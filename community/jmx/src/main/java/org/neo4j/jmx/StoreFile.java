@@ -46,4 +46,10 @@ public interface StoreFile
 
     @Description( "The amount of disk space used to store array properties, in bytes." )
     long getArrayStoreSize();
+
+    @Description( "The amount of disk space used by all logical logs, in bytes." )
+    long getAllLogicalLogsSize();
+
+    @Description( "The amount of disk space used by all indices, in bytes" )
+    long getIndexStoreSize();
 }

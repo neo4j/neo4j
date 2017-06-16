@@ -419,8 +419,7 @@ public class StoreUpgraderTest
         NullLogService instance = NullLogService.getInstance();
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance
         );
-        SchemaIndexMigrator indexMigrator =
-                new SchemaIndexMigrator( fileSystem, schemaIndexProvider, labelScanStoreProvider );
+        SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );

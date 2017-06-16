@@ -84,7 +84,8 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
                 LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG );
         LuceneLabelScanStore scanStore = new LuceneLabelScanStore( indexBuilder,
                 new FullLabelStream( dependencies.indexStoreView() ),
-                monitors.newMonitor( LabelScanStore.Monitor.class, LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG ) );
+                monitors.newMonitor( LabelScanStore.Monitor.class, LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG ),
+                context.storeDir() );
 
         return new LabelScanStoreProvider( LuceneLabelScanStore.LUCENE_LABEL_INDEX_TAG, scanStore );
     }
@@ -95,7 +96,7 @@ public class LuceneLabelScanStoreExtension extends KernelExtensionFactory<Lucene
         return LuceneLabelScanIndexBuilder.create()
                 .withDirectoryFactory( directoryFactory )
                 .withFileSystem( fileSystem )
-                .withIndexRootFolder( LabelScanStoreProvider.getStoreDirectory( context.storeDir() ) )
+                .withIndexRootFolder( LabelScanStoreProvider.getLuceneStoreDirectory( context.storeDir() ) )
                 .withConfig( config );
     }
 }

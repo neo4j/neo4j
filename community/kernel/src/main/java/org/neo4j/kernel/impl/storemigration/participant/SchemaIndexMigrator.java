@@ -43,15 +43,12 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     private File labelIndexDirectory;
     private File schemaIndexDirectory;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final LabelScanStoreProvider labelScanStoreProvider;
 
-    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider )
+    public SchemaIndexMigrator( FileSystemAbstraction fileSystem, SchemaIndexProvider schemaIndexProvider )
     {
         super( "Indexes" );
         this.fileSystem = fileSystem;
         this.schemaIndexProvider = schemaIndexProvider;
-        this.labelScanStoreProvider = labelScanStoreProvider;
     }
 
     @Override
@@ -63,7 +60,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
-            labelIndexDirectory = LabelScanStoreProvider.getStoreDirectory( storeDir );
+            labelIndexDirectory = LabelScanStoreProvider.getLuceneStoreDirectory( storeDir );
             deleteObsoleteIndexes = true;
         }
     }

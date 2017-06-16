@@ -157,7 +157,7 @@ public class StoreUpgraderInterruptionTestIT
 
     private SchemaIndexMigrator createIndexMigrator()
     {
-        return new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+        return new SchemaIndexMigrator( fs, schemaIndexProvider );
     }
 
     @Test

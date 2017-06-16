@@ -146,7 +146,7 @@ public class LuceneSchemaIndexProvider extends SchemaIndexProvider
     public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache,
             LabelScanStoreProvider labelScanStoreProvider )
     {
-        return new SchemaIndexMigrator( fs, this, labelScanStoreProvider );
+        return new SchemaIndexMigrator( fs, this );
     }
 
     @Override

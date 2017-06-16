@@ -44,7 +44,7 @@ public class SchemaIndexMigratorTest
     private final File storeDir = new File( "store" );
     private final File migrationDir = new File( "migrationDir" );
 
-    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider, labelScanStoreProvider );
+    private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, schemaIndexProvider );
 
     @Test
     public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
@@ -58,6 +58,6 @@ public class SchemaIndexMigratorTest
         migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
         verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
-        verify( fs ).deleteRecursively( LabelScanStoreProvider.getStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( LabelScanStoreProvider.getLuceneStoreDirectory( storeDir ) );
     }
 }

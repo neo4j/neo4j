@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.scan;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -43,8 +44,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class LabelScanStoreProvider extends LifecycleAdapter
 {
-    private static final String KEY = "lucene";
-
     private final String name;
     private final LabelScanStore labelScanStore;
 
@@ -59,9 +58,9 @@ public class LabelScanStoreProvider extends LifecycleAdapter
         return name;
     }
 
-    public static File getStoreDirectory( File storeRootDir )
+    public static File getLuceneStoreDirectory( File storeRootDir )
     {
-        return new File( new File( new File( storeRootDir, "schema" ), "label" ), KEY );
+        return new File( new File( new File( storeRootDir, "schema" ), "label" ), "lucene" );
     }
 
     public LabelScanStore getLabelScanStore()

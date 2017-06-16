@@ -1594,6 +1594,12 @@ public class BatchInsertTest
         {
             return false;
         }
+
+        @Override
+        public File getLabelScanStoreFile()
+        {
+            return null;
+        }
     }
 
     interface NoDependencies
