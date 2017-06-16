@@ -323,9 +323,9 @@ public abstract class IndexQuery implements Predicate<Value>
         StringRangePredicate( int propertyKeyId, String from, boolean fromInclusive, String to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = Values.stringValue( from );
+            this.from = Values.stringOrNoValue( from );
             this.fromInclusive = fromInclusive;
-            this.to = Values.stringValue( to );
+            this.to = Values.stringOrNoValue( to );
             this.toInclusive = toInclusive;
         }
 
