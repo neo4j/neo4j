@@ -19,9 +19,8 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.values.AnyValue;
@@ -30,9 +29,9 @@ import org.neo4j.values.VirtualValue;
 
 public final class MapValue extends VirtualValue
 {
-    private final HashMap<String,AnyValue> map;
+    private final Map<String,AnyValue> map;
 
-    MapValue( HashMap<String,AnyValue> map )
+    MapValue( Map<String,AnyValue> map )
     {
         this.map = map;
     }
@@ -79,30 +78,29 @@ public final class MapValue extends VirtualValue
         {
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
-        HashMap<String,AnyValue> otherMap = ((MapValue) other).map;
-        int compare = Integer.compare( map.size(), otherMap.size() );
+        Map<String,AnyValue> otherMap = ((MapValue) other).map;
+        int size = map.size();
+        int compare = Integer.compare( size(), otherMap.size() );
         if ( compare == 0 )
         {
-            Iterator<String> thisKeys = map.keySet().iterator();
-            Iterator<String> thatKeys = otherMap.keySet().iterator();
-            while ( thisKeys.hasNext() && thatKeys.hasNext() )
+
+            String[] thisKeys = map.keySet().toArray( new String[size] );
+            Arrays.sort( thisKeys, String::compareTo );
+            String[] thatKeys = otherMap.keySet().toArray( new String[size] );
+            Arrays.sort( thatKeys, String::compareTo );
+            for ( int i = 0; i < size; i++ )
             {
-                String key1 = thisKeys.next();
-                String key2 = thatKeys.next();
-                compare = key1.compareTo( key2 );
+                compare = thisKeys[i].compareTo( thatKeys[i] );
                 if ( compare != 0 )
                 {
                     return compare;
                 }
             }
 
-            Iterator<AnyValue> thisValues = map.values().iterator();
-            Iterator<AnyValue> thatValues = otherMap.values().iterator();
-            while ( thisValues.hasNext() && thatValues.hasNext() )
+            for ( int i = 0; i < size; i++ )
             {
-                AnyValue value1 = thisValues.next();
-                AnyValue value2 = thatValues.next();
-                compare = comparator.compare( value1, value2 );
+                String key = thisKeys[i];
+                compare = comparator.compare( map.get( key ), otherMap.get( key ) );
                 if ( compare != 0 )
                 {
                     return compare;
