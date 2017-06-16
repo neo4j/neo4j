@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.function.BiPredicate;
+import java.util.function.Function;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.is;
@@ -33,34 +34,51 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class MetricsTestHelper
 {
-    public static final int TIME_STAMP = 0;
-    public static final int METRICS_VALUE = 1;
+    private static final int TIME_STAMP = 0;
+    private static final int METRICS_VALUE = 1;
 
     public static long readLongValue( File metricFile ) throws IOException, InterruptedException
     {
-        return readLongValueAndAssert( metricFile, (one, two) -> true );
+        return readLongValueAndAssert( metricFile, ( one, two ) -> true );
     }
 
-    public static long readLongValueAndAssert( File metricFile, BiPredicate<Integer,Integer> assumption )
+    static long readLongValueAndAssert( File metricFile, BiPredicate<Long,Long> assumption )
             throws IOException, InterruptedException
+    {
+        return readValueAndAssert( metricFile, 0L, Long::parseLong, assumption );
+    }
+
+    static double readDoubleValue( File metricFile ) throws IOException, InterruptedException
+    {
+        return readValueAndAssert( metricFile, 0.0, Double::parseDouble,
+                ( one, two ) -> true );
+    }
+
+    private static <T> T readValueAndAssert( File metricFile, T startValue, Function<String,T> parser,
+            BiPredicate<T,T> assumption ) throws IOException, InterruptedException
     {
         // let's wait until the file is in place (since the reporting is async that might take a while)
         assertEventually( "Metrics file should exist", metricFile::exists, is( true ), 40, SECONDS );
 
         try ( BufferedReader reader = new BufferedReader( new FileReader( metricFile ) ) )
         {
-            String[] headers = reader.readLine().split( "," );
+            String s;
+            do
+            {
+                s = reader.readLine();
+            }
+            while ( s == null );
+            String[] headers = s.split( "," );
             assertThat( headers.length, is( 2 ) );
             assertThat( headers[TIME_STAMP], is( "t" ) );
             assertThat( headers[METRICS_VALUE], is( "value" ) );
 
-            // Now we can verify that the number of committed transactions should never decrease.
-            int currentValue = 0;
+            T currentValue = startValue;
             String line;
             while ( (line = reader.readLine()) != null )
             {
                 String[] fields = line.split( "," );
-                int newValue = Integer.parseInt( fields[1] );
+                T newValue = parser.apply( fields[1] );
                 assertTrue( "assertion failed on " + newValue + " " + currentValue,
                         assumption.test( newValue, currentValue ) );
                 currentValue = newValue;

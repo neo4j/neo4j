@@ -43,7 +43,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.neo4j.metrics.MetricsTestHelper.metricsCsv;
+import static org.neo4j.metrics.MetricsTestHelper.readDoubleValue;
 import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -94,6 +96,12 @@ public class PageCacheMetricsIT
         assertMetrics( "Page cache hits should be included in metrics report.", PageCacheMetrics.PC_HITS, greaterThan( 0L ) );
         assertMetrics( "Page cache flushes should be included in metrics report.", PageCacheMetrics.PC_FLUSHES, greaterThanOrEqualTo( 0L ) );
         assertMetrics( "Page cache exceptions should be included in metrics report.", PageCacheMetrics.PC_EVICTION_EXCEPTIONS, equalTo( 0L ) );
+
+        assertEventually(
+                "Page cache hit ratio should be included in metrics report.",
+                () -> readDoubleValue( metricsCsv( metricsDirectory, PageCacheMetrics.PC_HIT_RATIO ) ),
+                lessThanOrEqualTo( 1.0 ),
+                5, SECONDS );
     }
 
     private void assertMetrics( String message, String metricName, Matcher<Long> matcher ) throws Exception

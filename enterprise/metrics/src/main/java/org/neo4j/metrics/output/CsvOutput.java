@@ -31,6 +31,7 @@ import com.codahale.metrics.Timer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
@@ -75,6 +76,7 @@ public class CsvOutput implements Lifecycle, EventReporter
                 .convertRatesTo( TimeUnit.SECONDS )
                 .convertDurationsTo( TimeUnit.MILLISECONDS )
                 .filter( MetricFilter.ALL )
+                .formatFor( Locale.US )
                 .build( ensureDirectoryExists( outputPath ) );
     }
 
