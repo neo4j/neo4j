@@ -22,7 +22,11 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.IntFunction;
 import java.util.stream.Stream;
 
@@ -32,6 +36,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -91,11 +96,12 @@ public class ForsetiClient implements Locks.Client
      */
     private final PrimitiveLongIntMap[] sharedLockCounts;
 
-    /** @see {@link #sharedLockCounts} */
+    /** @see #sharedLockCounts */
     private final PrimitiveLongIntMap[] exclusiveLockCounts;
 
     /**
      * Time within which any particular lock should be acquired.
+     *
      * @see GraphDatabaseSettings#lock_acquisition_timeout
      */
     private final long lockAcquisitionTimeoutMillis;
@@ -103,6 +109,7 @@ public class ForsetiClient implements Locks.Client
 
     /** List of other clients this client is waiting for. */
     private final SimpleBitSet waitList = new SimpleBitSet( 64 );
+    private long waitListCheckPoint;
 
     // To be able to close Locks.Client instance properly we should be able to do couple of things:
     //  - have a possibility to prevent new clients to come
@@ -120,10 +127,16 @@ public class ForsetiClient implements Locks.Client
 
     private volatile boolean hasLocks;
 
+    /**
+     * When we *wait* for a specific lock to be released to us, we assign it to this field. This helps us during the
+     * secondary deadlock verification process, where we traverse the waiter/lock-owner dependency graph.
+     */
+    private volatile ForsetiLockManager.Lock waitingForLock;
+
     public ForsetiClient( int id, ConcurrentMap<Long,ForsetiLockManager.Lock>[] lockMaps,
-            WaitStrategy<AcquireLockTimeoutException>[] waitStrategies, Pool<ForsetiClient> clientPool,
-            DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
-            long lockAcquisitionTimeoutMillis, Clock clock )
+                          WaitStrategy<AcquireLockTimeoutException>[] waitStrategies, Pool<ForsetiClient> clientPool,
+                          DeadlockResolutionStrategy deadlockResolutionStrategy, IntFunction<ForsetiClient> clientById,
+                          long lockAcquisitionTimeoutMillis, Clock clock )
     {
         this.clientId = id;
         this.lockMaps = lockMaps;
@@ -153,10 +166,12 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+            throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
+        LockWaitEvent waitEvent = null;
 
         try
         {
@@ -193,77 +208,61 @@ public class ForsetiClient implements Locks.Client
                 SharedLock mySharedLock = null;
                 long waitStartMillis = clock.millis();
 
-                LockWaitEvent waitEvent = null;
-                try
+                // Retry loop
+                while ( true )
                 {
-                    // Retry loop
-                    while ( true )
+                    assertValid( waitStartMillis, resourceType, resourceId );
+
+                    // Check if there is a lock for this entity in the map
+                    ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
+
+                    // No lock
+                    if ( existingLock == null )
                     {
-                        assertValid( waitStartMillis, resourceType, resourceId );
-
-                        // Check if there is a lock for this entity in the map
-                        ForsetiLockManager.Lock existingLock = lockMap.get( resourceId );
-
-                        // No lock
-                        if ( existingLock == null )
+                        // Try to create a new shared lock
+                        if ( mySharedLock == null )
                         {
-                            // Try to create a new shared lock
-                            if ( mySharedLock == null )
-                            {
-                                mySharedLock = new SharedLock( this );
-                            }
-
-                            if ( lockMap.putIfAbsent( resourceId, mySharedLock ) == null )
-                            {
-                                // Success, we now hold the shared lock.
-                                break;
-                            }
-                            else
-                            {
-                                continue;
-                            }
+                            mySharedLock = new SharedLock( this );
                         }
 
-                        // Someone holds shared lock on this entity, try and get in on that action
-                        else if ( existingLock instanceof SharedLock )
+                        if ( lockMap.putIfAbsent( resourceId, mySharedLock ) == null )
                         {
-                            if ( ((SharedLock) existingLock).acquire( this ) )
-                            {
-                                // Success!
-                                break;
-                            }
-                        }
-
-                        // Someone holds an exclusive lock on this entity
-                        else if ( existingLock instanceof ExclusiveLock )
-                        {
-                            // We need to wait, just let the loop run.
+                            // Success, we now hold the shared lock.
+                            break;
                         }
                         else
                         {
-                            throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
+                            continue;
                         }
-
-                        if ( waitEvent == null )
-                        {
-                            waitEvent = tracer.waitForLock( false, resourceType, resourceId );
-                        }
-                        applyWaitStrategy( resourceType, tries++ );
-
-                        // And take note of who we are waiting for. This is used for deadlock detection.
-                        markAsWaitingFor( existingLock, resourceType, resourceId );
                     }
-                }
-                finally
-                {
-                    if ( waitEvent != null )
+
+                    // Someone holds shared lock on this entity, try and get in on that action
+                    else if ( existingLock instanceof SharedLock )
                     {
-                        waitEvent.close();
+                        if ( ((SharedLock) existingLock).acquire( this ) )
+                        {
+                            // Success!
+                            break;
+                        }
                     }
-                }
 
-                // Got the lock, no longer waiting for anyone.
-                clearWaitList();
+                    // Someone holds an exclusive lock on this entity
+                    else if ( existingLock instanceof ExclusiveLock )
+                    {
+                        // We need to wait, just let the loop run.
+                    }
+                    else
+                    {
+                        throw new UnsupportedOperationException( "Unknown lock type: " + existingLock );
+                    }
+
+                    if ( waitEvent == null )
+                    {
+                        waitEvent = tracer.waitForLock( false, resourceType, resourceId );
+                    }
+                    // And take note of who we are waiting for. This is used for deadlock detection.
+                    waitFor( existingLock, resourceType, resourceId, tries++ );
+                }
 
                 // Make a local note about the fact that we now hold this lock
                 heldShareLocks.put( resourceId, 1 );
@@ -271,15 +270,23 @@ public class ForsetiClient implements Locks.Client
         }
         finally
         {
+            if ( waitEvent != null )
+            {
+                waitEvent.close();
+            }
+            clearWaitList();
+            waitingForLock = null;
             stateHolder.decrementActiveClients();
         }
     }
 
     @Override
-    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException
+    public void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds )
+            throws AcquireLockTimeoutException
     {
         hasLocks = true;
         stateHolder.incrementActiveClients( this );
+        LockWaitEvent waitEvent = null;
 
         try
         {
@@ -296,53 +303,47 @@ public class ForsetiClient implements Locks.Client
                     continue;
                 }
 
-                LockWaitEvent waitEvent = null;
-                try
+                // Grab the global lock
+                ForsetiLockManager.Lock existingLock;
+                int tries = 0;
+                long waitStartMillis = clock.millis();
+                while ( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
                 {
-                    // Grab the global lock
-                    ForsetiLockManager.Lock existingLock;
-                    int tries = 0;
-                    long waitStartMillis = clock.millis();
-                    while ( (existingLock = lockMap.putIfAbsent( resourceId, myExclusiveLock )) != null )
-                    {
-                        assertValid( waitStartMillis, resourceType, resourceId );
+                    assertValid( waitStartMillis, resourceType, resourceId );
 
-                        // If this is a shared lock:
-                        // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
-                        // for it to convert to an exclusive lock.
-                        if ( tries > 50 && existingLock instanceof SharedLock )
-                        {
-                            // Then we should upgrade that lock
-                            SharedLock sharedLock = (SharedLock) existingLock;
-                            if ( tryUpgradeSharedToExclusive( tracer, waitEvent, resourceType, lockMap, resourceId, sharedLock,
-                                    waitStartMillis ) )
-                            {
-                                break;
-                            }
-                        }
-
-                        if ( waitEvent == null )
-                        {
-                            waitEvent = tracer.waitForLock( true, resourceType, resourceId );
-                        }
-                        applyWaitStrategy( resourceType, tries++ );
-                        markAsWaitingFor( existingLock, resourceType, resourceId );
-                    }
-                }
-                finally
-                {
-                    if ( waitEvent != null )
+                    // If this is a shared lock:
+                    // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
+                    // for it to convert to an exclusive lock.
+                    if ( tries > 50 && existingLock instanceof SharedLock )
                     {
-                        waitEvent.close();
+                        // Then we should upgrade that lock
+                        SharedLock sharedLock = (SharedLock) existingLock;
+                        if ( tryUpgradeSharedToExclusive( tracer, waitEvent, resourceType, lockMap, resourceId,
+                                sharedLock,
+                                waitStartMillis ) )
+                        {
+                            break;
+                        }
                     }
+
+                    if ( waitEvent == null )
+                    {
+                        waitEvent = tracer.waitForLock( true, resourceType, resourceId );
+                    }
+                    waitFor( existingLock, resourceType, resourceId, tries++ );
                 }
 
-                clearWaitList();
                 heldLocks.put( resourceId, 1 );
             }
         }
         finally
         {
+            if ( waitEvent != null )
+            {
+                waitEvent.close();
+            }
+            clearWaitList();
+            waitingForLock = null;
             stateHolder.decrementActiveClients();
         }
     }
@@ -748,21 +749,18 @@ public class ForsetiClient implements Locks.Client
         return count;
     }
 
-    public int waitListSize()
+    int waitListSize()
     {
         return waitList.size();
     }
 
-    public void copyWaitListTo( SimpleBitSet other )
+    void copyWaitListTo( SimpleBitSet other )
     {
         other.put( waitList );
-        // TODO It might make sense to somehow put a StoreLoad barrier here,
-        // TODO to expedite the observation of the updated waitList in other clients.
     }
 
-    public boolean isWaitingFor( int clientId )
+    boolean isWaitingFor( int clientId )
     {
-        // TODO Similarly to the above, make reading the waitList a volatile load.
         return clientId != this.clientId && waitList.contains( clientId );
     }
 
@@ -898,29 +896,19 @@ public class ForsetiClient implements Locks.Client
                     {
                         waitEvent = tracer.waitForLock( true, resourceType, resourceId );
                     }
-                    applyWaitStrategy( resourceType, tries++ );
-                    markAsWaitingFor( sharedLock, resourceType, resourceId );
+                    waitFor( sharedLock, resourceType, resourceId, tries++ );
                 }
 
                 return true;
-
-            }
-            catch ( DeadlockDetectedException e )
-            {
-                sharedLock.releaseUpdateLock();
-                // wait list is not cleared here as in other catch blocks because it is cleared in
-                // markAsWaitingFor() before throwing DeadlockDetectedException
-                throw e;
-            }
-            catch ( LockClientStoppedException e )
-            {
-                handleUpgradeToExclusiveFailure( sharedLock );
-                throw e;
             }
             catch ( Throwable e )
             {
-                handleUpgradeToExclusiveFailure( sharedLock );
-                throw new RuntimeException( e );
+                sharedLock.releaseUpdateLock();
+                if ( e instanceof DeadlockDetectedException || e instanceof LockClientStoppedException )
+                {
+                    throw (RuntimeException) e;
+                }
+                throw new TransactionFailureException( "Failed to upgrade shared lock to exclusive: " + sharedLock, e );
             }
             finally
             {
@@ -928,27 +916,24 @@ public class ForsetiClient implements Locks.Client
                 {
                     waitEvent.close();
                 }
+                clearWaitList();
+                waitingForLock = null;
             }
         }
         return false;
     }
 
-    private void handleUpgradeToExclusiveFailure( SharedLock sharedLock )
-    {
-        sharedLock.releaseUpdateLock();
-        clearWaitList();
-    }
-
     private void clearWaitList()
     {
-        waitList.clear();
-        waitList.put( clientId );
+        waitListCheckPoint = waitList.checkPointAndPut( waitListCheckPoint, clientId );
     }
 
-    private void markAsWaitingFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId )
+    private void waitFor( ForsetiLockManager.Lock lock, ResourceType type, long resourceId, int tries )
     {
+        waitingForLock = lock;
         clearWaitList();
         lock.copyHolderWaitListsInto( waitList );
+        applyWaitStrategy( type, tries );
 
         int b = lock.detectDeadlock( id() );
         if ( b != -1 && deadlockResolutionStrategy.shouldAbort( this, clientById.apply( b ) ) )
@@ -966,9 +951,71 @@ public class ForsetiClient implements Locks.Client
             // after we've generated a description of it.
             if ( lock.detectDeadlock( id() ) != -1 )
             {
-                waitList.clear();
-                throw new DeadlockDetectedException( message );
+                // If the deadlock is real, then an owner of this lock must be (transitively) waiting on a lock that
+                // we own. So to verify the deadlock, we traverse the lock owners and their `waitingForLock` fields,
+                // to find a lock that has us among the owners.
+                // We only act upon the result of this method if the `tries` count is above some threshold. The reason
+                // is that the Lock.collectOwners, which is algorithm relies upon, is inherently racy, and so only
+                // reduces the probably of a false positive, but does not eliminate them.
+                if ( isDeadlockReal( lock, tries ) )
+                {
+                    // After checking several times, this really does look like a real deadlock.
+                    throw new DeadlockDetectedException( message );
+                }
             }
+        }
+    }
+
+    private boolean isDeadlockReal( ForsetiLockManager.Lock lock, int tries )
+    {
+        Set<ForsetiLockManager.Lock> waitedUpon = new HashSet<>();
+        Set<ForsetiClient> owners = new HashSet<>();
+        Set<ForsetiLockManager.Lock> nextWaitedUpon = new HashSet<>();
+        Set<ForsetiClient> nextOwners = new HashSet<>();
+        lock.collectOwners( owners );
+
+        do
+        {
+            waitedUpon.addAll( nextWaitedUpon );
+            collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
+            if ( nextOwners.contains( this ) && tries > 20 )
+            {
+                // Worrying... let's take a deep breath
+                nextOwners.clear();
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+                // ... and check again
+                collectNextOwners( waitedUpon, owners, nextWaitedUpon, nextOwners );
+                if ( nextOwners.contains( this ) )
+                {
+                    // Yes, this deadlock looks real.
+                    return true;
+                }
+            }
+            owners.clear();
+            Set<ForsetiClient> ownersTmp = owners;
+            owners = nextOwners;
+            nextOwners = ownersTmp;
+        }
+        while ( !nextWaitedUpon.isEmpty() );
+        // Nope, we didn't find any real wait cycles.
+        return false;
+    }
+
+    private void collectNextOwners( Set<ForsetiLockManager.Lock> waitedUpon, Set<ForsetiClient> owners,
+                                    Set<ForsetiLockManager.Lock> nextWaitedUpon, Set<ForsetiClient> nextOwners )
+    {
+        nextWaitedUpon.clear();
+        for ( ForsetiClient owner : owners )
+        {
+            ForsetiLockManager.Lock waitingForLock = owner.waitingForLock;
+            if ( waitingForLock != null && !waitedUpon.contains( waitingForLock ) )
+            {
+                nextWaitedUpon.add( waitingForLock );
+            }
+        }
+        for ( ForsetiLockManager.Lock lck : nextWaitedUpon )
+        {
+            lck.collectOwners( nextOwners );
         }
     }
 
@@ -976,7 +1023,7 @@ public class ForsetiClient implements Locks.Client
      * @return an approximate (assuming data is concurrently being edited) count of the number of locks held by this
      * client.
      */
-    public int lockCount()
+    int lockCount()
     {
         int count = 0;
         for ( PrimitiveLongIntMap sharedLockCount : sharedLockCounts )
@@ -990,7 +1037,7 @@ public class ForsetiClient implements Locks.Client
         return count;
     }
 
-    public String describeWaitList()
+    String describeWaitList()
     {
         StringBuilder sb = new StringBuilder( format( "%nClient[%d] waits for [", id() ) );
         PrimitiveIntIterator iter = waitList.iterator();

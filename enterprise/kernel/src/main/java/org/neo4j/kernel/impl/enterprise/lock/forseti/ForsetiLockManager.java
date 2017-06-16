@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 import java.time.Clock;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
@@ -79,7 +80,7 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
  * <p/>
  * A.waitlist = [A] U [B] => [A,B]
  * <p/>
- * It will do this in a loop, continiously figuring out the union of wait lists for all clients it waits for. The magic
+ * It will do this in a loop, continuously figuring out the union of wait lists for all clients it waits for. The magic
  * then happens whenever one of those clients become blocked on client A. Assuming client B now has to wait for A,
  * it will also perform a union of A's wait list (which is [A,B] at this point):
  * <p/>
@@ -87,6 +88,23 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
  * <p/>
  * As it performs this union, B will find itself in A's waiting list, and when it does, it has detected a deadlock.
  * <p/>
+ * This algorithm always identifies real deadlocks, but it may also mistakenly identify a deadlock where there is none;
+ * a false positive. For this reason, we have a secondary deadlock verification algorithm that only runs if the
+ * algorithm above found what appears to be a deadlock.
+ * <p/>
+ * The secondary deadlock verification algorithm works like this: Whenever a lock client blocks to wait on a lock, the
+ * lock is stored in the clients `waitsFor` field, and the field is cleared when the client unblocks. Since every lock
+ * track their owners, we now have all the information we need to traverse the waiter/lock-holder dependency graph to
+ * verify that a cycle really does exist.
+ * <p/>
+ * We first collect the owners of the lock that we are blocking upon. From there, we need to find a lock that one of
+ * these lock-owners are waiting on, and have us amongst its owners. So to recap, we collect the immediate owners of
+ * the lock that we are immediately blocked upon, then we collect the set of locks that they are waiting upon, and then
+ * we collect the combined set of owners of <em>those</em> locks, and if we are amongst those, then we consider the
+ * deadlock is real. If we are not amongst those owners, then we take another step out into the graph, collect the next
+ * frontier of locks that are waited upon, and their owners, and then we check again in this new owner set. We continue
+ * traversing the graph like this until we either find ourselves amongst the owners - a deadlock - or we run out of
+ * locks that are being waited upon - no deadlock.
  * <p/>
  * <h2>Future work</h2>
  * <p/>
@@ -124,6 +142,17 @@ public class ForsetiLockManager implements Locks
          * for the lock.
          */
         String describeWaitList();
+
+        /**
+         * Collect the current owners of this lock into the given set. This is used for verifying that apparent
+         * deadlocks really do involve circular wait dependencies.
+         *
+         * Note that the owner set may change while this method is running, and thus it is not guaranteed to reflect any
+         * particular snapshot of the set of lock owners. Furthermore, the set may change arbitrarily after the method
+         * returns, immediately rendering the result outdated.
+         * @param owners The set into which to collect the current owners of this lock.
+         */
+        void collectOwners( Set<ForsetiClient> owners );
     }
 
     /**
@@ -257,8 +286,6 @@ public class ForsetiLockManager implements Locks
         private final AtomicInteger clientIds = new AtomicInteger( 0 );
 
         /** Re-use ids, forseti uses these in arrays, so we want to keep them low and not loose them. */
-        // TODO we could use a synchronised SimpleBitSet instead, since we know that we only care about reusing a
-        // very limited set of integers.
         private final Queue<Integer> unusedIds = new ConcurrentLinkedQueue<>();
         private final ConcurrentMap<Integer,ForsetiClient> clientsById = new ConcurrentHashMap<>();
         private final Config config;
