@@ -34,6 +34,7 @@ import java.util.Set;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -53,6 +54,9 @@ public class CertificatesIT
     {
         settings.put( tls_certificate_file.name(), certFile.getAbsolutePath() );
         settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
+        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
+        settings.put( new BoltConnector( "bolt" ).address.name(), "localhost:7878" );
     } );
 
     @Test
@@ -63,7 +67,7 @@ public class CertificatesIT
         try
         {
             // WHEN
-            connection.connect( new HostnamePort( "localhost:7687" ) )
+            connection.connect( new HostnamePort( "localhost:7878" ) )
                     .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
             // THEN
