@@ -66,10 +66,10 @@ class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         private int currentId;
         private boolean first;
 
-        GapFillingIterator( Iterator<NodeLabelRange> iterator, long highId )
+        GapFillingIterator( Iterator<NodeLabelRange> nodeLableRangeIterator, long highId )
         {
             this.highId = highId;
-            this.source = iterator;
+            this.source = nodeLableRangeIterator;
             this.first = true;
         }
 
@@ -84,6 +84,7 @@ class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
             int cursor = 0;
             for ( ; cursor < batchSize; cursor++, currentId++ )
             {
+                // First or empty source
                 if ( first || (sourceNodeIds != null && sourceIndex >= sourceNodeIds.length) )
                 {
                     first = false;
