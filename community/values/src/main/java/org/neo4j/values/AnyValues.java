@@ -50,7 +50,7 @@ public final class AnyValues
             new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
 
     /**
-     * Creates an AnyValue by doing type instpection. Do not use in production code where performance is important.
+     * Creates an AnyValue by doing type inspection. Do not use in production code where performance is important.
      * @param object the object to turned into a AnyValue
      * @return the AnyValue corresponding to object.
      */

@@ -70,4 +70,14 @@ public class EdgeValue extends VirtualEdgeValue
     {
         return id;
     }
+
+    public TextValue type()
+    {
+        return type;
+    }
+
+    public MapValue properties()
+    {
+        return properties;
+    }
 }

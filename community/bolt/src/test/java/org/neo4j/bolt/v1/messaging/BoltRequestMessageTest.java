@@ -81,6 +81,8 @@ public class BoltRequestMessageTest
         assertThat( msg.params().entrySet(), equalTo( expected.entrySet() ) );
     }
 
+    //"B1 71 91 B3 4E 0C 92 |84 55 73 65 72 | 86 42 61 6E\n61 6E 61 A284 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E"
+    //"B1 71 91 B3 4E 0C 92 |86 42 61 6E 61 6E 61| 84 55\n73 65 72 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E
     @Test
     public void shouldSerializeNode() throws Throwable
     {

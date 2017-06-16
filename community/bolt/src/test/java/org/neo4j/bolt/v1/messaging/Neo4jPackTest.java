@@ -33,21 +33,14 @@ import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.HexPrinter;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
 import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
@@ -151,20 +144,6 @@ public class Neo4jPackTest
 
     @SuppressWarnings( "unchecked" )
     @Test
-    public void shouldFailWhenNullKeysInMaps() throws IOException
-    {
-        // Given
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        HashMap<String,Object> map = new HashMap<>();
-        map.put(null, 42L);
-        map.put("foo", 1337L);
-        packer.pack( map );
-        assertTrue( packer.hasErrors() );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
     public void shouldFailNicelyWhenPackingAMapWithUnpackableValues() throws IOException
     {
         // Given
@@ -199,28 +178,6 @@ public class Neo4jPackTest
 
         // Then
         assertThat(unpacker.consumeError().get(), equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ));
-    }
-
-    @Test
-    public void shouldHandleDeletedNodesGracefully() throws IOException
-    {
-        // Given
-        Node node = mock( Node.class );
-        when( node.getId() ).thenReturn( 42L );
-        doThrow( NotFoundException.class ).when( node ).getAllProperties();
-        doThrow( NotFoundException.class ).when( node ).getLabels();
-
-        // When
-        byte[] packed = packed( node );
-
-        // Then
-        //Node (signature=0x4E)
-        //{
-        //    id: 42 (0x2A)
-        //    labels: [] (90)
-        //    props: {} (A0)
-        //}
-        assertThat( HexPrinter.hex( packed ), equalTo( "B3 4E 2A 90 A0" ) );
     }
 
     @Test

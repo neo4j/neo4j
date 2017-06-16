@@ -334,7 +334,7 @@ public class PackStream
             }
         }
 
-        private void packBytesHeader( int size ) throws IOException
+        protected void packBytesHeader( int size ) throws IOException
         {
             if ( size <= Byte.MAX_VALUE )
             {
