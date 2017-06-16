@@ -20,16 +20,17 @@
 package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.TextValue;
 
 import static java.lang.String.format;
 
 public class NodeValue extends VirtualNodeValue
 {
     private final long id;
-    private final LabelSet labels;
+    private final TextValue[] labels;
     private final MapValue properties;
 
-    NodeValue( long id, LabelSet labels, MapValue properties )
+    NodeValue( long id, TextValue[] labels, MapValue properties )
     {
         assert labels != null;
         assert properties != null;
@@ -39,7 +40,7 @@ public class NodeValue extends VirtualNodeValue
         this.properties = properties;
     }
 
-    LabelSet labels()
+    TextValue[] labels()
     {
         return labels;
     }

@@ -31,7 +31,6 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
-import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -56,7 +55,7 @@ public class VirtualValueTestUtil
         {
             labelValues[i] = stringValue( labels[i] );
         }
-        return nodeValue( id, labels( labelValues ), emptyMap() );
+        return nodeValue( id, labelValues, emptyMap() );
     }
 
     public static VirtualValue path( VirtualValue... pathElements )
@@ -117,7 +116,7 @@ public class VirtualValueTestUtil
     public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> nodeValue( id, labels( stringValue( "L" ) ), emptyMap() ) )
+                .mapToObj( id -> nodeValue( id, new TextValue[]{stringValue( "L" )}, emptyMap() ) )
                 .toArray( NodeValue[]::new );
     }
 

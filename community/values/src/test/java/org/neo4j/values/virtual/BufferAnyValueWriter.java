@@ -99,21 +99,9 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeNode( long nodeId, LabelSet labels, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextValue[] labels, MapValue properties ) throws RuntimeException
     {
         buffer.add( Specials.writeNode( nodeId, labels, properties ) );
-    }
-
-    @Override
-    public void beginLabels( int numberOfLabels )
-    {
-        buffer.add( Specials.beginLabels( numberOfLabels ) );
-    }
-
-    @Override
-    public void endLabels()
-    {
-        buffer.add( Specials.endLabels() );
     }
 
     @Override
@@ -175,9 +163,10 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     public static class Specials
     {
 
-        public static Special writeNode( long nodeId, LabelSet labels, MapValue properties )
+        public static Special writeNode( long nodeId, TextValue[] labels, MapValue properties )
         {
-            return new Special( SpecialKind.WriteNode, Arrays.hashCode( new Object[]{nodeId, labels, properties} ) );
+            return new Special( SpecialKind.WriteNode, Arrays.hashCode( new Object[]{nodeId, properties} ) +
+                                                       31 * Arrays.hashCode( labels ) );
         }
 
         public static Special writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type,
@@ -195,16 +184,6 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
         public static Special writeNodeReference( long nodeId )
         {
             return new Special( SpecialKind.WriteNodeReference, (int) nodeId );
-        }
-
-        public static Special beginLabels( int numberOfLabels )
-        {
-            return new Special( SpecialKind.BeginLabels, numberOfLabels );
-        }
-
-        public static Special endLabels()
-        {
-            return new Special( SpecialKind.EndLabels, 0 );
         }
 
         public static Special writeEdgeReference( long edgeId )

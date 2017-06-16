@@ -63,9 +63,9 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static LabelSet labels( TextValue... labels )
+    public static TextValue[] labels( TextValue... labels )
     {
-        return new LabelSet.ArrayBasedLabelSet( labels );
+        return labels;
     }
 
     public static NodeReference node( long id )
@@ -93,7 +93,7 @@ public final class VirtualValues
         return new PointValue.GeographicPointValue( latitude, longitude );
     }
 
-    public static NodeValue nodeValue( long id, LabelSet labels, MapValue properties )
+    public static NodeValue nodeValue( long id, TextValue[] labels, MapValue properties )
     {
         return new NodeValue( id, labels, properties );
     }

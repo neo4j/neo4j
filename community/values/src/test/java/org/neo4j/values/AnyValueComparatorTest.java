@@ -88,14 +88,6 @@ public class AnyValueComparatorTest
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 3L, 4L ) ),
             path( nodes( 1L, 2L, 3L, 4L ), edges( 1L, 4L, 2L ) ),
 
-            // LabelSet
-            labels(),
-            labels( stringValue( "L" ) ),
-            labels( stringValue( "M" ) ),
-            labels( stringValue( "L" ), stringValue( "M" ) ),
-            labels( stringValue( "L" ), stringValue( "M" ), stringValue( "N" ) ),
-            labels( stringValue( "L" ), stringValue( "M" ), stringValue( "O" ) ),
-
             // Point
             pointCartesian( -1.0, -1.0 ),
             pointCartesian( 1.0, 1.0 ),

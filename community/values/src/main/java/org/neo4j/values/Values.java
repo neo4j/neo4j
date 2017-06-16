@@ -393,7 +393,7 @@ public final class Values
     /**
      * Generic value factory method.
      * <p>
-     * Converts an array of object values to the internal Value type. See @{Values.of}.
+     * Converts an array of object values to the internal Value type. See {@link Values#of}.
      */
     public static Value[] values( Object... objects )
     {

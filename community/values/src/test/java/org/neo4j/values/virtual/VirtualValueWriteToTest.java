@@ -33,11 +33,9 @@ import static org.neo4j.values.Values.byteArray;
 import static org.neo4j.values.Values.charValue;
 import static org.neo4j.values.Values.intValue;
 import static org.neo4j.values.Values.stringValue;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginLabels;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginMap;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.beginPoint;
-import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endLabels;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endList;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endMap;
 import static org.neo4j.values.virtual.BufferAnyValueWriter.Specials.endPoint;
@@ -82,14 +80,6 @@ public class VirtualValueWriteToTest
                         "bar", 'c',
                         "foo", 100,
                         endMap()
-                ),
-                shouldWrite(
-                        labels( stringValue( "L" ), stringValue( "M" ), stringValue( "N" ) ),
-                        beginLabels( 3 ),
-                        "L",
-                        "M",
-                        "N",
-                        endLabels()
                 ),
                 shouldWrite(
                         VirtualValues.node( 1L ),
