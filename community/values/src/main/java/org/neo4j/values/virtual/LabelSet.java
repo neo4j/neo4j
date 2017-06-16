@@ -98,13 +98,11 @@ public abstract class LabelSet extends VirtualValue implements Iterable<TextValu
             }
             else
             {   //slow route
-                LabelSet that = (LabelSet) other;
-                Iterator<TextValue> thisIterator = iterator();
-                Iterator<TextValue> thatIterator = that.iterator();
-                while ( thisIterator.hasNext() && thatIterator.hasNext() )
+                TextValue[] thatLabels = toSortedLabelArray( (LabelSet) other );
+                for ( int i = 0; i < size(); i++ )
                 {
-                    TextValue label1 = thisIterator.next();
-                    TextValue label2 = thatIterator.next();
+                    TextValue label1 = labels[i];
+                    TextValue label2 = thatLabels[i];
                     if ( !label1.equals( label2 ) )
                     {
                         return false;
@@ -147,12 +145,11 @@ public abstract class LabelSet extends VirtualValue implements Iterable<TextValu
                 }
                 else
                 {
-                    Iterator<TextValue> thisIterator = iterator();
-                    Iterator<TextValue> thatIterator = otherSet.iterator();
-                    while ( thisIterator.hasNext() && thatIterator.hasNext() )
+                    TextValue[] thatLabels = toSortedLabelArray( (LabelSet) other );
+                    for ( int i = 0; i < size(); i++ )
                     {
-                        TextValue label1 = thisIterator.next();
-                        TextValue label2 = thatIterator.next();
+                        TextValue label1 = labels[i];
+                        TextValue label2 = thatLabels[i];
                         x = comparator.compare( label1, label2 );
                         if ( x != 0 )
                         {
@@ -182,6 +179,20 @@ public abstract class LabelSet extends VirtualValue implements Iterable<TextValu
         public Iterator<TextValue> iterator()
         {
             return asIterator( labels );
+        }
+
+        private TextValue[] toSortedLabelArray( LabelSet set )
+        {
+            Iterator<TextValue> thatIterator = set.iterator();
+            TextValue[] labelArray = new TextValue[set.size()];
+            int i = 0;
+            while ( thatIterator.hasNext() )
+            {
+                labelArray[i++] = thatIterator.next();
+            }
+            Arrays.sort( labelArray, AnyValues.COMPARATOR );
+
+            return labelArray;
         }
     }
 }
