@@ -55,7 +55,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
@@ -157,7 +156,7 @@ public class TransactionLogCatchUpWriterTest
     {
         // create an empty store
         org.neo4j.kernel.impl.store.StoreId storeId;
-        NeoStoreDataSource ds = dsRule.getDataSource( storeDir, fs, pageCache, emptyMap() );
+        NeoStoreDataSource ds = dsRule.getDataSource( storeDir, fs, pageCache );
         try ( Lifespan ignored = new Lifespan( ds ) )
         {
             storeId = ds.getStoreId();

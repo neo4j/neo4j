@@ -20,7 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
-import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
+import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -64,17 +64,19 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
-import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -87,36 +89,15 @@ public class NeoStoreDataSourceRule extends ExternalResource
 {
     private NeoStoreDataSource dataSource;
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig, DatabaseHealth databaseHealth )
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache )
     {
-        CommunityIdTypeConfigurationProvider idTypeConfigurationProvider =
-                new CommunityIdTypeConfigurationProvider();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        NullLogService logService = NullLogService.getInstance();
-        return getDataSource( storeDir, fs, idGeneratorFactory, idTypeConfigurationProvider, pageCache,
-                additionalConfig, databaseHealth, logService );
+        return getDataSource( storeDir, fs, pageCache, new Dependencies() );
     }
 
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Map<String, String> additionalConfig, DatabaseHealth databaseHealth,
-            LogService logService )
+    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs, PageCache pageCache,
+            DependencyResolver otherCustomOverriddenDependencies )
     {
-        return getDataSource( storeDir, fs, idGeneratorFactory, idConfigurationProvider, pageCache,
-                Config.embeddedDefaults( additionalConfig ), databaseHealth, logService );
-    }
-
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            IdGeneratorFactory idGeneratorFactory, IdTypeConfigurationProvider idConfigurationProvider,
-            PageCache pageCache, Config config, DatabaseHealth databaseHealth,
-            LogService logService )
-    {
-        if ( dataSource != null )
-        {
-            dataSource.stop();
-            dataSource.shutdown();
-        }
+        shutdownAnyRunning();
 
         StatementLocksFactory locksFactory = mock( StatementLocksFactory.class );
         StatementLocks statementLocks = mock( StatementLocks.class );
@@ -127,25 +108,73 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );
         Monitors monitors = new Monitors();
+
+        Dependencies mutableDependencies = new Dependencies( otherCustomOverriddenDependencies );
+        Config config = dependency( mutableDependencies, Config.class, deps -> Config.empty() );
+        LogService logService = dependency( mutableDependencies, LogService.class,
+                deps -> new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() ) );
+        IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
+                deps -> new DefaultIdGeneratorFactory( fs ) );
+        IdTypeConfigurationProvider idConfigurationProvider = dependency( mutableDependencies,
+                IdTypeConfigurationProvider.class, deps -> new CommunityIdTypeConfigurationProvider() );
+        DatabaseHealth databaseHealth = dependency( mutableDependencies, DatabaseHealth.class,
+                deps -> new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                        NullLogProvider.getInstance().getLog( DatabaseHealth.class ) ) );
+        SystemNanoClock clock = dependency( mutableDependencies, SystemNanoClock.class, deps -> Clocks.nanoClock() );
+        TransactionMonitor transactionMonitor =
+                dependency( mutableDependencies, TransactionMonitor.class, deps -> new TransactionStats() );
+        AvailabilityGuard availabilityGuard = dependency( mutableDependencies, AvailabilityGuard.class,
+                deps -> new AvailabilityGuard( deps.resolveDependency( SystemNanoClock.class ),
+                        NullLog.getInstance() ) );
+
         LabelScanStoreProvider labelScanStoreProvider =
                 nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, monitors );
-        SystemNanoClock clock = Clocks.nanoClock();
         dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
                 idConfigurationProvider,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider( labelScanStoreProvider ), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR,
-                fs, mock( TransactionMonitor.class ), databaseHealth,
+                fs, transactionMonitor, databaseHealth,
                 mock( PhysicalLogFile.Monitor.class ), TransactionHeaderInformationFactory.DEFAULT,
                 new StartupStatisticsProvider(), null,
                 new CommunityCommitProcessFactory(), mock( InternalAutoIndexing.class ), pageCache,
                 new StandardConstraintSemantics(), monitors,
-                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ), mock( Procedures.class ),
-                IOLimiter.unlimited(), new AvailabilityGuard( clock, NullLog.getInstance() ), clock, new CanWrite(),
-                new StoreCopyCheckPointMutex(),
+                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler ),
+                mock( Procedures.class ),
+                IOLimiter.unlimited(),
+                availabilityGuard, clock,
+                new CanWrite(), new StoreCopyCheckPointMutex(),
                 GroupingRecoveryCleanupWorkCollector.IMMEDIATE );
         return dataSource;
+    }
+
+    private <T> T dependency( Dependencies dependencies, Class<T> type,
+            Function<DependencyResolver,T> defaultSupplier )
+    {
+        try
+        {
+            return dependencies.resolveDependency( type );
+        }
+        catch ( IllegalArgumentException | UnsatisfiedDependencyException e )
+        {
+            return dependencies.satisfyDependency( defaultSupplier.apply( dependencies ) );
+        }
+    }
+
+    private void shutdownAnyRunning()
+    {
+        if ( dataSource != null )
+        {
+            dataSource.stop();
+            dataSource.shutdown();
+        }
+    }
+
+    @Override
+    protected void after( boolean successful ) throws Throwable
+    {
+        shutdownAnyRunning();
     }
 
     public static LabelScanStoreProvider nativeLabelScanStoreProvider( File storeDir, FileSystemAbstraction fs,
@@ -173,14 +202,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
         {
             throw launderedException( e );
         }
-    }
-
-    public NeoStoreDataSource getDataSource( File storeDir, FileSystemAbstraction fs,
-            PageCache pageCache, Map<String,String> additionalConfig )
-    {
-        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
-                NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
-        return getDataSource( storeDir, fs, pageCache, additionalConfig, databaseHealth );
     }
 
     private DependencyResolver dependencyResolverForNoIndexProvider( LabelScanStoreProvider labelScanStoreProvider )
