@@ -24,7 +24,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -47,11 +47,13 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
             FeatureToggles.getInteger( PooledConcurrentMergeScheduler.class, "pool.queue.capacity", 100 );
     private static final int POOL_MINIMUM_THREADS =
             FeatureToggles.getInteger( PooledConcurrentMergeScheduler.class, "pool.minimum.threads", 4 );
+    private static final int POOL_MAXIMUM_THREADS =
+            FeatureToggles.getInteger( PooledConcurrentMergeScheduler.class, "pool.maximum.threads", 10 );
 
-    private final AtomicInteger writerTaskCounter = new AtomicInteger();
+    private final LongAdder writerTaskCounter = new LongAdder();
 
     @Override
-    public synchronized void merge( IndexWriter writer, MergeTrigger trigger, boolean newMergesFound )
+    public void merge( IndexWriter writer, MergeTrigger trigger, boolean newMergesFound )
             throws IOException
     {
         while ( true )
@@ -65,7 +67,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
             try
             {
                 MergeThread mergeThread = getMergeThread( writer, merge );
-                writerTaskCounter.incrementAndGet();
+                writerTaskCounter.increment();
                 PooledConcurrentMergePool.mergeThreadsPool.submit( mergeTask( mergeThread ) );
                 success = true;
             }
@@ -74,7 +76,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
                 if ( !success )
                 {
                     writer.mergeFinish( merge );
-                    writerTaskCounter.decrementAndGet();
+                    writerTaskCounter.decrement();
                 }
             }
         }
@@ -99,9 +101,9 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
         // noop
     }
 
-    int getWriterTaskCount()
+    long getWriterTaskCount()
     {
-        return writerTaskCounter.get();
+        return writerTaskCounter.longValue();
     }
 
     private Runnable mergeTask( MergeThread mergeThread )
@@ -113,7 +115,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
     {
         try
         {
-            Predicates.await( () -> writerTaskCounter.get() == 0, 10, TimeUnit.MINUTES, 10, TimeUnit.MILLISECONDS );
+            Predicates.await( () -> writerTaskCounter.longValue() == 0, 10, TimeUnit.MINUTES, 10, TimeUnit.MILLISECONDS );
         }
         catch ( Throwable t )
         {
@@ -124,22 +126,22 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
     private static class PooledConcurrentMergePool
     {
         private static final ExecutorService mergeThreadsPool =
-                new ThreadPoolExecutor( 0, getMaximumPoolSize(), 60L, TimeUnit.SECONDS,
+                new ThreadPoolExecutor( POOL_MINIMUM_THREADS, getMaximumPoolSize(), 60L, TimeUnit.SECONDS,
                         new ArrayBlockingQueue<>( POOL_QUEUE_CAPACITY ),
                         new NamedThreadFactory( "Lucene-Merge", true ), new ThreadPoolExecutor.CallerRunsPolicy() );
 
         private static int getMaximumPoolSize()
         {
-            return Math.max( 1, Math.min( POOL_MINIMUM_THREADS, Runtime.getRuntime().availableProcessors() / 2 ) );
+            return Math.max( POOL_MAXIMUM_THREADS, Runtime.getRuntime().availableProcessors() );
         }
     }
 
     private class MergeTask implements Runnable
     {
         private final MergeThread mergeThread;
-        private final AtomicInteger taskCounter;
+        private final LongAdder taskCounter;
 
-        MergeTask( MergeThread mergeThread, AtomicInteger taskCounter )
+        MergeTask( MergeThread mergeThread, LongAdder taskCounter )
         {
             this.mergeThread = mergeThread;
             this.taskCounter = taskCounter;
@@ -154,7 +156,7 @@ public class PooledConcurrentMergeScheduler extends ConcurrentMergeScheduler
             }
             finally
             {
-                taskCounter.decrementAndGet();
+                taskCounter.decrement();
             }
         }
     }
