@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 
-import static org.neo4j.values.virtual.ArrayHelpers.hasNullOrNoValue;
+import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
 final class ListValue extends VirtualValue implements SequenceValue
 {
@@ -36,7 +36,8 @@ final class ListValue extends VirtualValue implements SequenceValue
     ListValue( AnyValue[] values )
     {
         assert values != null;
-        assert !hasNullOrNoValue( values );
+        assert !containsNull( values );
+
         this.values = values;
     }
 

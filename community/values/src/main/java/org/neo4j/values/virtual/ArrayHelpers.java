@@ -75,11 +75,11 @@ final class ArrayHelpers
         return true;
     }
 
-    static boolean hasNullOrNoValue( AnyValue[] values )
+    static boolean containsNull( AnyValue[] values )
     {
         for ( AnyValue value : values )
         {
-            if ( value == null || value == Values.NO_VALUE )
+            if ( value == null )
             {
                 return true;
             }
