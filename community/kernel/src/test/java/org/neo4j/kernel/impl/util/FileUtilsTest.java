@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 
@@ -40,6 +41,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
+import static org.neo4j.io.fs.FileUtils.size;
 
 public class FileUtilsTest
 {
@@ -242,6 +244,38 @@ public class FileUtilsTest
     {
         assumeTrue( SystemUtils.IS_OS_LINUX );
         assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
+    }
+
+    @Test
+    public void sizeOfFile() throws Exception
+    {
+        File file = touchFile( "a" );
+
+        try ( FileWriter fileWriter = new FileWriter( file ) )
+        {
+            fileWriter.append( 'a' );
+        }
+
+        assertThat( size( file ), is( 1L )  );
+    }
+
+    @Test
+    public void sizeOfDirector() throws Exception
+    {
+        File dir = directory( "dir" );
+        File file1 = new File( dir, "file1" );
+        File file2 = new File( dir, "file2" );
+
+        try ( FileWriter fileWriter = new FileWriter( file1 ) )
+        {
+            fileWriter.append( 'a' ).append( 'b' );
+        }
+        try ( FileWriter fileWriter = new FileWriter( file2 ) )
+        {
+            fileWriter.append( 'a' );
+        }
+
+        assertThat( size( dir ), is( 3L ) );
     }
 
     private File directory( String name )

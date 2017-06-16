@@ -27,6 +27,7 @@ import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
@@ -80,7 +81,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
         private final File storePath;
         private final PageCache pageCache;
 
-        protected BranchedStoreImpl( final ManagementData management ) throws NotCompliantMBeanException
+        BranchedStoreImpl( final ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
             fileSystem = getFilesystem( management );
@@ -88,7 +89,7 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             pageCache = getPageCache( management );
         }
 
-        protected BranchedStoreImpl( final ManagementData management, boolean isMXBean )
+        BranchedStoreImpl( final ManagementData management, boolean isMXBean )
         {
             super( management, isMXBean );
             fileSystem = getFilesystem( management );
@@ -121,9 +122,11 @@ public final class BranchedStoreBean extends ManagementBeanProvider
             try
             {
                 final File neoStoreFile = new File( branchDirectory, MetaDataStore.DEFAULT_NAME );
-                long txId = MetaDataStore.getRecord( pageCache, neoStoreFile, Position.LAST_TRANSACTION_ID );
-                long timestamp = Long.parseLong( branchDirectory.getName() );
-                return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp );
+                final long txId = MetaDataStore.getRecord( pageCache, neoStoreFile, Position.LAST_TRANSACTION_ID );
+                final long timestamp = Long.parseLong( branchDirectory.getName() );
+                final long branchedStoreSize = FileUtils.size( branchDirectory );
+
+                return new BranchedStoreInfo( branchDirectory.getName(), txId, timestamp, branchedStoreSize );
             }
             catch ( IOException e )
             {

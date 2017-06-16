@@ -30,14 +30,16 @@ public final class BranchedStoreInfo implements Serializable
 
     private long largestTxId;
     private long creationTime;
+    private long branchedStoreSize;
 
-    @ConstructorProperties( { "directory", "largestTxId", "creationTime" } )
+    @ConstructorProperties( { "directory", "largestTxId", "creationTime", "storeSize" } )
     public BranchedStoreInfo( String directory, long largestTxId,
-            long creationTime )
+            long creationTime, long branchedStoreSize )
     {
         this.directory = directory;
         this.largestTxId = largestTxId;
         this.creationTime = creationTime;
+        this.branchedStoreSize = branchedStoreSize;
     }
 
     public String getDirectory()
@@ -53,5 +55,10 @@ public final class BranchedStoreInfo implements Serializable
     public long getCreationTime()
     {
         return creationTime;
+    }
+
+    public long getBranchedStoreSize()
+    {
+        return branchedStoreSize;
     }
 }
