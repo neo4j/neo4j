@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -211,6 +212,26 @@ class SharedLock implements ForsetiLockManager.Lock
             }
         }
         return sb.append( "]" ).toString();
+    }
+
+    @Override
+    public void collectOwners( Set<ForsetiClient> owners )
+    {
+        for ( AtomicReferenceArray<ForsetiClient> ownerArray : clientsHoldingThisLock )
+        {
+            if ( ownerArray != null )
+            {
+                int len = ownerArray.length();
+                for ( int i = 0; i < len; i++ )
+                {
+                    ForsetiClient owner = ownerArray.get( i );
+                    if ( owner != null )
+                    {
+                        owners.add( owner );
+                    }
+                }
+            }
+        }
     }
 
     @Override
