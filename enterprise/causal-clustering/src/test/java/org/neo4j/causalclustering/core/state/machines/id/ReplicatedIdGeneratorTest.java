@@ -30,15 +30,14 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.IdGeneratorContractTest;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -68,14 +67,16 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
     private File file;
     private FileSystemAbstraction fs;
     private MemberId myself = new MemberId( UUID.randomUUID() );
-    private LeaderLocator leaderLocator = Mockito.mock( LeaderLocator.class );
-    private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+    private RaftMachine raftMachine = Mockito.mock( RaftMachine.class );
+    private ExposedRaftState state = mock( ExposedRaftState.class );
+    private final CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
 
     @Before
     public void setUp() throws Exception
     {
         file = testDirectory.file( "idgen" );
         fs = fileSystemRule.get();
+        when( raftMachine.state() ).thenReturn( state );
     }
 
     @Override
@@ -164,8 +165,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         assertEquals( 0, idGenerator.getDefragCount() );
         assertEquals( 23, idGenerator.nextId() );
 
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 6L ); // gap-free
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 6L ); // gap-free
+        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
         idReusabilityCondition.receive( myself );
 
         idGenerator.freeId( 10 );
@@ -208,8 +209,8 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
         assertEquals( 0, idGenerator.getDefragCount() );
         assertEquals( 23, idGenerator.nextId() );
 
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 4L, 6L ); // gap-free
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 4L, 6L ); // gap-free
+        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
         idReusabilityCondition.receive( myself );
 
         assertEquals( 24, idGenerator.nextId() );
@@ -221,9 +222,7 @@ public class ReplicatedIdGeneratorTest extends IdGeneratorContractTest
 
     private IdReusabilityCondition getIdReusabilityCondition()
     {
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( transactionIdStore );
-        return new IdReusabilityCondition( dependencies, leaderLocator, myself );
+        return new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
     }
 
     private Set<Long> collectGeneratedIds( ReplicatedIdGenerator idGenerator, int expectedIds )

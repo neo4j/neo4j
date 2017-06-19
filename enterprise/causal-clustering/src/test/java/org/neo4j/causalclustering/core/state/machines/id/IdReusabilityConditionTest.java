@@ -24,10 +24,9 @@ import org.junit.Test;
 
 import java.util.UUID;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
+import org.neo4j.causalclustering.core.consensus.state.ExposedRaftState;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -38,21 +37,18 @@ import static org.mockito.Mockito.when;
 
 public class IdReusabilityConditionTest
 {
-    private LeaderLocator leaderLocator;
+    private RaftMachine raftMachine = mock( RaftMachine.class );
+    private ExposedRaftState state = mock( ExposedRaftState.class );
     private MemberId myself;
-    private Dependencies dependencies;
-    private TransactionIdStore transactionIdStore;
+    private CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
     private IdReusabilityCondition idReusabilityCondition;
 
     @Before
     public void setUp() throws Exception
     {
-        leaderLocator = mock( LeaderLocator.class );
+        when( raftMachine.state() ) .thenReturn( state );
         myself = new MemberId( UUID.randomUUID() );
-        dependencies = new Dependencies();
-        transactionIdStore = mock( TransactionIdStore.class );
-        dependencies.satisfyDependency( transactionIdStore );
-        idReusabilityCondition = new IdReusabilityCondition( dependencies, leaderLocator, myself );
+        idReusabilityCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
     }
 
     @Test
@@ -75,8 +71,8 @@ public class IdReusabilityConditionTest
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 2L ); // gap-free
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L ); // gap-free
+        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
         idReusabilityCondition.receive( myself );
 
@@ -84,8 +80,8 @@ public class IdReusabilityConditionTest
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
-        verify( transactionIdStore, times( 3 ) ).getLastClosedTransactionId();
-        verify( transactionIdStore ).getLastCommittedTransactionId();
+        verify( commandIndexTracker, times( 3 ) ).getAppliedCommandIndex();
+        verify( state ).lastLogIndexBeforeWeBecameLeader();
     }
 
     @Test
@@ -93,8 +89,8 @@ public class IdReusabilityConditionTest
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 2L, 5L, 6L ); // gap-free
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
+        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
         idReusabilityCondition.receive( myself );
 
@@ -102,8 +98,8 @@ public class IdReusabilityConditionTest
         assertFalse( idReusabilityCondition.getAsBoolean() );
         assertTrue( idReusabilityCondition.getAsBoolean() );
 
-        verify( transactionIdStore, times( 3 ) ).getLastClosedTransactionId();
-        verify( transactionIdStore ).getLastCommittedTransactionId();
+        verify( commandIndexTracker, times( 3 ) ).getAppliedCommandIndex();
+        verify( state ).lastLogIndexBeforeWeBecameLeader();
     }
 
     @Test
@@ -111,8 +107,8 @@ public class IdReusabilityConditionTest
     {
         assertFalse( idReusabilityCondition.getAsBoolean() );
 
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 2L, 5L, 6L ); // gap-free
-        when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 5L );
+        when( commandIndexTracker.getAppliedCommandIndex() ).thenReturn( 2L, 5L, 6L ); // gap-free
+        when( state.lastLogIndexBeforeWeBecameLeader() ).thenReturn( 5L );
 
         idReusabilityCondition.receive( myself );
 

@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 
 import org.neo4j.causalclustering.core.state.Result;
 import org.neo4j.causalclustering.core.state.machines.StateMachine;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.locks.ReplicatedLockTokenStateMachine;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
@@ -42,6 +43,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 
 public class ReplicatedTransactionStateMachine implements StateMachine<ReplicatedTransaction>
 {
+    private final CommandIndexTracker commandIndexTracker;
     private final ReplicatedLockTokenStateMachine lockTokenStateMachine;
     private final int maxBatchSize;
     private final Log log;
@@ -49,9 +51,10 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     private TransactionQueue queue;
     private long lastCommittedIndex = -1;
 
-    public ReplicatedTransactionStateMachine( ReplicatedLockTokenStateMachine lockStateMachine,
-            int maxBatchSize, LogProvider logProvider )
+    public ReplicatedTransactionStateMachine( CommandIndexTracker commandIndexTracker,
+            ReplicatedLockTokenStateMachine lockStateMachine, int maxBatchSize, LogProvider logProvider )
     {
+        this.commandIndexTracker = commandIndexTracker;
         this.lockTokenStateMachine = lockStateMachine;
         this.maxBatchSize = maxBatchSize;
         this.log = logProvider.getLog( getClass() );
@@ -93,7 +96,11 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
             try
             {
                 TransactionToApply transaction = new TransactionToApply( tx );
-                transaction.onClose( txId -> callback.accept( Result.of( txId ) ) );
+                transaction.onClose( txId ->
+                {
+                    callback.accept( Result.of( txId ) );
+                    commandIndexTracker.setAppliedCommandIndex( commandIndex );
+                } );
                 queue.queue( transaction );
             }
             catch ( Exception e )

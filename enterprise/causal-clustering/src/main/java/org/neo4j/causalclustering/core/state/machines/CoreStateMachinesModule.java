@@ -27,8 +27,10 @@ import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
 import org.neo4j.causalclustering.core.state.machines.id.IdReusabilityCondition;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationStateMachine;
@@ -103,7 +105,7 @@ public class CoreStateMachinesModule
     public final CoreStateMachines coreStateMachines;
 
     public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
-            Config config, RaftReplicator replicator, LeaderLocator leaderLocator, Dependencies dependencies,
+            Config config, RaftReplicator replicator, RaftMachine raftMachine, Dependencies dependencies,
             LocalDatabase localDatabase )
     {
         StateStorage<IdAllocationState> idAllocationState;
@@ -133,8 +135,8 @@ public class CoreStateMachinesModule
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-
-        BooleanSupplier freeIdCondition = new IdReusabilityCondition( dependencies, leaderLocator, myself );
+        CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
+        BooleanSupplier freeIdCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
         this.idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem,
                 idRangeAcquirer, logProvider,
                 idTypeConfigurationProvider, freeIdCondition ) );
@@ -169,12 +171,12 @@ public class CoreStateMachinesModule
                         logProvider );
 
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
-                new ReplicatedTransactionStateMachine( replicatedLockTokenStateMachine,
+                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
                         config.get( state_machine_apply_max_batch_size ), logProvider );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, leaderLocator,
+        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
         RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );

@@ -21,10 +21,8 @@ package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.util.function.BooleanSupplier;
 
-import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.Listener;
 
 /**
@@ -35,17 +33,18 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
 {
     private static final BooleanSupplier ALWAYS_FALSE = () -> false;
 
-    private TransactionIdStore transactionIdStore;
-    private final Dependencies dependencies;
+    private CommandIndexTracker commandIndexTracker;
+    private final RaftMachine raftMachine;
     private final MemberId myself;
 
     private volatile BooleanSupplier currentSupplier = ALWAYS_FALSE;
 
-    public IdReusabilityCondition( Dependencies dependencies, LeaderLocator leaderLocator, MemberId myself )
+    public IdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachine raftMachine, MemberId myself )
     {
-        this.dependencies = dependencies;
+        this.commandIndexTracker = commandIndexTracker;
+        this.raftMachine = raftMachine;
         this.myself = myself;
-        leaderLocator.registerListener( this );
+        raftMachine.registerListener( this );
     }
 
     @Override
@@ -60,8 +59,7 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
         if ( myself.equals( newLeader ) )
         {
             // We just became leader
-            resolveTransactionIdStore();
-            currentSupplier = new LeaderIdReusabilityCondition( transactionIdStore );
+            currentSupplier = new LeaderIdReusabilityCondition( commandIndexTracker, raftMachine );
         }
         else
         {
@@ -70,27 +68,19 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
         }
     }
 
-    private void resolveTransactionIdStore()
-    {
-        if ( transactionIdStore == null )
-        {
-            transactionIdStore = dependencies.provideDependency( TransactionIdStore.class ).get();
-        }
-    }
-
     private static class LeaderIdReusabilityCondition implements BooleanSupplier
     {
-        private final TransactionIdStore transactionIdStore;
-        private final long idHighestWhenBecameLeader;
+        private final CommandIndexTracker commandIndexTracker;
+        private final long commandIdWhenBecameLeader;
 
         private volatile boolean oldTransactionsApplied;
 
-        LeaderIdReusabilityCondition( TransactionIdStore transactionIdStore )
+        LeaderIdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachine raftMachine )
         {
-            this.transactionIdStore = transactionIdStore;
+            this.commandIndexTracker = commandIndexTracker;
 
-            // Get highest transaction id seen
-            this.idHighestWhenBecameLeader = transactionIdStore.getLastCommittedTransactionId();
+            // Get highest command id seen
+            this.commandIdWhenBecameLeader = raftMachine.state().lastLogIndexBeforeWeBecameLeader();
         }
 
         @Override
@@ -101,7 +91,7 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
                 return true;
             }
 
-            boolean hasAppliedOldTransactions = transactionIdStore.getLastClosedTransactionId() > idHighestWhenBecameLeader;
+            boolean hasAppliedOldTransactions = commandIndexTracker.getAppliedCommandIndex() > commandIdWhenBecameLeader;
             if ( hasAppliedOldTransactions )
             {
                 oldTransactionsApplied = true;
