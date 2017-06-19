@@ -25,8 +25,29 @@ import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+
+  test("Should not use both pruning var expand and projections that need path info") {
+
+    val n1 = createLabeledNode("Neo")
+    val n2 = createLabeledNode()
+    createLabeledNode()
+    relate(n1, n2)
+
+    val query =
+      """
+        |MATCH p=(source:Neo)-[rel *0..1]->(dest)
+        |WITH nodes(p) as d
+        |RETURN DISTINCT d
+      """.stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+
+    result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
+
+  }
 
   // Not TCK material -- only one integer type
   test("comparing numbers should work nicely") {
