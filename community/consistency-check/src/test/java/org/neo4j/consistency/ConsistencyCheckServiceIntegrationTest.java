@@ -254,7 +254,7 @@ public class ConsistencyCheckServiceIntegrationTest
     private File findFile( String targetFile, File directory )
     {
         File foundFile = null;
-        boolean didFindFile= false;
+        boolean didFindFile = false;
         for ( File file : directory.listFiles() )
         {
             if ( file.getName().equals( targetFile ) )
