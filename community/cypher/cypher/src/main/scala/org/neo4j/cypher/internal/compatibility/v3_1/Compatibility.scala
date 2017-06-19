@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => Transa
 import org.neo4j.cypher.internal.spi.v3_3.{TransactionalContextWrapper => TransactionalContextWrapperV3_3}
 import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -55,7 +55,7 @@ trait Compatibility {
 
   protected val compiler: v3_1.CypherCompiler
 
-  implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
+  implicit val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
@@ -81,7 +81,7 @@ trait Compatibility {
           (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
         }
 
-      override protected val trier = preparedSyntacticQueryForV_3_1
+      override protected val trier: Try[PreparedQuerySyntax] = preparedSyntacticQueryForV_3_1
     }
   }
 
@@ -111,7 +111,7 @@ trait Compatibility {
       }
     }
 
-    def isPeriodicCommit = inner.isPeriodicCommit
+    def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 
     def isStale(lastCommittedTxId: LastCommittedTxIdProvider, ctx: TransactionalContextWrapperV3_3): Boolean =
       inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx.readOperations))

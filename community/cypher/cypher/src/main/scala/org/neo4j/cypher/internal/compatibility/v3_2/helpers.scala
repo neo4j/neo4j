@@ -21,14 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v3_2.{CypherCompilerConfiguration => CypherCompilerConfiguration3_2}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
-import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.{CompilationPhase => v3_2Phase, CompilationPhaseEvent => CompilationPhaseEvent3_2}
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.{CompilationPhase => v3_2Phase, CompilationPhaseEvent => CompilationPhaseEvent3_2}
 import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition => InputPosition3_2}
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.{CompilationPhase => v3_3Phase}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
-
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
@@ -50,7 +49,7 @@ object helpers {
 
   def as3_2(tracer: CompilationPhaseTracer): org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer = {
     new org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer {
-      override def beginPhase(phase: org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase) = {
+      override def beginPhase(phase: org.neo4j.cypher.internal.frontend.v3_2.phases.CompilationPhaseTracer.CompilationPhase): CompilationPhaseEvent3_2 = {
         val wrappedPhase = phase match {
           case v3_2Phase.AST_REWRITE => v3_3Phase.AST_REWRITE
           case v3_2Phase.CODE_GENERATION => v3_3Phase.CODE_GENERATION

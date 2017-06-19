@@ -63,7 +63,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[], ProcedureException> stream =
+        RawIterator<Object[],ProcedureException> stream =
                 procedureCallOpsInNewTx().procedureCallRead( procedureName( "db", "labels" ), new Object[0] );
 
         // Then
@@ -79,7 +79,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
+        RawIterator<Object[],ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "db", "propertyKeys" ), new Object[0] );
 
         // Then
@@ -98,7 +98,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
+        RawIterator<Object[],ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "db", "relationshipTypes" ), new Object[0] );
 
         // Then
@@ -109,20 +109,22 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listProcedures() throws Throwable
     {
         // When
-        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
+        RawIterator<Object[],ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "dbms", "procedures" ), new Object[0] );
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{ "dbms.listConfig",
+                equalTo( new Object[]{"dbms.listConfig",
                         "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
-                                "value :: STRING?)",
-                        "List the currently active config of Neo4j." } ),
+                        "value :: STRING?)",
+                        "List the currently active config of Neo4j."} ),
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database."} ),
-                equalTo( new Object[]{"db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)",
+                equalTo( new Object[]{"db.indexes",
+                        "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)",
                         "List all indexes in the database."} ),
-                equalTo( new Object[]{"db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                equalTo( new Object[]{"db.awaitIndex",
+                        "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))."} ),
                 equalTo( new Object[]{"db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID",
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))."} ),
@@ -130,30 +132,55 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Schedule resampling of all outdated indexes."} ),
                 equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
                         "List all property keys in the database."} ),
-                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database."} ),
+                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)",
+                        "List all labels in the database."} ),
                 equalTo( new Object[]{"db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " +
-                        "OF " +
-                        "RELATIONSHIP?)", "Show the schema of the data."} ),
+                                                   "OF " +
+                                                   "RELATIONSHIP?)", "Show the schema of the data."} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
-                        "STRING?)", "List all relationship types in the database."} ),
+                                                              "STRING?)",
+                        "List all relationship types in the database."} ),
                 equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +
-                        "STRING?, description :: STRING?)", "List all procedures in the DBMS."} ),
+                                                         "STRING?, description :: STRING?)",
+                        "List all procedures in the DBMS."} ),
                 equalTo( new Object[]{"dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: " +
-                                                         "STRING?, description :: STRING?)", "List all user functions in the DBMS."} ),
+                                                        "STRING?, description :: STRING?)",
+                        "List all user functions in the DBMS."} ),
                 equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
-                        " STRING?, edition :: STRING?)", "List DBMS components and their versions."} ),
+                                                         " STRING?, edition :: STRING?)",
+                        "List DBMS components and their versions."} ),
                 equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
-                        "description :: STRING?, attributes :: MAP?)", "Query JMX management data by domain and name." +
-                                                                       " For instance, \"org.neo4j:*\""} ),
-                equalTo(new Object[]{"db.createLabel","db.createLabel(newLabel :: STRING?) :: VOID", "Create a label"
-                }),
-                equalTo(new Object[]{"db.createProperty","db.createProperty(newProperty :: STRING?) :: VOID",
+                                                       "description :: STRING?, attributes :: MAP?)",
+                        "Query JMX management data by domain and name." +
+                        " For instance, \"org.neo4j:*\""} ),
+                equalTo( new Object[]{"db.createLabel", "db.createLabel(newLabel :: STRING?) :: VOID", "Create a label"
+                } ),
+                equalTo( new Object[]{"db.createProperty", "db.createProperty(newProperty :: STRING?) :: VOID",
                         "Create a Property"
-                }),
-                equalTo(new Object[]{"db.createRelationshipType",
+                } ),
+                equalTo( new Object[]{"db.createRelationshipType",
                         "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
                         "Create a RelationshipType"
-                })
+                } ),
+                equalTo( new Object[]{"db.nodeManualIndexSearch",
+                        "db.nodeManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (node :: NODE?)",
+                        "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`"
+                } ),
+                equalTo( new Object[]{"db.nodeManualIndexSeek",
+                        "db.nodeManualIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +
+                        "NODE?)",
+                        "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`"
+                } ),
+                equalTo( new Object[]{"db.relationshipManualIndexSearch",
+                        "db.relationshipManualIndexSearch(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
+                        "RELATIONSHIP?)",
+                        "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`"
+                } ),
+                equalTo( new Object[]{"db.relationshipManualIndexSeek",
+                        "db.relationshipManualIndexSeek(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
+                        "(relationship :: RELATIONSHIP?)",
+                        "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`"
+                } )
         ) );
     }
 
@@ -180,7 +207,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Given a running database
 
         // When
-        RawIterator<Object[], ProcedureException> stream = procedureCallOpsInNewTx()
+        RawIterator<Object[],ProcedureException> stream = procedureCallOpsInNewTx()
                 .procedureCallRead( procedureName( "dbms", "components" ), new Object[0] );
 
         // Then
@@ -222,6 +249,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         assertThat( result, containsInAnyOrder(
                 new Object[]{"INDEX ON :Age(foo)", "ONLINE", "node_unique_property"},
                 new Object[]{"INDEX ON :Person(foo)", "ONLINE", "node_label_property"}
-            ) );
+        ) );
     }
 }

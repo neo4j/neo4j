@@ -21,14 +21,23 @@ package org.neo4j.kernel.builtinprocs;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
+import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
@@ -36,6 +45,7 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -134,7 +144,7 @@ public class BuiltInProcedures
     @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index,
-                            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
+            @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
             throws ProcedureException
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
@@ -184,6 +194,104 @@ public class BuiltInProcedures
                 .sorted()
                 .map( ConstraintResult::new )
                 .onClose( statement::close );
+    }
+
+    @Description( "Get node from manual index. Replaces `START n=node:nodes(key = 'A')`" )
+    @Procedure( name = "db.nodeManualIndexSeek", mode = READ )
+    public Stream<NodeResult> nodeManualIndexSeek( @Name( "indexName" ) String legacyIndexName,
+            @Name( "key" ) String key,
+            @Name( "value" ) Object value )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.nodeLegacyIndexGet( legacyIndexName, key, value );
+            return toStream( hits, ( id ) -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    legacyIndexName );
+        }
+    }
+
+    @Description( "Search nodes from manual index. Replaces `START n=node:nodes('key:foo*')`" )
+    @Procedure( name = "db.nodeManualIndexSearch", mode = READ )
+    public Stream<NodeResult> nodeManualIndexSearch( @Name( "indexName" ) String manualIndexName,
+            @Name( "query" ) Object query )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.nodeLegacyIndexQuery( manualIndexName, query );
+            return toStream( hits, ( id ) -> new NodeResult( graphDatabaseAPI.getNodeById( id ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Node index %s not found",
+                    manualIndexName );
+        }
+    }
+
+    @Description( "Get relationship from manual index. Replaces `START r=relationship:relIndex(key = 'A')`" )
+    @Procedure( name = "db.relationshipManualIndexSeek", mode = READ )
+    public Stream<RelationshipResult> relationshipManualIndexSeek( @Name( "indexName" ) String manualIndexName,
+            @Name( "key" ) String key,
+            @Name( "value" ) Object value )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexGet( manualIndexName, key, value, -1, -1 );
+            return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
+        }
+    }
+
+    @Description( "Search relationship from manual index. Replaces `START r=relationship:relIndex('key:foo*')`" )
+    @Procedure( name = "db.relationshipManualIndexSearch", mode = READ )
+    public Stream<RelationshipResult> relationshipManualIndexSearch( @Name( "indexName" ) String manualIndexName,
+            @Name( "query" ) Object query )
+            throws ProcedureException
+    {
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations readOperations = statement.readOperations();
+            LegacyIndexHits hits = readOperations.relationshipLegacyIndexQuery( manualIndexName, query, -1, -1 );
+            return toStream( hits, ( id ) -> new RelationshipResult( graphDatabaseAPI.getRelationshipById( id ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.LegacyIndex.LegacyIndexNotFound, "Relationship index %s not found",
+                    manualIndexName );
+        }
+    }
+
+    private <T> Stream<T> toStream( PrimitiveLongResourceIterator iterator, Function<Long,T> mapper )
+    {
+        Iterator<T> it = new Iterator<T>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return iterator.hasNext();
+            }
+
+            @Override
+            public T next()
+            {
+                return mapper.apply( iterator.next() );
+            }
+        };
+
+        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( it, Spliterator.ORDERED ), false );
     }
 
     private IndexProcedures indexProcedures()
@@ -248,6 +356,28 @@ public class BuiltInProcedures
         {
             this.description = description;
         }
+    }
+
+    @SuppressWarnings( "unused" )
+    public class NodeResult
+    {
+        public NodeResult( Node node )
+        {
+            this.node = node;
+        }
+
+        public final Node node;
+    }
+
+    @SuppressWarnings( "unused" )
+    public class RelationshipResult
+    {
+        public RelationshipResult( Relationship relationship )
+        {
+            this.relationship = relationship;
+        }
+
+        public final Relationship relationship;
     }
 
     //When we have decided on what to call different indexes
