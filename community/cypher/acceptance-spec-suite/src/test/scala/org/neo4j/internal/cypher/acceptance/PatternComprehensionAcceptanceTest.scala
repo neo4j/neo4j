@@ -61,6 +61,37 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
       List(Map("related" -> List(Map("tagged" -> Vector(Map("owner" -> Map("name" -> "Michael Hunger"))))))))
   }
 
+  test("bug found when binding to already existing variables") {
+
+    innerExecute(
+      """create
+        |(_0:`Decision`  {`id`:"d1"}),
+        |(_1:`FilterValue`  {`value`:500}),
+        |(_2:`FilterCharacteristic`  {`id`:"c1"}),
+        |(_3:`Decision`  {`id`:"d2"}),
+        |(_4:`FilterValue`  {`value`:1000}),
+        |(_5:`Decision`  {`id`:"d3"}),
+        |(_1)-[:`SET_ON`]->(_2),
+        |(_1)-[:`SET_FOR`]->(_0),
+        |(_4)-[:`SET_ON`]->(_2),
+        |(_4)-[:`SET_FOR`]->(_3)""".stripMargin)
+
+    val query =
+      """WITH {c1:[100,50000]} AS rangeFilters
+        |MATCH (childD:Decision)
+        | WHERE ALL(key IN keys(rangeFilters)
+        |   WHERE size([(childD)<-[:SET_FOR]-(filterValue)-[:SET_ON]->(filterCharacteristic) WHERE filterCharacteristic.id = key  AND (rangeFilters[key])[0] <= filterValue.value <= (rangeFilters[key])[1] | 1]
+        | ) > 0)
+        | RETURN childD.id""".stripMargin
+
+    val result = executeWithCostPlannerOnly(query)
+
+    result.toList should equal(
+      List(
+        Map("childD.id" -> "d1"),
+        Map("childD.id" -> "d2")))
+  }
+
   test("pattern comprehension nested in function call") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
 
