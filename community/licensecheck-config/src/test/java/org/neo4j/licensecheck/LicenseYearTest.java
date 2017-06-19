@@ -42,19 +42,25 @@ public class LicenseYearTest
     @Test
     public void testNoticePrefixYearGPL() throws FileNotFoundException
     {
-        URL resource = getClass().getClassLoader().getResource( NOTICE_GPL_FILE );
-        File gplFile = new File( resource.getFile() );
+        if ( System.getProperty( "ignoreNoticeYear" ).isEmpty() )
+        {
+            URL resource = getClass().getClassLoader().getResource( NOTICE_GPL_FILE );
+            File gplFile = new File( resource.getFile() );
 
-        checkYearInFile(gplFile);
+            checkYearInFile( gplFile );
+        }
     }
 
     @Test
     public void testNoticePrefixYearAGPL() throws FileNotFoundException
     {
-        URL resource = getClass().getClassLoader().getResource( NOTICE_AGPL_FILE );
-        File gplFile = new File( resource.getFile() );
+        if ( System.getProperty( "ignoreNoticeYear" ).isEmpty() )
+        {
+            URL resource = getClass().getClassLoader().getResource( NOTICE_AGPL_FILE );
+            File gplFile = new File( resource.getFile() );
 
-        checkYearInFile( gplFile );
+            checkYearInFile( gplFile );
+        }
     }
 
     private void checkYearInFile( File gplFile ) throws FileNotFoundException
@@ -73,7 +79,10 @@ public class LicenseYearTest
 
                 int realYear = Calendar.getInstance().get( Calendar.YEAR );
 
-                assertThat( Integer.parseInt( yearInFile ), equalTo( realYear ) );
+                assertThat( "The year field in the NOTICE file header template needs to be updated. " +
+                            "If you are building an old version of Neo4j, and/or do not care about the copyright " +
+                            "year of its modules, set the maven parameter `-DignoreNoticeYear`",
+                        Integer.parseInt( yearInFile ), equalTo( realYear ) );
             }
             else
             {
