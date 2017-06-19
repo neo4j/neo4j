@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.naming.AuthenticationException;
 import javax.naming.CommunicationException;
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -548,7 +549,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
                 if ( search.hasMore() )
                 {
                     securityLog.error( "More than one user matching: " + principal );
-                    throw new RuntimeException( "More than one user matching: " + principal );
+                    throw new AuthenticationException( "More than one user matching: " + principal );
                 }
                 else
                 {
@@ -568,7 +569,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
             else
             {
                 securityLog.warn( "No user matching: " + principal );
-                throw new RuntimeException( "No user matching: " + principal );
+                throw new AuthenticationException( "No user matching: " + principal );
             }
             return createAuthenticationInfo( token, principal, credentials, ctx );
         }

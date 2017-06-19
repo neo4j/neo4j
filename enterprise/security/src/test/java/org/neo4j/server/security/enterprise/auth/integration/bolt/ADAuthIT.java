@@ -135,7 +135,7 @@ public class ADAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldFailLoginSamAccountNameWithDN() throws Throwable
     {
-        assertAuthFail( "n neo4j", "abc123" );
+        assertAuthFail( "n.neo4j", "abc123" );
     }
 
     @Test

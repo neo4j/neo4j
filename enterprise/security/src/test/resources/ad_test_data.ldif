@@ -24,56 +24,56 @@ objectclass: top
 ou: users
 
 # Entry 10: cn=neo4j,ou=users,dc=example,dc=com
-dn: cn=n neo4j,ou=users,dc=example,dc=com
+dn: cn=n.neo4j,ou=users,dc=example,dc=com
 memberOf: cn=admin,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
 samAccountName: neo4j
-cn: neo4j
-sn: neo4j
+cn: n.neo4j
+sn: n.neo4j
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
 # Entry 11: cn=neo,ou=users,dc=example,dc=com
-dn: cn=n neo,ou=users,dc=example,dc=com
+dn: cn=n.neo,ou=users,dc=example,dc=com
 memberOf: cn=reader,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
 samAccountName: smith
-cn: neo
-sn: neo
+cn: n.neo
+sn: n.neo
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
 # Entry 12: cn=smith,ou=users,dc=example,dc=com
-dn: cn=s smith,ou=users,dc=example,dc=com
+dn: cn=s.smith,ou=users,dc=example,dc=com
 memberOf: cn=agent,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
 samAccountName: smith
-cn:  smith
-sn: smith
+cn:  s.smith
+sn: s.smith
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
 # Entry 13: cn=tank,ou=users,dc=example,dc=com
-dn: cn=t tank,ou=users,dc=example,dc=com
+dn: cn=t.tank,ou=users,dc=example,dc=com
 memberOf: cn=publisher,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
 samAccountName: tank
-cn:  tank
-sn: tank
+cn:  t.tank
+sn: t.tank
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
 # Entry 14: cn=trinity,ou=users,dc=example,dc=com
-dn: cn=t trinity,ou=users,dc=example,dc=com
+dn: cn=t.trinity,ou=users,dc=example,dc=com
 memberof: cn=architect,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
 samAccountName: trinity
-cn: trinity
-sn: trinity
+cn: t.trinity
+sn: t.trinity
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
