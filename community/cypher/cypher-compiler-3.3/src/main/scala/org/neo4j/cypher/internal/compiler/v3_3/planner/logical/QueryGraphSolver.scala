@@ -51,18 +51,17 @@ trait PatternExpressionSolving {
 
   def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
                               (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
-    val dependencies = expr.dependencies.map(IdName.fromVariable)
-    val qgArguments = planArguments intersect dependencies
-    val qg = expr.asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
+    val asQueryGraph = expr.asQueryGraph
+    val qgArguments = planArguments intersect asQueryGraph.coveredIds
+    val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
     val plan: LogicalPlan = planQueryGraph(qg, Map.empty)
     (plan, expr)
   }
 
   private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable])
                             (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val argLeafPlan = Some(context.logicalPlanProducer.planQueryArgumentRow(qg))
-    val namedNodes = namedMap.collect { case (elem: NodePattern, identifier) => identifier }
-    val namedRels = namedMap.collect { case (elem: RelationshipChain, identifier) => identifier }
+    val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
+    val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
     self.plan(qg)(patternPlanningContext)
   }
