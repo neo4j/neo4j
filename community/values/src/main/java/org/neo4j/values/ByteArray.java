@@ -140,39 +140,4 @@ abstract class ByteArray extends IntegralArray
             return format( "ByteArray%s", Arrays.toString( value ) );
         }
     }
-
-    static final class Lazy extends ByteArray implements LazyValue<byte[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<byte[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        byte[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( byte[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "ByteArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

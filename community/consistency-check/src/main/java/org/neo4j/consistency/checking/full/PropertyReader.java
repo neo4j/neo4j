@@ -95,7 +95,7 @@ public class PropertyReader implements PropertyAccessor
 
     public Value propertyValue( PropertyBlock block )
     {
-        return block.getType().valueLazy( block, propertyStore );
+        return block.getType().value( block, propertyStore );
     }
 
     @Override

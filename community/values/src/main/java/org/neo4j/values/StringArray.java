@@ -121,39 +121,4 @@ abstract class StringArray extends TextArray
             return format( "StringArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends StringArray implements LazyValue<String[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<String[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        String[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( String[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "StringArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

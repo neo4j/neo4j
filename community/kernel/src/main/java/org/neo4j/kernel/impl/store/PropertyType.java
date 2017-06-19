@@ -35,15 +35,9 @@ public enum PropertyType
     BOOL( 1 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.booleanValue( getValue( block.getSingleValueLong() ) );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
-            return valueLazy( block, store );
+            return Values.booleanValue( getValue( block.getSingleValueLong() ) );
         }
 
         private boolean getValue( long propBlock )
@@ -54,12 +48,6 @@ public enum PropertyType
     BYTE( 2 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.byteValue( block.getSingleValueByte() );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.byteValue( block.getSingleValueByte() );
@@ -67,12 +55,6 @@ public enum PropertyType
     },
     SHORT( 3 )
     {
-        @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.shortValue( block.getSingleValueShort() );
-        }
-
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
@@ -82,12 +64,6 @@ public enum PropertyType
     CHAR( 4 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.charValue( (char) block.getSingleValueShort() );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.charValue( (char) block.getSingleValueShort() );
@@ -95,12 +71,6 @@ public enum PropertyType
     },
     INT( 5 )
     {
-        @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.intValue( block.getSingleValueInt() );
-        }
-
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
@@ -110,17 +80,11 @@ public enum PropertyType
     LONG( 6 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
+        public Value value( PropertyBlock block, PropertyStore store )
         {
             long firstBlock = block.getSingleValueBlock();
             long value = valueIsInlined( firstBlock ) ? (block.getSingleValueLong() >>> 1) : block.getValueBlocks()[1];
             return Values.longValue( value );
-        }
-
-        @Override
-        public Value value( PropertyBlock block, PropertyStore store )
-        {
-            return valueLazy( block, store );
         }
 
         private boolean valueIsInlined( long firstBlock )
@@ -138,12 +102,6 @@ public enum PropertyType
     FLOAT( 7 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.floatValue( Float.intBitsToFloat( block.getSingleValueInt() ) );
@@ -151,12 +109,6 @@ public enum PropertyType
     },
     DOUBLE( 8 )
     {
-        @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.doubleValue( Double.longBitsToDouble( block.getValueBlocks()[1] ) );
-        }
-
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
@@ -172,12 +124,6 @@ public enum PropertyType
     STRING( 9 )
     {
         @Override
-        public Value valueLazy( final PropertyBlock block, final PropertyStore store )
-        {
-            return Values.lazyStringValue( () -> store.getStringFor( block ) );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.stringValue( store.getStringFor( block ) );
@@ -191,13 +137,6 @@ public enum PropertyType
     },
     ARRAY( 10 )
     {
-        @Override
-        public Value valueLazy( final PropertyBlock block, final PropertyStore store )
-        {
-            // TODO: make me lazy again?
-            return value( block, store );
-        }
-
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
@@ -227,12 +166,6 @@ public enum PropertyType
     SHORT_STRING( 11 )
     {
         @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            return Values.stringValue( LongerShortString.decode( block ) );
-        }
-
-        @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
             return Values.stringValue( LongerShortString.decode( block ) );
@@ -246,13 +179,6 @@ public enum PropertyType
     },
     SHORT_ARRAY( 12 )
     {
-        @Override
-        public Value valueLazy( PropertyBlock block, PropertyStore store )
-        {
-            // TODO: Specialize per type
-            return Values.of( ShortArray.decode(block) );
-        }
-
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
@@ -302,8 +228,6 @@ public enum PropertyType
     }
 
     public abstract Value value( PropertyBlock block, PropertyStore store );
-
-    public abstract Value valueLazy( PropertyBlock block, PropertyStore store );
 
     public static PropertyType getPropertyTypeOrNull( long propBlock )
     {
@@ -365,16 +289,6 @@ public enum PropertyType
     public static int getPayloadSizeLongs()
     {
         return payloadSize >>> 3;
-    }
-
-    // TODO In wait of a better place
-    public static void setPayloadSize( int newPayloadSize )
-    {
-        if ( newPayloadSize % 8 != 0 )
-        {
-            throw new RuntimeException( "Payload must be divisible by 8" );
-        }
-        payloadSize = newPayloadSize;
     }
 
     public int calculateNumberOfBlocksUsed( long firstBlock )

@@ -140,39 +140,4 @@ abstract class IntArray extends IntegralArray
             return format( "IntArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends IntArray implements LazyValue<int[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<int[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        int[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( int[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "IntArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

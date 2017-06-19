@@ -140,39 +140,4 @@ abstract class FloatArray extends FloatingPointArray
             return format( "FloatArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends FloatArray implements LazyValue<float[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<float[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        float[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( float[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "FloatArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

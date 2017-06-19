@@ -28,6 +28,7 @@ import static org.neo4j.values.BufferValueWriter.Specials.beginArray;
 import static org.neo4j.values.BufferValueWriter.Specials.byteArray;
 import static org.neo4j.values.BufferValueWriter.Specials.endArray;
 import static org.neo4j.values.ValueWriter.ArrayType.BOOLEAN;
+import static org.neo4j.values.ValueWriter.ArrayType.BYTE;
 import static org.neo4j.values.ValueWriter.ArrayType.CHAR;
 import static org.neo4j.values.ValueWriter.ArrayType.DOUBLE;
 import static org.neo4j.values.ValueWriter.ArrayType.FLOAT;
@@ -70,36 +71,15 @@ public class ValueWriteToTest
                 shouldWrite( new String[]{"a", "b"}, beginArray( 2, STRING ), "a", "b", endArray() ),
                 shouldWrite( new boolean[]{true, false}, beginArray( 2, BOOLEAN ), true, false, endArray() ),
 
-                // lazy array properties
-                shouldWrite( Values.lazyByteArray( () -> new byte[]{1, 2, 3} ),
-                        byteArray( new byte[]{1, 2, 3} ) ),
-
-                shouldWrite( Values.lazyShortArray( () -> new short[]{1, 2, 3} ),
-                        beginArray( 3, SHORT ), (short) 1, (short) 2, (short) 3, endArray() ),
-
-                shouldWrite( Values.lazyIntArray( () -> new int[]{1, 2, 3} ),
-                        beginArray( 3, INT ), 1, 2, 3, endArray() ),
-
-                shouldWrite( Values.lazyLongArray( () -> new long[]{1, 2, 3} ),
-                        beginArray( 3, LONG ), 1L, 2L, 3L, endArray() ),
-
-                shouldWrite( Values.lazyFloatArray( () -> new float[]{1, 2, 3} ),
-                        beginArray( 3, FLOAT ), 1.0f, 2.0f, 3.0f, endArray() ),
-
-                shouldWrite( Values.lazyDoubleArray( () -> new double[]{1, 2, 3} ),
-                        beginArray( 3, DOUBLE ), 1.0, 2.0, 3.0, endArray() ),
-
-                shouldWrite( Values.lazyCharArray( () -> new char[]{'a', 'b'} ),
-                        beginArray( 2, CHAR ), 'a', 'b', endArray() ),
-
-                shouldWrite( Values.lazyStringArray( () -> new String[]{"a", "b"} ),
-                        beginArray( 2, STRING ), "a", "b", endArray() ),
-
-                shouldWrite( Values.lazyBooleanArray( () -> new boolean[]{true, false} ),
-                        beginArray( 2, BOOLEAN ), true, false, endArray() ),
-
-                // lazy string property
-                shouldWrite( Values.lazyStringValue( () -> "Finnlines" ), "Finnlines" )
+                shouldWrite( new byte[]{1,2,3}, beginArray( 3, BYTE ), (byte)1, (byte)2, (byte)3, endArray() ),
+                shouldWrite( new short[]{1,2,3}, beginArray( 3, SHORT ), (short)1, (short)2, (short)3, endArray() ),
+                shouldWrite( new int[]{1,2,3}, beginArray( 3, INT ), 1, 2, 3, endArray() ),
+                shouldWrite( new long[]{1,2,3}, beginArray( 3, LONG ), 1L, 2L, 3L, endArray() ),
+                shouldWrite( new float[]{1,2,3}, beginArray( 3, FLOAT ), 1.0f, 2.0f, 3.0f, endArray() ),
+                shouldWrite( new double[]{1,2,3}, beginArray( 3, DOUBLE ), 1.0, 2.0, 3.0, endArray() ),
+                shouldWrite( new char[]{'a','b'}, beginArray( 2, CHAR ), 'a', 'b', endArray() ),
+                shouldWrite( new String[]{"a","b"}, beginArray( 2, STRING ), "a", "b", endArray() ),
+                shouldWrite( new boolean[]{true, false}, beginArray( 2, BOOLEAN), true, false, endArray() )
         );
     }
 

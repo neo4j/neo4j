@@ -35,16 +35,6 @@ import static org.neo4j.values.Values.floatArray;
 import static org.neo4j.values.Values.floatValue;
 import static org.neo4j.values.Values.intArray;
 import static org.neo4j.values.Values.intValue;
-import static org.neo4j.values.Values.lazyBooleanArray;
-import static org.neo4j.values.Values.lazyByteArray;
-import static org.neo4j.values.Values.lazyCharArray;
-import static org.neo4j.values.Values.lazyDoubleArray;
-import static org.neo4j.values.Values.lazyFloatArray;
-import static org.neo4j.values.Values.lazyIntArray;
-import static org.neo4j.values.Values.lazyLongArray;
-import static org.neo4j.values.Values.lazyShortArray;
-import static org.neo4j.values.Values.lazyStringArray;
-import static org.neo4j.values.Values.lazyStringValue;
 import static org.neo4j.values.Values.longArray;
 import static org.neo4j.values.Values.longValue;
 import static org.neo4j.values.Values.shortArray;
@@ -95,28 +85,6 @@ public class ValuesTest
         assertEqual( doubleArray( new double[]{1.0} ), doubleArray( new double[]{1.0} ) );
         assertEqual( charArray( new char[]{'x'} ), charArray( new char[]{'x'} ) );
         assertEqual( stringArray( new String[]{"hi"} ), stringArray( new String[]{"hi"} ) );
-
-        assertEqual( lazyStringValue( () -> "hi" ), lazyStringValue( () -> "hi" ) );
-        assertEqual( lazyBooleanArray( () -> new boolean[]{true} ), lazyBooleanArray( () -> new boolean[]{true} ) );
-        assertEqual( lazyByteArray( () -> new byte[]{1} ), lazyByteArray( () -> new byte[]{1} ) );
-        assertEqual( lazyShortArray( () -> new short[]{1} ), lazyShortArray( () -> new short[]{1} ) );
-        assertEqual( lazyIntArray( () -> new int[]{1} ), lazyIntArray( () -> new int[]{1} ) );
-        assertEqual( lazyLongArray( () -> new long[]{1} ), lazyLongArray( () -> new long[]{1} ) );
-        assertEqual( lazyFloatArray( () -> new float[]{1.0f} ), lazyFloatArray( () -> new float[]{1.0f} ) );
-        assertEqual( lazyDoubleArray( () -> new double[]{1.0} ), lazyDoubleArray( () -> new double[]{1.0} ) );
-        assertEqual( lazyCharArray( () -> new char[]{'a'} ), lazyCharArray( () -> new char[]{'a'} ) );
-        assertEqual( lazyStringArray( () -> new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
-
-        assertEqual( stringValue( "hi" ), lazyStringValue( () -> "hi" ) );
-        assertEqual( booleanArray( new boolean[]{true} ), lazyBooleanArray( () -> new boolean[]{true} ) );
-        assertEqual( byteArray( new byte[]{1} ), lazyByteArray( () -> new byte[]{1} ) );
-        assertEqual( shortArray( new short[]{1} ), lazyShortArray( () -> new short[]{1} ) );
-        assertEqual( intArray( new int[]{1} ), lazyIntArray( () -> new int[]{1} ) );
-        assertEqual( longArray( new long[]{1} ), lazyLongArray( () -> new long[]{1} ) );
-        assertEqual( floatArray( new float[]{1.0f} ), lazyFloatArray( () -> new float[]{1.0f} ) );
-        assertEqual( doubleArray( new double[]{1.0} ), lazyDoubleArray( () -> new double[]{1.0} ) );
-        assertEqual( charArray( new char[]{'a'} ), lazyCharArray( () -> new char[]{'a'} ) );
-        assertEqual( stringArray( new String[]{"hi"} ), lazyStringArray( () -> new String[]{"hi"} ) );
     }
 
     private void assertEqual( Value a, Value b )

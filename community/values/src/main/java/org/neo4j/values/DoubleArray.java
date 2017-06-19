@@ -140,39 +140,4 @@ abstract class DoubleArray extends FloatingPointArray
             return format( "DoubleArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends DoubleArray implements LazyValue<double[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<double[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        double[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( double[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "DoubleArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }
