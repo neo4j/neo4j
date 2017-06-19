@@ -47,6 +47,8 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -63,6 +65,8 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
+import static org.neo4j.values.Values.VALUE_COMPARATOR;
+import static org.neo4j.values.Values.of;
 
 /**
  * Tests for
@@ -183,7 +187,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
             default:
                 throw new IllegalArgumentException();
             }
-            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], newValue );
+            updates[i] = change( update.getEntityId(), indexDescriptor, update.values()[0], of( newValue ) );
         }
 
         // when
@@ -250,7 +254,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         try ( IndexReader reader = accessor.newReader() )
         {
             // when
-            long count = reader.countIndexedNodes( 123, 456 );
+            long count = reader.countIndexedNodes( 123, of( 456 ) );
 
             // then
             assertEquals( 0, count );
@@ -276,7 +280,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
             }
 
             // and when
-            long count = reader.countIndexedNodes( 123, 456 );
+            long count = reader.countIndexedNodes( 123, of( 456 ) );
 
             // then
             assertEquals( 0, count );
@@ -297,7 +301,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         {
             long countWithMismatchingData = reader.countIndexedNodes( update.getEntityId() + 1, update.values() );
             long countWithNonExistentEntityId = reader.countIndexedNodes( NON_EXISTENT_ENTITY_ID, update.values() );
-            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), NON_EXISTENT_VALUE );
+            long countWithNonExistentValue = reader.countIndexedNodes( update.getEntityId(), of( NON_EXISTENT_VALUE ) );
 
             // then
             assertEquals( 0, countWithMismatchingData );
@@ -344,7 +348,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         IndexReader reader = accessor.newReader();
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            Object value = update.values()[0];
+            Value value = update.values()[0];
             PrimitiveLongIterator result = reader.query( IndexQuery.exact( 0, value ) );
             assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
         }
@@ -376,6 +380,11 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         PrimitiveLongIterator result = reader.query(
                 IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, false ) );
         assertEntityIdHits( extractEntityIds( updates, lessThan( Double.POSITIVE_INFINITY ) ), result );
+    }
+
+    private static int compare( Value value, Number other )
+    {
+        return VALUE_COMPARATOR.compare( value, Values.of( other ) );
     }
 
     @Test
@@ -634,7 +643,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 
         // then
         Set<Long> expectedIds = Stream.of( updates )
-                .map( update -> update.getEntityId() )
+                .map( IndexEntryUpdate::getEntityId )
                 .collect( Collectors.toCollection( HashSet::new ) );
         assertEquals( expectedIds, ids );
     }
@@ -650,14 +659,14 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         assertEquals( expectedIds, ids );
     }
 
-    private static Predicate<Object> lessThan( Double value )
+    private static Predicate<Value> lessThan( Double other )
     {
-        return t -> ((Number)t).doubleValue() < value;
+        return t -> compare( t, other ) < 0;
     }
 
-    private static Predicate<Object> greaterThan( Double value )
+    private static Predicate<Value> greaterThan( Double other )
     {
-        return t -> ((Number)t).doubleValue() > value;
+        return t -> compare( t, other ) > 0;
     }
 
     private void assertEntityIdHits( long[] expected, PrimitiveLongIterator result )
@@ -668,7 +677,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
         assertArrayEquals( expected, actual );
     }
 
-    private long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Object> valueFilter )
+    private long[] extractEntityIds( IndexEntryUpdate<?>[] updates, Predicate<Value> valueFilter )
     {
         long[] entityIds = new long[updates.length];
         int cursor = 0;
@@ -786,7 +795,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 
     private IndexEntryUpdate<IndexDescriptor> simpleUpdate()
     {
-        return IndexEntryUpdate.add( 0, indexDescriptor, 0 );
+        return IndexEntryUpdate.add( 0, indexDescriptor, of ( 0 ) );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate

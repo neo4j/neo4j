@@ -34,6 +34,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
@@ -76,13 +77,13 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
         return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
         {
             private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Number> uniqueValues = new ArrayList<>();
+            private final List<Value> uniqueValues = new ArrayList<>();
             private long currentEntityId;
 
             @Override
             protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
             {
-                Number value;
+                Value value;
                 if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
                         random.nextFloat() < fractionDuplicates )
                 {
@@ -96,7 +97,7 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
                 return add( currentEntityId++, value );
             }
 
-            private Number newUniqueValue( RandomRule randomRule )
+            private Value newUniqueValue( RandomRule randomRule )
             {
                 Number value;
                 Double compareValue;
@@ -106,11 +107,12 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
                     compareValue = value.doubleValue();
                 }
                 while ( !uniqueCompareValues.add( compareValue ) );
-                uniqueValues.add( value );
-                return value;
+                Value numberValue = Values.of( value );
+                uniqueValues.add( numberValue );
+                return numberValue;
             }
 
-            private Number existingNonUniqueValue( RandomRule randomRule )
+            private Value existingNonUniqueValue( RandomRule randomRule )
             {
                 return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
             }
@@ -133,7 +135,7 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
         IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
         for ( int i = 0; i < indexEntryUpdates.length; i++ )
         {
-            indexEntryUpdates[i] = add( i, values[i] );
+            indexEntryUpdates[i] = add( i, Values.of( values[i] ) );
         }
         return indexEntryUpdates;
     }
@@ -160,9 +162,9 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
                     1234567890123456789L
             };
 
-    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
+    protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
+        return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
     }
 
     static int countUniqueValues( IndexEntryUpdate<IndexDescriptor>[] updates )

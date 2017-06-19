@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
+
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -132,7 +134,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
             long nodeId = 1000;
             for ( Number number : updates )
             {
-                IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, number );
+                IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( number ) );
                 updater.process( update );
                 populator.includeSample( update );
             }

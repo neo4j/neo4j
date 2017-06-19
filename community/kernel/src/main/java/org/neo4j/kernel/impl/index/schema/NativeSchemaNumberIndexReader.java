@@ -38,6 +38,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
 
 class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberValue>
         implements IndexReader
@@ -80,7 +82,7 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
     }
 
     @Override
-    public long countIndexedNodes( long nodeId, Object... propertyValues )
+    public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
         treeKeyFrom.from( nodeId, propertyValues );
         treeKeyTo.from( nodeId, propertyValues );
@@ -119,22 +121,29 @@ class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberV
             return startSeekForInitializedRange();
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            Object[] values = new Object[] {exactPredicate.value()};
+            Value[] values = new Value[] {exactPredicate.value()};
             treeKeyFrom.from( Long.MIN_VALUE, values );
             treeKeyTo.from( Long.MAX_VALUE, values );
             return startSeekForInitializedRange();
         case rangeNumeric:
+            // todo: NumberRangePredicate should return NumberValue instead of Number
             NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
             treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE,
-                    new Object[] {rangePredicate.from()} );
+                    new Value[] {Values.of( rangePredicate.from() )} );
             treeKeyFrom.entityIdIsSpecialTieBreaker = true;
             treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE,
-                    new Object[] {rangePredicate.to()} );
+                    new Value[] {Values.of( rangePredicate.to() )} );
             treeKeyTo.entityIdIsSpecialTieBreaker = true;
             return startSeekForInitializedRange();
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
         }
+    }
+
+    @Override
+    public boolean hasFullNumberPrecision()
+    {
+        return true;
     }
 
     private PrimitiveLongIterator startSeekForInitializedRange()

@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
+import org.neo4j.values.Value;
+import org.neo4j.values.Values;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
@@ -34,7 +37,7 @@ public class ConflictDetectingValueMergerTest
     public void shouldReportConflictOnSameValueAndDifferentEntityIds() throws Exception
     {
         // given
-        Object value = 123;
+        Value value = Values.of( 123);
         long entityId1 = 10;
         long entityId2 = 20;
 
@@ -42,8 +45,8 @@ public class ConflictDetectingValueMergerTest
         NumberValue merged = detector.merge(
                 key( entityId1, value ),
                 key( entityId2, value ),
-                value( value ),
-                value( value ) );
+                NumberValue.INSTANCE,
+                NumberValue.INSTANCE );
 
         // then
         assertNull( merged );
@@ -56,30 +59,25 @@ public class ConflictDetectingValueMergerTest
     public void shouldNotReportConflictOnSameValueSameEntityId() throws Exception
     {
         // given
-        Object value = 123;
+        Value value = Values.of( 123);
         long entityId = 10;
 
         // when
         NumberValue merged = detector.merge(
                 key( entityId, value ),
                 key( entityId, value ),
-                value( value ),
-                value( value ) );
+                NumberValue.INSTANCE,
+                NumberValue.INSTANCE );
 
         // then
         assertNull( merged );
         assertFalse( detector.wasConflict() );
     }
 
-    private static NumberKey key( long entityId, Object value )
+    private static NumberKey key( long entityId, Value... value )
     {
         NumberKey key = new NumberKey();
-        key.from( entityId, new Object[] {value} );
+        key.from( entityId, value );
         return key;
-    }
-
-    private static NumberValue value( Object value )
-    {
-        return NumberValue.INSTANCE;
     }
 }

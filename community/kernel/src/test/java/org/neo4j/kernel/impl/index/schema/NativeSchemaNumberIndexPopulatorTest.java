@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -203,7 +204,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey
         // then
         try
         {
-            updater.process( layoutUtil.add( 1, Long.MAX_VALUE ) );
+            updater.process( layoutUtil.add( 1, Values.of( Long.MAX_VALUE ) ) );
             fail( "Expected process to throw on closed updater" );
         }
         catch ( IllegalStateException e )
