@@ -21,11 +21,17 @@ package org.neo4j.impl.store.prototype.neole;
 
 class EdgeScanCursor extends EdgeCursor implements org.neo4j.impl.kernel.api.EdgeScanCursor
 {
-    long maxReference;
+    private long maxReference;
 
     EdgeScanCursor( ReadStore store )
     {
         super( store );
+    }
+
+    void init( StoreFile edges, long reference, long maxReference )
+    {
+        ReadStore.setup( edges, this, reference - 1 );
+        this.maxReference = maxReference;
     }
 
     @Override

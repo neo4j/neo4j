@@ -76,7 +76,7 @@ public class ReadStore extends MemoryManager implements Read
     @Override
     public void allNodesScan( org.neo4j.impl.kernel.api.NodeCursor cursor )
     {
-        setup( nodes, (NodeCursor) cursor, 0 ).maxReference = nodes.maxReference;
+        ((NodeCursor) cursor).init( nodes, 0, nodes.maxReference );
     }
 
     @Override
@@ -88,19 +88,19 @@ public class ReadStore extends MemoryManager implements Read
     @Override
     public void singleNode( long reference, org.neo4j.impl.kernel.api.NodeCursor cursor )
     {
-        setup( nodes, (NodeCursor) cursor, reference ).maxReference = reference;
+        ((NodeCursor) cursor).init( nodes, reference, reference );
     }
 
     @Override
     public void singleEdge( long reference, org.neo4j.impl.kernel.api.EdgeScanCursor cursor )
     {
-        setup( edges, (EdgeScanCursor) cursor, reference ).maxReference = reference;
+        ((EdgeScanCursor) cursor).init( edges, reference, reference );
     }
 
     @Override
     public void allEdgesScan( org.neo4j.impl.kernel.api.EdgeScanCursor cursor )
     {
-        setup( edges, (EdgeScanCursor) cursor, 0 ).maxReference = edges.maxReference;
+        ((EdgeScanCursor) cursor).init( edges, 0, edges.maxReference );
     }
 
     @Override
@@ -136,7 +136,7 @@ public class ReadStore extends MemoryManager implements Read
         }
         else
         {
-            setup( edges, (EdgeTraversalCursor) cursor, reference ).init( nodeReference );
+            ((EdgeTraversalCursor) cursor).init( edges, nodeReference, reference );
         }
     }
 
@@ -205,12 +205,10 @@ public class ReadStore extends MemoryManager implements Read
         }
     }
 
-    private static <Cursor extends ReadCursor> Cursor setup( StoreFile store, Cursor cursor, long reference )
+    static <Cursor extends ReadCursor> void setup( StoreFile store, Cursor cursor, long reference )
     {
-        // TODO: move this into init-methods of the cursors instead!
         int pageId = store.pageOf( reference );
-        setup( cursor, reference - 1, store, pageId, store.page( pageId ) );
-        return cursor;
+        setup( cursor, reference, store, pageId, store.page( pageId ) );
     }
 
     static int nextPowerOfTwo( int v )

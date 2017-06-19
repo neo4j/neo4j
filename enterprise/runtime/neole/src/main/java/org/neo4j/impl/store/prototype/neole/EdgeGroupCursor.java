@@ -72,9 +72,8 @@ class EdgeGroupCursor extends org.neo4j.impl.store.prototype.EdgeGroupCursor<Rea
         }
         else
         {
-            int pageId = groups.pageOf( reference );
+            ReadStore.setup( groups, this, reference );
             this.originNodeReference = ~originNodeReference;
-            prepareReadCursor( reference, groups, pageId, groups.page( pageId ) );
         }
     }
 

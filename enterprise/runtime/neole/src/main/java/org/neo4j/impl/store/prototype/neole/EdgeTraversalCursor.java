@@ -31,13 +31,7 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.impl.kernel.ap
 
     void init( StoreFile edges, long originNodeReference, long reference )
     {
-        int pageId = edges.pageOf( reference );
-        prepareReadCursor( reference -1, edges, pageId, edges.page( pageId ) );
-        this.originNodeReference = ~originNodeReference;
-    }
-
-    void init( long originNodeReference )
-    {
+        ReadStore.setup( edges, this, reference );
         this.originNodeReference = ~originNodeReference;
     }
 
@@ -103,7 +97,7 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.impl.kernel.ap
             else
             {
                 originNodeReference = ~originNodeReference;
-                next = virtualAddress() + 1; // same as current - we haven't been there yet.
+                next = virtualAddress(); // same as current - we haven't been there yet.
             }
         }
         else

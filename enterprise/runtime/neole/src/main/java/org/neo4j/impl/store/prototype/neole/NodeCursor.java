@@ -60,6 +60,12 @@ class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
         super( store );
     }
 
+    void init( StoreFile nodes, long reference, long maxReference )
+    {
+        ReadStore.setup( nodes, this, reference - 1 );
+        this.maxReference = maxReference;
+    }
+
     private boolean inUse()
     {
         return (unsignedByte( 0 ) & 0x01) != 0;
