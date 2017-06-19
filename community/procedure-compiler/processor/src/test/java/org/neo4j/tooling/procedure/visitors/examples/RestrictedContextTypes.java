@@ -50,7 +50,7 @@ public class RestrictedContextTypes
     @Context
     public ProcedureTransaction procedureTransaction;
 
-    // BELOW ARE RESTRICTED TYPES
+    // BELOW ARE RESTRICTED TYPES, THESE ARE UNSUPPORTED AND SUBJECT TO CHANGE
 
     @Context
     public GraphDatabaseAPI graphDatabaseAPI;
