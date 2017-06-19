@@ -102,7 +102,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val aggregate = Aggregation(originalExpand, Map.empty, Map("count" -> CountStar()(pos)))(solved)
     val input = Aggregation(aggregate, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
-    rewrite(input) should equal(input)
+    assertNotRewritten(input)
   }
 
   test("Double var expand with distinct result") {
@@ -201,7 +201,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
     val input = Aggregation(originalExpand, Map("r" -> Variable("r")(pos)), Map.empty)(solved)
 
-    rewrite(input) should equal(input)
+    assertNotRewritten(input)
   }
 
   test("on longer var-lengths, we use FullPruningVarExpand") {
@@ -236,9 +236,33 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
     val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
-    rewrite(input) should equal(input)
+    assertNotRewritten(input)
   }
 
+  test("do not use pruning for pathExpressions when path is needed"){
+    // Simplest query:
+    // match p=(from)-[r*0..1]->(to) with nodes(p) as d return distinct d
+
+    val fromId = IdName("from")
+    val allNodes = AllNodesScan(fromId, Set.empty)(solved)
+    val dir = SemanticDirection.BOTH
+    val length = VarPatternLength(0, Some(2))
+    val toId = IdName("to")
+
+    val relId = IdName("r")
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val pathProjectior = NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, NilPathStep))
+
+    val function = FunctionInvocation(FunctionName("nodes")(pos), PathExpression(pathProjectior)(pos))(pos)
+    val projection = Projection(originalExpand, Map("d" -> function))(solved)
+    val distinct = Aggregation(projection, Map("d" -> varFor("d")), Map.empty)(solved)
+
+    assertNotRewritten(distinct)
+  }
+
+  private def assertNotRewritten(p: LogicalPlan): Unit = {
+    rewrite(p) should equal(p)
+  }
   private def rewrite(p: LogicalPlan): LogicalPlan =
     p.endoRewrite(pruningVarExpander)
 }
