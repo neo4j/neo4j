@@ -32,13 +32,15 @@ import static org.neo4j.values.BufferValueWriter.SpecialKind.BeginUTF8;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.CopyUTF8;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.EndArray;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.EndUTF8;
+import static org.neo4j.values.BufferValueWriter.SpecialKind.WriteByteArray;
 import static org.neo4j.values.BufferValueWriter.SpecialKind.WriteCharArray;
 
-public class BufferValueWriter implements ValueWriter
+public class BufferValueWriter implements ValueWriter<RuntimeException>
 {
     enum SpecialKind
     {
         WriteCharArray,
+        WriteByteArray,
         BeginUTF8,
         CopyUTF8,
         EndUTF8,
@@ -88,7 +90,7 @@ public class BufferValueWriter implements ValueWriter
         }
     }
 
-    private List<Object> buffer = new ArrayList<>();
+    protected List<Object> buffer = new ArrayList<>();
 
     @SuppressWarnings( "WeakerAccess" )
     public void assertBuffer( Object... writeEvents )
@@ -192,12 +194,23 @@ public class BufferValueWriter implements ValueWriter
         buffer.add( Specials.endArray() );
     }
 
+    @Override
+    public void writeByteArray( byte[] value ) throws RuntimeException
+    {
+        buffer.add( Specials.byteArray( value ) );
+    }
+
     @SuppressWarnings( "WeakerAccess" )
     public static class Specials
     {
         public static Special charArray( char[] value, int offset, int length )
         {
             return new Special( WriteCharArray, format( "%d %d %d", Arrays.hashCode( value ), offset, length ) );
+        }
+
+        public static Special byteArray( byte[] value )
+        {
+            return new Special( WriteByteArray,  Arrays.hashCode( value ) );
         }
 
         public static Special beginUTF8( int size )

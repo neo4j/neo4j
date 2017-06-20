@@ -19,6 +19,10 @@
  */
 package org.neo4j.values;
 
+import java.util.Comparator;
+
+import org.neo4j.values.virtual.VirtualValueGroup;
+
 public class MyVirtualValue extends VirtualValue
 {
     private final int hashCode;
@@ -35,25 +39,24 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
+    public VirtualValueGroup valueGroup()
+    {
+        return null;
+    }
+
+    @Override
+    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    {
+        return 0;
+    }
+
+    @Override
     public int hash()
     {
         return hashCode;
     }
 
-    @Override
-    public void writeTo( ValueWriter writer )
+    public void writeTo( AnyValueWriter writer )
     {
-    }
-
-    @Override
-    public Object asObjectCopy()
-    {
-        return this;
-    }
-
-    @Override
-    public String prettyPrint()
-    {
-        return null;
     }
 }

@@ -70,7 +70,7 @@ abstract class StringArray extends TextArray
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         PrimitiveArrayWriting.writeTo( writer, value() );
     }

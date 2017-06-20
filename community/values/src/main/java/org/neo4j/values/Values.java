@@ -27,18 +27,18 @@ import static java.lang.String.format;
 
 /**
  * Entry point to the values library.
- *
+ * <p>
  * The values library centers around the Value class, which represents a value in Neo4j. Values can be correctly
  * checked for equality over different primitive representations, including consistent hashCodes and sorting.
- *
+ * <p>
  * To create Values use the factory methods in the Values class.
- *
+ * <p>
  * Values come in two major categories: Storable and Virtual. Storable values are valid values for
  * node, relationship and graph properties. Virtual values are not supported as property values, but might be created
  * and returned as part of cypher execution. These include Node, Relationship and Path.
  */
 @SuppressWarnings( "WeakerAccess" )
-public class Values
+public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
@@ -51,13 +51,9 @@ public class Values
 
     /**
      * Default value comparator. Will correctly compare all storable values and order the value groups according the
-     * to comparability group. Virtual values are sorted in a random but deterministic fashion (by hashCode).
+     * to comparability group.
      */
-    public static final ValueComparator VALUE_COMPARATOR =
-            new ValueComparator(
-                    ValueGroup::compareTo,
-                    Comparator.comparingInt( VirtualValue::hashCode )
-                );
+    public static final Comparator<Value> COMPARATOR = new ValueComparator( ValueGroup::compareTo );
 
     public static boolean isNumberValue( Object value )
     {
@@ -83,11 +79,11 @@ public class Values
     {
         if ( value instanceof IntegralValue )
         {
-            return ((IntegralValue)value).longValue();
+            return ((IntegralValue) value).longValue();
         }
         if ( value instanceof FloatingPointValue )
         {
-            return ((FloatingPointValue)value).doubleValue();
+            return ((FloatingPointValue) value).doubleValue();
         }
         throw new UnsupportedOperationException( format( "Cannot coerce %s to double", value ) );
     }
@@ -96,16 +92,24 @@ public class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
-    public static Value stringValue( String value )
+    public static TextValue stringValue( String value )
+    {
+        return new StringValue.Direct( value );
+    }
+
+    public static Value stringOrNoValue( String value )
     {
         if ( value == null )
         {
             return NO_VALUE;
         }
-        return new StringValue.Direct( value );
+        else
+        {
+            return new StringValue.Direct( value );
+        }
     }
 
-    public static Value lazyStringValue( ValueLoader<String> producer )
+    public static TextValue lazyStringValue( ValueLoader<String> producer )
     {
         return new StringValue.Lazy( producer );
     }
@@ -278,11 +282,11 @@ public class Values
 
     /**
      * Generic value factory method.
-     *
+     * <p>
      * Beware, this method is intended for converting externally supplied values to the internal Value type, and to
      * make testing convenient. Passing a Value as in parameter should never be needed, and will throw an
      * UnsupportedOperationException.
-     *
+     * <p>
      * This method does defensive copying of arrays, while the explicit *Array() factory methods do not.
      *
      * @param value Object to convert to Value
@@ -383,19 +387,19 @@ public class Values
 
         // otherwise fail
         throw new IllegalArgumentException(
-                    format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
+                format( "[%s:%s] is not a supported property value", value, value.getClass().getName() ) );
     }
 
     /**
      * Generic value factory method.
-     *
-     * Converts an array of object values to the internal Value type. See {@Values.of}.
+     * <p>
+     * Converts an array of object values to the internal Value type. See {@link Values#of}.
      */
     public static Value[] values( Object... objects )
     {
         return Arrays.stream( objects )
-                        .map( Values::of )
-                        .toArray( Value[]::new );
+                .map( Values::of )
+                .toArray( Value[]::new );
     }
 
     @Deprecated
@@ -456,7 +460,7 @@ public class Values
         }
         throw new IllegalArgumentException(
                 format( "%s[] is not a supported property value type",
-                               value.getClass().getComponentType().getName() ) );
+                        value.getClass().getComponentType().getName() ) );
     }
 
     private static <T> T copy( Object[] value, T target )

@@ -21,10 +21,10 @@ package org.neo4j.values;
 
 /**
  * Writer of values.
- *
+ * <p>
  * Has functionality to write all supported primitives, as well as arrays and different representations of Strings.
  */
-public interface ValueWriter
+public interface ValueWriter<E extends Exception>
 {
     enum ArrayType
     {
@@ -39,40 +39,42 @@ public interface ValueWriter
         CHAR
     }
 
-    void writeNull();
+    void writeNull() throws E;
 
-    void writeBoolean( boolean value );
+    void writeBoolean( boolean value ) throws E;
 
-    void writeInteger( byte value );
+    void writeInteger( byte value ) throws E;
 
-    void writeInteger( short value );
+    void writeInteger( short value ) throws E;
 
-    void writeInteger( int value );
+    void writeInteger( int value ) throws E;
 
-    void writeInteger( long value );
+    void writeInteger( long value ) throws E;
 
-    void writeFloatingPoint( float value );
+    void writeFloatingPoint( float value ) throws E;
 
-    void writeFloatingPoint( double value );
+    void writeFloatingPoint( double value ) throws E;
 
-    void writeString( String value );
+    void writeString( String value ) throws E;
 
-    void writeString( char value );
+    void writeString( char value ) throws E;
 
-    default void writeString( char[] value )
+    default void writeString( char[] value ) throws E
     {
         writeString( value, 0, value.length );
     }
 
-    void writeString( char[] value, int offset, int length );
+    void writeString( char[] value, int offset, int length ) throws E;
 
-    void beginUTF8( int size );
+    void beginUTF8( int size ) throws E;
 
-    void copyUTF8( long fromAddress, int length );
+    void copyUTF8( long fromAddress, int length ) throws E;
 
-    void endUTF8();
+    void endUTF8() throws E;
 
-    void beginArray( int size, ArrayType arrayType );
+    void beginArray( int size, ArrayType arrayType ) throws E;
 
-    void endArray();
+    void endArray() throws E;
+
+    void writeByteArray( byte[] value ) throws E;
 }

@@ -17,11 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values;
+package org.neo4j.values.virtual;
 
-/**
- * Value that can be stored as a node, relationship or graph property.
- */
-abstract class StorableValue extends Value
+public enum CoordinateReferenceSystem
 {
+    Cartesian( "cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/" ),
+    WGS84( "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/" );
+
+    final String name;
+    final int code;
+    final String href;
+
+    CoordinateReferenceSystem( String name, int code, String href )
+    {
+        this.name = name;
+        this.code = code;
+        this.href = href;
+    }
 }

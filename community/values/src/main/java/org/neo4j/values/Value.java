@@ -19,14 +19,8 @@
  */
 package org.neo4j.values;
 
-public abstract class Value
+public abstract class Value extends AnyValue
 {
-    @Override
-    public abstract boolean equals( Object other );
-
-    @Override
-    public abstract int hashCode();
-
     public abstract boolean equals( Value other );
 
     public abstract boolean equals( byte[] x );
@@ -53,7 +47,12 @@ public abstract class Value
 
     public abstract boolean equals( String[] x );
 
-    public abstract void writeTo( ValueWriter writer );
+    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    {
+        writeTo( (ValueWriter<E>)writer );
+    }
+
+    public abstract <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E;
 
     /**
      * Return this value as a regular java boxed primitive, String or primitive array. This method performs defensive

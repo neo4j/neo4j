@@ -35,7 +35,7 @@ public class ValueComparisonTest
     @Rule
     public ExpectedException thrown = ExpectedException.none();
 
-    private ValueComparator comparator = Values.VALUE_COMPARATOR;
+    private Comparator<Value> comparator = Values.COMPARATOR;
 
     private Object[] objs = new Object[]{
             // OTHER
@@ -94,8 +94,6 @@ public class ValueComparisonTest
     public void shouldOrderValuesCorrectly()
     {
         List<Value> values = Arrays.stream( objs ).map( Values::of ).collect( Collectors.toList() );
-        values.add( new MyVirtualValue( 0 ) );
-        values.add( new MyVirtualValue( 1 ) );
 
         for ( int i = 0; i < values.size(); i++ )
         {

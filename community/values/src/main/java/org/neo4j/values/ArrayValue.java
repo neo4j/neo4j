@@ -22,7 +22,7 @@ package org.neo4j.values;
 /**
  * Array of one of the storable primitives
  */
-abstract class ArrayValue extends StorableValue
+abstract class ArrayValue extends Value
 {
     abstract int length();
 

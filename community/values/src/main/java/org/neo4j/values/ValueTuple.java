@@ -145,7 +145,7 @@ public class ValueTuple
         int compare = 0;
         for ( int i = 0; i < left.values.length; i++ )
         {
-            compare = Values.VALUE_COMPARATOR.compare( left.valueAt( i ), right.valueAt( i ) );
+            compare = Values.COMPARATOR.compare( left.valueAt( i ), right.valueAt( i ) );
             if ( compare != 0 )
             {
                 return compare;

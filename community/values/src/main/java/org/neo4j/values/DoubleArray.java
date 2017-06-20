@@ -94,7 +94,7 @@ abstract class DoubleArray extends FloatingPointArray
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         PrimitiveArrayWriting.writeTo( writer, value() );
     }

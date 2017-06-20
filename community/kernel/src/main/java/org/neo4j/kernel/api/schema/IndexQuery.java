@@ -273,7 +273,7 @@ public abstract class IndexQuery implements Predicate<Value>
             {
                 if ( from != Values.NO_VALUE )
                 {
-                    int compare = Values.VALUE_COMPARATOR.compare( value, from );
+                    int compare = Values.COMPARATOR.compare( value, from );
                     if ( compare < 0 || !fromInclusive && compare == 0 )
                     {
                         return false;
@@ -281,7 +281,7 @@ public abstract class IndexQuery implements Predicate<Value>
                 }
                 if ( to != Values.NO_VALUE )
                 {
-                    int compare = Values.VALUE_COMPARATOR.compare( value, to );
+                    int compare = Values.COMPARATOR.compare( value, to );
                     if ( compare > 0 || !toInclusive && compare == 0 )
                     {
                         return false;
@@ -323,9 +323,9 @@ public abstract class IndexQuery implements Predicate<Value>
         StringRangePredicate( int propertyKeyId, String from, boolean fromInclusive, String to, boolean toInclusive )
         {
             super( propertyKeyId );
-            this.from = Values.stringValue( from );
+            this.from = Values.stringOrNoValue( from );
             this.fromInclusive = fromInclusive;
-            this.to = Values.stringValue( to );
+            this.to = Values.stringOrNoValue( to );
             this.toInclusive = toInclusive;
         }
 
@@ -348,7 +348,7 @@ public abstract class IndexQuery implements Predicate<Value>
             }
             if ( from != Values.NO_VALUE )
             {
-                int compare = Values.VALUE_COMPARATOR.compare( value, from );
+                int compare = Values.COMPARATOR.compare( value, from );
                 if ( compare < 0 || !fromInclusive && compare == 0 )
                 {
                     return false;
@@ -356,7 +356,7 @@ public abstract class IndexQuery implements Predicate<Value>
             }
             if ( to != Values.NO_VALUE )
             {
-                int compare = Values.VALUE_COMPARATOR.compare( value, to );
+                int compare = Values.COMPARATOR.compare( value, to );
                 if ( compare > 0 || !toInclusive && compare == 0 )
                 {
                     return false;
