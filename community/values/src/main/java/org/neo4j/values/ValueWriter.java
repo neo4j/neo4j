@@ -77,4 +77,92 @@ public interface ValueWriter<E extends Exception>
     void endArray() throws E;
 
     void writeByteArray( byte[] value ) throws E;
+
+    class Adapter implements ValueWriter
+    {
+        @Override
+        public void writeNull()
+        {   // no-op
+        }
+
+        @Override
+        public void writeBoolean( boolean value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeInteger( byte value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeInteger( short value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeInteger( int value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeInteger( long value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeFloatingPoint( float value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeFloatingPoint( double value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeString( String value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeString( char value )
+        {   // no-op
+        }
+
+        @Override
+        public void writeString( char[] value, int offset, int length )
+        {   // no-op
+        }
+
+        @Override
+        public void beginUTF8( int size )
+        {   // no-op
+        }
+
+        @Override
+        public void copyUTF8( long fromAddress, int length )
+        {   // no-op
+        }
+
+        @Override
+        public void endUTF8()
+        {   // no-op
+        }
+
+        @Override
+        public void beginArray( int size, ArrayType arrayType )
+        {   // no-op
+        }
+
+        @Override
+        public void endArray() throws Exception
+        {   // no-opa
+        }
+
+        @Override
+        public void writeByteArray( byte[] value ) throws Exception
+        {   // no-op
+        }
+    }
 }

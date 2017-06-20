@@ -20,9 +20,14 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.values.NumberValue;
+import org.neo4j.values.NumberValues;
+import org.neo4j.values.PrimitiveNumberType;
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueWriter;
+import org.neo4j.values.Values;
 
-import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertValidSingleNumber;
+import static java.lang.String.format;
 
 /**
  * Includes value and entity id (to be able to handle non-unique values).
@@ -32,7 +37,7 @@ import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertVal
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class SchemaNumberKey
+class SchemaNumberKey extends ValueWriter.Adapter
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -40,10 +45,6 @@ class SchemaNumberKey
 
             // TODO this could use 6 bytes instead and have the highest 2 bits stored in the type byte
             Long.BYTES;  /* entityId */
-
-    static final byte TYPE_LONG = 0;
-    static final byte TYPE_FLOAT = 1;
-    static final byte TYPE_DOUBLE = 2;
 
     byte type;
     long rawValueBits;
@@ -65,15 +66,34 @@ class SchemaNumberKey
         entityIdIsSpecialTieBreaker = false;
     }
 
+    private static NumberValue assertValidSingleNumber( Value[] values )
+    {
+        // TODO: support multiple values, right?
+        if ( values.length > 1 )
+        {
+            throw new IllegalArgumentException( "Tried to create composite key with non-composite schema key layout" );
+        }
+        if ( values.length < 1 )
+        {
+            throw new IllegalArgumentException( "Tried to create key without value" );
+        }
+        if ( !Values.isNumberValue( values[0] ) )
+        {
+            throw new IllegalArgumentException(
+                    "Key layout does only support numbers, tried to create key from " + values[0] );
+        }
+        return (NumberValue) values[0];
+    }
+
     String propertiesAsString()
     {
-        return String.valueOf( toNumberValue() );
+        return PrimitiveNumberType.from( type ).valueFromRawBits( rawValueBits ).toString();
     }
 
     void initAsLowest()
     {
         rawValueBits = Double.doubleToLongBits( Double.NEGATIVE_INFINITY );
-        type = TYPE_DOUBLE;
+        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -81,7 +101,7 @@ class SchemaNumberKey
     void initAsHighest()
     {
         rawValueBits = Double.doubleToLongBits( Double.POSITIVE_INFINITY );
-        type = TYPE_DOUBLE;
+        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -95,89 +115,65 @@ class SchemaNumberKey
      */
     int compareValueTo( SchemaNumberKey other )
     {
-        return type == TYPE_LONG && other.type == TYPE_LONG
-                // If both are long values then compare them directly, w/o going through double.
-                // This is because at high values longs have higher precision, or double lower rather,
-                // than double values, so converting them to doubles and comparing would have false positives.
-                ? Long.compare( rawValueBits, other.rawValueBits )
-
-                // Otherwise convert both to double and compare, with the reasoning that the long precision
-                // cannot be upheld anyway and double precious being higher than float precision.
-                : Double.compare( doubleValue(), other.doubleValue() );
+        return NumberValues.compare( rawValueBits, type, other.rawValueBits, other.type );
     }
 
     /**
-     * @return the value as double, with potential precision loss.
-     */
-    private double doubleValue()
-    {
-        switch ( type )
-        {
-        case TYPE_LONG:
-            return rawValueBits;
-        case TYPE_FLOAT:
-            return Float.intBitsToFloat( (int) rawValueBits );
-        case TYPE_DOUBLE:
-            return Double.longBitsToDouble( rawValueBits );
-        default:
-            // This is interesting: because of the nature of the page cache and the point in time this method
-            // is called we cannot really throw exception here if type is something unexpected - it may simply
-            // have been an inconsistent read, which will be retried.
-            // It's not for us to decide here, so let's return NaN here.
-            return Double.NaN;
-        }
-    }
-
-    /**
-     * Extracts data from a {@link Number} into state of this {@link SchemaNumberKey} instance.
+     * Extracts data from a {@link NumberValue} into state of this {@link SchemaNumberKey} instance.
      *
-     * @param value actual {@link Number} value.
+     * @param value actual {@link NumberValue} value.
      */
-    private void extractValue( Number value )
+    private void extractValue( NumberValue value )
     {
-        if ( value instanceof Double )
-        {
-            type = TYPE_DOUBLE;
-            rawValueBits = Double.doubleToLongBits( (Double) value );
-        }
-        else if ( value instanceof Float )
-        {
-            type = TYPE_FLOAT;
-            rawValueBits = Float.floatToIntBits( (Float) value );
-        }
-        else
-        {
-            type = TYPE_LONG;
-            rawValueBits = value.longValue();
-        }
-    }
-
-    /**
-     * Useful for getting the value as {@link Number} for e.g. printing or converting to {@link String}.
-     * This method isn't and should not be called on a hot path.
-     *
-     * @return a {@link Number} of correct type, i.e. {@link Long}, {@link Float} or {@link Double}.
-     */
-    private Number toNumberValue()
-    {
-        switch ( type )
-        {
-        case TYPE_LONG:
-            return rawValueBits;
-        case TYPE_FLOAT:
-            return Float.intBitsToFloat( (int)rawValueBits );
-        case TYPE_DOUBLE:
-            return Double.longBitsToDouble( rawValueBits );
-        default:
-            // Unlike in compareValueTo() it is assumed here that the value have been consistently read
-            // and that the value is put to some actual use.
-            throw new IllegalArgumentException( "Unexpected type " + type );
-        }
+        value.writeTo( this );
     }
 
     @Override
     public String toString()
     {
-        return "type=" + type + ",rawValue=" + rawValueBits + ",value=" + toNumberValue() + ",entityId=" + entityId;
+        return format( "type=%d,rawValue=%d,value=%s,entityId=%d",
+                type, rawValueBits, PrimitiveNumberType.from( type ).valueFromRawBits( rawValueBits ).toString(), entityId );
+    }
+
+    @Override
+    public void writeInteger( byte value )
+    {
+        type = PrimitiveNumberType.BYTE.byteRepresentation();
+        rawValueBits = value;
+    }
+
+    @Override
+    public void writeInteger( short value )
+    {
+        type = PrimitiveNumberType.SHORT.byteRepresentation();
+        rawValueBits = value;
+    }
+
+    @Override
+    public void writeInteger( int value )
+    {
+        type = PrimitiveNumberType.INT.byteRepresentation();
+        rawValueBits = value;
+    }
+
+    @Override
+    public void writeInteger( long value )
+    {
+        type = PrimitiveNumberType.LONG.byteRepresentation();
+        rawValueBits = value;
+    }
+
+    @Override
+    public void writeFloatingPoint( float value )
+    {
+        type = PrimitiveNumberType.FLOAT.byteRepresentation();
+        rawValueBits = Float.floatToIntBits( value );
+    }
+
+    @Override
+    public void writeFloatingPoint( double value )
+    {
+        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
+        rawValueBits = Double.doubleToLongBits( value );
     }
 }

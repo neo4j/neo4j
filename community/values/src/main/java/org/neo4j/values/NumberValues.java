@@ -294,4 +294,67 @@ public final class NumberValues
         }
         return x;
     }
+
+    public static int compare( long lhsRawBits, byte lhsType, long rhsRawBits, byte rhsType )
+    {
+        // case integral - integral
+        if ( lhsType == PrimitiveNumberType.BYTE.byteRepresentation() ||
+                lhsType == PrimitiveNumberType.SHORT.byteRepresentation() ||
+                lhsType == PrimitiveNumberType.INT.byteRepresentation() ||
+                lhsType == PrimitiveNumberType.LONG.byteRepresentation() )
+        {
+            return compareLongAgainstRawType( lhsRawBits, rhsRawBits, rhsType );
+        }
+        else if ( lhsType == PrimitiveNumberType.FLOAT.byteRepresentation() )
+        {
+            double lhsFloat = Float.intBitsToFloat( (int) lhsRawBits );
+            return compareDoubleAgainstRawType( lhsFloat, rhsRawBits, rhsType );
+        }
+        else if ( lhsType == PrimitiveNumberType.DOUBLE.byteRepresentation() )
+        {
+            double lhsDouble = Double.longBitsToDouble( lhsRawBits );
+            return compareDoubleAgainstRawType( lhsDouble, rhsRawBits, rhsType );
+        }
+        return -1;
+    }
+
+    private static int compareLongAgainstRawType( long lhs, long rhsRawBits, byte rhsType )
+    {
+        if ( rhsType == PrimitiveNumberType.BYTE.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.SHORT.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.INT.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.LONG.byteRepresentation() )
+        {
+            return Long.compare( lhs, rhsRawBits );
+        }
+        else if ( rhsType == PrimitiveNumberType.FLOAT.byteRepresentation() )
+        {
+            return NumberValues.compareLongAgainstDouble( lhs, Float.intBitsToFloat( (int) rhsRawBits ) );
+        }
+        else if ( rhsType == PrimitiveNumberType.DOUBLE.byteRepresentation() )
+        {
+            return NumberValues.compareLongAgainstDouble( lhs, Double.longBitsToDouble( rhsRawBits ) );
+        }
+        return 1;
+    }
+
+    private static int compareDoubleAgainstRawType( double lhsDouble, long rhsRawBits, byte rhsType )
+    {
+        if ( rhsType == PrimitiveNumberType.BYTE.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.SHORT.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.INT.byteRepresentation() ||
+                rhsType == PrimitiveNumberType.LONG.byteRepresentation() )
+        {
+            return NumberValues.compareDoubleAgainstLong( lhsDouble, rhsRawBits );
+        }
+        else if ( rhsType == PrimitiveNumberType.FLOAT.byteRepresentation() )
+        {
+            return Double.compare( lhsDouble, Float.intBitsToFloat( (int) rhsRawBits ) );
+        }
+        else if ( rhsType == PrimitiveNumberType.DOUBLE.byteRepresentation() )
+        {
+            return Double.compare( lhsDouble, Double.longBitsToDouble( rhsRawBits ) );
+        }
+        return 1;
+    }
 }
