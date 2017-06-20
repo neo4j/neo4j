@@ -48,7 +48,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.values.Values.values;
 
-public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil<NumberKey,NumberValue>
+public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil<SchemaNumberKey,SchemaNumberValue>
 {
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
@@ -59,10 +59,10 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<NumberKey,NumberValue> gbpTree = getTree() )
+        try ( GBPTree<SchemaNumberKey,SchemaNumberValue> gbpTree = getTree() )
         {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            FullScanNonUniqueIndexSampler<NumberKey,NumberValue> sampler =
+            FullScanNonUniqueIndexSampler<SchemaNumberKey,SchemaNumberValue> sampler =
                     new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
             sample = sampler.result();
         }
@@ -86,12 +86,12 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
 
     private void buildTree( Number[] values ) throws IOException
     {
-        try ( GBPTree<NumberKey,NumberValue> gbpTree = getTree() )
+        try ( GBPTree<SchemaNumberKey,SchemaNumberValue> gbpTree = getTree() )
         {
-            try ( Writer<NumberKey,NumberValue> writer = gbpTree.writer() )
+            try ( Writer<SchemaNumberKey,SchemaNumberValue> writer = gbpTree.writer() )
             {
-                NumberKey key = layout.newKey();
-                NumberValue value = layout.newValue();
+                SchemaNumberKey key = layout.newKey();
+                SchemaNumberValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Number number : values )
                 {
@@ -106,7 +106,7 @@ public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil
     }
 
     @Override
-    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
     {
         return new NonUniqueLayoutTestUtil();
     }

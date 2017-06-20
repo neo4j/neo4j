@@ -32,11 +32,11 @@ class UniqueNumberLayout extends NumberLayout
     public long identifier()
     {
         // todo Is Number.Value.SIZE a good checksum?
-        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberKey.SIZE );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberKey.SIZE );
     }
 
     @Override
-    public int compare( NumberKey o1, NumberKey o2 )
+    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
     {
         int comparison = o1.compareValueTo( o2 );
         if ( comparison == 0 )

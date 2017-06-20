@@ -32,7 +32,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
-class NativeSchemaNumberIndex<KEY extends NumberKey, VALUE extends NumberValue>
+class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
 {
     final PageCache pageCache;
     final File storeFile;

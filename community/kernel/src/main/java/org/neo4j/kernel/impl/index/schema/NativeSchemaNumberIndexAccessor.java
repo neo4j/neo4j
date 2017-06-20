@@ -40,7 +40,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 
-public class NativeSchemaNumberIndexAccessor<KEY extends NumberKey, VALUE extends NumberValue>
+public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
 {
     private final NativeSchemaNumberIndexUpdater<KEY,VALUE> singleUpdater;

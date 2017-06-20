@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.Value;
 import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.values.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertValidSingleNumber;
 
@@ -32,7 +32,7 @@ import static org.neo4j.kernel.impl.index.schema.NumberValueConversion.assertVal
  * Distinction between double and float exists because coersions between each other and long may differ.
  * TODO this should be figured out and potentially reduced to long, double types only.
  */
-class NumberKey
+class SchemaNumberKey
 {
     static final int SIZE =
             Byte.BYTES + /* type of value */
@@ -90,10 +90,10 @@ class NumberKey
      * Compares the value of this key to that of another key.
      * This method is expected to be called in scenarios where inconsistent reads may happen (and later retried).
      *
-     * @param other the {@link NumberKey} to compare to.
-     * @return comparison against the {@code other} {@link NumberKey}.
+     * @param other the {@link SchemaNumberKey} to compare to.
+     * @return comparison against the {@code other} {@link SchemaNumberKey}.
      */
-    int compareValueTo( NumberKey other )
+    int compareValueTo( SchemaNumberKey other )
     {
         return type == TYPE_LONG && other.type == TYPE_LONG
                 // If both are long values then compare them directly, w/o going through double.
@@ -129,7 +129,7 @@ class NumberKey
     }
 
     /**
-     * Extracts data from a {@link Number} into state of this {@link NumberKey} instance.
+     * Extracts data from a {@link Number} into state of this {@link SchemaNumberKey} instance.
      *
      * @param value actual {@link Number} value.
      */

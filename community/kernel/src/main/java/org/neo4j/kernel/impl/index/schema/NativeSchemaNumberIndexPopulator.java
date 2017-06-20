@@ -40,10 +40,10 @@ import org.neo4j.kernel.impl.index.GBPTreeUtil;
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
- * @param <KEY> type of {@link NumberKey}.
- * @param <VALUE> type of {@link NumberValue}.
+ * @param <KEY> type of {@link SchemaNumberKey}.
+ * @param <VALUE> type of {@link SchemaNumberValue}.
  */
-public abstract class NativeSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
+public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexPopulator
 {
     static final byte BYTE_ONLINE = 1;

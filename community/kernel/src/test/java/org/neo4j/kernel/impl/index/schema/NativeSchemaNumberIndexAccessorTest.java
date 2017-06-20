@@ -76,7 +76,7 @@ import static org.neo4j.values.Values.of;
  *     <li>{@link NativeSchemaNumberIndexReader}</li>
  * </ul>
  */
-public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey, VALUE extends NumberValue>
+public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
     private NativeSchemaNumberIndexAccessor<KEY,VALUE> accessor;

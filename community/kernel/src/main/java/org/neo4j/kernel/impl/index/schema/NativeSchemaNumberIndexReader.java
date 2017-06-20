@@ -41,7 +41,7 @@ import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-class NativeSchemaNumberIndexReader<KEY extends NumberKey, VALUE extends NumberValue>
+class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexReader
 {
     private final GBPTree<KEY,VALUE> tree;

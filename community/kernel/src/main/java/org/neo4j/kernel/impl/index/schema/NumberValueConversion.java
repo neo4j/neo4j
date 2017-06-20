@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_FLOAT;
-import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_LONG;
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberKey.TYPE_DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberKey.TYPE_FLOAT;
+import static org.neo4j.kernel.impl.index.schema.SchemaNumberKey.TYPE_LONG;
 
 /**
  * Utilities for converting number values to and from different representations.

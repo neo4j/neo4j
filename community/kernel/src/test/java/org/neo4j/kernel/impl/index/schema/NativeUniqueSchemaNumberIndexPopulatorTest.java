@@ -36,18 +36,18 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
+public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator(
+    NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator(
             PageCache pageCache, File indexFile,
-            Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
+            Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
         return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout );
     }
 
     @Override
-    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil();
     }

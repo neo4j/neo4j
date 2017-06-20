@@ -25,17 +25,17 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout implements Layout<NumberKey,NumberValue>
+abstract class NumberLayout implements Layout<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
-    public NumberKey newKey()
+    public SchemaNumberKey newKey()
     {
-        return new NumberKey();
+        return new SchemaNumberKey();
     }
 
     @Override
-    public NumberKey copyKey( NumberKey key,
-            NumberKey into )
+    public SchemaNumberKey copyKey( SchemaNumberKey key,
+            SchemaNumberKey into )
     {
         into.type = key.type;
         into.rawValueBits = key.rawValueBits;
@@ -45,25 +45,25 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     }
 
     @Override
-    public NumberValue newValue()
+    public SchemaNumberValue newValue()
     {
-        return NumberValue.INSTANCE;
+        return SchemaNumberValue.INSTANCE;
     }
 
     @Override
     public int keySize()
     {
-        return NumberKey.SIZE;
+        return SchemaNumberKey.SIZE;
     }
 
     @Override
     public int valueSize()
     {
-        return NumberValue.SIZE;
+        return SchemaNumberValue.SIZE;
     }
 
     @Override
-    public void writeKey( PageCursor cursor, NumberKey key )
+    public void writeKey( PageCursor cursor, SchemaNumberKey key )
     {
         cursor.putByte( key.type );
         cursor.putLong( key.rawValueBits );
@@ -71,12 +71,12 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     }
 
     @Override
-    public void writeValue( PageCursor cursor, NumberValue value )
+    public void writeValue( PageCursor cursor, SchemaNumberValue value )
     {
     }
 
     @Override
-    public void readKey( PageCursor cursor, NumberKey into )
+    public void readKey( PageCursor cursor, SchemaNumberKey into )
     {
         into.type = cursor.getByte();
         into.rawValueBits = cursor.getLong();
@@ -84,7 +84,7 @@ abstract class NumberLayout implements Layout<NumberKey,NumberValue>
     }
 
     @Override
-    public void readValue( PageCursor cursor, NumberValue into )
+    public void readValue( PageCursor cursor, SchemaNumberValue into )
     {
     }
 
