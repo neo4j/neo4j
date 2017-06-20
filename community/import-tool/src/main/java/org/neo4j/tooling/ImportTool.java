@@ -438,7 +438,8 @@ public class ImportTool
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             dbConfig = dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
-            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
+            configuration = importConfiguration(
+                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -663,14 +664,14 @@ public class ImportTool
         }
     }
 
-    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig )
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
     {
-        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null );
+        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir );
     }
 
-    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig, Long maxMemory )
+    public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -695,7 +696,14 @@ public class ImportTool
             @Override
             public long maxMemoryUsage()
             {
-                return maxMemory != null ? maxMemory.longValue() : DEFAULT.maxMemoryUsage();
+                return maxMemory != null ? maxMemory : DEFAULT.maxMemoryUsage();
+            }
+
+            @Override
+            public boolean parallelRecordReadsWhenWriting()
+            {
+                return org.neo4j.unsafe.impl.batchimport.Configuration.hintParallelRecordReadsWhenWritingForStoreDir(
+                        storeDir, false );
             }
         };
     }

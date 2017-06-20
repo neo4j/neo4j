@@ -370,7 +370,15 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 RecordCursors relationshipInputCursors = new RecordCursors( legacyStore );
                 OutputStream badOutput = new BufferedOutputStream( new FileOutputStream( badFile, false ) ) )
         {
-            Configuration importConfig = new Configuration.Overridden( config );
+            Configuration importConfig = new Configuration.Overridden( config )
+            {
+                @Override
+                public boolean parallelRecordReadsWhenWriting()
+                {
+                    return Configuration.hintParallelRecordReadsWhenWritingForStoreDir(
+                            storeDir, super.parallelRecordReadsWhenWriting() );
+                }
+            };
             AdditionalInitialIds additionalInitialIds =
                     readAdditionalIds( lastTxId, lastTxChecksum, lastTxLogVersion, lastTxLogByteOffset );
 
