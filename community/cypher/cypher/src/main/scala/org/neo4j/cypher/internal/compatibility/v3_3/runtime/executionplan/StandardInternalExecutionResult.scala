@@ -24,19 +24,20 @@ import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter, RuntimeTextValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, PlannerImpl, Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.{NotFoundException, Notification, QueryExecutionType, ResourceIterator}
 
 import scala.collection.{Map, mutable}
 
 abstract class StandardInternalExecutionResult(context: QueryContext,
-                                               taskCloser: Option[TaskCloser] = None)
+                                               taskCloser: Option[TaskCloser] = None,
+                                               override val notifications: Iterable[Notification] = Iterable.empty[Notification])
   extends InternalExecutionResult
     with Completable {
 
@@ -47,11 +48,11 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
-  protected def isOpen = !isClosed
-  protected def isClosed = taskCloser.exists(_.isClosed)
+  protected def isOpen: Boolean = !isClosed
+  protected def isClosed: Boolean = taskCloser.exists(_.isClosed)
 
-  override def hasNext = inner.hasNext
-  override def next() = scalaValues.asDeepScalaMap(inner.next())
+  override def hasNext: Boolean = inner.hasNext
+  override def next(): Predef.Map[String, Any] = scalaValues.asDeepScalaMap(inner.next())
 
   // Override one of them in subclasses
   override def javaColumns: util.List[String] = columns.asJava
@@ -76,14 +77,13 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     stringWriter.getBuffer.toString
   }
 
-  override def dumpToString(writer: PrintWriter) = {
+  override def dumpToString(writer: PrintWriter): Unit = {
     val builder = Seq.newBuilder[Map[String, String]]
     doInAccept(populateDumpToStringResults(builder))
     formatOutput(writer, columns, builder.result(), queryStatistics())
   }
 
   override def planDescriptionRequested: Boolean = executionMode == ExplainMode || executionMode == ProfileMode
-  override def notifications = Iterable.empty[InternalNotification]
 
   override def close(): Unit = {
     completed(success = true)
@@ -106,35 +106,43 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
         populateDumpToStringResults(dumpToStringBuilder)(row)
       }
 
-    new StandardInternalExecutionResult(context, taskCloser)
+    def create(notification: Iterable[Notification] = Iterable.empty): InternalExecutionResult = new StandardInternalExecutionResult(context, taskCloser)
       with StandardInternalExecutionResult.AcceptByIterating {
 
-      override protected def createInner = result.iterator()
+      override protected def createInner: util.Iterator[util.Map[String, Any]] = result.iterator()
 
       override def javaColumns: util.List[String] = self.javaColumns
 
       override def executionPlanDescription(): InternalPlanDescription =
-        self.executionPlanDescription().addArgument(Planner(planner.name)).addArgument(Runtime(runtime.name))
+        self.executionPlanDescription()
+          .addArgument(Planner(planner.toTextOutput))
+          .addArgument(PlannerImpl(planner.name))
+          .addArgument(Runtime(runtime.toTextOutput))
+          .addArgument(RuntimeImpl(runtime.name))
 
-      override def toList = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue)).toList
+      override def toList: List[Predef.Map[String, Any]] = result.asScala.map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue)).toList
 
-      override def dumpToString(writer: PrintWriter) =
+      override def dumpToString(writer: PrintWriter): Unit =
         formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
 
       override def executionMode: ExecutionMode = self.executionMode
-      override def queryStatistics(): InternalQueryStatistics = self.queryStatistics()
+      override def queryStatistics(): QueryStatistics = self.queryStatistics()
       override def executionType: InternalQueryType = self.executionType
+
+      override def withNotifications(notification: Notification*): InternalExecutionResult = create(notification)
     }
+
+    create()
   }
 
   protected final lazy val inner: util.Iterator[util.Map[String, Any]] = createInner
 
   protected def createInner: util.Iterator[util.Map[String, Any]]
 
-  protected def doInAccept[T](body: InternalResultRow => T) = {
+  protected def doInAccept[T](body: ResultRow => T): Unit = {
     if (isOpen) {
-      accept(new InternalResultVisitor[RuntimeException] {
-        override def visit(row: InternalResultRow): Boolean = {
+      accept(new ResultVisitor[RuntimeException] {
+        override def visit(row: ResultRow): Boolean = {
           body(row)
           true
         }
@@ -145,7 +153,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   }
 
   protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])
-                                           (row: InternalResultRow) = {
+                                           (row: ResultRow): builder.type = {
     val textValues = new RuntimeTextValueConverter(scalaValues)(context)
     val map = new mutable.HashMap[String, String]()
     columns.foreach(c => map.put(c, textValues.asTextValue(row.get(c))))
@@ -153,7 +161,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     builder += map
   }
 
-  protected def populateResults(results: util.List[util.Map[String, Any]])(row: InternalResultRow) = {
+  protected def populateResults(results: util.List[util.Map[String, Any]])(row: ResultRow): Boolean = {
     val map = new util.HashMap[String, Any]()
     columns.foreach(c => map.put(c, row.get(c)))
     results.add(map)
@@ -177,7 +185,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
     new NotFoundException(s"No column named '$column' was found. Found: ${expected.mkString("(\"", "\", \"", "\")")}")
 
   private abstract class ClosingJavaIterator[A] extends ResourceIterator[A] {
-      def hasNext = self.hasNext
+      def hasNext: Boolean = self.hasNext
 
       def remove() {
         throw new UnsupportedOperationException("remove")
@@ -210,7 +218,7 @@ object StandardInternalExecutionResult {
     val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     @throws(classOf[Exception])
-    def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
+    def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
       javaValues.feedIteratorToVisitable(self).accept(visitor)
     }
   }

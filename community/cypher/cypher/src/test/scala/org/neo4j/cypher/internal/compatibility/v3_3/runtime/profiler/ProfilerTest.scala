@@ -23,9 +23,8 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, PageCacheHits, PageCacheMisses, Rows}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}

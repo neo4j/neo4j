@@ -17,25 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.{InequalitySeekRangeWrapper, PrefixSeekRangeWrapper}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, PlannerName, ast}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
-object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id]) => InternalPlanDescription) {
-  override def apply(input: LogicalPlan, idMap: Map[LogicalPlan, Id]): InternalPlanDescription = {
+object LogicalPlan2PlanDescription extends ((LogicalPlan, Map[LogicalPlan, Id], PlannerName) => InternalPlanDescription) {
+
+  override def apply(input: LogicalPlan, idMap: Map[LogicalPlan, Id],
+                     plannerName: PlannerName): InternalPlanDescription = {
     val readOnly = input.solved.readOnly
     new LogicalPlan2PlanDescription(idMap, readOnly).create(input)
+      .addArgument(Version("CYPHER 3.3"))
+      .addArgument(Planner(plannerName.toTextOutput))
+      .addArgument(PlannerImpl(plannerName.name))
   }
 }
 
-case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Boolean) extends TreeBuilder[InternalPlanDescription] {
+case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Boolean)
+  extends TreeBuilder[InternalPlanDescription] {
+
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
     assert(plan.isLeaf)
 
@@ -96,7 +103,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "ProcedureCall", NoChildren, Seq(signature), variables)
 
       case RelationshipCountFromCountStore(IdName(ident), startLabel, typeNames, endLabel, _) =>
-        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name), endLabel.map(_.name))
+        val exp = CountRelationshipsExpression(ident, startLabel.map(_.name), typeNames.map(_.name),
+                                               endLabel.map(_.name))
         PlanDescriptionImpl(id, "RelationshipCountFromCountStore", NoChildren, Seq(exp), variables)
 
       case _: UndirectedRelationshipByIdSeek =>
@@ -121,7 +129,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "Distinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
 
       case Aggregation(_, groupingExpressions, _) =>
-        PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
+        PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
+                            variables)
 
       case _: CreateNode =>
         PlanDescriptionImpl(id, "CreateNode", children, Seq.empty, variables)
@@ -146,11 +155,13 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
 
       case RelationshipCountFromCountStore(IdName(id), start, types, end, arguments) =>
         PlanDescriptionImpl(id = idMap(plan), "RelationshipCountFromCountStore", NoChildren,
-                            Seq(CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
+                            Seq(
+                              CountRelationshipsExpression(id, start.map(_.name), types.map(_.name), end.map(_.name))),
                             variables)
 
       case NodeUniqueIndexSeek(IdName(id), label, propKeys, value, arguments) =>
-        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren, Seq(Index(label.name, propKeys.map(_.name))), variables)
+        PlanDescriptionImpl(id = idMap(plan), "NodeUniqueIndexSeek", NoChildren,
+                            Seq(Index(label.name, propKeys.map(_.name))), variables)
 
       case _: ErrorPlan =>
         PlanDescriptionImpl(id, "Error", children, Seq.empty, variables)
@@ -219,11 +230,13 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, name, children, Seq(KeyNames(Seq(relName, start, end))), variables)
 
       case PruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, predicates) =>
-        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
+        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
+                                          maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(Pruning)", children, Seq(expandSpec), variables)
 
       case FullPruningVarExpand(_, IdName(fromName), dir, types, IdName(toName), min, max, predicates) =>
-        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min, maxLength = Some(max))
+        val expandSpec = ExpandExpression(fromName, "", types.map(_.name), toName, dir, minLength = min,
+                                          maxLength = Some(max))
         PlanDescriptionImpl(id, s"VarLengthExpand(FullPruning)", children, Seq(expandSpec), variables)
 
       case _: RemoveLabels =>
@@ -253,7 +266,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         PlanDescriptionImpl(id, "Unwind", children, Seq(Expression(expression)), variables)
 
       case VarExpand(_, IdName(fromName), dir, _, types, IdName(toName), IdName(relName), length, mode, predicates) =>
-        val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir, minLength = length.min, maxLength = length.max)
+        val expandDescription = ExpandExpression(fromName, relName, types.map(_.name), toName, dir,
+                                                 minLength = length.min, maxLength = length.max)
         val predicatesMap = predicates.map(_._2).zipWithIndex.map({ case (p, idx) => s"p$idx" -> p }).toMap
         val predicatesDescription = if (predicatesMap.isEmpty)
           None
@@ -263,7 +277,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case ExpandAll => "All"
           case ExpandInto => "Into"
         }
-        PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children, Seq(expandDescription) ++ predicatesDescription, variables)
+        PlanDescriptionImpl(id, s"VarLengthExpand($modeDescr)", children,
+                            Seq(expandDescription) ++ predicatesDescription, variables)
 
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
@@ -271,7 +286,8 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     result.addArgument(EstimatedRows(plan.solved.estimatedCardinality.amount))
   }
 
-  override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription, rhs: InternalPlanDescription): InternalPlanDescription = {
+  override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription,
+                               rhs: InternalPlanDescription): InternalPlanDescription = {
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.nonEmpty)
 
@@ -359,10 +375,10 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
                               propertyKeys: Seq[PropertyKeyToken],
                               valueExpr: QueryExpression[ast.Expression],
                               unique: Boolean,
-                              readOnly: Boolean): (String, planDescription.Argument) = {
+                              readOnly: Boolean): (String, Argument) = {
 
     val (name, indexDesc) = valueExpr match {
-      case e: RangeQueryExpression[_]  =>
+      case e: RangeQueryExpression[_] =>
         assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
         val propertyKey = propertyKeys.head.name
         val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
@@ -370,12 +386,18 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
           case PrefixSeekRangeWrapper(range) =>
             (name, PrefixIndex(label.name, propertyKey, range.prefix))
           case InequalitySeekRangeWrapper(RangeLessThan(bounds)) =>
-            (name, InequalityIndex(label.name, propertyKey, bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq))
+            (name, InequalityIndex(label.name, propertyKey,
+                                   bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}")
+                                     .toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeGreaterThan(bounds)) =>
-            (name, InequalityIndex(label.name, propertyKey, bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq))
+            (name, InequalityIndex(label.name, propertyKey,
+                                   bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}")
+                                     .toIndexedSeq))
           case InequalitySeekRangeWrapper(RangeBetween(greaterThanBounds, lessThanBounds)) =>
-            val greaterThanBoundsText = greaterThanBounds.bounds.map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
-            val lessThanBoundsText = lessThanBounds.bounds.map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            val greaterThanBoundsText = greaterThanBounds.bounds
+              .map(bound => s">${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
+            val lessThanBoundsText = lessThanBounds.bounds
+              .map(bound => s"<${bound.inequalitySignSuffix} ${bound.endPoint}").toIndexedSeq
             (name, InequalityIndex(label.name, propertyKey, greaterThanBoundsText ++ lessThanBoundsText))
           case _ => throw new InternalException("This should never happen. Missing a case?")
         }

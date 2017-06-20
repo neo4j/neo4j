@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.FakeIdMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator, _}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

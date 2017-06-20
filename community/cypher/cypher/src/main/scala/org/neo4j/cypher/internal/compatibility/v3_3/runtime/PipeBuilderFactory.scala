@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NestedPipeExpression, Pipe}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}

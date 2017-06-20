@@ -17,25 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.spi;
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-
-public interface InternalResultRow
-{
-    Node getNode( String key );
-
-    Relationship getRelationship( String key );
-
-    Object get( String key );
-
-    String getString( String key );
-
-    Number getNumber( String key );
-
-    Boolean getBoolean( String key );
-
-    Path getPath( String key );
+object renderSummary extends (InternalPlanDescription => String) {
+  def apply(plan: InternalPlanDescription): String =
+    "Total database accesses: " + plan.totalDbHits.getOrElse("?")
 }

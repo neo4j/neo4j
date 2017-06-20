@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val id: Id = new Id)

@@ -22,16 +22,18 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, InternalQueryType}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl, Version}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -52,7 +54,11 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
 
-  def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()
+  def executionPlanDescription(): InternalPlanDescription =
+    executionPlanBuilder()
+      .addArgument(Version("CYPHER 3.3"))
+      .addArgument(Runtime(InterpretedRuntimeName.toTextOutput))
+      .addArgument(RuntimeImpl(InterpretedRuntimeName.name))
 
   def javaColumns: java.util.List[String] = columns.asJava
 
@@ -104,9 +110,10 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   //notifications only present for EXPLAIN
-  override val notifications = Iterable.empty[InternalNotification]
+  override val notifications = Iterable.empty[Notification]
+  override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
-  def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
+  def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
     try {
       javaValues.feedIteratorToVisitable(self).accept(visitor)
     } finally {

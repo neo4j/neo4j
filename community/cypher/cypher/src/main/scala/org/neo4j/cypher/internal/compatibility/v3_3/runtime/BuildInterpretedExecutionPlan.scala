@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification

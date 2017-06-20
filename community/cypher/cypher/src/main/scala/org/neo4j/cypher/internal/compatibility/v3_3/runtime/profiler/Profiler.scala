@@ -23,8 +23,8 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}

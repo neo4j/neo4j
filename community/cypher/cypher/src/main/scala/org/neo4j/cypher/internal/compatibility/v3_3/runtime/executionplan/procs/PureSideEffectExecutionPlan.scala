@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalQueryType, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification

@@ -23,7 +23,7 @@ import java.util.Comparator
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 import scala.math._
 

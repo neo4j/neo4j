@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api.query.SchemaIndexUsage
@@ -79,37 +80,32 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
-  @throws(classOf[SyntaxException])
-  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {
+  def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
     profile(query, javaParams, context)
   }
 
-  @throws(classOf[SyntaxException])
-  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): ExecutionResult = {
+  def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
     preparedPlanExecution.profile(wrappedContext, scalaParams)
   }
 
-  @throws(classOf[SyntaxException])
-  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): ExecutionResult = {
+  def execute(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
     // we got deep scala parameters => convert to deep java parameters
     val javaParams = javaValues.asDeepJavaMap(scalaParams).asInstanceOf[JavaMap[String, AnyRef]]
     execute(query, javaParams, context)
   }
 
-  @throws(classOf[SyntaxException])
-  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): ExecutionResult = {
+  def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
     val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
     preparedPlanExecution.execute(wrappedContext, scalaParams)
   }
 
-  @throws(classOf[SyntaxException])
   protected def parseQuery(queryText: String): ParsedQuery =
     parsePreParsedQuery(preParseQuery(queryText), CompilationPhaseTracer.NO_TRACING)
 

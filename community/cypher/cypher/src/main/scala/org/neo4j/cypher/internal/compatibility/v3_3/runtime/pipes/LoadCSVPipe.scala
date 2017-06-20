@@ -24,7 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ArrayBackedMap
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.LoadExternalResourceException
 import org.neo4j.cypher.internal.ir.v3_3.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext

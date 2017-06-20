@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName => AstLabelName, _}
@@ -47,42 +47,44 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       "logical plan" -> "expected plan description",
 
       AllNodesScan(IdName("a"), Set.empty)(1) ->
-        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(EstimatedRows(1)), Set("a"))
+        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(EstimatedRows(1), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("a"))
 
       , AllNodesScan(IdName("b"), Set.empty)(42) ->
-        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(EstimatedRows(42)), Set("b"))
+        PlanDescriptionImpl(id, "AllNodesScan", NoChildren, Seq(EstimatedRows(42), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("b"))
 
       , NodeByLabelScan(IdName("node"), AstLabelName("X")(DummyPosition(0)), Set.empty)(33) ->
-        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName("X"), EstimatedRows(33)), Set("node"))
+        PlanDescriptionImpl(id, "NodeByLabelScan", NoChildren, Seq(LabelName("X"), EstimatedRows(33), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("node"))
 
       , NodeByIdSeek(IdName("node"), ManySeekableArgs(ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos)), Set.empty)(333) ->
-        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(EstimatedRows(333)), Set("node"))
+        PlanDescriptionImpl(id, "NodeByIdSeek", NoChildren, Seq(EstimatedRows(333), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("node"))
 
       , NodeIndexSeek(IdName("x"), LabelToken("Label", LabelId(0)), Seq(PropertyKeyToken("Prop", PropertyKeyId(0))), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(23) ->
-        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren, Seq(Index("Label", Seq("Prop")), EstimatedRows(23)), Set("x"))
+        PlanDescriptionImpl(id, "NodeIndexSeek", NoChildren, Seq(Index("Label", Seq("Prop")), EstimatedRows(23), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("x"))
 
       , NodeUniqueIndexSeek(IdName("x"), LabelToken("Lebal", LabelId(0)), Seq(PropertyKeyToken("Porp", PropertyKeyId(0))), ManyQueryExpression(ListLiteral(Seq(StringLiteral("Andres")(pos)))(pos)), Set.empty)(95) ->
-        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", Seq("Porp")), EstimatedRows(95)), Set("x"))
+        PlanDescriptionImpl(id, "NodeUniqueIndexSeek", NoChildren, Seq(Index("Lebal", Seq("Porp")), EstimatedRows(95), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("x"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(95) ->
-        PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING, 1, Some(1)), EstimatedRows(95)), Set("a", "r1", "b"))
+        PlanDescriptionImpl(id, "Expand(All)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "b", SemanticDirection.OUTGOING, 1, Some(1)),
+                                                                       EstimatedRows(95), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("a", "r1", "b"))
 
       , Expand(lhsLP, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("a"), IdName("r1"), ExpandInto)(113) ->
-        PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING, 1, Some(1)), EstimatedRows(113)), Set("a", "r1"))
+        PlanDescriptionImpl(id, "Expand(Into)", SingleChild(lhsPD), Seq(ExpandExpression("a", "r1", Seq.empty, "a", SemanticDirection.OUTGOING, 1, Some(1)),
+                                                                        EstimatedRows(113), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("a", "r1"))
 
       , NodeHashJoin(Set(IdName("a")), lhsLP, rhsLP)(2345) ->
-        PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD), Seq(KeyNames(Seq("a")), EstimatedRows(2345)), Set("a", "b"))
+        PlanDescriptionImpl(id, "NodeHashJoin", TwoChildren(lhsPD, rhsPD), Seq(KeyNames(Seq("a")), EstimatedRows(2345), Version("CYPHER 3.3"), Planner("COST"), PlannerImpl("IDP")), Set("a", "b"))
     )
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
         val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap)
+        val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap, IDPPlannerName)
 
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {
-          withClue("name")(producedPlanDescription.name should equal(expectedPlanDescription.name))
-          withClue("arguments")(producedPlanDescription.arguments should equal(expectedPlanDescription.arguments))
-          withClue("variables")(producedPlanDescription.variables should equal(expectedPlanDescription.variables))
+          withClue("name")(a.name should equal(b.name))
+          withClue("arguments")(a.arguments should equal(b.arguments))
+          withClue("variables")(a.variables should equal(b.variables))
         }
         withClue("id")(producedPlanDescription.id should equal(idMap(logicalPlan)))
 

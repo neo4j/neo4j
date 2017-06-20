@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import scala.beans.BeanProperty
+
 // Whenever you add a field here, please update the following classes:
 //
 // org.neo4j.cypher.internal.javacompact.QueryStatistics
@@ -26,19 +28,29 @@ package org.neo4j.cypher.internal
 // org.neo4j.server.rest.CypherFunctionalTest
 // org.neo4j.cypher.QueryStatisticsTestSupport
 //
-case class QueryStatistics(nodesCreated: Int = 0,
-                           relationshipsCreated: Int = 0,
-                           propertiesSet: Int = 0,
-                           nodesDeleted: Int = 0,
-                           relationshipsDeleted: Int = 0,
-                           labelsAdded: Int = 0,
-                           labelsRemoved: Int = 0,
-                           indexesAdded: Int = 0,
-                           indexesRemoved: Int = 0,
-                           constraintsAdded: Int = 0,
-                           constraintsRemoved: Int = 0
-                            ) {
-  def containsUpdates =
+
+case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
+                           @BeanProperty relationshipsCreated: Int = 0,
+                           @BeanProperty propertiesSet: Int = 0,
+                           @BeanProperty nodesDeleted: Int = 0,
+                           @BeanProperty relationshipsDeleted: Int = 0,
+                           @BeanProperty labelsAdded: Int = 0,
+                           @BeanProperty labelsRemoved: Int = 0,
+                           @BeanProperty indexesAdded: Int = 0,
+                           @BeanProperty indexesRemoved: Int = 0,
+                           uniqueConstraintsAdded: Int = 0,
+                           uniqueConstraintsRemoved: Int = 0,
+                           existenceConstraintsAdded: Int = 0,
+                           existenceConstraintsRemoved: Int = 0
+                          ) extends org.neo4j.graphdb.QueryStatistics {
+
+  @BeanProperty
+  val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded
+
+  @BeanProperty
+  val constraintsRemoved = uniqueConstraintsAdded + existenceConstraintsAdded
+
+  def containsUpdates: Boolean =
     nodesCreated > 0 ||
       relationshipsCreated > 0 ||
       propertiesSet > 0 ||
@@ -51,7 +63,8 @@ case class QueryStatistics(nodesCreated: Int = 0,
       constraintsAdded > 0 ||
       constraintsRemoved > 0
 
-  override def toString = {
+
+  override def toString: String = {
     val builder = new StringBuilder
 
     includeIfNonZero(builder, "Nodes created: ", nodesCreated)
@@ -71,7 +84,7 @@ case class QueryStatistics(nodesCreated: Int = 0,
     if (result.isEmpty) "<Nothing happened>" else result
   }
 
-  private def includeIfNonZero(builder:StringBuilder, message: String, count:Long) = if(count>0) {
+  private def includeIfNonZero(builder: StringBuilder, message: String, count: Long) = if (count > 0) {
     builder.append(message + count.toString + "\n")
   }
 

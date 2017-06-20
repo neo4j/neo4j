@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{InterpretedRuntimeN
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
+import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -120,7 +121,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
                        planner: Option[PlannerName] = None,
                        runtime: Option[RuntimeName] = None) {
 
-    lazy val planDescription: PlanDescription = execute()
+    lazy val planDescription: ExecutionPlanDescription = execute()
 
     def withCypherVersion(version: CypherVersion): TestQuery = copy(cypherVersion = Some(version))
 
@@ -145,7 +146,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       this
     }
 
-    private def execute() = {
+    private def execute(): ExecutionPlanDescription = {
       val prepend = (cypherVersion, planner, runtime) match {
         case (None, None, None) => ""
         case _ =>
@@ -155,9 +156,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           s"CYPHER $version $plannerString $runtimeString"
       }
       val result = eengine.profile(s"$prepend $query", Map.empty[String, Object])
-      result.size
-      val executionResult = result.executionPlanDescription()
-      executionResult.asJava
+      result.resultAsString()
+      val executionResult = result.getExecutionPlanDescription
+      executionResult
     }
   }
 }

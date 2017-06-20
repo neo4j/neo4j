@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planDescription
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
 import java.util.Locale
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlan2PlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Expand, ExpandAll, SingleRow}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, FunctionInvocation, FunctionName, HasLabels, Not, Property, PropertyKeyName, Variable}
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
 import org.scalatest.BeforeAndAfterAll
 

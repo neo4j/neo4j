@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
+import org.neo4j.cypher.internal.QueryStatistics
 
 import scala.collection.Map
 
 /**
  * Creates formatted tabular output.
  */
-object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]], InternalQueryStatistics) => Unit) {
+object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]], QueryStatistics) => Unit) {
 
   def apply(writer: PrintWriter, columns: List[String],
-            result: Seq[Map[String, String]], queryStatistics: InternalQueryStatistics) {
+            result: Seq[Map[String, String]], queryStatistics: QueryStatistics) {
 
     def makeSize(txt: String, wantedSize: Int): String = {
       val actualSize = txt.length()

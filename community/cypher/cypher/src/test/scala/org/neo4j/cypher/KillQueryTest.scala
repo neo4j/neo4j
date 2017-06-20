@@ -110,7 +110,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
             val transactionalContext: TransactionalContext = contextFactory.newContext(connectionInfo, tx, query, emptyMap)
             tcs.put(transactionalContext)
             val result = engine.execute(query, Map.empty[String, AnyRef], transactionalContext)
-            result.dumpToString()
+            result.resultAsString()
             tx.success()
           }
           catch {

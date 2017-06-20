@@ -17,15 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
+package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, InternalQueryStatistics}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
-import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] {
 
@@ -39,7 +39,7 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def dumpToString(writer: PrintWriter)
   def dumpToString(): String
 
-  def queryStatistics(): InternalQueryStatistics
+  def queryStatistics(): QueryStatistics
 
   def planDescriptionRequested: Boolean
   def executionPlanDescription(): InternalPlanDescription
@@ -47,11 +47,28 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def executionType: InternalQueryType
   def executionMode: ExecutionMode
 
-  def notifications: Iterable[InternalNotification]
+  def notifications: Iterable[Notification]
 
-  @throws(classOf[Exception])
-  def accept[EX <: Exception](visitor: InternalResultVisitor[EX])
+  def accept[EX <: Exception](visitor: ResultVisitor[EX])
 
   def close()
-}
 
+  def withNotifications(notification: Notification*): InternalExecutionResult
+
+  def publicExecutionType: QueryExecutionType = {
+
+    val qt = executionType match {
+      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
+      case WRITE => QueryExecutionType.QueryType.WRITE
+      case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
+      case DBMS => QueryExecutionType.QueryType.READ_ONLY
+    }
+
+    executionMode match {
+      case ExplainMode => QueryExecutionType.explained(qt)
+      case ProfileMode => QueryExecutionType.profiled(qt)
+      case NormalMode => QueryExecutionType.query(qt)
+    }
+  }
+}

@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 
 /*
 A PipeDecorator is used to instrument calls between Pipes, and between a Pipe and the graph

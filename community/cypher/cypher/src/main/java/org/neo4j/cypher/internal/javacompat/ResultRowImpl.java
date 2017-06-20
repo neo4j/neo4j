@@ -23,12 +23,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultRow;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Result;
 
-public class ResultRowImpl implements InternalResultRow
+public class ResultRowImpl implements Result.ResultRow
 {
     private Map<String, Object> results;
 

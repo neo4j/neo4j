@@ -19,22 +19,24 @@
  */
 package org.neo4j.cypher
 
+import java.util
 import java.util.concurrent.TimeUnit
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal._
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 
+import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -105,8 +107,10 @@ trait ExecutionEngineHelper {
   def profile(q: String, params: (String, Any)*): InternalExecutionResult =
     RewindableExecutionResult(eengine.profile(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)))
 
-  def executeScalar[T](q: String, params: (String, Any)*): T =
-    scalar[T](eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap)).toList)
+  def executeScalar[T](q: String, params: (String, Any)*): T = {
+    val res = eengine.execute(q, params.toMap, graph.transactionalContext(query = q -> params.toMap))
+    scalar[T](asScalaResult(res).toList)
+  }
 
   private def scalar[T](input: List[Map[String, Any]]): T = input match {
     case m :: Nil =>
@@ -121,11 +125,13 @@ trait ExecutionEngineHelper {
 
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 
+  def asScalaResult(result: Result): Iterator[Map[String, AnyRef]] = result.asScala.map(_.asScala.toMap)
+
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): ExecutionResult =
+    def profile(query: String, params: Map[String, Any]): Result =
       engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
 
-    def execute(query: String, params: Map[String, Any]): ExecutionResult =
+    def execute(query: String, params: Map[String, Any]): Result =
       engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
   }
 }

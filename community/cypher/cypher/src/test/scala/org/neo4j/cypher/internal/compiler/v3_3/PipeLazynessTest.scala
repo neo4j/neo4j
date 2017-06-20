@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPa
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb._
@@ -92,12 +92,12 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private def startPipe = {
     val node = mock[Node]
     val (iter, src) = emptyFakes
-    val pipe = new NodeStartPipe(src, "y", new EntityProducer[Node] {
+    val pipe = NodeStartPipe(src, "y", new EntityProducer[Node] {
       def producerType: String = "SingleNodeMock"
 
       def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
 
-      def arguments: Seq[Argument] = Seq.empty
+      def arguments: Seq[Argument] = Seq.empty[Argument]
     })()
     (pipe, iter)
   }

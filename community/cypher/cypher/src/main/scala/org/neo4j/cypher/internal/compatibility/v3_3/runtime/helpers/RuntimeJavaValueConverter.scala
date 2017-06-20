@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import java.util.{List => JavaList, Map => JavaMap}
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 
 import scala.collection.JavaConverters._
@@ -47,7 +47,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
   }
 
   case class feedIteratorToVisitable[EX <: Exception](iterator: Iterator[Map[String, Any]]) {
-    def accept(visitor: InternalResultVisitor[EX]) = {
+    def accept(visitor: ResultVisitor[EX]) = {
       val row = new MapBasedRow()
       var continue = true
       while (continue && iterator.hasNext) {
@@ -57,7 +57,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     }
   }
 
-  private class MapBasedRow extends InternalResultRow {
+  private class MapBasedRow extends ResultRow {
     var map: Map[String, Any] = Map.empty
 
     override def getNode(key: String): Node = getWithType(key, classOf[Node])

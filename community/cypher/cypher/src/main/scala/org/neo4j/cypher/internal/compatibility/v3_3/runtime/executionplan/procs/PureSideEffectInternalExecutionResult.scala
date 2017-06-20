@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 import java.io.PrintWriter
 import java.util
 
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, InternalQueryStatistics}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result.ResultVisitor
 
 /**
   * Empty result, as produced by a pure side-effect.
@@ -34,26 +36,30 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
                                                  executionPlanDescription: InternalPlanDescription,
                                                  executionType: InternalQueryType,
-                                                 executionMode: ExecutionMode)
-  extends StandardInternalExecutionResult(ctx)
+                                                 executionMode: ExecutionMode,
+                                                 notification: Iterable[Notification] = Iterable.empty)
+  extends StandardInternalExecutionResult(ctx, None, notification)
     with StandardInternalExecutionResult.IterateByAccepting {
 
-    override def javaColumns: util.List[String] = java.util.Collections.emptyList()
+  override def javaColumns: util.List[String] = java.util.Collections.emptyList()
 
-    override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
-      ctx.transactionalContext.close(success = true)
-    }
-
-    override def queryStatistics() = ctx.getOptStatistics.getOrElse(InternalQueryStatistics())
-
-    override def toList = List.empty
-
-    override def dumpToString(writer: PrintWriter) = {
-      writer.println("+-------------------+")
-      writer.println("| No data returned. |")
-      writer.println("+-------------------+")
-      writer.print(queryStatistics().toString)
-    }
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
+    ctx.transactionalContext.close(success = true)
   }
+
+  override def queryStatistics(): QueryStatistics = ctx.getOptStatistics.getOrElse(QueryStatistics())
+
+  override def toList: List[Nothing] = List.empty
+
+  override def dumpToString(writer: PrintWriter): Unit = {
+    writer.println("+-------------------+")
+    writer.println("| No data returned. |")
+    writer.println("+-------------------+")
+    writer.print(queryStatistics().toString)
+  }
+
+  override def withNotifications(added: Notification*): InternalExecutionResult =
+    copy(notification = notification ++ added)
+}
 
 

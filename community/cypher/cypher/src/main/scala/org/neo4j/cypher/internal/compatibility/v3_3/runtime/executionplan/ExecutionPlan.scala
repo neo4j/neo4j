@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, RuntimeName}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage

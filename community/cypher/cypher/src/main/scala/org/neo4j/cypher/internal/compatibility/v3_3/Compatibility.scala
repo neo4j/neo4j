@@ -39,8 +39,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
+import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_3._
+import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.query.IndexUsage.{legacyIndexUsage, schemaIndexUsage}
 import org.neo4j.kernel.api.query.PlannerInfo
@@ -166,19 +168,20 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
     }
 
     def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
-            params: Map[String, Any]): ExecutionResult = {
+            params: Map[String, Any]): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.normal => NormalMode
       }
       exceptionHandler.runSafely {
-        val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, params)
-        new ClosingExecutionResult(
+        val innerResult: InternalExecutionResult = inner.run(queryContext(transactionalContext), innerExecutionMode, params)
+
+        new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offset)),
+          innerResult.withNotifications(preParsingNotifications.toSeq:_*),
           exceptionHandler.runSafely
-        )
+        ))
       }
     }
 

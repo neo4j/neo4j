@@ -17,25 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
 
-/*
-The map of logical plan and ids is used to allow profiling to connect to the right part in the logical plan
-to report db hits and rows passed through.
- */
-object LogicalPlanIdentificationBuilder extends (LogicalPlan => Map[LogicalPlan, Id]) {
-  def apply(plan: LogicalPlan): Map[LogicalPlan, Id] = {
+class FakeIdMap extends Map[LogicalPlan, Id] {
+  override def +[B1 >: Id](kv: (LogicalPlan, B1)): Map[LogicalPlan, B1] = ???
 
-    def build(input: Map[LogicalPlan, Id], plan: LogicalPlan): Map[LogicalPlan, Id] = {
-      val l = plan.lhs.foldLeft(input)(build)
-      val r = plan.rhs.foldLeft(l)(build)
-      r + (plan -> new Id)
-    }
+  override def get(key: LogicalPlan): Option[Id] = Some(new Id)
 
-    build(IdentityMap.empty, plan)
-  }
+  override def iterator: Iterator[(LogicalPlan, Id)] = ???
+
+  override def -(key: LogicalPlan): Map[LogicalPlan, Id] = ???
 }

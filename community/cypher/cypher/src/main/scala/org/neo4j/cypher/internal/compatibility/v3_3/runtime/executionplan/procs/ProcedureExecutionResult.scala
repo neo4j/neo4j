@@ -21,26 +21,29 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultVisitor, QualifiedName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.Result.ResultVisitor
 
 /**
   * Execution result of a Procedure
   *
-  * @param context The QueryContext used to communicate with the kernel.
-  * @param taskCloser called when done with the result, cleans up resources.
-  * @param name The name of the procedure.
-  * @param callMode The call mode of the procedure.
-  * @param args The argument to the procedure.
-  * @param indexResultNameMappings Describes how values at output row indices are mapped onto result columns.
+  * @param context                           The QueryContext used to communicate with the kernel.
+  * @param taskCloser                        called when done with the result, cleans up resources.
+  * @param name                              The name of the procedure.
+  * @param callMode                          The call mode of the procedure.
+  * @param args                              The argument to the procedure.
+  * @param indexResultNameMappings           Describes how values at output row indices are mapped onto result columns.
   * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
-  * @param executionMode The execution mode.
+  * @param executionMode                     The execution mode.
+  * @param notifications                     Notification found so far in execution the query
   */
 class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                taskCloser: TaskCloser,
@@ -49,10 +52,11 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                args: Seq[Any],
                                                indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
-                                               val executionMode: ExecutionMode)
-  extends StandardInternalExecutionResult(context, Some(taskCloser)) {
+                                               val executionMode: ExecutionMode,
+                                               notifications: Iterable[Notification] = Iterable.empty)
+  extends StandardInternalExecutionResult(context, Some(taskCloser), notifications) {
 
-  override def columns = indexResultNameMappings.map(_._2).toList
+  override def columns: List[String] = indexResultNameMappings.map(_._2).toList
 
   private final val executionResults = executeCall
 
@@ -61,7 +65,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
-      resultAsMap( executionResults.next( ) ) //TODO!!!¡¡¡¡
+      resultAsMap(executionResults.next()) //TODO!!!¡¡¡¡
     /*
         override def next(): util.Map[String, Any] =
           try { resultAsMap( executionResults.next( ) ) }
@@ -71,21 +75,22 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
     override def hasNext: Boolean = {
       val moreToCome = executionResults.hasNext
-      if (!moreToCome)  {
+      if (!moreToCome) {
         close()
       }
       moreToCome
     }
   }
 
-  override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
     executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
     close()
   }
 
   // TODO Look into having the kernel track updates, rather than cypher middle-layers, only sensible way I can think
   //      of to get accurate stats for procedure code
-  override def queryStatistics() = context.getOptStatistics.getOrElse(InternalQueryStatistics())
+  override def queryStatistics(): QueryStatistics = context.getOptStatistics.getOrElse(QueryStatistics())
+
   override def executionType: InternalQueryType = callMode.queryType
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
@@ -104,4 +109,8 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     case ProfileMode if executionResults.hasNext => throw new ProfilerStatisticsNotReadyException()
     case _ => executionPlanDescriptionGenerator()
   }
+
+  override def withNotifications(notification: Notification*): InternalExecutionResult =
+    new ProcedureExecutionResult[E](context, taskCloser, name, callMode, args, indexResultNameMappings,
+                                    executionPlanDescriptionGenerator, executionMode, notification)
 }

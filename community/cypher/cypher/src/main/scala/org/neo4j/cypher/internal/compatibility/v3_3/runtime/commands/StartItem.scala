@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.NodeById.pos
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.TypeSafe
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.UnsignedDecimalIntegerLiteral

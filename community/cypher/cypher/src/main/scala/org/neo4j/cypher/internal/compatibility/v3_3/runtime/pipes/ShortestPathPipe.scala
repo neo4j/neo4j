@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.graphdb.Path
 
 import scala.collection.JavaConverters._

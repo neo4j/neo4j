@@ -21,16 +21,19 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.ExecutionResult
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb
-import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 
-class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResult, runSafely: RunSafely)
+class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecutionResult, runSafely: RunSafely)
                             (implicit innerMonitor: QueryExecutionMonitor)
-  extends ExecutionResult {
+  extends InternalExecutionResult {
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
@@ -41,7 +44,7 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResu
       closeIfEmpty()
     }
 
-  override def planDescriptionRequested = runSafely {
+  override def planDescriptionRequested: Boolean = runSafely {
     inner.planDescriptionRequested
   }
 
@@ -135,23 +138,23 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResu
     }
   }
 
-  override def executionPlanDescription(): org.neo4j.cypher.internal.PlanDescription =
+  override def executionPlanDescription(): InternalPlanDescription =
     runSafely {
       inner.executionPlanDescription()
     }
 
-  override def close() = runSafely {
+  override def close(): Unit = runSafely {
     inner.close()
     endQueryExecution()
   }
 
-  override def next() = runSafely {
+  override def next(): Map[String, Any] = runSafely {
     val result = inner.next()
     closeIfEmpty()
     result
   }
 
-  override def hasNext = runSafely {
+  override def hasNext: Boolean = runSafely {
     val next = inner.hasNext
     if (!next) {
       endQueryExecution()
@@ -159,18 +162,18 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResu
     next
   }
 
-  override def executionType: graphdb.QueryExecutionType = runSafely {
+  override def executionType: InternalQueryType = runSafely {
     inner.executionType
   }
 
-  override def notifications = runSafely { inner.notifications }
+  override def notifications: Iterable[Notification] = runSafely { inner.notifications }
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = runSafely {
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = runSafely {
     inner.accept(visitor)
     endQueryExecution()
   }
 
-  override def toString() = runSafely {
+  override def toString(): String = runSafely {
     inner.toString()
   }
 
@@ -183,4 +186,11 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: ExecutionResu
   private def endQueryExecution() = {
     monitor.endSuccess(query) // this method is expected to be idempotent
   }
+
+  override def executionMode: ExecutionMode = runSafely(inner.executionMode)
+
+  override def withNotifications(added: Notification*): InternalExecutionResult =
+    new ClosingExecutionResult(query, inner, runSafely) {
+      override def notifications: Iterable[Notification] = super.notifications ++ added
+    }
 }

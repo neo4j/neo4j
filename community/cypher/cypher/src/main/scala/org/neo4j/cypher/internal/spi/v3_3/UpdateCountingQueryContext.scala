@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -42,7 +42,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val propertyExistenceConstraintsAdded = new Counter
   private val propertyExistenceConstraintsRemoved = new Counter
 
-  def getStatistics = InternalQueryStatistics(
+  def getStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
     relationshipsCreated = relationshipsCreated.count,
     propertiesSet = propertiesSet.count,

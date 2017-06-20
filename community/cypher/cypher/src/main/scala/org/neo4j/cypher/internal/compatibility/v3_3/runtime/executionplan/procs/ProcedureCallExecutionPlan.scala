@@ -19,21 +19,23 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, ProcedureCallMode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{Counter, RuntimeJavaValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Notification
 
 /**
   * Execution plan for calling procedures
@@ -49,7 +51,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
                                       resultIndices: Seq[(Int, String)],
-                                      notifications: Set[InternalNotification],
+                                      notifications: Set[Notification],
                                       converter: ExpressionConverters)
   extends ExecutionPlan {
 
@@ -77,7 +79,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     }
 
     private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
-                                               notifications: Set[InternalNotification]) = {
+                                               notifications: Set[Notification]) = {
       // close all statements
       taskCloser.close(success = true)
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)

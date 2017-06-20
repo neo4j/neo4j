@@ -28,11 +28,13 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import org.neo4j.cypher.CypherException;
+import org.neo4j.cypher.internal.InternalExecutionResult;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryExecutionType.QueryType;
+import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
@@ -53,7 +55,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
  */
 public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Result
 {
-    private final org.neo4j.cypher.internal.ExecutionResult inner;
+    private final InternalExecutionResult inner;
 
     /**
      * Initialized lazily and should be accessed with {@link #innerIterator()} method
@@ -68,11 +70,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      *
      * @param   projection Execution result projection to use.
      */
-    public ExecutionResult( org.neo4j.cypher.internal.ExecutionResult projection )
+    public ExecutionResult( InternalExecutionResult projection )
     {
         inner = Objects.requireNonNull( projection );
         //if updating query we must fetch the iterator right away in order to eagerly perform updates
-        if ( projection.executionType().queryType() == QueryType.WRITE )
+        if ( projection.publicExecutionType().queryType() == QueryType.WRITE )
         {
             innerIterator();
         }
@@ -83,7 +85,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      * single column results.
      *
      * <p><b>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
-     * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
+     * either be fully exhausted, or the {@link ResourceIterator#close() close()} method must be
      * called.</b></p>
      *
      * @param n exact name of the column, as it appeared in the original query
@@ -112,7 +114,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return inner.executionType();
+            return inner.publicExecutionType();
         }
         catch ( CypherException e )
         {
@@ -168,7 +170,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return new QueryStatistics( inner.queryStatistics() );
+            return inner.queryStatistics();
         }
         catch ( CypherException e )
         {
@@ -176,19 +178,10 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
         }
     }
 
-    /**
-     * Returns a string representation of the query plan used to produce this result.
-     * @return a string representation of the query plan used to produce this result.
-     */
-    public PlanDescription executionPlanDescription()
-    {
-        return inner.executionPlanDescription().asJava(); // legacy method - don't convert exceptions...
-    }
-
     public void toString( PrintWriter writer )
     {
         inner.dumpToString( writer ); // legacy method - don't convert exceptions...
-        for ( Notification notification : scala.collection.JavaConversions.asJavaIterable( inner.notifications() ) )
+        for ( Notification notification : JavaConversions.asJavaIterable( inner.notifications() ) )
         {
             writer.println( notification.getDescription() );
         }
@@ -200,7 +193,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
      * is one row of the query result.
      *
      * <p><b>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
-     * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
+     * either be fully exhausted, or the {@link ResourceIterator#close() close()} method must be
      * called.</b></p>
      *
      * @return An iterator over the result of the query as a map from projected column name to value
@@ -271,7 +264,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return new Description( inner.executionPlanDescription() );
+            return inner.executionPlanDescription();
         }
         catch ( CypherException e )
         {
@@ -393,6 +386,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
                 throw converted( e );
             }
         }
+    }
+
+    public InternalExecutionResult internalExecutionResult()
+    {
+        return inner;
     }
 
     private static QueryExecutionException converted( CypherException e )

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, MapExecutionContext}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 
 import scala.collection.mutable

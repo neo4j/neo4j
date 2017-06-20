@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureSignature, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 

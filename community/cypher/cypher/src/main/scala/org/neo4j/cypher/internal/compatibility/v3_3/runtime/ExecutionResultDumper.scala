@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import java.io.{PrintWriter, StringWriter}
 
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
-case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: InternalQueryStatistics) extends CypherSerializer {
+case class ExecutionResultDumper(result: Seq[Map[String, Any]], columns: List[String], queryStatistics: QueryStatistics) extends CypherSerializer {
 
   def dumpToString(implicit query: QueryContext): String = {
     val stringWriter = new StringWriter()

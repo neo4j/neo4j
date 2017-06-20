@@ -19,10 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlan2PlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
@@ -84,11 +85,11 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
 
     private def createResults(state: QueryState, planType: ExecutionMode, notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       val queryType: InternalQueryType = getQueryType
-      val planDescription: InternalPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap)
+      val planDescription: InternalPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap, pipeInfo.plannerUsed)
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        ExplainExecutionResult(columns, planDescription, queryType, notificationLogger.notifications)
+        ExplainExecutionResult(columns, planDescription, queryType, notificationLogger.notifications.map(asKernelNotification))
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
