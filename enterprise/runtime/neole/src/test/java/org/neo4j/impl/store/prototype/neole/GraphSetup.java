@@ -19,23 +19,30 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.Description;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.Description;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.impl.kernel.api.*;
 import org.neo4j.impl.kernel.api.EdgeGroupCursor;
 import org.neo4j.impl.kernel.api.EdgeScanCursor;
+import org.neo4j.impl.kernel.api.EdgeSearchStructureCursor;
 import org.neo4j.impl.kernel.api.EdgeTraversalCursor;
+import org.neo4j.impl.kernel.api.IndexPredicate;
+import org.neo4j.impl.kernel.api.IndexReference;
 import org.neo4j.impl.kernel.api.NodeCursor;
+import org.neo4j.impl.kernel.api.NodeLabelIndexCursor;
+import org.neo4j.impl.kernel.api.NodeSearchStructureCursor;
+import org.neo4j.impl.kernel.api.NodeValueIndexCursor;
 import org.neo4j.impl.kernel.api.PropertyCursor;
+import org.neo4j.impl.kernel.api.Read;
+import org.neo4j.impl.kernel.api.Scan;
 
 public abstract class GraphSetup extends TestResource implements Read, org.neo4j.impl.kernel.api.CursorFactory
 {

@@ -79,6 +79,10 @@ public class DeepEdgeTraversalCursorTest
                     offset = relate( 2 + i, leafs, offset, inter );
                 }
 
+                Node inter = graphDb.createNode();
+                inter.createRelationshipTo( root, PARENT );
+                offset = relate( 1, leafs, offset, inter );
+
                 expected_total = offset + duplicate;
                 expected_unique = leafs.length;
 

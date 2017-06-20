@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.store.cursors;
 
-public abstract class ReadCursor extends MemoryAccess
+public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
 {
     public final boolean shouldRetry()
     {
@@ -46,8 +46,7 @@ public abstract class ReadCursor extends MemoryAccess
     }
 
     /**
-     *
-     * @param virtualAddress
+     * @param virtualAddress the virtual address to go to
      * @return {@code true} if the virtual address is valid, {@code false} otherwise.
      */
     protected final boolean gotoVirtualAddress( long virtualAddress )
@@ -78,6 +77,18 @@ public abstract class ReadCursor extends MemoryAccess
     }
 
     @Override
+    public final void close()
+    {
+        try
+        {
+            closeImpl();
+        }
+        finally
+        {
+            closeAccess();
+        }
+    }
+
     protected void closeImpl()
     {
         // default: do nothing. Allow override in subclasses

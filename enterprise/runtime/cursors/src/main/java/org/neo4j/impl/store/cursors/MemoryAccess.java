@@ -21,7 +21,7 @@ package org.neo4j.impl.store.cursors;
 
 import static java.lang.String.format;
 
-abstract class MemoryAccess implements AutoCloseable
+abstract class MemoryAccess
 {
     long virtualAddress;
     PageHandle page;
@@ -32,25 +32,17 @@ abstract class MemoryAccess implements AutoCloseable
 
     protected abstract int dataBound();
 
-    @Override
-    public final void close()
+    final void closeAccess()
     {
         if ( page != null )
         {
             try
             {
-                closeImpl();
+                page.releasePage( pageId, base, offset, lockToken );
             }
             finally
             {
-                try
-                {
-                    page.releasePage( pageId, base, offset, lockToken );
-                }
-                finally
-                {
-                    page = null;
-                }
+                page = null;
             }
         }
     }
@@ -60,8 +52,6 @@ abstract class MemoryAccess implements AutoCloseable
         return page != null;
     }
 
-    abstract void closeImpl();
-
     final void access( long virtualAddress, PageHandle page, long pageId, long base, int offset )
     {
         // TODO: this method is too large to inline...
@@ -69,7 +59,7 @@ abstract class MemoryAccess implements AutoCloseable
         {
             if ( this.page != page || this.pageId != pageId )
             {
-                close();
+                closeAccess();
             }
             else
             {

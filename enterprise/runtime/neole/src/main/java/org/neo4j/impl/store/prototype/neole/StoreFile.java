@@ -186,7 +186,7 @@ abstract class StoreFile extends PageHandle implements Closeable
         }
         else
         {
-            read( cursor, virtualAddress, this, page, page( page ), offset, recordSize() );
+            read( cursor, virtualAddress, this, page, page( page ), newOffset, recordSize() );
         }
         return true;
     }

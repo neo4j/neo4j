@@ -22,6 +22,18 @@ package org.neo4j.impl.store.cursors;
 public abstract class Writer extends MemoryAccess implements AutoCloseable
 {
     @Override
+    public final void close()
+    {
+        try
+        {
+            closeImpl();
+        }
+        finally
+        {
+            closeAccess();
+        }
+    }
+
     protected void closeImpl()
     {
         // default: do nothing. Allow override in subclasses

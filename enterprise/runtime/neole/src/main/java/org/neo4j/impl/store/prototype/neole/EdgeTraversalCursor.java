@@ -19,6 +19,8 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import static java.lang.String.format;
+
 class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.impl.kernel.api.EdgeTraversalCursor
 {
     private long originNodeReference;
@@ -77,7 +79,7 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.impl.kernel.ap
         {
             return source;
         }
-        throw new IllegalStateException( String.format(
+        throw new IllegalStateException( format(
                 "not part of this chain! source=0x%x, target=0x%x, origin=0x%x",
                 source,
                 target,
@@ -123,7 +125,7 @@ class EdgeTraversalCursor extends EdgeCursor implements org.neo4j.impl.kernel.ap
         {
             return targetNextEdgeReference();
         }
-        throw new IllegalStateException( String.format(
+        throw new IllegalStateException( format(
                 "%d is not part of this chain! source=0x%x, target=0x%x, origin=0x%x",
                 edgeReference(),
                 source,
