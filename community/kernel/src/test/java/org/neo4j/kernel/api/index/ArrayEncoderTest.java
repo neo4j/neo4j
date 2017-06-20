@@ -90,6 +90,7 @@ public class ArrayEncoderTest
         assertEncoding( "D1.0|2.0|3.0|", new int[]{1, 2, 3} );
         assertEncoding( "Ztrue|false|", new boolean[]{true, false} );
         assertEncoding( "LYWxp|YXJl|eW91|b2s=|", new String[]{"ali", "are", "you", "ok"} );
+        assertEncoding( "", new String[]{} );
     }
 
     @Test

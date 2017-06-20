@@ -158,13 +158,15 @@ public final class ArrayEncoder
         @Override
         public void beginArray( int size, ArrayType arrayType )
         {
-            builder.append( typeChar( arrayType ) );
+            if ( size > 0 )
+            {
+                builder.append( typeChar( arrayType ) );
+            }
         }
 
         @Override
         public void endArray()
         {
-
         }
 
         private char typeChar( ArrayType arrayType )
