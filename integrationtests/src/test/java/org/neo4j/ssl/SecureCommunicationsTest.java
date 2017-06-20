@@ -62,6 +62,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.ssl.SslResourceBuilder.caSignedKeyId;
+import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 /**
@@ -71,7 +73,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
  */
 public class SecureCommunicationsTest
 {
-    private static final int bogusId = 5; // SslContextFactory requires us to trust something
+    private static final int UNRELATED_ID = 5; // SslContextFactory requires us to trust something
 
     private static final byte[] REQUEST = {1, 2, 3, 4};
     private static final byte[] RESPONSE = {5, 6, 7, 8};
@@ -107,8 +109,8 @@ public class SecureCommunicationsTest
     public void partiesWithMutualTrustShouldCommunicate() throws Exception
     {
         // given
-        SslResource sslServerResource = SslResourceBuilder.selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
-        SslResource sslClientResource = SslResourceBuilder.selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
+        SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "server" ) );
+        SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
 
         server = new SecureServer( makeSslContext( sslServerResource, true ) );
 
@@ -127,34 +129,11 @@ public class SecureCommunicationsTest
     }
 
     @Test
-    public void partiesWithMutualTrustThroughRootCAShouldCommunicate() throws Exception
+    public void partiesWithMutualTrustThroughCAShouldCommunicate() throws Exception
     {
         // given
-        SslResource sslServerResource = SslResourceBuilder.rootSignedKeyId( 0 ).trustSignedByRoot().install( testDir.directory( "server" ) );
-        SslResource sslClientResource = SslResourceBuilder.rootSignedKeyId( 1 ).trustSignedByRoot().install( testDir.directory( "client" ) );
-
-        server = new SecureServer( makeSslContext( sslServerResource, true ) );
-
-        server.start();
-        client = new SecureClient( makeSslContext( sslClientResource, false ) );
-        client.connect( server.port() );
-
-        // when
-        ByteBuf request = ByteBufAllocator.DEFAULT.buffer().writeBytes( REQUEST );
-        client.channel.writeAndFlush( request );
-
-        // then
-        expected = ByteBufAllocator.DEFAULT.buffer().writeBytes( RESPONSE );
-        client.clientInitializer.handshakeFuture.get();
-        client.assertResponse( expected );
-    }
-
-    @Test
-    public void partiesWithMutualTrustThroughIntermediateShouldCommunicate() throws Exception
-    {
-        // given
-        SslResource sslServerResource = SslResourceBuilder.caSignedKeyId( 0 ).trustSignedByRoot().install( testDir.directory( "server" ) );
-        SslResource sslClientResource = SslResourceBuilder.caSignedKeyId( 1 ).trustSignedByRoot().install( testDir.directory( "client" ) );
+        SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().install( testDir.directory( "server" ) );
+        SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().install( testDir.directory( "client" ) );
 
         server = new SecureServer( makeSslContext( sslServerResource, true ) );
 
@@ -176,8 +155,8 @@ public class SecureCommunicationsTest
     public void serverShouldNotCommunicateWithUntrustedClient() throws Exception
     {
         // given
-        SslResource sslClientResource = SslResourceBuilder.selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
-        SslResource sslServerResource = SslResourceBuilder.selfSignedKeyId( 0 ).trustKeyId( bogusId ).install( testDir.directory( "server" ) );
+        SslResource sslClientResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "client" ) );
+        SslResource sslServerResource = selfSignedKeyId( 0 ).trustKeyId( UNRELATED_ID ).install( testDir.directory( "server" ) );
 
         server = new SecureServer( makeSslContext( sslServerResource, true ) );
 
@@ -201,8 +180,8 @@ public class SecureCommunicationsTest
     public void clientShouldNotCommunicateWithUntrustedServer() throws Exception
     {
         // given
-        SslResource sslClientResource = SslResourceBuilder.selfSignedKeyId( 0 ).trustKeyId( bogusId ).install( testDir.directory( "client" ) );
-        SslResource sslServerResource = SslResourceBuilder.selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "server" ) );
+        SslResource sslClientResource = selfSignedKeyId( 0 ).trustKeyId( UNRELATED_ID ).install( testDir.directory( "client" ) );
+        SslResource sslServerResource = selfSignedKeyId( 1 ).trustKeyId( 0 ).install( testDir.directory( "server" ) );
 
         server = new SecureServer( makeSslContext( sslServerResource, true ) );
 
@@ -214,6 +193,54 @@ public class SecureCommunicationsTest
         {
             client.clientInitializer.handshakeFuture.get();
             fail();
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( SSLException.class ) );
+        }
+    }
+
+    @Test
+    public void partiesWithMutualTrustThroughCAShouldNotCommunicateWhenServerRevoked() throws Exception
+    {
+        // given
+        SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().install( testDir.directory( "server" ) );
+        SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().revoke( 0 ).install( testDir.directory( "client" ) );
+
+        server = new SecureServer( makeSslContext( sslServerResource, true ) );
+
+        server.start();
+        client = new SecureClient( makeSslContext( sslClientResource, false ) );
+        client.connect( server.port() );
+
+        try
+        {
+            client.clientInitializer.handshakeFuture.get();
+            fail( "Server should have been revoked" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), instanceOf( SSLException.class ) );
+        }
+    }
+
+    @Test
+    public void partiesWithMutualTrustThroughCAShouldNotCommunicateWhenClientRevoked() throws Exception
+    {
+        // given
+        SslResource sslServerResource = caSignedKeyId( 0 ).trustSignedByCA().revoke( 1 ).install( testDir.directory( "server" ) );
+        SslResource sslClientResource = caSignedKeyId( 1 ).trustSignedByCA().install( testDir.directory( "client" ) );
+
+        server = new SecureServer( makeSslContext( sslServerResource, true ) );
+
+        server.start();
+        client = new SecureClient( makeSslContext( sslClientResource, false ) );
+        client.connect( server.port() );
+
+        try
+        {
+            client.clientInitializer.handshakeFuture.get();
+            fail( "Client should have been revoked" );
         }
         catch ( ExecutionException e )
         {
@@ -234,6 +261,7 @@ public class SecureCommunicationsTest
         config.put( policyConfig.private_key.name(), sslResource.privateKey().getPath() );
         config.put( policyConfig.public_certificate.name(), sslResource.publicCertificate().getPath() );
         config.put( policyConfig.trusted_dir.name(), sslResource.trustedDirectory().getPath() );
+        config.put( policyConfig.revoked_dir.name(), sslResource.revokedDirectory().getPath() );
 
         SslPolicyLoader sslPolicyFactory = SslPolicyLoader.create( Config.serverDefaults( config ), NullLogProvider.getInstance() );
 

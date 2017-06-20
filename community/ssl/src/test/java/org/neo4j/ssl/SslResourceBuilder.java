@@ -31,38 +31,35 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.ssl.SslResourceBuilder.SignedBy.CA;
-import static org.neo4j.ssl.SslResourceBuilder.SignedBy.ROOT;
 import static org.neo4j.ssl.SslResourceBuilder.SignedBy.SELF;
 
 /**
  * This builder has a finite set of pre-generated resource
  * keys and certificates which can be utilized in tests.
- *
- * The script gen-root.sh is used to generate the root
- * resources and gey-key.sh is used to generate the
- * instance resources.
  */
 public class SslResourceBuilder
 {
-    private static final String ROOT_CERTIFICATE_NAME = "root.crt";
+    private static final String CA_CERTIFICATE_NAME = "cluster.crt";
 
     private static final String PRIVATE_KEY_NAME = "private.key";
     private static final String PUBLIC_CERT_NAME = "public.crt";
 
     private static final String SELF_SIGNED_NAME = "selfsigned.crt";
+    private static final String REVOKED_NAME = "revoked.crl";
     private static final String CA_SIGNED_NAME = "casigned.crt";
-    private static final String ROOT_SIGNED_NAME = "rootsigned.crt";
 
     private static final String TRUSTED_DIR_NAME = "trusted";
-    private static final String BASE_PATH = "test-certificates/";
+    private static final String REVOKED_DIR_NAME = "revoked";
+
+    private static final String CA_BASE_PATH = "test-certificates/ca/";
+    private static final String SERVERS_BASE_PATH = "test-certificates/servers/";
 
     private final int keyId;
 
     enum SignedBy
     {
         SELF( SELF_SIGNED_NAME ),
-        CA( CA_SIGNED_NAME ),
-        ROOT( ROOT_SIGNED_NAME );
+        CA( CA_SIGNED_NAME );
 
         private final String resourceName;
 
@@ -79,8 +76,9 @@ public class SslResourceBuilder
 
     private final SignedBy signedBy;
 
-    private boolean trustSignedByRoot;
+    private boolean trustSignedByCA;
     private Set<Integer> trusted = new HashSet<>();
+    private Set<Integer> revoked = new HashSet<>();
 
     private FileSystemAbstraction fsa = new DefaultFileSystemAbstraction();
 
@@ -100,20 +98,21 @@ public class SslResourceBuilder
         return new SslResourceBuilder( keyId, CA );
     }
 
-    public static SslResourceBuilder rootSignedKeyId( int keyId )
-    {
-        return new SslResourceBuilder( keyId, ROOT );
-    }
-
     public SslResourceBuilder trustKeyId( int keyId )
     {
         trusted.add( keyId );
         return this;
     }
 
-    public SslResourceBuilder trustSignedByRoot()
+    public SslResourceBuilder trustSignedByCA()
     {
-        this.trustSignedByRoot = true;
+        this.trustSignedByCA = true;
+        return this;
+    }
+
+    public SslResourceBuilder revoke( int keyId )
+    {
+        revoked.add( keyId );
         return this;
     }
 
@@ -122,8 +121,10 @@ public class SslResourceBuilder
         File targetKey = new File( targetDirectory, PRIVATE_KEY_NAME );
         File targetCertificate = new File( targetDirectory, PUBLIC_CERT_NAME );
         File targetTrusted = new File( targetDirectory, TRUSTED_DIR_NAME );
+        File targetRevoked = new File( targetDirectory, REVOKED_DIR_NAME );
 
         fsa.mkdir( targetTrusted );
+        fsa.mkdir( targetRevoked );
 
         for ( int trustedKeyId : trusted )
         {
@@ -131,26 +132,32 @@ public class SslResourceBuilder
             copy( resource( SELF_SIGNED_NAME, trustedKeyId ), targetTrustedCertificate );
         }
 
-        if ( trustSignedByRoot )
+        for ( int revokedKeyId : revoked )
         {
-            File targetTrustedCertificate = new File( targetTrusted, ROOT_CERTIFICATE_NAME );
-            copy( resource( ROOT_CERTIFICATE_NAME ), targetTrustedCertificate );
+            File targetRevokedCRL = new File( targetRevoked, String.valueOf( revokedKeyId ) + ".crl" );
+            copy( resource( REVOKED_NAME, revokedKeyId ), targetRevokedCRL );
+        }
+
+        if ( trustSignedByCA )
+        {
+            File targetTrustedCertificate = new File( targetTrusted, CA_CERTIFICATE_NAME );
+            copy( resource( CA_CERTIFICATE_NAME ), targetTrustedCertificate );
         }
 
         copy( resource( PRIVATE_KEY_NAME, keyId ), targetKey );
         copy( signedBy.keyId( keyId ), targetCertificate );
 
-        return new SslResource( targetKey, targetCertificate, targetTrusted );
+        return new SslResource( targetKey, targetCertificate, targetTrusted, targetRevoked );
     }
 
     private static URL resource( String filename, int keyId )
     {
-        return SslResourceBuilder.class.getResource( BASE_PATH + String.valueOf( keyId ) + "/" + filename );
+        return SslResourceBuilder.class.getResource( SERVERS_BASE_PATH + String.valueOf( keyId ) + "/" + filename );
     }
 
     private URL resource( String filename )
     {
-        return SslResourceBuilder.class.getResource( BASE_PATH + filename );
+        return SslResourceBuilder.class.getResource( CA_BASE_PATH + filename );
     }
 
     private void copy( URL in, File outFile ) throws IOException
