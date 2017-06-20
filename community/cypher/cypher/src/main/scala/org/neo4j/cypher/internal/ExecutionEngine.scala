@@ -39,8 +39,6 @@ import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
-
-import scala.collection.mutable
 trait StringCacheMonitor extends CypherCacheMonitor[String, api.Statement]
 
 /**
@@ -175,10 +173,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           val stateBefore = getSchemaState(tc)
           var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
           if (!touched) {
-            val labelIds: mutable.Seq[Int] = extractPlanLabels(plan)
+            preParsedQuery.version
+            val labelIds: Seq[Int] = extractPlanLabels(plan, preParsedQuery.version, tc)
             lockPlanLabels(tc, labelIds)
             val stateAfter = getSchemaState(tc)
-            if (stateBefore != stateAfter) {
+            if (stateBefore eq stateAfter) {
               releasePlanLabels(tc, labelIds)
               touched = false
             }
@@ -209,21 +208,30 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   }
 
 
-  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: mutable.Seq[Int]) = {
+  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Int]) = {
     labelIds.foreach {
       tc.readOperations.releaseShared(ResourceTypes.LABEL, _)
     }
   }
 
-  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: mutable.Seq[Int]) = {
+  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Int]) = {
     labelIds.foreach {
       tc.readOperations.acquireShared(ResourceTypes.LABEL, _)
     }
   }
 
-  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any])) = {
+  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc: TransactionalContextWrapper): Seq[Int] = {
     import scala.collection.JavaConverters._
-    plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
+
+    def getPlanLabels = {
+      plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
+    }
+
+    version match {
+      case CypherVersion.v3_3 => getPlanLabels
+      case CypherVersion.v3_2 => getPlanLabels
+      case _ => tc.statement.readOperations().labelsGetAllTokens().asScala.map( t => t.id() ).toSeq
+    }
   }
 
   private def getSchemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
