@@ -23,8 +23,6 @@ import java.util.function.LongPredicate;
 
 import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 
-import static java.lang.System.nanoTime;
-
 public class Processing
 {
     private Processing()
@@ -38,16 +36,14 @@ public class Processing
      * @param goal to feed into the {@code goalPredicate}.
      * @param healthCheck to check as to not continue waiting if not passing.
      * @param park {@link ParkStrategy} for each tiny little wait.
-     * @return how long time was spent in here, in nanos.
      */
-    public static long await( LongPredicate goalPredicate, long goal, Runnable healthCheck, ParkStrategy park )
+    public static void await( LongPredicate goalPredicate, long goal, Runnable healthCheck, ParkStrategy park )
     {
         if ( goalPredicate.test( goal ) )
         {
-            return 0;
+            return;
         }
 
-        long startTime = nanoTime();
         for ( int i = 0; i < 1_000_000 && !goalPredicate.test( goal ); i++ )
         {   // Busy loop a while
         }
@@ -58,6 +54,5 @@ public class Processing
             park.park( thread );
             healthCheck.run();
         }
-        return nanoTime() - startTime;
     }
 }
