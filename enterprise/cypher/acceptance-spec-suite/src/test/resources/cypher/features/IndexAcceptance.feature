@@ -168,3 +168,133 @@ Feature: ConstraintAcceptance
       | +labels     | 2 |
       | +properties | 1 |
 
+  Scenario: Should allow AND and OR with index and equality predicates
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop1)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop2)
+      """
+    And having executed:
+      """
+      UNWIND range(1, 100) AS x CREATE (u:User {prop1: x, prop2: x})
+      """
+    When executing query:
+      """
+      MATCH (c:User)
+      WHERE ((c.prop1 = 1 AND c.prop2 = 1)
+      OR (c.prop1 = 11 AND c.prop2 = 11))
+      RETURN c
+      """
+    Then the result should be:
+      | c                               |
+      | (:User {prop1: 1, prop2: 1})    |
+      | (:User {prop1: 11, prop2: 11})  |
+    And no side effects
+
+
+  Scenario: Should allow AND and OR with index and inequality predicates
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop1)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop2)
+      """
+    And having executed:
+      """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x, prop2: x})
+      """
+    When executing query:
+      """
+      MATCH (c:User)
+      WHERE ((c.prop1 >= 1 AND c.prop2 < 2)
+      OR (c.prop1 > 10 AND c.prop2 <= 11))
+      RETURN c
+      """
+    Then the result should be:
+      | c                               |
+      | (:User {prop1: 1, prop2: 1})    |
+      | (:User {prop1: 11, prop2: 11})  |
+    And no side effects
+
+  Scenario: Should allow AND and OR with index and STARTS WITH predicates
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop1)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop2)
+      """
+    And having executed:
+      """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      """
+    When executing query:
+      """
+      MATCH (c:User)
+      WHERE ((c.prop1 STARTS WITH '1_' AND c.prop2 STARTS WITH '1_')
+      OR (c.prop1 STARTS WITH '11_' AND c.prop2 STARTS WITH '11_'))
+      RETURN c
+      """
+    Then the result should be:
+      | c                                           |
+      | (:User {prop1: '1_val', prop2: '1_val'})    |
+      | (:User {prop1: '11_val', prop2: '11_val'})  |
+    And no side effects
+
+  Scenario: Should allow AND and OR with index and regex predicates
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop1)
+      """
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop2)
+      """
+    And having executed:
+      """
+      UNWIND range(1, 100) AS x CREATE (:User {prop1: x+'_val', prop2: x+'_val'})
+      """
+    When executing query:
+      """
+      MATCH (c:User)
+      WHERE ((c.prop1 =~ '1_.*' AND c.prop2 =~ '1_.*')
+      OR (c.prop1 =~ '11_.*' AND c.prop2 =~ '11_.*'))
+      RETURN c
+      """
+    Then the result should be:
+      | c                                           |
+      | (:User {prop1: '1_val', prop2: '1_val'})    |
+      | (:User {prop1: '11_val', prop2: '11_val'})  |
+    And no side effects
+
+  Scenario: Should allow OR with index and regex predicates
+    Given an empty graph
+    And having executed:
+      """
+      CREATE INDEX ON :User(prop)
+      """
+    And having executed:
+      """
+      UNWIND range(1, 100) AS x CREATE (u:User {prop: x+'_val'})
+      """
+    When executing query:
+      """
+      MATCH (c:User)
+      WHERE c.prop =~ '1_.*' OR c.prop =~ '11_.*'
+      RETURN c
+      """
+    Then the result should be:
+      | c                         |
+      | (:User {prop: '1_val'})   |
+      | (:User {prop: '11_val'})  |
+    And no side effects

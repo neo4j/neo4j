@@ -152,3 +152,14 @@ Accessing a list with null should return null
 Accessing a list with null as lower bound should return null
 Accessing a list with null as upper bound should return null
 Accessing a map with null should return null
+
+Should allow AND and OR with equality predicates
+Should allow AND and OR with inequality predicates
+Should allow AND and OR with STARTS WITH predicates
+Should allow AND and OR with regex predicates
+Should allow OR with regex predicates
+Should allow AND and OR with index and equality predicates
+Should allow AND and OR with index and inequality predicates
+Should allow AND and OR with index and STARTS WITH predicates
+Should allow AND and OR with index and regex predicates
+Should allow OR with index and regex predicates
