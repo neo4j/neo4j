@@ -30,20 +30,22 @@ import org.neo4j.impl.store.cursors.MemoryManager;
 import org.neo4j.impl.store.cursors.ReadCursor;
 
 import static org.neo4j.impl.store.prototype.EdgeCursor.NO_EDGE;
+import static org.neo4j.impl.store.prototype.PropertyCursor.NO_PROPERTIES;
 import static org.neo4j.impl.store.prototype.neole.StoreFile.fixedSizeRecordFile;
 
 public class ReadStore extends MemoryManager implements Read
 {
     private static final String NODE_STORE = "neostore.nodestore.db", EDGE_STORE = "neostore.relationshipstore.db",
-            EDGE_GROUP_STORE = "neostore.relationshipgroupstore.db";
+            EDGE_GROUP_STORE = "neostore.relationshipgroupstore.db", PROPERTY_STORE = "neostore.propertystore.db";
     private static final long INTEGER_MINUS_ONE = 0xFFFF_FFFFL;
-    private final StoreFile nodes, edges, edgeGroups;
+    private final StoreFile nodes, edges, edgeGroups, properties;
 
     public ReadStore( File storeDir ) throws IOException
     {
         this.nodes = fixedSizeRecordFile( new File( storeDir, NODE_STORE ), NodeCursor.RECORD_SIZE );
         this.edges = fixedSizeRecordFile( new File( storeDir, EDGE_STORE ), EdgeCursor.RECORD_SIZE );
         this.edgeGroups = fixedSizeRecordFile( new File( storeDir, EDGE_GROUP_STORE ), EdgeGroupCursor.RECORD_SIZE );
+        this.properties = fixedSizeRecordFile( new File( storeDir, PROPERTY_STORE ), PropertyCursor.RECORD_SIZE );
     }
 
     @Override
@@ -143,7 +145,14 @@ public class ReadStore extends MemoryManager implements Read
     @Override
     public void nodeProperties( long reference, org.neo4j.impl.kernel.api.PropertyCursor cursor )
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        if ( reference == NO_PROPERTIES )
+        {
+            cursor.close();
+        }
+        else
+        {
+            ((PropertyCursor) cursor).init( properties, reference );
+        }
     }
 
     @Override
@@ -245,6 +254,6 @@ public class ReadStore extends MemoryManager implements Read
 
     int dynamicStoreRecordSize()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return properties.recordSize();
     }
 }

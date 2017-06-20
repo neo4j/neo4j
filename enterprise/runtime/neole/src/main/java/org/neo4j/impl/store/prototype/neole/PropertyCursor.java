@@ -19,7 +19,10 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
-import org.neo4j.impl.kernel.api.Value;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueGroup;
+import org.neo4j.values.ValueWriter;
+import org.neo4j.values.Values;
 
 class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadStore>
 {
@@ -83,18 +86,35 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     static final int BOOL = 1, BYTE = 2, SHORT = 3, CHAR = 4, INT = 5, LONG = 6, FLOAT = 7, DOUBLE = 8,
             STRING_REFERENCE = 9, ARRAY_REFERENCE = 10, SHORT_STRING = 11, SHORT_ARRAY = 12;
     private final ByteBlockCursor bytes;
-    int block;
+    private int block;
 
     PropertyCursor( ReadStore store, ByteBlockCursor bytes )
     {
         super( store );
         this.bytes = bytes;
+        block = Integer.MIN_VALUE;
     }
 
     @Override
     public boolean next()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        while ( block >= -1 && block < 3 )
+        {
+            block++;
+            if ( typeIdentifier() != 0 )
+            {
+                return true;
+            }
+        }
+        // TODO: move to next record if needed
+        close();
+        return false;
+    }
+
+    @Override
+    protected void closeImpl()
+    {
+        block = Integer.MIN_VALUE;
     }
 
     @Override
@@ -114,32 +134,32 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     }
 
     @Override
-    public Value.Type propertyType()
+    public ValueGroup propertyType()
     {
         switch ( typeIdentifier() )
         {
         case BOOL:
-            return Value.Type.BOOLEAN;
+            return ValueGroup.BOOLEAN;
         case BYTE:
-            return Value.Type.INTEGER;
+            return ValueGroup.NUMBER;
         case SHORT:
-            return Value.Type.INTEGER;
+            return ValueGroup.NUMBER;
         case CHAR:
-            return Value.Type.STRING;
+            return ValueGroup.TEXT;
         case INT:
-            return Value.Type.INTEGER;
+            return ValueGroup.NUMBER;
         case LONG:
-            return Value.Type.INTEGER;
+            return ValueGroup.NUMBER;
         case FLOAT:
-            return Value.Type.FLOAT;
+            return ValueGroup.NUMBER;
         case DOUBLE:
-            return Value.Type.DOUBLE;
+            return ValueGroup.NUMBER;
         case STRING_REFERENCE:
-            return Value.Type.STRING;
+            return ValueGroup.TEXT;
         case ARRAY_REFERENCE:
             throw new UnsupportedOperationException( "not implemented" );
         case SHORT_STRING:
-            return Value.Type.STRING;
+            return ValueGroup.TEXT;
         case SHORT_ARRAY:
             throw new UnsupportedOperationException( "not implemented" );
         default:
@@ -150,6 +170,41 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     @Override
     public Value propertyValue()
     {
+        switch ( typeIdentifier() )
+        {
+        case BOOL:
+//            return (block(block) & 0x0000_0000_1000_0000) != 0;
+            throw new UnsupportedOperationException( "not implemented" );
+        case BYTE:
+            throw new UnsupportedOperationException( "not implemented" );
+        case SHORT:
+            throw new UnsupportedOperationException( "not implemented" );
+        case CHAR:
+            throw new UnsupportedOperationException( "not implemented" );
+        case INT:
+            return Values.intValue( (int)(block( block ) & 0x0FFF_FFFF_F000_0000L) >> 28 );
+        case LONG:
+            throw new UnsupportedOperationException( "not implemented" );
+        case FLOAT:
+            throw new UnsupportedOperationException( "not implemented" );
+        case DOUBLE:
+            throw new UnsupportedOperationException( "not implemented" );
+        case STRING_REFERENCE:
+            throw new UnsupportedOperationException( "not implemented" );
+        case ARRAY_REFERENCE:
+            throw new UnsupportedOperationException( "not implemented" );
+        case SHORT_STRING:
+            throw new UnsupportedOperationException( "not implemented" );
+        case SHORT_ARRAY:
+            throw new UnsupportedOperationException( "not implemented" );
+        default:
+            return null;
+        }
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( ValueWriter<E> target )
+    {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
@@ -157,5 +212,11 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     protected int dataBound()
     {
         return RECORD_SIZE;
+    }
+
+    void init( StoreFile properties, long reference )
+    {
+        ReadStore.setup( properties, this, reference );
+        block = -1;
     }
 }

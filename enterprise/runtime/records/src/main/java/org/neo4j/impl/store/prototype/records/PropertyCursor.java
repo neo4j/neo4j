@@ -21,10 +21,11 @@ package org.neo4j.impl.store.prototype.records;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.impl.kernel.api.Value;
-import org.neo4j.impl.kernel.api.result.ValueWriter;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueGroup;
+import org.neo4j.values.ValueWriter;
 
 public class PropertyCursor extends PropertyRecord implements org.neo4j.impl.kernel.api.PropertyCursor
 {
@@ -63,7 +64,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.impl.ker
     }
 
     @Override
-    public Value.Type propertyType()
+    public ValueGroup propertyType()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
@@ -75,7 +76,7 @@ public class PropertyCursor extends PropertyRecord implements org.neo4j.impl.ker
     }
 
     @Override
-    public void writeValueTo( ValueWriter target )
+    public <E extends Exception> void writeTo( ValueWriter<E> target )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -23,7 +23,6 @@ import org.neo4j.impl.kernel.api.EdgeTraversalCursor;
 import org.neo4j.impl.kernel.api.EdgeGroupCursor;
 import org.neo4j.impl.kernel.api.LabelSet;
 import org.neo4j.impl.kernel.api.PropertyCursor;
-import org.neo4j.impl.kernel.api.result.ValueWriter;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -48,12 +47,6 @@ public class NodeCursor extends NodeRecord implements org.neo4j.impl.kernel.api.
     public LabelSet labels()
     {
         return new Labels( NodeLabelsField.get( this, store ) );
-    }
-
-    @Override
-    public void writeIdTo( ValueWriter target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override

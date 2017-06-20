@@ -20,7 +20,6 @@
 package org.neo4j.impl.store.prototype.neole;
 
 import org.neo4j.impl.kernel.api.LabelSet;
-import org.neo4j.impl.kernel.api.result.ValueWriter;
 
 import static org.neo4j.impl.store.prototype.EdgeCursor.NO_EDGE;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
@@ -102,12 +101,6 @@ class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
             }
             return new Labels( labels );
         }
-    }
-
-    @Override
-    public void writeIdTo( ValueWriter target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
