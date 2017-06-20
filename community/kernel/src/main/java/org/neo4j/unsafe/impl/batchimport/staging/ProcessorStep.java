@@ -126,7 +126,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             long lastBatchEnd = lastBatchEndTime.get();
             if ( lastBatchEnd != 0 )
             {
-                upstreamIdleTime.addAndGet( currentTimeMillis() - lastBatchEnd );
+                upstreamIdleTime.add( currentTimeMillis() - lastBatchEnd );
             }
         }
     }
@@ -164,7 +164,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
         {
             await( rightDoneTicket, ticket, healthChecker, park );
         }
-        downstreamIdleTime.addAndGet( downstream.receive( ticket, batch ) );
+        downstreamIdleTime.add( downstream.receive( ticket, batch ) );
         doneBatches.incrementAndGet();
     }
 

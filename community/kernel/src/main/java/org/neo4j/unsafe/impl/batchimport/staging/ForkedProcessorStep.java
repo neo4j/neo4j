@@ -151,7 +151,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     @SuppressWarnings( "unchecked" )
     void sendDownstream( Unit unit )
     {
-        downstreamIdleTime.addAndGet( downstream.receive( unit.ticket, unit.batch ) );
+        downstreamIdleTime.add( downstream.receive( unit.ticket, unit.batch ) );
     }
 
     // One unit of work. Contains the batch along with ticket and meta state during processing such

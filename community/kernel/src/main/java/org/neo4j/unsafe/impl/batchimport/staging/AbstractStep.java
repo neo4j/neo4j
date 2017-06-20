@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongPredicate;
 
 import org.neo4j.helpers.Exceptions;
@@ -61,10 +62,10 @@ public abstract class AbstractStep<T> implements Step<T>
 
     // Milliseconds awaiting downstream to process batches so that its queue size goes beyond the configured threshold
     // If this is big then it means that this step is faster than downstream.
-    protected final AtomicLong downstreamIdleTime = new AtomicLong();
+    protected final LongAdder downstreamIdleTime = new LongAdder();
     // Milliseconds awaiting upstream to hand over batches to this step.
     // If this is big then it means that this step is faster than upstream.
-    protected final AtomicLong upstreamIdleTime = new AtomicLong();
+    protected final LongAdder upstreamIdleTime = new LongAdder();
     // Number of batches received, but not yet processed.
     protected final AtomicInteger queuedBatches = new AtomicInteger();
     // Number of batches fully processed
@@ -74,7 +75,7 @@ public abstract class AbstractStep<T> implements Step<T>
     protected long startTime;
     protected long endTime;
     private final List<StatsProvider> additionalStatsProvider;
-    protected final Runnable healthChecker = () -> assertHealthy();
+    protected final Runnable healthChecker = this::assertHealthy;
     protected final Configuration config;
 
     public AbstractStep( StageControl control, String name, Configuration config,
@@ -180,7 +181,7 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         into.add( new ProcessingStats( doneBatches.get() + queuedBatches.get(), doneBatches.get(),
                 totalProcessingTime.total(), totalProcessingTime.average() / processors( 0 ),
-                upstreamIdleTime.get(), downstreamIdleTime.get() ) );
+                upstreamIdleTime.sum(), downstreamIdleTime.sum() ) );
         into.addAll( additionalStatsProvider );
     }
 
@@ -233,8 +234,8 @@ public abstract class AbstractStep<T> implements Step<T>
 
     protected void resetStats()
     {
-        downstreamIdleTime.set( 0 );
-        upstreamIdleTime.set( 0 );
+        downstreamIdleTime.reset();
+        upstreamIdleTime.reset();
         queuedBatches.set( 0 );
         doneBatches.set( 0 );
         totalProcessingTime.reset();
