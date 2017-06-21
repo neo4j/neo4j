@@ -24,13 +24,15 @@ import org.neo4j.values.ValueGroup;
 import org.neo4j.values.ValueWriter;
 import org.neo4j.values.Values;
 
+import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
+
 class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadStore>
 {
     /**
      * <pre>
      *  0: high bits  ( 1 byte)
-     *  1: next       ( 4 bytes)
-     *  5: prev       ( 4 bytes)
+     *  1: next       ( 4 bytes)    where new property records are added
+     *  5: prev       ( 4 bytes)    points to more PropertyRecords in this chain
      *  9: payload    (32 bytes - 4 x 8 byte blocks)
      * </pre>
      * <h2>high bits</h2>
@@ -95,6 +97,12 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         block = Integer.MIN_VALUE;
     }
 
+    void init( StoreFile properties, long reference )
+    {
+        ReadStore.setup( properties, this, reference );
+        block = -1;
+    }
+
     @Override
     public boolean next()
     {
@@ -108,32 +116,14 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             }
             nextBlock = block + blocksUsedByCurrent();
         }
-        // TODO: move to next record if needed
-        close();
-        return false;
-    }
-
-    private int blocksUsedByCurrent()
-    {
-        if ( block == -1 )
+        long next = prevPropertyRecordReference();
+        block = -1;
+        if ( next == NO_PROPERTIES )
         {
-            return 1;
+            close();
+            return false;
         }
-        long valueBytes = block( this.block );
-        long typeId = (valueBytes & 0x0F00_0000L) >> 24;
-        if ( typeId == DOUBLE ||
-                (typeId == LONG && ( valueBytes & 0x0000_0000_1000_0000 ) == 0 ) )
-        {
-            if ( moreBlocksInRecord() )
-            {
-                return 2;
-            }
-            else
-            {
-                throw new UnsupportedOperationException( "not implemented" ); // long bytes in next record
-            }
-        }
-        return 1;
+        return gotoVirtualAddress( next );
     }
 
     @Override
@@ -213,7 +203,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             {
                 if ( moreBlocksInRecord() )
                 {
-                    return block( this.block + 1 );
+                    return Values.longValue( block( this.block + 1 ) );
                 }
                 else
                 {
@@ -225,7 +215,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             return Values.floatValue(
                     Float.intBitsToFloat((int)((block( this.block ) & 0x0FFF_FFFF_F000_0000L) >> 28) ) );
         case DOUBLE:
-            return Double.longBitsToDouble( block( this.block + 1 ) );
+            return Values.doubleValue( Double.longBitsToDouble( block( this.block + 1 ) ) );
         case STRING_REFERENCE:
             throw new UnsupportedOperationException( "not implemented" );
         case ARRAY_REFERENCE:
@@ -239,6 +229,12 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         }
     }
 
+    @Override
+    protected int dataBound()
+    {
+        return RECORD_SIZE;
+    }
+
     private boolean moreBlocksInRecord()
     {
         return block < 3;
@@ -250,15 +246,36 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    @Override
-    protected int dataBound()
+    private int blocksUsedByCurrent()
     {
-        return RECORD_SIZE;
+        if ( block == -1 )
+        {
+            return 1;
+        }
+        long valueBytes = block( this.block );
+        long typeId = (valueBytes & 0x1F00_0000L) >> 24;
+        if ( typeId == DOUBLE ||
+                (typeId == LONG && ( valueBytes & 0x0000_0000_1000_0000 ) == 0 ) )
+        {
+            if ( moreBlocksInRecord() )
+            {
+                return 2;
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "not implemented" ); // long/double bytes in next record
+            }
+        }
+        return 1;
     }
 
-    void init( StoreFile properties, long reference )
+    private long nextPropertyRecordReference()
     {
-        ReadStore.setup( properties, this, reference );
-        block = -1;
+        return combineReference( unsignedInt( 1 ), ((long) unsignedByte( 0 ) & 0x0FL) << 32 );
+    }
+
+    private long prevPropertyRecordReference()
+    {
+        return combineReference( unsignedInt( 5 ), ((long) unsignedByte( 0 ) & 0xF0L) << 31 );
     }
 }

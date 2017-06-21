@@ -22,6 +22,9 @@ package org.neo4j.impl.store.prototype.neole;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,7 +39,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 public class PropertyCursorTest
 {
     private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
-            floatProp, doubleProp, trueProp, falseProp;
+            floatProp, doubleProp, trueProp, falseProp, allProps;
 
     @ClassRule
     public static final GraphSetup graph = new GraphSetup()
@@ -59,6 +62,22 @@ public class PropertyCursorTest
 
                 trueProp = createNodeWithProperty( graphDb, "trueProp", true );
                 falseProp = createNodeWithProperty( graphDb, "falseProp", false );
+
+                Node all = graphDb.createNode();
+                // first property record
+                all.setProperty( "byteProp", (byte)13 );
+                all.setProperty( "shortProp", (short)13 );
+                all.setProperty( "intProp", 13 );
+                all.setProperty( "inlineLongProp", 13L );
+                // second property record
+                all.setProperty( "longProp", Long.MAX_VALUE );
+                all.setProperty( "floatProp", 13.0f );
+                all.setProperty( "doubleProp", 13.0 );
+                //                  ^^^
+                // third property record halfway through double?
+                all.setProperty( "trueProp", true );
+                all.setProperty( "falseProp", false );
+                allProps = all.getId();
 
                 tx.success();
             }
@@ -96,7 +115,7 @@ public class PropertyCursorTest
     }
 
     @Test
-    public void shouldAccessIntProperty() throws Exception
+    public void shouldAccessSingleProperty() throws Exception
     {
         assertAccessSingleProperty( byteProp, (byte)13 );
         assertAccessSingleProperty( shortProp, (short)13 );
@@ -107,6 +126,37 @@ public class PropertyCursorTest
         assertAccessSingleProperty( doubleProp, 13.0 );
         assertAccessSingleProperty( trueProp, true );
         assertAccessSingleProperty( falseProp, false );
+    }
+
+    @Test
+    public void shouldAccessAllNodeProperties() throws Exception
+    {
+        // given
+        try ( NodeCursor node = graph.allocateNodeCursor();
+                PropertyCursor props = graph.allocatePropertyCursor() )
+        {
+            // when
+            graph.singleNode( allProps, node );
+            assertTrue( "node by reference", node.next() );
+            assertTrue( "has properties", node.hasProperties() );
+
+            node.properties( props );
+            Set<Object> values = new HashSet<>();
+            while ( props.next() )
+            {
+                values.add( props.propertyValue() );
+            }
+
+            assertTrue( "byteProp", values.contains( (byte)13 ) );
+            assertTrue( "shortProp", values.contains( (short)13 ) );
+            assertTrue( "intProp", values.contains( 13 ) );
+            assertTrue( "inlineLongProp", values.contains( 13L ) );
+            assertTrue( "longProp", values.contains( Long.MAX_VALUE ) );
+            assertTrue( "floatProp", values.contains( 13.0f ) );
+            assertTrue( "doubleProp", values.contains( 13.0 ) );
+            assertTrue( "trueProp", values.contains( true ) );
+            assertTrue( "falseProp", values.contains( false ) );
+        }
     }
 
     private void assertAccessSingleProperty( long nodeId, Object expectedValue )
