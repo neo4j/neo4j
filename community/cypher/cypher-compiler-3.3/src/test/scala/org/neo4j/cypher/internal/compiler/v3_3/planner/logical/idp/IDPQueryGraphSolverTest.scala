@@ -487,13 +487,6 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
     val solverConfigsToTest = Seq(
       ExpandOnlyIDPSolverConfig,
-      ExpandOnlyWhenPatternIsLong,
-      ExpandOnlyWhenPatternIsLongShortIterationLimit,
-      new IDPSolverConfig {
-        override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
-          ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
-        override def iterationDurationLimit: Long = 50
-      },
       new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
       new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited
       AdaptiveChainPatternConfig(10), // default
@@ -523,8 +516,6 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           // We disallow joins in a couple of configurations
           val joinsPossible: Boolean= solverConfig match {
             case ExpandOnlyIDPSolverConfig => false
-            case ExpandOnlyWhenPatternIsLong => false
-            case ExpandOnlyWhenPatternIsLongShortIterationLimit => numberOfPatternRelationships > 10
             case _ => true
           }
           assertMinExpandsAndJoins(plan, numberOfPatternRelationships, joinsPossible, numberOfPatternRelationships)
@@ -932,13 +923,6 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Argument(Set("a", "b"))(solved)()
       )
     }
-  }
-
-  case object ExpandOnlyWhenPatternIsLongShortIterationLimit extends IDPSolverConfig {
-
-    override def solvers(queryGraph: QueryGraph): Seq[(QueryGraph) => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
-      ExpandOnlyWhenPatternIsLong.solvers(queryGraph)
-    override def iterationDurationLimit: Long = 100
   }
 
   private def createQueryGraphSolver(monitor: IDPQueryGraphSolverMonitor, solverConfig: IDPSolverConfig) =
