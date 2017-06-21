@@ -37,6 +37,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
+import static org.junit.Assume.assumeTrue;
 
 public class ClusterIdReuseIT
 {
@@ -58,27 +59,39 @@ public class ClusterIdReuseIT
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
 
-        createThreeNodes( cluster, first, second );
-        removeTwoNodes( cluster, first, second );
+        CoreClusterMember leader1 = createThreeNodes( cluster, first, second );
+        CoreClusterMember leader2 = removeTwoNodes( cluster, first, second );
+
+        assumeTrue( leader1 != null && leader1.equals( leader2 ) );
 
         // Force maintenance on leader
-        IdController idController = idMaintenanceOnLeader();
+        IdController idController = idMaintenanceOnLeader( leader1 );
 
         final IdGenerator idGenerator = idController.getIdGeneratorFactory().get( IdType.NODE );
         assertEquals( 2, idGenerator.getDefragCount() );
 
-        cluster.coreTx( ( db, tx ) ->
+        final MutableLong node1id = new MutableLong();
+        final MutableLong node2id = new MutableLong();
+        final MutableLong node3id = new MutableLong();
+
+        CoreClusterMember clusterMember = cluster.coreTx( ( db, tx ) ->
         {
             Node node1 = db.createNode();
             Node node2 = db.createNode();
             Node node3 = db.createNode();
 
-            assertEquals( first.longValue(), node1.getId() );
-            assertEquals( second.longValue(), node2.getId() );
-            assertEquals( idGenerator.getHighestPossibleIdInUse(), node3.getId() );
+            node1id.setValue( node1.getId() );
+            node2id.setValue( node2.getId() );
+            node3id.setValue( node3.getId() );
 
             tx.success();
         } );
+
+        assumeTrue( leader1.equals( clusterMember ) );
+
+        assertEquals( first.longValue(), node1id.longValue() );
+        assertEquals( second.longValue(), node2id.longValue() );
+        assertEquals( idGenerator.getHighestPossibleIdInUse(), node3id.longValue() );
     }
 
     @Test
@@ -87,69 +100,93 @@ public class ClusterIdReuseIT
         final MutableLong first = new MutableLong();
         final MutableLong second = new MutableLong();
 
-        createThreeNodes( cluster, first, second );
-        removeTwoNodes( cluster, first, second );
+        CoreClusterMember creationLeader = createThreeNodes( cluster, first, second );
+        CoreClusterMember deletionLeader = removeTwoNodes( cluster, first, second );
 
-        IdGenerator oldLeaderIdGenerator = idMaintenanceOnLeader().getIdGeneratorFactory().get( IdType.NODE );
-        assertEquals( 2, oldLeaderIdGenerator.getDefragCount() );
+        assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
+
+        IdGenerator creationLeaderIdGenerator = idMaintenanceOnLeader( creationLeader ).getIdGeneratorFactory().get( IdType.NODE );
+        assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
         // Force leader switch
-        CoreClusterMember firstLeader = cluster.awaitLeader();
-        cluster.removeCoreMemberWithMemberId( firstLeader.serverId() );
+        cluster.removeCoreMemberWithMemberId( creationLeader.serverId() );
 
         // waiting for new leader
         CoreClusterMember newLeader = cluster.awaitLeader();
-        assertNotSame( firstLeader.serverId(), newLeader.serverId() );
-        IdController idController = idMaintenanceOnLeader();
+        assertNotSame( creationLeader.serverId(), newLeader.serverId() );
+        IdController idController = idMaintenanceOnLeader( newLeader );
 
         final IdGenerator idGenerator = idController.getIdGeneratorFactory().get( IdType.NODE );
         assertEquals( 0, idGenerator.getDefragCount() );
 
-        cluster.coreTx( ( db, tx ) ->
+        CoreClusterMember newCreationLeader = cluster.coreTx( ( db, tx ) ->
         {
             Node node = db.createNode();
             assertEquals( idGenerator.getHighestPossibleIdInUse(), node.getId() );
 
             tx.success();
         } );
+        assumeTrue( newLeader.equals( newCreationLeader ) );
+    }
 
-        // Re-elect first leader
-        cluster.addCoreMemberWithId( firstLeader.serverId() ).start();
+    @Test
+    public void reusePreviouslyFreedIds() throws Exception
+    {
+        final MutableLong first = new MutableLong();
+        final MutableLong second = new MutableLong();
+
+        CoreClusterMember creationLeader = createThreeNodes( cluster, first, second );
+        CoreClusterMember deletionLeader = removeTwoNodes( cluster, first, second );
+
+        assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
+
+        IdGenerator creationLeaderIdGenerator = idMaintenanceOnLeader( creationLeader ).getIdGeneratorFactory().get( IdType.NODE );
+        assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
+
+
+        // Restart and re-elect first leader
+        cluster.removeCoreMemberWithMemberId( creationLeader.serverId() );
+        cluster.addCoreMemberWithId( creationLeader.serverId() ).start();
 
         CoreClusterMember leader = cluster.awaitLeader();
-        while ( leader.serverId() != firstLeader.serverId() )
+        while ( leader.serverId() != creationLeader.serverId() )
         {
             cluster.removeCoreMemberWithMemberId( leader.serverId() );
             cluster.addCoreMemberWithId( leader.serverId() ).start();
             leader = cluster.awaitLeader();
         }
 
-        oldLeaderIdGenerator = idMaintenanceOnLeader().getIdGeneratorFactory().get( IdType.NODE );
-        assertEquals( 2, oldLeaderIdGenerator.getDefragCount() );
+        creationLeaderIdGenerator = idMaintenanceOnLeader( leader ).getIdGeneratorFactory().get( IdType.NODE );
+        assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
-        cluster.coreTx( ( db, tx ) ->
+        final MutableLong node1id = new MutableLong();
+        final MutableLong node2id = new MutableLong();
+        CoreClusterMember reuseLeader = cluster.coreTx( ( db, tx ) ->
         {
             Node node1 = db.createNode();
             Node node2 = db.createNode();
 
-            assertEquals( first.longValue(), node1.getId() );
-            assertEquals( second.longValue(), node2.getId() );
+            node1id.setValue( node1.getId() );
+            node2id.setValue( node2.getId() );
 
             tx.success();
         } );
+        assumeTrue( leader.equals( reuseLeader ) );
+
+        assertEquals( first.longValue(), node1id.longValue() );
+        assertEquals( second.longValue(), node2id.longValue() );
     }
 
-    private IdController idMaintenanceOnLeader() throws TimeoutException
+    private IdController idMaintenanceOnLeader( CoreClusterMember leader ) throws TimeoutException
     {
-        CoreClusterMember newLeader = cluster.awaitLeader();
-        IdController idController = newLeader.database().getDependencyResolver().resolveDependency( IdController.class );
+        IdController idController = leader.database().getDependencyResolver().resolveDependency( IdController.class );
         idController.maintenance();
         return idController;
     }
 
-    private void removeTwoNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
+    private CoreClusterMember removeTwoNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
     {
-        cluster.coreTx( ( db, tx ) ->
+        return cluster.coreTx( ( db, tx ) ->
         {
             Node node1 = db.getNodeById( first.longValue() );
             node1.delete();
@@ -160,9 +197,9 @@ public class ClusterIdReuseIT
         } );
     }
 
-    private void createThreeNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
+    private CoreClusterMember createThreeNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception
     {
-        cluster.coreTx( ( db, tx ) ->
+        return cluster.coreTx( ( db, tx ) ->
         {
             Node node1 = db.createNode();
             first.setValue( node1.getId() );

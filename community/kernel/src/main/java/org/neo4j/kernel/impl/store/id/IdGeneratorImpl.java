@@ -68,7 +68,7 @@ public class IdGeneratorImpl implements IdGenerator
 
     private final long max;
     private final IdContainer idContainer;
-    private long highId = INTEGER_MINUS_ONE;
+    private long highId;
 
     /**
      * Opens the id generator represented by <CODE>fileName</CODE>. The
