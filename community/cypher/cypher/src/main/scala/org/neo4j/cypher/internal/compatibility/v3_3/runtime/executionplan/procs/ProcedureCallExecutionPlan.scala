@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
@@ -51,7 +51,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       resultIndices: Seq[(Int, String)], notifications: Set[InternalNotification])
   extends ExecutionPlan {
 
-    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(toCommandExpression) ++
+    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(CommunityExpressionConverters.toCommandExpression) ++
       signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
     override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {

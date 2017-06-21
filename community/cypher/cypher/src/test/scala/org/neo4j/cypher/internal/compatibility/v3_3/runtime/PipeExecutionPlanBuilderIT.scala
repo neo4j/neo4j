@@ -22,23 +22,24 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.mockito.Mockito.{atLeastOnce, verify, when}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters.toCommandExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{FakeIdMap, Id}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken.Resolved
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.{RelTypeId, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{RelTypeId, SemanticDirection, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_3._
 
 import scala.collection.mutable
@@ -51,7 +52,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val planBuilder = new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors)
+  val planBuilder = new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors, expressionConverters = CommunityExpressionConverters)
 
   def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)

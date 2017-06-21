@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{values => commandvalues}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.{SyntaxException, ast}
-import ExpressionConverters._
 
 object PatternConverters {
 

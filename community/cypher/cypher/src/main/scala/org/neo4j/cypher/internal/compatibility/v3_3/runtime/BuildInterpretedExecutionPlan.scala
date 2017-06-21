@@ -19,19 +19,20 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler.Profiler
+import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
-import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionException, PlannerName}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{InternalNotificationLogger, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
 
 object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
@@ -44,7 +45,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors)
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors, expressionConverters = CommunityExpressionConverters)
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo

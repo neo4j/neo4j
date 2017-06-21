@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
@@ -46,7 +46,8 @@ import scala.collection.mutable
 
 class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
-                               pipeBuilderFactory: PipeBuilderFactory = PipeBuilderFactory()) {
+                               pipeBuilderFactory: PipeBuilderFactory = PipeBuilderFactory(),
+                               expressionConverters: ExpressionConverters) {
   def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
 
@@ -88,7 +89,8 @@ class PipeExecutionPlanBuilder(clock: Clock,
       monitors = monitors,
       recurse = p => buildPipe(p, idMap),
       readOnly = plan.solved.all(_.queryGraph.readOnly),
-      idMap)
+      idMap = idMap,
+      expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[Pipe]()
@@ -157,9 +159,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
 }
 
 case class PipeBuilderFactory() {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id])
+  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder =
-    ActualPipeBuilder(monitors, recurse, readOnly, idMap)
+    ActualPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
 }
 
 trait PipeBuilder {
@@ -172,7 +174,7 @@ trait PipeBuilder {
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id])
+case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
                             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
   def build(plan: LogicalPlan): Pipe = {
@@ -197,13 +199,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
 
       case NodeByIdSeek(IdName(ident), nodeIdExpr, _) =>
-        NodeByIdSeekPipe(ident, toCommandSeekArgs(nodeIdExpr))(id = id)
+        NodeByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(nodeIdExpr))(id = id)
 
       case DirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        DirectedRelationshipByIdSeekPipe(ident, toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
+        DirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
       case UndirectedRelationshipByIdSeek(IdName(ident), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
-        UndirectedRelationshipByIdSeekPipe(ident, toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
+        UndirectedRelationshipByIdSeekPipe(ident, expressionConverters.toCommandSeekArgs(relIdExpr), toNode, fromNode)(id = id)
 
       case NodeIndexSeek(IdName(ident), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -325,83 +327,83 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
         val legacyShortestPath = shortestPathPattern.expr.asLegacyPatterns(shortestPathPattern.name.map(_.name)).head
-        ShortestPathPipe(source, legacyShortestPath, predicates.map(toCommandPredicate), withFallBack, disallowSameNode)(id = id)
+        ShortestPathPipe(source, legacyShortestPath, predicates.map(p => buildPredicate(p)), withFallBack, disallowSameNode)(id = id)
 
       case UnwindCollection(_, variable, collection) =>
-        UnwindPipe(source, toCommandExpression(collection), variable.name)(id = id)
+        UnwindPipe(source, buildExpression(collection), variable.name)(id = id)
 
       case ProcedureCall(_, call@ResolvedCall(signature, callArguments, _, _, _)) =>
         val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
         val callArgumentCommands = callArguments.map(Some(_)).zipAll(signature.inputSignature.map(_.default.map(_.value)), None, None).map {
-          case (given, default) => given.map(toCommandExpression).getOrElse(Literal(default.get))
+          case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
         }
         val rowProcessing = ProcedureCallRowProcessing(signature)
         ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
 
       case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
-        LoadCSVPipe(source, format, toCommandExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
+        LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
 
       case ProduceResult(columns, _) =>
         ProduceResultsPipe(source, columns)(id = id)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))(id = id)
+        CreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case MergeCreateNode(_, idName, labels, props) =>
-        MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(toCommandExpression))(id = id)
+        MergeCreateNodePipe(source, idName.name, labels.map(LazyLabel.apply), props.map(buildExpression))(id = id)
 
       case CreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))(id = id)
+        CreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
 
       case MergeCreateRelationship(_, idName, startNode, typ, endNode, props) =>
-        MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(toCommandExpression))(id = id)
+        MergeCreateRelationshipPipe(source, idName.name, startNode.name, LazyType(typ)(context.semanticTable), endNode.name, props.map(buildExpression))(id = id)
 
       case SetLabels(_, IdName(name), labels) =>
         SetPipe(source, SetLabelsOperation(name, labels.map(LazyLabel.apply)))(id = id)
 
       case SetNodeProperty(_, IdName(name), propertyKey, expression) =>
         SetPipe(source, SetNodePropertyOperation(name, LazyPropertyKey(propertyKey),
-          toCommandExpression(expression)))(id = id)
+          buildExpression(expression)))(id = id)
 
       case SetNodePropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
         SetPipe(source,
-          SetNodePropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))(id = id)
+          SetNodePropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
 
       case SetRelationshipPropery(_, IdName(name), propertyKey, expression) =>
         SetPipe(source,
-          SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), toCommandExpression(expression)))(id = id)
+          SetRelationshipPropertyOperation(name, LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
 
       case SetRelationshipPropertiesFromMap(_, IdName(name), expression, removeOtherProps) =>
         SetPipe(source,
-          SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps))(id = id)
+          SetRelationshipPropertyFromMapOperation(name, buildExpression(expression), removeOtherProps))(id = id)
 
       case SetProperty(_, entityExpr, propertyKey, expression) =>
         SetPipe(source, SetPropertyOperation(
-          toCommandExpression(entityExpr), LazyPropertyKey(propertyKey), toCommandExpression(expression)))(id = id)
+          buildExpression(entityExpr), LazyPropertyKey(propertyKey), buildExpression(expression)))(id = id)
 
       case RemoveLabels(_, IdName(name), labels) =>
         RemoveLabelsPipe(source, name, labels.map(LazyLabel.apply))(id = id)
 
       case DeleteNode(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = false)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = false)(id = id)
 
       case DetachDeleteNode(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = true)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = true)(id = id)
 
       case DeleteRelationship(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = false)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = false)(id = id)
 
       case DeletePath(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = false)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = false)(id = id)
 
       case DetachDeletePath(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = true)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = true)(id = id)
 
       case DeleteExpression(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = false)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = false)(id = id)
 
       case DetachDeleteExpression(_, expression) =>
-        DeletePipe(source, toCommandExpression(expression), forced = true)(id = id)
+        DeletePipe(source, buildExpression(expression), forced = true)(id = id)
 
       case Eager(_) =>
         EagerPipe(source)(id = id)
@@ -498,7 +500,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
 
       case ForeachApply(_, _, variable, expression) =>
-        ForeachPipe(lhs, rhs, variable, toCommandExpression(expression))(id = id)
+        ForeachPipe(lhs, rhs, variable, buildExpression(expression))(id = id)
 
       case RollUpApply(_, _, collectionName, identifierToCollection, nullables) =>
         RollUpApplyPipe(lhs, rhs, collectionName.name, identifierToCollection.name, nullables.map(_.name))(id = id)
@@ -525,15 +527,15 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   }
 
   private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {
-    val rewrittenExpr = expr.endoRewrite(buildPipeExpressions) // TODO
+    val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
 
-    toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
+    expressionConverters.toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
   }
 
   private def buildPredicate(expr: ast.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
     val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
-    toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
   private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {
