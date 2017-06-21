@@ -65,7 +65,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
-import static org.neo4j.values.Values.VALUE_COMPARATOR;
+import static org.neo4j.values.Values.COMPARATOR;
 import static org.neo4j.values.Values.of;
 
 /**
@@ -384,7 +384,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 
     private static int compare( Value value, Number other )
     {
-        return VALUE_COMPARATOR.compare( value, Values.of( other ) );
+        return COMPARATOR.compare( value, Values.of( other ) );
     }
 
     @Test
