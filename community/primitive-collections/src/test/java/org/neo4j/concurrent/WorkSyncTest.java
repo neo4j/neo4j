@@ -19,6 +19,9 @@
  */
 package org.neo4j.concurrent;
 
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -29,19 +32,36 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class WorkSyncTest
 {
+    private static ExecutorService executor;
+
+    @BeforeClass
+    public static void startExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterClass
+    public static void stopExecutor()
+    {
+        executor.shutdownNow();
+    }
+
     private static void usleep( long micros )
     {
         long deadline = System.nanoTime() + TimeUnit.MICROSECONDS.toNanos( micros );
@@ -81,6 +101,7 @@ public class WorkSyncTest
     {
         public void add( int delta )
         {
+            semaphore.acquireUninterruptibly();
             sum.add( delta );
             count.increment();
         }
@@ -133,6 +154,35 @@ public class WorkSyncTest
     private UnsynchronisedAdder count = new UnsynchronisedAdder();
     private Adder adder = new Adder();
     private WorkSync<Adder,AddWork> sync = new WorkSync<>( adder );
+    private Semaphore semaphore = new Semaphore( Integer.MAX_VALUE );
+
+    @After
+    public void refillSemaphore()
+    {
+        // This ensures that no threads end up stuck
+        semaphore.drainPermits();
+        semaphore.release( Integer.MAX_VALUE );
+    }
+
+    private Future<Void> makeWorkStuckAtSemaphore( int delta ) throws InterruptedException, ExecutionException
+    {
+        semaphore.drainPermits();
+        Future<Void> concurrentWork = executor.submit( new CallableWork( new AddWork( delta ) ) );
+        try
+        {
+            concurrentWork.get( 10, TimeUnit.MILLISECONDS );
+            fail( "should have thrown a TimeoutException" );
+        }
+        catch ( TimeoutException ignore )
+        {
+            while ( !semaphore.hasQueuedThreads() )
+            {
+                usleep( 1 );
+            }
+            // good, the concurrent AddWork is now stuck on the semaphore
+        }
+        return concurrentWork;
+    }
 
     @Test
     public void mustApplyWork() throws Exception
@@ -187,7 +237,6 @@ public class WorkSyncTest
         };
         sync = new WorkSync<>( adder );
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
         try
         {
             // Run this in a different thread to account for reentrant locks.
@@ -219,7 +268,6 @@ public class WorkSyncTest
         int incrementValue = 42;
         CountDownLatch startLatch = new CountDownLatch( workers );
         CountDownLatch endLatch = new CountDownLatch( workers );
-        ExecutorService executor = Executors.newFixedThreadPool( workers );
         AtomicBoolean start = new AtomicBoolean();
         Callable<Void> work = () ->
         {
@@ -256,5 +304,193 @@ public class WorkSyncTest
 
         assertThat( count.sum(), lessThan( (long) (workers * iterations) ) );
         assertThat( sum.sum(), is( (long) (incrementValue * workers * iterations) ) );
+    }
+
+    @Test
+    public void mustNotApplyAsyncWorkInParallelUnderStress() throws Exception
+    {
+        int workers = Runtime.getRuntime().availableProcessors() * 5;
+        int iterations = 1_000;
+        int incrementValue = 42;
+        CountDownLatch startLatch = new CountDownLatch( workers );
+        CountDownLatch endLatch = new CountDownLatch( workers );
+        AtomicBoolean start = new AtomicBoolean();
+        Callable<Void> work = () ->
+        {
+            startLatch.countDown();
+            boolean spin;
+            do
+            {
+                spin = !start.get();
+            }
+            while ( spin );
+
+            ThreadLocalRandom rng = ThreadLocalRandom.current();
+            List<AsyncApply> asyncs = new ArrayList<>();
+            for ( int i = 0; i < iterations; i++ )
+            {
+                asyncs.add( sync.applyAsync( new AddWork( incrementValue ) ) );
+                if ( rng.nextInt( 10 ) == 0 )
+                {
+                    for ( AsyncApply async : asyncs )
+                    {
+                        async.await();
+                    }
+                    asyncs.clear();
+                }
+            }
+
+            for ( AsyncApply async : asyncs )
+            {
+                async.await();
+            }
+            endLatch.countDown();
+            return null;
+        };
+
+        List<Future<Void>> futureList = new ArrayList<>();
+        for ( int i = 0; i < workers; i++ )
+        {
+            futureList.add( executor.submit( work ) );
+        }
+        startLatch.await();
+        start.set( true );
+        endLatch.await();
+
+        for ( Future<Void> future : futureList )
+        {
+            future.get(); // check for any exceptions
+        }
+
+        assertThat( count.sum(), lessThan( (long) (workers * iterations) ) );
+        assertThat( sum.sum(), is( (long) (incrementValue * workers * iterations) ) );
+    }
+
+    @Test
+    public void mustApplyWorkAsync() throws Exception
+    {
+        AsyncApply a = sync.applyAsync( new AddWork( 10 ) );
+        a.await();
+        assertThat( sum.sum(), is( 10L ) );
+
+        AsyncApply b = sync.applyAsync( new AddWork( 20 ) );
+        AsyncApply c = sync.applyAsync( new AddWork( 30 ) );
+        b.await();
+        c.await();
+        assertThat( sum.sum(), is( 60L ) );
+    }
+
+    @Test
+    public void mustCombineWorkAsync() throws Exception
+    {
+        makeWorkStuckAtSemaphore( 1 );
+
+        AsyncApply a = sync.applyAsync( new AddWork( 1 ) );
+        AsyncApply b = sync.applyAsync( new AddWork( 1 ) );
+        AsyncApply c = sync.applyAsync( new AddWork( 1 ) );
+        semaphore.release( 2 );
+        a.await();
+        b.await();
+        c.await();
+        assertThat( sum.sum(), is( 4L ) );
+        assertThat( count.sum(), is( 2L ) );
+    }
+
+    @Test
+    public void mustApplyWorkAsyncEvenWhenInterrupted() throws Exception
+    {
+        Thread.currentThread().interrupt();
+
+        sync.applyAsync( new AddWork( 10 ) ).await();
+
+        assertThat( sum.sum(), is( 10L ) );
+        assertTrue( Thread.interrupted() );
+    }
+
+    @Test
+    public void asyncWorkThatThrowsMustRememberException() throws Exception
+    {
+        RuntimeException boo = new RuntimeException( "boo" );
+        AsyncApply asyncApply = sync.applyAsync( new AddWork( 10 )
+        {
+            @Override
+            public void apply( Adder adder )
+            {
+                super.apply( adder );
+                throw boo;
+            }
+        } );
+
+        try
+        {
+            asyncApply.await();
+            fail( "Should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), sameInstance( boo ) );
+        }
+
+        assertThat( sum.sum(), is( 10L ) );
+        assertThat( count.sum(), is( 1L ) );
+
+        try
+        {
+            asyncApply.await();
+            fail( "Should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), sameInstance( boo ) );
+        }
+
+        assertThat( sum.sum(), is( 10L ) );
+        assertThat( count.sum(), is( 1L ) );
+    }
+
+    @Test
+    public void asyncWorkDoneInAnotherThreadThatThrowsMustRememberException() throws Exception // TODO!!!
+    {
+        Future<Void> stuckAtSemaphore = makeWorkStuckAtSemaphore( 1 );
+
+        RuntimeException boo = new RuntimeException( "boo" );
+        AsyncApply asyncApply = sync.applyAsync( new AddWork( 10 )
+        {
+            @Override
+            public void apply( Adder adder )
+            {
+                super.apply( adder );
+                throw boo;
+            }
+        } );
+
+        refillSemaphore();
+        stuckAtSemaphore.get();
+
+        try
+        {
+            asyncApply.await();
+            fail( "Should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), sameInstance( boo ) );
+        }
+
+        assertThat( sum.sum(), is( 11L ) );
+        assertThat( count.sum(), is( 2L ) );
+
+        try
+        {
+            asyncApply.await();
+            fail( "Should have thrown" );
+        }
+        catch ( ExecutionException e )
+        {
+            assertThat( e.getCause(), sameInstance( boo ) );
+        }
+
+        assertThat( sum.sum(), is( 11L ) );
+        assertThat( count.sum(), is( 2L ) );
     }
 }
