@@ -266,7 +266,7 @@ public class ConsistencyCheckServiceIntegrationTest
         return getGraphDatabaseService( testDirectory.absolutePath() );
     }
 
-    private GraphDatabaseService getGraphDatabaseService( File storeDir)
+    private GraphDatabaseService getGraphDatabaseService( File storeDir )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( settings() );
