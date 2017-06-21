@@ -44,7 +44,19 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
+  }
 
+  test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
+    val start = createLabeledNode("Start")
+    createLabeledNode("End")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """
+        |MATCH (start:Start),(end:End)
+        |OPTIONAL MATCH (start)-[rel]->(end)
+        |DELETE rel
+        |RETURN DISTINCT start""".stripMargin)
+
+    result.toList should equal(List(Map("start" -> start)))
   }
 
   test("should allow for OPTONAL MATCH with horizon and aggregating function") {

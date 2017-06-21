@@ -43,11 +43,10 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
       if validAggregations(aggregations) =>
 
       // The variables that are needed by the return/with clause
-      val expressionDeps: Set[IdName] =
-        (distinctExpressions.values ++ aggregations.values)
-          .flatMap(_.dependencies)
-          .map(IdName.fromVariable)
-          .toSet
+
+      val projectionDeps = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
+      val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
+      val dependencies: Set[IdName] = (projectionDeps ++ updateDeps).map(IdName.fromVariable).toSet
 
       val optionalMatches = graph.optionalMatches.flatMapWithTail {
         (original: QueryGraph, tail: Seq[QueryGraph]) =>
@@ -57,7 +56,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
           // dependencies from optional matches listed later in the query
             tail.flatMap(g => g.argumentIds ++ g.selections.variableDependencies).toSet ++
               // any dependencies from the next horizon
-              expressionDeps --
+              dependencies --
               // But we don't need to solve variables already present by the non-optional part of the QG
               graph.coveredIds
 

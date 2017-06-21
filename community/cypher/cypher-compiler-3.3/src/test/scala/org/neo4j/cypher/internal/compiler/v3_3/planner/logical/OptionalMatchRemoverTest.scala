@@ -175,6 +175,13 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
           OPTIONAL MATCH (a)-[r:T1]->(b) WHERE (b)-[:T2]->(:A:B {foo: 'apa', id: 42})
           RETURN DISTINCT b as b""")
 
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)-[r]->(b)
+      |DELETE r
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
