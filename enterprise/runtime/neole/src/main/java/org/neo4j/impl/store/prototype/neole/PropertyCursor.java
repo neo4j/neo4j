@@ -98,17 +98,42 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     @Override
     public boolean next()
     {
-        while ( block >= -1 && block < 3 )
+        int nextBlock = block + blocksUsedByCurrent();
+        while ( nextBlock >= 0 && nextBlock < 4 )
         {
-            block++;
+            block = nextBlock;
             if ( typeIdentifier() != 0 )
             {
                 return true;
             }
+            nextBlock = block + blocksUsedByCurrent();
         }
         // TODO: move to next record if needed
         close();
         return false;
+    }
+
+    private int blocksUsedByCurrent()
+    {
+        if ( block == -1 )
+        {
+            return 1;
+        }
+        long valueBytes = block( this.block );
+        long typeId = (valueBytes & 0x0F00_0000L) >> 24;
+        if ( typeId == DOUBLE ||
+                (typeId == LONG && ( valueBytes & 0x0000_0000_1000_0000 ) == 0 ) )
+        {
+            if ( moreBlocksInRecord() )
+            {
+                return 2;
+            }
+            else
+            {
+                throw new UnsupportedOperationException( "not implemented" ); // long bytes in next record
+            }
+        }
+        return 1;
     }
 
     @Override
@@ -186,14 +211,21 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             long valueBytes = block( this.block );
             if ( ( valueBytes & 0x0000_0000_1000_0000 ) == 0 )
             {
-                throw new UnsupportedOperationException( "not implemented" ); // long bytes in next block
+                if ( moreBlocksInRecord() )
+                {
+                    return block( this.block + 1 );
+                }
+                else
+                {
+                    throw new UnsupportedOperationException( "not implemented" ); // long bytes in next record
+                }
             }
             return Values.longValue( (valueBytes & 0xFFFF_FFFF_E000_0000L) >> 29 );
         case FLOAT:
             return Values.floatValue(
                     Float.intBitsToFloat((int)((block( this.block ) & 0x0FFF_FFFF_F000_0000L) >> 28) ) );
         case DOUBLE:
-            throw new UnsupportedOperationException( "not implemented" );
+            return Double.longBitsToDouble( block( this.block + 1 ) );
         case STRING_REFERENCE:
             throw new UnsupportedOperationException( "not implemented" );
         case ARRAY_REFERENCE:
@@ -205,6 +237,11 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         default:
             return null;
         }
+    }
+
+    private boolean moreBlocksInRecord()
+    {
+        return block < 3;
     }
 
     @Override

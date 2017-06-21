@@ -52,6 +52,7 @@ public class PropertyCursorTest
                 shortProp = createNodeWithProperty( graphDb, "shortProp", (short)13 );
                 intProp = createNodeWithProperty( graphDb, "intProp", 13 );
                 inlineLongProp = createNodeWithProperty( graphDb, "inlineLongProp", 13L );
+                longProp = createNodeWithProperty( graphDb, "longProp", Long.MAX_VALUE );
 
                 floatProp = createNodeWithProperty( graphDb, "floatProp", 13.0f );
                 doubleProp = createNodeWithProperty( graphDb, "doubleProp", 13.0 );
@@ -101,7 +102,9 @@ public class PropertyCursorTest
         assertAccessSingleProperty( shortProp, (short)13 );
         assertAccessSingleProperty( intProp, 13 );
         assertAccessSingleProperty( inlineLongProp, 13L );
+        assertAccessSingleProperty( longProp, Long.MAX_VALUE );
         assertAccessSingleProperty( floatProp, 13.0f );
+        assertAccessSingleProperty( doubleProp, 13.0 );
         assertAccessSingleProperty( trueProp, true );
         assertAccessSingleProperty( falseProp, false );
     }
