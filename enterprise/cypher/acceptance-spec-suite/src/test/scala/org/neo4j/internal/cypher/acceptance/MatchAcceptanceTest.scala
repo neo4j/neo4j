@@ -40,12 +40,26 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       """
         |MATCH p=(source:Neo)-[rel *0..1]->(dest)
         |WITH nodes(p) as d
-        |RETURN DISTINCT d
-      """.stripMargin
-
+        |RETURN DISTINCT d""".stripMargin
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
+
+  }
+
+  test("should allow for OPTONAL MATCH with horizon and aggregating function") {
+    //This is a test to ensure that a bug does not return
+    val query =
+      """
+        |MATCH (a)-[:rel]->(b:label1)
+        |WITH a, COLLECT( DISTINCT(b) ) as b
+        |OPTIONAL MATCH (a)-[:rel2]->(c:label2)-[:rel3]->(:label3)
+        |RETURN a, b, COLLECT( DISTINCT c) as c
+      """.stripMargin
+
+    val result = executeWithAllPlannersAndCompatibilityMode(query)
+    result.size should be(0)
+    result.hasNext should be(false)
 
   }
 
