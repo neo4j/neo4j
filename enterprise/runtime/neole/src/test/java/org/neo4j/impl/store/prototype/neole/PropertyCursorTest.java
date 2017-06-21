@@ -35,7 +35,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 
 public class PropertyCursorTest
 {
-    private static long bare, intProp;
+    private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
+            floatProp, doubleProp, trueProp, falseProp;
 
     @ClassRule
     public static final GraphSetup graph = new GraphSetup()
@@ -47,12 +48,26 @@ public class PropertyCursorTest
             {
                 bare = graphDb.createNode().getId();
 
-                Node p = graphDb.createNode();
-                p.setProperty( "intProp", 1 );
-                intProp = p.getId();
+                byteProp = createNodeWithProperty( graphDb, "byteProp", (byte)13 );
+                shortProp = createNodeWithProperty( graphDb, "shortProp", (short)13 );
+                intProp = createNodeWithProperty( graphDb, "intProp", 13 );
+                inlineLongProp = createNodeWithProperty( graphDb, "inlineLongProp", 13L );
+
+                floatProp = createNodeWithProperty( graphDb, "floatProp", 13.0f );
+                doubleProp = createNodeWithProperty( graphDb, "doubleProp", 13.0 );
+
+                trueProp = createNodeWithProperty( graphDb, "trueProp", true );
+                falseProp = createNodeWithProperty( graphDb, "falseProp", false );
 
                 tx.success();
             }
+        }
+
+        private long createNodeWithProperty( GraphDatabaseService graphDb, String propertyKey, Object value )
+        {
+            Node p = graphDb.createNode();
+            p.setProperty( propertyKey, value );
+            return p.getId();
         }
     }
             .withConfig( dense_node_threshold, "1" );
@@ -82,23 +97,34 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessIntProperty() throws Exception
     {
+        assertAccessSingleProperty( byteProp, (byte)13 );
+        assertAccessSingleProperty( shortProp, (short)13 );
+        assertAccessSingleProperty( intProp, 13 );
+        assertAccessSingleProperty( inlineLongProp, 13L );
+        assertAccessSingleProperty( floatProp, 13.0f );
+        assertAccessSingleProperty( trueProp, true );
+        assertAccessSingleProperty( falseProp, false );
+    }
+
+    private void assertAccessSingleProperty( long nodeId, Object expectedValue )
+    {
         // given
         try ( NodeCursor node = graph.allocateNodeCursor();
                 PropertyCursor props = graph.allocatePropertyCursor() )
         {
             // when
-            graph.singleNode( intProp, node );
+            graph.singleNode( nodeId, node );
             assertTrue( "node by reference", node.next() );
             assertTrue( "has properties", node.hasProperties() );
 
             node.properties( props );
             assertTrue( "has properties by direct method", props.next() );
-            assertEquals( "correct value", 1, props.propertyValue() );
+            assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
 
             graph.nodeProperties( node.propertiesReference(), props );
             assertTrue( "has properties via property ref", props.next() );
-            assertEquals( "correct value", 1, props.propertyValue() );
+            assertEquals( "correct value", expectedValue, props.propertyValue() );
             assertFalse( "single property", props.next() );
         }
     }

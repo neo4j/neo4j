@@ -21,9 +21,10 @@ package org.neo4j.impl.store.cursors;
 
 public abstract class MemoryManager
 {
-    protected static void setup( ReadCursor cursor, long virtualAddress, PageHandle page, long pageId, long base )
+    protected static void setup( ReadCursor cursor, long virtualAddress, PageHandle page, long pageId, long base,
+            int offset )
     {
-        cursor.access( virtualAddress, page, pageId, base, 0 );
+        cursor.access( virtualAddress, page, pageId, base, offset );
     }
 
     protected static void read(

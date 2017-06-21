@@ -27,6 +27,7 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
+import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -42,6 +43,26 @@ abstract class StoreFile extends PageHandle implements Closeable
 {
     static StoreFile fixedSizeRecordFile( File file, int recordSize ) throws IOException
     {
+        return new StoreFile( file )
+        {
+            @Override
+            int recordSize()
+            {
+                return recordSize;
+            }
+        };
+    }
+
+    static StoreFile dynamicSizeRecordFile( File file ) throws IOException
+    {
+        FileChannel channel = new RandomAccessFile( file, "r" ).getChannel();
+        ByteBuffer buffer = ByteBuffer.allocate( 4 );
+        System.out.println( channel.read( buffer ) );
+        buffer.flip();
+
+        final int recordSize = buffer.getInt();
+        channel.close();
+
         return new StoreFile( file )
         {
             @Override
@@ -234,5 +255,10 @@ abstract class StoreFile extends PageHandle implements Closeable
     public int pageOf( long reference )
     {
         return (int) (reference * recordSize() / pageSize);
+    }
+
+    public int offsetIntoPage( long reference, int pageId )
+    {
+        return (int) (reference * recordSize() - pageSize * pageId);
     }
 }

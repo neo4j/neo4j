@@ -65,7 +65,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
      * SHORT:     [    ,    ] [    ,    ] [    ,xxxx] [xxxx,xxxx] [xxxx,type][K][K][K]    (>>28) (0x0000_0FFF_F000_0000)
      * CHAR:      [    ,    ] [    ,    ] [    ,xxxx] [xxxx,xxxx] [xxxx,type][K][K][K]    (>>28) (0x0000_0FFF_F000_0000)
      * INT:       [    ,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,type][K][K][K]    (>>28) (0x0FFF_FFFF_F000_0000)
-     * LONG:      [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxx1,type][K][K][K] inline>>29(0xFFFF_FFFF_7000_0000)
+     * LONG:      [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxx1,type][K][K][K] inline>>29(0xFFFF_FFFF_E000_0000)
      * LONG:      [    ,    ] [    ,    ] [    ,    ] [    ,    ] [   0,type][K][K][K] value in next long block
      * FLOAT:     [    ,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,xxxx] [xxxx,type][K][K][K]    (>>28) (0x0FFF_FFFF_F000_0000)
      * DOUBLE:    [    ,    ] [    ,    ] [    ,    ] [    ,    ] [    ,type][K][K][K] value in next long block
@@ -173,20 +173,25 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         switch ( typeIdentifier() )
         {
         case BOOL:
-//            return (block(block) & 0x0000_0000_1000_0000) != 0;
-            throw new UnsupportedOperationException( "not implemented" );
+            return Values.booleanValue( (block(block) & 0x0000_0000_1000_0000) != 0 );
         case BYTE:
-            throw new UnsupportedOperationException( "not implemented" );
+            return Values.byteValue( (byte)((block( this.block ) & 0x0000_000F_F000_0000L) >> 28) );
         case SHORT:
-            throw new UnsupportedOperationException( "not implemented" );
+            return Values.shortValue( (short)((block( this.block ) & 0x0000_0FFF_F000_0000L) >> 28) );
         case CHAR:
             throw new UnsupportedOperationException( "not implemented" );
         case INT:
             return Values.intValue( (int)(block( block ) & 0x0FFF_FFFF_F000_0000L) >> 28 );
         case LONG:
-            throw new UnsupportedOperationException( "not implemented" );
+            long valueBytes = block( this.block );
+            if ( ( valueBytes & 0x0000_0000_1000_0000 ) == 0 )
+            {
+                throw new UnsupportedOperationException( "not implemented" ); // long bytes in next block
+            }
+            return Values.longValue( (valueBytes & 0xFFFF_FFFF_E000_0000L) >> 29 );
         case FLOAT:
-            throw new UnsupportedOperationException( "not implemented" );
+            return Values.floatValue(
+                    Float.intBitsToFloat((int)((block( this.block ) & 0x0FFF_FFFF_F000_0000L) >> 28) ) );
         case DOUBLE:
             throw new UnsupportedOperationException( "not implemented" );
         case STRING_REFERENCE:
