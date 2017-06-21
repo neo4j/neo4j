@@ -363,15 +363,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     rewindableResult(result)
   }
 
-  private def rewindableResult(result: Result): InternalExecutionResult = {
-    result match {
-      case e: ClosingExecutionResult => e.inner.asInstanceOf[ExecutionResult].internalExecutionResult() match {
-        case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: InternalExecutionResult => RewindableExecutionResult(e)
-      }
-    }
-  }
+  private def rewindableResult(result: Result): InternalExecutionResult = RewindableExecutionResult(result)
 
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")

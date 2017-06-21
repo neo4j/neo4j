@@ -43,7 +43,6 @@ import org.neo4j.graphdb.Result.ResultVisitor
   * @param indexResultNameMappings           Describes how values at output row indices are mapped onto result columns.
   * @param executionPlanDescriptionGenerator Generator for the plan description of the result.
   * @param executionMode                     The execution mode.
-  * @param notifications                     Notification found so far in execution the query
   */
 class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                taskCloser: TaskCloser,
@@ -52,16 +51,15 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                args: Seq[Any],
                                                indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
-                                               val executionMode: ExecutionMode,
-                                               notifications: Iterable[Notification] = Iterable.empty)
-  extends StandardInternalExecutionResult(context, Some(taskCloser), notifications) {
+                                               val executionMode: ExecutionMode)
+  extends StandardInternalExecutionResult(context, Some(taskCloser)) {
 
   override def columns: List[String] = indexResultNameMappings.map(_._2).toList
 
   private final val executionResults = executeCall
 
   // The signature mode is taking care of eagerization
-  protected def executeCall = callMode.callProcedure(context, name, args)
+  protected def executeCall: Iterator[Array[AnyRef]] = callMode.callProcedure(context, name, args)
 
   override protected def createInner = new util.Iterator[util.Map[String, Any]]() {
     override def next(): util.Map[String, Any] =
@@ -82,7 +80,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     }
   }
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = {
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
     executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
     close()
   }
@@ -110,7 +108,5 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     case _ => executionPlanDescriptionGenerator()
   }
 
-  override def withNotifications(notification: Notification*): InternalExecutionResult =
-    new ProcedureExecutionResult[E](context, taskCloser, name, callMode, args, indexResultNameMappings,
-                                    executionPlanDescriptionGenerator, executionMode, notification)
+  override def withNotifications(notification: Notification*): InternalExecutionResult = this
 }

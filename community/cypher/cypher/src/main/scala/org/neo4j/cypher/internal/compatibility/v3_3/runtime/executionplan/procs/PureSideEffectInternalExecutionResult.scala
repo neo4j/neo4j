@@ -36,9 +36,8 @@ import org.neo4j.graphdb.Result.ResultVisitor
 case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
                                                  executionPlanDescription: InternalPlanDescription,
                                                  executionType: InternalQueryType,
-                                                 executionMode: ExecutionMode,
-                                                 notification: Iterable[Notification] = Iterable.empty)
-  extends StandardInternalExecutionResult(ctx, None, notification)
+                                                 executionMode: ExecutionMode)
+  extends StandardInternalExecutionResult(ctx, None)
     with StandardInternalExecutionResult.IterateByAccepting {
 
   override def javaColumns: util.List[String] = java.util.Collections.emptyList()
@@ -58,8 +57,7 @@ case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
     writer.print(queryStatistics().toString)
   }
 
-  override def withNotifications(added: Notification*): InternalExecutionResult =
-    copy(notification = notification ++ added)
+  override def withNotifications(added: Notification*): InternalExecutionResult = this
 }
 
 

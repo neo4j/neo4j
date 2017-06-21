@@ -28,6 +28,7 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.helpers.GraphIcing
 import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeScalaValueConverter
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.{GraphDatabaseService, Result}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -97,6 +98,8 @@ object ExecutionEngineHelper {
 trait ExecutionEngineHelper {
   self: GraphIcing =>
 
+  private val converter = new RuntimeScalaValueConverter(_ => false)
+
   def graph: GraphDatabaseCypherService
 
   def eengine: ExecutionEngine
@@ -125,7 +128,7 @@ trait ExecutionEngineHelper {
 
   protected class ScalarFailureException(msg: String) extends RuntimeException(msg)
 
-  def asScalaResult(result: Result): Iterator[Map[String, AnyRef]] = result.asScala.map(_.asScala.toMap)
+  def asScalaResult(result: Result): Iterator[Map[String, Any]] = result.asScala.map(converter.asDeepScalaMap)
 
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
     def profile(query: String, params: Map[String, Any]): Result =

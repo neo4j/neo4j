@@ -131,7 +131,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
 
-      val externalTransactionalContext = new TransactionalContextWrapper(transactionalContext)
+      val externalTransactionalContext = TransactionalContextWrapper(transactionalContext)
       val preParsedQuery = try {
         preParseQuery(queryText)
       } catch {

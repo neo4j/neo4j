@@ -20,7 +20,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_3
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, QualifiedName}
@@ -64,7 +63,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createLabeledNode("Animal")
 
     val result = legacyProfile("CALL db.labels")
-
     assertDbHits(1)(result)("ProcedureCall")
     assertRows(2)(result)("ProcedureCall")
     getPlanDescriptions(result, Seq("ProcedureCall")).foreach { plan =>
@@ -672,6 +670,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
+
     val planDescription: InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
       p =>

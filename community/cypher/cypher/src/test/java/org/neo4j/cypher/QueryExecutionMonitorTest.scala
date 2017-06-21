@@ -300,9 +300,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     // given
     val (query, result) = runQuery("CYPHER 3.1 CREATE()")
 
-    // when
-    result
-
     // then
     verify(monitor, times(1)).startQueryExecution(query)
     verify(monitor, times(1)).endSuccess(query)

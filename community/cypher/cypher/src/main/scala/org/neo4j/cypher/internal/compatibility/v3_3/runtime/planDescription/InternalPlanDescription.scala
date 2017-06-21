@@ -108,6 +108,7 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
     private def extract(f: PartialFunction[Argument, Long]): Long =
       arguments.collectFirst(f).getOrElse(throw new InternalException("Don't have profiler stats"))
   }
+
 }
 
 class Id
@@ -275,7 +276,18 @@ final case class PlanDescriptionImpl(id: Id,
   val NL = System.lineSeparator()
 
   override def toString = {
-    s"${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
+    val version = arguments.collectFirst {
+      case Version(v) => s"Compiler $v$NL"
+    }
+    val planner = arguments.collectFirst {
+      case Planner(n) => s"Planner ${n.toUpperCase}$NL"
+    }
+
+    val runtime = arguments.collectFirst {
+      case Runtime(n) => s"Runtime ${n.toUpperCase}$NL"
+    }
+    val prefix = version ++ planner ++ runtime
+    s"${prefix.mkString("", NL, NL)}${renderAsTreeTable(this)}$NL${renderSummary(this)}$renderSources"
   }
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {

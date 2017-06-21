@@ -36,8 +36,7 @@ import org.neo4j.graphdb.{NotFoundException, Notification, QueryExecutionType, R
 import scala.collection.{Map, mutable}
 
 abstract class StandardInternalExecutionResult(context: QueryContext,
-                                               taskCloser: Option[TaskCloser] = None,
-                                               override val notifications: Iterable[Notification] = Iterable.empty[Notification])
+                                               taskCloser: Option[TaskCloser] = None)
   extends InternalExecutionResult
     with Completable {
 
@@ -84,6 +83,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def planDescriptionRequested: Boolean = executionMode == ExplainMode || executionMode == ProfileMode
+  override def notifications = Iterable.empty[Notification]
 
   override def close(): Unit = {
     completed(success = true)
@@ -106,7 +106,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
         populateDumpToStringResults(dumpToStringBuilder)(row)
       }
 
-    def create(notification: Iterable[Notification] = Iterable.empty): InternalExecutionResult = new StandardInternalExecutionResult(context, taskCloser)
+    new StandardInternalExecutionResult(context, taskCloser)
       with StandardInternalExecutionResult.AcceptByIterating {
 
       override protected def createInner: util.Iterator[util.Map[String, Any]] = result.iterator()
@@ -129,10 +129,8 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
       override def queryStatistics(): QueryStatistics = self.queryStatistics()
       override def executionType: InternalQueryType = self.executionType
 
-      override def withNotifications(notification: Notification*): InternalExecutionResult = create(notification)
+      override def withNotifications(notification: Notification*): InternalExecutionResult = self
     }
-
-    create()
   }
 
   protected final lazy val inner: util.Iterator[util.Map[String, Any]] = createInner

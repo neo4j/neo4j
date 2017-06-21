@@ -24,17 +24,18 @@ import java.util.Map;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider;
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription;
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext;
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 
 public interface GeneratedQuery
 {
-    <T extends ExecutionPlanDescription> GeneratedQueryExecution execute(
+    GeneratedQueryExecution execute(
             TaskCloser closer,
             QueryContext queryContext,
             ExecutionMode executionMode,
-            Provider<T> description,
+            Provider<InternalPlanDescription> description,
             QueryExecutionTracer tracer,
             Map<String,Object> params );
 }

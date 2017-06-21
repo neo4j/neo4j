@@ -209,7 +209,7 @@ public enum NotificationCode
         return new Notification( position, details );
     }
 
-    private final class Notification implements org.neo4j.graphdb.Notification
+    public final class Notification implements org.neo4j.graphdb.Notification
     {
         private final InputPosition position;
         private final String detailedDescription;

@@ -85,7 +85,7 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
       result.executionPlanDescription() match {
         case planDesc =>
           val actual = planDesc.arguments.collectFirst {
-            case Arguments.Planner(name) => name
+            case Arguments.PlannerImpl(name) => name
           }
           MatchResult(
             matches = actual.isDefined && actual.get == expected.name,

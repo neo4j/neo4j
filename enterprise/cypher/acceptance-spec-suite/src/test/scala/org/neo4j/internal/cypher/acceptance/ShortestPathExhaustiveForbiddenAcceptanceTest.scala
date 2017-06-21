@@ -25,6 +25,8 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbidde
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationCode.EXHAUSTIVE_SHORTEST_PATH
 
 import scala.collection.mutable
 
@@ -35,10 +37,10 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
   test("should fail at run time when using the shortest path fallback") {
     // when
-    val exception = the [ExhaustiveShortestPathForbiddenException] thrownBy executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val exception = the[ExhaustiveShortestPathForbiddenException] thrownBy executeWithCostPlannerAndInterpretedRuntimeOnly(
       s"""MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
-          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
-          |RETURN nodes(p) AS nodes""".stripMargin)
+         |WHERE ANY(n in nodes(p) WHERE n:$topRight)
+         |RETURN nodes(p) AS nodes""".stripMargin)
 
     // then
     exception should have message InternalExhaustiveShortestPathForbiddenException.ERROR_MSG
@@ -48,12 +50,13 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
     // when
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       s"""EXPLAIN MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
-          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
-          |RETURN nodes(p) AS nodes""".stripMargin)
+         |WHERE ANY(n in nodes(p) WHERE n:$topRight)
+         |RETURN nodes(p) AS nodes""".stripMargin)
 
     // then
     result.notifications.toSeq should equal(
-      Seq(new ExhaustiveShortestPathForbiddenNotification(new InputPosition(10,1,11)))
+      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(10, 1, 11))
+      )
     )
   }
 
@@ -63,7 +66,7 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
   val topRight = s"CELL0${dMax}"
   val bottomLeft = s"CELL${dMax}0"
   val bottomRight = s"CELL${dMax}${dMax}"
-  val middle = s"CELL${dMax/2}${dMax/2}"
+  val middle = s"CELL${dMax / 2}${dMax / 2}"
   val nodesByName: mutable.Map[String, Node] = mutable.Map[String, Node]()
 
   override protected def initTest(): Unit = {
@@ -71,7 +74,8 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
     0 to dMax foreach { row =>
       0 to dMax foreach { col =>
         val name = s"$row$col"
-        val node = createLabeledNode(Map("name" -> name, "row" -> row, "col" -> col), s"CELL$row$col", s"ROW$row", s"COL$col")
+        val node = createLabeledNode(Map("name" -> name, "row" -> row, "col" -> col), s"CELL$row$col", s"ROW$row",
+                                     s"COL$col")
         nodesByName(name) = node
         if (row > 0) {
           relate(nodesByName(s"${row - 1}$col"), nodesByName(name), "DOWN", s"r${row - 1}-${row}c$col")
