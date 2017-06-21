@@ -26,13 +26,13 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.CompiledExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterators
 
 import scala.collection.JavaConverters._
@@ -133,8 +133,8 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     })
 
     // when
-    result.accept(new InternalResultVisitor[Exception] {
-      override def visit(row: InternalResultRow): Boolean = {
+    result.accept(new ResultVisitor[Exception] {
+      override def visit(row: ResultRow): Boolean = {
         false
       }
     })
@@ -145,8 +145,8 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     val result = newCompiledExecutionResult(javaMap("a" -> "1", "b" -> "2"))
 
     // when
-    result.accept(new InternalResultVisitor[Exception] {
-      override def visit(row: InternalResultRow): Boolean = {
+    result.accept(new ResultVisitor[Exception] {
+      override def visit(row: ResultRow): Boolean = {
         true
       }
     })
@@ -164,7 +164,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
       override def setCompletable(closeable: Completable){}
       override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
       override def executionMode(): ExecutionMode = NormalMode
-      override def accept[E <: Exception](visitor: InternalResultVisitor[E]): Unit = {
+      override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
         try {
           val rowImpl = new ResultRowImpl()
           row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }

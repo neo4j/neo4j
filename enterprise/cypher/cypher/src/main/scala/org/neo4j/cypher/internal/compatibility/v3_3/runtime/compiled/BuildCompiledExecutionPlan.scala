@@ -21,12 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{TaskCloser, _}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
@@ -35,7 +37,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 
 object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
 
@@ -74,7 +75,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
           //close all statements
           taskCloser.close(success = true)
           ExplainExecutionResult(compiled.columns.toList,
-            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications)
+            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications.map(InternalWrapping.asKernelNotification))
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
       } catch {

@@ -85,7 +85,5 @@ class ShortestPathRelationshipUniquenessAcceptanceTest extends ExecutionEngineFu
   }
 
   def executeUsingCostPlannerOnly(query: String) =
-    eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]) match {
-      case e: ClosingExecutionResult => RewindableExecutionResult(e.inner)
-    }
+    RewindableExecutionResult(eengine.execute(s"CYPHER planner=COST $query", Map.empty[String, Any]))
 }

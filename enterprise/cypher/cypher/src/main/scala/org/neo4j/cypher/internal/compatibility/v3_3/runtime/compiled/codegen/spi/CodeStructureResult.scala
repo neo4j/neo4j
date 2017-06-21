@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi
 
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{ByteCode, SourceCode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{ByteCode, SourceCode}
 
 trait CodeStructureResult[T] {
   def query: T

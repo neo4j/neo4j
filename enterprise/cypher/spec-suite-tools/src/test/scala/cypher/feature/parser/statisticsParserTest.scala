@@ -74,7 +74,6 @@ class statisticsParserTest extends ParsingTestSupport {
     DataTable.create(strings.map(_.toList.asJava).toList.asJava)
   }
 
-  private def stats(cypherStats: QueryStatistics): javacompat.QueryStatistics = new javacompat.QueryStatistics(
-    cypherStats)
+  private def stats(cypherStats: QueryStatistics): QueryStatistics = new QueryStatistics()
 
 }

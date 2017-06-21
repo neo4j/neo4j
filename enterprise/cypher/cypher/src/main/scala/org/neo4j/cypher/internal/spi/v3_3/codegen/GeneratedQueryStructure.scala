@@ -35,15 +35,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
 
@@ -152,7 +152,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                         fields: Fields,
                         conf: CodeGenConfiguration)(implicit codeGenContext: CodeGenContext) = {
     using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-      Parameter.param(parameterizedType(classOf[InternalResultVisitor[_]],
+      Parameter.param(parameterizedType(classOf[ResultVisitor[_]],
         typeParameter("E")), "visitor")).
       parameterizedWith("E", extending(typeRef[Exception])).
       throwsException(typeParameter("E")))) { (codeBlock: CodeBlock) =>

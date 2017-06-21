@@ -24,15 +24,14 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Projection => PlanProjection, _}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, Descending, plans}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -40,6 +39,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, Sema
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
@@ -808,8 +808,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[InternalResultVisitor[RuntimeException]]
-    when(visitor.visit(any[InternalResultRow])).thenReturn(true)
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    when(visitor.visit(any[ResultRow])).thenReturn(true)
     compiled.accept(visitor)
     verify(closer).close(success = true)
   }
@@ -824,8 +824,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[InternalResultVisitor[RuntimeException]]
-    when(visitor.visit(any[InternalResultRow])).thenReturn(false)
+    val visitor = mock[ResultVisitor[RuntimeException]]
+    when(visitor.visit(any[ResultRow])).thenReturn(false)
     compiled.accept(visitor)
     verify(closer).close(success = true)
   }
@@ -840,9 +840,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     verifyZeroInteractions(closer)
-    val visitor = mock[InternalResultVisitor[RuntimeException]]
+    val visitor = mock[ResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
-    when(visitor.visit(any[InternalResultRow])).thenThrow(exception)
+    when(visitor.visit(any[ResultRow])).thenThrow(exception)
     intercept[RuntimeException] {
       compiled.accept(visitor)
     }
@@ -858,9 +858,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val compiled = compileAndExecute( plan, taskCloser = closer )
 
     // then
-    val visitor = mock[InternalResultVisitor[RuntimeException]]
+    val visitor = mock[ResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
-    when(visitor.visit(any[InternalResultRow])).thenThrow(exception)
+    when(visitor.visit(any[ResultRow])).thenThrow(exception)
       try {
         compiled.accept(visitor)
         fail("should have thrown error")
@@ -1747,8 +1747,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private def getNodesFromResult(plan: InternalExecutionResult, columns: String*) = {
     val res = Seq.newBuilder[Map[String, Node]]
 
-    plan.accept(new InternalResultVisitor[RuntimeException]() {
-      override def visit(element: InternalResultRow): Boolean = {
+    plan.accept(new ResultVisitor[RuntimeException]() {
+      override def visit(element: ResultRow): Boolean = {
         res += columns.map(col => col -> element.getNode(col)).toMap
         true
       }
@@ -1759,8 +1759,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private def getResult(plan: InternalExecutionResult, columns: String*) = {
     val res = Seq.newBuilder[Map[String, Any]]
 
-    plan.accept(new InternalResultVisitor[RuntimeException]() {
-      override def visit(element: InternalResultRow): Boolean = {
+    plan.accept(new ResultVisitor[RuntimeException]() {
+      override def visit(element: ResultRow): Boolean = {
         res += columns.map(col => col -> element.get(col)).toMap
         true
       }

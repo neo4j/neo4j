@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, PeriodicCommitInfo, PlanFingerprint, Provider}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ProfileMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PeriodicCommitInfo, PlanFingerprint, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, ProfileMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
-import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
 
 object ExecutionPlanBuilder {
   type DescriptionProvider =
@@ -43,7 +43,9 @@ object ExecutionPlanBuilder {
           override def get(): InternalPlanDescription = description.map {
             plan: InternalPlanDescription =>
               val data = tracer.get(plan.id)
+
               plan.
+                addArgument(Arguments.Runtime(CompiledRuntimeName.toTextOutput)).
                 addArgument(Arguments.DbHits(data.dbHits())).
                 addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
                 addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).

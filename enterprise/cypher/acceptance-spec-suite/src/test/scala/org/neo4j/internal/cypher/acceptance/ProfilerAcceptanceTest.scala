@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Argument, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Rows, Signature}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, QualifiedName}
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
@@ -672,7 +672,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   def profileWithPlanner(planner: Planner, q: String, params: (String, Any)*): InternalExecutionResult = {
     val result = planner("profile " + q, params)
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    val planDescription: v3_3.planDescription.InternalPlanDescription = result.executionPlanDescription()
+    val planDescription: InternalPlanDescription = result.executionPlanDescription()
     planDescription.flatten.foreach {
       p =>
         if (!p.arguments.exists(_.isInstanceOf[DbHits])) {
@@ -691,11 +691,11 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   def legacyProfile(q: String, params: (String, Any)*): InternalExecutionResult = profileWithPlanner(innerExecute(_,_:_*), q, params:_*)
 
-  private def getArgument[A <: Argument](plan: v3_3.planDescription.InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString()} but only found ${plan.arguments}"))
 
-  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[v3_3.planDescription.InternalPlanDescription] = {
+  private def getPlanDescriptions(result: InternalExecutionResult, names: Seq[String]): Seq[InternalPlanDescription] = {
     result.toList
     val description = result.executionPlanDescription()
     if (names.isEmpty)

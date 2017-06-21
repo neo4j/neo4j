@@ -39,11 +39,11 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     result should be(empty)
   }
 
-  test("EXPLAIN query plan description contains estimated rows") {
-    val result = succeedWith(Configs.All, "explain match (n) return n")
-    result.toList
-    assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
-    result.executionPlanDescription().toString should include("Estimated Rows")
+
+  test("EXPLAIN for Cypher 3.1") {
+    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
+    result.resultAsString()
+    result.getExecutionPlanDescription.toString should include("Estimated Rows")
   }
 
   test("should handle query with nested expression") {

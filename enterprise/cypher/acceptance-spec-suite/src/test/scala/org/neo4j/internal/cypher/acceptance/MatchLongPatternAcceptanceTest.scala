@@ -23,12 +23,9 @@ import java.io.File
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compatibility.v3_3.CompatibilityPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InterpretedRuntimeName
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.IDPSolverMonitor
-import org.neo4j.cypher.internal.compiler.v3_3.IDPPlannerName
-import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine, PlanDescription}
+import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -171,11 +168,6 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   private def assertMinExpandsAndJoins(plan: InternalPlanDescription, minCounts: Map[String, Int]): Map[String, Int] = {
-    val externalPlanDescription = CompatibilityPlanDescription(plan, CypherVersion.v3_2, IDPPlannerName, InterpretedRuntimeName)
-    assertMinExpandsAndJoins(externalPlanDescription, minCounts)
-  }
-
-  private def assertMinExpandsAndJoins(plan: PlanDescription, minCounts: Map[String, Int]): Map[String, Int] = {
     val counts = countExpandsAndJoins(plan)
     Seq("expands", "joins").foreach { op =>
       if(VERBOSE) println(s"\t$op\t${counts(op)}")
@@ -185,20 +177,15 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   private def countExpandsAndJoins(plan: InternalPlanDescription): Map[String, Int] = {
-    val externalPlanDescription = CompatibilityPlanDescription(plan, CypherVersion.v3_2, IDPPlannerName, InterpretedRuntimeName)
-    countExpandsAndJoins(externalPlanDescription)
-  }
-
-  private def countExpandsAndJoins(plan: PlanDescription): Map[String, Int] = {
     def addCounts(map1: Map[String, Int], map2: Map[String, Int]) = map1 ++ map2.map { case (k, v) => k -> (v + map1.getOrElse(k, 0)) }
     def incrCount(map: Map[String, Int], key: String) = addCounts(map, Map(key -> 1))
-    def expandsAndJoinsCount(plan: PlanDescription, counts: Map[String, Int]): Map[String, Int] = {
+    def expandsAndJoinsCount(plan: InternalPlanDescription, counts: Map[String, Int]): Map[String, Int] = {
       val c = plan.name match {
         case "NodeHashJoin" => incrCount(counts, "joins")
         case "Expand(All)" => incrCount(counts, "expands")
         case _ => counts
       }
-      plan.children.foldLeft(c) { (acc, child) =>
+      plan.children.toIndexedSeq.foldLeft(c) { (acc, child) =>
         expandsAndJoinsCount(child, acc)
       }
     }
