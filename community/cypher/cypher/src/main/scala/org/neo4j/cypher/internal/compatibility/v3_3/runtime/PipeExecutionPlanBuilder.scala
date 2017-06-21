@@ -24,7 +24,6 @@ import java.time.Clock
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.StatementConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
@@ -216,18 +215,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case NodeIndexScan(IdName(ident), label, propertyKey, _) =>
         NodeIndexScanPipe(ident, label, propertyKey)(id = id)
-
-      case LegacyNodeIndexSeek(ident, hint: NodeStartItem, _) =>
-        val source = SingleRowPipe()(id = id)
-        val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
-        val ep = entityProducerFactory.readNodeStartItems((planContext, startItem))
-        NodeStartPipe(source, ident.name, ep, Effects(ReadsAllNodes))(id = id)
-
-      case LegacyRelationshipIndexSeek(ident, hint: RelationshipStartItem, _) =>
-        val source = SingleRowPipe()(id = id)
-        val startItem = StatementConverters.StartItemConverter(hint).asCommandStartItem
-        val ep = entityProducerFactory.readRelationshipLegacy((planContext, startItem))
-        RelationshipStartPipe(source, ident.name, ep)(id = id)
 
       case NodeIndexContainsScan(IdName(ident), label, propertyKey, valueExpr, _) =>
         NodeIndexContainsScanPipe(ident, label, propertyKey, buildExpression(valueExpr))(id = id)
