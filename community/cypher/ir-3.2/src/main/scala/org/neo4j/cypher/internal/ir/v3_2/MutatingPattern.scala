@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.ir.v3_2
 
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_2.ast.{Expression, LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
 sealed trait MutatingPattern {
   def coveredIds: Set[IdName]
+  def dependencies: Set[Variable] = Set.empty
 }
 
 sealed trait NoSymbols {
@@ -63,7 +64,9 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
   override def coveredIds = Set(relName)
 }
 
-case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols
+case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols {
+  override def dependencies: Set[Variable] = expression.dependencies
+}
 
 sealed trait MergePattern {
   self : MutatingPattern =>
