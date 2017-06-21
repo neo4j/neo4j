@@ -19,6 +19,7 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import org.neo4j.string.UTF8;
 import org.neo4j.values.Value;
 import org.neo4j.values.ValueGroup;
 import org.neo4j.values.ValueWriter;
@@ -87,6 +88,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     static final int RECORD_SIZE = 41;
     static final int BOOL = 1, BYTE = 2, SHORT = 3, CHAR = 4, INT = 5, LONG = 6, FLOAT = 7, DOUBLE = 8,
             STRING_REFERENCE = 9, ARRAY_REFERENCE = 10, SHORT_STRING = 11, SHORT_ARRAY = 12;
+
     private final ByteBlockCursor bytes;
     private int block;
 
@@ -117,7 +119,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             nextBlock = block + blocksUsedByCurrent();
         }
         long next = prevPropertyRecordReference();
-        block = -1;
+        block = 0;
         if ( next == NO_PROPERTIES )
         {
             close();
@@ -185,20 +187,20 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     @Override
     public Value propertyValue()
     {
+        long valueBytes = block( this.block );
         switch ( typeIdentifier() )
         {
         case BOOL:
-            return Values.booleanValue( (block(block) & 0x0000_0000_1000_0000) != 0 );
+            return Values.booleanValue( (valueBytes & 0x0000_0000_1000_0000) != 0 );
         case BYTE:
-            return Values.byteValue( (byte)((block( this.block ) & 0x0000_000F_F000_0000L) >> 28) );
+            return Values.byteValue( (byte)((valueBytes & 0x0000_000F_F000_0000L) >> 28) );
         case SHORT:
-            return Values.shortValue( (short)((block( this.block ) & 0x0000_0FFF_F000_0000L) >> 28) );
+            return Values.shortValue( (short)((valueBytes & 0x0000_0FFF_F000_0000L) >> 28) );
         case CHAR:
-            throw new UnsupportedOperationException( "not implemented" );
+            return Values.charValue( (char)((valueBytes & 0x0000_0FFF_F000_0000L) >> 28) );
         case INT:
-            return Values.intValue( (int)(block( block ) & 0x0FFF_FFFF_F000_0000L) >> 28 );
+            return Values.intValue( (int)(valueBytes & 0x0FFF_FFFF_F000_0000L) >> 28 );
         case LONG:
-            long valueBytes = block( this.block );
             if ( ( valueBytes & 0x0000_0000_1000_0000 ) == 0 )
             {
                 if ( moreBlocksInRecord() )
@@ -212,8 +214,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             }
             return Values.longValue( (valueBytes & 0xFFFF_FFFF_E000_0000L) >> 29 );
         case FLOAT:
-            return Values.floatValue(
-                    Float.intBitsToFloat((int)((block( this.block ) & 0x0FFF_FFFF_F000_0000L) >> 28) ) );
+            return Values.floatValue( Float.intBitsToFloat((int)((valueBytes & 0x0FFF_FFFF_F000_0000L) >> 28) ) );
         case DOUBLE:
             return Values.doubleValue( Double.longBitsToDouble( block( this.block + 1 ) ) );
         case STRING_REFERENCE:
@@ -221,7 +222,20 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         case ARRAY_REFERENCE:
             throw new UnsupportedOperationException( "not implemented" );
         case SHORT_STRING:
-            throw new UnsupportedOperationException( "not implemented" );
+            int encoding = shortStringEncoding( valueBytes );
+            int stringLength = shortStringLength( valueBytes );
+            if ( encoding == ShortStringEncoding.ENCODING_UTF8 )
+            {
+                return Values.stringValue( decodeUTF8( stringLength ) );
+            }
+            if ( encoding == ShortStringEncoding.ENCODING_LATIN1 )
+            {
+                return Values.stringValue( decodeLatin1( stringLength ) );
+            }
+
+            ShortStringEncoding table = ShortStringEncoding.getEncodingTable( encoding );
+            return Values.stringValue( decode( stringLength, table ) );
+
         case SHORT_ARRAY:
             throw new UnsupportedOperationException( "not implemented" );
         default:
@@ -266,6 +280,13 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
                 throw new UnsupportedOperationException( "not implemented" ); // long/double bytes in next record
             }
         }
+        if ( typeId == SHORT_STRING )
+        {
+            int encoding = shortStringEncoding( valueBytes );
+            int stringLength = shortStringLength( valueBytes );
+            return ShortStringEncoding.calculateNumberOfBlocksUsed( ShortStringEncoding.ENCODINGS[ encoding-1 ],
+                    stringLength );
+        }
         return 1;
     }
 
@@ -277,5 +298,75 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     private long prevPropertyRecordReference()
     {
         return combineReference( unsignedInt( 5 ), ((long) unsignedByte( 0 ) & 0xF0L) << 31 );
+    }
+
+    // SHORT STRING DECODE
+
+    private int shortStringEncoding( long valueBytes )
+    {
+        return (int) ((valueBytes & 0x0001_F000_0000L) >>> 28); // 5 bits of encoding
+    }
+
+    private int shortStringLength( long valueBytes )
+    {
+        return (int) ((valueBytes & 0x007E_0000_0000L) >>> 33); // 6 bits of stringLength
+    }
+
+    private String decodeUTF8( int stringLength )
+    {
+        byte[] result = new byte[stringLength];
+        int blockIndex = this.block;
+        int maskShift = ShortStringEncoding.HEADER_SIZE;
+        for ( int i = 0; i < result.length; i++ )
+        {
+            byte codePoint = (byte) (block(blockIndex) >>> maskShift);
+            maskShift += 8;
+            if ( maskShift >= 64 )
+            {
+                maskShift %= 64;
+                codePoint |= (block(++blockIndex) & (0xFF >>> (8 - maskShift))) << (8 - maskShift);
+            }
+            result[i] = codePoint;
+        }
+        return UTF8.decode( result );
+    }
+
+    private String decodeLatin1( int stringLength )
+    {
+        StringBuilder sb = new StringBuilder( stringLength );
+        int blockIndex = this.block;
+        int maskShift = ShortStringEncoding.HEADER_SIZE;
+        for ( int i = 0; i < stringLength; i++ )
+        {
+            char codePoint = (char) ((block(blockIndex) >>> maskShift) & 0xFF);
+            maskShift += 8;
+            if ( maskShift >= 64 )
+            {
+                maskShift %= 64;
+                codePoint |= (block(++blockIndex) & (0xFF >>> (8 - maskShift))) << (8 - maskShift);
+            }
+            sb.append( codePoint );
+        }
+        return sb.toString();
+    }
+
+    private String decode( int stringLength, ShortStringEncoding table )
+    {
+        StringBuilder sb = new StringBuilder( stringLength );
+        int blockIndex = this.block;
+        int maskShift = ShortStringEncoding.HEADER_SIZE;
+        long baseMask = table.mask;
+        for ( int i = 0; i < stringLength; i++ )
+        {
+            byte codePoint = (byte) ((block(blockIndex) >>> maskShift) & baseMask);
+            maskShift += table.step;
+            if ( maskShift >= 64 && blockIndex + 1 < 4 )
+            {
+                maskShift %= 64;
+                codePoint |= (block(++blockIndex) & (baseMask >>> (table.step - maskShift))) << (table.step - maskShift);
+            }
+            sb.append( table.decTranslate( codePoint ) );
+        }
+        return sb.toString();
     }
 }

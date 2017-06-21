@@ -39,7 +39,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 public class PropertyCursorTest
 {
     private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
-            floatProp, doubleProp, trueProp, falseProp, allProps;
+            floatProp, doubleProp, trueProp, falseProp, charProp, shortStringProp, allProps;
 
     @ClassRule
     public static final GraphSetup graph = new GraphSetup()
@@ -63,6 +63,9 @@ public class PropertyCursorTest
                 trueProp = createNodeWithProperty( graphDb, "trueProp", true );
                 falseProp = createNodeWithProperty( graphDb, "falseProp", false );
 
+                charProp = createNodeWithProperty( graphDb, "charProp", 'x' );
+                shortStringProp = createNodeWithProperty( graphDb, "shortStringProp", "hello" );
+
                 Node all = graphDb.createNode();
                 // first property record
                 all.setProperty( "byteProp", (byte)13 );
@@ -77,6 +80,10 @@ public class PropertyCursorTest
                 // third property record halfway through double?
                 all.setProperty( "trueProp", true );
                 all.setProperty( "falseProp", false );
+
+                all.setProperty( "charProp", 'x' );
+                all.setProperty( "shortStringProp", "hello" );
+
                 allProps = all.getId();
 
                 tx.success();
@@ -126,6 +133,8 @@ public class PropertyCursorTest
         assertAccessSingleProperty( doubleProp, 13.0 );
         assertAccessSingleProperty( trueProp, true );
         assertAccessSingleProperty( falseProp, false );
+        assertAccessSingleProperty( charProp, 'x' );
+        assertAccessSingleProperty( shortStringProp, "hello" );
     }
 
     @Test
@@ -156,6 +165,10 @@ public class PropertyCursorTest
             assertTrue( "doubleProp", values.contains( 13.0 ) );
             assertTrue( "trueProp", values.contains( true ) );
             assertTrue( "falseProp", values.contains( false ) );
+            assertTrue( "charProp", values.contains( 'x' ) );
+            assertTrue( "shortStringProp", values.contains( "hello" ) );
+
+            assertEquals( "number of values", 11, values.size() );
         }
     }
 
