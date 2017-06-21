@@ -51,5 +51,5 @@ object InputPosition {
   implicit val byOffset =
     Ordering.by { (pos: InputPosition) => pos.offset }
 
-  val NONE = null
+  val NONE = InputPosition(0, 0, 0)
 }
