@@ -106,7 +106,6 @@ import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;

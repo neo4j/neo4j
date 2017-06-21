@@ -749,7 +749,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
 
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config, availabilityGuard );
+                config );
 
         kernel.registerTransactionHook( transactionEventHandlers );
 

@@ -194,7 +194,8 @@ public class PlatformModule
         // Anyways please fix this.
         dependencies.satisfyDependency( dataSourceManager );
 
-        availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
+        availabilityGuard = dependencies.satisfyDependency(
+                new AvailabilityGuard( clock, logging.getInternalLog( AvailabilityGuard.class ) ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
@@ -213,11 +214,6 @@ public class PlatformModule
     protected StoreLocker createStoreLocker()
     {
         return new GlobalStoreLocker( fileSystem, storeDir );
-    }
-
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        return new AvailabilityGuard( clock, logging.getInternalLog( AvailabilityGuard.class ) );
     }
 
     protected SystemNanoClock createClock()

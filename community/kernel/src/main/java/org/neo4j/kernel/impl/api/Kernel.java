@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.AvailabilityGuard.UnavailableException;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
@@ -67,22 +64,17 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DatabaseHealth health;
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
-    private final AvailabilityGuard availabilityGuard;
     private final long defaultTransactionTimeout;
-    private final long transactionStartTimeout;
 
     public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
-            TransactionMonitor transactionMonitor, Procedures procedures, Config config,
-            AvailabilityGuard availabilityGuard )
+            TransactionMonitor transactionMonitor, Procedures procedures, Config config )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
-        this.availabilityGuard = availabilityGuard;
         this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        this.transactionStartTimeout = config.get( GraphDatabaseSettings.transaction_start_timeout ).toMillis();
     }
 
     @Override
@@ -97,21 +89,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-
-        // Increment transaction monitor before checking the availability guard (which needs to be checked
-        // before starting the transaction). This is because the DatabaseAvailability does this in the other
-        // order, where it closes the availability guard and then awaits started transactions to finish.
+        KernelTransaction transaction = transactions.newInstance( type, securityContext, timeout );
         transactionMonitor.transactionStarted();
-        try
-        {
-            availabilityGuard.await( transactionStartTimeout );
-        }
-        catch ( UnavailableException e )
-        {
-            transactionMonitor.transactionFinished( false, false );
-            throw new TransactionFailureException( Status.Transaction.TransactionStartFailed, e, e.getMessage() );
-        }
-        return transactions.newInstance( type, securityContext, timeout );
+        return transaction;
     }
 
     @Override
