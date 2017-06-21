@@ -105,7 +105,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.collection.Iterators.emptyIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
