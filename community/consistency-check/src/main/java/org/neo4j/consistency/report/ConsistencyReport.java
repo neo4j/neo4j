@@ -158,7 +158,7 @@ public interface ConsistencyReport
         void unsupportedSchemaRuleKind( SchemaRule.Kind kind );
 
         @Warning
-        @Documented( "The schema rule contained in the DynamicRecord chain a reference to a schema rule that is not online. It will be rebuilt on next startup." )
+        @Documented( "The schema rule contained in the DynamicRecord chain has a reference to a schema rule that is not online." )
         void schemaRuleNotOnline( SchemaRule schemaRule );
     }
 

@@ -253,22 +253,12 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private File findFile( String targetFile, File directory )
     {
-        File foundFile = null;
-        boolean didFindFile = false;
-        for ( File file : directory.listFiles() )
-        {
-            if ( file.getName().equals( targetFile ) )
-            {
-                foundFile = file;
-                didFindFile = true;
-                break;
-            }
-        }
-        if ( !didFindFile )
+        File file = new File( directory, targetFile );
+        if ( !file.exists() )
         {
             fail( "Could not find file " + targetFile );
         }
-        return foundFile;
+        return file;
     }
 
     private GraphDatabaseService getGraphDatabaseService()

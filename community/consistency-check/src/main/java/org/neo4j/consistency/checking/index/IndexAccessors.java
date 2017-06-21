@@ -109,5 +109,6 @@ public class IndexAccessors implements Closeable
         }
         accessors.clear();
         onlineIndexRules.clear();
+        notOnlineIndexRules.clear();
     }
 }
