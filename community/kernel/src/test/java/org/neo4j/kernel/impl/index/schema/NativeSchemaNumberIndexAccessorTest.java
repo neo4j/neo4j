@@ -795,7 +795,7 @@ public abstract class NativeSchemaNumberIndexAccessorTest<KEY extends NumberKey,
 
     private IndexEntryUpdate<IndexDescriptor> simpleUpdate()
     {
-        return IndexEntryUpdate.add( 0, indexDescriptor, of ( 0 ) );
+        return IndexEntryUpdate.add( 0, indexDescriptor, of( 0 ) );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
