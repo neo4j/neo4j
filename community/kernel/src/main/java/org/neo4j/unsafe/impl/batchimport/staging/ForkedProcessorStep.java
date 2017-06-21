@@ -204,7 +204,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
      */
     private final class CompletedBatchesSender extends Thread
     {
-        public CompletedBatchesSender( String name )
+        CompletedBatchesSender( String name )
         {
             super( name );
         }
