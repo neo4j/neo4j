@@ -19,7 +19,7 @@
  */
 package org.neo4j.values;
 
-abstract public class NumberValue extends ScalarValue
+public abstract class NumberValue extends ScalarValue
 {
     abstract int compareTo( IntegralValue other );
 

@@ -36,7 +36,7 @@ class SchemaNumberValue
 
     static final SchemaNumberValue INSTANCE = new SchemaNumberValue();
 
-    void from( Value[] values )
+    void from( Value... values )
     {
         // not needed a.t.m.
     }

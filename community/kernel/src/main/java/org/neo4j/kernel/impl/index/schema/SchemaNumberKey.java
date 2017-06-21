@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.values.NumberValue;
-import org.neo4j.values.NumberValues;
-import org.neo4j.values.PrimitiveNumberType;
 import org.neo4j.values.Value;
 import org.neo4j.values.ValueWriter;
 import org.neo4j.values.Values;
@@ -59,14 +57,14 @@ class SchemaNumberKey extends ValueWriter.Adapter
      */
     boolean entityIdIsSpecialTieBreaker;
 
-    void from( long entityId, Value[] values )
+    void from( long entityId, Value... values )
     {
-        extractValue( assertValidSingleNumber( values ) );
+        extractRawBitsAndType( assertValidSingleNumber( values ) );
         this.entityId = entityId;
         entityIdIsSpecialTieBreaker = false;
     }
 
-    private static NumberValue assertValidSingleNumber( Value[] values )
+    private static NumberValue assertValidSingleNumber( Value... values )
     {
         // TODO: support multiple values, right?
         if ( values.length > 1 )
@@ -87,13 +85,13 @@ class SchemaNumberKey extends ValueWriter.Adapter
 
     String propertiesAsString()
     {
-        return PrimitiveNumberType.from( type ).valueFromRawBits( rawValueBits ).toString();
+        return RawBits.asNumberValue( rawValueBits, type ).toString();
     }
 
     void initAsLowest()
     {
         rawValueBits = Double.doubleToLongBits( Double.NEGATIVE_INFINITY );
-        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
+        type = RawBits.DOUBLE;
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -101,7 +99,7 @@ class SchemaNumberKey extends ValueWriter.Adapter
     void initAsHighest()
     {
         rawValueBits = Double.doubleToLongBits( Double.POSITIVE_INFINITY );
-        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
+        type = RawBits.DOUBLE;
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
@@ -115,15 +113,15 @@ class SchemaNumberKey extends ValueWriter.Adapter
      */
     int compareValueTo( SchemaNumberKey other )
     {
-        return NumberValues.compare( rawValueBits, type, other.rawValueBits, other.type );
+        return RawBits.compare( rawValueBits, type, other.rawValueBits, other.type );
     }
 
     /**
-     * Extracts data from a {@link NumberValue} into state of this {@link SchemaNumberKey} instance.
+     * Extracts raw bits and type from a {@link NumberValue} and store as state of this {@link SchemaNumberKey} instance.
      *
      * @param value actual {@link NumberValue} value.
      */
-    private void extractValue( NumberValue value )
+    private void extractRawBitsAndType( NumberValue value )
     {
         value.writeTo( this );
     }
@@ -132,48 +130,48 @@ class SchemaNumberKey extends ValueWriter.Adapter
     public String toString()
     {
         return format( "type=%d,rawValue=%d,value=%s,entityId=%d",
-                type, rawValueBits, PrimitiveNumberType.from( type ).valueFromRawBits( rawValueBits ).toString(), entityId );
+                type, rawValueBits, RawBits.asNumberValue( rawValueBits, type ), entityId );
     }
 
     @Override
     public void writeInteger( byte value )
     {
-        type = PrimitiveNumberType.BYTE.byteRepresentation();
+        type = RawBits.BYTE;
         rawValueBits = value;
     }
 
     @Override
     public void writeInteger( short value )
     {
-        type = PrimitiveNumberType.SHORT.byteRepresentation();
+        type = RawBits.SHORT;
         rawValueBits = value;
     }
 
     @Override
     public void writeInteger( int value )
     {
-        type = PrimitiveNumberType.INT.byteRepresentation();
+        type = RawBits.INT;
         rawValueBits = value;
     }
 
     @Override
     public void writeInteger( long value )
     {
-        type = PrimitiveNumberType.LONG.byteRepresentation();
+        type = RawBits.LONG;
         rawValueBits = value;
     }
 
     @Override
     public void writeFloatingPoint( float value )
     {
-        type = PrimitiveNumberType.FLOAT.byteRepresentation();
+        type = RawBits.FLOAT;
         rawValueBits = Float.floatToIntBits( value );
     }
 
     @Override
     public void writeFloatingPoint( double value )
     {
-        type = PrimitiveNumberType.DOUBLE.byteRepresentation();
+        type = RawBits.DOUBLE;
         rawValueBits = Double.doubleToLongBits( value );
     }
 }
