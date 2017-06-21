@@ -22,17 +22,18 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
-class SimplifyEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
     val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
     val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
     val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), singleRow)(solved)
 
-    selection.endoRewrite(simplifyEquality) should equal(
+    selection.endoRewrite(simplifyPredicates) should equal(
       Selection(Seq(cleanPredicate), singleRow)(solved))
   }
 
@@ -42,6 +43,18 @@ class SimplifyEqualityTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val orgPredicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), collection)(pos)
     val selection = Selection(Seq(orgPredicate), singleRow)(solved)
 
-    selection.endoRewrite(simplifyEquality) should equal(selection)
+    selection.endoRewrite(simplifyPredicates) should equal(selection)
+  }
+
+  test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop <> 1") {
+    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
+    val variable = Variable("a")(pos)
+    val property = Property(variable, PropertyKeyName("prop")(pos))(pos)
+    val greaterThan = GreaterThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)
+    val complexForm = AndedPropertyInequalities(variable, property, NonEmptyList(greaterThan))
+    val selection = Selection(Seq(complexForm), singleRow)(solved)
+    val expectedSelection = Selection(Seq(greaterThan), singleRow)(solved)
+
+    selection.endoRewrite(simplifyPredicates) should equal(expectedSelection)
   }
 }

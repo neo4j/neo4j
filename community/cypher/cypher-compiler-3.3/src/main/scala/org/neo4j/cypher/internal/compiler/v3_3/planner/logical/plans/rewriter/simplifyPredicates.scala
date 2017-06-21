@@ -22,11 +22,15 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
-case object simplifyEquality extends Rewriter {
+case object simplifyPredicates extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case in@In(exp, ListLiteral(values@Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
+
+    // This form is used to make finding composite index seeks and scans
+    case AndedPropertyInequalities(_, _, predicates) if predicates.size == 1 =>
+      predicates.head
   })
 }
