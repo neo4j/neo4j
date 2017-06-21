@@ -45,7 +45,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
 
-}
+  }
 
   test("should allow for OPTONAL MATCH with horizon and aggregating function") {
     //This is a test to ensure that a bug does not return
