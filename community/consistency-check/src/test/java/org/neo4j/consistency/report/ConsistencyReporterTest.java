@@ -53,6 +53,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -391,6 +392,10 @@ public class ConsistencyReporterTest
                 return IndexRule.indexRule( 1, IndexDescriptorFactory.forLabel( 2, 3 ),
                         new SchemaIndexProvider.Descriptor( "provider", "version" ) );
             }
+            if ( type == SchemaRule.class )
+            {
+                return simpleSchemaRule();
+            }
             if ( type == RelationshipGroupRecord.class )
             {
                 return new RelationshipGroupRecord( 0, 1 );
@@ -404,6 +409,24 @@ public class ConsistencyReporterTest
                 return "object";
             }
             throw new IllegalArgumentException( format( "Don't know how to provide parameter of type %s", type.getName() ) );
+        }
+
+        private SchemaRule simpleSchemaRule()
+        {
+            return new SchemaRule( 0 )
+            {
+                @Override
+                public byte[] serialize()
+                {
+                    return new byte[0];
+                }
+
+                @Override
+                public SchemaDescriptor schema()
+                {
+                    return null;
+                }
+            };
         }
 
         @SuppressWarnings( "unchecked" )

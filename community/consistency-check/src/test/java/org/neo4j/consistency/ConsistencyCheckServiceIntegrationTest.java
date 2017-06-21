@@ -31,6 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.consistency.ConsistencyCheckService.Result;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -42,7 +43,9 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -58,11 +61,13 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.Property.property;
 import static org.neo4j.test.Property.set;
@@ -204,11 +209,67 @@ public class ConsistencyCheckServiceIntegrationTest
         assertTrue( result.isSuccessful() );
     }
 
+    @Test
+    public void shouldReportMissingSchemaIndex() throws Exception
+    {
+        // given
+        File storeDir = testDirectory.absolutePath();
+        GraphDatabaseService gds = getGraphDatabaseService( storeDir );
+
+        IndexDefinition indexDefinition;
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            indexDefinition = gds.schema().indexFor( Label.label( "label" ) ).on( "propKey" ).create();
+            tx.success();
+        }
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            gds.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+
+        gds.shutdown();
+
+        // when
+        File schemaDir = findFile( "schema", storeDir );
+        FileUtils.deleteRecursively( schemaDir );
+
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Config configuration = Config.embeddedDefaults( settings() );
+        Result result = runFullConsistencyCheck( service, configuration, storeDir );
+
+        // then
+        assertTrue( result.isSuccessful() );
+        File reportFile = result.reportFile();
+        assertTrue( "Consistency check report file should be generated.", reportFile.exists() );
+        assertThat( "Expected to see report about schema index not being online",
+                Files.readAllLines( reportFile.toPath() ).toString(), allOf(
+                        containsString( "schema rule" ),
+                        containsString( "not online" )
+                ) );
+    }
+
+    private File findFile( String targetFile, File directory )
+    {
+        File file = new File( directory, targetFile );
+        if ( !file.exists() )
+        {
+            fail( "Could not find file " + targetFile );
+        }
+        return file;
+    }
+
     private GraphDatabaseService getGraphDatabaseService()
     {
-        GraphDatabaseBuilder builder =
-                new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.absolutePath() );
-        builder.setConfig( settings(  ) );
+        return getGraphDatabaseService( testDirectory.absolutePath() );
+    }
+
+    private GraphDatabaseService getGraphDatabaseService( File storeDir )
+    {
+        GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
+        builder.setConfig( settings() );
 
         return builder.newGraphDatabase();
     }
@@ -274,7 +335,13 @@ public class ConsistencyCheckServiceIntegrationTest
     private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        return service.runFullConsistencyCheck( fixture.directory(),
+        return runFullConsistencyCheck( service, configuration, fixture.directory() );
+    }
+
+    private Result runFullConsistencyCheck( ConsistencyCheckService service, Config configuration, File storeDir )
+            throws ConsistencyCheckIncompleteException, IOException
+    {
+        return service.runFullConsistencyCheck( storeDir,
                 configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );
     }
 

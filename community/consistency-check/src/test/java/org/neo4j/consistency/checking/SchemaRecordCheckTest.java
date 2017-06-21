@@ -21,6 +21,7 @@ package org.neo4j.consistency.checking;
 
 import org.junit.Test;
 
+import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccessStub;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -49,11 +50,16 @@ public class SchemaRecordCheckTest
 
     public SchemaRecordCheckTest()
     {
-        super( new SchemaRecordCheck( configureSchemaStore() ),
+        super( new SchemaRecordCheck( configureSchemaStore(), configureIndexAcessors() ),
                 ConsistencyReport.SchemaConsistencyReport.class, new int[0] );
     }
 
-    public static SchemaStorage configureSchemaStore()
+    private static IndexAccessors configureIndexAcessors()
+    {
+        return mock( IndexAccessors.class );
+    }
+
+    private static SchemaStorage configureSchemaStore()
     {
         return mock( SchemaStorage.class );
     }

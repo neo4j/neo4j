@@ -152,7 +152,7 @@ public class ConsistencyCheckTasks
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
         final SchemaRecordCheck schemaCheck =
-                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ) );
+                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, progress, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
@@ -182,7 +182,7 @@ public class ConsistencyCheckTasks
         }
         if ( checkIndexes )
         {
-            for ( IndexRule indexRule : indexes.rules() )
+            for ( IndexRule indexRule : indexes.onlineRules() )
             {
                 tasks.add( recordScanner( format( "Index_%d", indexRule.getId() ),
                         new IndexIterator( indexes.accessorFor( indexRule ) ),
