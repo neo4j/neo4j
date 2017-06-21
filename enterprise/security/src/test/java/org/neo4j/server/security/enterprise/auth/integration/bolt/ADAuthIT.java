@@ -68,8 +68,10 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
         saslMechanisms =
         {
-                @SaslMechanism( name = "DIGEST-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl.digestMD5.DigestMd5MechanismHandler.class ),
-                @SaslMechanism( name  = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl.cramMD5.CramMd5MechanismHandler.class )
+                @SaslMechanism( name = "DIGEST-MD5", implClass =
+                        org.apache.directory.server.ldap.handlers.sasl.digestMD5.DigestMd5MechanismHandler.class ),
+                @SaslMechanism( name  = "CRAM-MD5", implClass =
+                        org.apache.directory.server.ldap.handlers.sasl.cramMD5.CramMd5MechanismHandler.class )
         },
         saslHost = "0.0.0.0",
         extendedOpHandlers = { StartTlsHandler.class },

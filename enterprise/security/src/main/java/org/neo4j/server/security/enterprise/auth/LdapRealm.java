@@ -527,7 +527,8 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
         return map;
     }
 
-    private AuthenticationInfo queryForAuthenticationInfoSAM( AuthenticationToken token, LdapContextFactory ldapContextFactory ) throws NamingException
+    private AuthenticationInfo queryForAuthenticationInfoSAM(
+            AuthenticationToken token, LdapContextFactory ldapContextFactory ) throws NamingException
     {
         Object principal = token.getPrincipal();
         Object credentials = token.getCredentials();
