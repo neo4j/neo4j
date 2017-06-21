@@ -55,7 +55,7 @@ public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
     {
         try
         {
-            if ( seeker.next() )
+            if ( !closed && seeker.next() )
             {
                 return next( seeker.get().key().entityId );
             }

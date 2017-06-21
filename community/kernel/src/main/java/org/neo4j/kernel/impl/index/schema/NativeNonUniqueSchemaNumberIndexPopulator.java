@@ -54,7 +54,7 @@ class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE ext
         if ( updateSampling )
         {
             checkSampler();
-            sampler.include( SamplingUtil.encodedStringValuesForSampling( update.values() ) );
+            sampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
         }
     }
 
