@@ -50,11 +50,11 @@ public class BinaryLatchTest
         latch.await();
     }
 
-    @Test( timeout = 3000 )
+    @Test( timeout = 10000 )
     public void releaseMustUnblockAwaiters() throws Exception
     {
         final BinaryLatch latch = new BinaryLatch();
-        Runnable awaiter = () -> latch.await();
+        Runnable awaiter = latch::await;
         int awaiters = 24;
         Future<?>[] futures = new Future<?>[awaiters];
         for ( int i = 0; i < awaiters; i++ )
@@ -104,7 +104,7 @@ public class BinaryLatchTest
         for ( int i = 0; i < 500000; i++ )
         {
             latchRef.getAndSet( new BinaryLatch() ).release();
-            spinwaitu( rng.nextLong( 0, 10 ) );
+            spin( rng.nextLong( 0, 10 ) );
         }
 
         latchRef.getAndSet( null ).release();
@@ -116,7 +116,7 @@ public class BinaryLatchTest
         }
     }
 
-    private static void spinwaitu( long micros )
+    private static void spin( long micros )
     {
         if ( micros == 0 )
         {

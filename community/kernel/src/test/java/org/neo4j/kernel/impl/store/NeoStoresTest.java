@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.cursor.Cursor;
@@ -52,8 +53,8 @@ import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
+import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -79,8 +80,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.string.UTF8;
@@ -797,7 +798,8 @@ public class NeoStoresTest
         thread.start();
 
         // let's wait for the thread to start waiting for the next transaction id
-        ThreadTestUtils.awaitThreadState( thread, 500, Thread.State.TIMED_WAITING, Thread.State.WAITING );
+        ThreadTestUtils.awaitThreadState( thread, TimeUnit.SECONDS.toMillis( 5 ), Thread.State.TIMED_WAITING,
+                Thread.State.WAITING );
 
         try
         {

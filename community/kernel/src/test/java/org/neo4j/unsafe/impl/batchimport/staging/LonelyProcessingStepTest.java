@@ -34,7 +34,7 @@ public class LonelyProcessingStepTest
     @Rule
     public SuppressOutput mute = SuppressOutput.suppressAll();
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10000 )
     public void issuePanicBeforeCompletionOnError() throws Exception
     {
         List<Step<?>> stepsPipeline = new ArrayList<>();
