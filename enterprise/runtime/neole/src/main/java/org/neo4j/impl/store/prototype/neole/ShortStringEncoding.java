@@ -5,17 +5,17 @@
  * This file is part of Neo4j.
  *
  * Neo4j is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * it under the terms of the GNU Affero General Public License as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.impl.store.prototype.neole;
 
@@ -784,14 +784,19 @@ public enum ShortStringEncoding
         return mask;
     }
 
-    public static int calculateNumberOfBlocksUsed( ShortStringEncoding encoding, int length )
+    public static int numberOfBlocksUsedUTF8OrLatin1( int length )
+    {
+        return totalBits( length * 8 );
+    }
+
+    public static int numberOfBlocksUsed( ShortStringEncoding encoding, int length )
     {
         return totalBits( length * encoding.step );
     }
 
     private static int totalBits( int bitsForCharacters )
     {
-        int bitsInTotal = 24 + 4 + 5 + 6 + bitsForCharacters;
+        int bitsInTotal = HEADER_SIZE + bitsForCharacters;
         return ((bitsInTotal - 1) >> 6) + 1; // /64
     }
 }

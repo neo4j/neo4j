@@ -26,6 +26,7 @@ import org.neo4j.values.ValueWriter;
 import org.neo4j.values.Values;
 
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
+import static org.neo4j.impl.store.prototype.neole.ShortStringEncoding.ENCODINGS;
 
 class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadStore>
 {
@@ -108,6 +109,11 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     @Override
     public boolean next()
     {
+        if ( block == Integer.MIN_VALUE )
+        {
+            return false;
+        }
+
         int nextBlock = block + blocksUsedByCurrent();
         while ( nextBlock >= 0 && nextBlock < 4 )
         {
@@ -284,8 +290,13 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         {
             int encoding = shortStringEncoding( valueBytes );
             int stringLength = shortStringLength( valueBytes );
-            return ShortStringEncoding.calculateNumberOfBlocksUsed( ShortStringEncoding.ENCODINGS[ encoding-1 ],
-                    stringLength );
+
+            if ( encoding == ShortStringEncoding.ENCODING_UTF8 || encoding == ShortStringEncoding.ENCODING_LATIN1 )
+            {
+                return ShortStringEncoding.numberOfBlocksUsedUTF8OrLatin1( stringLength );
+            }
+
+            return ShortStringEncoding.numberOfBlocksUsed( ENCODINGS[ encoding - 1 ], stringLength );
         }
         return 1;
     }

@@ -39,8 +39,9 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 public class PropertyCursorTest
 {
     private static long bare, byteProp, shortProp, intProp, inlineLongProp, longProp,
-            floatProp, doubleProp, trueProp, falseProp, charProp, shortStringProp, allProps;
+            floatProp, doubleProp, trueProp, falseProp, charProp, shortStringProp, utf8Prop, allProps;
 
+    private static String chinese = "造Unicode之";
     @ClassRule
     public static final GraphSetup graph = new GraphSetup()
     {
@@ -65,6 +66,7 @@ public class PropertyCursorTest
 
                 charProp = createNodeWithProperty( graphDb, "charProp", 'x' );
                 shortStringProp = createNodeWithProperty( graphDb, "shortStringProp", "hello" );
+                utf8Prop = createNodeWithProperty( graphDb, "utf8Prop", chinese );
 
                 Node all = graphDb.createNode();
                 // first property record
@@ -83,6 +85,7 @@ public class PropertyCursorTest
 
                 all.setProperty( "charProp", 'x' );
                 all.setProperty( "shortStringProp", "hello" );
+                all.setProperty( "utf8Prop", chinese );
 
                 allProps = all.getId();
 
@@ -135,6 +138,7 @@ public class PropertyCursorTest
         assertAccessSingleProperty( falseProp, false );
         assertAccessSingleProperty( charProp, 'x' );
         assertAccessSingleProperty( shortStringProp, "hello" );
+        assertAccessSingleProperty( utf8Prop, chinese );
     }
 
     @Test
@@ -167,8 +171,9 @@ public class PropertyCursorTest
             assertTrue( "falseProp", values.contains( false ) );
             assertTrue( "charProp", values.contains( 'x' ) );
             assertTrue( "shortStringProp", values.contains( "hello" ) );
+            assertTrue( "utf8Prop", values.contains( chinese ) );
 
-            assertEquals( "number of values", 11, values.size() );
+            assertEquals( "number of values", 12, values.size() );
         }
     }
 
