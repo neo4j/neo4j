@@ -606,7 +606,7 @@ public abstract class LabelScanStoreTest
         public boolean rebuildingCalled;
         public boolean rebuiltCalled;
         public boolean noIndexCalled;
-        public boolean corruptedIndex = false;
+        public boolean corruptedIndex;
 
         @Override
         public void noIndex()
@@ -645,7 +645,11 @@ public abstract class LabelScanStoreTest
 
         public void reset()
         {
-            initCalled = rebuildingCalled = rebuiltCalled = noIndexCalled = corruptedIndex = false;
+            initCalled = false;
+            rebuildingCalled = false;
+            rebuiltCalled = false;
+            noIndexCalled = false;
+            corruptedIndex = false;
         }
     }
 }
