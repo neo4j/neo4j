@@ -1,17 +1,42 @@
 #!/bin/bash
 
-subj="/C=SE/ST=Malmo/L=Malmo/O=neo4j/OU=dev/CN=Company_CA"
+# The purpose of this script is to setup a Root CA and an intermediate Cluster CA.
 
-# Generates a 2048 RSA private key in PKCS#1 format
-openssl genrsa -out ca.key1 2048
+##### ROOT #####
 
-# Transforms it into PKCS#8 format as commonly required
-openssl pkcs8 -topk8 -nocrypt -in ca.key1 -out ca.key
-rm ca.key1
+# Root base setup
+mkdir -p ca/root/private
+mkdir ca/root/db
 
-# Creates a certificate signing request (CSR) for the key
-openssl req -new -key ca.key -out ca.csr -subj $subj
+touch ca/root/db/root.db
+touch ca/root/db/root.db.attr
 
-# Signs the CA CSR by root
-openssl x509 -req -in ca.csr -extfile ca.ext -CA root.crt -CAkey root.key -CAcreateserial -out ca.crt -days 36500 -sha256
-rm ca.csr
+echo 01 > ca/root/db/root.crt.srl
+echo 01 > ca/root/db/root.crl.srl
+
+# Key Generation and Certificate Signing Request (CSR) for Root
+openssl req -new -config root.conf -out ca/root.csr -keyout ca/root/private/root.key
+
+# Self-signing of Root Certificate for ~100 Years
+openssl ca -batch -selfsign -config root.conf -in ca/root.csr -out ca/root.crt -extensions root_ca_ext -days 36500
+
+# Generate initial empty Certificate Revocation List (CRL)
+openssl ca -gencrl -config root.conf -out ca/crl/root.crl
+
+##### CLUSTER #####
+
+# Cluster base setup
+mkdir -p ca/cluster/private
+mkdir ca/cluster/db
+
+touch ca/cluster/db/cluster.db
+touch ca/cluster/db/cluster.db.attr
+
+echo 01 > ca/cluster/db/cluster.crt.srl
+echo 01 > ca/cluster/db/cluster.crl.srl
+
+# Key Generation and Certificate Signing Request (CSR) for Cluster
+openssl req -new -config cluster.conf -out ca/cluster.csr -keyout ca/cluster/private/cluster.key
+
+# Root-signing of Cluster Certificate for ~10 Years
+openssl ca -batch -config root.conf -in ca/cluster.csr -out ca/cluster.crt -extensions signing_ca_ext -days 3650

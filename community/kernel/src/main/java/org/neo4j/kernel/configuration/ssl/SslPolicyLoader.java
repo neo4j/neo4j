@@ -28,14 +28,24 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.cert.CRLException;
+import java.security.cert.CertStore;
+import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.security.cert.CollectionCertStoreParameters;
+import java.security.cert.PKIXBuilderParameters;
+import java.security.cert.X509CRL;
+import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Stream;
+import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.kernel.configuration.Config;
@@ -61,8 +71,6 @@ import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_PO
  *
  * @see SslPolicyConfig
  */
-// TODO: Use FileSystemAbstraction
-// TODO: Create SslPolicies class in SSL module (distinct from loader)
 public class SslPolicyLoader
 {
     private final Map<String,SslPolicy> policies = new ConcurrentHashMap<>();
@@ -151,12 +159,8 @@ public class SslPolicyLoader
         PrivateKey privateKey = loadPrivateKey( privateKeyFile, null );
         X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
 
-        return new SslPolicy( privateKey, keyCertChain, null, null, ClientAuth.OPTIONAL, trustAllFactory() );
-    }
-
-    private TrustManagerFactory trustAllFactory()
-    {
-        return InsecureTrustManagerFactory.INSTANCE;
+        return new SslPolicy( privateKey, keyCertChain, null, null,
+                ClientAuth.OPTIONAL, InsecureTrustManagerFactory.INSTANCE );
     }
 
     private void load( Config config, Log log )
@@ -202,8 +206,7 @@ public class SslPolicyLoader
                     pkiUtils.createSelfSignedCertificate( keyCertChainFile, privateKeyFile, hostname );
 
                     trustedCertificatesDir.mkdir();
-                    // TODO: Add back when supporting loading of certificate revocation lists (CRL).
-                    //revokedCertificatesDir.mkdir();
+                    revokedCertificatesDir.mkdir();
                 }
                 catch ( GeneralSecurityException | IOException | OperatorCreationException e )
                 {
@@ -218,33 +221,16 @@ public class SslPolicyLoader
             boolean trustAll = policyConfig.trust_all.from( config );
             TrustManagerFactory trustManagerFactory;
 
-            if ( trustAll )
-            {
-                trustManagerFactory = trustAllFactory();
-            }
-            else
-            {
-                try
-                {
-                    trustManagerFactory = createTrustManagerFactory( trustedCertificatesDir, clientAuth );
-                }
-                catch ( Exception e )
-                {
-                    throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
-                }
-            }
+            Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
 
-            // TODO: Add back when supporting loading of certificate revocation lists (CRL).
-//            File[] revokedCertificateFiles = revokedCertificatesDir.listFiles();
-//            if ( revokedCertificateFiles == null )
-//            {
-//                throw new RuntimeException( format( "Could not find or list files in revoked directory: %s", revokedCertificatesDir ) );
-//            }
-//
-//            if ( revokedCertificateFiles.length != 0 )
-//            {
-//                throw new UnsupportedOperationException( "Loading of certificate revocation lists is not yet supported" );
-//            }
+            try
+            {
+                trustManagerFactory = createTrustManagerFactory( trustAll, trustedCertificatesDir, crls, clientAuth );
+            }
+            catch ( Exception e )
+            {
+                throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
+            }
 
             List<String> tlsVersions = policyConfig.tls_versions.from( config );
             List<String> ciphers = policyConfig.ciphers.from( config );
@@ -253,6 +239,47 @@ public class SslPolicyLoader
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );
             policies.put( policyName, sslPolicy );
         }
+    }
+
+    private Collection<X509CRL> getCRLs( File revokedCertificatesDir )
+    {
+        Collection<X509CRL> crls = new ArrayList<>();
+        File[] revocationFiles = revokedCertificatesDir.listFiles();
+
+        if ( revocationFiles == null )
+        {
+            throw new RuntimeException( format( "Could not find or list files in revoked directory: %s", revokedCertificatesDir ) );
+        }
+
+        if ( revocationFiles.length == 0 )
+        {
+            return crls;
+        }
+
+        CertificateFactory certificateFactory;
+
+        try
+        {
+            certificateFactory = CertificateFactory.getInstance( "X.509" );
+        }
+        catch ( CertificateException e )
+        {
+            throw new RuntimeException( "Could not generated certificate factory", e );
+        }
+
+        for ( File crl : revocationFiles )
+        {
+            try ( FileInputStream input = new FileInputStream( crl ) )
+            {
+                crls.addAll( (Collection<X509CRL>) certificateFactory.generateCRLs( input ) );
+            }
+            catch ( IOException | CRLException e )
+            {
+                throw new RuntimeException( format( "Could not load CRL: %s", crl ), e );
+            }
+        }
+
+        return crls;
     }
 
     private X509Certificate[] loadCertificateChain( File keyCertChainFile )
@@ -281,15 +308,21 @@ public class SslPolicyLoader
         }
         catch ( Exception e )
         {
-            throw new RuntimeException( "Failed to load private key: " + privateKeyFile
-                                        + (privateKeyPassword == null ? "" : " (using configured password)"), e );
+            throw new RuntimeException( "Failed to load private key: " + privateKeyFile +
+                                        (privateKeyPassword == null ? "" : " (using configured password)"), e );
         }
     }
 
-    private TrustManagerFactory createTrustManagerFactory( File trustedCertificatesDir, ClientAuth clientAuth ) throws Exception
+    private TrustManagerFactory createTrustManagerFactory( boolean trustAll, File trustedCertificatesDir,
+            Collection<X509CRL> crls, ClientAuth clientAuth ) throws Exception
     {
-        KeyStore keyStore = KeyStore.getInstance( KeyStore.getDefaultType() );
-        keyStore.load( null, null );
+        if ( trustAll )
+        {
+            return InsecureTrustManagerFactory.INSTANCE;
+        }
+
+        KeyStore trustStore = KeyStore.getInstance( KeyStore.getDefaultType() );
+        trustStore.load( null, null );
 
         File[] trustedCertFiles = trustedCertificatesDir.listFiles();
 
@@ -311,13 +344,27 @@ public class SslPolicyLoader
                 while ( input.available() > 0 )
                 {
                     X509Certificate cert = (X509Certificate) certificateFactory.generateCertificate( input );
-                    keyStore.setCertificateEntry( Integer.toString( i++ ), cert );
+                    trustStore.setCertificateEntry( Integer.toString( i++ ), cert );
                 }
             }
         }
 
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance( TrustManagerFactory.getDefaultAlgorithm() );
-        trustManagerFactory.init( keyStore );
+
+        if ( !crls.isEmpty() )
+        {
+            PKIXBuilderParameters pkixParamsBuilder = new PKIXBuilderParameters( trustStore, new X509CertSelector() );
+            pkixParamsBuilder.setRevocationEnabled( true );
+
+            pkixParamsBuilder.addCertStore( CertStore.getInstance( "Collection",
+                    new CollectionCertStoreParameters( crls ) ) );
+
+            trustManagerFactory.init( new CertPathTrustManagerParameters( pkixParamsBuilder ) );
+        }
+        else
+        {
+            trustManagerFactory.init( trustStore );
+        }
 
         return trustManagerFactory;
     }

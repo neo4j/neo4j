@@ -31,7 +31,6 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -95,8 +94,8 @@ public class SecureClusterIT
             fsRule.mkdirs( new File( baseDir, "revoked" ) );
 
             int keyId = core.serverId();
-            SslResourceBuilder.rootSignedKeyId( keyId )
-                    .trustSignedByRoot().install( baseDir );
+            SslResourceBuilder.caSignedKeyId( keyId )
+                    .trustSignedByCA().install( baseDir );
         }
 
         // install the cryptographic objects for each read replica
@@ -108,8 +107,8 @@ public class SecureClusterIT
             fsRule.mkdirs( new File( baseDir, "revoked" ) );
 
             int keyId = replica.serverId() + noOfCoreMembers;
-            SslResourceBuilder.rootSignedKeyId( keyId )
-                    .trustSignedByRoot().install( baseDir );
+            SslResourceBuilder.caSignedKeyId( keyId )
+                    .trustSignedByCA().install( baseDir );
         }
 
         // when
