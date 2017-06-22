@@ -23,7 +23,7 @@ import java.util
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.CompiledExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.CompiledExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
