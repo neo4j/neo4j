@@ -75,7 +75,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.impl.kernel.api.Ed
         }
         else
         {
-            ReadStore.setup( groups, this, reference );
+            groups.initializeCursor( reference, this );
             this.originNodeReference = ~originNodeReference;
         }
     }
@@ -149,7 +149,7 @@ class EdgeGroupCursor extends ReadCursor implements org.neo4j.impl.kernel.api.Ed
             close();
             return false;
         }
-        return gotoVirtualAddress( next );
+        return moveToVirtualAddress( next );
     }
 
     @Override

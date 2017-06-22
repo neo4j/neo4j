@@ -21,7 +21,7 @@ package org.neo4j.impl.store.cursors;
 
 public abstract class MemoryManager
 {
-    protected static void setup( ReadCursor cursor, long virtualAddress, PageManager page, long pageId, long base,
+    protected static void initialize( ReadCursor cursor, long virtualAddress, PageManager page, long pageId, long base,
             int offset )
     {
         cursor.initializeMemoryAccess( virtualAddress, page, pageId, base, offset );
@@ -30,25 +30,20 @@ public abstract class MemoryManager
     protected static void read(
             ReadCursor cursor,
             long virtualAddress,
-            PageManager page,
             long pageId,
             long base,
-            int offset,
-            int bound )
+            int offset )
     {
-        page.assertValidOffset( pageId, base, offset, bound );
         cursor.moveToOtherPage( virtualAddress, pageId, base, offset );
         cursor.lockShared();
     }
 
-    protected static void move( ReadCursor cursor, long virtualAddress, int offset, int bound )
+    protected static void move( ReadCursor cursor, long virtualAddress, int offset )
     {
         PageManager page = cursor.pageMan;
-        long pageId = cursor.pageId;
-        long base = cursor.base;
-        page.assertValidOffset( pageId, base, offset, bound );
+        int oldOffset = cursor.offset;
         cursor.moveWithinPage( virtualAddress, offset );
-        cursor.lockToken = page.moveLock( pageId, base, cursor.offset, cursor.lockToken, offset );
+        cursor.lockToken = page.moveLock( cursor.pageId, cursor.base, oldOffset, cursor.lockToken, offset );
     }
 
     protected static void write(
@@ -57,10 +52,8 @@ public abstract class MemoryManager
             PageManager page,
             long pageId,
             long base,
-            int offset,
-            int bound )
+            int offset )
     {
-        page.assertValidOffset( pageId, base, offset, bound );
         writer.initializeMemoryAccess( virtualAddress, page, pageId, base, offset );
         writer.lockExclusive();
     }

@@ -90,7 +90,7 @@ abstract class StoreFile extends PageManager implements Closeable
 
     abstract int recordSize();
 
-    long page( int pageId )
+    private long pageBase( int pageId )
     {
         MappedByteBuffer[] buffers = this.buffers;
         if ( buffers == null )
@@ -186,7 +186,23 @@ abstract class StoreFile extends PageManager implements Closeable
     }
 
     @Override
-    protected boolean gotoVirtualAddress(
+    protected boolean initializeCursor( long virtualAddress, ReadCursor cursor )
+    {
+        if ( (virtualAddress & 0xFFFF_FFF8_0000_0000L) != 0 )
+        {
+            return false;
+        }
+        long address = virtualAddress * recordSize();
+        int pageId = (int) (address / pageSize);
+        int offset = (int) (address % pageSize);
+        long base = pageBase( pageId );
+        assertValidOffset( pageId, base, offset, recordSize() );
+        initialize( cursor, virtualAddress, this, pageId, base, offset );
+        return true;
+    }
+
+    @Override
+    protected boolean moveToVirtualAddress(
             long virtualAddress,
             ReadCursor cursor,
             long pageId,
@@ -199,15 +215,18 @@ abstract class StoreFile extends PageManager implements Closeable
             return false;
         }
         long address = virtualAddress * recordSize();
-        int page = (int) (address / pageSize);
+        int newPageId = (int) (address / pageSize);
         int newOffset = (int) (address % pageSize);
-        if ( page == pageId )
+        if ( newPageId == pageId )
         {
-            move( cursor, virtualAddress, newOffset, recordSize() );
+            assertValidOffset( newPageId, base, newOffset, recordSize() );
+            move( cursor, virtualAddress, newOffset );
         }
         else
         {
-            read( cursor, virtualAddress, this, page, page( page ), newOffset, recordSize() );
+            long newBase = pageBase( newPageId );
+            assertValidOffset( newPageId, newBase, newOffset, recordSize() );
+            read( cursor, virtualAddress, newPageId, newBase, newOffset );
         }
         return true;
     }

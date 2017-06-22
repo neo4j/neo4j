@@ -66,19 +66,41 @@ class NodeCursor extends ReadCursor implements org.neo4j.impl.kernel.api.NodeCur
 
     void init( StoreFile nodes, long reference, long maxReference )
     {
-        ReadStore.setup( nodes, this, reference - 1 );
+        nodes.initializeCursor( reference, this );
+        initializeScanCursor();
         this.maxReference = maxReference;
     }
 
-    private boolean inUse()
+    @Override
+    public boolean next()
     {
-        return (unsignedByte( 0 ) & 0x01) != 0;
+        while ( scanNextByVirtualAddress( maxReference ) )
+        {
+            if ( inUse() )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
     public long nodeReference()
     {
         return virtualAddress();
+    }
+
+    @Override
+    public void writeIdTo( ValueWriter target )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    // DATA ACCESSOR METHODS
+
+    private boolean inUse()
+    {
+        return (unsignedByte( 0 ) & 0x01) != 0;
     }
 
     @Override
@@ -132,18 +154,7 @@ class NodeCursor extends ReadCursor implements org.neo4j.impl.kernel.api.NodeCur
         return combineReference( unsignedInt( 5 ), (unsignedByte( 0 ) & 0xF0L) << 28 );
     }
 
-    @Override
-    public boolean next()
-    {
-        while ( scanNextByVirtualAddress( maxReference ) )
-        {
-            if ( inUse() )
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    // ===================
 
     @Override
     protected int dataBound()

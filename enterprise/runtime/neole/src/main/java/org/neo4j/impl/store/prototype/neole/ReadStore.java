@@ -214,13 +214,6 @@ public class ReadStore extends MemoryManager implements Read
         }
     }
 
-    static <Cursor extends ReadCursor> void setup( StoreFile store, Cursor cursor, long reference )
-    {
-        int pageId = store.pageOf( reference );
-        int offset = store.offsetIntoPage( reference, pageId );
-        setup( cursor, reference, store, pageId, store.page( pageId ), offset );
-    }
-
     static int nextPowerOfTwo( int v )
     {
         v--;

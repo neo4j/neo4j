@@ -45,7 +45,11 @@ public abstract class PageManager extends MemoryManager
         return true;
     }
 
-    protected abstract boolean gotoVirtualAddress(
+    protected abstract boolean initializeCursor(
+            long virtualAddress,
+            ReadCursor cursor );
+
+    protected abstract boolean moveToVirtualAddress(
             long virtualAddress,
             ReadCursor cursor,
             long pageId,

@@ -99,7 +99,7 @@ class PropertyCursor extends PartialPropertyCursor
 
     void init( StoreFile properties, long reference )
     {
-        ReadStore.setup( properties, this, reference );
+        properties.initializeCursor( reference, this );
         block = -1;
     }
 
@@ -128,7 +128,7 @@ class PropertyCursor extends PartialPropertyCursor
             close();
             return false;
         }
-        return gotoVirtualAddress( next );
+        return moveToVirtualAddress( next );
     }
 
     @Override

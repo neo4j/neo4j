@@ -44,13 +44,18 @@ public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
      * @param virtualAddress the virtual address to go to
      * @return {@code true} if the virtual address is valid, {@code false} otherwise.
      */
-    protected final boolean gotoVirtualAddress( long virtualAddress )
+    protected final boolean moveToVirtualAddress( long virtualAddress )
     {
         if ( pageMan == null )
         {
             throw new IllegalStateException( "Cursor has not been initialized." );
         }
-        return pageMan.gotoVirtualAddress( virtualAddress, this, pageId, base, offset, lockToken );
+        return pageMan.moveToVirtualAddress( virtualAddress, this, pageId, base, offset, lockToken );
+    }
+
+    protected void initializeScanCursor()
+    {
+        virtualAddress -= 1;
     }
 
     protected boolean scanNextByVirtualAddress( long maxAddress )
@@ -59,7 +64,7 @@ public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
         {
             if ( address < maxAddress )
             {
-                if ( gotoVirtualAddress( address + 1 ) )
+                if ( moveToVirtualAddress( address + 1 ) )
                 {
                     return true;
                 }

@@ -30,7 +30,8 @@ class EdgeScanCursor extends EdgeCursor implements org.neo4j.impl.kernel.api.Edg
 
     void init( StoreFile edges, long reference, long maxReference )
     {
-        ReadStore.setup( edges, this, reference - 1 );
+        edges.initializeCursor( reference, this );
+        initializeScanCursor();
         this.maxReference = maxReference;
     }
 
@@ -44,7 +45,6 @@ class EdgeScanCursor extends EdgeCursor implements org.neo4j.impl.kernel.api.Edg
                 return true;
             }
         }
-        // TODO: fetch next block
         return false;
     }
 }
