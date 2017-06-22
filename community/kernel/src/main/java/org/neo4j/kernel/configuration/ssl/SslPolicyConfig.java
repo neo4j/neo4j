@@ -25,7 +25,6 @@ import java.util.List;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.config.SettingGroup;
 import org.neo4j.kernel.configuration.Group;
 import org.neo4j.kernel.configuration.GroupSettingSupport;
 import org.neo4j.ssl.ClientAuth;
@@ -72,8 +71,7 @@ public class SslPolicyConfig
     @Description( "Path to directory of X.509 certificates in PEM format for trusted parties." )
     public final Setting<File> trusted_dir;
 
-    @Internal // not yet implemented
-    @Description( "Path to directory of CRLs." )
+    @Description( "Path to directory of CRLs (Certificate Revocation Lists) in PEM format." )
     public final Setting<File> revoked_dir;
 
     @Description( "Client authentication stance." )

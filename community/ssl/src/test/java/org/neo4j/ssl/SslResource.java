@@ -26,12 +26,14 @@ public class SslResource
     private final File privateKey;
     private final File publicCertificate;
     private final File trustedDirectory;
+    private final File revokedDirectory;
 
-    SslResource( File privateKey, File publicCertificate, File trustedDirectory )
+    SslResource( File privateKey, File publicCertificate, File trustedDirectory, File revokedDirectory )
     {
         this.privateKey = privateKey;
         this.publicCertificate = publicCertificate;
         this.trustedDirectory = trustedDirectory;
+        this.revokedDirectory = revokedDirectory;
     }
 
     public File privateKey()
@@ -47,5 +49,10 @@ public class SslResource
     public File trustedDirectory()
     {
         return trustedDirectory;
+    }
+
+    public File revokedDirectory()
+    {
+        return revokedDirectory;
     }
 }
