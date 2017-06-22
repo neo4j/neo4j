@@ -30,9 +30,9 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.{CodeGenContext, QueryExecutionEvent}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}

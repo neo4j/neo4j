@@ -23,10 +23,10 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.Instruction
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.{CompiledExecutionResult, CompiledPlan}
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.Instruction
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
