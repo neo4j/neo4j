@@ -24,7 +24,7 @@ public abstract class MemoryManager
     protected static void setup( ReadCursor cursor, long virtualAddress, PageManager page, long pageId, long base,
             int offset )
     {
-        cursor.access( virtualAddress, page, pageId, base, offset );
+        cursor.initializeMemoryAccess( virtualAddress, page, pageId, base, offset );
     }
 
     protected static void read(
@@ -37,17 +37,17 @@ public abstract class MemoryManager
             int bound )
     {
         page.assertValidOffset( pageId, base, offset, bound );
-        cursor.access( virtualAddress, page, pageId, base, offset );
+        cursor.moveToOtherPage( virtualAddress, pageId, base, offset );
         cursor.lockShared();
     }
 
     protected static void move( ReadCursor cursor, long virtualAddress, int offset, int bound )
     {
-        PageManager page = cursor.pageman;
+        PageManager page = cursor.pageMan;
         long pageId = cursor.pageId;
         long base = cursor.base;
         page.assertValidOffset( pageId, base, offset, bound );
-        cursor.access( virtualAddress, page, pageId, base, offset );
+        cursor.moveWithinPage( virtualAddress, offset );
         cursor.lockToken = page.moveLock( pageId, base, cursor.offset, cursor.lockToken, offset );
     }
 
@@ -61,7 +61,7 @@ public abstract class MemoryManager
             int bound )
     {
         page.assertValidOffset( pageId, base, offset, bound );
-        writer.access( virtualAddress, page, pageId, base, offset );
+        writer.initializeMemoryAccess( virtualAddress, page, pageId, base, offset );
         writer.lockExclusive();
     }
 }

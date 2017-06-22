@@ -24,7 +24,7 @@ import static java.lang.String.format;
 abstract class MemoryAccess
 {
     long virtualAddress;
-    PageManager pageman;
+    PageManager pageMan;
     long pageId;
     long base;
     int offset;
@@ -34,64 +34,79 @@ abstract class MemoryAccess
 
     final void closeAccess()
     {
-        if ( pageman != null )
+        if ( pageMan != null )
         {
             try
             {
-                pageman.releasePage( pageId, base, offset, lockToken );
+                pageMan.releasePage( pageId, base, offset, lockToken );
             }
             finally
             {
-                pageman = null;
+                pageMan = null;
             }
         }
     }
 
     public final boolean hasPageReference()
     {
-        return pageman != null;
+        return pageMan != null;
     }
 
-    final void access( long virtualAddress, PageManager pageman, long pageId, long base, int offset )
+    final void initializeMemoryAccess( long virtualAddress, PageManager pageMan, long pageId, long base, int offset )
     {
-        // TODO: this method is too large to inline...
-        if ( this.pageman != null )
+        if ( this.pageMan != null )
         {
-            if ( this.pageman != pageman || this.pageId != pageId )
+            if ( this.pageMan != pageMan || this.pageId != pageId )
             {
                 closeAccess();
             }
             else
             {
-                lockRelease(); // TODO: this is wrong - the move method assumes that the lock has NOT been released!
+                lockRelease();
             }
         }
         this.virtualAddress = virtualAddress;
-        this.pageman = pageman;
+        this.pageMan = pageMan;
         this.pageId = pageId;
         this.base = base;
         this.offset = offset;
     }
 
+    final void moveToOtherPage( long virtualAddress, long pageId, long base, int offset )
+    {
+        assert this.pageMan != null : "Memory access must be initialized before moving";
+        this.virtualAddress = virtualAddress;
+        this.pageId = pageId;
+        this.base = base;
+        this.offset = offset;
+    }
+
+    final void moveWithinPage( long virtualAddress, int offset )
+    {
+        assert this.pageMan != null : "Memory access must be initialized before moving";
+        this.virtualAddress = virtualAddress;
+        this.offset = offset;
+    }
+
     final void lockShared()
     {
-        lockToken = pageman.sharedLock( pageId, base, offset );
+        lockToken = pageMan.sharedLock( pageId, base, offset );
     }
 
     final void lockExclusive()
     {
-        lockToken = pageman.exclusiveLock( pageId, base, offset );
+        lockToken = pageMan.exclusiveLock( pageId, base, offset );
     }
 
     final void lockRelease()
     {
-        pageman.releaseLock( pageId, base, offset, lockToken );
+        pageMan.releaseLock( pageId, base, offset, lockToken );
         lockToken = 0;
     }
 
     final long address( int offset, int size )
     {
-        if ( pageman == null )
+        if ( pageMan == null )
         {
             throw new IllegalStateException( "Cursor has not been initialized." );
         }
