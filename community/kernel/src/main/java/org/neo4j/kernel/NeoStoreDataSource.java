@@ -478,6 +478,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     clock,
                     propertyAccessor );
 
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
+            idController.initialize( transactionsSnapshotSupplier );
+
             kernelModule.satisfyDependencies( dependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
