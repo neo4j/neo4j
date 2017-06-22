@@ -19,7 +19,7 @@
  */
 package org.neo4j.impl.store.cursors;
 
-public abstract class PageHandle extends MemoryManager
+public abstract class PageManager extends MemoryManager
 {
     protected abstract void releasePage( long pageId, long base, int offset, long lockToken );
 

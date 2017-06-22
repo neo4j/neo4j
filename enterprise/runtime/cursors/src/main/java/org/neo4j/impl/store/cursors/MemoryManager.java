@@ -21,7 +21,7 @@ package org.neo4j.impl.store.cursors;
 
 public abstract class MemoryManager
 {
-    protected static void setup( ReadCursor cursor, long virtualAddress, PageHandle page, long pageId, long base,
+    protected static void setup( ReadCursor cursor, long virtualAddress, PageManager page, long pageId, long base,
             int offset )
     {
         cursor.access( virtualAddress, page, pageId, base, offset );
@@ -30,7 +30,7 @@ public abstract class MemoryManager
     protected static void read(
             ReadCursor cursor,
             long virtualAddress,
-            PageHandle page,
+            PageManager page,
             long pageId,
             long base,
             int offset,
@@ -43,7 +43,7 @@ public abstract class MemoryManager
 
     protected static void move( ReadCursor cursor, long virtualAddress, int offset, int bound )
     {
-        PageHandle page = cursor.page;
+        PageManager page = cursor.pageman;
         long pageId = cursor.pageId;
         long base = cursor.base;
         page.assertValidOffset( pageId, base, offset, bound );
@@ -54,7 +54,7 @@ public abstract class MemoryManager
     protected static void write(
             Writer writer,
             long virtualAddress,
-            PageHandle page,
+            PageManager page,
             long pageId,
             long base,
             int offset,

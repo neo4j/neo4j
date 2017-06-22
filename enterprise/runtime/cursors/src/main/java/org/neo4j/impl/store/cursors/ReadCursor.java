@@ -23,7 +23,7 @@ public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
 {
     public final boolean shouldRetry()
     {
-        long token = page.refreshLockToken( pageId, base, offset, lockToken );
+        long token = pageman.refreshLockToken( pageId, base, offset, lockToken );
         if ( token != lockToken )
         {
             lockToken = token;
@@ -35,7 +35,7 @@ public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
         }
     }
 
-    protected final void prepareReadCursor( long virtualAddress, PageHandle page, long pageId, long base )
+    protected final void prepareReadCursor( long virtualAddress, PageManager page, long pageId, long base )
     {
         access( virtualAddress, page, pageId, base, 0 );
     }
@@ -51,11 +51,11 @@ public abstract class ReadCursor extends MemoryAccess implements AutoCloseable
      */
     protected final boolean gotoVirtualAddress( long virtualAddress )
     {
-        if ( page == null )
+        if ( pageman == null )
         {
             throw new IllegalStateException( "Cursor has not been initialized." );
         }
-        return page.gotoVirtualAddress( virtualAddress, this, pageId, base, offset, lockToken );
+        return pageman.gotoVirtualAddress( virtualAddress, this, pageId, base, offset, lockToken );
     }
 
     protected boolean scanNextByVirtualAddress( long maxAddress )

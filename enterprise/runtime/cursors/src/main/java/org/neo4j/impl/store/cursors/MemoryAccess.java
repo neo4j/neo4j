@@ -24,7 +24,7 @@ import static java.lang.String.format;
 abstract class MemoryAccess
 {
     long virtualAddress;
-    PageHandle page;
+    PageManager pageman;
     long pageId;
     long base;
     int offset;
@@ -34,30 +34,30 @@ abstract class MemoryAccess
 
     final void closeAccess()
     {
-        if ( page != null )
+        if ( pageman != null )
         {
             try
             {
-                page.releasePage( pageId, base, offset, lockToken );
+                pageman.releasePage( pageId, base, offset, lockToken );
             }
             finally
             {
-                page = null;
+                pageman = null;
             }
         }
     }
 
     public final boolean hasPageReference()
     {
-        return page != null;
+        return pageman != null;
     }
 
-    final void access( long virtualAddress, PageHandle page, long pageId, long base, int offset )
+    final void access( long virtualAddress, PageManager pageman, long pageId, long base, int offset )
     {
         // TODO: this method is too large to inline...
-        if ( this.page != null )
+        if ( this.pageman != null )
         {
-            if ( this.page != page || this.pageId != pageId )
+            if ( this.pageman != pageman || this.pageId != pageId )
             {
                 closeAccess();
             }
@@ -67,7 +67,7 @@ abstract class MemoryAccess
             }
         }
         this.virtualAddress = virtualAddress;
-        this.page = page;
+        this.pageman = pageman;
         this.pageId = pageId;
         this.base = base;
         this.offset = offset;
@@ -75,23 +75,23 @@ abstract class MemoryAccess
 
     final void lockShared()
     {
-        lockToken = page.sharedLock( pageId, base, offset );
+        lockToken = pageman.sharedLock( pageId, base, offset );
     }
 
     final void lockExclusive()
     {
-        lockToken = page.exclusiveLock( pageId, base, offset );
+        lockToken = pageman.exclusiveLock( pageId, base, offset );
     }
 
     final void lockRelease()
     {
-        page.releaseLock( pageId, base, offset, lockToken );
+        pageman.releaseLock( pageId, base, offset, lockToken );
         lockToken = 0;
     }
 
     final long address( int offset, int size )
     {
-        if ( page == null )
+        if ( pageman == null )
         {
             throw new IllegalStateException( "Cursor has not been initialized." );
         }

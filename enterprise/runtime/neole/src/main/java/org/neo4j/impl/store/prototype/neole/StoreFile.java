@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
-import org.neo4j.impl.store.cursors.PageHandle;
+import org.neo4j.impl.store.cursors.PageManager;
 import org.neo4j.impl.store.cursors.ReadCursor;
 
 import static java.lang.Math.max;
@@ -39,7 +39,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.lcm;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.nextPowerOfTwo;
 
-abstract class StoreFile extends PageHandle implements Closeable
+abstract class StoreFile extends PageManager implements Closeable
 {
     static StoreFile fixedSizeRecordFile( File file, int recordSize ) throws IOException
     {
