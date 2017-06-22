@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core.state.machines.id;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -39,17 +38,14 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
     private final ReplicatedIdRangeAcquirer idRangeAcquirer;
     private final LogProvider logProvider;
     private IdTypeConfigurationProvider idTypeConfigurationProvider;
-    private final BooleanSupplier freeIdCondition;
 
     public ReplicatedIdGeneratorFactory( FileSystemAbstraction fs, ReplicatedIdRangeAcquirer idRangeAcquirer,
-            LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider,
-            BooleanSupplier freeIdCondition )
+            LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.fs = fs;
         this.idRangeAcquirer = idRangeAcquirer;
         this.logProvider = logProvider;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
-        this.freeIdCondition = freeIdCondition;
     }
 
     @Override
@@ -77,7 +73,7 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
         }
         ReplicatedIdGenerator replicatedIdGenerator =
                 new ReplicatedIdGenerator( fs, file, idType, highId, idRangeAcquirer, logProvider, grabSize,
-                        aggressiveReuse, freeIdCondition );
+                        aggressiveReuse );
 
         generators.put( idType, replicatedIdGenerator);
         return replicatedIdGenerator;

@@ -50,7 +50,8 @@ public class BufferingIdGeneratorFactoryTest
         MockedIdGeneratorFactory actual = new MockedIdGeneratorFactory();
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                actual, boundaries, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+                actual, IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider() );
+        bufferingIdGeneratorFactory.initialize( boundaries );
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );
 
@@ -79,8 +80,9 @@ public class BufferingIdGeneratorFactoryTest
         final long safeZone = MINUTES.toMillis( 1 );
         ControllableSnapshotSupplier boundaries = new ControllableSnapshotSupplier();
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory( actual,
-                boundaries, t -> clock.millis() - t.snapshotTime() >= safeZone,
+                t -> clock.millis() - t.snapshotTime() >= safeZone,
                 new CommunityIdTypeConfigurationProvider() );
+        bufferingIdGeneratorFactory.initialize( boundaries );
 
         IdGenerator idGenerator = bufferingIdGeneratorFactory.open(
                 new File( "doesnt-matter" ), 10, IdType.STRING_BLOCK, 0, Integer.MAX_VALUE );

@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
@@ -94,7 +95,7 @@ public class CoreStateMachinesModule
     public static final String ID_ALLOCATION_NAME = "id-allocation";
     public static final String LOCK_TOKEN_NAME = "lock-token";
 
-    public final ReplicatedIdGeneratorFactory idGeneratorFactory;
+    public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final LabelTokenHolder labelTokenHolder;
     public final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -103,6 +104,7 @@ public class CoreStateMachinesModule
     public final CommitProcessFactory commitProcessFactory;
 
     public final CoreStateMachines coreStateMachines;
+    public final BooleanSupplier freeIdCondition;
 
     public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
             Config config, RaftReplicator replicator, RaftMachine raftMachine, Dependencies dependencies,
@@ -136,10 +138,10 @@ public class CoreStateMachinesModule
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
-        BooleanSupplier freeIdCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
+        freeIdCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
         this.idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem,
                 idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider, freeIdCondition ) );
+                idTypeConfigurationProvider ) );
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
@@ -217,12 +219,12 @@ public class CoreStateMachinesModule
         return allocationSizes;
     }
 
-    private ReplicatedIdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
+    private IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
             final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider,
-            IdTypeConfigurationProvider idTypeConfigurationProvider, BooleanSupplier freeIdCondition )
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider, freeIdCondition );
+        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer,
+                logProvider, idTypeConfigurationProvider );
     }
 
     private Locks createLockManager( final Config config, Clock clock, final LogService logging,

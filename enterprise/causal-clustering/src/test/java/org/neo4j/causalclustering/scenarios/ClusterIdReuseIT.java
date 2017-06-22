@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.causalclustering.ClusterRule;
 
@@ -65,9 +66,9 @@ public class ClusterIdReuseIT
         assumeTrue( leader1 != null && leader1.equals( leader2 ) );
 
         // Force maintenance on leader
-        IdController idController = idMaintenanceOnLeader( leader1 );
-
-        final IdGenerator idGenerator = idController.getIdGeneratorFactory().get( IdType.NODE );
+        idMaintenanceOnLeader( leader1 );
+        IdGeneratorFactory idGeneratorFactory = resolveDependency( leader1, IdGeneratorFactory.class );
+        final IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
         assertEquals( 2, idGenerator.getDefragCount() );
 
         final MutableLong node1id = new MutableLong();
@@ -105,7 +106,9 @@ public class ClusterIdReuseIT
 
         assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
 
-        IdGenerator creationLeaderIdGenerator = idMaintenanceOnLeader( creationLeader ).getIdGeneratorFactory().get( IdType.NODE );
+        idMaintenanceOnLeader( creationLeader );
+        IdGeneratorFactory idGeneratorFactory = resolveDependency( creationLeader, IdGeneratorFactory.class );
+        IdGenerator creationLeaderIdGenerator = idGeneratorFactory.get( IdType.NODE );
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
         // Force leader switch
@@ -114,9 +117,10 @@ public class ClusterIdReuseIT
         // waiting for new leader
         CoreClusterMember newLeader = cluster.awaitLeader();
         assertNotSame( creationLeader.serverId(), newLeader.serverId() );
-        IdController idController = idMaintenanceOnLeader( newLeader );
+        idMaintenanceOnLeader( newLeader );
 
-        final IdGenerator idGenerator = idController.getIdGeneratorFactory().get( IdType.NODE );
+        IdGeneratorFactory newLeaderIdGeneratorFactory = resolveDependency( newLeader, IdGeneratorFactory.class );
+        final IdGenerator idGenerator = newLeaderIdGeneratorFactory.get( IdType.NODE );
         assertEquals( 0, idGenerator.getDefragCount() );
 
         CoreClusterMember newCreationLeader = cluster.coreTx( ( db, tx ) ->
@@ -139,10 +143,9 @@ public class ClusterIdReuseIT
         CoreClusterMember deletionLeader = removeTwoNodes( cluster, first, second );
 
         assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
-
-        IdGenerator creationLeaderIdGenerator = idMaintenanceOnLeader( creationLeader ).getIdGeneratorFactory().get( IdType.NODE );
+        IdGeneratorFactory idGeneratorFactory = resolveDependency( creationLeader, IdGeneratorFactory.class );
+        IdGenerator creationLeaderIdGenerator = idGeneratorFactory.get( IdType.NODE );
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
-
 
         // Restart and re-elect first leader
         cluster.removeCoreMemberWithMemberId( creationLeader.serverId() );
@@ -156,7 +159,9 @@ public class ClusterIdReuseIT
             leader = cluster.awaitLeader();
         }
 
-        creationLeaderIdGenerator = idMaintenanceOnLeader( leader ).getIdGeneratorFactory().get( IdType.NODE );
+        idMaintenanceOnLeader( leader );
+        IdGeneratorFactory leaderIdGeneratorFactory = resolveDependency( leader, IdGeneratorFactory.class );
+        creationLeaderIdGenerator = leaderIdGeneratorFactory.get( IdType.NODE );
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 
         final MutableLong node1id = new MutableLong();
@@ -177,11 +182,15 @@ public class ClusterIdReuseIT
         assertEquals( second.longValue(), node2id.longValue() );
     }
 
-    private IdController idMaintenanceOnLeader( CoreClusterMember leader ) throws TimeoutException
+    private void idMaintenanceOnLeader( CoreClusterMember leader ) throws TimeoutException
     {
-        IdController idController = leader.database().getDependencyResolver().resolveDependency( IdController.class );
+        IdController idController = resolveDependency( leader, IdController.class );
         idController.maintenance();
-        return idController;
+    }
+
+    private <T> T resolveDependency( CoreClusterMember leader, Class<T> clazz )
+    {
+        return leader.database().getDependencyResolver().resolveDependency( clazz );
     }
 
     private CoreClusterMember removeTwoNodes( Cluster cluster, MutableLong first, MutableLong second ) throws Exception

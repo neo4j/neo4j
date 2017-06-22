@@ -120,6 +120,6 @@ public class ReplicatedIdRangeAcquirerTest
         LeaderLocator leaderLocator = Mockito.mock( LeaderLocator.class );
 
         return new ReplicatedIdGenerator( fs, file, IdType.ARRAY_BLOCK, initialHighId, acquirer,
-                NullLogProvider.getInstance(), 10, true, () -> false );
+                NullLogProvider.getInstance(), 10, true );
     }
 }

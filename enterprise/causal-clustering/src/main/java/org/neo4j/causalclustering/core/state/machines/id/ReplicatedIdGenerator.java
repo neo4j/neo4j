@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.io.File;
-import java.util.function.BooleanSupplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdContainer;
@@ -39,21 +38,18 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdType idType;
     private final Log log;
     private final ReplicatedIdRangeAcquirer acquirer;
-    private final BooleanSupplier freeIdCondition;
     private volatile long highId;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
 
     private IdContainer idContainer;
 
     ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
-            ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse,
-            BooleanSupplier freeIdCondition )
+            ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse )
     {
         this.idType = idType;
         this.highId = highId;
         this.acquirer = acquirer;
         this.log = logProvider.getLog( getClass() );
-        this.freeIdCondition = freeIdCondition;
         idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
         idContainer.init();
     }
@@ -67,10 +63,7 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public void freeId( long id )
     {
-        if ( freeIdCondition.getAsBoolean() )
-        {
-            idContainer.freeId( id );
-        }
+        idContainer.freeId( id );
     }
 
     @Override
@@ -94,7 +87,7 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public long getNumberOfIdsInUse()
     {
-        return highId - idContainer.getFreeIdCount();
+        return highId - getDefragCount();
     }
 
     @Override

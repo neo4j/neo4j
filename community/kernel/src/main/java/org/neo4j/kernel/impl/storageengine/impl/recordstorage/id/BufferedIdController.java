@@ -24,11 +24,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.scheduler.JobScheduler;
 
 /**
  * Storage id controller that provide buffering possibilities to be able so safely free and reuse ids.
@@ -37,23 +34,14 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class BufferedIdController extends LifecycleAdapter implements IdController
 {
-
     private final BufferingIdGeneratorFactory bufferingIdGeneratorFactory;
     private final JobScheduler scheduler;
     private JobScheduler.JobHandle jobHandle;
 
-    public BufferedIdController( IdGeneratorFactory idGeneratorFactory,
-            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier, IdReuseEligibility eligibleForReuse,
-            IdTypeConfigurationProvider idTypeConfigurationProvider, JobScheduler scheduler )
+    public BufferedIdController( BufferingIdGeneratorFactory bufferingIdGeneratorFactory, JobScheduler scheduler )
     {
+        this.bufferingIdGeneratorFactory = bufferingIdGeneratorFactory;
         this.scheduler = scheduler;
-        bufferingIdGeneratorFactory = new BufferingIdGeneratorFactory(
-                idGeneratorFactory, transactionsSnapshotSupplier, eligibleForReuse, idTypeConfigurationProvider );
-    }
-
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return bufferingIdGeneratorFactory;
     }
 
     @Override
@@ -79,5 +67,11 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     public void maintenance()
     {
         bufferingIdGeneratorFactory.maintenance();
+    }
+
+    @Override
+    public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
+    {
+        bufferingIdGeneratorFactory.initialize( transactionsSnapshotSupplier );
     }
 }

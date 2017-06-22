@@ -44,12 +44,16 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
@@ -57,8 +61,10 @@ import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.Collections.singletonMap;
 
@@ -68,6 +74,9 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
+    protected static final boolean safeIdBuffering = FeatureToggles.flag(
+            RecordStorageEngine.class, "safeIdBuffering", true ); // TODO: fix this!
+
     void registerProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( org.neo4j.kernel.builtinprocs.BuiltInProcedures.class );
@@ -111,6 +120,8 @@ public abstract class EditionModule
     public IdReuseEligibility eligibleForIdReuse;
 
     public FileSystemWatcherService watcherService;
+
+    public IdController idController;
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File storeDir,
             LogService logging, JobScheduler jobScheduler, Predicate<String> fileNameFilter )
@@ -224,5 +235,25 @@ public abstract class EditionModule
     protected BoltConnectionTracker createSessionTracker()
     {
         return BoltConnectionTracker.NOOP;
+    }
+
+    protected IdController createIdController( PlatformModule platformModule )
+    {
+        return safeIdBuffering ? createBufferedIdController( idGeneratorFactory, platformModule.jobScheduler,
+                eligibleForIdReuse, idTypeConfigurationProvider ) : createDefaultIdController();
+    }
+
+    protected BufferedIdController createBufferedIdController( IdGeneratorFactory idGeneratorFactory,
+            JobScheduler scheduler, IdReuseEligibility eligibleForIdReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    {
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
+                new BufferingIdGeneratorFactory( idGeneratorFactory, eligibleForIdReuse, idTypeConfigurationProvider );
+        return new BufferedIdController( bufferingIdGeneratorFactory, scheduler );
+    }
+
+    protected DefaultIdController createDefaultIdController()
+    {
+        return new DefaultIdController();
     }
 }

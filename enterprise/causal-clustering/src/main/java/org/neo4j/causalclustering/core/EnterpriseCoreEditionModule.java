@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
@@ -83,7 +84,11 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
+import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -96,6 +101,7 @@ import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
@@ -225,8 +231,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
-        this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
+        this.idGeneratorFactory =
+                safeIdBuffering ? new BufferingIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory, eligibleForIdReuse,
+                        idTypeConfigurationProvider ) : coreStateMachinesModule.idGeneratorFactory;
+        this.idController = createIdController( platformModule );
+        this.idGeneratorFactory = new FreeIdFilteredIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory,
+                coreStateMachinesModule.freeIdCondition );
+
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
@@ -244,6 +256,14 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    @Override
+    protected BufferedIdController createBufferedIdController( IdGeneratorFactory idGeneratorFactory,
+            JobScheduler scheduler, IdReuseEligibility eligibleForIdReuse,
+            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    {
+        return new BufferedIdController( (BufferingIdGeneratorFactory) idGeneratorFactory, scheduler );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
@@ -276,6 +277,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
+    private final IdController idController;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final AccessCapability accessCapability;
 
@@ -325,7 +327,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             SystemNanoClock clock,
             AccessCapability accessCapability,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            IdController idController )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -364,6 +367,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
 
         readOnly = config.get( Configuration.read_only );
+        this.idController = idController;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
@@ -479,6 +483,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     clock,
                     propertyAccessor );
 
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
+            idController.initialize( transactionsSnapshotSupplier );
+
             kernelModule.satisfyDependencies( dependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
@@ -577,17 +584,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
             SchemaState schemaState, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
-        // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
-        // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
-        // TODO API
-        Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
-                () -> kernelModule.kernelTransactions().get();
-        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
-                eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
-                tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                transactionSnapshotSupplier );
+        RecordStorageEngine storageEngine =
+                new RecordStorageEngine( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder,
+                        labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
+                        tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
+                        labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                        legacyIndexTransactionOrdering, idGeneratorFactory, idController );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

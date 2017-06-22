@@ -56,6 +56,8 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -145,9 +147,10 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 IOLimiter.unlimited(),
                 availabilityGuard, clock,
                 new CanWrite(), new StoreCopyCheckPointMutex(),
-                RecoveryCleanupWorkCollector.IMMEDIATE );
-
-//>>>>>>> upstream/3.2
+                RecoveryCleanupWorkCollector.IMMEDIATE,
+                new BufferedIdController(
+                        new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                                idConfigurationProvider ), jobScheduler ));
         return dataSource;
     }
 

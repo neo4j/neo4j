@@ -20,9 +20,7 @@
 package org.neo4j.test.rule;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.neo4j.concurrent.Runnables;
 import org.neo4j.helpers.collection.Iterables;
@@ -32,7 +30,6 @@ import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
-import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -47,10 +44,12 @@ import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -111,17 +110,18 @@ public class RecordStorageEngineRule extends ExternalResource
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
         JobScheduler scheduler = life.add( new Neo4jJobScheduler() );
         Config config = Config.defaults();
-        Supplier<KernelTransactionsSnapshot> txSnapshotSupplier =
-                () -> new KernelTransactionsSnapshot( Collections.emptySet(), 0 );
-        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, idGeneratorFactory,
-                IdReuseEligibility.ALWAYS, new CommunityIdTypeConfigurationProvider(), pageCache, fs,
-                NullLogProvider.getInstance(),
-                mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
+
+        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                        new CommunityIdTypeConfigurationProvider() );
+        return life.add( new ExtendedRecordStorageEngine( storeDirectory, config, pageCache, fs,
+                NullLogProvider.getInstance(), mock( PropertyKeyTokenHolder.class ), mock( LabelTokenHolder.class ),
                 mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
                 labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), txSnapshotSupplier, transactionApplierTransformer ) );
+                new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
+                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
     }
 
     @Override
@@ -192,34 +192,25 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private class ExtendedRecordStorageEngine extends RecordStorageEngine
     {
-
         private final Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
                 transactionApplierTransformer;
 
-        ExtendedRecordStorageEngine( File storeDir, Config config,
-                IdGeneratorFactory idGeneratorFactory, IdReuseEligibility eligibleForReuse,
-                IdTypeConfigurationProvider idTypeConfigurationProvider,
-                PageCache pageCache, FileSystemAbstraction fs, LogProvider logProvider,
-                PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
+        ExtendedRecordStorageEngine( File storeDir, Config config, PageCache pageCache, FileSystemAbstraction fs,
+                LogProvider logProvider, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
                 RelationshipTypeTokenHolder relationshipTypeTokens, SchemaState schemaState,
-                ConstraintSemantics constraintSemantics, JobScheduler scheduler,
-                TokenNameLookup tokenNameLookup, LockService lockService,
-                SchemaIndexProvider indexProvider,
+                ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
+                LockService lockService, SchemaIndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                LabelScanStoreProvider labelScanStoreProvider,
-                LegacyIndexProviderLookup legacyIndexProviderLookup,
+                LabelScanStoreProvider labelScanStoreProvider, LegacyIndexProviderLookup legacyIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
-                Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier,
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade>
-                        transactionApplierTransformer )
+                IdGeneratorFactory idGeneratorFactory, IdController idController,
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
-            super( storeDir, config, idGeneratorFactory, eligibleForReuse, idTypeConfigurationProvider,
-                    pageCache, fs, logProvider, propertyKeyTokenHolder,
-                    labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
-                    tokenNameLookup, lockService, indexProvider, indexingServiceMonitor, databaseHealth,
-                    labelScanStoreProvider,
-                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                    transactionsSnapshotSupplier );
+            super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
+                    relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
+                    lockService, indexProvider, indexingServiceMonitor, databaseHealth, labelScanStoreProvider,
+                    legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering, idGeneratorFactory,
+                    idController );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 
