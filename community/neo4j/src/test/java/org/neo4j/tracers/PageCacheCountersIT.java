@@ -95,7 +95,7 @@ public class PageCacheCountersIT
         long initialFlushes = pageCacheTracer.flushes();
 
         startNodeCreators( nodeCreators, nodeCreatorFutures );
-        TimeUnit.MILLISECONDS.sleep( 50 );
+        TimeUnit.MILLISECONDS.sleep( 500 );
         stopNodeCreators( nodeCreators, nodeCreatorFutures );
 
         assertThat( pageCacheTracer.pins(), greaterThan( 0L ) );
@@ -202,7 +202,7 @@ public class PageCacheCountersIT
 
         private void storeCounters( PageCursorCounters pageCursorCounters )
         {
-            Objects.nonNull( pageCursorCounters );
+            Objects.requireNonNull( pageCursorCounters );
             pins += pageCursorCounters.pins();
             unpins += pageCursorCounters.unpins();
             hits += pageCursorCounters.hits();
