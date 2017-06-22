@@ -23,8 +23,20 @@ objectclass: organizationalUnit
 objectclass: top
 ou: users
 
+# Entry 9: ou=users,dc=example,dc=com
+dn: ou=local,ou=users,dc=example,dc=com
+objectclass: organizationalUnit
+objectclass: top
+ou: local
+
+# Entry 9: ou=users,dc=example,dc=com
+dn: ou=remote,ou=users,dc=example,dc=com
+objectclass: organizationalUnit
+objectclass: top
+ou: remote
+
 # Entry 10: cn=neo4j,ou=users,dc=example,dc=com
-dn: cn=n.neo4j,ou=users,dc=example,dc=com
+dn: cn=n.neo4j,ou=local,ou=users,dc=example,dc=com
 memberOf: cn=admin,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
@@ -35,12 +47,12 @@ sn: n.neo4j
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
 
 # Entry 11: cn=neo,ou=users,dc=example,dc=com
-dn: cn=n.neo,ou=users,dc=example,dc=com
+dn: cn=n.neo,ou=remote,ou=users,dc=example,dc=com
 memberOf: cn=reader,ou=groups,dc=example,dc=com
 objectClass: top
 objectClass: inetOrgPerson
 objectclass: simulatedMicrosoftSecurityPrincipal
-samAccountName: smith
+samAccountName: neo
 cn: n.neo
 sn: n.neo
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
