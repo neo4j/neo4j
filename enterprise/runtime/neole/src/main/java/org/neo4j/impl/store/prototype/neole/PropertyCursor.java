@@ -28,7 +28,7 @@ import org.neo4j.values.Values;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 import static org.neo4j.impl.store.prototype.neole.ShortStringEncoding.ENCODINGS;
 
-class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadStore>
+class PropertyCursor extends PartialPropertyCursor
 {
     /**
      * <pre>
@@ -90,13 +90,10 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     static final int BOOL = 1, BYTE = 2, SHORT = 3, CHAR = 4, INT = 5, LONG = 6, FLOAT = 7, DOUBLE = 8,
             STRING_REFERENCE = 9, ARRAY_REFERENCE = 10, SHORT_STRING = 11, SHORT_ARRAY = 12;
 
-    private final ByteBlockCursor bytes;
     private int block;
 
-    PropertyCursor( ReadStore store, ByteBlockCursor bytes )
+    PropertyCursor()
     {
-        super( store );
-        this.bytes = bytes;
         block = Integer.MIN_VALUE;
     }
 
@@ -146,7 +143,7 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
         return (int) (block( block ) & 0x00FF_FFFFL);
     }
 
-    int typeIdentifier()
+    private int typeIdentifier()
     {
         return (int) ((block( block ) & 0x0F00_0000L) >> 24);
     }
@@ -154,6 +151,16 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
     private long block( int offset )
     {
         return readLong( 9 + Long.BYTES * offset );
+    }
+
+    private long nextPropertyRecordReference()
+    {
+        return combineReference( unsignedInt( 1 ), ((long) unsignedByte( 0 ) & 0x0FL) << 32 );
+    }
+
+    private long prevPropertyRecordReference()
+    {
+        return combineReference( unsignedInt( 5 ), ((long) unsignedByte( 0 ) & 0xF0L) << 31 );
     }
 
     @Override
@@ -299,16 +306,6 @@ class PropertyCursor extends org.neo4j.impl.store.prototype.PropertyCursor<ReadS
             return ShortStringEncoding.numberOfBlocksUsed( ENCODINGS[ encoding - 1 ], stringLength );
         }
         return 1;
-    }
-
-    private long nextPropertyRecordReference()
-    {
-        return combineReference( unsignedInt( 1 ), ((long) unsignedByte( 0 ) & 0x0FL) << 32 );
-    }
-
-    private long prevPropertyRecordReference()
-    {
-        return combineReference( unsignedInt( 5 ), ((long) unsignedByte( 0 ) & 0xF0L) << 31 );
     }
 
     // SHORT STRING DECODE

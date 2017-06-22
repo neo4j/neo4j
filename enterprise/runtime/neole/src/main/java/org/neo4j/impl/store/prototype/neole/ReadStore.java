@@ -29,8 +29,8 @@ import org.neo4j.impl.kernel.api.Scan;
 import org.neo4j.impl.store.cursors.MemoryManager;
 import org.neo4j.impl.store.cursors.ReadCursor;
 
-import static org.neo4j.impl.store.prototype.EdgeCursor.NO_EDGE;
-import static org.neo4j.impl.store.prototype.PropertyCursor.NO_PROPERTIES;
+import static org.neo4j.impl.store.prototype.neole.EdgeCursor.NO_EDGE;
+import static org.neo4j.impl.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.impl.store.prototype.neole.StoreFile.fixedSizeRecordFile;
 
 public class ReadStore extends MemoryManager implements Read
@@ -255,6 +255,6 @@ public class ReadStore extends MemoryManager implements Read
 
     int dynamicStoreRecordSize()
     {
-        return properties.recordSize();
+        throw new UnsupportedOperationException( "not implemented" );
     }
 }

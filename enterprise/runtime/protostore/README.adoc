@@ -1,9 +1,0 @@
-Store API Prototype
-===================
-
-This is an abstract base for implementations of the link:../../../community/kernel-api/README.adoc[Kernel API].
-
-The implementation here is based on the link:../cursors/README.adoc[Direct Cursors] prototype.
-
-If this prototype is successful, the abstract base here will form the actual Kernel API, replacing the interfaces defined in `org.neo4j.impl.kernel.api`.
-While we still have multiple implementations of those interfaces, we need them to be interfaces.

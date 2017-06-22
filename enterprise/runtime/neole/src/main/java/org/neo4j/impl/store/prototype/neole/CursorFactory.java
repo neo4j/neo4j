@@ -54,7 +54,7 @@ class CursorFactory implements org.neo4j.impl.kernel.api.CursorFactory
     @Override
     public PropertyCursor allocatePropertyCursor()
     {
-        return new PropertyCursor( store, new ByteBlockCursor( store, store.dynamicStoreRecordSize() ) );
+        return new PropertyCursor();
     }
 
     @Override

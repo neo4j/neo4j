@@ -17,23 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.impl.store.prototype;
+package org.neo4j.impl.store.prototype.neole;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.impl.kernel.api.Read;
 import org.neo4j.impl.kernel.api.result.ValueWriter;
 import org.neo4j.impl.store.cursors.ReadCursor;
 
-public abstract class PropertyCursor<Store extends Read> extends ReadCursor
+public abstract class PartialPropertyCursor extends ReadCursor
         implements org.neo4j.impl.kernel.api.PropertyCursor
 {
-    public static final long NO_PROPERTIES = -1;
-    protected final Store store;
+    static final long NO_PROPERTIES = -1;
 
-    protected PropertyCursor( Store store )
+    PartialPropertyCursor()
     {
-        this.store = store;
     }
 
     @Override

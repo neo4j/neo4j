@@ -19,10 +19,12 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
-import static org.neo4j.impl.store.prototype.EdgeCursor.NO_EDGE;
+import org.neo4j.impl.store.cursors.ReadCursor;
+
+import static org.neo4j.impl.store.prototype.neole.EdgeCursor.NO_EDGE;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 
-class EdgeGroupCursor extends org.neo4j.impl.store.prototype.EdgeGroupCursor<ReadStore>
+class EdgeGroupCursor extends ReadCursor implements org.neo4j.impl.kernel.api.EdgeGroupCursor
 {
     /**
      * <pre>
@@ -49,13 +51,14 @@ class EdgeGroupCursor extends org.neo4j.impl.store.prototype.EdgeGroupCursor<Rea
      * </pre>
      */
     static final int RECORD_SIZE = 25;
+    protected final ReadStore store;
     /** used for accessing counts */
     private final EdgeTraversalCursor edge;
     private long originNodeReference;
 
     EdgeGroupCursor( ReadStore store, EdgeTraversalCursor edge )
     {
-        super( store );
+        this.store = store;
         this.edge = edge;
         this.originNodeReference = Long.MIN_VALUE;
     }
@@ -246,13 +249,30 @@ class EdgeGroupCursor extends org.neo4j.impl.store.prototype.EdgeGroupCursor<Rea
         return combineReference( unsignedInt( 20 ), ((long) unsignedByte( 24 )) << 32 );
     }
 
-    @Override
-    protected long originNodeReference()
+    private long originNodeReference()
     {
         if ( nonDenseHack() )
         {
             return edge.originNodeReference();
         }
         return originNodeReference;
+    }
+
+    @Override
+    public void outgoing( org.neo4j.impl.kernel.api.EdgeTraversalCursor cursor )
+    {
+        store.edges( originNodeReference(), outgoingReference(), cursor );
+    }
+
+    @Override
+    public void incoming( org.neo4j.impl.kernel.api.EdgeTraversalCursor cursor )
+    {
+        store.edges( originNodeReference(), incomingReference(), cursor );
+    }
+
+    @Override
+    public void loops( org.neo4j.impl.kernel.api.EdgeTraversalCursor cursor )
+    {
+        store.edges( originNodeReference(), loopsReference(), cursor );
     }
 }

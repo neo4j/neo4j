@@ -19,12 +19,16 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import org.neo4j.impl.kernel.api.EdgeTraversalCursor;
 import org.neo4j.impl.kernel.api.LabelSet;
+import org.neo4j.impl.kernel.api.PropertyCursor;
+import org.neo4j.impl.store.cursors.ReadCursor;
 
-import static org.neo4j.impl.store.prototype.EdgeCursor.NO_EDGE;
+import static org.neo4j.impl.store.prototype.neole.EdgeCursor.NO_EDGE;
+import static org.neo4j.impl.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 
-class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
+class NodeCursor extends ReadCursor implements org.neo4j.impl.kernel.api.NodeCursor
 {
     /**
      * <pre>
@@ -52,11 +56,12 @@ class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
      * </pre>
      */
     static final int RECORD_SIZE = 15;
-    long maxReference;
+    protected final ReadStore store;
+    private long maxReference;
 
     NodeCursor( ReadStore store )
     {
-        super( store );
+        this.store = store;
     }
 
     void init( StoreFile nodes, long reference, long maxReference )
@@ -137,7 +142,6 @@ class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
                 return true;
             }
         }
-        // TODO: fetch next block
         return false;
     }
 
@@ -145,5 +149,41 @@ class NodeCursor extends org.neo4j.impl.store.prototype.NodeCursor<ReadStore>
     protected int dataBound()
     {
         return RECORD_SIZE;
+    }
+
+    @Override
+    public boolean hasProperties()
+    {
+        return propertiesReference() != NO_PROPERTIES;
+    }
+
+    @Override
+    public void edges( org.neo4j.impl.kernel.api.EdgeGroupCursor cursor )
+    {
+        store.edgeGroups( nodeReference(), edgeGroupReference(), cursor );
+    }
+
+    @Override
+    public void outgoingEdges( org.neo4j.impl.kernel.api.EdgeGroupCursor groups, org.neo4j.impl.kernel.api.EdgeTraversalCursor edges )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void incomingEdges( org.neo4j.impl.kernel.api.EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void allEdges( org.neo4j.impl.kernel.api.EdgeGroupCursor groups, EdgeTraversalCursor edges )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void properties( PropertyCursor cursor )
+    {
+        store.nodeProperties( propertiesReference(), cursor );
     }
 }

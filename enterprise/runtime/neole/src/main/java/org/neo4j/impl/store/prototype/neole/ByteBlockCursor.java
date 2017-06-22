@@ -28,6 +28,10 @@ import static java.lang.Math.min;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.nextPowerOfTwo;
 
+/**
+ * The ByteBlockCursor would be used to read data from dynamic stores. This will help if we decide to implement
+ * loading of heavy properties in NeoLE.
+ */
 class ByteBlockCursor extends ReadCursor
 {
     /**

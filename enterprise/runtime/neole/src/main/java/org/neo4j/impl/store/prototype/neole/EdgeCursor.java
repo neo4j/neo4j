@@ -19,9 +19,14 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
+import org.neo4j.impl.kernel.api.NodeCursor;
+import org.neo4j.impl.kernel.api.PropertyCursor;
+import org.neo4j.impl.store.cursors.ReadCursor;
+
+import static org.neo4j.impl.store.prototype.neole.PartialPropertyCursor.NO_PROPERTIES;
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 
-abstract class EdgeCursor extends org.neo4j.impl.store.prototype.EdgeCursor<ReadStore>
+abstract class EdgeCursor extends ReadCursor implements org.neo4j.impl.kernel.api.EdgeDataAccessor
 {
     /**
      * <pre>
@@ -53,10 +58,12 @@ abstract class EdgeCursor extends org.neo4j.impl.store.prototype.EdgeCursor<Read
      * </pre>
      */
     static final int RECORD_SIZE = 34;
+    static final long NO_EDGE = -1;
+    protected final ReadStore store;
 
     EdgeCursor( ReadStore store )
     {
-        super( store );
+        this.store = store;
     }
 
     @Override
@@ -118,5 +125,29 @@ abstract class EdgeCursor extends org.neo4j.impl.store.prototype.EdgeCursor<Read
     long targetNextEdgeReference()
     {
         return combineReference( unsignedInt( 25 ), ((long) unsignedShort( 9 ) & 0x0007L) << 32 );
+    }
+
+    @Override
+    public boolean hasProperties()
+    {
+        return propertiesReference() != NO_PROPERTIES;
+    }
+
+    @Override
+    public void source( org.neo4j.impl.kernel.api.NodeCursor cursor )
+    {
+        store.singleNode( sourceNodeReference(), cursor );
+    }
+
+    @Override
+    public void target( NodeCursor cursor )
+    {
+        store.singleNode( targetNodeReference(), cursor );
+    }
+
+    @Override
+    public void properties( PropertyCursor cursor )
+    {
+        store.edgeProperties( propertiesReference(), cursor );
     }
 }
