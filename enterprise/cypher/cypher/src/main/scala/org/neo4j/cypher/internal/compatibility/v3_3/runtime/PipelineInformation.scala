@@ -21,6 +21,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 
 object PipelineInformation {
@@ -35,16 +36,16 @@ class PipelineInformation(var slots: Map[String, Slot], var numberOfLongs: Int, 
     new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
   }
 
-  def newLong(name: String): Unit = {
+  def newLong(name: String, nullable: Boolean, typ: CypherType): Unit = {
     checkNotAlreadyTaken(name)
-    val slot = LongSlot(numberOfLongs)
+    val slot = LongSlot(numberOfLongs, nullable, typ)
     slots = slots + (name -> slot)
     numberOfLongs = numberOfLongs + 1
   }
 
-  def newReference(name: String): Unit = {
+  def newReference(name: String, nullable: Boolean, typ: CypherType): Unit = {
     checkNotAlreadyTaken(name)
-    val slot = RefSlot(numberOfReferences)
+    val slot = RefSlot(numberOfReferences, nullable, typ)
     slots = slots + (name -> slot)
     numberOfReferences = numberOfReferences + 1
   }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 import scala.collection.mutable
 
@@ -30,37 +31,41 @@ object RegisterAllocation {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
 
-    def allocate(lp: LogicalPlan, pipelineInfo: PipelineInformation): Unit = lp match {
+    def allocate(lp: LogicalPlan, pipelineInfo: PipelineInformation, nullable: Boolean): Unit = lp match {
       case leaf: NodeLogicalLeafPlan =>
-        pipelineInfo.newLong(leaf.idName.name)
+        pipelineInfo.newLong(leaf.idName.name, nullable, CTNode)
         result += (lp -> pipelineInfo)
 
       case ProduceResult(_, source) =>
-        allocate(source, pipelineInfo)
+        allocate(source, pipelineInfo, nullable)
         result += (lp -> pipelineInfo)
 
       case Selection(_, source) =>
-        allocate(source, pipelineInfo)
+        allocate(source, pipelineInfo, nullable)
         result += (lp -> pipelineInfo)
 
       case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        allocate(source, pipelineInfo)
+        allocate(source, pipelineInfo, nullable)
         val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(relName)
-        newPipelineInfo.newLong(to)
+        newPipelineInfo.newLong(relName, nullable, CTRelationship)
+        newPipelineInfo.newLong(to, nullable, CTNode)
         result += (lp -> newPipelineInfo)
 
-      case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandInto) =>
-        allocate(source, pipelineInfo)
+      case Expand(source, _, _, _, _, IdName(relName), ExpandInto) =>
+        allocate(source, pipelineInfo, nullable)
         val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(relName)
+        newPipelineInfo.newLong(relName, nullable, CTRelationship)
         result += (lp -> newPipelineInfo)
+
+      case Optional(source, _) =>
+        allocate(source, pipelineInfo, nullable = true)
+        result += (lp -> pipelineInfo)
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
     val allocations = PipelineInformation.empty
-    allocate(lp, allocations)
+    allocate(lp, allocations, nullable = false)
 
     result.toMap
   }

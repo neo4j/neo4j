@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+
 sealed trait Slot {
   def offset: Int
+  def nullable: Boolean
+  def typ: CypherType
 }
 
-case class LongSlot(offset: Int) extends Slot
-case class RefSlot(offset: Int) extends Slot
+case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
+case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot

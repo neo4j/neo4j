@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, True}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("only single allnodes scan") {
@@ -36,7 +37,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 1
-    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0)), 1, 0))
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
   }
 
   test("single labelscan scan") {
@@ -48,7 +49,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 1
-    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0)), 1, 0))
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
   }
 
   test("labelscan with filtering") {
@@ -61,7 +62,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 2
-    allocations(leaf) should equal(PipelineInformation(Map("x" -> LongSlot(0)), 1, 0))
+    allocations(leaf) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
     allocations(filter) shouldBe theSameInstanceAs (allocations(leaf))
   }
 
@@ -77,11 +78,14 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0), "r" -> LongSlot(1), "z" -> LongSlot(2)), numberOfLongs = 3, numberOfReferences = 0))
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = false, CTRelationship),
+        "z" -> LongSlot(2, nullable = false, CTNode)), numberOfLongs = 3, numberOfReferences = 0))
   }
 
   test("single node with expand into") {
@@ -96,45 +100,24 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0), "r" -> LongSlot(1)), numberOfLongs = 2, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode), "r" -> LongSlot(1, nullable = false, CTRelationship)), numberOfLongs = 2, numberOfReferences = 0))
   }
 
-//  test("single node with two expands") {
-//    // given
-//    val root = AllNodesScan(IdName("x"), Set.empty)(solved)
-//    val e1 = Expand(root, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r1"), ExpandAll)(solved)
-//    val e2 = Expand(e1, IdName("z"), SemanticDirection.INCOMING, Seq.empty, IdName("y"), IdName("r2"), ExpandAll)(solved)
-//
-//    // when
-//    val allocations = RegisterAllocation.allocateRegisters(e2)
-//
-//    // then
-//    allocations should have size 3
-//    val allocations1 = allocations(e2)
-//    allocations1 should equal(
-//      PipelineInformation(Map("x" -> LongSlot(0), "r1" -> LongSlot(1), "z" -> LongSlot(2), "r2" -> LongSlot(3), "y" -> LongSlot(4)), 5, 0))
-//
-//    allocations1 should be theSameInstanceAs allocations(e1)
-//    allocations1 should be theSameInstanceAs allocations(root)
-//  }
-//
-//  test("single expandInto") {
-//    // given
-//    val root = AllNodesScan(IdName("x"), Set.empty)(solved)
-//    val plan = Expand(root, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r1"), ExpandInto)(solved)
-//
-//    // when
-//    val allocations = RegisterAllocation.allocateRegisters(plan)
-//
-//    // then
-//    allocations should have size 2
-//    allocations(plan) should equal(
-//      PipelineInformation(Map("x" -> LongSlot(0), "r1" -> LongSlot(1)), 2, 0))
-//  }
+  test("optional node") {
+    // given
+    val leaf = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val plan = Optional(leaf)(solved)
 
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(plan)
+
+    // then
+    allocations should have size 2
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), 1, 0))
+  }
 
 }

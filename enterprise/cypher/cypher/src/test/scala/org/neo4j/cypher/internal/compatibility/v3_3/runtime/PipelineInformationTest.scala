@@ -21,56 +21,59 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 class PipelineInformationTest extends CypherFunSuite {
   test("can't overwrite variable name by mistake1") {
     // given
     val pipeline = PipelineInformation.empty
-    pipeline.newLong("x")
+    pipeline.newLong("x", nullable = false, CTNode)
 
     // when && then
-    intercept[InternalException](pipeline.newLong("x"))
+    intercept[InternalException](pipeline.newLong("x", nullable = false, CTNode))
   }
 
   test("can't overwrite variable name by mistake2") {
     // given
     val pipeline = PipelineInformation.empty
-    pipeline.newLong("x")
+    pipeline.newLong("x", nullable = false, CTNode)
 
     // when && then
-    intercept[InternalException](pipeline.newReference("x"))
+    intercept[InternalException](pipeline.newReference("x", nullable = false, CTNode))
   }
 
   test("can't overwrite variable name by mistake3") {
     // given
     val pipeline = PipelineInformation.empty
-    pipeline.newReference("x")
+    pipeline.newReference("x", nullable = false, CTNode)
 
     // when && then
-    intercept[InternalException](pipeline.newLong("x"))
+    intercept[InternalException](pipeline.newLong("x", nullable = false, CTNode))
   }
 
   test("can't overwrite variable name by mistake4") {
     // given
     val pipeline = PipelineInformation.empty
-    pipeline.newReference("x")
+    pipeline.newReference("x", nullable = false, CTNode)
 
     // when && then
-    intercept[InternalException](pipeline.newReference("x"))
+    intercept[InternalException](pipeline.newReference("x", nullable = false, CTNode))
   }
 
   test("deepClone creates an immutable copy") {
     // given
-    val pipeline = PipelineInformation(Map("x" -> LongSlot(0), "y" -> LongSlot(1)), numberOfLongs = 2, numberOfReferences = 0)
+    val pipeline = PipelineInformation(Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "y" -> LongSlot(1, nullable = false, CTNode)), numberOfLongs = 2, numberOfReferences = 0)
     val clone: PipelineInformation = pipeline.deepClone()
     pipeline should equal(clone)
 
     // when
-    pipeline.newReference("a")
+    pipeline.newReference("a", nullable = false, CTNode)
 
     // then
-    pipeline.slots should contain("a" -> RefSlot(0))
-    clone.slots shouldNot contain("a" -> RefSlot(0))
+    pipeline.slots should contain("a" -> RefSlot(0, nullable = false, CTNode))
+    clone.slots shouldNot contain("a" -> RefSlot(0, nullable = false, CTNode))
     clone.numberOfReferences should equal(0)
   }
 }
