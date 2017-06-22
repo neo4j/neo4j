@@ -19,15 +19,11 @@
  */
 package org.neo4j.impl.kernel.api;
 
-import org.neo4j.impl.kernel.api.result.ValueWriter;
-
 public interface NodeCursor extends Cursor
 {
     long nodeReference();
 
     LabelSet labels();
-
-    void writeIdTo( ValueWriter target );
 
     boolean hasProperties();
 

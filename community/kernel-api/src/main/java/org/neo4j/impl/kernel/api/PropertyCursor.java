@@ -21,7 +21,8 @@ package org.neo4j.impl.kernel.api;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.impl.kernel.api.result.ValueWriter;
+import org.neo4j.values.Value;
+import org.neo4j.values.ValueWriter;
 
 public interface PropertyCursor extends Cursor
 {
@@ -50,17 +51,9 @@ public interface PropertyCursor extends Cursor
 
     int propertyKey();
 
-    Value.Type propertyType();
-
     Value propertyValue();
 
-    default void writePropertyTo( ValueWriter target )
-    {
-        target.writePropertyKey( propertyKey() );
-        writeValueTo( target );
-    }
-
-    void writeValueTo( ValueWriter target );
+    <E extends Exception> void writeTo( ValueWriter<E> target );
 
     // typed accessor methods
 

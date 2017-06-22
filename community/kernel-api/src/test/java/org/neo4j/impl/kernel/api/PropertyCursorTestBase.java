@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.values.BufferValueWriter;
+import org.neo4j.values.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -40,7 +42,7 @@ public abstract class PropertyCursorTestBase
     abstract PropertyCursor emptyCursor();
     abstract PropertyCursor withValues( Map<Integer,Object> values );
 
-    BufferValueWriter writeBuffer = new BufferValueWriter();
+    private BufferValueWriter writeBuffer = new BufferValueWriter();
 
     @Test
     public void shouldBeEmpty()
@@ -56,8 +58,7 @@ public abstract class PropertyCursorTestBase
             assertFalse( cursor.next() );
 
             assertThat( cursor.propertyKey(), equalTo( NO_SUCH_PROPERTY ) );
-            assertThat( cursor.propertyType(), equalTo( null ) );
-            assertThat( cursor.propertyValue(), equalTo( null ) );
+            assertThat( cursor.propertyValue(), equalTo( Values.NO_VALUE ) );
 
             assertException( cursor::booleanValue );
             assertException( cursor::stringValue );
@@ -91,7 +92,6 @@ public abstract class PropertyCursorTestBase
 
         assertTrue( cursor.next() );
         assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.propertyType(), equalTo( Value.Type.STRING ) );
         assertThat( cursor.stringValue(), equalTo( X ) );
         assertTrue( cursor.valueEqualTo( X ) );
 
@@ -99,7 +99,7 @@ public abstract class PropertyCursorTestBase
         assertException( cursor::longValue );
         assertException( cursor::doubleValue );
 
-        cursor.writeValueTo( writeBuffer );
+        cursor.writeTo( writeBuffer );
         writeBuffer.assertBuffer( X );
 
         assertEmpty( cursor );
@@ -115,7 +115,6 @@ public abstract class PropertyCursorTestBase
 
         assertTrue( cursor.next() );
         assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.propertyType(), equalTo( Value.Type.INTEGER ) );
         assertThat( cursor.stringValue(), equalTo( X ) );
         assertTrue( cursor.valueEqualTo( X ) );
 
@@ -123,7 +122,7 @@ public abstract class PropertyCursorTestBase
         assertException( cursor::stringValue );
         assertException( cursor::doubleValue );
 
-        cursor.writeValueTo( writeBuffer );
+        cursor.writeTo( writeBuffer );
         writeBuffer.assertBuffer( X );
 
         assertEmpty( cursor );
@@ -139,7 +138,6 @@ public abstract class PropertyCursorTestBase
 
         assertTrue( cursor.next() );
         assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.propertyType(), equalTo( Value.Type.FLOAT ) );
         assertThat( cursor.stringValue(), equalTo( X ) );
         assertTrue( cursor.valueEqualTo( X ) );
 
@@ -147,12 +145,13 @@ public abstract class PropertyCursorTestBase
         assertException( cursor::stringValue );
         assertException( cursor::longValue );
 
-        cursor.writeValueTo( writeBuffer );
+        cursor.writeTo( writeBuffer );
         writeBuffer.assertBuffer( X );
 
         assertEmpty( cursor );
     }
 
+    @SuppressWarnings( "ConstantConditions" )
     @Test
     public void shouldParseBoolean()
     {
@@ -163,14 +162,13 @@ public abstract class PropertyCursorTestBase
 
         assertTrue( cursor.next() );
         assertThat( cursor.propertyKey(), equalTo( 1 ) );
-        assertThat( cursor.propertyType(), equalTo( Value.Type.FLOAT ) );
         assertThat( cursor.stringValue(), equalTo( X ) );
 
         assertException( cursor::doubleValue );
         assertException( cursor::stringValue );
         assertException( cursor::longValue );
 
-        cursor.writeValueTo( writeBuffer );
+        cursor.writeTo( writeBuffer );
         writeBuffer.assertBuffer( X );
 
         assertEmpty( cursor );

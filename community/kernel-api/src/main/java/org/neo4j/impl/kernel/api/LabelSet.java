@@ -21,24 +21,11 @@ package org.neo4j.impl.kernel.api;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.impl.kernel.api.result.LabelWriter;
-
 public interface LabelSet
 {
     int numberOfLabels();
 
     int label( int offset );
-
-    default void writeLabelsTo( LabelWriter target )
-    {
-        int numberOfLabels = numberOfLabels();
-        target.writeNodeLabel( numberOfLabels );
-        for ( int i = 0; i < numberOfLabels; i++ )
-        {
-            target.writeNodeLabel( label( i ) );
-        }
-        target.endLabelList();
-    }
 
     LabelSet NONE = new LabelSet()
     {

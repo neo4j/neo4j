@@ -24,8 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.impl.kernel.api.result.ValueWriter;
-
 /**
  * This is an example of an abstraction on top of {@link EdgeScanCursor} and {@link EdgeGroupCursor}.
  */
@@ -294,12 +292,6 @@ public abstract class NeighbourCursor implements NodeCursor
         }
         while ( edges.shouldRetry() );
         return neighbours.next();
-    }
-
-    @Override
-    public void writeIdTo( ValueWriter target )
-    {
-        neighbours.writeIdTo( target );
     }
 
     protected abstract boolean next( EdgeGroupCursor group, EdgeTraversalCursor edges );

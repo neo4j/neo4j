@@ -19,6 +19,8 @@
  */
 package org.neo4j.impl.kernel.api;
 
+import org.neo4j.values.Value;
+
 interface Write
 {
     long nodeCreate();
