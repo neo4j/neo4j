@@ -51,13 +51,14 @@ public class NodeInUseWithCorrectLabelsCheckTest
     {
         // given
         int nodeId = 42;
+        long labelId = 7;
 
         ConsistencyReport.LabelScanConsistencyReport report =
                 mock( ConsistencyReport.LabelScanConsistencyReport.class );
         NodeRecord node = notInUse( new NodeRecord( nodeId, false, 0, 0 ) );
 
         // when
-        checker( new long[]{}, true ).checkReference( null, node, engineFor( report ), null );
+        checker( new long[]{labelId}, true ).checkReference( null, node, engineFor( report ), null );
 
         // then
         verify( report ).nodeNotInUse( node );
