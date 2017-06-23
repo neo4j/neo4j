@@ -7,9 +7,7 @@
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.neo4j</groupId>
     <artifactId>procedure-compiler-integration-tests</artifactId>
-    <version>3.2.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Neo4j - Procedure Compiler Integration Tests</name>

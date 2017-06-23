@@ -9,7 +9,6 @@
     </parent>
 
     <artifactId>procedure-compiler</artifactId>
-    <version>3.2.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Neo4j - Procedure Compiler Core</name>

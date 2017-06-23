@@ -15,7 +15,6 @@
     </properties>
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>org.neo4j</groupId>
     <artifactId>procedure-compiler-parent</artifactId>
     <version>3.2.2-SNAPSHOT</version>
     <packaging>pom</packaging>
