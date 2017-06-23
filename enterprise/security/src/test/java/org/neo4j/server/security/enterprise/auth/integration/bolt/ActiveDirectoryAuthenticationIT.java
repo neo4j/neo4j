@@ -125,9 +125,24 @@ public class ActiveDirectoryAuthenticationIT
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
-    public HostnamePort address = new HostnamePort( "localhost:7687" );
-
+    private HostnamePort address;
     protected TransportConnection client;
+
+    @Before
+    public void setup()
+    {
+        this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
+    }
+
+    @After
+    public void teardown() throws Exception
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
+    }
 
     //------------------------------------------------------------------
     // Active Directory tests on EC2
@@ -253,21 +268,6 @@ public class ActiveDirectoryAuthenticationIT
         // Then
         assertReadSucceeds();
         assertWriteSucceeds();
-    }
-
-    @Before
-    public void setup()
-    {
-        this.client = cf.newInstance();
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
     }
 
     private void assertAuth( String username, String password ) throws Exception

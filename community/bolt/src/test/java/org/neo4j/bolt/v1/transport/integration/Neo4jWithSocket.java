@@ -30,12 +30,13 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import org.neo4j.bolt.BoltKernelExtension;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.bolt.BoltConnectorRegister;
 import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -43,12 +44,15 @@ import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIO
 
 public class Neo4jWithSocket extends ExternalResource
 {
+    public static final String DEFAULT_CONNECTOR_KEY = "bolt";
+
     private Supplier<FileSystemAbstraction> fileSystemProvider;
     private final Consumer<Map<String,String>> configure;
     private final TestDirectory testDirectory;
     private TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
+    private BoltConnectorRegister connectorRegister;
 
     public Neo4jWithSocket( Class<?> testClass )
     {
@@ -107,6 +111,16 @@ public class Neo4jWithSocket extends ExternalResource
         return testDirectory.apply( testMethodWithBeforeAndAfter, description );
     }
 
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return connectorRegister.getLocalAddress( connectorKey );
+    }
+
+    public HostnamePort lookupDefaultConnector()
+    {
+        return connectorRegister.getLocalAddress( DEFAULT_CONNECTOR_KEY );
+    }
+
     public void shutdownDatabase()
     {
         try
@@ -118,6 +132,7 @@ public class Neo4jWithSocket extends ExternalResource
         }
         finally
         {
+            connectorRegister = null;
             gdb = null;
         }
     }
@@ -134,24 +149,20 @@ public class Neo4jWithSocket extends ExternalResource
         graphDatabaseFactory.setFileSystem( fileSystemProvider.get() );
         gdb = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
                 setConfig( settings ).newGraphDatabase();
+        connectorRegister =
+                ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( BoltConnectorRegister.class );
     }
 
     private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException
     {
         Map<String,String> settings = new HashMap<>();
-        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new BoltConnector( "bolt" ).encryption_level.name(), OPTIONAL.name() );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).encryption_level.name(), OPTIONAL.name() );
         configure.accept( settings );
         overrideSettingsFunction.accept( settings );
         return settings;
-    }
-
-    private String tempPath( String filename ) throws IOException
-    {
-        File file = new File( new File( workingDirectory, "security" ), filename );
-        file.deleteOnExit();
-        return file.getAbsolutePath();
     }
 
     public GraphDatabaseService graphDatabaseService()

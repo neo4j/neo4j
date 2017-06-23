@@ -34,10 +34,10 @@ import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.DISABLED;
 
 @RunWith( Parameterized.class )
@@ -47,8 +47,8 @@ public class RejectTransportEncryptionIT
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->
             {
-                settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-                settings.put( new BoltConnector( "bolt" ).encryption_level.name(), DISABLED.name() );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).encryption_level.name(), DISABLED.name() );
             } );
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -58,8 +58,6 @@ public class RejectTransportEncryptionIT
 
     @Parameterized.Parameter( 1 )
     public Exception expected;
-
-    private final HostnamePort address = new HostnamePort( "localhost:7687" );
 
     private TransportConnection client;
 
@@ -98,6 +96,6 @@ public class RejectTransportEncryptionIT
     {
         exception.expect( expected.getClass() );
         exception.expectMessage( expected.getMessage() );
-        client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
+        client.connect( server.lookupDefaultConnector() ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
     }
 }

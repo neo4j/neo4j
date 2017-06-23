@@ -36,6 +36,7 @@ import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -217,6 +218,12 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     public String getConnectionProtocol()
     {
         return "http";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return new HostnamePort( "localhost", 7687 );
     }
 
     private String parseErrorMessage( HTTP.Response response )

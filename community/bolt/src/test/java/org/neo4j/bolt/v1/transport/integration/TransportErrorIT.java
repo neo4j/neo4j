@@ -32,10 +32,15 @@ import java.util.Collection;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.helpers.HostnamePort;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.RUN;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
@@ -51,18 +56,33 @@ public class TransportErrorIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass() );
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
+    private HostnamePort address;
     private TransportConnection client;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return TransportSessionIT.transports();
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Before
+    public void setup()
+    {
+        this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
 
     @Test
@@ -151,20 +171,5 @@ public class TransportErrorIT
         // Then
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyDisconnects() );
-    }
-
-    @Before
-    public void setup()
-    {
-        this.client = cf.newInstance();
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
     }
 }

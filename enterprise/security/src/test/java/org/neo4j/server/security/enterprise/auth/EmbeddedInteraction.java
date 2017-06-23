@@ -28,8 +28,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.bolt.BoltConnectorRegister;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -49,6 +51,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     private GraphDatabaseFacade db;
     private EnterpriseAuthManager authManager;
     private FileSystemAbstraction fileSystem;
+    private BoltConnectorRegister connectorRegister;
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
@@ -83,6 +86,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        connectorRegister = db.getDependencyResolver().resolveDependency( BoltConnectorRegister.class );
     }
 
     @Override
@@ -188,5 +192,11 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     public String getConnectionProtocol()
     {
         return "embedded";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return connectorRegister.getLocalAddress( connectorKey );
     }
 }
