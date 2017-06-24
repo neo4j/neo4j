@@ -123,39 +123,4 @@ abstract class CharArray extends TextArray
             return format( "CharArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends CharArray implements LazyValue<char[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<char[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        char[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( char[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "CharArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

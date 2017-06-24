@@ -247,13 +247,13 @@ public class PropertyBlock implements Cloneable
 
     public Value newPropertyValue( PropertyStore propertyStore )
     {
-        return getType().valueLazy( this, propertyStore );
+        return getType().value( this, propertyStore );
     }
 
     public PropertyKeyValue newPropertyKeyValue( PropertyStore propertyStore )
     {
         int propertyKeyId = getKeyIndexId();
-        return new PropertyKeyValue( propertyKeyId, getType().valueLazy( this, propertyStore ) );
+        return new PropertyKeyValue( propertyKeyId, getType().value( this, propertyStore ) );
     }
 
     public static int keyIndexId( long valueBlock )

@@ -140,39 +140,4 @@ abstract class LongArray extends IntegralArray
             return format( "LongArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends LongArray implements LazyValue<long[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<long[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        long[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( long[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "LongArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

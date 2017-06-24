@@ -140,39 +140,4 @@ abstract class ShortArray extends IntegralArray
             return format( "ShortArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends ShortArray implements LazyValue<short[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<short[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        short[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( short[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "ShortArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

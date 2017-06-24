@@ -173,39 +173,4 @@ abstract class BooleanArray extends ArrayValue
             return format( "BooleanArray%s", Arrays.toString( value() ) );
         }
     }
-
-    static final class Lazy extends BooleanArray implements LazyValue<boolean[]>
-    {
-        private volatile Object field;
-
-        Lazy( ValueLoader<boolean[]> producer )
-        {
-            this.field = producer;
-        }
-
-        @Override
-        boolean[] value()
-        {
-            return LazyValues.getOrLoad( this );
-        }
-
-        @Override
-        public void registerValue( boolean[] value )
-        {
-            this.field = value;
-        }
-
-        @Override
-        public Object getMaybeValue()
-        {
-            return field;
-        }
-
-        @Override
-        public String toString()
-        {
-            return format( "BooleanArray%s",
-                    LazyValues.valueIsLoaded( field ) ? Arrays.toString( value() ) : "?" );
-        }
-    }
 }

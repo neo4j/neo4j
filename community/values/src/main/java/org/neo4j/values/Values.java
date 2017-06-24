@@ -109,56 +109,6 @@ public final class Values
         }
     }
 
-    public static TextValue lazyStringValue( ValueLoader<String> producer )
-    {
-        return new StringValue.Lazy( producer );
-    }
-
-    public static Value lazyByteArray( ValueLoader<byte[]> producer )
-    {
-        return new ByteArray.Lazy( producer );
-    }
-
-    public static Value lazyShortArray( ValueLoader<short[]> producer )
-    {
-        return new ShortArray.Lazy( producer );
-    }
-
-    public static Value lazyIntArray( ValueLoader<int[]> producer )
-    {
-        return new IntArray.Lazy( producer );
-    }
-
-    public static Value lazyLongArray( ValueLoader<long[]> producer )
-    {
-        return new LongArray.Lazy( producer );
-    }
-
-    public static Value lazyFloatArray( ValueLoader<float[]> producer )
-    {
-        return new FloatArray.Lazy( producer );
-    }
-
-    public static Value lazyDoubleArray( ValueLoader<double[]> producer )
-    {
-        return new DoubleArray.Lazy( producer );
-    }
-
-    public static Value lazyCharArray( ValueLoader<char[]> producer )
-    {
-        return new CharArray.Lazy( producer );
-    }
-
-    public static Value lazyStringArray( ValueLoader<String[]> producer )
-    {
-        return new StringArray.Lazy( producer );
-    }
-
-    public static Value lazyBooleanArray( ValueLoader<boolean[]> producer )
-    {
-        return new BooleanArray.Lazy( producer );
-    }
-
     public static Value numberValue( Number number )
     {
         if ( number instanceof Long )
