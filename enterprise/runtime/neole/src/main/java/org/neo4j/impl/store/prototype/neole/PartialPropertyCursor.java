@@ -21,8 +21,8 @@ package org.neo4j.impl.store.prototype.neole;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.impl.kernel.api.result.ValueWriter;
 import org.neo4j.impl.store.cursors.ReadCursor;
+import org.neo4j.values.ValueWriter;
 
 public abstract class PartialPropertyCursor extends ReadCursor
         implements org.neo4j.impl.kernel.api.PropertyCursor
@@ -34,7 +34,7 @@ public abstract class PartialPropertyCursor extends ReadCursor
     }
 
     @Override
-    public void writeValueTo( ValueWriter target )
+    public <E extends Exception> void writeTo( ValueWriter<E> target )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

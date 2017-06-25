@@ -267,12 +267,6 @@ class PropertyCursor extends PartialPropertyCursor
         return block < 3;
     }
 
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
     private int blocksUsedByCurrent()
     {
         if ( block == -1 )

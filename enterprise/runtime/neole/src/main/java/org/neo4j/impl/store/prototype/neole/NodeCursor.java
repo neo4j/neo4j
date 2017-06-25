@@ -90,12 +90,6 @@ class NodeCursor extends ReadCursor implements org.neo4j.impl.kernel.api.NodeCur
         return virtualAddress();
     }
 
-    @Override
-    public void writeIdTo( ValueWriter target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
     // DATA ACCESSOR METHODS
 
     private boolean inUse()
