@@ -62,13 +62,6 @@ case object JoinOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Lon
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_))
 }
 
-/* One approach to optimizing planning of very long patterns is to only allow expands.
-   This making planning very fast, but can lead to non-optimal plans where joins make more sense */
-case object ExpandOnlyWhenPatternIsLong extends IDPSolverConfig {
-  override def solvers(queryGraph: QueryGraph) =
-    Seq(AdaptiveSolverStep(_, (qg, goal) => qg.patternRelationships.size > 10))
-}
-
 /* One more advanced approach is to allow the inner loop to automatically switch from
    expands-only to expands and joins when the problem size becomes smaller.
    This is a good compromise between performance and quality, however it is not clear
