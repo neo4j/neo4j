@@ -19,6 +19,10 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * This class is really a renamed org.neo4j.kernel.api.schema.IndexQuery. Describes part of an index query related to
+ * one property.
+ */
 public interface IndexPredicate
 {
 }

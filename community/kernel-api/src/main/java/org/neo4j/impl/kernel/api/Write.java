@@ -21,6 +21,9 @@ package org.neo4j.impl.kernel.api;
 
 import org.neo4j.values.Value;
 
+/**
+ * Defines the write operations of the Kernel API.
+ */
 interface Write
 {
     long nodeCreate();

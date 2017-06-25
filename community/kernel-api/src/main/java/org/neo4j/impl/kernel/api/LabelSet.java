@@ -21,6 +21,9 @@ package org.neo4j.impl.kernel.api;
 
 import java.util.NoSuchElementException;
 
+/**
+ * Set of label ids.
+ */
 public interface LabelSet
 {
     int numberOfLabels();

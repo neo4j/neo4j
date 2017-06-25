@@ -21,6 +21,9 @@ package org.neo4j.impl.kernel.api;
 
 import org.neo4j.values.Value;
 
+/**
+ * Cursor for scanning the property values of nodes in a schema index.
+ */
 public interface NodeValueIndexCursor extends NodeIndexCursor
 {
     /**

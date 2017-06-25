@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for scanning the nodes of a schema index.
+ */
 public interface NodeIndexCursor extends Cursor
 {
     void node( NodeCursor cursor );

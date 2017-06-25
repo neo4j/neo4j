@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for traversing the edges of a single node.
+ */
 public interface EdgeTraversalCursor extends EdgeDataAccessor, SuspendableCursor<EdgeTraversalCursor.Position>
 {
     abstract class Position extends CursorPosition<Position>

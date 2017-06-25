@@ -19,6 +19,10 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * This class is really a renamed org.neo4j.kernel.api.schema.IndexDescriptor. Maybe it will compose an
+ * IndexDescriptor with an offset for faster index lookup.
+ */
 public class IndexReference
 {
 }

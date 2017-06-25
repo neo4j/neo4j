@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for traversing the edge groups of a node.
+ */
 public interface EdgeGroupCursor extends SuspendableCursor<EdgeGroupCursor.Position>
 {
     abstract class Position extends CursorPosition<Position>

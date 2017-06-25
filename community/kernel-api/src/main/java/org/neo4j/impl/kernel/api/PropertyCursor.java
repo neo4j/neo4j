@@ -24,6 +24,9 @@ import java.util.regex.Pattern;
 import org.neo4j.values.Value;
 import org.neo4j.values.ValueWriter;
 
+/**
+ * Cursor for scanning the properties of a node or edge.
+ */
 public interface PropertyCursor extends Cursor
 {
     /**

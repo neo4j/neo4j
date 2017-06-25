@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for scanning the nodes of a label index.
+ */
 public interface NodeLabelIndexCursor extends NodeIndexCursor
 {
     /**

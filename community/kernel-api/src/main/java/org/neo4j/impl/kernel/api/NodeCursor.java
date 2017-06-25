@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for scanning nodes.
+ */
 public interface NodeCursor extends Cursor
 {
     long nodeReference();

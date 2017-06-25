@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Experimental friend of the NeighbourCursor.
+ */
 public interface PropertyPredicate
 {
 }

@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Surface for accessing edge data.
+ */
 public interface EdgeDataAccessor
 {
     long edgeReference(); // not sure edges will have independent references, so exposing this might be leakage.

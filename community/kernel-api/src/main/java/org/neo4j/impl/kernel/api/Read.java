@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Defines the read operations of the Kernel API.
+ */
 public interface Read
 {
     /**

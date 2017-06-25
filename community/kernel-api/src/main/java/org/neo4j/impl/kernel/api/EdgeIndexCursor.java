@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for scanning edges of a schema index.
+ */
 public interface EdgeIndexCursor extends Cursor
 {
     void edge( EdgeScanCursor cursor );

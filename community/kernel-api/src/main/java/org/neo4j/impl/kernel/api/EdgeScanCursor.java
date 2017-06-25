@@ -19,6 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
+/**
+ * Cursor for scanning edges, that is listing edges without grouping by source or target node.
+ */
 public interface EdgeScanCursor extends EdgeDataAccessor, Cursor
 {
 }
