@@ -206,7 +206,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         }
     }
 
-    private static class NativeNodeLabelRange extends NodeLabelRange
+    private static class NativeNodeLabelRange implements NodeLabelRange
     {
         private final long idRange;
         private final long[] nodes;
@@ -253,9 +253,30 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
         @Override
         public String toString()
         {
-            String rangeString = idRange * RANGE_SIZE + "-" + (idRange + 1) * RANGE_SIZE;
-            String prefix = "NodeLabelRange[idRange=" + rangeString;
-            return toString( prefix, nodes, labels );
+            long lowRange = idRange * RANGE_SIZE;
+            long highRange = (idRange + 1) * RANGE_SIZE;
+            String rangeString = lowRange + "-" + highRange;
+            StringBuilder result = new StringBuilder( "NodeLabelRange[idRange=" ).append( rangeString );
+            result.append( "; {" );
+            for ( int i = 0; i < nodes.length; i++ )
+            {
+                if ( i != 0 )
+                {
+                    result.append( ", " );
+                }
+                result.append( "Node[" ).append( nodes[i] ).append( "]: Labels[" );
+                String sep = "";
+                if ( labels[i] != null )
+                {
+                    for ( long labelId : labels[i] )
+                    {
+                        result.append( sep ).append( labelId );
+                        sep = ", ";
+                    }
+                }
+                result.append( "]" );
+            }
+            return result.append( "}]" ).toString();
         }
     }
 }
