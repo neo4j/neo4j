@@ -58,8 +58,8 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
  * Rebuilds the count store during migration.
  * <p>
  * Since the database may or may not reside in the upgrade directory, depending on whether the new format has
- * different capabilities or not, we rebuild the count store in the store directory if we fail to open the store in
- * the upgrade directory
+ * different capabilities or not, we rebuild the count store using the information the store directory if we fail to
+ * open the store in the upgrade directory.
  * <p>
  * Just one out of many potential participants in a {@link StoreUpgrader migration}.
  *
@@ -68,7 +68,7 @@ import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
 public class CountsMigrator extends AbstractStoreMigrationParticipant
 {
 
-    public static final Iterable<StoreFile> COUNTS_STORE_FILES = Iterables
+    private static final Iterable<StoreFile> COUNTS_STORE_FILES = Iterables
             .iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
     private final Config config;
     private final LogService logService;
@@ -97,13 +97,16 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
             long lastTxId = MetaDataStore.getRecord( pageCache, neoStore, Position.LAST_TRANSACTION_ID );
             try
             {
-                rebuildCountsFromScratch( migrationDir, lastTxId, progressMonitor, versionToMigrateTo, pageCache );
+                rebuildCountsFromScratch( migrationDir, migrationDir, lastTxId, progressMonitor, versionToMigrateTo,
+                        pageCache );
             }
             catch ( StoreFailureException e )
             {
                 //This means that we did not perform a full migration, as the formats had the same capabilities. Thus
-                // we should use the store directory for information when rebuilding the count store.
-                rebuildCountsFromScratch( storeDir, lastTxId, progressMonitor, versionToMigrateFrom, pageCache );
+                // we should use the store directory for information when rebuilding the count store. Note that we
+                // still put the new count store in the migration directory.
+                rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, progressMonitor, versionToMigrateFrom,
+                        pageCache );
             }
         }
     }
@@ -141,13 +144,14 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                StoreVersion.HIGH_LIMIT_V3_1_0.versionString().equals( versionToMigrateFrom );
     }
 
-    private void rebuildCountsFromScratch( File migrationDir, long lastTxId,
+    private void rebuildCountsFromScratch( File storeDirToReadFrom, File migrationDir, long lastTxId,
             MigrationProgressMonitor.Section progressMonitor, String expectedStoreVersion, PageCache pageCache )
     {
-        final File storeFileBase = new File( migrationDir, MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
+        final File storeFileBase = new File( migrationDir,
+                MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
-        StoreFactory storeFactory = new StoreFactory( migrationDir, pageCache, fileSystem, recordFormats,
+        StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, pageCache, fileSystem, recordFormats,
                 NullLogProvider.getInstance() );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
