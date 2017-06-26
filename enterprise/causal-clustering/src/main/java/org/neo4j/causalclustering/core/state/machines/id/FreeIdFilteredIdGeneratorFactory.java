@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 public class FreeIdFilteredIdGeneratorFactory implements IdGeneratorFactory
 {
-    Map<IdType, IdGenerator> delegatedGenerator = new HashMap<>();
+    private Map<IdType, IdGenerator> delegatedGenerator = new HashMap<>();
     private final IdGeneratorFactory delegate;
     private final BooleanSupplier freeIdCondition;
 

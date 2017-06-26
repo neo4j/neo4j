@@ -95,8 +95,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -247,8 +245,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final IdReuseEligibility eligibleForReuse;
-    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final JobScheduler scheduler;
     private final Config config;
     private final LockService lockService;
@@ -295,8 +291,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             File storeDir,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
-            IdReuseEligibility eligibleForReuse,
-            IdTypeConfigurationProvider idTypeConfigurationProvider,
             LogService logService,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
@@ -333,8 +327,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.storeDir = storeDir;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.eligibleForReuse = eligibleForReuse;
-        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;

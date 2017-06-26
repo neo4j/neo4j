@@ -84,7 +84,6 @@ import org.neo4j.time.SystemNanoClock;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 
 public class NeoStoreDataSourceRule extends ExternalResource
@@ -131,8 +130,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         LabelScanStoreProvider labelScanStoreProvider =
                 nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, monitors );
-        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                idConfigurationProvider,
+
+        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider( labelScanStoreProvider ), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,

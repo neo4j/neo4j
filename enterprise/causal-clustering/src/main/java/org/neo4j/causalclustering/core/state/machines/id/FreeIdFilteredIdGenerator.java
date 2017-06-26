@@ -27,7 +27,7 @@ public class FreeIdFilteredIdGenerator extends IdGenerator.Delegate
 {
     private final BooleanSupplier freeIdCondition;
 
-    public FreeIdFilteredIdGenerator( IdGenerator delegate, BooleanSupplier freeIdCondition )
+    FreeIdFilteredIdGenerator( IdGenerator delegate, BooleanSupplier freeIdCondition )
     {
         super( delegate );
         this.freeIdCondition = freeIdCondition;

@@ -189,8 +189,6 @@ public class DataSourceModule
                 storeDir,
                 config,
                 editionModule.idGeneratorFactory,
-                editionModule.eligibleForIdReuse,
-                editionModule.idTypeConfigurationProvider,
                 logging,
                 platformModule.jobScheduler,
                 tokenNameLookup,

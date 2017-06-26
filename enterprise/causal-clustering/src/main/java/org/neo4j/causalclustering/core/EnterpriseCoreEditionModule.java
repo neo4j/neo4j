@@ -100,8 +100,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.ssl.SslPolicy;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.raft_messages_log_path;
@@ -232,12 +232,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
-        this.idGeneratorFactory =
-                safeIdBuffering ? new BufferingIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory, eligibleForIdReuse,
-                        idTypeConfigurationProvider ) : coreStateMachinesModule.idGeneratorFactory;
-        this.idController = createIdController( platformModule );
-        this.idGeneratorFactory = new FreeIdFilteredIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory,
-                coreStateMachinesModule.freeIdCondition );
+
+        createIdComponents( platformModule, coreStateMachinesModule );
 
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
@@ -256,6 +252,25 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    private void createIdComponents( PlatformModule platformModule, CoreStateMachinesModule coreStateMachinesModule )
+    {
+        IdGeneratorFactory factory;
+        if ( safeIdBuffering )
+        {
+            factory = new BufferingIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory, eligibleForIdReuse,
+                    idTypeConfigurationProvider );
+            this.idController = createBufferedIdController( factory, platformModule.jobScheduler, eligibleForIdReuse,
+                    idTypeConfigurationProvider );
+        }
+        else
+        {
+            factory = coreStateMachinesModule.idGeneratorFactory;
+            this.idController = createDefaultIdController();
+        }
+        this.idGeneratorFactory =
+                new FreeIdFilteredIdGeneratorFactory( factory, coreStateMachinesModule.freeIdCondition );
     }
 
     @Override

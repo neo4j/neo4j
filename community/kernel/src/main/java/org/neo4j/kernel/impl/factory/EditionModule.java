@@ -44,7 +44,6 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
@@ -75,7 +74,7 @@ import static java.util.Collections.singletonMap;
 public abstract class EditionModule
 {
     protected static final boolean safeIdBuffering = FeatureToggles.flag(
-            RecordStorageEngine.class, "safeIdBuffering", true ); // TODO: fix this!
+            EditionModule.class, "safeIdBuffering", true );
 
     void registerProcedures( Procedures procedures ) throws KernelException
     {
