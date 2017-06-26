@@ -70,7 +70,6 @@ import static org.neo4j.kernel.api.security.AuthToken.newBasicAuthToken;
 
 class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject>
 {
-    protected final HostnamePort address = new HostnamePort( "localhost:7687" );
     private final Factory<TransportConnection> connectionFactory = SocketConnection::new;
     private final Neo4jWithSocket server;
     private Map<String,BoltSubject> subjects = new HashMap<>();
@@ -163,7 +162,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             subject.client.disconnect();
             subject.client = connectionFactory.newInstance();
         }
-        subject.client.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+        subject.client.connect( server.lookupDefaultConnector() ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
                         map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
                                 SCHEME_KEY, BASIC_SCHEME ) ) ) );
@@ -231,6 +230,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
     public String getConnectionProtocol()
     {
         return "bolt";
+    }
+
+    @Override
+    public HostnamePort lookupConnector( String connectorKey )
+    {
+        return server.lookupConnector( connectorKey );
     }
 
     private static BoltResult collectResults( TransportConnection client ) throws Exception

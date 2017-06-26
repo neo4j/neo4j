@@ -73,6 +73,7 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
     {
         server.shutdownDatabase();
         server.ensureDatabase( asSettings( overrideSettingsFunction ) );
+        lookupConnectorAddress();
     }
 
     protected Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
@@ -100,14 +101,19 @@ public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestU
 
     public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
 
-    public HostnamePort address = new HostnamePort( "localhost:7687" );
-
+    protected HostnamePort address;
     protected TransportConnection client;
 
     @Before
     public void setup()
     {
         this.client = cf.newInstance();
+        lookupConnectorAddress();
+    }
+
+    protected void lookupConnectorAddress()
+    {
+        this.address = server.lookupDefaultConnector();
     }
 
     @After

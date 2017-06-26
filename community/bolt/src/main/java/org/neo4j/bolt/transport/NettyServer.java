@@ -21,6 +21,7 @@ package org.neo4j.bolt.transport;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
@@ -28,11 +29,14 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
 import java.net.BindException;
-import java.util.Collection;
+import java.net.InetSocketAddress;
+import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
+import org.neo4j.kernel.api.bolt.BoltPortRegister;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -46,8 +50,9 @@ public class NettyServer extends LifecycleAdapter
     private static final int NUM_SELECTOR_THREADS = Math.max( 1, Integer.getInteger(
             "org.neo4j.selectorThreads", Runtime.getRuntime().availableProcessors() * 2 ) );
 
-    private final Collection<ProtocolInitializer> bootstrappers;
+    private final Map<BoltConnector, ProtocolInitializer> bootstrappersMap;
     private final ThreadFactory tf;
+    private final BoltPortRegister connectionRegister;
     private EventLoopGroup bossGroup;
     private EventLoopGroup selectorGroup;
 
@@ -62,12 +67,15 @@ public class NettyServer extends LifecycleAdapter
 
     /**
      * @param tf used to create IO threads to listen and handle network events
-     * @param initializers functions that bootstrap protocols we should support
+     * @param initializersMap  function per bolt connector map to bootstrap configured protocols
+     * @param connectorRegister register to keep local address information on all configured connectors
      */
-    public NettyServer( ThreadFactory tf, Collection<ProtocolInitializer> initializers )
+    public NettyServer( ThreadFactory tf, Map<BoltConnector, ProtocolInitializer> initializersMap,
+            BoltPortRegister connectorRegister )
     {
-        this.bootstrappers = initializers;
+        this.bootstrappersMap = initializersMap;
         this.tf = tf;
+        this.connectionRegister = connectorRegister;
     }
 
     @Override
@@ -87,17 +95,19 @@ public class NettyServer extends LifecycleAdapter
 
         // Bootstrap the various ports and protocols we want to handle
 
-        for ( ProtocolInitializer initializer : bootstrappers )
+        for ( Map.Entry<BoltConnector, ProtocolInitializer> bootstrapEntry : bootstrappersMap.entrySet() )
         {
             try
             {
-                new ServerBootstrap()
-                        .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
-                        .group( bossGroup, selectorGroup )
-                        .channel( NioServerSocketChannel.class )
-                        .childHandler( initializer.channelInitializer() )
-                        .bind( initializer.address().socketAddress() )
-                        .sync();
+                ProtocolInitializer protocolInitializer = bootstrapEntry.getValue();
+                BoltConnector boltConnector = bootstrapEntry.getKey();
+                ChannelFuture channelFuture =
+                        new ServerBootstrap().option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                                .group( bossGroup, selectorGroup ).channel( NioServerSocketChannel.class )
+                                .childHandler( protocolInitializer.channelInitializer() )
+                                .bind( protocolInitializer.address().socketAddress() ).sync();
+                InetSocketAddress localAddress = (InetSocketAddress) channelFuture.channel().localAddress();
+                connectionRegister.register( boltConnector.key(), localAddress );
             }
             catch ( Throwable e )
             {
@@ -107,7 +117,7 @@ public class NettyServer extends LifecycleAdapter
 
                 if ( e instanceof BindException )
                 {
-                    throw new PortBindException( initializer.address(), (BindException) e );
+                    throw new PortBindException( bootstrapEntry.getValue().address(), (BindException) e );
                 }
                 throw e;
             }

@@ -73,11 +73,33 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 //@RunWith( Parameterized.class )
 public class BoltConnectionManagementIT
 {
+    private HostnamePort address;
+
+    protected TransportConnection admin;
+    protected TransportConnection user;
+
+    @Parameterized.Parameter()
+    public Factory<TransportConnection> cf;
+
+    @Parameterized.Parameters
+    public static Collection<Factory<TransportConnection>> transports()
+    {
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Rule
+    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
+            getSettingsFunction() );
+    @Rule
+    public final ThreadingRule threading = new ThreadingRule();
+
     @Before
     public void setup() throws Exception
     {
         this.admin = cf.newInstance();
         this.user = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
 
         authenticate( admin, "neo4j", "neo4j", "123" );
         createNewUser( admin, "Igor", "123" );
@@ -96,13 +118,6 @@ public class BoltConnectionManagementIT
         }
     }
 
-    @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            getSettingsFunction() );
-
-    @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-
     protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
     {
         return new TestEnterpriseGraphDatabaseFactory();
@@ -111,37 +126,6 @@ public class BoltConnectionManagementIT
     protected Consumer<Map<String, String>> getSettingsFunction()
     {
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
-    }
-
-    @Parameterized.Parameter( 0 )
-    public Factory<TransportConnection> cf;
-
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
-    protected TransportConnection admin;
-    protected TransportConnection user;
-
-    @Parameterized.Parameters
-    public static Collection<Object[]> transports()
-    {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
     }
 
     /*

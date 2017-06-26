@@ -36,7 +36,6 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -77,31 +76,31 @@ public class TransportSessionIT
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
+    private HostnamePort address;
 
     private TransportConnection client;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Before
+    public void setup()
+    {
+        this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
 
     @Test
@@ -392,7 +391,6 @@ public class TransportSessionIT
     public void shouldFailNicelyOnNullKeysInMap() throws Throwable
     {
         //Given
-        GraphDatabaseService db = server.graphDatabaseService();
         HashMap<String,Object> params = new HashMap<>();
         HashMap<String,Object> inner = new HashMap<>();
         inner.put(null, 42L);
@@ -441,20 +439,5 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgFailure( Status.Schema.IndexDropFailed, "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)."),
                 msgIgnored()) );
-    }
-
-    @Before
-    public void setup()
-    {
-        this.client = cf.newInstance();
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
     }
 }

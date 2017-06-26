@@ -34,11 +34,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v1.messaging.message.InitMessage;
+import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SecureWebSocketConnection;
+import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
+import org.neo4j.bolt.v1.transport.socket.client.WebSocketConnection;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
 
+import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
@@ -66,16 +70,14 @@ public class ConcurrentAccessIT
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), settings ->
             settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" ) );
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return TransportSessionIT.transports();
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
     }
 
     @Test
@@ -131,7 +133,7 @@ public class ConcurrentAccessIT
             {
                 // Connect
                 TransportConnection client = cf.newInstance();
-                client.connect( address ).send( acceptedVersions( 1, 0, 0, 0 ) );
+                client.connect( server.lookupDefaultConnector() ).send( acceptedVersions( 1, 0, 0, 0 ) );
                 assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
 
                 init( client );

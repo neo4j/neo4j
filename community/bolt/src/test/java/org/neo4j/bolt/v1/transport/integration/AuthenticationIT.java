@@ -73,8 +73,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class AuthenticationIT
 {
     protected EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    protected Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            fsRule::get, getSettingsFunction() );
+    protected Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(), fsRule, getSettingsFunction() );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( server );
@@ -89,35 +88,34 @@ public class AuthenticationIT
         return settings -> settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
     }
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
-    protected TransportConnection client;
+    private HostnamePort address;
+    private TransportConnection client;
     private final String version = "Neo4j/" + Version.getNeo4jVersion();
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) SecureWebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
+        return asList( SocketConnection::new, WebSocketConnection::new, SecureSocketConnection::new,
+                SecureWebSocketConnection::new );
+    }
+
+    @Before
+    public void setup() throws IOException
+    {
+        this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
+    }
+
+    @After
+    public void teardown() throws Exception
+    {
+        if ( client != null )
+        {
+            client.disconnect();
+        }
     }
 
     @Test
@@ -527,21 +525,6 @@ public class AuthenticationIT
                 "The credentials you provided were valid, but must be changed before you can use this instance." ) ) );
 
         assertThat( client, eventuallyDisconnects() );
-    }
-
-    @Before
-    public void setup() throws IOException
-    {
-        this.client = cf.newInstance();
-    }
-
-    @After
-    public void teardown() throws Exception
-    {
-        if ( client != null )
-        {
-            client.disconnect();
-        }
     }
 
     private void reconnect() throws Exception

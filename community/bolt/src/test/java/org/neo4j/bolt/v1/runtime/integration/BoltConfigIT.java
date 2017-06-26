@@ -36,23 +36,26 @@ import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 public class BoltConfigIT
 {
+    private static final String ANOTHER_CONNECTOR_KEY = "1";
+
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket( getClass(),
             settings ->
             {
-                settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-                settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-                settings.put( new BoltConnector( "bolt" ).address.name(), "localhost:7888" );
-                settings.put( new BoltConnector( "1" ).type.name(), "BOLT" );
-                settings.put( new BoltConnector( "1" ).enabled.name(), "true" );
-                settings.put( new BoltConnector( "1" ).address.name(), "localhost:7687" );
-                settings.put( new BoltConnector( "1" ).encryption_level.name(), REQUIRED.name() );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
+                settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).address.name(), "localhost:0" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).type.name(), "BOLT" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).enabled.name(), "true" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).address.name(), "localhost:0" );
+                settings.put( new BoltConnector( ANOTHER_CONNECTOR_KEY ).encryption_level.name(), REQUIRED.name() );
             } );
     @Rule
     public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
@@ -64,13 +67,13 @@ public class BoltConfigIT
         // When
 
         // Then
-        HostnamePort address0 = new HostnamePort( "localhost:7888" );
+        HostnamePort address0 = server.lookupConnector( DEFAULT_CONNECTOR_KEY );
         assertConnectionAccepted( address0, new WebSocketConnection() );
         assertConnectionAccepted( address0, new SecureWebSocketConnection() );
         assertConnectionAccepted( address0, new SocketConnection() );
         assertConnectionAccepted( address0, new SecureSocketConnection() );
 
-        HostnamePort address1 = new HostnamePort( "localhost:7687" );
+        HostnamePort address1 = server.lookupConnector( ANOTHER_CONNECTOR_KEY );
         assertConnectionRejected( address1, new WebSocketConnection() );
         assertConnectionAccepted( address1, new SecureWebSocketConnection() );
         assertConnectionRejected( address1, new SocketConnection() );

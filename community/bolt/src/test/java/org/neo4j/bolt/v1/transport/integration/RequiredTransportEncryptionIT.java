@@ -38,6 +38,7 @@ import org.neo4j.kernel.configuration.BoltConnector;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.REQUIRED;
 
 @RunWith( Parameterized.class )
@@ -48,36 +49,27 @@ public class RequiredTransportEncryptionIT
             settings ->
             {
                 Setting<BoltConnector.EncryptionLevel> encryption_level =
-                        new BoltConnector( "bolt" ).encryption_level;
+                        new BoltConnector( DEFAULT_CONNECTOR_KEY ).encryption_level;
                 settings.put( encryption_level.name(), REQUIRED.name() );
             } );
 
     @Parameterized.Parameter( 0 )
     public Factory<TransportConnection> cf;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
-
+    private HostnamePort address;
     private TransportConnection client;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<Factory<TransportConnection>> transports()
     {
-        return asList(
-                new Object[]{
-                        (Factory<TransportConnection>) SocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        (Factory<TransportConnection>) WebSocketConnection::new,
-                        new HostnamePort( "localhost:7687" )
-                } );
+        return asList( SocketConnection::new, WebSocketConnection::new );
     }
 
     @Before
     public void setup()
     {
         this.client = cf.newInstance();
+        this.address = server.lookupDefaultConnector();
     }
 
     @After

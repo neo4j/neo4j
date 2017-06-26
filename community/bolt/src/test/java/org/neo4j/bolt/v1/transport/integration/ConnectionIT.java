@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.transport.integration;
 
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -47,32 +48,22 @@ public class ConnectionIT
     @Rule
     public Neo4jWithSocket server = new Neo4jWithSocket(  getClass() );
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter
     public TransportConnection connection;
 
-    @Parameterized.Parameter( 1 )
-    public HostnamePort address;
+    private HostnamePort address;
 
     @Parameterized.Parameters
-    public static Collection<Object[]> transports()
+    public static Collection<TransportConnection> transports()
     {
-        return asList(
-                new Object[]{
-                        new SecureSocketConnection(),
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        new SocketConnection(),
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        new SecureWebSocketConnection(),
-                        new HostnamePort( "localhost:7687" )
-                },
-                new Object[]{
-                        new WebSocketConnection(),
-                        new HostnamePort( "localhost:7687" )
-                });
+        return asList( new SecureSocketConnection(), new SocketConnection(), new SecureWebSocketConnection(),
+                new WebSocketConnection() );
+    }
+
+    @Before
+    public void setUp()
+    {
+        address = server.lookupDefaultConnector();
     }
 
     @After

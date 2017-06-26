@@ -79,6 +79,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -533,7 +534,7 @@ public abstract class ProcedureInteractionTestBase<S>
     TransportConnection startBoltSession( String username, String password ) throws Exception
     {
         TransportConnection connection = new SocketConnection();
-        HostnamePort address = new HostnamePort( "localhost:7687" );
+        HostnamePort address = neo.lookupConnector( DEFAULT_CONNECTOR_KEY );
         Map<String,Object> authToken = map( "principal", username, "credentials", password, "scheme", "basic" );
 
         connection.connect( address ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )

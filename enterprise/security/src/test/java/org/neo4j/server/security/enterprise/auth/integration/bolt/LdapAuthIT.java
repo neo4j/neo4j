@@ -140,6 +140,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                     settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
         ) ) );
+        lookupConnectorAddress();
     }
 
     private void restartNeo4jServerWithSaslCramMd5() throws IOException
@@ -152,6 +153,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                     settings.put( SecuritySettings.ldap_authentication_user_dn_template, "{0}" );
                 }
         ) ) );
+        lookupConnectorAddress();
     }
 
     @Override

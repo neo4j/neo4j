@@ -33,13 +33,13 @@ import java.security.cert.X509Certificate;
 import java.util.Set;
 
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.ssl.PkiUtils;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_certificate_file;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.tls_key_file;
 
@@ -54,9 +54,9 @@ public class CertificatesIT
     {
         settings.put( tls_certificate_file.name(), certFile.getAbsolutePath() );
         settings.put( tls_key_file.name(), keyFile.getAbsolutePath() );
-        settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
-        settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-        settings.put( new BoltConnector( "bolt" ).address.name(), "localhost:7878" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).type.name(), "BOLT" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).enabled.name(), "true" );
+        settings.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).address.name(), "localhost:7878" );
     } );
 
     @Test
@@ -67,7 +67,7 @@ public class CertificatesIT
         try
         {
             // WHEN
-            connection.connect( new HostnamePort( "localhost:7878" ) )
+            connection.connect( server.lookupConnector( DEFAULT_CONNECTOR_KEY ) )
                     .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) );
 
             // THEN

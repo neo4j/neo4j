@@ -25,9 +25,10 @@ import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
@@ -51,6 +52,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
+import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -60,20 +62,19 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toList;
-import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 
 /**
  * Wraps Bolt and exposes it as a Kernel Extension.
@@ -104,6 +105,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         ThreadToStatementContextBridge txBridge();
 
         BoltConnectionTracker sessionTracker();
+
+        BoltPortRegister connectionRegister();
 
         Clock clock();
 
@@ -141,9 +144,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
+        BoltPortRegister connectionRegister = dependencies.connectionRegister();
 
-        List<ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
-                .map( ( connConfig ) ->
+        Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
+                .collect( Collectors.toMap( Function.identity(), connConfig ->
                 {
                     ListenSocketAddress listenAddress = config.get( connConfig.listen_address );
                     SslContext sslCtx;
@@ -180,14 +184,13 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> versions =
                             newVersions( logService, workerFactory );
                     return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
-                } )
-                .collect( toList() );
+                } ) );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
         {
-            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors ) );
+            life.add( new NettyServer( scheduler.threadFactory( boltNetworkIO ), connectors, connectionRegister ) );
             log.info( "Bolt Server extension loaded." );
-            for ( ProtocolInitializer connector : connectors )
+            for ( ProtocolInitializer connector : connectors.values() )
             {
                 logService.getUserLog( WorkerFactory.class ).info( "Bolt enabled on %s.", connector.address() );
             }
