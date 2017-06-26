@@ -231,6 +231,8 @@ public class EnterpriseCoreEditionModule extends EditionModule
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
 
         createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
 
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;

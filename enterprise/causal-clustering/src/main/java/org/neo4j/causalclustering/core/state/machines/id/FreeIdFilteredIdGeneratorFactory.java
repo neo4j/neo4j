@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 
-
 public class FreeIdFilteredIdGeneratorFactory implements IdGeneratorFactory
 {
     private Map<IdType, IdGenerator> delegatedGenerator = new HashMap<>();

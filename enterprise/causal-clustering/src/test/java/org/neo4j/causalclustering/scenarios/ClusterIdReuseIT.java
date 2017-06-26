@@ -144,6 +144,7 @@ public class ClusterIdReuseIT
 
         assumeTrue( creationLeader != null && creationLeader.equals( deletionLeader ) );
         IdGeneratorFactory idGeneratorFactory = resolveDependency( creationLeader, IdGeneratorFactory.class );
+        idMaintenanceOnLeader( creationLeader );
         IdGenerator creationLeaderIdGenerator = idGeneratorFactory.get( IdType.NODE );
         assertEquals( 2, creationLeaderIdGenerator.getDefragCount() );
 

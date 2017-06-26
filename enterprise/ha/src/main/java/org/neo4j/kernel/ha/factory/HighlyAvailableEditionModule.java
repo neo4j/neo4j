@@ -367,6 +367,8 @@ public class HighlyAvailableEditionModule
                 logging.getInternalLogProvider(), requestContextFactory, fs );
         eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
         createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         // TODO There's a cyclical dependency here that should be fixed

@@ -253,7 +253,6 @@ public abstract class EditionModule
             idController = createDefaultIdController();
         }
         this.idGeneratorFactory = factory;
-        dependencies.satisfyDependency( factory );
     }
 
     private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory,
