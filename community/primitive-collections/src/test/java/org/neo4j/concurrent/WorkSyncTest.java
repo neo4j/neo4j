@@ -449,7 +449,7 @@ public class WorkSyncTest
     }
 
     @Test
-    public void asyncWorkDoneInAnotherThreadThatThrowsMustRememberException() throws Exception // TODO!!!
+    public void asyncWorkThatThrowsInAwaitMustRememberException() throws Exception
     {
         Future<Void> stuckAtSemaphore = makeWorkStuckAtSemaphore( 1 );
 
