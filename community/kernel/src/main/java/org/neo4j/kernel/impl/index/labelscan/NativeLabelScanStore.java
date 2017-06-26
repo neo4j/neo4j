@@ -92,7 +92,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Written in header to indicate native label scan store is rebuilding
      */
-    private static final byte REBUILDING = (byte) 0x01;
+    private static final byte NEEDS_REBUILDING = (byte) 0x01;
 
     /**
      * Native label index tag, to distinguish native label index from other label indexes
@@ -161,7 +161,8 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Write rebuilding bit to header.
      */
-    private static final Consumer<PageCursor> writeRebuilding = pageCursor -> pageCursor.putByte( REBUILDING );
+    private static final Consumer<PageCursor> needsRebuildingWriter =
+            pageCursor -> pageCursor.putByte( NEEDS_REBUILDING );
 
     /**
      * Write clean header.
@@ -348,9 +349,9 @@ public class NativeLabelScanStore implements LabelScanStore
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
-                headerData -> isRebuilding.setValue( headerData.get() == REBUILDING );
+                headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
         index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding,
-                recoveryCleanupWorkCollector );
+                needsRebuildingWriter, recoveryCleanupWorkCollector );
         return isRebuilding.getValue();
     }
 
@@ -406,8 +407,6 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             monitor.rebuilding();
             long numberOfNodes;
-
-            index.checkpoint( IOLimiter.unlimited(), writeRebuilding );
 
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = writer() )

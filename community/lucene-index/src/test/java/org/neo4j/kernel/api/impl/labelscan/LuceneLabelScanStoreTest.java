@@ -35,14 +35,13 @@ import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsCollectionContaining.hasItem;
-import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
 @RunWith( Parameterized.class )
 public class LuceneLabelScanStoreTest extends LabelScanStoreTest
@@ -60,7 +59,7 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
 
     @Override
     protected LabelScanStore createLabelScanStore( FileSystemAbstraction fs, File rootFolder,
-            List<NodeLabelUpdate> existingData, boolean usePersistentStore, boolean readOnly,
+            FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
             LabelScanStore.Monitor monitor )
     {
         DirectoryFactory directoryFactory = usePersistentStore ? DirectoryFactory.PERSISTENT : inMemoryDirectoryFactory;
@@ -77,7 +76,7 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
                 .withConfig( config )
                 .withDocumentFormat( documentFormat );
 
-        return new LuceneLabelScanStore( indexBuilder, asStream( existingData ), monitor );
+        return new LuceneLabelScanStore( indexBuilder, fullStoreChangeStream, monitor );
     }
 
     @Override

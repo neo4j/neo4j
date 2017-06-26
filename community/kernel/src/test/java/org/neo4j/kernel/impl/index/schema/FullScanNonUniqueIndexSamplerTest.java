@@ -40,13 +40,11 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.values.Values;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
 
-import static org.neo4j.helpers.collection.Iterators.array;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -137,7 +135,7 @@ public class FullScanNonUniqueIndexSamplerTest
     {
         return new GBPTree<>(
                 pageCacheRule.getPageCache( fs ), directory.file( "tree" ), layout,
-                0, NO_MONITOR, NO_HEADER, IMMEDIATE );
+                0, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, IMMEDIATE );
     }
 
     // TODO: shouldIncludeHighestAndLowestPossibleNumberValues

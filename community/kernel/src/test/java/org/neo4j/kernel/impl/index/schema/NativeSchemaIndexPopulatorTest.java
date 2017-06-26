@@ -72,6 +72,9 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
+
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
 import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
@@ -657,7 +660,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
         try ( GBPTree<KEY,VALUE> ignored = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                headerReader, RecoveryCleanupWorkCollector.IMMEDIATE ) )
+                headerReader, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE ) )
         {
             if ( online )
             {
@@ -726,7 +729,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
         List<Hit<KEY,VALUE>> actualHits = new ArrayList<>();
         try ( GBPTree<KEY,VALUE> tree = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                GBPTree.NO_HEADER, RecoveryCleanupWorkCollector.IMMEDIATE );
+                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
               RawCursor<Hit<KEY,VALUE>,IOException> scan = scan( tree ) )
         {
             while ( scan.next() )

@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -77,7 +78,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
 import static org.neo4j.io.pagecache.IOLimiter.unlimited;
@@ -562,6 +564,50 @@ public class GBPTreeTest
         verifyHeaderDataAfterClose( beforeClose );
     }
 
+    @Test
+    public void mustWriteHeaderOnInitialization() throws Exception
+    {
+        // GIVEN
+        byte[] headerBytes = new byte[12];
+        ThreadLocalRandom.current().nextBytes( headerBytes );
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
+
+        // WHEN
+        try ( GBPTree<MutableLong,MutableLong> ignore = index().with( headerWriter ).build() )
+        {
+        }
+
+        // THEN
+        verifyHeader( headerBytes );
+    }
+
+    @Test
+    public void mustNotOverwriteHeaderOnExistingTree() throws Exception
+    {
+        // GIVEN
+        byte[] expectedBytes = new byte[12];
+        ThreadLocalRandom.current().nextBytes( expectedBytes );
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( expectedBytes );
+        try ( GBPTree<MutableLong,MutableLong> ignore = index().with( headerWriter ).build() )
+        {
+        }
+
+        // WHEN
+        byte[] fraudulentBytes = new byte[12];
+        do
+        {
+            ThreadLocalRandom.current().nextBytes( fraudulentBytes );
+        }
+        while ( Arrays.equals( expectedBytes, fraudulentBytes ) );
+
+        try ( GBPTree<MutableLong,MutableLong> ignore = index().with( headerWriter ).build() )
+        {
+        }
+
+        // THEN
+        verifyHeader( expectedBytes );
+    }
+
     private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose )
             throws IOException
     {
@@ -574,6 +620,11 @@ public class GBPTreeTest
             beforeClose.accept( index, expectedHeader );
         }
 
+        verifyHeader( expectedHeader );
+    }
+
+    private void verifyHeader( byte[] expectedHeader ) throws IOException
+    {
         // WHEN
         byte[] readHeader = new byte[expectedHeader.length];
         AtomicInteger length = new AtomicInteger();
@@ -1549,10 +1600,11 @@ public class GBPTreeTest
         private int pageCachePageSize = 256;
         private int tentativePageSize;
         private Monitor monitor = NO_MONITOR;
-        private Header.Reader headerReader = NO_HEADER;
+        private Header.Reader headerReader = NO_HEADER_READER;
         private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
         private PageCache specificPageCache;
         private RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
+        private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
 
         private GBPTreeBuilder withPageCachePageSize( int pageSize )
         {
@@ -1596,6 +1648,12 @@ public class GBPTreeTest
             return this;
         }
 
+        public GBPTreeBuilder with( Consumer<PageCursor> headerWriter )
+        {
+            this.headerWriter = headerWriter;
+            return this;
+        }
+
         private GBPTree<MutableLong,MutableLong> build() throws IOException
         {
             PageCache pageCacheToUse;
@@ -1614,7 +1672,7 @@ public class GBPTreeTest
             }
 
             return new GBPTree<>( pageCacheToUse, indexFile, layout, tentativePageSize, monitor, headerReader,
-                    recoveryCleanupWorkCollector );
+                    headerWriter, recoveryCleanupWorkCollector );
         }
     }
 

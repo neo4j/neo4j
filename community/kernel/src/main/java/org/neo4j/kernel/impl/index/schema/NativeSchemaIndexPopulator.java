@@ -40,7 +40,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.index.GBPTreeUtil;
 import org.neo4j.values.ValueTuple;
 
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
 /**
@@ -91,8 +92,8 @@ public abstract class NativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VA
 
     private void instantiateTree() throws IOException
     {
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER,
-                recoveryCleanupWorkCollector );
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER,
+                NO_HEADER_WRITER, recoveryCleanupWorkCollector );
     }
 
     void instantiateWriter() throws IOException

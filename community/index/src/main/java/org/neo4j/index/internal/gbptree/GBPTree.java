@@ -201,7 +201,14 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    public static final Header.Reader NO_HEADER = headerData ->
+    public static final Header.Reader NO_HEADER_READER = headerData ->
+    {
+    };
+
+    /**
+     * No-op header writer.
+     */
+    public static final Consumer<PageCursor> NO_HEADER_WRITER = pc ->
     {
     };
 
@@ -359,11 +366,13 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * @param monitor {@link Monitor} for monitoring {@link GBPTree}.
      * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
      * or {@link #close()}
+     * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
      * @throws IOException on page cache error
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
-            Monitor monitor, Header.Reader headerReader, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
+            Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
@@ -381,7 +390,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             // Create or load state
             if ( created )
             {
-                initializeAfterCreation( layout );
+                initializeAfterCreation( layout, headerWriter );
             }
             else
             {
@@ -411,7 +420,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private void initializeAfterCreation( Layout<KEY,VALUE> layout ) throws IOException
+    private void initializeAfterCreation( Layout<KEY,VALUE> layout, Consumer<PageCursor> headerWriter ) throws IOException
     {
         // Initialize meta
         writeMeta( layout, pagedFile );
@@ -434,7 +443,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Initialize free-list
         freeList.initializeAfterCreation();
         changesSinceLastCheckpoint = true;
-        checkpoint( IOLimiter.unlimited() );
+        checkpoint( IOLimiter.unlimited(), headerWriter );
         clean = true;
     }
 
@@ -554,7 +563,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         // Write/carry over header
         int headerOffset = cursor.getOffset();
         int headerDataOffset = headerOffset + Integer.BYTES; // will contain length of written header data (below)
-        if ( otherState.isValid() )
+        if ( otherState.isValid() || headerWriter != CARRY_OVER_PREVIOUS_HEADER )
         {
             PageCursor previousCursor = pagedFile.io( otherState.pageId(), PagedFile.PF_SHARED_READ_LOCK );
             PageCursorUtil.goTo( previousCursor, "previous state page", otherState.pageId() );
