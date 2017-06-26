@@ -366,6 +366,7 @@ public class HighlyAvailableEditionModule
         idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
                 masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory, fs ) );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+        idController = createIdController( platformModule );
 
         // TODO There's a cyclical dependency here that should be fixed
         final AtomicReference<HighAvailabilityModeSwitcher> exceptionHandlerRef = new AtomicReference<>();
