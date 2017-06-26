@@ -71,7 +71,7 @@ public abstract class PageSwapperTest
 
     private final ConcurrentLinkedQueue<PageSwapperFactory> openedFactories = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<PageSwapper> openedSwappers = new ConcurrentLinkedQueue<>();
-    private final MemoryAllocator mman = MemoryAllocator.createAllocator( ByteUnit.kibiBytes( 32 ), 1 );
+    private final MemoryAllocator mman = MemoryAllocator.createAllocator( ByteUnit.kibiBytes( 32 ) );
 
     protected abstract PageSwapperFactory swapperFactory() throws Exception;
 
@@ -95,7 +95,7 @@ public abstract class PageSwapperTest
 
     protected long createPage( int cachePageSize )
     {
-        long address = mman.allocateAligned( cachePageSize + Integer.BYTES );
+        long address = mman.allocateAligned( cachePageSize + Integer.BYTES, 1 );
         UnsafeUtil.putInt( address, cachePageSize );
         return address + Integer.BYTES;
     }

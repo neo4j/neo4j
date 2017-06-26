@@ -95,8 +95,10 @@ class PageList
     private final SwapperSet swappers;
     private final long victimPageAddress;
     private final long baseAddress;
+    private final long bufferAlignment;
 
-    PageList( int pageCount, int cachePageSize, MemoryAllocator memoryAllocator, SwapperSet swappers, long victimPageAddress )
+    PageList( int pageCount, int cachePageSize, MemoryAllocator memoryAllocator, SwapperSet swappers,
+              long victimPageAddress, long bufferAlignment )
     {
         this.pageCount = pageCount;
         this.cachePageSize = cachePageSize;
@@ -104,7 +106,8 @@ class PageList
         this.swappers = swappers;
         this.victimPageAddress = victimPageAddress;
         long bytes = ((long) pageCount) * META_DATA_BYTES_PER_PAGE;
-        this.baseAddress = memoryAllocator.allocateAligned( bytes );
+        this.baseAddress = memoryAllocator.allocateAligned( bytes, Long.BYTES );
+        this.bufferAlignment = bufferAlignment;
         clearMemory( baseAddress, pageCount );
     }
 
@@ -123,6 +126,7 @@ class PageList
         this.swappers = pageList.swappers;
         this.victimPageAddress = pageList.victimPageAddress;
         this.baseAddress = pageList.baseAddress;
+        this.bufferAlignment = pageList.bufferAlignment;
     }
 
     private void clearMemory( long baseAddress, long pageCount )
@@ -142,13 +146,14 @@ class PageList
 
     private void clearMemorySimple( long baseAddress, long pageCount )
     {
-        long address = baseAddress - 8;
+        long address = baseAddress - Long.BYTES;
+        long initialLockWord = OffHeapPageLock.initialLockWordWithExclusiveLock();
         for ( long i = 0; i < pageCount; i++ )
         {
-            UnsafeUtil.putLong( address += 8, OffHeapPageLock.initialLockWordWithExclusiveLock() ); // lock word
-            UnsafeUtil.putLong( address += 8, 0 ); // pointer
-            UnsafeUtil.putLong( address += 8, PageCursor.UNBOUND_PAGE_ID ); // file page id
-            UnsafeUtil.putLong( address += 8, 0 ); // rest
+            UnsafeUtil.putLong( address += Long.BYTES, initialLockWord );
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // page buffer address pointer
+            UnsafeUtil.putLong( address += Long.BYTES, PageCursor.UNBOUND_PAGE_ID ); // file page id
+            UnsafeUtil.putLong( address += Long.BYTES, 0 ); // rest
         }
     }
 
@@ -306,7 +311,7 @@ class PageList
     {
         if ( getAddress( pageRef ) == 0L )
         {
-            long addr = memoryAllocator.allocateAligned( getCachePageSize() );
+            long addr = memoryAllocator.allocateAligned( getCachePageSize(), bufferAlignment );
             UnsafeUtil.putLong( offAddress( pageRef ), addr );
         }
     }

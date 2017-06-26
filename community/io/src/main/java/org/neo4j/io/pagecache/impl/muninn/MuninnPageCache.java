@@ -233,10 +233,10 @@ public class MuninnPageCache implements PageCache
 
         long alignment = swapperFactory.getRequiredBufferAlignment();
         long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMaxMemory, alignment );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMaxMemory );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
 
-        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage );
+        this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );
     }

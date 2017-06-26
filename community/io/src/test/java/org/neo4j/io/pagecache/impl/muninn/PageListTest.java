@@ -88,7 +88,7 @@ public class PageListTest
     public static void setUpStatics()
     {
         executor = Executors.newCachedThreadPool( new DaemonThreadFactory() );
-        mman = MemoryAllocator.createAllocator( ByteUnit.mebiBytes( 1 ), ALIGNMENT );
+        mman = MemoryAllocator.createAllocator( ByteUnit.mebiBytes( 1 ) );
     }
 
     @AfterClass
@@ -124,7 +124,8 @@ public class PageListTest
     public void setUp()
     {
         swappers = new SwapperSet();
-        pageList = new PageList( pageIds.length, pageSize, mman, swappers, VictimPageReference.getVictimPage( pageSize ) );
+        long victimPage = VictimPageReference.getVictimPage( pageSize );
+        pageList = new PageList( pageIds.length, pageSize, mman, swappers, victimPage, ALIGNMENT );
         pageRef = pageList.deref( pageId );
         prevPageRef = pageList.deref( prevPageId );
         nextPageRef = pageList.deref( nextPageId );
@@ -137,10 +138,12 @@ public class PageListTest
         long victimPage = VictimPageReference.getVictimPage( pageSize );
 
         pageCount = 3;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
+                is( pageCount ) );
 
         pageCount = 42;
-        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage ).getPageCount(), is( pageCount ) );
+        assertThat( new PageList( pageCount, pageSize, mman, swappers, victimPage, ALIGNMENT ).getPageCount(),
+                is( pageCount ) );
     }
 
     @Test
@@ -1193,7 +1196,7 @@ public class PageListTest
     @Test
     public void mustExposeCachePageSize() throws Exception
     {
-        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ) );
+        PageList list = new PageList( 0, 42, mman, swappers, VictimPageReference.getVictimPage( 42 ), ALIGNMENT );
         assertThat( list.getCachePageSize(), is( 42 ) );
     }
 

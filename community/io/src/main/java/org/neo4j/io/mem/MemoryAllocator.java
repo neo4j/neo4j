@@ -24,9 +24,9 @@ package org.neo4j.io.mem;
  */
 public interface MemoryAllocator
 {
-    static MemoryAllocator createAllocator( long expectedMaxMemory, long alignment )
+    static MemoryAllocator createAllocator( long expectedMaxMemory )
     {
-        return new GrabAllocator( expectedMaxMemory, alignment );
+        return new GrabAllocator( expectedMaxMemory );
     }
 
     /**
@@ -42,8 +42,9 @@ public interface MemoryAllocator
     /**
      * Allocate a contiguous, aligned region of memory of the given size in bytes.
      * @param bytes the number of bytes to allocate.
+     * @param alignment The byte multiple that the allocated pointers have to be aligned at.
      * @return A pointer to the allocated memory.
      * @throws OutOfMemoryError if the requested memory could not be allocated.
      */
-    long allocateAligned( long bytes );
+    long allocateAligned( long bytes, long alignment );
 }

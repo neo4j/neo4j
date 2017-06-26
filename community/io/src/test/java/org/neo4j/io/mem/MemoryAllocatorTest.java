@@ -32,34 +32,34 @@ import static org.junit.Assert.assertThat;
 
 public class MemoryAllocatorTest
 {
-    protected MemoryAllocator createAllocator( long expectedMaxMemory, long alignment )
+    protected MemoryAllocator createAllocator( long expectedMaxMemory )
     {
-        return MemoryAllocator.createAllocator( expectedMaxMemory, alignment );
+        return MemoryAllocator.createAllocator( expectedMaxMemory );
     }
 
     @Test
     public void allocatedPointerMustNotBeNull() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE, 8 );
-        long address = mman.allocateAligned( PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE );
+        long address = mman.allocateAligned( PageCache.PAGE_SIZE, 8 );
         assertThat( address, is( not( 0L ) ) );
     }
 
     @Test
     public void allocatedPointerMustBePageAligned() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
-        long address = mman.allocateAligned( PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE );
+        long address = mman.allocateAligned( PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
         assertThat( address % UnsafeUtil.pageSize(), is( 0L ) );
     }
 
     @Test
     public void mustBeAbleToAllocatePastMemoryLimit() throws Exception
     {
-        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE, 2 );
+        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE );
         for ( int i = 0; i < 4100; i++ )
         {
-            assertThat( mman.allocateAligned( 1 ) % 2, is( 0L ) );
+            assertThat( mman.allocateAligned( 1, 2 ) % 2, is( 0L ) );
         }
         // Also asserts that no OutOfMemoryError is thrown.
     }
@@ -67,16 +67,16 @@ public class MemoryAllocatorTest
     @Test( expected = IllegalArgumentException.class )
     public void alignmentCannotBeZero() throws Exception
     {
-        createAllocator( PageCache.PAGE_SIZE, 0 );
+        createAllocator( PageCache.PAGE_SIZE ).allocateAligned( 8, 0 );
     }
 
     @Test
     public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 32 * 1024 * 1024, 1 );
-        long page1 = mman.allocateAligned( UnsafeUtil.pageSize() );
-        long largeBlock = mman.allocateAligned( 1024 * 1024 ); // 1 MiB
-        long page2 = mman.allocateAligned( UnsafeUtil.pageSize() );
+        MemoryAllocator mman = createAllocator( 32 * 1024 * 1024 );
+        long page1 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
+        long largeBlock = mman.allocateAligned( 1024 * 1024, 1 ); // 1 MiB
+        long page2 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
         assertThat( page1, is( not( 0L ) ) );
         assertThat( largeBlock, is( not( 0L ) ) );
         assertThat( page2, is( not( 0L ) ) );
@@ -85,17 +85,17 @@ public class MemoryAllocatorTest
     @Test
     public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
     {
-        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE, 1 );
+        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE );
         assertThat( mman.usedMemory(), is( 0L ) );
         assertThat( mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
         assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
-        mman.allocateAligned( 32 );
+        mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 32L ) ) );
         assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32L ) ) );
         assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
 
-        mman.allocateAligned( 32 );
+        mman.allocateAligned( 32, 1 );
         assertThat( mman.usedMemory(), is( greaterThanOrEqualTo( 64L ) ) );
         assertThat( mman.availableMemory(), is( lessThanOrEqualTo( PageCache.PAGE_SIZE - 32 - 32L ) ) );
         assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );

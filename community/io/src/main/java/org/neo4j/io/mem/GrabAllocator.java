@@ -38,7 +38,6 @@ public final class GrabAllocator implements MemoryAllocator
      * The amount of memory that this memory manager can still allocate.
      */
     private long memoryReserve;
-    private final long alignment;
 
     private Grab grabs;
 
@@ -47,16 +46,10 @@ public final class GrabAllocator implements MemoryAllocator
      * given alignment size.
      * @param expectedMaxMemory The maximum amount of memory that this memory manager is expected to allocate. The
      * actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
-     * @param alignment The byte multiple that the allocated pointers have to be aligned at.
      */
-    GrabAllocator( long expectedMaxMemory, long alignment )
+    GrabAllocator( long expectedMaxMemory )
     {
-        if ( alignment == 0 )
-        {
-            throw new IllegalArgumentException( "Alignment cannot be zero" );
-        }
         this.memoryReserve = expectedMaxMemory;
-        this.alignment = alignment;
     }
 
     @Override
@@ -66,7 +59,7 @@ public final class GrabAllocator implements MemoryAllocator
         Grab grab = grabs;
         while ( grab != null )
         {
-            sum += grab.nextAlignedPointer - grab.address;
+            sum += grab.nextPointer - grab.address;
             grab = grab.next;
         }
         return sum;
@@ -79,25 +72,29 @@ public final class GrabAllocator implements MemoryAllocator
         long availableInCurrentGrab = 0;
         if ( grab != null )
         {
-            availableInCurrentGrab = grab.limit - grab.nextAlignedPointer;
+            availableInCurrentGrab = grab.limit - grab.nextPointer;
         }
         return Math.max( memoryReserve, 0L ) + availableInCurrentGrab;
     }
 
     @Override
-    public synchronized long allocateAligned( long bytes )
+    public synchronized long allocateAligned( long bytes, long alignment )
     {
+        if ( alignment <= 0 )
+        {
+            throw new IllegalArgumentException( "Invalid alignment: " + alignment + "; alignment must be positive" );
+        }
         if ( bytes > GRAB_SIZE )
         {
             // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
             Grab nextGrab = grabs == null ? null : grabs.next;
-            Grab allocationGrab = new Grab( nextGrab, bytes, alignment );
+            Grab allocationGrab = new Grab( nextGrab, bytes );
             if ( !allocationGrab.canAllocate( bytes ) )
             {
                 allocationGrab.free();
-                allocationGrab = new Grab( nextGrab, bytes + alignment, alignment );
+                allocationGrab = new Grab( nextGrab, bytes + alignment );
             }
-            long allocation = allocationGrab.allocate( bytes );
+            long allocation = allocationGrab.allocate( bytes, alignment );
             grabs = grabs == null ? allocationGrab : grabs.setNext( allocationGrab );
             memoryReserve -= bytes;
             return allocation;
@@ -109,20 +106,20 @@ public final class GrabAllocator implements MemoryAllocator
             if ( desiredGrabSize < bytes )
             {
                 desiredGrabSize = bytes;
-                Grab grab = new Grab( grabs, desiredGrabSize, alignment );
+                Grab grab = new Grab( grabs, desiredGrabSize );
                 if ( grab.canAllocate( bytes ) )
                 {
                     memoryReserve -= desiredGrabSize;
                     grabs = grab;
-                    return grabs.allocate( bytes );
+                    return grabs.allocate( bytes, alignment );
                 }
                 grab.free();
                 desiredGrabSize = bytes + alignment;
             }
             memoryReserve -= desiredGrabSize;
-            grabs = new Grab( grabs, desiredGrabSize, alignment );
+            grabs = new Grab( grabs, desiredGrabSize );
         }
-        return grabs.allocate( bytes );
+        return grabs.allocate( bytes, alignment );
     }
 
     @Override
@@ -175,41 +172,39 @@ public final class GrabAllocator implements MemoryAllocator
         public final Grab next;
         private final long address;
         private final long limit;
-        private final long alignMask;
-        private long nextAlignedPointer;
+        private long nextPointer;
 
-        Grab( Grab next, long size, long alignment )
+        Grab( Grab next, long size )
         {
             this.next = next;
             this.address = allocateNativeMemory( size );
             this.limit = address + size;
-            this.alignMask = alignment - 1;
 
-            nextAlignedPointer = nextAligned( this.address );
+            nextPointer = address;
         }
 
-        Grab( Grab next, long address, long limit, long alignMask, long nextAlignedPointer )
+        Grab( Grab next, long address, long limit, long nextPointer )
         {
             this.next = next;
             this.address = address;
             this.limit = limit;
-            this.alignMask = alignMask;
-            this.nextAlignedPointer = nextAlignedPointer;
+            this.nextPointer = nextPointer;
         }
 
-        private long nextAligned( long pointer )
+        private long nextAligned( long pointer, long alignment )
         {
-            if ( (pointer & ~alignMask) == pointer )
+            long mask = alignment - 1;
+            if ( (pointer & ~mask) == pointer )
             {
                 return pointer;
             }
-            return (pointer + alignMask) & ~alignMask;
+            return (pointer + mask) & ~mask;
         }
 
-        long allocate( long bytes )
+        long allocate( long bytes, long alignment )
         {
-            long allocation = nextAlignedPointer;
-            nextAlignedPointer = nextAligned( nextAlignedPointer + bytes );
+            long allocation = nextAligned( nextPointer, alignment );
+            nextPointer = allocation + bytes;
             return allocation;
         }
 
@@ -220,19 +215,19 @@ public final class GrabAllocator implements MemoryAllocator
 
         boolean canAllocate( long bytes )
         {
-            return nextAlignedPointer + bytes <= limit;
+            return nextPointer + bytes <= limit;
         }
 
         Grab setNext( Grab grab )
         {
-            return new Grab( grab, address, limit, alignMask, nextAlignedPointer );
+            return new Grab( grab, address, limit, nextPointer );
         }
 
         @Override
         public String toString()
         {
             long size = limit - address;
-            long reserve = nextAlignedPointer > limit ? 0 : limit - nextAlignedPointer;
+            long reserve = nextPointer > limit ? 0 : limit - nextPointer;
             double use = (1.0 - reserve / ((double) size)) * 100.0;
             return String.format( "Grab[size = %d bytes, reserve = %d bytes, use = %5.2f %%]", size, reserve, use );
         }
