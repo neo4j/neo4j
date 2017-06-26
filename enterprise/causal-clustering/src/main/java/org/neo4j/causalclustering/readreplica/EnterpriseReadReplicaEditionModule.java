@@ -144,6 +144,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
         idGeneratorFactory = dependencies
                 .satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        idController = createDefaultIdController();
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         propertyKeyTokenHolder = life.add(

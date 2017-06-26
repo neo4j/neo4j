@@ -262,7 +262,7 @@ public abstract class EditionModule
         return new BufferedIdController( idGeneratorFactory, scheduler );
     }
 
-    private DefaultIdController createDefaultIdController()
+    protected DefaultIdController createDefaultIdController()
     {
         return new DefaultIdController();
     }
