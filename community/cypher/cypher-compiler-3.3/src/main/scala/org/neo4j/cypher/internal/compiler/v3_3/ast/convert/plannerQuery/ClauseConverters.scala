@@ -24,10 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, SyntaxException}
 import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
-
 import org.neo4j.cypher.internal.ir.v3_3.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v3_3.{NoHeaders, _}
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 
 import scala.collection.mutable
 
@@ -48,7 +46,7 @@ object ClauseConverters {
     case c: Foreach => addForeachToLogicalPlanInput(acc, c)
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
-    case x => throw new CantHandleQueryException(s"$x is not supported by the new runtime yet")
+    case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")
   }
 
   private def addLoadCSVToLogicalPlanInput(acc: PlannerQueryBuilder, clause: LoadCSV): PlannerQueryBuilder =
@@ -144,7 +142,7 @@ object ClauseConverters {
         acc
           .amendQueryGraph(_.addMutatingPatterns(nodesToCreate ++ rels: _*))
 
-      case _ => throw new CantHandleQueryException(s"$clause is not yet supported")
+      case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
 
   private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
@@ -350,7 +348,7 @@ object ClauseConverters {
           withHorizon(asQueryProjection(distinct = false, QueryProjection.forIds(queryGraph.allCoveredIds))).
           withTail(RegularPlannerQuery())
 
-      case _ => throw new CantHandleQueryException("not supported yet")
+      case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: ${x._2}")
     }
   }
 

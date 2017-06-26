@@ -19,20 +19,18 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, NewQuerySeen, UnableToHandleQuery}
+import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_3.ExecutionResultWrapper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, NewLogicalPlanSuccessRateMonitor, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
@@ -51,24 +49,6 @@ object NewPlannerMonitor {
 
   final case class NewQuerySeen(stackTrace: String) extends NewPlannerMonitorCall
 
-}
-
-class NewPlannerMonitor extends NewLogicalPlanSuccessRateMonitor {
-  private var traceBuilder = List.newBuilder[NewPlannerMonitorCall]
-
-  override def unableToHandleQuery(queryText: String, ast: Statement, e: CantHandleQueryException) {
-    traceBuilder += UnableToHandleQuery(Exceptions.stringify(e))
-  }
-
-  override def newQuerySeen(queryText: String, ast: Statement) {
-    traceBuilder += NewQuerySeen(queryText)
-  }
-
-  def trace = traceBuilder.result()
-
-  def clear() {
-    traceBuilder.clear()
-  }
 }
 
 object NewRuntimeMonitor {
@@ -111,13 +91,10 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   private val otherWriteVersion = "3.1" // because 2.3 cannot use cost planner for writes
   private val currentVersion = "3.3"
 
-  val newPlannerMonitor = new NewPlannerMonitor
-
   val newRuntimeMonitor = new NewRuntimeMonitor
 
   override protected def initTest() {
     super.initTest()
-    self.kernelMonitors.addMonitorListener(newPlannerMonitor)
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
@@ -399,20 +376,17 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     fail("Don't use execute together with NewPlannerTestSupport")
 
   def monitoringNewPlanner[T](action: => T)(testPlanner: List[NewPlannerMonitorCall] => Unit)(testRuntime: List[NewRuntimeMonitorCall] => Unit): T = {
-    newPlannerMonitor.clear()
     newRuntimeMonitor.clear()
     //if action fails we must wait to throw until after test has run
     val result = Try(action)
 
     //check for unexpected exceptions
     result match {
-      case f@Failure(ex: CantHandleQueryException) => //do nothing
       case f@Failure(ex: CantCompileQueryException) => //do nothing
       case Failure(ex) => throw ex
       case Success(r) => //do nothing
     }
 
-    testPlanner(newPlannerMonitor.trace)
     testRuntime(newRuntimeMonitor.trace)
     //now it is safe to throw
     result.get

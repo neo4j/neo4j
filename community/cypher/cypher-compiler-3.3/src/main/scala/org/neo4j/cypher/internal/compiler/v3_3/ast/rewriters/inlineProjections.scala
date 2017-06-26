@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, TypedRewriter, topDown}
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, TypedRewriter, topDown}
 
 case object inlineProjections extends Rewriter {
 
@@ -57,7 +56,7 @@ case object inlineProjections extends Rewriter {
         m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
       case _: UpdateClause  =>
-        throw new CantHandleQueryException
+        throw new InternalException("Update clauses not excepted here")
 
       case clause: Clause =>
         inlineVariables.narrowed(clause)

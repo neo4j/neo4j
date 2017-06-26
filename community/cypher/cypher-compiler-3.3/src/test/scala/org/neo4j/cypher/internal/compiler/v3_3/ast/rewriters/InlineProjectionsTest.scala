@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.AstRewritingTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticState, inSequence}
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticState, inSequence}
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
 
@@ -291,14 +290,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       """.stripMargin))
   }
 
-  // FIXME: 2014-4-30 Stefan: This is not yet supported by the inline rewriter
   test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
     evaluating {
       projectionInlinedAst(
         """CREATE (n)
           |RETURN n
         """.stripMargin)
-    } should produce[CantHandleQueryException]
+    } should produce[InternalException]
   }
 
   test("MATCH (n) WITH n.prop AS x WITH x LIMIT 10 RETURN x") {
