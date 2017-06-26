@@ -171,6 +171,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
         {
             throw new RuntimeException( e );
         }
+        dependencies.satisfyDependency( clusterStateDirectory );
 
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 

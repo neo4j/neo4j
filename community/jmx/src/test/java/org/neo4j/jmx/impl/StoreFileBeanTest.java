@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
@@ -94,19 +95,8 @@ public class StoreFileBeanTest
     @Test
     public void shouldCountAllLogFiles() throws Throwable
     {
-        try ( StoreChannel storeChannel = fs.create( physicalLogFiles.getLogFileForVersion( 0 ) ) )
-        {
-            byte[] bytes = new byte[10];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            storeChannel.writeAll( buffer );
-        }
-
-        try ( StoreChannel storeChannel = fs.create( physicalLogFiles.getLogFileForVersion( 1 ) ) )
-        {
-            byte[] bytes = new byte[20];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            storeChannel.writeAll( buffer );
-        }
+        createFileOfSize( physicalLogFiles.getLogFileForVersion( 0 ), 10 );
+        createFileOfSize( physicalLogFiles.getLogFileForVersion( 1 ), 20 );
 
         assertEquals( 30, storeFileBean.getAllLogicalLogsSize() );
     }
@@ -116,12 +106,7 @@ public class StoreFileBeanTest
     {
         // Legacy index file
         File legacyIndex = new File( storeDir, "legacyIndex" );
-        try ( StoreChannel storeChannel = fs.create( legacyIndex ) )
-        {
-            byte[] bytes = new byte[10];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            storeChannel.writeAll( buffer );
-        }
+        createFileOfSize( legacyIndex, 10 );
 
         IndexImplementation indexImplementation = mock( IndexImplementation.class );
         when( indexImplementation.getIndexImplementationDirectory( Mockito.any() ) ).thenReturn( legacyIndex );
@@ -129,25 +114,25 @@ public class StoreFileBeanTest
 
         // Legacy index file
         File schemaIndex = new File( storeDir, "schemaIndex" );
-        try ( StoreChannel storeChannel = fs.create( schemaIndex ) )
-        {
-            byte[] bytes = new byte[5];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            storeChannel.writeAll( buffer );
-        }
+        createFileOfSize( schemaIndex, 5 );
         when( schemaIndexProvider.getSchemaIndexStoreDirectory( Mockito.any() ) ).thenReturn( schemaIndex );
 
         // Label scan store
         File labelScan = new File( storeDir, "labelScanStore" );
-        try ( StoreChannel storeChannel = fs.create( labelScan ) )
-        {
-            byte[] bytes = new byte[20];
-            ByteBuffer buffer = ByteBuffer.wrap( bytes );
-            storeChannel.writeAll( buffer );
-        }
+        createFileOfSize( labelScan, 20 );
         when( labelScanStore.getLabelScanStoreFile() ).thenReturn( labelScan );
 
         // Count all files
         assertEquals( 35, storeFileBean.getIndexStoreSize() );
+    }
+
+    private void createFileOfSize( File file, int size ) throws IOException
+    {
+        try ( StoreChannel storeChannel = fs.create( file ) )
+        {
+            byte[] bytes = new byte[size];
+            ByteBuffer buffer = ByteBuffer.wrap( bytes );
+            storeChannel.writeAll( buffer );
+        }
     }
 }

@@ -25,6 +25,7 @@ import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -123,40 +124,18 @@ public final class StoreFileBean extends ManagementBeanProvider
         @Override
         public long getTotalStoreSize()
         {
-            return storePath == null ? 0 : sizeOf( fs, storePath );
+            return storePath == null ? 0 : FileUtils.size( fs, storePath );
         }
 
         @Override
         public long getLogicalLogSize()
         {
-            return logFile == null ? 0 : sizeOf( fs, logFile.currentLogFile() );
-        }
-
-        private static long sizeOf( FileSystemAbstraction fs, File file )
-        {
-            if ( fs.isDirectory( file ) )
-            {
-                long size = 0;
-                File[] files = fs.listFiles( file );
-                if ( files == null )
-                {
-                    return 0;
-                }
-                for ( File child : files )
-                {
-                    size += sizeOf( fs, child );
-                }
-                return size;
-            }
-            else
-            {
-                return fs.getFileSize( file );
-            }
+            return logFile == null ? 0 : FileUtils.size( fs, logFile.currentLogFile() );
         }
 
         private long sizeOf( String name )
         {
-            return storePath == null ? 0 : sizeOf( fs, new File( storePath, name ) );
+            return storePath == null ? 0 : FileUtils.size( fs, new File( storePath, name ) );
         }
 
         @Override
@@ -178,19 +157,19 @@ public final class StoreFileBean extends ManagementBeanProvider
         @Override
         public long getIndexStoreSize()
         {
-            long size = 0;
+            long size = 0L;
 
             // Add legacy indices
             for ( IndexImplementation index : legacyIndexProviderLookup.all() )
             {
-                size += sizeOf( fs, index.getIndexImplementationDirectory( storePath ) );
+                size += FileUtils.size( fs, index.getIndexImplementationDirectory( storePath ) );
             }
 
             // Add schema index
-            size += sizeOf( fs, schemaIndexProvider.getSchemaIndexStoreDirectory( storePath ) );
+            size += FileUtils.size( fs, schemaIndexProvider.getSchemaIndexStoreDirectory( storePath ) );
 
             // Add label index
-            size += sizeOf( fs, labelScanStore.getLabelScanStoreFile() );
+            size += FileUtils.size( fs, labelScanStore.getLabelScanStoreFile() );
 
             return size;
         }
@@ -237,7 +216,7 @@ public final class StoreFileBean extends ManagementBeanProvider
             @Override
             public void visit( File file, long logVersion )
             {
-                totalSize += sizeOf( fs, file );
+                totalSize += FileUtils.size( fs, file );
             }
         }
     }
