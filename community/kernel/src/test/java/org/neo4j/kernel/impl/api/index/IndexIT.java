@@ -129,24 +129,6 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
-    {
-        // given
-        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
-
-        creator.createConstraintIndex( descriptor );
-
-        // when
-        restartDb();
-
-        // then
-        ReadOperations readOperations = readOperationsInNewTransaction();
-        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
-        commit();
-    }
-
-    @Test
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given
