@@ -29,7 +29,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.RepeatRule.Repeat;

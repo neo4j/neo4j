@@ -28,8 +28,8 @@ import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import static java.lang.Integer.max;
 import static java.lang.Integer.min;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
+import static java.util.concurrent.TimeUnit.MICROSECONDS;
+import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getFieldOffset;
 
 /**
@@ -48,17 +48,18 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     protected static final int MAIN = 0;
     private final long COMPLETED_PROCESSORS_OFFSET = getFieldOffset( Unit.class, "completedProcessors" );
     private final long PROCESSING_TIME_OFFSET = getFieldOffset( Unit.class, "processingTime" );
-    private static final ParkStrategy PARK = new ParkStrategy.Park( 10, MILLISECONDS );
+    private static final ParkStrategy PARK = new ParkStrategy.Park( IS_OS_WINDOWS ? 10_000 : 500, MICROSECONDS );
 
     private final Object[] forkedProcessors;
     private volatile int numberOfForkedProcessors;
     private final Unit noop = new Unit( -1, null, 0 );
     private final AtomicReference<Unit> head = new AtomicReference<>( noop );
     private final AtomicReference<Unit> tail = new AtomicReference<>( noop );
-    private final Thread downstreamSender = new CompletedBatchesSender();
+    private final Thread downstreamSender;
     private volatile int numberOfProcessors = 1;
     private final int maxProcessors;
-    private Thread receiverThread;
+    private final int maxQueueLength;
+    private volatile Thread receiverThread;
 
     protected ForkedProcessorStep( StageControl control, String name, Configuration config )
     {
@@ -67,6 +68,8 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         this.forkedProcessors = new Object[this.maxProcessors];
 
         applyProcessorCount();
+        downstreamSender = new CompletedBatchesSender( name + " [CompletedBatchSender]" );
+        maxQueueLength = 200 + maxProcessors;
     }
 
     private void applyProcessorCount()
@@ -118,32 +121,25 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     @Override
     public long receive( long ticket, T batch )
     {
+        long time = nanoTime();
         applyProcessorCount();
-        while ( head.get().ticket - tail.get().ticket >= maxProcessors - 1 )
+        while ( head.get().ticket - tail.get().ticket >= maxQueueLength )
         {
             PARK.park( receiverThread = Thread.currentThread() );
         }
 
         queuedBatches.incrementAndGet();
         Unit unit = new Unit( ticket, batch, numberOfForkedProcessors );
-        long time = nanoTime();
 
         // [old head] [unit]
         //               ^
         //              head
-        Unit myHead;
-        do
-        {
-            myHead = head.get();
-        }
-        while ( !head.compareAndSet( myHead, unit ) );
+        Unit myHead = head.getAndSet( unit );
 
         // [old head] -next-> [unit]
         myHead.next = unit;
 
-        long queueTime = nanoTime() - time;
-
-        return queueTime;
+        return nanoTime() - time;
     }
 
     protected abstract void forkedProcess( int id, int processors, T batch ) throws Throwable;
@@ -151,7 +147,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
     @SuppressWarnings( "unchecked" )
     void sendDownstream( Unit unit )
     {
-        downstreamIdleTime.addAndGet( downstream.receive( unit.ticket, unit.batch ) );
+        downstreamIdleTime.add( downstream.receive( unit.ticket, unit.batch ) );
     }
 
     // One unit of work. Contains the batch along with ticket and meta state during processing such
@@ -168,7 +164,9 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
         // Updated when a ForkedProcessor have processed this unit.
         // Atomic since changed by UnsafeUtil#getAndAddInt/Long.
         // Volatile since read by CompletedBatchesSender.
+        @SuppressWarnings( "unused" )
         private volatile int completedProcessors;
+        @SuppressWarnings( "unused" )
         private volatile long processingTime;
 
         // Volatile since assigned by thread enqueueing this unit after changing head of the queue.
@@ -206,6 +204,11 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
      */
     private final class CompletedBatchesSender extends Thread
     {
+        CompletedBatchesSender( String name )
+        {
+            super( name );
+        }
+
         @Override
         public void run()
         {
@@ -229,9 +232,10 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
                 }
                 else
                 {
-                    if ( receiverThread != null )
+                    Thread receiver = ForkedProcessorStep.this.receiverThread;
+                    if ( receiver != null )
                     {
-                        PARK.unpark( receiverThread );
+                        PARK.unpark( receiver );
                     }
                     PARK.park( this );
                 }
@@ -276,7 +280,7 @@ public abstract class ForkedProcessorStep<T> extends AbstractStep<T>
                         }
                         else
                         {
-                            // The id of this processor is less than that of the next unit's expected max.
+                            // The id of this processor is greater than that of the next unit's expected max.
                             // This means that the number of assigned processors to this step has decreased
                             // and that this processor have reached the end of its life.
                             break;

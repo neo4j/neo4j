@@ -68,6 +68,66 @@ public class ForkedProcessorStepTest
         assertEquals( batches, downstream.received.get() );
     }
 
+    @Test( timeout = 1000 )
+    public void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
+    {
+        // GIVEN
+        StageControl control = mock( StageControl.class );
+        int processors = 1;
+
+        int batches = 10;
+        BatchProcessor step = new BatchProcessor( control, processors );
+        TrackingStep downstream = new TrackingStep();
+        step.setDownstream( downstream );
+
+        // WHEN
+        step.start( 0 );
+        for ( int i = 1; i <= batches; i++ )
+        {
+            step.receive( i, new Batch( processors ) );
+        }
+        step.endOfUpstream();
+        while ( !step.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
+        step.close();
+
+        // THEN
+        assertEquals( batches, downstream.received.get() );
+    }
+
+    @Test
+    public void mustNotDetachProcessorsFromBatchChains() throws Exception
+    {
+        // GIVEN
+        StageControl control = mock( StageControl.class );
+        int processors = 1;
+
+        int batches = 10;
+        BatchProcessor step = new BatchProcessor( control, processors );
+        TrackingStep downstream = new TrackingStep();
+        step.setDownstream( downstream );
+        int delta = processors - step.processors( 0 );
+        step.processors( delta );
+
+        // WHEN
+        step.start( 0 );
+        for ( int i = 1; i <= batches; i++ )
+        {
+            step.receive( i, new Batch( processors ) );
+        }
+        step.endOfUpstream();
+        while ( !step.isCompleted() )
+        {
+            Thread.sleep( 10 );
+        }
+        step.close();
+
+        // THEN
+        assertEquals( batches, downstream.received.get() );
+    }
+
     @Test
     public void shouldProcessAllMultiThreadedAndWithChangingProcessorCount() throws Exception
     {

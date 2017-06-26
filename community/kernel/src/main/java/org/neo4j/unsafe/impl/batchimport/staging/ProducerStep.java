@@ -76,7 +76,7 @@ public abstract class ProducerStep extends AbstractStep<Void> implements StatsPr
     protected void sendDownstream( Object batch )
     {
         long time = downstream.receive( doneBatches.getAndIncrement(), batch );
-        downstreamIdleTime.addAndGet( time );
+        downstreamIdleTime.add( time );
     }
 
     @Override
