@@ -22,20 +22,22 @@ package org.neo4j.kernel.impl.index.labelscan;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.PageCacheRule;
 
-import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 
 public class NativeLabelScanStoreTest extends LabelScanStoreTest
 {
@@ -44,14 +46,14 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
 
     @Override
     protected LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, File rootFolder,
-            List<NodeLabelUpdate> existingData, boolean usePersistentStore, boolean readOnly,
+            FullStoreChangeStream fullStoreChangeStream, boolean usePersistentStore, boolean readOnly,
             LabelScanStore.Monitor monitor )
     {
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
         return new NativeLabelScanStore( pageCache, rootFolder,
-                asStream( existingData ), readOnly, monitors );
+                fullStoreChangeStream, readOnly, monitors );
     }
 
     @Override
@@ -65,5 +67,33 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     {
         File lssFile = new File( rootFolder, NativeLabelScanStore.FILE_NAME );
         scrambleFile( lssFile );
+    }
+
+    @Test
+    public void shouldStartPopulationAgainIfNotCompletedFirstTime() throws Exception
+    {
+        // given
+        // label scan store init but no start
+        LifeSupport life = new LifeSupport();
+        TrackingMonitor monitor = new TrackingMonitor();
+        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.init();
+        assertTrue( monitor.noIndexCalled );
+        monitor.reset();
+        life.shutdown();
+
+        // when
+        // starting label scan store again
+        life = new LifeSupport();
+        life.add( createLabelScanStore( fileSystemRule.get(), dir, EMPTY, true, false, monitor ) );
+        life.init();
+
+        // then
+        // label scan store should recognize it still needs to be rebuilt
+        assertTrue( monitor.corruptedIndex );
+        life.start();
+        assertTrue( monitor.rebuildingCalled );
+        assertTrue( monitor.rebuiltCalled );
+        life.shutdown();
     }
 }

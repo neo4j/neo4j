@@ -93,7 +93,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Written in header to indicate native label scan store is rebuilding
      */
-    private static final byte REBUILDING = (byte) 0x01;
+    private static final byte NEEDS_REBUILDING = (byte) 0x01;
 
     /**
      * Native label index tag, to distinguish native label index from other label indexes
@@ -157,7 +157,8 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Write rebuilding bit to header.
      */
-    private static final Consumer<PageCursor> writeRebuilding = pageCursor -> pageCursor.putByte( REBUILDING );
+    private static final Consumer<PageCursor> needsRebuildingWriter =
+            pageCursor -> pageCursor.putByte( NEEDS_REBUILDING );
 
     /**
      * Write clean header.
@@ -352,11 +353,12 @@ public class NativeLabelScanStore implements LabelScanStore
     {
         monitors.addMonitorListener( treeMonitor(), NATIVE_LABEL_INDEX_TAG );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
-        MutableBoolean isRebuilding = new MutableBoolean();
-        Header.Reader readRebuilding =
-                (pageCursor, length) -> isRebuilding.setValue( pageCursor.getByte() == REBUILDING );
-        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, readRebuilding );
-        return isRebuilding.getValue();
+        MutableBoolean needsRebuilding = new MutableBoolean();
+        Header.Reader headerReader =
+                (pageCursor, length) -> needsRebuilding.setValue( pageCursor.getByte() == NEEDS_REBUILDING );
+        index = new GBPTree<>( pageCache, storeFile, new LabelScanLayout(), pageSize, monitor, headerReader,
+                needsRebuildingWriter );
+        return needsRebuilding.getValue();
     }
 
     private GBPTree.Monitor treeMonitor()
@@ -411,8 +413,6 @@ public class NativeLabelScanStore implements LabelScanStore
         {
             monitor.rebuilding();
             long numberOfNodes;
-
-            index.checkpoint( IOLimiter.unlimited(), writeRebuilding );
 
             // Intentionally ignore read-only flag here when rebuilding.
             try ( LabelScanWriter writer = writer() )
