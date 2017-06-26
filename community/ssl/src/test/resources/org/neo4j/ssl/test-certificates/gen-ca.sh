@@ -18,10 +18,10 @@ echo 01 > ca/root/db/root.crl.srl
 openssl req -new -config root.conf -out ca/root.csr -keyout ca/root/private/root.key
 
 # Self-signing of Root Certificate for ~100 Years
-openssl ca -batch -selfsign -config root.conf -in ca/root.csr -out ca/root.crt -extensions root_ca_ext -days 36500
+openssl ca -batch -selfsign -config root.conf -in ca/root.csr -out ca/root.cert -extensions root_ca_ext -days 36500
 
-# Generate initial empty Certificate Revocation List (CRL)
-openssl ca -gencrl -config root.conf -out ca/crl/root.crl
+# Fix-up for broken parsers which can't handle headers
+awk '/-----/{i++}i' ca/root.cert > ca/root.crt
 
 ##### CLUSTER #####
 
@@ -39,4 +39,7 @@ echo 01 > ca/cluster/db/cluster.crl.srl
 openssl req -new -config cluster.conf -out ca/cluster.csr -keyout ca/cluster/private/cluster.key
 
 # Root-signing of Cluster Certificate for ~10 Years
-openssl ca -batch -config root.conf -in ca/cluster.csr -out ca/cluster.crt -extensions signing_ca_ext -days 3650
+openssl ca -batch -config root.conf -in ca/cluster.csr -out ca/cluster.cert -extensions signing_ca_ext -days 3650
+
+# Fix-up for broken parsers which can't handle headers
+awk '/-----/{i++}i' ca/cluster.cert > ca/cluster.crt
