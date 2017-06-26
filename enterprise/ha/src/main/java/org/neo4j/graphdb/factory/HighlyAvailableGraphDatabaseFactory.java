@@ -33,7 +33,9 @@ import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Factory for HA Neo4j instances.
+ * Factory for Neo4j database instances with Enterprise Edition and High-Availability features.
+ *
+ * @see org.neo4j.graphdb.factory.GraphDatabaseFactory
  */
 public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
 {

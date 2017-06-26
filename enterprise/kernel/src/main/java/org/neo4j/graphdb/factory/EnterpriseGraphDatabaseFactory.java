@@ -22,18 +22,23 @@ package org.neo4j.graphdb.factory;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.graphdb.EnterpriseGraphDatabase;
+import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.Edition;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+/**
+ * Factory for Neo4j database instances with Enterprise Edition features.
+ *
+ * @see org.neo4j.graphdb.factory.GraphDatabaseFactory
+ */
 public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
 {
     @Override
     protected GraphDatabaseBuilder.DatabaseCreator createDatabaseCreator( final File storeDir,
-            final GraphDatabaseFactoryState state )
+                                                                          final GraphDatabaseFactoryState state )
     {
         return new GraphDatabaseBuilder.DatabaseCreator()
         {

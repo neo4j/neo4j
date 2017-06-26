@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb;
+package org.neo4j.kernel.enterprise;
 
 import java.io.File;
-import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
@@ -30,13 +29,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 public class EnterpriseGraphDatabase extends GraphDatabaseFacade
 {
-    public EnterpriseGraphDatabase( File storeDir, Map<String,String> params,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
-    {
-        new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
-                .initFacade( storeDir, params, dependencies, this );
-    }
-
     public EnterpriseGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {

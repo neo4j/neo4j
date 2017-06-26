@@ -36,10 +36,17 @@ import org.neo4j.logging.LogProvider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
- * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
+ * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
  * <p>
  * Use {@link #newEmbeddedDatabase(File)} or
  * {@link #newEmbeddedDatabaseBuilder(File)} to create a database instance.
+ * <p>
+ * <strong>Note:</strong> If you are using the Enterprise Edition of Neo4j in embedded mode, you have to create your
+ * database with the <a href="EnterpriseGraphDatabaseFactory.html">{@code EnterpriseGraphDatabaseFactory}</a>
+ * to enable the Enterprise Edition features, or the
+ * <a href="HighlyAvailableGraphDatabaseFactory.html">{@code HighlyAvailableGraphDatabaseFactory}</a> for the
+ * Enterprise and High-Availability features. There is no factory for the Causal Clustering features, because it is
+ * currently not possible to run a causal cluster in embedded mode.
  */
 public class GraphDatabaseFactory
 {
@@ -115,19 +122,19 @@ public class GraphDatabaseFactory
      */
     @Deprecated
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return newDatabase( storeDir, Config.embeddedDefaults( settings ), dependencies );
     }
 
     protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                        GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return GraphDatabaseFactory.this.newDatabase( storeDir, config, dependencies );
     }
 
     protected GraphDatabaseService newDatabase( File storeDir, Config config,
-            GraphDatabaseFacadeFactory.Dependencies dependencies )
+                                                GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY, CommunityEditionModule::new )
                 .newFacade( storeDir, config, dependencies );
