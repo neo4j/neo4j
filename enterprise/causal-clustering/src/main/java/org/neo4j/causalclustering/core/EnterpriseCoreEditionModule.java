@@ -84,11 +84,8 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
-import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -100,7 +97,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.udc.UsageData;
 
@@ -116,6 +112,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
     private final Config config;
+    private CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -227,13 +224,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
+        coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
 
-        createIdComponents( platformModule, coreStateMachinesModule );
+        createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
 
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
@@ -254,31 +251,13 @@ public class EnterpriseCoreEditionModule extends EditionModule
         life.add( coreServerModule.membershipWaiterLifecycle );
     }
 
-    private void createIdComponents( PlatformModule platformModule, CoreStateMachinesModule coreStateMachinesModule )
-    {
-        IdGeneratorFactory factory;
-        if ( safeIdBuffering )
-        {
-            factory = new BufferingIdGeneratorFactory( coreStateMachinesModule.idGeneratorFactory, eligibleForIdReuse,
-                    idTypeConfigurationProvider );
-            this.idController = createBufferedIdController( factory, platformModule.jobScheduler, eligibleForIdReuse,
-                    idTypeConfigurationProvider );
-        }
-        else
-        {
-            factory = coreStateMachinesModule.idGeneratorFactory;
-            this.idController = createDefaultIdController();
-        }
-        this.idGeneratorFactory =
-                new FreeIdFilteredIdGeneratorFactory( factory, coreStateMachinesModule.freeIdCondition );
-    }
-
     @Override
-    protected BufferedIdController createBufferedIdController( IdGeneratorFactory idGeneratorFactory,
-            JobScheduler scheduler, IdReuseEligibility eligibleForIdReuse,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
+            IdGeneratorFactory editionIdGeneratorFactory )
     {
-        return new BufferedIdController( (BufferingIdGeneratorFactory) idGeneratorFactory, scheduler );
+        super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        this.idGeneratorFactory =
+                new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory, coreStateMachinesModule.freeIdCondition );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

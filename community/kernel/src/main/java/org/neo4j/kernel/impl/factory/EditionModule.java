@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
 import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
@@ -236,22 +237,32 @@ public abstract class EditionModule
         return BoltConnectionTracker.NOOP;
     }
 
-    protected IdController createIdController( PlatformModule platformModule )
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies, IdGeneratorFactory
+            editionIdGeneratorFactory )
     {
-        return safeIdBuffering ? createBufferedIdController( idGeneratorFactory, platformModule.jobScheduler,
-                eligibleForIdReuse, idTypeConfigurationProvider ) : createDefaultIdController();
+        IdGeneratorFactory factory = editionIdGeneratorFactory;
+        if ( safeIdBuffering )
+        {
+            BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
+                    new BufferingIdGeneratorFactory( factory, eligibleForIdReuse, idTypeConfigurationProvider );
+            idController = createBufferedIdController( bufferingIdGeneratorFactory, platformModule.jobScheduler );
+            factory = bufferingIdGeneratorFactory;
+        }
+        else
+        {
+            idController = createDefaultIdController();
+        }
+        this.idGeneratorFactory = factory;
+        dependencies.satisfyDependency( factory );
     }
 
-    protected BufferedIdController createBufferedIdController( IdGeneratorFactory idGeneratorFactory,
-            JobScheduler scheduler, IdReuseEligibility eligibleForIdReuse,
-            IdTypeConfigurationProvider idTypeConfigurationProvider )
+    private BufferedIdController createBufferedIdController( BufferingIdGeneratorFactory idGeneratorFactory,
+            JobScheduler scheduler )
     {
-        BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
-                new BufferingIdGeneratorFactory( idGeneratorFactory, eligibleForIdReuse, idTypeConfigurationProvider );
-        return new BufferedIdController( bufferingIdGeneratorFactory, scheduler );
+        return new BufferedIdController( idGeneratorFactory, scheduler );
     }
 
-    protected DefaultIdController createDefaultIdController()
+    private DefaultIdController createDefaultIdController()
     {
         return new DefaultIdController();
     }

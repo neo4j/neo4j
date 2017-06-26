@@ -108,8 +108,7 @@ public class CommunityEditionModule extends EditionModule
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
         eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
-        idController = createIdController( platformModule );
+        createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );

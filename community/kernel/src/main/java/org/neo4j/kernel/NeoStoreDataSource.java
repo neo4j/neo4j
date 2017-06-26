@@ -435,6 +435,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
+            idController.initialize( transactionsSnapshotSupplier );
+
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
                     indexConfigStore, updateableSchemaState, legacyIndexTransactionOrdering );
@@ -474,9 +477,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     availabilityGuard,
                     clock,
                     propertyAccessor );
-
-            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
-            idController.initialize( transactionsSnapshotSupplier );
 
             kernelModule.satisfyDependencies( dependencies );
 
