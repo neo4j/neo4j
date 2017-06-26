@@ -100,6 +100,20 @@ public interface Result extends ResourceIterator<Map<String,Object>>
      * <strong>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
      * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
      * called.</strong>
+     * <p>
+     * As an example, if we are only interested in a column {@code n} that contains node values, we can extract it like
+     * this:
+     * <p>
+     * <pre><code>
+     *     try ( ResourceIterator&lt;Node&gt; nodes = result.columnAs( "n" ) )
+     *     {
+     *         while ( nodes.hasNext() )
+     *         {
+     *             Node node = nodes.next();
+     *             // Do some work with the 'node' instance.
+     *         }
+     *     }
+     * </code></pre>
      *
      * @param name exact name of the column, as it appeared in the original query
      * @param <T> desired type cast for the result objects
