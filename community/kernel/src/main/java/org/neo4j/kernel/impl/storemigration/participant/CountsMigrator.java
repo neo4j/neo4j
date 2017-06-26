@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.Lifespan;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
@@ -98,7 +99,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
             try
             {
                 rebuildCountsFromScratch( migrationDir, migrationDir, lastTxId, progressMonitor, versionToMigrateTo,
-                        pageCache );
+                        pageCache, NullLogProvider.getInstance() );
             }
             catch ( StoreFailureException e )
             {
@@ -106,7 +107,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 // we should use the store directory for information when rebuilding the count store. Note that we
                 // still put the new count store in the migration directory.
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, progressMonitor, versionToMigrateFrom,
-                        pageCache );
+                        pageCache, logService.getInternalLogProvider() );
             }
         }
     }
@@ -145,14 +146,15 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     }
 
     private void rebuildCountsFromScratch( File storeDirToReadFrom, File migrationDir, long lastTxId,
-            MigrationProgressMonitor.Section progressMonitor, String expectedStoreVersion, PageCache pageCache )
+            MigrationProgressMonitor.Section progressMonitor, String expectedStoreVersion, PageCache pageCache,
+            LogProvider logProvider )
     {
         final File storeFileBase = new File( migrationDir,
                 MetaDataStore.DEFAULT_NAME + StoreFactory.COUNTS_STORE );
 
         RecordFormats recordFormats = selectForVersion( expectedStoreVersion );
         StoreFactory storeFactory = new StoreFactory( storeDirToReadFrom, pageCache, fileSystem, recordFormats,
-                NullLogProvider.getInstance() );
+                logProvider );
         try ( NeoStores neoStores = storeFactory
                 .openNeoStores( StoreType.NODE, StoreType.RELATIONSHIP, StoreType.LABEL_TOKEN,
                         StoreType.RELATIONSHIP_TYPE_TOKEN ) )
@@ -165,7 +167,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId,
                         highRelationshipTypeId, progressMonitor );
-                life.add( new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config,
+                life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
                         storeFileBase ).setInitializer( initializer ) );
             }
         }

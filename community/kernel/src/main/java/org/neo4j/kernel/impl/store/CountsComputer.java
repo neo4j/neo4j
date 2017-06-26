@@ -64,7 +64,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
             int highLabelId, int highRelationshipTypeId )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                new SilentMigrationProgressMonitor().startSection( "Counts" ) );
+                SilentMigrationProgressMonitor.NO_OP_SECTION );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,

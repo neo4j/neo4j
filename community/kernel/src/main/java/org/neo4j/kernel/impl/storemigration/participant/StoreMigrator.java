@@ -472,7 +472,14 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
             {
                 File fromPath = new File( storeDir, file.fileName( StoreFileType.STORE ) );
                 File toPath = new File( migrationDir, file.fileName( StoreFileType.STORE ) );
-                copyWithPageCache( fromPath, toPath );
+                try
+                {
+                    copyWithPageCache( fromPath, toPath );
+                }
+                catch ( NoSuchFileException e )
+                {
+                    // It is okay for the file to not be there.
+                }
             }
 
             // The ID files are to be kept on the normal file system, hence we use fileOperation to copy them.
