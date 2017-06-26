@@ -73,7 +73,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.ThrowingRunnable.throwing;
@@ -1261,7 +1261,7 @@ public class GBPTreeTest
         private int pageCachePageSize = 256;
         private int tentativePageSize = 0;
         private Monitor monitor = NO_MONITOR;
-        private Header.Reader headerReader = NO_HEADER;
+        private Header.Reader headerReader = NO_HEADER_READER;
         private Layout<MutableLong,MutableLong> layout = GBPTreeTest.layout;
         private PageCache specificPageCache;
         private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;

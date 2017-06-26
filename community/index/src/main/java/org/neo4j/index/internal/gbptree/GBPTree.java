@@ -139,6 +139,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
      */
     public interface Monitor
     {
+        /**
+         * Adapter for {@link Monitor}.
+         */
         class Adaptor implements Monitor
         {
             @Override
@@ -199,7 +202,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * No-op header reader.
      */
-    static final Header.Reader NO_HEADER = (cursor,length) -> {};
+    static final Header.Reader NO_HEADER_READER = (cursor,length) -> {};
 
     /**
      * No-op header writer.

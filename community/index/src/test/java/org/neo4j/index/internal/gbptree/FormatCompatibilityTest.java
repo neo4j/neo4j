@@ -49,7 +49,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.test.rule.PageCacheRule.config;
@@ -98,7 +98,7 @@ public class FormatCompatibilityTest
         // THEN everything should work, otherwise there has likely been a format change
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree = new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0,
-                NO_MONITOR, NO_HEADER, NO_HEADER_WRITER ) )
+                NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER ) )
         {
             try
             {
@@ -174,7 +174,7 @@ public class FormatCompatibilityTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() );
         try ( GBPTree<MutableLong,MutableLong> tree = new GBPTree<>( pageCache, storeFile, new SimpleLongLayout(), 0,
-                NO_MONITOR, NO_HEADER, NO_HEADER_WRITER ) )
+                NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER ) )
         {
             MutableLong insertKey = new MutableLong();
             MutableLong insertValue = new MutableLong();
