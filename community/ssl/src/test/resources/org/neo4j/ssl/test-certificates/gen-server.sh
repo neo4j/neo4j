@@ -17,5 +17,8 @@ rm servers/$1/private.key1
 openssl req -new -key servers/$1/private.key -out servers/$1/casigned.csr -config server.conf -subj "${subj}"
 #openssl req -noout -text -in servers/$1/casigned.csr
 
-openssl ca -batch -config cluster.conf -in servers/$1/casigned.csr -out servers/$1/casigned.crt -extensions server_ext
+openssl ca -batch -config cluster.conf -in servers/$1/casigned.csr -out servers/$1/casigned.cert -extensions server_ext
 #openssl x509 -noout -text -in servers/$1/casigned.crt
+
+# Fix-up for broken parsers which can't handle headers
+awk '/-----/{i++}i' servers/$1/casigned.cert > servers/$1/casigned.crt
