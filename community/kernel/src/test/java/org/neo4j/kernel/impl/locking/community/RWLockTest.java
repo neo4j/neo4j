@@ -42,6 +42,8 @@ import static org.mockito.Mockito.mock;
 
 public class RWLockTest
 {
+    private static final long TEST_TIMEOUT_MILLIS = 5_000;
+
     private static ExecutorService executor;
 
     @BeforeClass
@@ -95,7 +97,7 @@ public class RWLockTest
      * In case if writer thread can't grab write lock now, it should be added to
      * into a waiting list, wait till resource will be free and grab it.
      */
-    @Test( timeout = 1000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void testWaitingWriterLock() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
@@ -140,7 +142,7 @@ public class RWLockTest
         assertEquals( "No lock elements left.", 0, lock.getTxLockElementCount() );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void testWaitingReaderLock() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
@@ -179,7 +181,7 @@ public class RWLockTest
         assertEquals( "No lock elements left.", 0, lock.getTxLockElementCount() );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void testThreadRemovedFromWaitingListOnDeadlock() throws InterruptedException
     {
         RagManager ragManager = Mockito.mock( RagManager.class );
@@ -292,7 +294,7 @@ public class RWLockTest
         assertEquals( 0, lock.getWriteCount() );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void testDeadlockDetection() throws InterruptedException
     {
         RagManager ragManager = new RagManager();
@@ -333,7 +335,7 @@ public class RWLockTest
         lockNode1.releaseWriteLock( client1Transaction );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = TEST_TIMEOUT_MILLIS )
     public void testLockRequestsTermination() throws InterruptedException
     {
         // given
