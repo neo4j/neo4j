@@ -31,7 +31,7 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.bolt.BoltConnectorRegister;
+import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.api.security.AuthenticationResult;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
@@ -51,7 +51,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
     private GraphDatabaseFacade db;
     private EnterpriseAuthManager authManager;
     private FileSystemAbstraction fileSystem;
-    private BoltConnectorRegister connectorRegister;
+    private BoltPortRegister connectorRegister;
 
     EmbeddedInteraction( Map<String, String> config ) throws Throwable
     {
@@ -86,7 +86,7 @@ public class EmbeddedInteraction implements NeoInteractionLevel<EnterpriseSecuri
 
         db = (GraphDatabaseFacade) builder.newGraphDatabase();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
-        connectorRegister = db.getDependencyResolver().resolveDependency( BoltConnectorRegister.class );
+        connectorRegister = db.getDependencyResolver().resolveDependency( BoltPortRegister.class );
     }
 
     @Override

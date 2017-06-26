@@ -34,7 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.api.bolt.BoltConnectorRegister;
+import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -52,7 +52,7 @@ public class Neo4jWithSocket extends ExternalResource
     private TestGraphDatabaseFactory graphDatabaseFactory;
     private GraphDatabaseService gdb;
     private File workingDirectory;
-    private BoltConnectorRegister connectorRegister;
+    private BoltPortRegister connectorRegister;
 
     public Neo4jWithSocket( Class<?> testClass )
     {
@@ -150,7 +150,7 @@ public class Neo4jWithSocket extends ExternalResource
         gdb = graphDatabaseFactory.newImpermanentDatabaseBuilder( storeDir ).
                 setConfig( settings ).newGraphDatabase();
         connectorRegister =
-                ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( BoltConnectorRegister.class );
+                ((GraphDatabaseAPI) gdb).getDependencyResolver().resolveDependency( BoltPortRegister.class );
     }
 
     private Map<String,String> configure( Consumer<Map<String,String>> overrideSettingsFunction ) throws IOException

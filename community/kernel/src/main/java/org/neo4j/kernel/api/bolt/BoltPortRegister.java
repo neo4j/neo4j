@@ -27,10 +27,10 @@ import org.neo4j.helpers.HostnamePort;
 /**
  * Connector tracker that keeps information about local address that any configured connector get during bootstrapping.
  */
-public class BoltConnectorRegister
+public class BoltPortRegister
 {
 
-    private ConcurrentHashMap<String,HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String,HostnamePort> connectorsInfo = new ConcurrentHashMap<>();
 
     public void register( String connectorKey, InetSocketAddress localAddress )
     {

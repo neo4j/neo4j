@@ -52,7 +52,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
-import org.neo4j.kernel.api.bolt.BoltConnectorRegister;
+import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
 import org.neo4j.kernel.configuration.BoltConnector;
@@ -106,7 +106,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
 
         BoltConnectionTracker sessionTracker();
 
-        BoltConnectorRegister connectionRegister();
+        BoltPortRegister connectionRegister();
 
         Clock clock();
 
@@ -144,7 +144,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         BoltFactory boltFactory = life.add( new BoltFactoryImpl( api, dependencies.usageData(),
                 logService, dependencies.txBridge(), authentication, dependencies.sessionTracker(), config ) );
         WorkerFactory workerFactory = createWorkerFactory( boltFactory, scheduler, dependencies, logService, clock );
-        BoltConnectorRegister connectionRegister = dependencies.connectionRegister();
+        BoltPortRegister connectionRegister = dependencies.connectionRegister();
 
         Map<BoltConnector, ProtocolInitializer> connectors = config.enabledBoltConnectors().stream()
                 .collect( Collectors.toMap( Function.identity(), connConfig ->
