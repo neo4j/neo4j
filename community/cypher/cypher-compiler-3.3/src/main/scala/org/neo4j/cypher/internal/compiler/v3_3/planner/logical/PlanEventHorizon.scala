@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.ir.v3_3._
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 
 /*
 Planning event horizons means planning the WITH clauses between query patterns. Some of these clauses are inlined
@@ -61,7 +61,7 @@ case object PlanEventHorizon
         context.logicalPlanProducer.planPassAll(plan)
 
       case _ =>
-        throw new CantHandleQueryException
+        throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")
     }
 
     // We need to check if reads introduced in the horizon conflicts with future writes

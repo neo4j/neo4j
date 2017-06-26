@@ -29,6 +29,12 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("apa") {
+    val result = innerExecute("create (n) return n")
+    println(result.dumpToString())
+    println(result.executionPlanDescription())
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
 
     val n1 = createLabeledNode("Neo")

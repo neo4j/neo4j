@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 
 case class PipeInfo(pipe: Pipe,
                     updating: Boolean,
@@ -34,11 +32,6 @@ case class PipeInfo(pipe: Pipe,
 
 case class PeriodicCommitInfo(size: Option[Long]) {
   def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
-}
-
-trait NewLogicalPlanSuccessRateMonitor {
-  def newQuerySeen(queryText: String, ast:Statement)
-  def unableToHandleQuery(queryText: String, ast:Statement, origin: CantHandleQueryException)
 }
 
 trait NewRuntimeSuccessRateMonitor {

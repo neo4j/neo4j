@@ -21,8 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, SemanticTable, ast}
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
+import org.neo4j.cypher.internal.frontend.v3_3.{Foldable, InternalException, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
 
 object StatementConverters {
@@ -73,7 +72,7 @@ object StatementConverters {
         UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 
       case _ =>
-        throw new CantHandleQueryException
+        throw new InternalException(s"Received an AST-clause that has no representation the QG: $query")
     }
   }
 }

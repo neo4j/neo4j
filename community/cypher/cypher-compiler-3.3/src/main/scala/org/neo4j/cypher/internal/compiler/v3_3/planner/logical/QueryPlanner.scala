@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPla
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
-import org.neo4j.cypher.internal.ir.v3_3.exception.CantHandleQueryException
 import org.neo4j.cypher.internal.ir.v3_3.{Cost, PeriodicCommit, PlannerQuery, UnionQuery}
 
 case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, LogicalPlan] = PlanSingleQuery()) extends Phase[CompilerContext, LogicalPlanState, LogicalPlanState] {
@@ -69,9 +68,6 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
       case UnionQuery(queries, distinct, _, periodicCommitHint) =>
         val plan = planQueries(queries, distinct)
         (periodicCommitHint, createProduceResultOperator(plan, unionQuery))
-
-      case _ =>
-        throw new CantHandleQueryException
     }
 
   private def createProduceResultOperator(in: LogicalPlan, unionQuery: UnionQuery)
