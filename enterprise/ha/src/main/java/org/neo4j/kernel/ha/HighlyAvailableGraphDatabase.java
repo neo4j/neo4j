@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 /**
- * This has all the functionality of an embedded database, with the addition of services
+ * This has all the functionality of an Enterprise Edition embedded database, with the addition of services
  * for handling clustering.
  */
 public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
