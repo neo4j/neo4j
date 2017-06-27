@@ -29,7 +29,7 @@ class SendDownstream implements Work<Downstream,SendDownstream>
     private TicketedBatch head;
     private TicketedBatch tail;
 
-    public SendDownstream( long ticket, Object batch, LongAdder downstreamIdleTime )
+    SendDownstream( long ticket, Object batch, LongAdder downstreamIdleTime )
     {
         this.downstreamIdleTime = downstreamIdleTime;
         TicketedBatch b = new TicketedBatch( ticket, batch );
