@@ -153,6 +153,31 @@ public class RawBitsTest
         }
     }
 
+    @Test
+    public void shouldHaveSameCompareResultsAsValueCompare() throws Exception
+    {
+        // given
+        List<Value> values = asValueObjects( objects );
+        List<SchemaNumberKey> schemaNumberKeys = asSchemaNumberKeys( values );
+
+        // when
+        for ( int i = 0; i < values.size(); i++ )
+        {
+            Value value1 = values.get( i );
+            SchemaNumberKey schemaNumberKey1 = schemaNumberKeys.get( i );
+            for ( int j = 0; j < values.size(); j++ )
+            {
+                // then
+                Value value2 = values.get( j );
+                SchemaNumberKey schemaNumberKey2 = schemaNumberKeys.get( j );
+                assertEquals( Values.COMPARATOR.compare( value1, value2 ),
+                        layout.compare( schemaNumberKey1, schemaNumberKey2 ) );
+                assertEquals( Values.COMPARATOR.compare( value2, value1 ),
+                        layout.compare( schemaNumberKey2, schemaNumberKey1 ) );
+            }
+        }
+    }
+
     private List<Value> asValues( List<SchemaNumberKey> schemaNumberKeys )
     {
         return schemaNumberKeys.stream()
