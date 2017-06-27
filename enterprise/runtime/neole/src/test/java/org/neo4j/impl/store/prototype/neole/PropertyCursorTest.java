@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.impl.kernel.api.NodeCursor;
 import org.neo4j.impl.kernel.api.PropertyCursor;
+import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -127,18 +128,18 @@ public class PropertyCursorTest
     @Test
     public void shouldAccessSingleProperty() throws Exception
     {
-        assertAccessSingleProperty( byteProp, (byte)13 );
-        assertAccessSingleProperty( shortProp, (short)13 );
-        assertAccessSingleProperty( intProp, 13 );
-        assertAccessSingleProperty( inlineLongProp, 13L );
-        assertAccessSingleProperty( longProp, Long.MAX_VALUE );
-        assertAccessSingleProperty( floatProp, 13.0f );
-        assertAccessSingleProperty( doubleProp, 13.0 );
-        assertAccessSingleProperty( trueProp, true );
-        assertAccessSingleProperty( falseProp, false );
-        assertAccessSingleProperty( charProp, 'x' );
-        assertAccessSingleProperty( shortStringProp, "hello" );
-        assertAccessSingleProperty( utf8Prop, chinese );
+        assertAccessSingleProperty( byteProp, Values.of( (byte)13 ) );
+        assertAccessSingleProperty( shortProp, Values.of( (short)13 ) );
+        assertAccessSingleProperty( intProp, Values.of( 13 ) );
+        assertAccessSingleProperty( inlineLongProp, Values.of( 13L ) );
+        assertAccessSingleProperty( longProp, Values.of( Long.MAX_VALUE ) );
+        assertAccessSingleProperty( floatProp, Values.of( 13.0f ) );
+        assertAccessSingleProperty( doubleProp, Values.of( 13.0 ) );
+        assertAccessSingleProperty( trueProp, Values.of( true ) );
+        assertAccessSingleProperty( falseProp, Values.of( false ) );
+        assertAccessSingleProperty( charProp, Values.of( 'x' ) );
+        assertAccessSingleProperty( shortStringProp, Values.of( "hello" ) );
+        assertAccessSingleProperty( utf8Prop, Values.of( chinese ) );
     }
 
     @Test
@@ -157,7 +158,7 @@ public class PropertyCursorTest
             Set<Object> values = new HashSet<>();
             while ( props.next() )
             {
-                values.add( props.propertyValue() );
+                values.add( props.propertyValue().asObject() );
             }
 
             assertTrue( "byteProp", values.contains( (byte)13 ) );

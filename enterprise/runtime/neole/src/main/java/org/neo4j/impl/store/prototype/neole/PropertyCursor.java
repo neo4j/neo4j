@@ -212,7 +212,7 @@ class PropertyCursor extends PartialPropertyCursor
         case CHAR:
             return Values.charValue( (char)((valueBytes & 0x0000_0FFF_F000_0000L) >> 28) );
         case INT:
-            return Values.intValue( (int)(valueBytes & 0x0FFF_FFFF_F000_0000L) >> 28 );
+            return Values.intValue( (int)((valueBytes & 0x0FFF_FFFF_F000_0000L) >> 28 ) );
         case LONG:
             if ( ( valueBytes & 0x0000_0000_1000_0000 ) == 0 )
             {
