@@ -136,10 +136,13 @@ public class DataIntegrityValidatingStatementOperations implements
 
             if ( existingIndex.type() == UNIQUE )
             {
-                throw new IndexBelongsToConstraintException( index.schema() );
+                if ( schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, existingIndex ) != null )
+                {
+                    throw new IndexBelongsToConstraintException( index.schema() );
+                }
             }
         }
-        catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
+        catch ( IndexBelongsToConstraintException | NoSuchIndexException | SchemaRuleNotFoundException e )
         {
             throw new DropIndexFailureException( index.schema(), e );
         }

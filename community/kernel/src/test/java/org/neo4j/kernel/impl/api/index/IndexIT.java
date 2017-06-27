@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -129,19 +130,26 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
-    public void shouldRemoveAConstraintIndexWithoutOwnerInRecovery() throws Exception
+    public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
         PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, false );
 
-        creator.createConstraintIndex( descriptor );
-
-        // when
-        restartDb();
-
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySetOf( ConstraintDescriptor.class ),
+                asSet( readOperations.constraintsGetForLabel( labelId ) ) );
+        commit();
+
+        // when
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.indexDrop( constraintIndex );
+        commit();
+
+        // then
+        readOperations = readOperationsInNewTransaction();
         assertEquals( emptySetOf( IndexDescriptor.class ), asSet( readOperations.indexesGetForLabel( labelId ) ) );
         commit();
     }
