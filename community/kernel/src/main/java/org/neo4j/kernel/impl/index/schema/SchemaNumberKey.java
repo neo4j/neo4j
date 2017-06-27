@@ -90,16 +90,14 @@ class SchemaNumberKey extends ValueWriter.Adapter
 
     void initAsLowest()
     {
-        rawValueBits = Double.doubleToLongBits( Double.NEGATIVE_INFINITY );
-        type = RawBits.DOUBLE;
+        writeFloatingPoint( Double.NEGATIVE_INFINITY );
         entityId = Long.MIN_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
 
     void initAsHighest()
     {
-        rawValueBits = Double.doubleToLongBits( Double.POSITIVE_INFINITY );
-        type = RawBits.DOUBLE;
+        writeFloatingPoint( Double.POSITIVE_INFINITY );
         entityId = Long.MAX_VALUE;
         entityIdIsSpecialTieBreaker = true;
     }
