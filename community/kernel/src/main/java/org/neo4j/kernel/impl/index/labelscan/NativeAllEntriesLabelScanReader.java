@@ -33,9 +33,10 @@ import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
 import static java.lang.Long.min;
-import static java.lang.Math.toIntExact;
 import static java.util.Arrays.fill;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.asArray;
+
+import static org.neo4j.kernel.api.labelscan.NodeLabelRange.convertState;
+import static org.neo4j.kernel.api.labelscan.NodeLabelRange.readBitmap;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 
 /**
@@ -63,6 +64,12 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
     public long maxCount()
     {
         return -1;
+    }
+
+    @Override
+    public int rangeSize()
+    {
+        return RANGE_SIZE;
     }
 
     @Override
@@ -132,7 +139,6 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 
             fill( labelsForEachNode, null );
             long nextLowestRange = Long.MAX_VALUE;
-            int slots = 0;
             try
             {
                 // One "rangeSize" range at a time
@@ -147,7 +153,9 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     }
                     else if ( idRange == currentRange )
                     {
-                        slots = readRange( slots, cursor );
+                        long bits = cursor.get().value().bits;
+                        long labelId = cursor.get().key().labelId;
+                        readBitmap( bits, labelId, labelsForEachNode );
 
                         // Advance cursor and look ahead to the next range
                         if ( cursor.next() )
@@ -162,7 +170,7 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
                     }
                 }
 
-                NativeNodeLabelRange range = new NativeNodeLabelRange( currentRange, convertState(), slots );
+                NodeLabelRange range = new NodeLabelRange( currentRange, convertState( labelsForEachNode ) );
                 currentRange = nextLowestRange;
 
                 return range;
@@ -171,91 +179,6 @@ class NativeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
             {
                 throw new RuntimeException( e );
             }
-        }
-
-        private long[][] convertState()
-        {
-            long[][] labelIdsByNodeIndex = new long[RANGE_SIZE][];
-            for ( int i = 0; i < RANGE_SIZE; i++ )
-            {
-                List<Long> labelIdList = labelsForEachNode[i];
-                if ( labelIdList != null )
-                {
-                    labelIdsByNodeIndex[i] = asArray( labelIdList.iterator() );
-                }
-            }
-            return labelIdsByNodeIndex;
-        }
-
-        private int readRange( int slots, RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
-        {
-            long bits = cursor.get().value().bits;
-            while ( bits != 0 )
-            {
-                int relativeNodeId = Long.numberOfTrailingZeros( bits );
-                long labelId = cursor.get().key().labelId;
-                if ( labelsForEachNode[relativeNodeId] == null )
-                {
-                    labelsForEachNode[relativeNodeId] = new ArrayList<>();
-                    slots++;
-                }
-                labelsForEachNode[relativeNodeId].add( labelId );
-                bits &= bits - 1;
-            }
-            return slots;
-        }
-    }
-
-    private static class NativeNodeLabelRange extends NodeLabelRange
-    {
-        private final long idRange;
-        private final long[] nodes;
-        private final long[][] labels;
-
-        NativeNodeLabelRange( long idRange, long[][] labels, int slots )
-        {
-            this.idRange = idRange;
-            this.labels = labels;
-            long baseNodeId = idRange * RANGE_SIZE;
-
-            this.nodes = new long[slots];
-            int nodeIndex = 0;
-            for ( int i = 0; i < RANGE_SIZE; i++ )
-            {
-                if ( labels[i] != null )
-                {
-                    nodes[nodeIndex++] = baseNodeId + i;
-                }
-            }
-        }
-
-        @Override
-        public int id()
-        {
-            return (int) idRange; // TODO this is a weird thing, id and this conversion
-        }
-
-        @Override
-        public long[] nodes()
-        {
-            return nodes;
-        }
-
-        @Override
-        public long[] labels( long nodeId )
-        {
-            long firstNodeId = idRange * RANGE_SIZE;
-            int index = toIntExact( nodeId - firstNodeId );
-            assert index >= 0 && index < RANGE_SIZE : "nodeId:" + nodeId + ", idRange:" + idRange;
-            return labels[index];
-        }
-
-        @Override
-        public String toString()
-        {
-            String rangeString = idRange * RANGE_SIZE + "-" + (idRange + 1) * RANGE_SIZE;
-            String prefix = "NodeLabelRange[idRange=" + rangeString;
-            return toString( prefix, nodes, labels );
         }
     }
 }

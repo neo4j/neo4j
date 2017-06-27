@@ -25,6 +25,10 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
+/**
+ * Inserts empty {@link NodeLabelRange} for those ranges missing from the source iterator.
+ * High node id is known up front such that ranges are returned up to that point.
+ */
 class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
     private final AllEntriesLabelScanReader nodeLabelRanges;
@@ -49,114 +53,72 @@ class GapFreeAllEntriesLabelScanReader implements AllEntriesLabelScanReader
     }
 
     @Override
+    public int rangeSize()
+    {
+        return nodeLabelRanges.rangeSize();
+    }
+
+    @Override
     public Iterator<NodeLabelRange> iterator()
     {
-        return new GapFillingIterator( nodeLabelRanges.iterator(), highId );
+        return new GapFillingIterator( nodeLabelRanges.iterator(), (highId - 1) / nodeLabelRanges.rangeSize(),
+                nodeLabelRanges.rangeSize() );
     }
 
     private static class GapFillingIterator extends PrefetchingIterator<NodeLabelRange>
     {
-        private static final int BATCH_SIZE = 1_000;
-        private static final long[] EMPTY_LONG_ARRAY = new long[0];
-        private final long highId;
-        private Iterator<NodeLabelRange> source;
-        private NodeLabelRange nextFromSource;
-        private long[] sourceNodeIds;
-        private int sourceIndex;
-        private int currentId;
-        private boolean first;
+        private final long highestRangeId;
+        private final Iterator<NodeLabelRange> source;
+        private final long[][] emptyRangeData;
 
-        GapFillingIterator( Iterator<NodeLabelRange> nodeLableRangeIterator, long highId )
+        private NodeLabelRange nextFromSource;
+        private long currentRangeId = -1;
+
+        GapFillingIterator( Iterator<NodeLabelRange> nodeLableRangeIterator, long highestRangeId, int rangeSize )
         {
-            this.highId = highId;
+            this.highestRangeId = highestRangeId;
             this.source = nodeLableRangeIterator;
-            this.first = true;
+            this.emptyRangeData = new long[rangeSize][];
         }
 
         @Override
         protected NodeLabelRange fetchNextOrNull()
         {
-            long baseId = currentId;
-            int batchSize = BATCH_SIZE;
-            long[] nodes = new long[batchSize];
-            long[][] labels = new long[batchSize][];
-
-            int cursor = 0;
-            for ( ; cursor < batchSize; cursor++, currentId++ )
+            while ( true )
             {
-                // First or empty source
-                if ( first || (sourceNodeIds != null && sourceIndex >= sourceNodeIds.length) )
+                // These conditions only come into play after we've gotten the first range from the source
+                if ( nextFromSource != null )
                 {
-                    first = false;
-                    if ( source.hasNext() )
+                    if ( currentRangeId + 1 == nextFromSource.id() )
                     {
-                        nextFromSource = source.next();
-                        sourceNodeIds = nextFromSource.nodes();
-                        sourceIndex = 0;
+                        // Next to return is the one from source
+                        currentRangeId++;
+                        return nextFromSource;
                     }
-                    else
+
+                    if ( currentRangeId < nextFromSource.id() )
                     {
-                        nextFromSource = null;
-                        sourceNodeIds = null;
+                        // Source range iterator has a gap we need to fill
+                        return new NodeLabelRange( ++currentRangeId, emptyRangeData );
                     }
                 }
 
-                if ( currentId >= highId && sourceNodeIds == null )
+                if ( source.hasNext() )
                 {
-                    break;
+                    // The source iterator has more ranges, grab the next one
+                    nextFromSource = source.next();
+                    // continue in the outer loop
                 }
-
-                nodes[cursor] = currentId;
-                if ( sourceNodeIds != null && sourceNodeIds[sourceIndex] == currentId )
+                else if ( currentRangeId < highestRangeId )
                 {
-                    labels[cursor] = nextFromSource.labels( currentId );
-                    sourceIndex++;
+                    nextFromSource = new NodeLabelRange( highestRangeId, emptyRangeData );
+                    // continue in the outer loop
                 }
                 else
                 {
-                    labels[cursor] = EMPTY_LONG_ARRAY;
+                    // End has been reached
+                    return null;
                 }
-            }
-            return cursor > 0 ? new SimpleNodeLabelRange( baseId, nodes, labels ) : null;
-        }
-
-        private static class SimpleNodeLabelRange extends NodeLabelRange
-        {
-            private final long baseId;
-            private final long[] nodes;
-            private final long[][] labels;
-
-            SimpleNodeLabelRange( long baseId, long[] nodes, long[][] labels )
-            {
-                this.baseId = baseId;
-                this.nodes = nodes;
-                this.labels = labels;
-            }
-
-            @Override
-            public int id()
-            {
-                return (int) baseId;
-            }
-
-            @Override
-            public long[] nodes()
-            {
-                return nodes;
-            }
-
-            @Override
-            public long[] labels( long nodeId )
-            {
-                return labels[(int) (nodeId - baseId)];
-            }
-
-            @Override
-            public String toString()
-            {
-                String rangeString = baseId + "-" + (baseId + nodes.length);
-                String prefix = "NodeLabelRange[idRange=" + rangeString;
-                return toString( prefix, nodes, labels );
             }
         }
     }

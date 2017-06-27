@@ -21,6 +21,14 @@ package org.neo4j.kernel.api.labelscan;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 
+/**
+ * Iterates over all label data in a label index.
+ */
 public interface AllEntriesLabelScanReader extends BoundedIterable<NodeLabelRange>
 {
+    /**
+     * @return size of a range. All {@link NodeLabelRange} instances handed out by this iterator
+     * has the same range size.
+     */
+    int rangeSize();
 }
