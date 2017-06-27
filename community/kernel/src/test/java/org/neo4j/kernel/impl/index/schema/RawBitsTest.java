@@ -33,7 +33,10 @@ import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableList;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 @RunWith( Parameterized.class )
 public class RawBitsTest
@@ -80,13 +83,23 @@ public class RawBitsTest
             Byte.MAX_VALUE,
             Short.MAX_VALUE,
             Integer.MAX_VALUE,
+            9007199254740991L,
+            9007199254740991D,
+            9007199254740992L,
             9007199254740992D,
             9007199254740993L,
+            9007199254740993D,
+            9007199254740994L,
+            9007199254740994D,
             Long.MAX_VALUE,
             Float.MAX_VALUE,
             Double.MAX_VALUE,
             Double.POSITIVE_INFINITY,
-            Double.NaN
+            Double.NaN,
+            Math.nextDown( Math.E ),
+            Math.nextUp( Math.E ),
+            Math.nextDown( Math.PI ),
+            Math.nextUp( Math.PI )
     );
 
     @Test
@@ -101,12 +114,44 @@ public class RawBitsTest
         // when
         values.sort( Values.COMPARATOR );
         schemaNumberKeys.sort( layout );
-        List<Value> actual = schemaNumberKeys.stream()
-                .map( k -> RawBits.asNumberValue( k.rawValueBits, k.type ) )
-                .collect( Collectors.toList() );
+        List<Value> actual = asValues( schemaNumberKeys );
 
         // then
         assertSameOrder( actual, values );
+    }
+
+    @Test
+    public void shouldCompareAllValuesToAllOtherValuesLikeValueComparator() throws Exception
+    {
+        // given
+        List<Value> values = asValueObjects( objects );
+        List<SchemaNumberKey> schemaNumberKeys = asSchemaNumberKeys( values );
+        values.sort( Values.COMPARATOR );
+
+        // when
+        for ( SchemaNumberKey numberKey : schemaNumberKeys )
+        {
+            List<SchemaNumberKey> withoutThisOne = new ArrayList<>( schemaNumberKeys );
+            assertTrue( withoutThisOne.remove( numberKey ) );
+            withoutThisOne = unmodifiableList( withoutThisOne );
+            for ( int i = 0; i < withoutThisOne.size(); i++ )
+            {
+                List<SchemaNumberKey> withThisOneInWrongPlace = new ArrayList<>( withoutThisOne );
+                withThisOneInWrongPlace.add( i, numberKey );
+                withThisOneInWrongPlace.sort( layout );
+                List<Value> actual = asValues( withThisOneInWrongPlace );
+
+                // then
+                assertSameOrder( actual, values );
+            }
+        }
+    }
+
+    private List<Value> asValues( List<SchemaNumberKey> schemaNumberKeys )
+    {
+        return schemaNumberKeys.stream()
+                .map( k -> RawBits.asNumberValue( k.rawValueBits, k.type ) )
+                .collect( Collectors.toList() );
     }
 
     private void assertSameOrder( List<Value> actual, List<Value> values )
