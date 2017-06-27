@@ -31,17 +31,17 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.Types;
 import javax.tools.Diagnostic;
 
-import org.neo4j.procedure.UserFunction;
+import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.testutils.ElementTestUtils;
-import org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples;
+import org.neo4j.tooling.procedure.visitors.examples.UserAggregationFunctionsExamples;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
-public class UserFunctionVisitorTest
+public class UserAggregationFunctionVisitorTest
 {
     @Rule
     public CompilationRule compilationRule = new CompilationRule();
@@ -56,14 +56,15 @@ public class UserFunctionVisitorTest
 
         elementTestUtils = new ElementTestUtils( compilationRule );
         final TypeMirrorUtils typeMirrorUtils = new TypeMirrorUtils( types, elements );
-        visitor = new UserFunctionVisitor( new FunctionVisitor<>( UserFunction.class, types, elements, typeMirrorUtils,
-                function -> CustomNameExtractor.getName( function::name, function::value ), false ) );
+        visitor = new UserAggregationFunctionVisitor(
+                new FunctionVisitor<>( UserAggregationFunction.class, types, elements, typeMirrorUtils,
+                        function -> CustomNameExtractor.getName( function::name, function::value ), false ), types );
     }
 
     @Test
-    public void functions_with_specified_name_cannot_be_in_root_namespace()
+    public void aggregation_functions_with_specified_name_cannot_be_in_root_namespace()
     {
-        Element function = elementTestUtils.findMethodElement( UserFunctionsExamples.class, "functionWithName" );
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "functionWithName" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
@@ -73,9 +74,9 @@ public class UserFunctionVisitorTest
     }
 
     @Test
-    public void functions_with_specified_value_cannot_be_in_root_namespace()
+    public void aggregation_functions_with_specified_value_cannot_be_in_root_namespace()
     {
-        Element function = elementTestUtils.findMethodElement( UserFunctionsExamples.class, "functionWithValue" );
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "functionWithValue" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
@@ -85,9 +86,9 @@ public class UserFunctionVisitorTest
     }
 
     @Test
-    public void functions_in_non_root_namespace_are_valid()
+    public void aggregation_functions_in_non_root_namespace_are_valid()
     {
-        Element function = elementTestUtils.findMethodElement( UserFunctionsExamples.class, "ok" );
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "ok" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
@@ -95,41 +96,80 @@ public class UserFunctionVisitorTest
     }
 
     @Test
-    public void functions_with_unsupported_return_types_are_invalid()
+    public void aggregation_functions_with_unsupported_return_types_are_invalid()
     {
-        Element function = elementTestUtils.findMethodElement( UserFunctionsExamples.class, "wrongReturnType" );
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "wrongReturnType" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getElement,
                 CompilationMessage::getContents ).contains( tuple( Diagnostic.Kind.ERROR, function,
-                "Unsupported return type <void> of function defined in " +
-                        "<org.neo4j.tooling.procedure.visitors.examples.UserFunctionsExamples#wrongReturnType>." ) );
+                "Unsupported return type <void> of aggregation function." ) );
     }
 
     @Test
-    public void functions_with_unsupported_parameter_types_are_invalid()
+    public void aggregation_functions_with_parameters_are_invalid()
     {
-        Element function = elementTestUtils.findMethodElement( UserFunctionsExamples.class, "wrongParameterType" );
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "shouldNotHaveParameters" );
+
+        Stream<CompilationMessage> errors = visitor.visit( function );
+
+        assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getElement,
+                CompilationMessage::getContents ).contains( tuple( Diagnostic.Kind.ERROR, function,
+                "@UserAggregationFunction usage error: method should be public, non-static and without parameters." ) );
+    }
+
+    @Test
+    public void aggregation_update_functions_with_unsupported_parameter_types_are_invalid()
+    {
+        Element function = elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "updateWithWrongParameterType" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
                 .contains( tuple( Diagnostic.Kind.ERROR,
                         "Unsupported parameter type <java.lang.Thread> of procedure|function " +
-                                "UserFunctionsExamples#wrongParameterType" ) );
+                                "StringAggregatorWithWrongUpdateParameterType#doSomething" ) );
     }
 
     @Test
-    public void functions_with_non_annotated_parameters_are_invalid()
+    public void aggregation_functions_with_non_annotated_parameters_are_invalid()
     {
         Element function =
-                elementTestUtils.findMethodElement( UserFunctionsExamples.class, "missingParameterAnnotation" );
+                elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "missingParameterAnnotation" );
 
         Stream<CompilationMessage> errors = visitor.visit( function );
 
         assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
                 .contains( tuple( Diagnostic.Kind.ERROR,
-                        "@org.neo4j.procedure.Name usage error: missing on parameter <arg1>" ) );
+                        "@org.neo4j.procedure.Name usage error: missing on parameter <foo>" ) );
+    }
+
+    @Test
+    public void aggregation_result_functions_with_unsupported_return_types_are_invalid()
+    {
+        Element function =
+                elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "resultWithWrongReturnType" );
+
+        Stream<CompilationMessage> errors = visitor.visit( function );
+
+        assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
+                .contains( tuple( Diagnostic.Kind.ERROR,
+                "Unsupported return type <java.lang.Thread> of function defined in " +
+                "<org.neo4j.tooling.procedure.visitors.examples.UserAggregationFunctionsExamples." +
+                "StringAggregatorWithWrongResultReturnType#result>." ) );
+    }
+
+    @Test
+    public void aggregation_result_functions_with_parameters_are_invalid()
+    {
+        Element function =
+                elementTestUtils.findMethodElement( UserAggregationFunctionsExamples.class, "resultWithParams" );
+
+        Stream<CompilationMessage> errors = visitor.visit( function );
+
+        assertThat( errors ).hasSize( 1 ).extracting( CompilationMessage::getCategory, CompilationMessage::getContents )
+                .contains( tuple( Diagnostic.Kind.ERROR,
+                        "@UserAggregationUpdate usage error: method should be public, non-static and without parameters." ) );
     }
 }

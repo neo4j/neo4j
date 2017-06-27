@@ -44,6 +44,7 @@
     <module>auth-plugin-api</module>
     <module>deferred-locks</module>
     <module>ha</module>
+    <module>procedure-compiler-enterprise-tests</module>
   </modules>
 
   <profiles>

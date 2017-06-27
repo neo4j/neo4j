@@ -17,32 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.procedure.messages;
+package org.neo4j.tooling.procedure.visitors.examples;
 
-import javax.lang.model.element.Element;
+import org.neo4j.procedure.Context;
 
-public class ProcedureMissingPublicNoArgConstructor implements CompilationMessage
+public class UnknownContextType
 {
 
-    private final Element element;
-    private final String errorMessage;
-
-    public ProcedureMissingPublicNoArgConstructor( Element element, String message, Object... args )
-    {
-
-        this.element = element;
-        this.errorMessage = String.format( message, args );
-    }
-
-    @Override
-    public Element getElement()
-    {
-        return element;
-    }
-
-    @Override
-    public String getContents()
-    {
-        return errorMessage;
-    }
+    @Context
+    public String unsupportedType;
 }

@@ -21,9 +21,11 @@ package org.neo4j.tooling.procedure.visitors;
 
 import java.util.Arrays;
 import java.util.LinkedHashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import javax.lang.model.element.Element;
 import javax.lang.model.element.Modifier;
 import javax.lang.model.element.VariableElement;
 import javax.lang.model.type.TypeMirror;
@@ -31,32 +33,44 @@ import javax.lang.model.util.Elements;
 import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.security.UserManager;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.ProcedureTransaction;
+import org.neo4j.procedure.TerminationGuard;
+import org.neo4j.tooling.procedure.ProcedureProcessor;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ContextFieldError;
 import org.neo4j.tooling.procedure.messages.ContextFieldWarning;
-import org.neo4j.tooling.procedure.messages.FieldError;
+
+import static org.neo4j.tooling.procedure.CompilerOptions.IGNORE_CONTEXT_WARNINGS_OPTION;
 
 class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
-    private static final Set<Class<?>> SUPPORTED_TYPES =
-            new LinkedHashSet<>( Arrays.asList( GraphDatabaseService.class, Log.class ) );
+    private static final Set<String> SUPPORTED_TYPES = new LinkedHashSet<>(
+            Arrays.asList( GraphDatabaseService.class.getName(), Log.class.getName(), TerminationGuard.class.getName(),
+                    SecurityContext.class.getName(), ProcedureTransaction.class.getName() ) );
+    private static final Set<String> RESTRICTED_TYPES = new LinkedHashSet<>(
+            Arrays.asList( GraphDatabaseAPI.class.getName(), KernelTransaction.class.getName(),
+                    DependencyResolver.class.getName(), UserManager.class.getName(),
+                    // the following classes are not in the compiler classpath
+                    "org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager",
+                    "org.neo4j.server.security.enterprise.log.SecurityLog" ) );
 
     private final Elements elements;
     private final Types types;
-    private final boolean skipContextWarnings;
+    private final boolean ignoresWarnings;
 
-    ContextFieldVisitor( Types types, Elements elements, boolean skipContextWarnings )
+    ContextFieldVisitor( Types types, Elements elements, boolean ignoresWarnings )
     {
         this.elements = elements;
         this.types = types;
-        this.skipContextWarnings = skipContextWarnings;
-    }
-
-    private static String types( Set<Class<?>> supportedTypes )
-    {
-        return supportedTypes.stream().map( Class::getName ).collect( Collectors.joining( ">, <", "<", ">" ) );
+        this.ignoresWarnings = ignoresWarnings;
     }
 
     @Override
@@ -69,9 +83,9 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
     {
         if ( !hasValidModifiers( field ) )
         {
-            return Stream.of( new FieldError( field,
-                    "@%s usage error: field %s#%s should be public, non-static and non-final", Context.class.getName(),
-                    field.getEnclosingElement().getSimpleName(), field.getSimpleName() ) );
+            return Stream.of( new ContextFieldError( field,
+                    "@%s usage error: field %s should be public, non-static and non-final", Context.class.getName(),
+                    fieldFullName( field ) ) );
         }
 
         return Stream.empty();
@@ -79,26 +93,45 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
 
     private Stream<CompilationMessage> validateInjectedTypes( VariableElement field )
     {
-        if ( skipContextWarnings )
+        TypeMirror fieldType = field.asType();
+        if ( injectsAllowedType( fieldType ) )
         {
             return Stream.empty();
         }
 
-        TypeMirror fieldType = field.asType();
-        if ( !injectsAllowedTypes( fieldType ) )
+        if ( injectsRestrictedType( fieldType ) )
         {
-            return Stream
-                    .of( new ContextFieldWarning( field, "@%s usage warning: found type: <%s>, expected one of: %s",
-                            Context.class.getName(), fieldType.toString(), types( SUPPORTED_TYPES ) ) );
+            if ( ignoresWarnings )
+            {
+                return Stream.empty();
+            }
+
+            return Stream.of( new ContextFieldWarning( field, "@%s usage warning: found unsupported restricted type <%s> on %s.\n" +
+                    "The procedure will not load unless declared via the configuration option 'dbms.security.procedures.unrestricted'.\n" +
+                    "You can ignore this warning by passing the option -A%s to the Java compiler",
+                    Context.class.getName(), fieldType.toString(), fieldFullName( field ),
+                    IGNORE_CONTEXT_WARNINGS_OPTION ) );
         }
 
-        return Stream.empty();
+        return Stream.of( new ContextFieldError( field,
+                "@%s usage error: found unknown type <%s> on field %s, expected one of: %s",
+                Context.class.getName(), fieldType.toString(), fieldFullName( field ),
+                joinTypes( SUPPORTED_TYPES ) ) );
     }
 
-    private boolean injectsAllowedTypes( TypeMirror fieldType )
+    private boolean injectsAllowedType( TypeMirror fieldType )
     {
-        return supportedTypeMirrors( SUPPORTED_TYPES ).filter( t -> types.isSameType( t, fieldType ) ).findAny()
-                .isPresent();
+        return matches( fieldType, SUPPORTED_TYPES );
+    }
+
+    private boolean injectsRestrictedType( TypeMirror fieldType )
+    {
+        return matches( fieldType, RESTRICTED_TYPES );
+    }
+
+    private boolean matches( TypeMirror fieldType, Set<String> typeNames )
+    {
+        return typeMirrors( typeNames ).anyMatch( t -> types.isSameType( t, fieldType ) );
     }
 
     private boolean hasValidModifiers( VariableElement field )
@@ -108,8 +141,18 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
                 !modifiers.contains( Modifier.FINAL );
     }
 
-    private Stream<TypeMirror> supportedTypeMirrors( Set<Class<?>> supportedTypes )
+    private Stream<TypeMirror> typeMirrors( Set<String> typeNames )
     {
-        return supportedTypes.stream().map( c -> elements.getTypeElement( c.getName() ).asType() );
+        return typeNames.stream().map( elements::getTypeElement ).filter( Objects::nonNull ).map( Element::asType );
+    }
+
+    private String fieldFullName( VariableElement field )
+    {
+        return String.format( "%s#%s", field.getEnclosingElement().getSimpleName(), field.getSimpleName() );
+    }
+
+    private static String joinTypes( Set<String> types )
+    {
+        return types.stream().collect( Collectors.joining( ">, <", "<", ">" ) );
     }
 }

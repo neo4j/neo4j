@@ -17,46 +17,50 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.procedure.visitors.examples;
+package org.neo4j.tooling.procedure.procedures.invalid.bad_context_field;
 
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserAggregationFunction;
+import org.neo4j.procedure.UserAggregationResult;
+import org.neo4j.procedure.UserAggregationUpdate;
 import org.neo4j.procedure.UserFunction;
 
-public class UserFunctionsExamples
+public class BadContextUnsupportedTypeError
 {
-    @UserFunction( name = "in_root_namespace" )
-    public String functionWithName()
+    @Context
+    public String foo;
+
+    @Procedure
+    public void sproc()
     {
-        return "42";
     }
 
-    @UserFunction( value = "in_root_namespace_again" )
-    public String functionWithValue()
+    @UserFunction
+    public Long function()
     {
-        return "42";
+        return 2L;
     }
 
-    @UserFunction( name = "not.in.root.namespace" )
-    public String ok()
+    @UserAggregationFunction
+    public MyAggregation aggregation()
     {
-        return "42";
+        return new MyAggregation();
     }
 
-    @UserFunction( name = "com.acme.foobar" )
-    public void wrongReturnType()
+    public static class MyAggregation
     {
+        @UserAggregationResult
+        public Long result()
+        {
+            return 42L;
+        }
 
-    }
+        @UserAggregationUpdate
+        public void woot( @Name( "undostres" ) String onetwothree )
+        {
 
-    @UserFunction( name = "com.acme.foobar" )
-    public String wrongParameterType( @Name( "foo" ) Thread foo )
-    {
-        return "42";
-    }
-
-    @UserFunction( name = "com.acme.foobar" )
-    public String missingParameterAnnotation( @Name( "foo" ) String foo, String oops )
-    {
-        return "42";
+        }
     }
 }

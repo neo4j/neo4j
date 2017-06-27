@@ -34,7 +34,7 @@ import javax.lang.model.util.Elements;
 import javax.tools.Diagnostic;
 
 import org.neo4j.procedure.Procedure;
-import org.neo4j.tooling.procedure.ProcedureProcessor;
+import org.neo4j.tooling.procedure.compilerutils.CustomNameExtractor;
 import org.neo4j.tooling.procedure.messages.CompilationMessage;
 import org.neo4j.tooling.procedure.validators.examples.DefaultProcedureA;
 import org.neo4j.tooling.procedure.validators.examples.DefaultProcedureB;
@@ -45,7 +45,7 @@ import static java.util.Arrays.asList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
 
-public class DuplicatedProcedureValidatorTest
+public class DuplicatedExtensionValidatorTest
 {
 
     @Rule
@@ -58,7 +58,8 @@ public class DuplicatedProcedureValidatorTest
     public void prepare()
     {
         elements = compilation.getElements();
-        validator = new DuplicatedProcedureValidator<>( elements, Procedure.class, ProcedureProcessor::getCustomName );
+        validator = new DuplicatedExtensionValidator<>( elements, Procedure.class,
+                ( proc ) -> CustomNameExtractor.getName( proc::name, proc::value ) );
     }
 
     @Test

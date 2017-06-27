@@ -17,25 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.tooling.procedure.visitors.examples;
+package org.neo4j.tooling.procedure.messages;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.Log;
-import org.neo4j.procedure.Context;
+import javax.lang.model.element.Element;
 
-public class UnsupportedInjectedContextTypes
+public class ExtensionMissingPublicNoArgConstructor implements CompilationMessage
 {
 
-    @Context
-    public String unsupportedType;
+    private final Element element;
+    private final String errorMessage;
 
-    @Context
-    public GraphDatabaseAPI notOfficiallySupported;
+    public ExtensionMissingPublicNoArgConstructor( Element element, String message, Object... args )
+    {
 
-    @Context
-    public GraphDatabaseService graphDatabaseService;
+        this.element = element;
+        this.errorMessage = String.format( message, args );
+    }
 
-    @Context
-    public Log log;
+    @Override
+    public Element getElement()
+    {
+        return element;
+    }
+
+    @Override
+    public String getContents()
+    {
+        return errorMessage;
+    }
 }
