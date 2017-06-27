@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -36,7 +37,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * @param <KEY> type of keys in tree.
  * @param <VALUE> type of values in tree.
  */
-class FullScanNonUniqueIndexSampler<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
+class FullScanNonUniqueIndexSampler<KEY extends NumberKey, VALUE extends NumberValue>
         extends NonUniqueIndexSampler.Adapter
 {
     private final GBPTree<KEY,VALUE> gbpTree;
@@ -70,7 +71,7 @@ class FullScanNonUniqueIndexSampler<KEY extends SchemaNumberKey, VALUE extends S
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 

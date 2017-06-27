@@ -30,6 +30,11 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class FailureHeaderWriter implements Consumer<PageCursor>
 {
+    /**
+     * The {@code short} length field containing the length (number of bytes) of the failure message.
+     */
+    private static final int HEADER_LENGTH_FIELD_LENGTH = 2;
+
     private final byte[] failureBytes;
 
     FailureHeaderWriter( byte[] failureBytes )
@@ -41,11 +46,11 @@ class FailureHeaderWriter implements Consumer<PageCursor>
     public void accept( PageCursor cursor )
     {
         byte[] bytesToWrite = failureBytes;
-        cursor.putByte( NativeSchemaIndexPopulator.BYTE_FAILED );
+        cursor.putByte( NativeSchemaNumberIndexPopulator.BYTE_FAILED );
         int availableSpace = cursor.getCurrentPageSize() - cursor.getOffset();
-        if ( bytesToWrite.length + 2 > availableSpace )
+        if ( bytesToWrite.length + HEADER_LENGTH_FIELD_LENGTH > availableSpace )
         {
-            bytesToWrite = Arrays.copyOf( bytesToWrite, availableSpace - 2 );
+            bytesToWrite = Arrays.copyOf( bytesToWrite, availableSpace - HEADER_LENGTH_FIELD_LENGTH );
         }
         cursor.putShort( (short) bytesToWrite.length );
         cursor.putBytes( bytesToWrite );

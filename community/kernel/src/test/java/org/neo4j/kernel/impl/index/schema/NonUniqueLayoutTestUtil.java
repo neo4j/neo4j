@@ -19,18 +19,33 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.Value;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-/**
- * Key in a native schema index for numbers.
- */
-interface SchemaNumberKey
+class NonUniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
 {
-    void from( long entityId, Value[] values );
+    NonUniqueLayoutTestUtil()
+    {
+        super( IndexDescriptorFactory.forLabel( 42, 666 ) );
+    }
 
-    String propertiesAsString();
+    @Override
+    Layout<NumberKey,NumberValue> createLayout()
+    {
+        return new NonUniqueNumberLayout();
+    }
 
-    void initAsLowest();
+    @Override
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    {
+        return someUpdatesWithDuplicateValues();
+    }
 
-    void initAsHighest();
+    @Override
+    protected double fractionDuplicates()
+    {
+        return 0.1;
+    }
 }

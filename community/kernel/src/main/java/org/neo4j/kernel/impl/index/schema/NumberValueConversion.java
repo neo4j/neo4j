@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
+import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_DOUBLE;
+import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_FLOAT;
+import static org.neo4j.kernel.impl.index.schema.NumberKey.TYPE_LONG;
 
 /**
  * Utilities for converting number values to and from different representations.
  */
-class SchemaNumberValueConversion
+class NumberValueConversion
 {
     static Number assertValidSingleNumber( Value[] values )
     {
@@ -54,11 +54,11 @@ class SchemaNumberValueConversion
     {
         switch ( type )
         {
-        case LONG:
+        case TYPE_LONG:
             return rawValueBits;
-        case FLOAT:
+        case TYPE_FLOAT:
             return Float.intBitsToFloat( (int)rawValueBits );
-        case DOUBLE:
+        case TYPE_DOUBLE:
             return Double.longBitsToDouble( rawValueBits );
         default:
             throw new IllegalArgumentException( "Unexpected type " + type );

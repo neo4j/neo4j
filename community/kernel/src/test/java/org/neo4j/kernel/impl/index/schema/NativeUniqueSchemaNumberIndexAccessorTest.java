@@ -19,19 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.StringUtils;
-
-import org.neo4j.storageengine.api.schema.IndexSampler;
-
-/**
- * Utilities for implementing {@link IndexSampler sampling}.
- */
-class SamplingUtil
+public class NativeUniqueSchemaNumberIndexAccessorTest
+        extends NativeSchemaNumberIndexAccessorTest<NumberKey,NumberValue>
 {
-    private static final String DELIMITER = "\u001F";
-
-    static String encodedStringValuesForSampling( Object... values )
+    @Override
+    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
     {
-        return StringUtils.join( values, DELIMITER );
+        return new UniqueLayoutTestUtil();
     }
 }

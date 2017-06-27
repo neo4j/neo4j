@@ -30,18 +30,21 @@ import org.neo4j.index.internal.gbptree.Writer;
  *
  * @param <VALUE> type of values being merged.
  */
-class ConflictDetectingValueMerger<VALUE extends SchemaNumberValue> implements ValueMerger<VALUE>
+class ConflictDetectingValueMerger<KEY extends NumberKey, VALUE extends NumberValue> implements ValueMerger<KEY,VALUE>
 {
     private boolean conflict;
     private long existingNodeId;
     private long addedNodeId;
 
     @Override
-    public VALUE merge( VALUE existingValue, VALUE newValue )
+    public VALUE merge( KEY existingKey, KEY newKey, VALUE existingValue, VALUE newValue )
     {
-        conflict = true;
-        existingNodeId = existingValue.getEntityId();
-        addedNodeId = newValue.getEntityId();
+        if ( existingKey.entityId != newKey.entityId )
+        {
+            conflict = true;
+            existingNodeId = existingKey.entityId;
+            addedNodeId = newKey.entityId;
+        }
         return null;
     }
 

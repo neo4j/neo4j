@@ -22,24 +22,22 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * {@link NativeSchemaIndexPopulator} which can enforces unique values.
+ * {@link NativeSchemaNumberIndexPopulator} which can enforces unique values.
  */
-class UniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends NativeSchemaIndexPopulator<KEY,VALUE>
+class NativeUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
+        extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
     private final UniqueIndexSampler sampler;
 
-    UniqueNativeSchemaIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    NativeUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout )
     {
-        super( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
+        super( pageCache, storeFile, layout );
         this.sampler = new UniqueIndexSampler();
     }
 

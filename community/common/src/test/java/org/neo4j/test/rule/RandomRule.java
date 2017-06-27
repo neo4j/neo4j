@@ -44,6 +44,7 @@ import static java.lang.System.currentTimeMillis;
 public class RandomRule implements TestRule
 {
     private long seed;
+    private boolean hasGlobalSeed;
     private Random random;
     private Randoms randoms;
     private Configuration config = Randoms.DEFAULT;
@@ -51,6 +52,13 @@ public class RandomRule implements TestRule
     public RandomRule withConfiguration( Randoms.Configuration config )
     {
         this.config = config;
+        return this;
+    }
+
+    public RandomRule withSeedForAllTests( long seed )
+    {
+        hasGlobalSeed = true;
+        this.seed = seed;
         return this;
     }
 
@@ -62,14 +70,17 @@ public class RandomRule implements TestRule
             @Override
             public void evaluate() throws Throwable
             {
-                Seed methodSeed = description.getAnnotation( Seed.class );
-                if ( methodSeed != null )
+                if ( !hasGlobalSeed )
                 {
-                    seed = methodSeed.value();
-                }
-                else
-                {
-                    seed = currentTimeMillis();
+                    Seed methodSeed = description.getAnnotation( Seed.class );
+                    if ( methodSeed != null )
+                    {
+                        seed = methodSeed.value();
+                    }
+                    else
+                    {
+                        seed = currentTimeMillis();
+                    }
                 }
                 reset();
                 try

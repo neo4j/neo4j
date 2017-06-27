@@ -111,7 +111,6 @@ public class LuceneSchemaIndexProviderTest
         LuceneSchemaIndexProvider indexProvider = getLuceneSchemaIndexProvider( config, directoryFactory, fs,
                 graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( config, indexProvider );
-        onlineAccessor.flush();
         onlineAccessor.close();
     }
 

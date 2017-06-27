@@ -19,20 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -40,6 +35,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
 
@@ -48,80 +44,59 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
 import static org.neo4j.test.rule.PageCacheRule.config;
+
+import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.values.Values.values;
 
-public class FullScanNonUniqueIndexSamplerTest
+public class FullScanNonUniqueIndexSamplerTest extends SchemaNumberIndexTestUtil<NumberKey,NumberValue>
 {
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    protected final RandomRule random = new RandomRule();
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
-
-    private final NonUniqueSchemaNumberIndexLayout layout = new NonUniqueSchemaNumberIndexLayout();
-
     @Test
     public void shouldIncludeAllValuesInTree() throws Exception
     {
         // GIVEN
-        List<Number> values = generateNumberValues();
+        Number[] values = generateNumberValues();
         buildTree( values );
 
         // WHEN
         IndexSample sample;
-        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout ) )
+        try ( GBPTree<NumberKey,NumberValue> gbpTree = getTree() )
         {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
-            FullScanNonUniqueIndexSampler<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> sampler =
+            FullScanNonUniqueIndexSampler<NumberKey,NumberValue> sampler =
                     new FullScanNonUniqueIndexSampler<>( gbpTree, layout, samplingConfig );
             sample = sampler.result();
         }
 
         // THEN
-        assertEquals( values.size(), sample.sampleSize() );
+        assertEquals( values.length, sample.sampleSize() );
         assertEquals( countUniqueValues( values ), sample.uniqueValues() );
-        assertEquals( values.size(), sample.indexSize() );
+        assertEquals( values.length, sample.indexSize() );
     }
 
-    static int countUniqueValues( List<Number> values )
+    private Number[] generateNumberValues()
     {
-        int count = 0;
-        Set<Double> seenValues = new HashSet<>();
-        for ( Number number : values )
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        Number[] result = new Number[updates.length];
+        for ( int i = 0; i < updates.length; i++ )
         {
-            if ( seenValues.add( number.doubleValue() ) )
-            {
-                count++;
-            }
+            result[i] = (Number) updates[i].values()[0].asObject();
         }
-        return count;
-    }
-
-    private List<Number> generateNumberValues()
-    {
-        List<Number> result = new ArrayList<>();
-        for ( IndexEntryUpdate<?> update : NativeSchemaIndexPopulatorTest.someDuplicateIndexEntryUpdates() )
-        {
-            result.add( (Number) update.values()[0].asObject() );
-        }
-        // TODO: perhaps some more values?
         return result;
     }
 
-    private void buildTree( List<Number> values ) throws IOException
+    private void buildTree( Number[] values ) throws IOException
     {
-        try ( GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> gbpTree = newTree( layout ) )
+        try ( GBPTree<NumberKey,NumberValue> gbpTree = getTree() )
         {
-            try ( Writer<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue> writer = gbpTree.writer() )
+            try ( Writer<NumberKey,NumberValue> writer = gbpTree.writer() )
             {
-                NonUniqueSchemaNumberKey key = layout.newKey();
-                NonUniqueSchemaNumberValue value = layout.newValue();
+                NumberKey key = layout.newKey();
+                NumberValue value = layout.newValue();
                 long nodeId = 0;
                 for ( Number number : values )
                 {
                     key.from( nodeId, values( number ) );
-                    value.from( nodeId, values( number ) );
+                    value.from( values( number ) );
                     writer.put( key, value );
                     nodeId++;
                 }
@@ -130,13 +105,9 @@ public class FullScanNonUniqueIndexSamplerTest
         }
     }
 
-    private GBPTree<NonUniqueSchemaNumberKey,NonUniqueSchemaNumberValue>
-            newTree( NonUniqueSchemaNumberIndexLayout layout ) throws IOException
+    @Override
+    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
     {
-        return new GBPTree<>(
-                pageCacheRule.getPageCache( fs ), directory.file( "tree" ), layout,
-                0, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER, IMMEDIATE );
+        return new NonUniqueLayoutTestUtil();
     }
-
-    // TODO: shouldIncludeHighestAndLowestPossibleNumberValues
 }

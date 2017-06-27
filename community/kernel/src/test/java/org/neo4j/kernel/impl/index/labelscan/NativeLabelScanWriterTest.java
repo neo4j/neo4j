@@ -141,7 +141,7 @@ public class NativeLabelScanWriterTest
         }
 
         @Override
-        public void merge( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanValue> amender )
+        public void merge( LabelScanKey key, LabelScanValue value, ValueMerger<LabelScanKey,LabelScanValue> amender )
                 throws IOException
         {
             // Clone since these instances are reused between calls, internally in the writer
@@ -157,7 +157,7 @@ public class NativeLabelScanWriterTest
             }
             else
             {
-                amender.merge( existing, value );
+                amender.merge( key, key, existing, value );
             }
         }
 

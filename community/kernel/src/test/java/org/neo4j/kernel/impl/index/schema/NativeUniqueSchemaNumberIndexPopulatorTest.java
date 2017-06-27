@@ -23,8 +23,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
@@ -38,34 +36,20 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.IMMEDIATE;
-
-public class UniqueNativeSchemaIndexPopulatorTest
-        extends NativeSchemaIndexPopulatorTest<UniqueSchemaNumberKey,UniqueSchemaNumberValue>
+public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
 {
     @Override
-    NativeSchemaIndexPopulator<UniqueSchemaNumberKey,UniqueSchemaNumberValue> createPopulator(
+    NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator(
             PageCache pageCache, File indexFile,
-            Layout<UniqueSchemaNumberKey,UniqueSchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
+            Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
     {
-        return new UniqueNativeSchemaIndexPopulator<>( pageCache, indexFile, layout, IMMEDIATE );
+        return new NativeUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout );
     }
 
     @Override
-    protected int compareValue( UniqueSchemaNumberValue value1, UniqueSchemaNumberValue value2 )
+    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
     {
-        int valueCompare = compareIndexedPropertyValue( value1, value2 );
-        if ( valueCompare == 0 )
-        {
-            return Long.compare( value1.getEntityId(), value2.getEntityId() );
-        }
-        return valueCompare;
-    }
-
-    @Override
-    Layout<UniqueSchemaNumberKey,UniqueSchemaNumberValue> createLayout()
-    {
-        return new UniqueSchemaNumberIndexLayout();
+        return new UniqueLayoutTestUtil();
     }
 
     @Test
@@ -73,8 +57,7 @@ public class UniqueNativeSchemaIndexPopulatorTest
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someDuplicateIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
 
         // when
         try
@@ -95,8 +78,7 @@ public class UniqueNativeSchemaIndexPopulatorTest
     {
         // given
         populator.create();
-        @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someDuplicateIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
             // when
@@ -115,53 +97,12 @@ public class UniqueNativeSchemaIndexPopulatorTest
     }
 
     @Test
-    public void shouldThrowOnLargeAmountOfInterleavedRandomUpdatesWithDuplicates() throws Exception
-    {
-        // given
-        populator.create();
-        random.reset();
-        Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0.01f );
-        Number failSafeDuplicateValue = 12345.6789D;
-
-        // when
-        try
-        {
-            populator.add( add( 1_000_000_000, failSafeDuplicateValue ) );
-            for ( int i = 0; i < LARGE_AMOUNT_OF_UPDATES; i++ )
-            {
-                if ( updaterRandom.nextFloat() < 0.1 )
-                {
-                    try ( IndexUpdater indexUpdater = populator.newPopulatingUpdater( null_property_accessor ) )
-                    {
-                        int numberOfUpdaterUpdates = updaterRandom.nextInt( 100 );
-                        for ( int j = 0; j < numberOfUpdaterUpdates; j++ )
-                        {
-                            indexUpdater.process( updates.next() );
-                        }
-                    }
-                }
-                populator.add( updates.next() );
-            }
-            populator.add( add( 1_000_000_001, failSafeDuplicateValue ) );
-            fail( "Should have bumped into and detected duplicate" );
-        }
-        catch ( IndexEntryConflictException e )
-        {
-            // then good
-        }
-
-        populator.close( true );
-    }
-
-    @Test
     public void shouldSampleUpdates() throws Exception
     {
         // GIVEN
         populator.create();
         populator.configureSampling( true ); // has no effect, really
-        @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -176,13 +117,5 @@ public class UniqueNativeSchemaIndexPopulatorTest
         assertEquals( updates.length, sample.uniqueValues() );
         assertEquals( updates.length, sample.indexSize() );
         populator.close( true );
-    }
-
-    @Override
-    protected void copyValue( UniqueSchemaNumberValue value, UniqueSchemaNumberValue into )
-    {
-        into.type = value.type;
-        into.rawValueBits = value.rawValueBits;
-        into.entityId = value.entityId;
     }
 }

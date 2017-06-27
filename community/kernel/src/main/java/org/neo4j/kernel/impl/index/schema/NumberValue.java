@@ -24,47 +24,26 @@ import org.neo4j.values.Value;
 
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
- * Contains actual number for internal filtering after accidental query hits due to double value coersion.
+ *
+ * NOTE:  For the time being no data exists in {@link NumberValue}, but since the layout is under development
+ * it's very convenient to have this class still exist so that it's very easy to try out different types
+ * of layouts without changing the entire stack of arguments. In the end it may just be that this class
+ * will be deleted, but for now it sticks around.
  */
-abstract class SchemaNumberValue
+class NumberValue
 {
-    static final byte LONG = 0;
-    static final byte FLOAT = 1;
-    static final byte DOUBLE = 2;
+    static final int SIZE = 0;
 
-    protected byte type;
-    protected long rawValueBits;
+    static final NumberValue INSTANCE = new NumberValue();
 
-    abstract void from( long entityId, Value[] values );
-
-    abstract long getEntityId();
-
-    byte type()
+    void from( Value[] values )
     {
-        return type;
+        // not needed a.t.m.
     }
 
-    long rawValueBits()
+    @Override
+    public String toString()
     {
-        return rawValueBits;
-    }
-
-    void extractValue( Number value )
-    {
-        if ( value instanceof Double )
-        {
-            type = DOUBLE;
-            rawValueBits = Double.doubleToLongBits( (Double) value );
-        }
-        else if ( value instanceof Float )
-        {
-            type = FLOAT;
-            rawValueBits = Float.floatToIntBits( (Float) value );
-        }
-        else
-        {
-            type = LONG;
-            rawValueBits = value.longValue();
-        }
+        return "[no value]";
     }
 }

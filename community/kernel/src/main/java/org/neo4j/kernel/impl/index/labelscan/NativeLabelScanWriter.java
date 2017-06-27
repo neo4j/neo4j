@@ -62,12 +62,14 @@ class NativeLabelScanWriter implements LabelScanWriter
     /**
      * {@link ValueMerger} used for adding label->node mappings, see {@link LabelScanValue#add(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanValue> ADD_MERGER = LabelScanValue::add;
+    private static final ValueMerger<LabelScanKey,LabelScanValue> ADD_MERGER =
+            ( existingKey, newKey, existingValue, newValue ) -> existingValue.add( newValue );
 
     /**
      * {@link ValueMerger} used for removing label->node mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanValue> REMOVE_MERGER = LabelScanValue::remove;
+    private static final ValueMerger<LabelScanKey,LabelScanValue> REMOVE_MERGER =
+            ( existingKey, newKey, existingValue, newValue ) -> existingValue.remove( newValue );
 
     /**
      * {@link Writer} acquired when acquiring this {@link NativeLabelScanWriter},

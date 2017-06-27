@@ -20,31 +20,22 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.codec.Charsets;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 
-import org.neo4j.cursor.RawCursor;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
-import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.StoreChannel;
@@ -55,14 +46,8 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 import org.neo4j.values.Values;
 
 import static org.junit.Assert.assertEquals;
@@ -71,48 +56,29 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.rules.RuleChain.outerRule;
-
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_FAILED;
-import static org.neo4j.kernel.impl.index.schema.NativeSchemaIndexPopulator.BYTE_ONLINE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.DOUBLE;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.FLOAT;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValue.LONG;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
 
-public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue>
+public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends NumberKey,VALUE extends NumberValue>
+        extends SchemaNumberIndexTestUtil<KEY,VALUE>
 {
-    static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    private static final IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 42, 666 );
-    static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) -> null;
+    private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
+    static final PropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
+    {
+        throw new RuntimeException( "Did not expect an attempt to go to store" );
+    };
 
-    private final FileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
-    protected final RandomRule random = new RandomRule();
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
-
-    private Layout<KEY,VALUE> layout;
-    private File indexFile;
-    private PageCache pageCache;
-    NativeSchemaIndexPopulator<KEY,VALUE> populator;
+    NativeSchemaNumberIndexPopulator<KEY,VALUE> populator;
 
     @Before
-    public void setup()
+    public void setupPopulator()
     {
-        layout = createLayout();
-        indexFile = directory.file( "index" );
-        pageCache = pageCacheRule.getPageCache( fs );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.embeddedDefaults() );
         populator = createPopulator( pageCache, indexFile, layout, samplingConfig );
     }
 
-    abstract Layout<KEY,VALUE> createLayout();
-
-    abstract NativeSchemaIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, File indexFile,
+    abstract NativeSchemaNumberIndexPopulator<KEY,VALUE> createPopulator( PageCache pageCache, File indexFile,
             Layout<KEY,VALUE> layout, IndexSamplingConfig samplingConfig );
 
     @Test
@@ -195,7 +161,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -212,7 +178,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -238,7 +204,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         // then
         try
         {
-            updater.process( add( 1, Long.MAX_VALUE ) );
+            updater.process( layoutUtil.add( 1, Values.of( Long.MAX_VALUE ) ) );
             fail( "Expected process to throw on closed updater" );
         }
         catch ( IllegalStateException e )
@@ -255,7 +221,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         populator.create();
         IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = someIndexEntryUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
         applyInterleaved( updates, updater, populator );
@@ -406,7 +372,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = randomUniqueUpdateGenerator( random, 0 );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = layoutUtil.randomUpdateGenerator( random );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -414,7 +380,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( randomUniqueUpdateGenerator( random, 0 ), count );
+        verifyUpdates( layoutUtil.randomUpdateGenerator( random ), count );
     }
 
     @Test
@@ -520,37 +486,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         }
     }
 
-    private void assertFilePresent()
-    {
-        assertTrue( fs.fileExists( indexFile ) );
-    }
-
-    private void assertFileNotPresent()
-    {
-        assertFalse( fs.fileExists( indexFile ) );
-    }
-
-    static IndexEntryUpdate[] someIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE )
-        };
-    }
-
-    int interleaveLargeAmountOfUpdates( Random updaterRandom,
+    private int interleaveLargeAmountOfUpdates( Random updaterRandom,
             Iterator<IndexEntryUpdate<IndexDescriptor>> updates ) throws IOException, IndexEntryConflictException
     {
         int count = 0;
@@ -572,88 +508,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
             count++;
         }
         return count;
-    }
-
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUniqueUpdateGenerator( RandomRule randomRule,
-            float fractionDuplicates )
-    {
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
-        {
-            private final Set<Double> uniqueCompareValues = new HashSet<>();
-            private final List<Number> uniqueValues = new ArrayList<>();
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Number value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        randomRule.nextFloat() < fractionDuplicates )
-                {
-                    value = existingNonUniqueValue( randomRule );
-                }
-                else
-                {
-                    value = newUniqueValue( randomRule );
-                }
-
-                return add( currentEntityId++, value );
-            }
-
-            private Number newUniqueValue( RandomRule randomRule )
-            {
-                Number value;
-                Double compareValue;
-                do
-                {
-                    value = randomRule.numberPropertyValue();
-                    compareValue = value.doubleValue();
-                }
-                while ( !uniqueCompareValues.add( compareValue ) );
-                uniqueValues.add( value );
-                return value;
-            }
-
-            private Number existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
-        };
-    }
-
-    @SuppressWarnings( "rawtypes" )
-    static IndexEntryUpdate[] someDuplicateIndexEntryUpdates()
-    {
-        return new IndexEntryUpdate[]{
-                add( 0, 0 ),
-                add( 1, 4 ),
-                add( 2, Double.MAX_VALUE ),
-                add( 3, -Double.MAX_VALUE ),
-                add( 4, Float.MAX_VALUE ),
-                add( 5, -Float.MAX_VALUE ),
-                add( 6, Long.MAX_VALUE ),
-                add( 7, Long.MIN_VALUE ),
-                add( 8, Integer.MAX_VALUE ),
-                add( 9, Integer.MIN_VALUE ),
-                add( 10, Short.MAX_VALUE ),
-                add( 11, Short.MIN_VALUE ),
-                add( 12, Byte.MAX_VALUE ),
-                add( 13, Byte.MIN_VALUE ),
-                add( 14, 0 ),
-                add( 15, 4 ),
-                add( 16, Double.MAX_VALUE ),
-                add( 17, -Double.MAX_VALUE ),
-                add( 18, Float.MAX_VALUE ),
-                add( 19, -Float.MAX_VALUE ),
-                add( 20, Long.MAX_VALUE ),
-                add( 21, Long.MIN_VALUE ),
-                add( 22, Integer.MAX_VALUE ),
-                add( 23, Integer.MIN_VALUE ),
-                add( 24, Short.MAX_VALUE ),
-                add( 25, Short.MIN_VALUE ),
-                add( 26, Byte.MAX_VALUE ),
-                add( 27, Byte.MIN_VALUE )
-        };
     }
 
     private void assertHeader( boolean online, String failureMessage, boolean messageTruncated ) throws IOException
@@ -685,17 +539,11 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
 
     private String longString( int length )
     {
-        String alphabet = "123xyz";
-        StringBuilder outputBuffer = new StringBuilder( length );
-        for ( int i = 0; i < length; i++ )
-        {
-            outputBuffer.append( alphabet.charAt( random.nextInt( alphabet.length() ) ) );
-        }
-        return outputBuffer.toString();
+        return RandomStringUtils.random( length, true, true );
     }
 
     private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
-            NativeSchemaIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
+            NativeSchemaNumberIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
     {
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
@@ -710,7 +558,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         }
     }
 
-    void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
+    private void verifyUpdates( Iterator<IndexEntryUpdate<IndexDescriptor>> indexEntryUpdateIterator, int count )
             throws IOException
     {
         @SuppressWarnings( "unchecked" )
@@ -722,113 +570,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         verifyUpdates( updates );
     }
 
-    @SuppressWarnings( "unchecked" )
-    void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
-            throws IOException
-    {
-        Hit<KEY,VALUE>[] expectedHits = convertToHits( updates, layout );
-        List<Hit<KEY,VALUE>> actualHits = new ArrayList<>();
-        try ( GBPTree<KEY,VALUE> tree = new GBPTree<>( pageCache, indexFile, layout, 0, GBPTree.NO_MONITOR,
-                NO_HEADER_READER, NO_HEADER_WRITER, RecoveryCleanupWorkCollector.IMMEDIATE );
-              RawCursor<Hit<KEY,VALUE>,IOException> scan = scan( tree ) )
-        {
-            while ( scan.next() )
-            {
-                actualHits.add( deepCopy( scan.get() ) );
-            }
-        }
-
-        Comparator<Hit<KEY,VALUE>> hitComparator = ( h1, h2 ) ->
-        {
-            int keyCompare = layout.compare( h1.key(), h2.key() );
-            if ( keyCompare == 0 )
-            {
-                return compareValue( h1.value(), h2.value() );
-            }
-            else
-            {
-                return keyCompare;
-            }
-        };
-        assertSameHits( expectedHits, actualHits.toArray( new Hit[0] ), hitComparator );
-    }
-
-    protected abstract int compareValue( VALUE value1, VALUE value2 );
-
-    int compareIndexedPropertyValue( SchemaNumberValue value1, SchemaNumberValue value2 )
-    {
-        int typeCompare = Byte.compare( value1.type(), value2.type() );
-        if ( typeCompare == 0 )
-        {
-            switch ( value1.type() )
-            {
-            case LONG:
-                return Long.compare( value1.rawValueBits(), value2.rawValueBits() );
-            case FLOAT:
-                return Float.compare(
-                        Float.intBitsToFloat( (int) value1.rawValueBits() ),
-                        Float.intBitsToFloat( (int) value2.rawValueBits() ) );
-            case DOUBLE:
-                return Double.compare(
-                        Double.longBitsToDouble( value1.rawValueBits() ),
-                        Double.longBitsToDouble( value2.rawValueBits() ) );
-            default:
-                throw new IllegalArgumentException(
-                        "Expected type to be LONG, FLOAT or DOUBLE (" + LONG + "," + FLOAT + "," + DOUBLE +
-                                "). But was " + value1.type() );
-            }
-        }
-        return typeCompare;
-    }
-
-    private void assertSameHits( Hit<KEY, VALUE>[] expectedHits, Hit<KEY, VALUE>[] actualHits,
-            Comparator<Hit<KEY, VALUE>> comparator )
-    {
-        Arrays.sort( expectedHits, comparator );
-        Arrays.sort( actualHits, comparator );
-        assertEquals( "Array length differ", expectedHits.length, actualHits.length );
-
-        for ( int i = 0; i < expectedHits.length; i++ )
-        {
-            Hit<KEY,VALUE> expected = expectedHits[i];
-            Hit<KEY,VALUE> actual = actualHits[i];
-            assertTrue( "Hits differ on item number " + i + ". Expected " + expected + " but was " + actual,
-                    comparator.compare( expected, actual ) == 0 );
-        }
-    }
-
-    private Hit<KEY,VALUE> deepCopy( Hit<KEY,VALUE> from )
-    {
-        KEY intoKey = layout.newKey();
-        VALUE intoValue = layout.newValue();
-        layout.copyKey( from.key(), intoKey );
-        copyValue( from.value(), intoValue );
-        return new SimpleHit( intoKey, intoValue );
-    }
-
-    protected abstract void copyValue( VALUE value, VALUE intoValue );
-
-    @SuppressWarnings( "unchecked" )
-    private Hit<KEY,VALUE>[] convertToHits( IndexEntryUpdate<IndexDescriptor>[] updates,
-            Layout<KEY,VALUE> layout )
-    {
-        List<Hit<KEY,VALUE>> hits = new ArrayList<>( updates.length );
-        for ( IndexEntryUpdate<IndexDescriptor> u : updates )
-        {
-            KEY key = layout.newKey();
-            key.from( u.getEntityId(), u.values() );
-            VALUE value = layout.newValue();
-            value.from( u.getEntityId(), u.values() );
-            hits.add( hit( key, value ) );
-        }
-        return hits.toArray( new Hit[0] );
-    }
-
-    private Hit<KEY,VALUE> hit( final KEY key, final VALUE value )
-    {
-        return new SimpleHit( key, value );
-    }
-
     private static class NativeSchemaIndexHeaderReader implements Header.Reader
     {
         private byte state;
@@ -838,7 +579,7 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
         public void read( ByteBuffer headerData )
         {
             state = headerData.get();
-            if ( state == NativeSchemaIndexPopulator.BYTE_FAILED )
+            if ( state == BYTE_FAILED )
             {
                 short messageLength = headerData.getShort();
                 byte[] failureMessageBytes = new byte[messageLength];
@@ -846,73 +587,6 @@ public abstract class NativeSchemaIndexPopulatorTest<KEY extends SchemaNumberKey
                 failureMessage = new String( failureMessageBytes, Charsets.UTF_8 );
             }
         }
-    }
-
-    private class SimpleHit implements Hit<KEY,VALUE>
-    {
-        private final KEY key;
-        private final VALUE value;
-
-        SimpleHit( KEY key, VALUE value )
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        @Override
-        public KEY key()
-        {
-            return key;
-        }
-
-        @Override
-        public VALUE value()
-        {
-            return value;
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-            @SuppressWarnings( "unchecked" )
-            Hit<KEY,VALUE> simpleHit = (Hit<KEY,VALUE>) o;
-            return Objects.equals( key(), simpleHit.key() ) &&
-                    Objects.equals( value, simpleHit.value() );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return Objects.hash( key, value );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "[" + key + "," + value + "]";
-        }
-    }
-
-    private RawCursor<Hit<KEY,VALUE>, IOException> scan( GBPTree<KEY,VALUE> tree ) throws IOException
-    {
-        KEY lowest = layout.newKey();
-        lowest.initAsLowest();
-        KEY highest = layout.newKey();
-        highest.initAsHighest();
-        return tree.seek( lowest, highest );
-    }
-
-    protected static IndexEntryUpdate<IndexDescriptor> add( long nodeId, Object value )
-    {
-        return IndexEntryUpdate.add( nodeId, indexDescriptor, Values.of( value ) );
     }
 
     private byte[] fileWithContent() throws IOException

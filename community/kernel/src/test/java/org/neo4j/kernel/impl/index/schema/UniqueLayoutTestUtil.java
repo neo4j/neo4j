@@ -19,37 +19,33 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.Value;
+import org.neo4j.index.internal.gbptree.Layout;
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.index.IndexDescriptor;
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-import static java.lang.String.format;
-
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.assertValidSingleNumber;
-import static org.neo4j.kernel.impl.index.schema.SchemaNumberValueConversion.toValue;
-
-/**
- * Relies on its key counterpart to supply entity id, since the key needs entity id anyway.
- */
-class NonUniqueSchemaNumberValue extends SchemaNumberValue
+public class UniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
 {
-    static final int SIZE =
-            Byte.SIZE + /* type */
-            Long.SIZE;  /* value bits */
-
-    @Override
-    public void from( long entityId, Value[] values )
+    UniqueLayoutTestUtil()
     {
-        extractValue( assertValidSingleNumber( values ) );
+        super( IndexDescriptorFactory.uniqueForLabel( 42, 666 ) );
     }
 
     @Override
-    public long getEntityId()
+    public Layout<NumberKey,NumberValue> createLayout()
     {
-        throw new UnsupportedOperationException( "entity id should be retrieved from key for non-unique index" );
+        return new UniqueNumberLayout();
     }
 
     @Override
-    public String toString()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
-        return format( "type=%d,value=%s", type, toValue( type, rawValueBits ) );
+        return someUpdatesNoDuplicateValues();
+    }
+
+    @Override
+    protected double fractionDuplicates()
+    {
+        return 0.0;
     }
 }

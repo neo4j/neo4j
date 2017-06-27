@@ -341,7 +341,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     void insert( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key, VALUE value,
-            ValueMerger<VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
+            ValueMerger<KEY,VALUE> valueMerger, long stableGeneration, long unstableGeneration ) throws IOException
     {
         assert cursorIsAtExpectedLocation( cursor );
         moveToCorrectLeaf( cursor, key, stableGeneration, unstableGeneration );
@@ -600,7 +600,7 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void insertInLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY key, VALUE value, ValueMerger<VALUE> valueMerger,
+            KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
         int keyCount = TreeNode.keyCount( cursor );
@@ -610,7 +610,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // this key already exists, what shall we do? ask the valueMerger
             bTreeNode.valueAt( cursor, readValue, pos );
-            VALUE mergedValue = valueMerger.merge( readValue, value );
+            VALUE mergedValue = valueMerger.merge( readKey, key, readValue, value );
             if ( mergedValue != null )
             {
                 createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,

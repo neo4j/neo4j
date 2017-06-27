@@ -54,7 +54,7 @@ public interface Writer<KEY,VALUE> extends Closeable
      * @param valueMerger {@link ValueMerger} to consult if key already exists.
      * @throws IOException on index access error.
      */
-    void merge( KEY key, VALUE value, ValueMerger<VALUE> valueMerger ) throws IOException;
+    void merge( KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger ) throws IOException;
 
     /**
      * Removes a key, returning it's associated value, if found.

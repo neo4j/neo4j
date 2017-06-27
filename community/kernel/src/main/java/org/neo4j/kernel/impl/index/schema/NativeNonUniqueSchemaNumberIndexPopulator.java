@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.sampling.DefaultNonUniqueIndexSampler;
@@ -32,19 +32,19 @@ import org.neo4j.kernel.impl.api.index.sampling.NonUniqueIndexSampler;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 /**
- * {@link NativeSchemaIndexPopulator} which can accept duplicate values (for different entity ids).
+ * {@link NativeSchemaNumberIndexPopulator} which can accept duplicate values (for different entity ids).
  */
-class NonUniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
-        extends NativeSchemaIndexPopulator<KEY,VALUE>
+class NativeNonUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
+        extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
     private final IndexSamplingConfig samplingConfig;
     private boolean updateSampling;
     private NonUniqueIndexSampler sampler;
 
-    NonUniqueNativeSchemaIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexSamplingConfig samplingConfig )
+    NativeNonUniqueSchemaNumberIndexPopulator( PageCache pageCache, File storeFile, Layout<KEY,VALUE> layout,
+            IndexSamplingConfig samplingConfig )
     {
-        super( pageCache, storeFile, layout, recoveryCleanupWorkCollector );
+        super( pageCache, storeFile, layout );
         this.samplingConfig = samplingConfig;
     }
 
@@ -54,7 +54,7 @@ class NonUniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE ext
         if ( updateSampling )
         {
             checkSampler();
-            sampler.include( SamplingUtil.encodedStringValuesForSampling( update.values() ) );
+            sampler.include( SamplingUtil.encodedStringValuesForSampling( (Object[]) update.values() ) );
         }
     }
 
@@ -78,7 +78,7 @@ class NonUniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE ext
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
 
         try
@@ -87,14 +87,13 @@ class NonUniqueNativeSchemaIndexPopulator<KEY extends SchemaNumberKey, VALUE ext
         }
         finally
         {
-            // Start the writer again (TODO may be unnecessary)
             try
             {
                 instantiateWriter();
             }
             catch ( IOException e )
             {
-                throw new RuntimeException( e );
+                throw new UncheckedIOException( e );
             }
         }
     }

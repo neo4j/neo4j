@@ -19,19 +19,22 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.StringUtils;
+import org.neo4j.index.internal.gbptree.Layout;
 
-import org.neo4j.storageengine.api.schema.IndexSampler;
-
-/**
- * Utilities for implementing {@link IndexSampler sampling}.
- */
-class SamplingUtil
+public class NonUniqueNumberLayout extends NumberLayout
 {
-    private static final String DELIMITER = "\u001F";
+    private static final String IDENTIFIER_NAME = "NUNI";
 
-    static String encodedStringValuesForSampling( Object... values )
+    @Override
+    public long identifier()
     {
-        return StringUtils.join( values, DELIMITER );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
+    }
+
+    @Override
+    public int compare( NumberKey o1, NumberKey o2 )
+    {
+        int comparison = o1.compareValueTo( o2 );
+        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
     }
 }
