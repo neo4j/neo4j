@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 /**
  * {@link NativeSchemaNumberIndexPopulator} which can enforces unique values.
  */
-class NativeUniqueSchemaNumberIndexPopulator<KEY extends NumberKey, VALUE extends NumberValue>
+class NativeUniqueSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndexPopulator<KEY,VALUE>
 {
     private final UniqueIndexSampler sampler;

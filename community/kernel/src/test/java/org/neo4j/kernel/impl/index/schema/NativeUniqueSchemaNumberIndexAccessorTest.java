@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.index.schema;
 
 public class NativeUniqueSchemaNumberIndexAccessorTest
-        extends NativeSchemaNumberIndexAccessorTest<NumberKey,NumberValue>
+        extends NativeSchemaNumberIndexAccessorTest<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
-    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
     {
         return new UniqueLayoutTestUtil();
     }

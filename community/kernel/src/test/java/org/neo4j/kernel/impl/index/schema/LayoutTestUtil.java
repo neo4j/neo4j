@@ -37,7 +37,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.Value;
 import org.neo4j.values.Values;
 
-abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
+abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
 {
     private final IndexDescriptor indexDescriptor;
 
@@ -61,7 +61,7 @@ abstract class LayoutTestUtil<KEY extends NumberKey, VALUE extends NumberValue>
     {
     }
 
-    int compareIndexedPropertyValue( NumberKey key1, NumberKey key2 )
+    int compareIndexedPropertyValue( SchemaNumberKey key1, SchemaNumberKey key2 )
     {
         int typeCompare = Byte.compare( key1.type, key2.type );
         if ( typeCompare == 0 )

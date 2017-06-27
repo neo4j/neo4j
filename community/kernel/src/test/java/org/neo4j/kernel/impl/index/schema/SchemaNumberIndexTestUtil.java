@@ -55,7 +55,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
-public abstract class SchemaNumberIndexTestUtil<KEY extends NumberKey,VALUE extends NumberValue>
+public abstract class SchemaNumberIndexTestUtil<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue>
 {
     static final long NON_EXISTENT_VALUE = Short.MAX_VALUE + 1;
     static final long NON_EXISTENT_ENTITY_ID = 1_000_000_000;

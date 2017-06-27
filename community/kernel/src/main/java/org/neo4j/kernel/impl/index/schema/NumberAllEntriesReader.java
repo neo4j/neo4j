@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 
-class NumberAllEntriesReader<KEY extends NumberKey,VALUE extends NumberValue> implements BoundedIterable<Long>
+class NumberAllEntriesReader<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue> implements BoundedIterable<Long>
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;

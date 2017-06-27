@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 
 public class ConflictDetectingValueMergerTest
 {
-    private final ConflictDetectingValueMerger<NumberKey,NumberValue> detector = new ConflictDetectingValueMerger<>();
+    private final ConflictDetectingValueMerger<SchemaNumberKey,SchemaNumberValue> detector = new ConflictDetectingValueMerger<>();
 
     @Test
     public void shouldReportConflictOnSameValueAndDifferentEntityIds() throws Exception
@@ -42,11 +42,11 @@ public class ConflictDetectingValueMergerTest
         long entityId2 = 20;
 
         // when
-        NumberValue merged = detector.merge(
+        SchemaNumberValue merged = detector.merge(
                 key( entityId1, value ),
                 key( entityId2, value ),
-                NumberValue.INSTANCE,
-                NumberValue.INSTANCE );
+                SchemaNumberValue.INSTANCE,
+                SchemaNumberValue.INSTANCE );
 
         // then
         assertNull( merged );
@@ -63,20 +63,20 @@ public class ConflictDetectingValueMergerTest
         long entityId = 10;
 
         // when
-        NumberValue merged = detector.merge(
+        SchemaNumberValue merged = detector.merge(
                 key( entityId, value ),
                 key( entityId, value ),
-                NumberValue.INSTANCE,
-                NumberValue.INSTANCE );
+                SchemaNumberValue.INSTANCE,
+                SchemaNumberValue.INSTANCE );
 
         // then
         assertNull( merged );
         assertFalse( detector.wasConflict() );
     }
 
-    private static NumberKey key( long entityId, Value... value )
+    private static SchemaNumberKey key( long entityId, Value... value )
     {
-        NumberKey key = new NumberKey();
+        SchemaNumberKey key = new SchemaNumberKey();
         key.from( entityId, value );
         return key;
     }

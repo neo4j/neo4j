@@ -39,11 +39,11 @@ import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
 public class NativeNonUniqueSchemaNumberIndexPopulatorTest
-        extends NativeSchemaNumberIndexPopulatorTest<NumberKey,NumberValue>
+        extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
-    NativeSchemaNumberIndexPopulator<NumberKey,NumberValue> createPopulator( PageCache pageCache, File indexFile,
-            Layout<NumberKey,NumberValue> layout, IndexSamplingConfig samplingConfig )
+    NativeSchemaNumberIndexPopulator<SchemaNumberKey,SchemaNumberValue> createPopulator( PageCache pageCache, File indexFile,
+            Layout<SchemaNumberKey,SchemaNumberValue> layout, IndexSamplingConfig samplingConfig )
     {
         return new NativeNonUniqueSchemaNumberIndexPopulator<>( pageCache, indexFile, layout, samplingConfig );
     }
@@ -151,7 +151,7 @@ public class NativeNonUniqueSchemaNumberIndexPopulatorTest
     }
 
     @Override
-    protected LayoutTestUtil<NumberKey,NumberValue> createLayoutTestUtil()
+    protected LayoutTestUtil<SchemaNumberKey,SchemaNumberValue> createLayoutTestUtil()
     {
         return new NonUniqueLayoutTestUtil();
     }

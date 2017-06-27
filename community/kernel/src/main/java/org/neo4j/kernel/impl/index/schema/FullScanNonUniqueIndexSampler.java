@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
  * @param <KEY> type of keys in tree.
  * @param <VALUE> type of values in tree.
  */
-class FullScanNonUniqueIndexSampler<KEY extends NumberKey, VALUE extends NumberValue>
+class FullScanNonUniqueIndexSampler<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NonUniqueIndexSampler.Adapter
 {
     private final GBPTree<KEY,VALUE> gbpTree;

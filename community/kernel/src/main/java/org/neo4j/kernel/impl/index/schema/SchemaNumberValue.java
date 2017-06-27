@@ -25,18 +25,18 @@ import org.neo4j.values.Value;
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.
  *
- * NOTE:  For the time being no data exists in {@link NumberValue}, but since the layout is under development
+ * NOTE:  For the time being no data exists in {@link SchemaNumberValue}, but since the layout is under development
  * it's very convenient to have this class still exist so that it's very easy to try out different types
  * of layouts without changing the entire stack of arguments. In the end it may just be that this class
  * will be deleted, but for now it sticks around.
  */
-class NumberValue
+class SchemaNumberValue
 {
     static final int SIZE = 0;
 
-    static final NumberValue INSTANCE = new NumberValue();
+    static final SchemaNumberValue INSTANCE = new SchemaNumberValue();
 
-    void from( Value[] values )
+    void from( Value... values )
     {
         // not needed a.t.m.
     }

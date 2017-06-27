@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 
-class NonUniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
+class NonUniqueLayoutTestUtil extends LayoutTestUtil<SchemaNumberKey,SchemaNumberValue>
 {
     NonUniqueLayoutTestUtil()
     {
@@ -32,7 +32,7 @@ class NonUniqueLayoutTestUtil extends LayoutTestUtil<NumberKey,NumberValue>
     }
 
     @Override
-    Layout<NumberKey,NumberValue> createLayout()
+    Layout<SchemaNumberKey,SchemaNumberValue> createLayout()
     {
         return new NonUniqueNumberLayout();
     }

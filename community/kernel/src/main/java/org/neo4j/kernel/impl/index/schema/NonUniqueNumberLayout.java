@@ -28,11 +28,11 @@ public class NonUniqueNumberLayout extends NumberLayout
     @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, NumberValue.SIZE );
+        return Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
     }
 
     @Override
-    public int compare( NumberKey o1, NumberKey o2 )
+    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
     {
         int comparison = o1.compareValueTo( o2 );
         return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );

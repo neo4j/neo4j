@@ -33,10 +33,10 @@ import org.neo4j.index.internal.gbptree.Hit;
  * The {@link RawCursor seeker} which gets passed in will have to be closed somewhere else because
  * the {@link PrimitiveLongIterator} is just a plain iterator, no resource.
  *
- * @param <KEY> type of {@link NumberKey}.
- * @param <VALUE> type of {@link NumberValue}.
+ * @param <KEY> type of {@link SchemaNumberKey}.
+ * @param <VALUE> type of {@link SchemaNumberValue}.
  */
-public class NumberHitIterator<KEY extends NumberKey, VALUE extends NumberValue>
+public class NumberHitIterator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends PrimitiveLongCollections.PrimitiveLongBaseIterator
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
