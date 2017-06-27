@@ -24,7 +24,6 @@
 
   <modules>
     <module>cursors</module>
-    <module>records</module>
     <module>neole</module>
   </modules>
 

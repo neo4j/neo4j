@@ -52,12 +52,12 @@
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-protostore</artifactId>
+      <artifactId>neo4j-store-cursors</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-page-manager</artifactId>
+      <artifactId>neo4j-kernel-api</artifactId>
       <version>${project.version}</version>
     </dependency>
 
