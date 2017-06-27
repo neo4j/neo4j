@@ -257,33 +257,13 @@ public final class Values
         {
             return arrayValue( (Object[]) value );
         }
-        if ( value instanceof Long )
-        {
-            return longValue( (Long) value );
-        }
-        if ( value instanceof Integer )
-        {
-            return intValue( (Integer) value );
-        }
         if ( value instanceof Boolean )
         {
             return booleanValue( (Boolean) value );
         }
-        if ( value instanceof Double )
+        if ( value instanceof Number )
         {
-            return doubleValue( (Double) value );
-        }
-        if ( value instanceof Float )
-        {
-            return floatValue( (Float) value );
-        }
-        if ( value instanceof Short )
-        {
-            return shortValue( (Short) value );
-        }
-        if ( value instanceof Byte )
-        {
-            return byteValue( (Byte) value );
+            return numberValue( (Number) value );
         }
         if ( value instanceof Character )
         {
