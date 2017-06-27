@@ -28,8 +28,6 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  implicit val monitor = mock[PipeMonitor]
-
   test("should return a count for relationships without a type or any labels") {
     val pipe = RelationshipCountFromCountStorePipe("count(r)", None, LazyTypes.empty, None)()
 

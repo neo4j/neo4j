@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ErrorPipeTest extends CypherFunSuite {
 
-  private implicit val pipeMonitor = mock[PipeMonitor]
-
   test("should throw an exception when used") {
     val exception = new RuntimeException("Boom!")
     val pipe = ErrorPipe(mock[Pipe], exception)()

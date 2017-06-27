@@ -37,7 +37,6 @@ class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
   private val labelOverThreshold = "A"
   private val labelUnderThrehsold = "B"
   private val indexFor= Map(labelOverThreshold -> 1, labelUnderThrehsold -> 2)
-  private implicit val monitor = mock[PipeMonitor]
   private val planContext = mock[PlanContext]
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {

@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
                        (val id: Id = new Id)
-                       (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+  extends PipeWithSource(source) {
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
     val context = initialContext.getOrElse(ExecutionContext.empty)

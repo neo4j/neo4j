@@ -30,8 +30,7 @@ import org.neo4j.graphdb.Node
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
                                                propertyKey: PropertyKeyToken,
-                                               valueExpr: Expression)(implicit pipeMonitor: PipeMonitor)
-  extends Pipe {
+                                               valueExpr: Expression) extends Pipe {
 
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -55,7 +54,6 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String): Iterator[Node]
 
-  override def monitor = pipeMonitor
 }
 
 case class NodeIndexContainsScanPipe(ident: String,
@@ -63,7 +61,6 @@ case class NodeIndexContainsScanPipe(ident: String,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
                                     (val id: Id = new Id)
-                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =
@@ -75,7 +72,6 @@ case class NodeIndexEndsWithScanPipe(ident: String,
                                      propertyKey: PropertyKeyToken,
                                      valueExpr: Expression)
                                     (val id: Id = new Id)
-                                    (implicit pipeMonitor: PipeMonitor)
   extends AbstractNodeIndexStringScanPipe(ident, label, propertyKey, valueExpr) {
 
   override protected def queryContextCall(state: QueryState, indexDescriptor: IndexDescriptor, value: String) =

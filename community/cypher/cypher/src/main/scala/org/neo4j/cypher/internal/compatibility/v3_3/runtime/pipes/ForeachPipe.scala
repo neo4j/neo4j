@@ -26,8 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
                       (val id: Id = new Id)
-                      (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with ListSupport {
+  extends PipeWithSource(source) with ListSupport {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map {

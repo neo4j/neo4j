@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
                         (val id: Id = new Id)
-                        (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+  extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       (outerContext) =>

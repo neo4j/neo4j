@@ -45,7 +45,6 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  implicit private val pipeMonitor = mock[PipeMonitor]
   implicit private val table = SemanticTable()
 
   private def build(beforeRewrite: LogicalPlan): Pipe = {

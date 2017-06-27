@@ -378,7 +378,6 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   }
 
   private val resolver = new KeyTokenResolver
-  implicit private val monitor = monitors.newMonitor[PipeMonitor]()
   implicit val table: SemanticTable = context.semanticTable
 
   private object buildPipeExpressions extends Rewriter {

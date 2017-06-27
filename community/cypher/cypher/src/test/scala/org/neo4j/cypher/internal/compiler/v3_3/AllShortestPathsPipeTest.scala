@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, ShortestPathPipe}
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -30,8 +30,6 @@ import org.neo4j.graphdb.{Node, Path}
 import scala.collection.mutable
 
 class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
-
-  private implicit val monitor = mock[PipeMonitor]
 
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)

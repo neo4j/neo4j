@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class DistinctPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("distinct input passes through") {
     //GIVEN
     val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)))

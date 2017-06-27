@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
-                     (val id: Id = new Id)
-                     (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                     (val id: Id = new Id) extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 

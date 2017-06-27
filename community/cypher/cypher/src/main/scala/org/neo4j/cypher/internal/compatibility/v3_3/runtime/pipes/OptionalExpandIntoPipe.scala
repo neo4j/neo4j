@@ -30,8 +30,7 @@ import scala.collection.mutable.ListBuffer
 case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
                                   dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
                                  (val id: Id = new Id)
-                                 (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with CachingExpandInto {
+  extends PipeWithSource(source) with CachingExpandInto {
   private final val CACHE_SIZE = 100000
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

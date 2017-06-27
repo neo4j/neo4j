@@ -36,8 +36,7 @@ import scala.collection.JavaConverters._
 case class ShortestPathPipe(source: Pipe, shortestPathCommand: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
                            (val id: Id = new Id)
-                           (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with ListSupport {
+  extends PipeWithSource(source) with ListSupport {
   private def pathName = shortestPathCommand.pathName
   private val shortestPathExpression = ShortestPathExpression(shortestPathCommand, predicates, withFallBack, disallowSameNode)
 

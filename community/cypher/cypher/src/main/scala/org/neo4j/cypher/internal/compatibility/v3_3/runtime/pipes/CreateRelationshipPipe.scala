@@ -32,8 +32,8 @@ import org.neo4j.graphdb.{Node, Relationship}
 import scala.collection.Map
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
-                                    properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
+                                    properties: Option[Expression])
+  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createRelationship(_, state))
@@ -86,8 +86,7 @@ case class CreateRelationshipPipe(src: Pipe,
                                   key: String, startNode: String, typ: LazyType, endNode: String,
                                   properties: Option[Expression])
                                  (val id: Id = new Id)
-                                 (implicit pipeMonitor: PipeMonitor)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
+  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
   override protected def handleNull(key: String) {
     //do nothing
   }
@@ -96,8 +95,7 @@ case class CreateRelationshipPipe(src: Pipe,
 case class MergeCreateRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                        properties: Option[Expression])
                                       (val id: Id = new Id)
-                                      (implicit pipeMonitor: PipeMonitor)
-  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties, pipeMonitor) {
+  extends BaseRelationshipPipe(src, key, startNode, typ, endNode, properties) {
 
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create

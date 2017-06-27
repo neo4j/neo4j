@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class OptionalPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("should return results if it finds them") {
     val source = new FakePipe( Iterator(Map("a" -> 1)), "a" -> CTNumber)
     val state = QueryStateHelper.empty

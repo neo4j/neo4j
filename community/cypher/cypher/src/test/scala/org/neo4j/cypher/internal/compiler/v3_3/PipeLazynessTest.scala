@@ -39,7 +39,6 @@ in fact are lazy. Every Pipe should be represented here
  */
 
 class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
-  private implicit val monitor = mock[PipeMonitor]
 
   test("test") {
     distinctPipe.!!()
@@ -73,7 +72,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def filterPipe = {
     val (iter, src) = emptyFakes
-    val pipe = new FilterPipe(src, True())()(mock[PipeMonitor])
+    val pipe = new FilterPipe(src, True())()
     (pipe, iter)
   }
 

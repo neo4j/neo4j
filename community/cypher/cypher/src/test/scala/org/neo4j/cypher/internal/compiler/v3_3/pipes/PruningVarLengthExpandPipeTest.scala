@@ -36,7 +36,6 @@ import scala.util.Random
 
 class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = LazyTypes(Seq.empty[String])
-  implicit val pipeMonitor = mock[PipeMonitor]
 
   test("node without any relationships produces empty result") {
     val n1 = createNode()

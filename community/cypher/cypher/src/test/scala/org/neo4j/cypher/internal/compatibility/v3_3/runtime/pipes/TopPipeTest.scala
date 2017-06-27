@@ -27,8 +27,6 @@ import scala.util.Random
 
 class TopPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   test("returning top 10 from 5 possible should return all") {
     val input = createFakePipeWith(5)
     val pipe = new TopNPipe(input, List(Ascending("a")), Literal(10))()

@@ -28,8 +28,7 @@ import scala.annotation.tailrec
 
 case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
                      (val id: Id = new Id)
-                     (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with ListSupport {
+  extends PipeWithSource(source) with ListSupport {
 
   collection.registerOwningPipe(this)
 

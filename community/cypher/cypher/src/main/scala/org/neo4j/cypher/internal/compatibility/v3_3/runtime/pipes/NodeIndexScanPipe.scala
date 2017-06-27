@@ -27,9 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken)
-                            (val id: Id = new Id)
-                            (implicit pipeMonitor: PipeMonitor)
-  extends Pipe {
+                            (val id: Id = new Id) extends Pipe {
 
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
@@ -39,5 +37,4 @@ case class NodeIndexScanPipe(ident: String,
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
-  override def monitor = pipeMonitor
 }

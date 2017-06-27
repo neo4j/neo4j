@@ -28,8 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import scala.collection.mutable
 
 case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
-                       (val id: Id = new Id)
-                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                       (val id: Id = new Id) extends PipeWithSource(source) {
 
   val keyNames: Seq[String] = expressions.keys.toIndexedSeq
 

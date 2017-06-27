@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.MergeConstraintConflictException
 import org.neo4j.graphdb.Node
 
 case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
-                             (val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+                             (val id: Id = new Id)
+  extends PipeWithSource(source) {
 
   protected def internalCreateResults(lhsResult: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val rhsResults = inner.createResults(state)

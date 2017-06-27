@@ -40,8 +40,7 @@ case class ExpandIntoPipe(source: Pipe,
                           dir: SemanticDirection,
                           lazyTypes: LazyTypes)
                           (val id: Id = new Id)
-                          (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with CachingExpandInto {
+  extends PipeWithSource(source) with CachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
 

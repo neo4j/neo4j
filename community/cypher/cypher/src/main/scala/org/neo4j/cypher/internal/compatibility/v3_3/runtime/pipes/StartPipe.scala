@@ -27,8 +27,7 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
                                                         name: String,
-                                                        createSource: EntityProducer[T],
-                                                        pipeMonitor:PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                                                        createSource: EntityProducer[T]) extends PipeWithSource(source) {
   def variableType: CypherType
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
@@ -46,15 +45,12 @@ case class NodeStartPipe(source: Pipe,
                          createSource: EntityProducer[Node],
                          itemEffects: Effects = Effects(ReadsAllNodes))
                         (val id: Id = new Id)
-                        (implicit pipeMonitor: PipeMonitor)
-  extends StartPipe[Node](source, name, createSource, pipeMonitor) {
+  extends StartPipe[Node](source, name, createSource) {
   def variableType = CTNode
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
-                                (val id: Id = new Id)
-                                (implicit pipeMonitor: PipeMonitor)
-  extends StartPipe[Relationship](source, name, createSource, pipeMonitor) {
+                                (val id: Id = new Id) extends StartPipe[Relationship](source, name, createSource) {
   def variableType = CTRelationship
 }
 

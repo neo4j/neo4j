@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ProduceResultsPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
-
   test("should project needed columns") {
     val sourcePipe = mock[Pipe]
     val queryState = mock[QueryState]
