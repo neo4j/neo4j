@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * A {@link LuceneIndexPopulatingUpdater} used for unique Lucene schema indexes.

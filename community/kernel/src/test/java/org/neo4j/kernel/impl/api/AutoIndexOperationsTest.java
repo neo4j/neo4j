@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;

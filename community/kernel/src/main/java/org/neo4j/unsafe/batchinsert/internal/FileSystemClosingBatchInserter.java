@@ -31,7 +31,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class FileSystemClosingBatchInserter implements BatchInserter, IndexConfigStoreProvider
 {

@@ -29,8 +29,8 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {

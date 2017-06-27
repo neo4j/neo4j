@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.api.IndexSimpleValueValidator.INSTANCE;
 

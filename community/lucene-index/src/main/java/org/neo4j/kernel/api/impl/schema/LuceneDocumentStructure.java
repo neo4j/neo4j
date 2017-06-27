@@ -50,7 +50,7 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static org.apache.lucene.document.Field.Store.YES;
 

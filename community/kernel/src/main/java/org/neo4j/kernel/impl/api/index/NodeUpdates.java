@@ -33,7 +33,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static java.util.Arrays.binarySearch;

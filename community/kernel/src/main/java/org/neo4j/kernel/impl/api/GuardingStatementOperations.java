@@ -41,7 +41,7 @@ import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class GuardingStatementOperations implements
         EntityWriteOperations,

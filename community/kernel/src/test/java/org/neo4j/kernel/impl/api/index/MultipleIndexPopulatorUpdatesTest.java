@@ -61,7 +61,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;

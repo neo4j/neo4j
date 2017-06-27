@@ -46,7 +46,7 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
 import org.neo4j.time.Clocks
-import org.neo4j.values.{Value, Values}
+import org.neo4j.values.storable.{Value, Values}
 
 import scala.collection.{JavaConverters, mutable}
 

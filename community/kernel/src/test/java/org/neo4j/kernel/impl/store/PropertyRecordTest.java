@@ -29,7 +29,7 @@ import java.util.Set;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;

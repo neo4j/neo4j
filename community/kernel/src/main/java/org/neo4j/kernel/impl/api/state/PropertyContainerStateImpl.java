@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static java.util.Collections.emptyIterator;
 

@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * The batch inserter drops support for transactions and concurrency in favor

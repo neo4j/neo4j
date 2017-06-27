@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

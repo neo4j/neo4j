@@ -57,7 +57,7 @@ import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Defines all types of read operations that can be done from the {@link KernelAPI}.

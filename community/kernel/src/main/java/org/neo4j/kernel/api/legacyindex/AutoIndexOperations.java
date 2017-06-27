@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Abstract interface for accessing legacy auto indexing facilities for a given type of entity (nodes or relationships)

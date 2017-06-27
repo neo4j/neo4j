@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
-import static org.neo4j.values.Values.stringValue;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.map;

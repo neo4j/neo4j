@@ -33,9 +33,9 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;

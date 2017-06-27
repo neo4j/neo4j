@@ -23,7 +23,7 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.NumberValues;
+import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.VirtualValue;
 
 import static java.lang.String.format;

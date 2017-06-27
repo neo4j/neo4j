@@ -29,8 +29,8 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.NO;
 

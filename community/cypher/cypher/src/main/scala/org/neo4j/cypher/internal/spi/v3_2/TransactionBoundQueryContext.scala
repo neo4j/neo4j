@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import org.neo4j.values.Values
+import org.neo4j.values.storable.Values
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._

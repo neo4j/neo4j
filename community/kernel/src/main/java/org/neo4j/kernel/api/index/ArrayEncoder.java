@@ -22,9 +22,9 @@ package org.neo4j.kernel.api.index;
 import java.util.Base64;
 
 import org.neo4j.string.UTF8;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueWriter;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueWriter;
+import org.neo4j.values.storable.Values;
 
 public final class ArrayEncoder
 {

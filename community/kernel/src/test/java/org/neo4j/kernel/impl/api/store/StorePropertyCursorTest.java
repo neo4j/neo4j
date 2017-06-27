@@ -58,8 +58,8 @@ import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.test.MockedNeoStores;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Arrays.asList;

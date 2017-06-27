@@ -28,10 +28,10 @@ import java.util.function.Predicate;
 
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.values.TextValue;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 public abstract class IndexQuery implements Predicate<Value>
 {

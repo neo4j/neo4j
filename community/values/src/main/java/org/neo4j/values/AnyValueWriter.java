@@ -19,6 +19,8 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;

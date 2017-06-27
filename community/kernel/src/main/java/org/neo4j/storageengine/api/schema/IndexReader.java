@@ -25,7 +25,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Reader for an index. Must honor repeatable reads, which means that if a lookup is executed multiple times the

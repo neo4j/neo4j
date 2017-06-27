@@ -22,7 +22,7 @@ package org.neo4j.values.virtual;
 import java.util.HashMap;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.TextValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.VirtualValue;
 
 /**

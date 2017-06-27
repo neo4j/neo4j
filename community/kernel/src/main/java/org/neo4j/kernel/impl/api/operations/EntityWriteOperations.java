@@ -25,7 +25,7 @@ import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.AutoIndexingKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public interface EntityWriteOperations
 {

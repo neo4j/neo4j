@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
-import org.neo4j.values.{Value, Values}
+import org.neo4j.values.storable.{Value, Values}
 
 object Methods {
 

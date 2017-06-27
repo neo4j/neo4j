@@ -24,7 +24,7 @@ import java.util.Arrays;
 import org.neo4j.kernel.api.schema.LabelSchemaSupplier;
 import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 

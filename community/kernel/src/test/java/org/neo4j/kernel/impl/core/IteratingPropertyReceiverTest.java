@@ -24,7 +24,7 @@ import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

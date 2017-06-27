@@ -25,7 +25,7 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Overlays transaction state on a {@link PropertyItem} cursors.

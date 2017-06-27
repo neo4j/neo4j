@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.storageengine.api.PropertyItem;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 

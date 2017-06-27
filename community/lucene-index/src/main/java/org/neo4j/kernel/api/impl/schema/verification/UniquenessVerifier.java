@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * A component that verifies uniqueness of values in a lucene index.

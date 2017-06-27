@@ -20,7 +20,7 @@
 package org.neo4j.values.virtual;
 
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.TextValue;
+import org.neo4j.values.storable.TextValue;
 
 import static java.lang.String.format;
 

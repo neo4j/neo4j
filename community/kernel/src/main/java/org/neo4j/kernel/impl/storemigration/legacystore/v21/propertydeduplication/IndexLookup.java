@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 class IndexLookup implements AutoCloseable
 {

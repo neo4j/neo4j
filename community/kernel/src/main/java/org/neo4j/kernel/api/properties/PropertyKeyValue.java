@@ -20,8 +20,8 @@
 package org.neo4j.kernel.api.properties;
 
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class PropertyKeyValue implements StorageProperty
 {

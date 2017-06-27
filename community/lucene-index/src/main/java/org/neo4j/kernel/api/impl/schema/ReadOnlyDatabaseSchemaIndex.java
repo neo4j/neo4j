@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Read only schema index

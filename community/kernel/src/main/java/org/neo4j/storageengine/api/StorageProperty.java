@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Abstraction pairing property key token id and property value. Can represent both defined and undefined
