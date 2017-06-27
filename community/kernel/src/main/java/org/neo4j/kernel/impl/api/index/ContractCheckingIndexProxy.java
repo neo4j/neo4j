@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -141,7 +143,7 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
 
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
-            ensureNoOpenCalls( "drop" );
+            waitOpenCallsToClose();
             return super.drop();
         }
 
@@ -159,11 +161,19 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
 
         if ( state.compareAndSet( State.STARTED, State.CLOSED ) )
         {
-            ensureNoOpenCalls( "close" );
+            waitOpenCallsToClose();
             return super.close();
         }
 
         throw new IllegalStateException( "IndexProxy already closed" );
+    }
+
+    private void waitOpenCallsToClose()
+    {
+        while ( openCalls.intValue() > 0 )
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+        }
     }
 
     private void openCall( String name )
@@ -179,13 +189,6 @@ public class ContractCheckingIndexProxy extends DelegatingIndexProxy
         }
         else
             throw new IllegalStateException("Cannot call " + name + "() when index state is " + state.get() );
-    }
-
-    private void ensureNoOpenCalls(String name)
-    {
-        if (openCalls.get() > 0)
-            throw new IllegalStateException( "Concurrent " + name + "() while updates have not completed" );
-
     }
 
     private void closeCall()
