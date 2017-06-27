@@ -28,14 +28,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 
 import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
 import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
@@ -67,11 +62,7 @@ public final class StoreFileBean extends ManagementBeanProvider
 
         private File storePath;
         private LogFile logFile;
-        private PhysicalLogFiles physicalLogFiles;
         private FileSystemAbstraction fs;
-        private LegacyIndexProviderLookup legacyIndexProviderLookup;
-        private SchemaIndexProvider schemaIndexProvider;
-        private LabelScanStore labelScanStore;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
@@ -86,11 +77,6 @@ public final class StoreFileBean extends ManagementBeanProvider
                 public void registered( NeoStoreDataSource ds )
                 {
                     logFile = resolveDependency( ds, LogFile.class );
-                    physicalLogFiles = resolveDependency( ds, PhysicalLogFiles.class );
-                    legacyIndexProviderLookup = resolveDependency( ds, LegacyIndexProviderLookup.class );
-                    schemaIndexProvider = resolveDependency( ds, SchemaIndexProvider.class );
-                    labelScanStore = resolveDependency( ds, LabelScanStore.class );
-
                     storePath = resolvePath( ds );
                 }
 
@@ -103,7 +89,6 @@ public final class StoreFileBean extends ManagementBeanProvider
                 public void unregistered( NeoStoreDataSource ds )
                 {
                     logFile = null;
-                    physicalLogFiles = null;
                     storePath = null;
                 }
 
@@ -133,45 +118,10 @@ public final class StoreFileBean extends ManagementBeanProvider
             return logFile == null ? 0 : FileUtils.size( fs, logFile.currentLogFile() );
         }
 
-        private long sizeOf( String name )
-        {
-            return storePath == null ? 0 : FileUtils.size( fs, new File( storePath, name ) );
-        }
-
         @Override
         public long getArrayStoreSize()
         {
             return sizeOf( ARRAY_STORE );
-        }
-
-        @Override
-        public long getAllLogicalLogsSize()
-        {
-            TotalSizeVersionVisitor logVersionVisitor = new TotalSizeVersionVisitor( fs );
-
-            physicalLogFiles.accept( logVersionVisitor );
-
-            return logVersionVisitor.getTotalSize();
-        }
-
-        @Override
-        public long getIndexStoreSize()
-        {
-            long size = 0L;
-
-            // Add legacy indices
-            for ( IndexImplementation index : legacyIndexProviderLookup.all() )
-            {
-                size += FileUtils.size( fs, index.getIndexImplementationDirectory( storePath ) );
-            }
-
-            // Add schema index
-            size += FileUtils.size( fs, schemaIndexProvider.getSchemaIndexStoreDirectory( storePath ) );
-
-            // Add label index
-            size += FileUtils.size( fs, labelScanStore.getLabelScanStoreFile() );
-
-            return size;
         }
 
         @Override
@@ -198,26 +148,9 @@ public final class StoreFileBean extends ManagementBeanProvider
             return sizeOf( STRING_STORE );
         }
 
-        private static class TotalSizeVersionVisitor implements PhysicalLogFiles.LogVersionVisitor
+        private long sizeOf( String name )
         {
-            private final FileSystemAbstraction fs;
-            private long totalSize;
-
-            TotalSizeVersionVisitor( FileSystemAbstraction fs )
-            {
-                this.fs = fs;
-            }
-
-            long getTotalSize()
-            {
-                return totalSize;
-            }
-
-            @Override
-            public void visit( File file, long logVersion )
-            {
-                totalSize += FileUtils.size( fs, file );
-            }
+            return storePath == null ? 0 : FileUtils.size( fs, new File( storePath, name ) );
         }
     }
 }

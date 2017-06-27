@@ -1,2 +1,3 @@
 org.neo4j.jmx.impl.PrimitivesBean
 org.neo4j.jmx.impl.StoreFileBean
+org.neo4j.jmx.impl.StoreSizeBean
