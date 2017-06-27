@@ -76,10 +76,8 @@ public interface StoreReadLayer
      * @param index {@link IndexDescriptor} to get related uniqueness constraint for.
      * @return schema rule id of uniqueness constraint that owns the given {@code index}, or {@code null}
      * if the given index isn't related to a uniqueness constraint.
-     * @throws SchemaRuleNotFoundException if there's no such index matching the given {@code index} in storage.
      */
-    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
-            throws SchemaRuleNotFoundException;
+    Long indexGetOwningUniquenessConstraintId( IndexDescriptor index );
 
     /**
      * @param index {@link IndexDescriptor} to get schema rule id for.

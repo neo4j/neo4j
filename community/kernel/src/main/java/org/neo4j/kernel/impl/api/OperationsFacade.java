@@ -581,7 +581,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );

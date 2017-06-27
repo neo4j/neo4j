@@ -238,22 +238,14 @@ public class ConstraintIndexCreator
                 // OK so we found a matching constraint index. We check whether or not it has an owner
                 // because this may have been a left-over constraint index from a previously failed
                 // constraint creation, due to crash or similar, hence the missing owner.
-                try
+                if ( schemaOps.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
                 {
-                    if ( schemaOps.indexGetOwningUniquenessConstraintId( state, descriptor ) == null )
-                    {
-                        return descriptor;
-                    }
-                    throw new AlreadyConstrainedException(
-                            ConstraintDescriptorFactory.uniqueForSchema( schema ),
-                            OperationContext.CONSTRAINT_CREATION,
-                            new StatementTokenNameLookup( state.readOperations() ) );
+                    return descriptor;
                 }
-                catch ( SchemaRuleNotFoundException e )
-                {
-                    throw new IllegalStateException( "Unexpectedly index " + descriptor +
-                            " wasn't found right after getting it", e );
-                }
+                throw new AlreadyConstrainedException(
+                        ConstraintDescriptorFactory.uniqueForSchema( schema ),
+                        OperationContext.CONSTRAINT_CREATION,
+                        new StatementTokenNameLookup( state.readOperations() ) );
             }
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );

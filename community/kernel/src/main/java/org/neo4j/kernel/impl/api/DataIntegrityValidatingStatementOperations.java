@@ -142,7 +142,7 @@ public class DataIntegrityValidatingStatementOperations implements
                 }
             }
         }
-        catch ( IndexBelongsToConstraintException | NoSuchIndexException | SchemaRuleNotFoundException e )
+        catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
         {
             throw new DropIndexFailureException( index.schema(), e );
         }
@@ -251,15 +251,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
     {
-        try
-        {
-            return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IllegalStateException( "Unexpectedly index " + descriptor +
-                    " wasn't found right after getting it", e );
-        }
+        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
     }
 
     private String checkValidTokenName( String name ) throws IllegalTokenNameException
