@@ -79,6 +79,7 @@ public class StoreSizeBeanTest
     private SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
+    private File storeDirAbsolute;
 
     @Before
     public void setUp() throws Throwable
@@ -106,8 +107,10 @@ public class StoreSizeBeanTest
         KernelData kernelData = new DefaultKernelData( fs, mock( PageCache.class ), storeDir, Config.empty(), db );
         ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
+    }
 
-        // Create a simulated file structure of the store
+    private void createFakeStoreDirectory() throws IOException
+    {
         Map<String,Integer> dummyStore = new HashMap<>();
         dummyStore.put( NODE_STORE.fileName( STORE ), 1 );
         dummyStore.put( NODE_STORE.fileName( ID ), 2 );
@@ -140,7 +143,7 @@ public class StoreSizeBeanTest
         dummyStore.put( COUNTS_STORE_LEFT.fileName( STORE ), 29 );
         // COUNTS_STORE_RIGHT is created in the test
 
-        File storeDirAbsolute = storeDir.getCanonicalFile().getAbsoluteFile();
+        storeDirAbsolute = storeDir.getCanonicalFile().getAbsoluteFile();
         for ( Map.Entry<String,Integer> dummyFile : dummyStore.entrySet() )
         {
             createFileOfSize( new File( storeDirAbsolute, dummyFile.getKey() ), dummyFile.getValue() );
@@ -150,56 +153,65 @@ public class StoreSizeBeanTest
     @Test
     public void sumAllNodeRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
     public void sumAllPropertyRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 5, 10 ), storeSizeBean.getPropertyStoreSize() );
     }
 
     @Test
     public void sumAllStringRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
     public void sumAllArrayRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
     public void sumAllRelationshipRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 15, 22 ), storeSizeBean.getRelationshipStoreSize() );
     }
 
     @Test
     public void sumAllLabelRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 23, 26 ), storeSizeBean.getLabelStoreSize() );
     }
 
     @Test
     public void sumAllCountStoreRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
-        createFileOfSize( new File( storeDir.getCanonicalFile().getAbsoluteFile(), COUNTS_STORE_RIGHT.fileName( STORE ) ), 30 );
+        createFileOfSize( new File( storeDirAbsolute, COUNTS_STORE_RIGHT.fileName( STORE ) ), 30 );
         assertEquals( getExpected( 29, 30), storeSizeBean.getCountStoreSize() );
     }
 
     @Test
     public void sumAllSchemaRelatedFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 27, 28 ), storeSizeBean.getSchemaStoreSize() );
     }
 
     @Test
     public void sumAllFiles() throws Exception
     {
+        createFakeStoreDirectory();
         assertEquals( getExpected( 0, 29 ), storeSizeBean.getTotalStoreSize() );
     }
 
