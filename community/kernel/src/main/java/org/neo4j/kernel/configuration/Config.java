@@ -292,6 +292,17 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
+     * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
+     * non-overlapping ones.
+     * @param config config to add and override with
+     * @return combined config
+     */
+    public Config augment( Config config )
+    {
+        return augment( config.params );
+    }
+
+    /**
      * Specify a log where errors and warnings will be reported.
      *
      * @param log to use

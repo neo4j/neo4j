@@ -67,6 +67,9 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.Arrays.asList;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -75,11 +78,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.Arrays.asList;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.helpers.ArrayUtil.join;
@@ -1672,6 +1670,61 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--db-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
+    public void useProvidedAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
+    public void combineProvidedDbAndAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        File additionalConfig = file( "additional.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ) ), additionalConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--db-config", dbConfig.getAbsolutePath(),
+                "--additional-config", additionalConfig.getAbsolutePath(),
                 "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
 
         // THEN

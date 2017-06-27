@@ -161,6 +161,19 @@ public class ConfigTest
     }
 
     @Test
+    public void augmentAnotherConfig() throws Exception
+    {
+        Config config = Config().with( stringMap( MySettingsWithDefaults.hello.name(), "Hi" ) );
+        Config anotherConfig = Config().with( stringMap( MySettingsWithDefaults.boolSetting.name(),
+                Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
+
+        config.augment( anotherConfig );
+
+        assertThat( config.get( MySettingsWithDefaults.boolSetting ), equalTo( false ) );
+        assertThat( config.get( MySettingsWithDefaults.hello ), equalTo( "Bye" ) );
+    }
+
+    @Test
     public void shouldRetainCustomConfigOutsideNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
