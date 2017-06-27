@@ -77,7 +77,7 @@ import java.util.Map;
  * distinguish between these cases the {@link QueryExecutionType} {@linkplain #getQueryExecutionType() of this result}
  * can be queried.
  */
-public interface Result extends ResourceIterator<Map<String, Object>>
+public interface Result extends ResourceIterator<Map<String,Object>>
 {
     /**
      * Indicates what kind of query execution produced this result.
@@ -96,15 +96,29 @@ public interface Result extends ResourceIterator<Map<String, Object>>
     /**
      * Returns an iterator with the result objects from a single column of the result set. This method is best used for
      * single column results.
-     *
-     * <p><b>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
+     * <p>
+     * <strong>To ensure that any resources, including transactions bound to it, are properly closed, the iterator must
      * either be fully exhausted, or the {@link org.neo4j.graphdb.ResourceIterator#close() close()} method must be
-     * called.</b></p>
+     * called.</strong>
+     * <p>
+     * As an example, if we are only interested in a column {@code n} that contains node values, we can extract it like
+     * this:
+     * <p>
+     * <pre><code>
+     *     try ( ResourceIterator&lt;Node&gt; nodes = result.columnAs( "n" ) )
+     *     {
+     *         while ( nodes.hasNext() )
+     *         {
+     *             Node node = nodes.next();
+     *             // Do some work with the 'node' instance.
+     *         }
+     *     }
+     * </code></pre>
      *
      * @param name exact name of the column, as it appeared in the original query
-     * @param <T>  desired type cast for the result objects
+     * @param <T> desired type cast for the result objects
      * @return an iterator of the result objects, possibly empty
-     * @throws ClassCastException                  when the result object can not be cast to the requested type
+     * @throws ClassCastException when the result object can not be cast to the requested type
      * @throws org.neo4j.graphdb.NotFoundException when the column name does not appear in the original query
      */
     <T> ResourceIterator<T> columnAs( String name );
@@ -124,11 +138,11 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * @return the next row in this result.
      */
     @Override
-    Map<String, Object> next();
+    Map<String,Object> next();
 
     /**
      * Closes the result, freeing up any resources held by the result.
-     *
+     * <p>
      * This is an idempotent operation, invoking it multiple times has the same effect as invoking it exactly once.
      * It is thus safe (and even encouraged, for style and simplicity) to invoke this method even after consuming all
      * rows in the result through the {@link #next() next-method}.
@@ -145,12 +159,12 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /**
      * Returns a description of the query plan used to produce this result.
-     *
+     * <p>
      * Retrieving a description of the execution plan that was executed is always possible, regardless of whether the
      * query requested a plan or not. For implementing a client with the ability to present the plan to the user, it is
      * useful to be able to tell if the query requested a description of the plan or not. For these purposes the
      * {@link QueryExecutionType#requestedExecutionPlanDescription()}-method is used.
-     *
+     * <p>
      * Being able to invoke this method, regardless of whether the user requested the plan or not is useful for
      * purposes of debugging queries in applications.
      *
@@ -175,6 +189,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
      * The execution result represented by this object will be consumed in its entirety after this method is called.
      * Calling any of the other iterating methods on it should not be expected to return any results.
      * </b></p>
+     *
      * @param writer the {@link java.io.PrintWriter} to receive the textual representation of the query result.
      */
     void writeAsStringTo( PrintWriter writer );
@@ -185,7 +200,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /**
      * Provides notifications about the query producing this result.
-     *
+     * <p>
      * Notifications can be warnings about problematic queries or other valuable information that can be
      * presented in a client.
      *
@@ -195,7 +210,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
 
     /**
      * Visits all rows in this Result by iterating over them.
-     *
+     * <p>
      * This is an alternative to using the iterator form of Result. Using the visitor is better from a object
      * creation perspective.
      *
@@ -241,7 +256,7 @@ public interface Result extends ResourceIterator<Map<String, Object>>
          * Visits the specified row.
          *
          * @param row the row to visit. The row object is only guaranteed to be stable until flow of control has
-         *            returned from this method.
+         * returned from this method.
          * @return true if the next row should also be visited. Returning false will terminate the iteration of
          * result rows.
          * @throws VisitationException if there is a problem in the execution of this method. This exception will close

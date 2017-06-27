@@ -18,6 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 /**
- * Create database instances.
+ * Factories and builders for creating database instances.
+ * <p>
+ * Note that your choice of {@link org.neo4j.graphdb.factory.GraphDatabaseFactory} determines what feature sets are
+ * available to the database instances you create.
+ *
+ * @see org.neo4j.graphdb.factory.GraphDatabaseFactory
+ * @see org.neo4j.graphdb.factory.GraphDatabaseBuilder
  */
 package org.neo4j.graphdb.factory;
