@@ -19,10 +19,6 @@
  */
 package org.neo4j.tooling.procedure.visitors;
 
-import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
-import org.neo4j.tooling.procedure.messages.CompilationMessage;
-import org.neo4j.tooling.procedure.messages.ReturnTypeError;
-
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -38,8 +34,11 @@ import javax.lang.model.util.SimpleElementVisitor8;
 import javax.lang.model.util.Types;
 
 import org.neo4j.procedure.Name;
+import org.neo4j.tooling.procedure.compilerutils.TypeMirrorUtils;
+import org.neo4j.tooling.procedure.messages.CompilationMessage;
+import org.neo4j.tooling.procedure.messages.ReturnTypeError;
 
-public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
+public class ProcedureVisitor extends SimpleElementVisitor8<Stream<CompilationMessage>,Void>
 {
 
     private final Types typeUtils;
@@ -47,16 +46,18 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     private final ElementVisitor<Stream<CompilationMessage>,Void> classVisitor;
     private final TypeVisitor<Stream<CompilationMessage>,Void> recordVisitor;
     private final ElementVisitor<Stream<CompilationMessage>,Void> parameterVisitor;
+    private final ElementVisitor<Stream<CompilationMessage>,Void> performsWriteVisitor;
 
-    public StoredProcedureVisitor( Types typeUtils, Elements elementUtils, boolean skipContextWarnings )
+    public ProcedureVisitor( Types typeUtils, Elements elementUtils, boolean ignoresWarnings )
     {
         TypeMirrorUtils typeMirrors = new TypeMirrorUtils( typeUtils, elementUtils );
 
         this.typeUtils = typeUtils;
         this.elementUtils = elementUtils;
-        this.classVisitor = new StoredProcedureClassVisitor( typeUtils, elementUtils, skipContextWarnings );
+        this.classVisitor = new ExtensionClassVisitor( typeUtils, elementUtils, ignoresWarnings );
         this.recordVisitor = new RecordTypeVisitor( typeUtils, typeMirrors );
         this.parameterVisitor = new ParameterVisitor( new ParameterTypeVisitor( typeUtils, typeMirrors ) );
+        this.performsWriteVisitor = new PerformsWriteMethodVisitor();
     }
 
     /**
@@ -66,13 +67,14 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
     public Stream<CompilationMessage> visitExecutable( ExecutableElement executableElement, Void ignored )
     {
         return Stream.of( classVisitor.visit( executableElement.getEnclosingElement() ),
-                validateParameters( executableElement.getParameters(), ignored ),
-                validateReturnType( executableElement ) ).flatMap( Function.identity() );
+                validateParameters( executableElement.getParameters() ),
+                validateReturnType( executableElement ), validatePerformsWriteUsage( executableElement ) )
+                .flatMap( Function.identity() );
     }
 
-    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters, Void ignored )
+    private Stream<CompilationMessage> validateParameters( List<? extends VariableElement> parameters )
     {
-        return parameters.stream().flatMap( var -> parameterVisitor.visit( var, ignored ) );
+        return parameters.stream().flatMap( parameterVisitor::visit );
     }
 
     private Stream<CompilationMessage> validateReturnType( ExecutableElement method )
@@ -98,15 +100,9 @@ public class StoredProcedureVisitor extends SimpleElementVisitor8<Stream<Compila
         return recordVisitor.visit( returnType );
     }
 
-    private AnnotationMirror annotationMirror( List<? extends AnnotationMirror> mirrors )
+    private Stream<CompilationMessage> validatePerformsWriteUsage( ExecutableElement executableElement )
     {
-        AnnotationTypeVisitor nameVisitor = new AnnotationTypeVisitor( Name.class );
-        return mirrors.stream().filter( mirror -> nameVisitor.visit( mirror.getAnnotationType().asElement() ) )
-                .findFirst().orElse( null );
+        return performsWriteVisitor.visit( executableElement );
     }
 
-    private String nameOf( VariableElement parameter )
-    {
-        return parameter.getSimpleName().toString();
-    }
 }

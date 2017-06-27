@@ -16,11 +16,12 @@ is not met:
  - `@Context` fields must be `public` and non-`final`
  - all other fields must be `static`
  - `Map` record fields/procedure parameters must define their key type as `String`
- - `@Procedure` class must define a public constructor with no arguments
+ - `@Procedure`|`@UserFunction` class must define a public constructor with no arguments
  - `@Procedure` method must return a Stream
- - `@Procedure` parameter and record types must be supported
- - `@Procedure` parameters must be annotated with `@Name`
- - all visited `@Procedure` names must be unique*
+ - `@Procedure`|`@UserFunction` parameter and record types must be supported
+ - `@Procedure`|`@UserFunction` parameters must be annotated with `@Name`
+ - `@UserFunction` cannot be defined in the root namespace
+ - all visited `@Procedure`|`@UserFunction` names must be unique*
 
 *A deployed Neo4j instance can aggregate stored procedures from different JARs.
 Inter-JAR naming conflict cannot be detected by an annotation processor.

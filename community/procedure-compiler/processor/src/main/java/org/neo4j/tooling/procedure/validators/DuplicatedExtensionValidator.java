@@ -38,7 +38,18 @@ import org.neo4j.procedure.Procedure;
 
 import static java.util.stream.Collectors.groupingBy;
 
-public class DuplicatedProcedureValidator<T extends Annotation>
+/**
+ * Validates that a given extension name is not declared by multiple elements annotated with the same annotation of type
+ * {@code T}.
+ * This validation is done within an annotation processor. This means that the detection is detected only per
+ * compilation unit, not per Neo4j instance.
+ *
+ * Indeed, a Neo4j instance can aggregate several extension JARs and its duplication detection cannot be entirely
+ * replaced by this.
+ *
+ * @param <T> annotation type
+ */
+public class DuplicatedExtensionValidator<T extends Annotation>
         implements Function<Collection<Element>,Stream<CompilationMessage>>
 {
 
@@ -46,7 +57,7 @@ public class DuplicatedProcedureValidator<T extends Annotation>
     private final Class<T> annotationType;
     private final Function<T,Optional<String>> customNameExtractor;
 
-    public DuplicatedProcedureValidator( Elements elements, Class<T> annotationType,
+    public DuplicatedExtensionValidator( Elements elements, Class<T> annotationType,
             Function<T,Optional<String>> customNameExtractor )
     {
         this.elements = elements;

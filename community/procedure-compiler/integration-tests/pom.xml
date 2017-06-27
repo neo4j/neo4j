@@ -1,7 +1,4 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
-
-
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>procedure-compiler-parent</artifactId>
@@ -9,9 +6,8 @@
         <relativePath>..</relativePath>
     </parent>
 
-    <groupId>org.neo4j</groupId>
+    <modelVersion>4.0.0</modelVersion>
     <artifactId>procedure-compiler-integration-tests</artifactId>
-    <version>3.2.2-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Neo4j - Procedure Compiler Integration Tests</name>
