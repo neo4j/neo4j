@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
@@ -245,7 +246,8 @@ public class ProcedureRegistry
 
     public Set<UserFunctionSignature> getAllFunctions()
     {
-
-        return functions.values().stream().map( CallableUserFunction::signature ).collect( Collectors.toSet() );
+        return Stream.concat(functions.values().stream().map( CallableUserFunction::signature ),
+                aggregationFunctions.values().stream().map( CallableUserAggregationFunction::signature ))
+                .collect( Collectors.toSet() );
     }
 }

@@ -29,6 +29,7 @@ import java.util.Optional;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.api.proc.Context;
 import org.neo4j.kernel.api.proc.Key;
@@ -78,6 +79,22 @@ public class UserFunctionsTest
                 functionSignature( "org", "myproc1" ).out(Neo4jTypes.NTAny).build(),
                 functionSignature( "org", "myproc2" ).out(Neo4jTypes.NTAny).build(),
                 functionSignature( "org", "myproc3" ).out(Neo4jTypes.NTAny).build() ) );
+    }
+
+    @Test
+    public void shouldGetRegisteredAggregationFunctions() throws Throwable
+    {
+        // When
+        procs.register( function( functionSignature( "org", "myfunc1" ).out(Neo4jTypes.NTAny).build() ) );
+        procs.register( function( functionSignature( "org", "myfunc2" ).out(Neo4jTypes.NTAny).build() ) );
+        procs.register( aggregationFunction( functionSignature( "org", "myaggrfunc1" ).out(Neo4jTypes.NTAny).build() ) );
+
+        // Then
+        List<UserFunctionSignature> signatures = Iterables.asList( procs.getAllFunctions() );
+        assertThat( signatures, containsInAnyOrder(
+                functionSignature( "org", "myfunc1" ).out(Neo4jTypes.NTAny).build(),
+                functionSignature( "org", "myfunc2" ).out(Neo4jTypes.NTAny).build(),
+                functionSignature( "org", "myaggrfunc1" ).out(Neo4jTypes.NTAny).build() ) );
     }
 
     @Test
@@ -160,6 +177,18 @@ public class UserFunctionsTest
             public Object apply( Context ctx, Object[] input )
             {
                 return input;
+            }
+        };
+    }
+
+    private CallableUserAggregationFunction aggregationFunction( UserFunctionSignature signature )
+    {
+        return new CallableUserAggregationFunction.BasicUserAggregationFunction( signature )
+        {
+            @Override
+            public Aggregator create( Context ctx ) throws ProcedureException
+            {
+                return null;
             }
         };
     }
