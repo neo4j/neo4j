@@ -43,7 +43,6 @@ import static org.neo4j.kernel.impl.store.id.IdContainer.NO_RESULT;
  */
 public class FreeIdKeeper implements Closeable
 {
-
     private static final int ID_ENTRY_SIZE = Long.BYTES;
     private final LinkedList<Long> freeIds = new LinkedList<>();
     private final LinkedList<Long> readFromDisk = new LinkedList<>();
@@ -246,26 +245,6 @@ public class FreeIdKeeper implements Closeable
                     "can go", newPosition, lowWatermarkForChannelPosition ) );
         }
         channel.position( newPosition );
-    }
-
-    /**
-     * Utility method that will dump all defragged id's to console. Do not call
-     * while running store using this id generator since it could corrupt the id
-     * generator (not thread safe). This method will close the id generator after
-     * being invoked.
-     */
-    // TODO make this a nice, cosy, reusable visitor instead?
-    public synchronized void dumpFreeIds() throws IOException
-    {
-        while ( canReadMoreIdBatches() )
-        {
-            readIdBatch();
-        }
-        for ( Long id : freeIds )
-        {
-            System.out.print( " " + id );
-        }
-        close();
     }
 
     private void defragReusableIdsInFile( ByteBuffer writeBuffer ) throws IOException

@@ -73,7 +73,7 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
         private final CommandIndexTracker commandIndexTracker;
         private final long commandIdWhenBecameLeader;
 
-        private volatile boolean oldTransactionsApplied;
+        private volatile boolean hasAppliedOldTransactions;
 
         LeaderIdReusabilityCondition( CommandIndexTracker commandIndexTracker, RaftMachine raftMachine )
         {
@@ -86,15 +86,10 @@ public class IdReusabilityCondition implements BooleanSupplier, Listener<MemberI
         @Override
         public boolean getAsBoolean()
         {
-            if ( oldTransactionsApplied )
+            // Once all transactions from previous term are applied we don't need to recheck with the CommandIndexTracker
+            if ( !hasAppliedOldTransactions )
             {
-                return true;
-            }
-
-            boolean hasAppliedOldTransactions = commandIndexTracker.getAppliedCommandIndex() > commandIdWhenBecameLeader;
-            if ( hasAppliedOldTransactions )
-            {
-                oldTransactionsApplied = true;
+                hasAppliedOldTransactions = commandIndexTracker.getAppliedCommandIndex() > commandIdWhenBecameLeader;
             }
 
             return hasAppliedOldTransactions;

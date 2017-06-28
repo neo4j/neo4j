@@ -74,7 +74,8 @@ import static java.util.Collections.singletonMap;
  */
 public abstract class EditionModule
 {
-    protected static final boolean safeIdBuffering = FeatureToggles.flag(
+    // This resided in RecordStorageEngine prior to 3.3
+    private static final boolean safeIdBuffering = FeatureToggles.flag(
             EditionModule.class, "safeIdBuffering", true );
 
     void registerProcedures( Procedures procedures ) throws KernelException

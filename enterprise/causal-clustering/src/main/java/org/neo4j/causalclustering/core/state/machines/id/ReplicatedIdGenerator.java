@@ -38,8 +38,8 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdType idType;
     private final Log log;
     private final ReplicatedIdRangeAcquirer acquirer;
-    private volatile long highId;
-    private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
+    private long highId;
+    private IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
 
     private IdContainer idContainer;
 
@@ -55,37 +55,37 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public void close()
+    public synchronized void close()
     {
         idContainer.close( highId );
     }
 
     @Override
-    public void freeId( long id )
+    public synchronized void freeId( long id )
     {
         idContainer.freeId( id );
     }
 
     @Override
-    public long getHighId()
+    public synchronized long getHighId()
     {
         return highId;
     }
 
     @Override
-    public void setHighId( long id )
+    public synchronized void setHighId( long id )
     {
         this.highId = max( this.highId, id );
     }
 
     @Override
-    public long getHighestPossibleIdInUse()
+    public synchronized long getHighestPossibleIdInUse()
     {
         return highId - 1;
     }
 
     @Override
-    public long getNumberOfIdsInUse()
+    public synchronized long getNumberOfIdsInUse()
     {
         return highId - getDefragCount();
     }
@@ -113,7 +113,7 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         throw new UnsupportedOperationException( "Should never be called" );
     }
@@ -145,19 +145,19 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public long getDefragCount()
+    public synchronized long getDefragCount()
     {
         return idContainer.getFreeIdCount();
     }
 
     @Override
-    public void delete()
+    public synchronized void delete()
     {
         idContainer.delete();
     }
 
     @Override
-    public String toString()
+    public synchronized String toString()
     {
         return getClass().getSimpleName() + "[" + this.idQueue + "]";
     }

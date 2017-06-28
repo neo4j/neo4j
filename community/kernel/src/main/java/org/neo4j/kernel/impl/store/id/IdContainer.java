@@ -28,12 +28,18 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 
-
+/**
+ * This class handles the persisting of a highest id in use. A sticky byte is present in the header to indicate
+ * whether the file was closed properly. It also handel delegation of reusable ids to the {@link FreeIdKeeper}
+ * class.
+ *
+ * This class is <b>not thread-safe</b> and synchronization need to be handed by the caller.
+ */
 public class IdContainer
 {
     public static final long NO_RESULT = -1;
 
-    // sticky(byte), nextFreeId(long)
+    // header format: sticky(byte), nextFreeId(long)
     static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
     // if sticky the id generator wasn't closed properly so it has to be
