@@ -31,7 +31,6 @@ import java.util.stream.Collectors;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -90,14 +89,12 @@ public class CoreEdgeMetricsIT
         cluster = clusterRule.startCluster();
 
         // when
-        CoreGraphDatabase coreDB = cluster.awaitLeader( 5, TimeUnit.SECONDS ).database();
-
-        try ( Transaction tx = coreDB.beginTx() )
+        CoreClusterMember coreMember = cluster.coreTx( ( db, tx ) ->
         {
-            Node node = coreDB.createNode( label( "boo" ) );
+            Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
-        }
+        } );
 
         // then
         for ( CoreClusterMember db : cluster.coreMembers() )
@@ -110,7 +107,7 @@ public class CoreEdgeMetricsIT
             assertAllNodesVisible( db.database() );
         }
 
-        File coreMetricsDir = new File( cluster.getCoreMemberById( 0 ).homeDir(), csvPath.getDefaultValue() );
+        File coreMetricsDir = new File( coreMember.homeDir(), csvPath.getDefaultValue() );
 
         assertEventually( "append index eventually accurate",
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.APPEND_INDEX ) ),
