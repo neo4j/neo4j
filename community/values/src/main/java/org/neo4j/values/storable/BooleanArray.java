@@ -111,7 +111,7 @@ abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public void writeTo( ValueWriter writer )
+    public <E extends Exception> void writeTo( ValueWriter<E> writer ) throws E
     {
         PrimitiveArrayWriting.writeTo( writer, value() );
     }
@@ -134,6 +134,7 @@ abstract class BooleanArray extends ArrayValue
         return NumberValues.compareBooleanArrays( this, other );
     }
 
+    @Override
     public ValueGroup valueGroup()
     {
         return ValueGroup.BOOLEAN_ARRAY;
