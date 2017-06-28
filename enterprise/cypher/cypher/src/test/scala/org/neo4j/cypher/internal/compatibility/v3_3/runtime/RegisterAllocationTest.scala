@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, True}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -163,6 +164,51 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
         "x" -> LongSlot(0, nullable = false, CTNode),
         "r" -> LongSlot(1, nullable = true, CTRelationship)
       ), numberOfLongs = 2, numberOfReferences = 0))
+  }
+
+  test("let's skip this one") {
+    // given
+    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val skip = plans.Skip(allNodesScan, literalInt(42))(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(skip)
+
+    // then
+    allocations should have size 2
+    val labelScanAllocations = allocations(allNodesScan)
+    labelScanAllocations should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    val expandAllocations = allocations(skip)
+    expandAllocations should equal(labelScanAllocations)
+  }
+
+  test("all we need is to apply ourselves") {
+    // given
+    val lhs = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val label = LabelToken("label2", LabelId(0))
+    val seekExpression = SingleQueryExpression(literalInt(42))
+    val rhs = NodeIndexSeek(IdName("z"), label, Seq.empty, seekExpression, Set(IdName("x")))(solved)
+    val apply = Apply(lhs, rhs)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(apply)
+
+    // then
+    allocations should have size 3
+    allocations(lhs) should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    val rhsPipeline = allocations(rhs)
+
+    rhsPipeline should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "z" -> LongSlot(1, nullable = false, CTNode)
+      ), numberOfLongs = 2, numberOfReferences = 0))
+
+    allocations(apply) should equal(rhsPipeline)
   }
 
 }
