@@ -19,12 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.apache.lucene.util.IOUtils;
-
-import java.io.File;
-import java.io.IOException;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.util.OsBeanUtil;
@@ -290,24 +284,5 @@ public interface Configuration
 
         double factor = percent / 100D;
         return round( (freePhysicalMemory - Runtime.getRuntime().maxMemory()) * factor );
-    }
-
-    static boolean hintParallelRecordReadsWhenWritingForStoreDir( File storeDir, boolean defaultValue )
-    {
-        try
-        {
-            // The idea is that we can do more IO in parallel if we use flash storage, and that we shouldn't do
-            // parallel IO with a spinning disk because then the additional seeks would hurt us.
-            // Most macs have flash storage, so assume true for them. IOUtils.spins implementation is Linux specific,
-            // and would only return true for that OS if it can detect a spinning storage medium (which we negate).
-            // If IOUtils cannot make an accurate detection, then it assumes true, which means that we by default
-            // assume that we are NOT on flash storage.
-            return SystemUtils.IS_OS_MAC
-                   || !IOUtils.spins( storeDir.toPath() );
-        }
-        catch ( IOException e )
-        {
-            return defaultValue;
-        }
     }
 }

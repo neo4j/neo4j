@@ -43,6 +43,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -702,8 +703,7 @@ public class ImportTool
             @Override
             public boolean parallelRecordReadsWhenWriting()
             {
-                return org.neo4j.unsafe.impl.batchimport.Configuration.hintParallelRecordReadsWhenWritingForStoreDir(
-                        storeDir, false );
+                return FileUtils.highIODevice( storeDir.toPath(), false );
             }
         };
     }

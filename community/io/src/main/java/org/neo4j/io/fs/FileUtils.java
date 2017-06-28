@@ -44,11 +44,14 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
 
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -68,7 +71,7 @@ public class FileUtils
 
     public static void deleteRecursively( File directory ) throws IOException
     {
-        if ( ! directory.exists() )
+        if ( !directory.exists() )
         {
             return;
         }
@@ -136,12 +139,12 @@ public class FileUtils
         if ( !toMove.exists() )
         {
             throw new FileNotFoundException( "Source file[" + toMove.getAbsolutePath()
-                    + "] not found" );
+                                             + "] not found" );
         }
         if ( target.exists() )
         {
             throw new IOException( "Target file[" + target.getAbsolutePath()
-                    + "] already exists" );
+                                   + "] already exists" );
         }
 
         if ( toMove.renameTo( target ) )
@@ -340,6 +343,86 @@ public class FileUtils
     }
 
     /**
+     * Attempts to discern if the given path is mounted on a device that can likely sustain a very high IO throughput.
+     * <p>
+     * A high IO device is expected to have negligible seek time, if any, and be able to service multiple IO requests
+     * in parallel.
+     *
+     * @param pathOnDevice Any path, hypothetical or real, that once fully resolved, would exist on a storage device
+     * that either supports high IO, or not.
+     * @param defaultHunch The default hunch for whether the device supports high IO or not. This will be returned if
+     * we otherwise have no clue about the nature of the storage device.
+     * @return Our best-effort estimate for whether or not this device supports a high IO workload.
+     */
+    public static boolean highIODevice( Path pathOnDevice, boolean defaultHunch )
+    {
+        // This method has been manually tested and correctly identifies the high IO volumes on our test servers.
+        if ( SystemUtils.IS_OS_MAC )
+        {
+            // Most macs have flash storage, so let's assume true for them.
+            return true;
+        }
+
+        if ( SystemUtils.IS_OS_LINUX )
+        {
+            try
+            {
+                FileStore fileStore = Files.getFileStore( pathOnDevice );
+                String name = fileStore.name();
+                if ( name.equals( "tmpfs" ) || name.equals( "hugetlbfs" ) )
+                {
+                    // This is a purely in-memory device. It doesn't get faster than this.
+                    return true;
+                }
+
+                if ( name.startsWith( "/dev/nvme" ) )
+                {
+                    // This is probably an NVMe device. Anything on that protocol is most likely very fast.
+                    return true;
+                }
+
+                Path device = Paths.get( name ).toRealPath(); // Use toRealPath to resolve any symlinks.
+                Path deviceName = device.getName( device.getNameCount() - 1 );
+                Path sysblock = Paths.get( "/sys/block" );
+                Path rotational = sysblock.resolve( deviceName ).resolve( "queue" ).resolve( "rotational" );
+                if ( Files.exists( rotational ) )
+                {
+                    return readFirstCharacter( rotational ) == '0';
+                }
+                else
+                {
+                    String namePart = deviceName.toString();
+                    int len = namePart.length();
+                    while ( Character.isDigit( namePart.charAt( len - 1 ) ) )
+                    {
+                        len--;
+                    }
+                    namePart = namePart.substring( 0, len );
+                    rotational = sysblock.resolve( namePart ).resolve( "queue" ).resolve( "rotational" );
+                    if ( Files.exists( rotational ) )
+                    {
+                        return readFirstCharacter( rotational ) == '0';
+                    }
+                }
+            }
+            catch ( Exception e )
+            {
+                return defaultHunch;
+            }
+        }
+
+        return defaultHunch;
+    }
+
+    private static int readFirstCharacter( Path file ) throws IOException
+    {
+        try ( InputStream in = Files.newInputStream( file, StandardOpenOption.READ ) )
+        {
+            return in.read();
+        }
+    }
+
+    /**
      * Useful when you want to move a file from one directory to another by renaming the file
      * and keep eventual sub directories. Example:
      * <p>
@@ -477,20 +560,21 @@ public class FileUtils
 
     private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
     {
-        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
+        return e.getMessage()
+                .contains( "The process cannot access the file because it is being used by another process." );
     }
 
     /**
-    * Given a directory and a path under it, return filename of the path
-    * relative to the directory.
-    *
-    * @param baseDir The base directory, containing the storeFile
-    * @param storeFile The store file path, must be contained under
-    * <code>baseDir</code>
-    * @return The relative path of <code>storeFile</code> to
-    * <code>baseDir</code>
-    * @throws IOException As per {@link File#getCanonicalPath()}
-    */
+     * Given a directory and a path under it, return filename of the path
+     * relative to the directory.
+     *
+     * @param baseDir The base directory, containing the storeFile
+     * @param storeFile The store file path, must be contained under
+     * <code>baseDir</code>
+     * @return The relative path of <code>storeFile</code> to
+     * <code>baseDir</code>
+     * @throws IOException As per {@link File#getCanonicalPath()}
+     */
     public static String relativePath( File baseDir, File storeFile )
             throws IOException
     {
@@ -583,6 +667,7 @@ public class FileUtils
 
     /**
      * Check if directory is empty.
+     *
      * @param directory - directory to check
      * @return false if directory exists and empty, true otherwise.
      * @throws IllegalArgumentException if specified directory represent a file
@@ -612,11 +697,11 @@ public class FileUtils
         OpenOption[] options;
         if ( append )
         {
-            options = new OpenOption[] {CREATE, WRITE, APPEND};
+            options = new OpenOption[]{CREATE, WRITE, APPEND};
         }
         else
         {
-            options = new OpenOption[] {CREATE, WRITE};
+            options = new OpenOption[]{CREATE, WRITE};
         }
         return Files.newOutputStream( path, options );
     }

@@ -45,6 +45,7 @@ import java.util.stream.StreamSupport;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
@@ -375,8 +376,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 @Override
                 public boolean parallelRecordReadsWhenWriting()
                 {
-                    return Configuration.hintParallelRecordReadsWhenWritingForStoreDir(
-                            storeDir, super.parallelRecordReadsWhenWriting() );
+                    return FileUtils.highIODevice( storeDir.toPath(), super.parallelRecordReadsWhenWriting() );
                 }
             };
             AdditionalInitialIds additionalInitialIds =
