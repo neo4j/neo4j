@@ -25,13 +25,11 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
-import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
 
 /**
@@ -54,7 +52,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
-    private final ParkStrategy park = new ParkStrategy.Park( 1, MILLISECONDS );
 
     protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
             StatsProvider... additionalStatsProviders )
