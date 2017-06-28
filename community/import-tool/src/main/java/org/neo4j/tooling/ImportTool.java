@@ -76,6 +76,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
@@ -505,11 +506,11 @@ public class ImportTool
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        File internalLogFile = dbConfig.get( store_internal_log_path );
+        File internalLogFile = dbConfig.with( stringMap( logs_directory.name(), logsDir.getCanonicalPath() ) )
+                .get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
 
         life.start();
-        //TODO: add file watcher here?
         BatchImporter importer = new ParallelBatchImporter( storeDir,
                 fs,
                 configuration,
