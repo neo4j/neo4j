@@ -1696,7 +1696,7 @@ public class ImportToolTest
         importTool(
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--additional-config", dbConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, ( value ) -> true ).getAbsolutePath() );
 
         // THEN
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
@@ -1725,7 +1725,7 @@ public class ImportToolTest
                 "--into", dbRule.getStoreDirAbsolutePath(),
                 "--db-config", dbConfig.getAbsolutePath(),
                 "--additional-config", additionalConfig.getAbsolutePath(),
-                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, ( value ) -> true ).getAbsolutePath() );
 
         // THEN
         NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
