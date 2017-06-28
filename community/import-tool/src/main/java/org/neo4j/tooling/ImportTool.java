@@ -238,7 +238,10 @@ public class ImportTool
                 "(advanced) Maximum memory that importer can use for various data structures and caching " +
                 "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
                 "% of (free memory on machine - max JVM memory). " +
-                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." );
+                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." ),
+        HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
+                "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
+                "support parallel IO with high throughput." );
 
         private final String key;
         private final Object defaultValue;
@@ -379,8 +382,8 @@ public class ImportTool
         Collection<Option<File[]>> nodesFiles;
         Collection<Option<File[]>> relationshipsFiles;
         boolean enableStacktrace;
-        Number processors = null;
-        Input input = null;
+        Number processors;
+        Input input;
         int badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships;
@@ -389,11 +392,12 @@ public class ImportTool
         boolean skipBadEntriesLogging;
         Config dbConfig;
         OutputStream badOutput = null;
-        IdType idType = null;
+        IdType idType;
         org.neo4j.unsafe.impl.batchimport.Configuration configuration = null;
         File logsDir;
         File badFile = null;
-        Long maxMemory = null;
+        Long maxMemory;
+        Boolean defaultHighIO;
 
         boolean success = false;
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
@@ -431,6 +435,8 @@ public class ImportTool
                     (Boolean)Options.SKIP_DUPLICATE_NODES.defaultValue(), true );
             ignoreExtraColumns = args.getBoolean( Options.IGNORE_EXTRA_COLUMNS.key(),
                     (Boolean)Options.IGNORE_EXTRA_COLUMNS.defaultValue(), true );
+            defaultHighIO = args.getBoolean( Options.HIGH_IO.key(),
+                    (Boolean)Options.HIGH_IO.defaultValue(), true );
 
             Collector badCollector = getBadCollector( badTolerance, skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns,
                     skipBadEntriesLogging, badOutput );
@@ -440,7 +446,7 @@ public class ImportTool
             dbConfig = dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
             configuration = importConfiguration(
-                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir );
+                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -668,11 +674,14 @@ public class ImportTool
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
             Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, File storeDir )
     {
-        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir );
+        return importConfiguration(
+                processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
+                (Boolean)Options.HIGH_IO.defaultValue() );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
-            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir )
+            Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir,
+            Boolean defaultHighIO )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -703,7 +712,7 @@ public class ImportTool
             @Override
             public boolean parallelRecordReadsWhenWriting()
             {
-                return FileUtils.highIODevice( storeDir.toPath(), false );
+                return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
             }
         };
     }
