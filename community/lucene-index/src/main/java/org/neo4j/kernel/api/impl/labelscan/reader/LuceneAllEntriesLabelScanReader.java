@@ -25,13 +25,14 @@ import org.apache.lucene.index.IndexableField;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
+import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.kernel.api.impl.labelscan.bitmaps.Bitmap;
 import org.neo4j.kernel.api.impl.labelscan.storestrategy.BitmapDocumentFormat;
 import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
+
+import static org.neo4j.kernel.api.labelscan.NodeLabelRange.readBitmap;
 
 public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReader
 {
@@ -48,25 +49,20 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
     public Iterator<NodeLabelRange> iterator()
     {
         final Iterator<Document> iterator = documents.iterator();
-        return new Iterator<NodeLabelRange>()
+        return new IteratorWrapper<NodeLabelRange,Document>( iterator )
         {
-            private int id;
-
-            public boolean hasNext()
+            @Override
+            protected NodeLabelRange underlyingObjectToObject( Document document )
             {
-                return iterator.hasNext();
-            }
-
-            public LuceneNodeLabelRange next()
-            {
-                return parse( id++, iterator.next() );
-            }
-
-            public void remove()
-            {
-                iterator.remove();
+                return parse( document );
             }
         };
+    }
+
+    @Override
+    public int rangeSize()
+    {
+        return format.bitmapFormat().rangeSize();
     }
 
     @Override
@@ -81,7 +77,7 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
         return documents.maxCount();
     }
 
-    private LuceneNodeLabelRange parse( int id, Document document )
+    private NodeLabelRange parse( Document document )
     {
         List<IndexableField> fields = document.getFields();
 
@@ -119,16 +115,12 @@ public class LuceneAllEntriesLabelScanReader implements AllEntriesLabelScanReade
             bitmaps = scratchBitmaps;
         }
 
-        return LuceneNodeLabelRange.fromBitmapStructure( id, labelIds, getLongs( bitmaps, rangeId ) );
-    }
-
-    private long[][] getLongs( Bitmap[] bitmaps, long rangeId )
-    {
-        long[][] nodeIds = new long[bitmaps.length][];
-        for ( int k = 0; k < nodeIds.length; k++ )
+        @SuppressWarnings( "unchecked" )
+        List<Long>[] labelsPerNode = new List[format.bitmapFormat().rangeSize()];
+        for ( int j = 0; j < labelIds.length; j++ )
         {
-            nodeIds[k] = format.bitmapFormat().convertRangeAndBitmapToArray( rangeId, bitmaps[k].bitmap() );
+            readBitmap( bitmaps[j].bitmap(), labelIds[j], labelsPerNode );
         }
-        return nodeIds;
+        return new NodeLabelRange( rangeId, NodeLabelRange.convertState( labelsPerNode ) );
     }
 }

@@ -175,9 +175,10 @@ public class ConsistencyCheckTasks
         ConsistencyReporter filteredReporter = multiPass.reporter( NODES );
         if ( checkLabelScanStore )
         {
+            long highId = nativeStores.getNodeStore().getHighId();
             tasks.add( recordScanner( "LabelScanStore",
-                    labelScanStore.allNodeLabelRanges(), new LabelScanDocumentProcessor(
-                            filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
+                    new GapFreeAllEntriesLabelScanReader( labelScanStore.allNodeLabelRanges(), highId ),
+                    new LabelScanDocumentProcessor( filteredReporter, new LabelScanCheck() ), Stage.SEQUENTIAL_FORWARD,
                     ROUND_ROBIN ) );
         }
         if ( checkIndexes )
