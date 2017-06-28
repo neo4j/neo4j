@@ -51,8 +51,8 @@ import org.neo4j.consistency.store.RecordReference;
 import org.neo4j.consistency.store.synthetic.CountsEntry;
 import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
-import org.neo4j.kernel.api.impl.labelscan.LuceneNodeLabelRange;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -379,7 +379,7 @@ public class ConsistencyReporterTest
             }
             if ( type == LabelScanDocument.class )
             {
-                return new LabelScanDocument( new LuceneNodeLabelRange( 0, new long[] {}, new long[][] {} ) );
+                return new LabelScanDocument( new NodeLabelRange( 0, new long[][] {} ) );
             }
             if ( type == IndexEntry.class )
             {

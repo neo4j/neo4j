@@ -141,7 +141,6 @@ public class NativeAllEntriesLabelScanReaderTest
                 NodeLabelRange range = iterator.next();
 
                 assertEquals( rangeId, range.id() );
-                assertArrayEquals( "Unexpected data in range " + rangeId, nodesOf( expected ), range.nodes() );
                 for ( Map.Entry<Long,List<Long>> expectedEntry : expected.entrySet() )
                 {
                     long[] labels = range.labels( expectedEntry.getKey() );
@@ -151,17 +150,6 @@ public class NativeAllEntriesLabelScanReaderTest
             // else there was nothing in this range
         }
         assertFalse( iterator.hasNext() );
-    }
-
-    private static long[] nodesOf( SortedMap<Long,List<Long>> expected )
-    {
-        long[] nodes = new long[expected.size()];
-        Iterator<Long> nodeIds = expected.keySet().iterator();
-        for ( int i = 0; nodeIds.hasNext(); i++ )
-        {
-            nodes[i] = nodeIds.next();
-        }
-        return nodes;
     }
 
     private static SortedMap<Long,List<Long>> rangeOf( Labels[] data, long rangeId )

@@ -238,7 +238,7 @@ public abstract class LabelScanStoreTest
         NodeLabelRange range = single( reader.iterator() );
 
         // THEN
-        assertArrayEquals( new long[]{nodeId1, nodeId2}, sorted( range.nodes() ) );
+        assertArrayEquals( new long[]{nodeId1, nodeId2}, reducedNodes( range ) );
 
         assertArrayEquals( new long[]{labelId1}, sorted( range.labels( nodeId1 ) ) );
         assertArrayEquals( new long[]{labelId1, labelId2}, sorted( range.labels( nodeId2 ) ) );
@@ -263,8 +263,8 @@ public abstract class LabelScanStoreTest
         assertFalse( iterator.hasNext() );
 
         // THEN
-        assertArrayEquals( new long[]{nodeId1}, sorted( range1.nodes() ) );
-        assertArrayEquals( new long[]{nodeId2}, sorted( range2.nodes() ) );
+        assertArrayEquals( new long[]{nodeId1}, reducedNodes( range1 ) );
+        assertArrayEquals( new long[]{nodeId2}, reducedNodes( range2 ) );
 
         assertArrayEquals( new long[]{labelId1}, sorted( range1.labels( nodeId1 ) ) );
 
@@ -331,7 +331,13 @@ public abstract class LabelScanStoreTest
         // when
         MutableInt count = new MutableInt();
         AllEntriesLabelScanReader nodeLabelRanges = store.allNodeLabelRanges();
-        nodeLabelRanges.forEach( nlr -> count.add( nlr.nodes().length ) );
+        nodeLabelRanges.forEach( nlr ->
+        {
+            for ( long nodeId : nlr.nodes() )
+            {
+                count.add( nlr.labels( nodeId ).length );
+            }
+        } );
         assertThat( count.intValue(), is( 1 ) );
     }
 
@@ -350,6 +356,21 @@ public abstract class LabelScanStoreTest
     {
         Arrays.sort( input );
         return input;
+    }
+
+    private long[] reducedNodes( NodeLabelRange range )
+    {
+        long[] nodes = range.nodes();
+        long[] result = new long[nodes.length];
+        int cursor = 0;
+        for ( long node : nodes )
+        {
+            if ( range.labels( node ).length > 0 )
+            {
+                result[cursor++] = node;
+            }
+        }
+        return Arrays.copyOf( result, cursor );
     }
 
     @Test
