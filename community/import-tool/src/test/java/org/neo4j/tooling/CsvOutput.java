@@ -19,7 +19,9 @@
  */
 package org.neo4j.tooling;
 
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.function.Function;
@@ -32,6 +34,8 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntity;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Deserialization;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Header;
+
+import static org.neo4j.io.ByteUnit.mebiBytes;
 
 public class CsvOutput implements BatchImporter
 {
@@ -141,6 +145,7 @@ public class CsvOutput implements BatchImporter
 
     private PrintStream file( String name ) throws IOException
     {
-        return new PrintStream( new File( targetDirectory, name ) );
+        return new PrintStream( new BufferedOutputStream( new FileOutputStream( new File( targetDirectory, name ) ),
+                (int) mebiBytes( 1 ) ) );
     }
 }
