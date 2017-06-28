@@ -29,8 +29,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArray;
  */
 abstract class AbstractTracker<ARRAY extends NumberArray> implements Tracker
 {
-    static final int DEFAULT_VALUE = -1;
-
     protected ARRAY array;
 
     protected AbstractTracker( ARRAY array )

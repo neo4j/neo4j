@@ -628,8 +628,8 @@ public class EncodingIdMapperTest
         public Tracker create( NumberArrayFactory arrayFactory, long size )
         {
             return System.currentTimeMillis() % 2 == 0
-                    ? new IntTracker( arrayFactory.newIntArray( size, AbstractTracker.DEFAULT_VALUE ) )
-                    : new LongTracker( arrayFactory.newLongArray( size, AbstractTracker.DEFAULT_VALUE ) );
+                    ? new IntTracker( arrayFactory.newIntArray( size, IntTracker.DEFAULT_VALUE ) )
+                    : new BigIdTracker( arrayFactory.newByteArray( size, BigIdTracker.DEFAULT_VALUE ) );
         }
     };
 
