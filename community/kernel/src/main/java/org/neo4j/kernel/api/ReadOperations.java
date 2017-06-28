@@ -343,8 +343,7 @@ public interface ReadOperations
     /**
      * The number of nodes in the graph, including anything changed in the transaction state.
      *
-     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph,
-     * i.e.
+     * If the label parameter is {@link #ANY_LABEL}, this method returns the total number of nodes in the graph, i.e.
      * {@code MATCH (n) RETURN count(n)}.
      *
      * If the label parameter is set to any other value, this method returns the number of nodes that has that label,

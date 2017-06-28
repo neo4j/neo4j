@@ -143,9 +143,10 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public <K, V> V schemaStateGet( K key )
+    public <K, V> V schemaStateGet( KernelStatement state, K key )
     {
-        return schemaStateDelegate.schemaStateGet( key );
+        state.assertOpen();
+        return schemaStateDelegate.schemaStateGet( state, key );
     }
 
     @Override

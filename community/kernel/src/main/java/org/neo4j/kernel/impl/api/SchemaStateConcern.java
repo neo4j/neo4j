@@ -39,7 +39,7 @@ public class SchemaStateConcern implements SchemaStateOperations
     }
 
     @Override
-    public <K, V> V schemaStateGet( K key )
+    public <K, V> V schemaStateGet( KernelStatement state, K key )
     {
         return schemaState.get( key );
     }

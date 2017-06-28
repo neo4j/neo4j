@@ -170,13 +170,12 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
             parsedQuery.plan(tc, phaseTracer)
           }
 
-          val stateBefore = getSchemaState(tc)
+          val stateBefore = schemaState(tc)
           var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
           if (!touched) {
-            preParsedQuery.version
             val labelIds: Seq[Int] = extractPlanLabels(plan, preParsedQuery.version, tc)
             lockPlanLabels(tc, labelIds)
-            val stateAfter = getSchemaState(tc)
+            val stateAfter = schemaState(tc)
             if (stateBefore eq stateAfter) {
               releasePlanLabels(tc, labelIds)
               touched = false
@@ -223,18 +222,18 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc: TransactionalContextWrapper): Seq[Int] = {
     import scala.collection.JavaConverters._
 
-    def getPlanLabels = {
+    def planLabels = {
       plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
     }
 
     version match {
-      case CypherVersion.v3_3 => getPlanLabels
-      case CypherVersion.v3_2 => getPlanLabels
+      case CypherVersion.v3_3 => planLabels
+      case CypherVersion.v3_2 => planLabels
       case _ => tc.statement.readOperations().labelsGetAllTokens().asScala.map( t => t.id() ).toSeq
     }
   }
 
-  private def getSchemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
+  private def schemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
     (ExecutionPlan, Map[String, Any])], LFUCache[String, (ExecutionPlan, Map[String, Any])]] = {
     tc.readOperations.schemaStateGet(this)
   }
