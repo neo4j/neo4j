@@ -1681,6 +1681,61 @@ public class ImportToolTest
     }
 
     @Test
+    public void useProvidedAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ),
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--additional-config", dbConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
+    public void combineProvidedDbAndAdditionalConfig() throws Exception
+    {
+        // GIVEN
+        int arrayBlockSize = 10;
+        int stringBlockSize = 12;
+        File dbConfig = file( "neo4j.properties" );
+        File additionalConfig = file( "additional.properties" );
+        store( stringMap(
+                GraphDatabaseSettings.string_block_size.name(), String.valueOf( stringBlockSize ) ), dbConfig );
+        store( stringMap(
+                GraphDatabaseSettings.array_block_size.name(), String.valueOf( arrayBlockSize ) ), additionalConfig );
+        List<String> nodeIds = nodeIds();
+
+        // WHEN
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--db-config", dbConfig.getAbsolutePath(),
+                "--additional-config", additionalConfig.getAbsolutePath(),
+                "--nodes", nodeData( true, Configuration.COMMAS, nodeIds, (value) -> true ).getAbsolutePath() );
+
+        // THEN
+        NeoStores stores = dbRule.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        int headerSize = Standard.LATEST_RECORD_FORMATS.dynamic().getRecordHeaderSize();
+        assertEquals( arrayBlockSize + headerSize, stores.getPropertyStore().getArrayStore().getRecordSize() );
+        assertEquals( stringBlockSize + headerSize, stores.getPropertyStore().getStringStore().getRecordSize() );
+    }
+
+    @Test
     public void shouldPrintStackTraceOnInputExceptionIfToldTo() throws Exception
     {
         // GIVEN

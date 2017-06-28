@@ -214,15 +214,8 @@ public class ImportTool
                         + "Skipped columns will be logged, containing at most number of entities specified by "
                         + BAD_TOLERANCE.key() + ", unless "
                         + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + "option." ),
-        DATABASE_CONFIG( "db-config", null,
-                "<path/to/neo4j.conf>",
-                "(advanced) File specifying database-specific configuration. For more information consult "
-                        + "manual about available configuration options for a neo4j configuration file. "
-                        + "Only configuration affecting store at time of creation will be read. "
-                        + "Examples of supported config are:\n"
-                        + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
-                        + GraphDatabaseSettings.string_block_size.name() + "\n"
-                        + GraphDatabaseSettings.array_block_size.name() ),
+        DATABASE_CONFIG( "db-config", null, "<path/to/neo4j.conf>",
+                "(advanced) Option is deprecated and replaced by 'additional-config'. " ),
         ADDITIONAL_CONFIG( "additional-config", null,
                 "<path/to/neo4j.conf>",
                 "(advanced) File specifying database-specific configuration. For more information consult "
@@ -443,6 +436,8 @@ public class ImportTool
 
             dbConfig = loadDbConfig( args.interpretOption( Options.DATABASE_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
+            dbConfig = dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
+                    Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
             configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
