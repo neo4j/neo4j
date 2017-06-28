@@ -61,6 +61,19 @@ object RegisterAllocation {
         allocate(source, pipelineInfo, nullable = true)
         result += (lp -> pipelineInfo)
 
+      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandAll, _) =>
+        allocate(source, pipelineInfo, nullable)
+        val newPipelineInfo = pipelineInfo.deepClone()
+        newPipelineInfo.newLong(rel, nullable = true, CTRelationship)
+        newPipelineInfo.newLong(to, nullable = true, CTNode)
+        result += (lp -> newPipelineInfo)
+
+      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandInto, _) =>
+        allocate(source, pipelineInfo, nullable)
+        val newPipelineInfo = pipelineInfo.deepClone()
+        newPipelineInfo.newLong(rel, nullable = true, CTRelationship)
+        result += (lp -> newPipelineInfo)
+
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 

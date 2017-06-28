@@ -120,4 +120,49 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), 1, 0))
   }
 
+  test("single node with optionalExpand ExpandAll") {
+    // given
+    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val expand = OptionalExpand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(expand)
+
+    // then we'll end up with two pipelines
+    allocations should have size 2
+    val labelScanAllocations = allocations(allNodesScan)
+    labelScanAllocations should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    val expandAllocations = allocations(expand)
+    expandAllocations should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = true, CTRelationship),
+        "z" -> LongSlot(2, nullable = true, CTNode)
+      ), numberOfLongs = 3, numberOfReferences = 0))
+  }
+
+  test("single node with optionalExpand ExpandInto") {
+    // given
+    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val expand = OptionalExpand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(expand)
+
+    // then we'll end up with two pipelines
+    allocations should have size 2
+    val labelScanAllocations = allocations(allNodesScan)
+    labelScanAllocations should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    val expandAllocations = allocations(expand)
+    expandAllocations should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode),
+        "r" -> LongSlot(1, nullable = true, CTRelationship)
+      ), numberOfLongs = 2, numberOfReferences = 0))
+  }
+
 }
