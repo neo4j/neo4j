@@ -55,8 +55,8 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StorageStatement;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptyIterator;
 import static org.hamcrest.MatcherAssert.assertThat;

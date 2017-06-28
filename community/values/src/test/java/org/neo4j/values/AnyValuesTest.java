@@ -22,14 +22,14 @@ package org.neo4j.values;
 import org.junit.Test;
 
 import static junit.framework.TestCase.assertFalse;
-import static org.neo4j.values.Values.booleanValue;
-import static org.neo4j.values.Values.byteValue;
-import static org.neo4j.values.Values.doubleValue;
-import static org.neo4j.values.Values.floatValue;
-import static org.neo4j.values.Values.intValue;
-import static org.neo4j.values.Values.longValue;
-import static org.neo4j.values.Values.shortValue;
-import static org.neo4j.values.Values.stringValue;
+import static org.neo4j.values.storable.Values.booleanValue;
+import static org.neo4j.values.storable.Values.byteValue;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.floatValue;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.shortValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class AnyValuesTest
 {

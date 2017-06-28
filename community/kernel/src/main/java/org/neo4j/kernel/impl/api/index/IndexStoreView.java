@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor, PropertyLoader

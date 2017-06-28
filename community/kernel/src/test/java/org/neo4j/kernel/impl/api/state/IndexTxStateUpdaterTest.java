@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.values.ValueTuple;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;

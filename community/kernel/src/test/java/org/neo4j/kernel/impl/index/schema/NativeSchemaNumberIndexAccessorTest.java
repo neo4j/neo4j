@@ -47,8 +47,8 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -65,8 +65,8 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
-import static org.neo4j.values.Values.COMPARATOR;
-import static org.neo4j.values.Values.of;
+import static org.neo4j.values.storable.Values.COMPARATOR;
+import static org.neo4j.values.storable.Values.of;
 
 /**
  * Tests for

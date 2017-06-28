@@ -30,9 +30,8 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.storageengine.api.NodeItem;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueGroup;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 /**
  * When looking up nodes by a property value, we have to do a two-stage check.

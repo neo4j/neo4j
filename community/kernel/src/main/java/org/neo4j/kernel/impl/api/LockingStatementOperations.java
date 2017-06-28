@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;

@@ -24,8 +24,8 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

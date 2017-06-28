@@ -25,9 +25,9 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.SchemaUtil;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

@@ -21,6 +21,7 @@ package org.neo4j.values;
 
 import java.util.Comparator;
 
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 @SuppressWarnings( "WeakerAccess" )

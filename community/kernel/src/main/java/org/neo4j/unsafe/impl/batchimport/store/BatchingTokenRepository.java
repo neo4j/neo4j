@@ -35,8 +35,7 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.max;
 

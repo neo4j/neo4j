@@ -47,8 +47,8 @@ import org.neo4j.kernel.api.impl.schema.verification.SimpleUniquenessVerifier;
 import org.neo4j.kernel.api.impl.schema.verification.UniquenessVerifier;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.instanceOf;

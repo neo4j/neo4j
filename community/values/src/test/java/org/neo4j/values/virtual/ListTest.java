@@ -21,12 +21,8 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
-import org.neo4j.values.AnyValue;
-import org.neo4j.values.Values;
-import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;

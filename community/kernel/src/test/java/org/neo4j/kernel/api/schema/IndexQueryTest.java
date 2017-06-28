@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.schema.IndexQuery.StringContainsPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static junit.framework.TestCase.assertFalse;
 import static junit.framework.TestCase.assertTrue;

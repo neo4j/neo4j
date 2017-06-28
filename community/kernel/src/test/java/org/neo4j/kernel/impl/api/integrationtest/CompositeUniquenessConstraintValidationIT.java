@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;

@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;

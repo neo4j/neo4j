@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.emptySet;
 import static org.neo4j.helpers.collection.Iterables.map;

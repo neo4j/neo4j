@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.util.List;
 
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class TestPropertyAccessor implements PropertyAccessor
 {

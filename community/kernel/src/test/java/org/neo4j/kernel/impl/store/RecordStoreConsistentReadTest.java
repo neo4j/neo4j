@@ -46,8 +46,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertNotNull;

@@ -24,9 +24,9 @@ public enum CoordinateReferenceSystem
     Cartesian( "cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/" ),
     WGS84( "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/" );
 
-    final String name;
-    final int code;
-    final String href;
+    public final String name;
+    public final int code;
+    public final String href;
 
     CoordinateReferenceSystem( String name, int code, String href )
     {

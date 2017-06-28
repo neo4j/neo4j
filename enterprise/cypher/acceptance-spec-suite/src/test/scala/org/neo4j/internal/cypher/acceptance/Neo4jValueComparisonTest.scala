@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure
-import org.neo4j.values.Values
+import org.neo4j.values.storable.Values
 import org.scalacheck._
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 

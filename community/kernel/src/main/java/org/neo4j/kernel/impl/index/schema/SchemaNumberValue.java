@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * Value in a {@link GBPTree} handling numbers suitable for schema indexing.

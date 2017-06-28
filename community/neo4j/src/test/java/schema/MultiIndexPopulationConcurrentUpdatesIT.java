@@ -34,7 +34,6 @@ import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.concurrent.Runnables;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -79,7 +78,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 

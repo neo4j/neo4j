@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.test.Randoms;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.Long.max;
 import static java.lang.Math.abs;

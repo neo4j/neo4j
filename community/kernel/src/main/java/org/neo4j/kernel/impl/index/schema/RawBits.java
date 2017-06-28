@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.NumberValue;
-import org.neo4j.values.NumberValues;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.NumberValues;
+import org.neo4j.values.storable.Values;
 
 /**
  * Useful to compare values stored as raw bits and value type without having to box them as {@link NumberValue number values}.

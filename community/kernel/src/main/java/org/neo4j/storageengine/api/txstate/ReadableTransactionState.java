@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.RelationshipItem;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.ValueTuple;
 
 /**
  * This interface contains the methods for reading transaction state from the transaction state.

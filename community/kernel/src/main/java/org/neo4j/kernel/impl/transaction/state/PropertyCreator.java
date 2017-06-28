@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class PropertyCreator
 {

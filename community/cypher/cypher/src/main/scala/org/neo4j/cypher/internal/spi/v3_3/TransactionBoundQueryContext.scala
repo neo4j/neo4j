@@ -56,7 +56,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes
 import JavaConversionSupport._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
-import org.neo4j.values.Values
+import org.neo4j.values.storable.Values
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._

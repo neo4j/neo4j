@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

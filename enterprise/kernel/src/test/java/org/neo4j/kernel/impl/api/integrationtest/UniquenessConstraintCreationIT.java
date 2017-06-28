@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.IndexRule;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.Matchers.instanceOf;

@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import java.util.Arrays;
-
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 import static java.lang.String.format;
 import static java.lang.String.valueOf;

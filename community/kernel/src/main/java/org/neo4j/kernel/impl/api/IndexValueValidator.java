@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.impl.util.Validator;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 public class IndexValueValidator implements Validator<Value>
 {

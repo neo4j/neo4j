@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 /**
  * A {@link UniquenessVerifier} that is able to verify value uniqueness inside a single index partition using

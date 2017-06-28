@@ -34,8 +34,8 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 abstract class LayoutTestUtil<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
 {

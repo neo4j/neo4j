@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 

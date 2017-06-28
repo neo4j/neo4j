@@ -33,7 +33,7 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 import static org.neo4j.kernel.api.schema.IndexQuery.IndexQueryType.exact;

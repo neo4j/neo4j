@@ -24,8 +24,8 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.VirtualValue;
 
 /**

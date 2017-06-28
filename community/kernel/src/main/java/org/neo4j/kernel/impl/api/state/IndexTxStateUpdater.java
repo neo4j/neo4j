@@ -35,9 +35,9 @@ import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
 import org.neo4j.storageengine.api.StoreReadLayer;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_PROPERTY_KEY;
 

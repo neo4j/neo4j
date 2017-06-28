@@ -46,7 +46,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.core.IsEqual.equalTo;

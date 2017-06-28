@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.storageengine.api.Token;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,7 +45,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.toList;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
-import static org.neo4j.values.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public class PropertyIT extends KernelIntegrationTest
 {

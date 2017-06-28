@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class DelegatingIndexReader implements IndexReader
 {

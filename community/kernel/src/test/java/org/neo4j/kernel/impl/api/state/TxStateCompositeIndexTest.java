@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.txstate.ReadableDiffSets;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.ValueTuple;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Matchers.any;

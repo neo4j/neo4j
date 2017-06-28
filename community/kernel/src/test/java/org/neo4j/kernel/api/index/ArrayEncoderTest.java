@@ -27,8 +27,8 @@ import java.util.function.Function;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
-import org.neo4j.values.Value;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

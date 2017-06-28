@@ -50,7 +50,6 @@ import java.util.function.IntPredicate;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
-import org.neo4j.concurrent.Runnables;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.BoundedIterable;
@@ -99,7 +98,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.mockito.answer.AwaitAnswer;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;

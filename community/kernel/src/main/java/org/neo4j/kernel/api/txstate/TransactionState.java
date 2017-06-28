@@ -24,8 +24,8 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constaints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueTuple;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxState} for implementation details.

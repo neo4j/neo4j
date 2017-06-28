@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelExce
 import org.neo4j.kernel.api.legacyindex.AutoIndexOperations;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.values.Value;
+import org.neo4j.values.storable.Value;
 
 public class InternalAutoIndexOperations implements AutoIndexOperations
 {

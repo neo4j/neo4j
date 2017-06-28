@@ -26,7 +26,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.values.ValueTuple;
+import org.neo4j.values.storable.ValueTuple;
 
 class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexUpdater
