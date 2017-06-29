@@ -242,6 +242,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
+                    <!-- Integration tests spend significant time waiting, so we can run more things in parallel here-->
                     <forkCount>2C</forkCount>
                     <parallel>classes</parallel>
                     <!-- Misha says it is not safe to run tests with more than one thread per JVM -->
