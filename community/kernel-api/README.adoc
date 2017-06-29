@@ -11,8 +11,8 @@ These are Tobias's API proposals for how the Cypher Runtime should interact with
   This differentiation allows access to data available within the index which makes it possible to defer and sometimes avoid accessing the node store.
 * link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] is used for accessing properties for both nodes and relationships.
 * Property values (and other types of values used in the runtime) are represented by the link:src/main/java/org/neo4j/impl/kernel/api/Value.java[Value class], but for common predicates link:src/main/java/org/neo4j/impl/kernel/api/PropertyCursor.java[PropertyCursor] provides direct methods for performing these without de-serialization.
-* "Legacy Indexes" (called "Search Structures" in this API) are accessed through link:src/main/java/org/neo4j/impl/kernel/api/NodeSearchStructureCursor.java[NodeSearchStructureCursor] and link:src/main/java/org/neo4j/impl/kernel/api/EdgeSearchStructureCursor.java[EdgeSearchStructureCursor].
-  The shared base class link:src/main/java/org/neo4j/impl/kernel/api/SearchStructureCursor.java[SearchStructureCursor] defines access to the lucene information that leaks through from these search structures out via the "Core API".
+* "Manual Indexes" are accessed through link:src/main/java/org/neo4j/impl/kernel/api/NodeManualIndexCursor.java[NodeManualIndexCursor] and link:src/main/java/org/neo4j/impl/kernel/api/EdgeManualIndexCursor.java[EdgeManualIndexCursor].
+  The shared base class link:src/main/java/org/neo4j/impl/kernel/api/ManualIndexCursor.java[ManualIndexCursor] defines access to the lucene information that leaks through from these search structures out via the "Core API".
 * Parallel scans are initialized through a (thread safe) link:src/main/java/org/neo4j/impl/kernel/api/Scan.java[Scan initializer].
   The usage of these is to initialize one cursor per thread.
   Each thread-local cursor will then proceed through ranges of underlying data elements automatically - no re-initialization is required.

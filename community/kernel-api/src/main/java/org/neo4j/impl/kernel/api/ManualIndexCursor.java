@@ -19,9 +19,9 @@
  */
 package org.neo4j.impl.kernel.api;
 
-/**
- * Cursor for accessing manual index nodes.
- */
-public interface NodeSearchStructureCursor extends NodeIndexCursor, SearchStructureCursor
+interface ManualIndexCursor
 {
+    int totalExpectedCursorSize();
+
+    float score();
 }

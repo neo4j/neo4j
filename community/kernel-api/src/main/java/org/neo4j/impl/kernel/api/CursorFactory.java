@@ -43,9 +43,9 @@ public interface CursorFactory
 
     NodeLabelIndexCursor allocateNodeLabelIndexCursor();
 
-    // "legacy" indexes
+    // manual indexes
 
-    NodeSearchStructureCursor allocateNodeSearchStructureCursor();
+    NodeManualIndexCursor allocateNodeManualIndexCursor();
 
-    EdgeSearchStructureCursor allocateEdgeSearchStructureCursor();
+    EdgeManualIndexCursor allocateEdgeManualIndexCursor();
 }

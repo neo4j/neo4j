@@ -22,6 +22,6 @@ package org.neo4j.impl.kernel.api;
 /**
  * Cursor for accessing manual index edges.
  */
-public interface EdgeSearchStructureCursor extends EdgeIndexCursor, SearchStructureCursor
+public interface EdgeManualIndexCursor extends EdgeIndexCursor, ManualIndexCursor
 {
 }
