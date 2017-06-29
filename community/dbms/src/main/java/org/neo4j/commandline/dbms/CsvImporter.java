@@ -108,8 +108,8 @@ class CsvImporter implements Importer
         Collector badCollector = badCollector( badOutput, isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
                 collect( ignoreBadRelationships, ignoreDuplicateNodes, ignoreExtraColumns ) );
 
-        Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration( null, false,
-                databaseConfig ) );
+        Configuration configuration = new WrappedBatchImporterConfigurationForNeo4jAdmin( importConfiguration(
+                null, false, databaseConfig, storeDir ) );
         CsvInput input = new CsvInput(
                 nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                 relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),

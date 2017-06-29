@@ -19,20 +19,18 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.concurrent.AsyncApply;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
-import org.neo4j.unsafe.impl.batchimport.executor.ParkStrategy;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 
 import static java.lang.System.currentTimeMillis;
 import static java.lang.System.nanoTime;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor.DEFAULT_PARK_STRATEGY;
-import static org.neo4j.unsafe.impl.batchimport.staging.Processing.await;
 
 /**
  * {@link Step} that uses {@link TaskExecutor} as a queue and execution mechanism.
@@ -54,7 +52,6 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     // Time stamp for when we processed the last queued batch received from upstream.
     // Useful for tracking how much time we spend waiting for batches from upstream.
     private final AtomicLong lastBatchEndTime = new AtomicLong();
-    private final ParkStrategy park = new ParkStrategy.Park( 1, MILLISECONDS );
 
     protected ProcessorStep( StageControl control, String name, Configuration config, int maxProcessors,
             StatsProvider... additionalStatsProviders )
@@ -158,20 +155,52 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     }
 
     @SuppressWarnings( "unchecked" )
-    private void sendDownstream( long ticket, Object batch )
+    private AsyncApply sendDownstream( long ticket, Object batch, AsyncApply downstreamAsync )
     {
         if ( guarantees( ORDER_SEND_DOWNSTREAM ) )
         {
-            await( rightDoneTicket, ticket, healthChecker, park );
+            AsyncApply async = downstreamWorkSync.applyAsync( new SendDownstream( ticket, batch, downstreamIdleTime ) );
+            if ( downstreamAsync != null )
+            {
+                try
+                {
+                    downstreamAsync.await();
+                    async.await();
+                    return null;
+                }
+                catch ( ExecutionException e )
+                {
+                    issuePanic( e.getCause() );
+                }
+            }
+            else
+            {
+                return async;
+            }
         }
-        downstreamIdleTime.add( downstream.receive( ticket, batch ) );
-        doneBatches.incrementAndGet();
+        else
+        {
+            downstreamIdleTime.add( downstream.receive( ticket, batch ) );
+            doneBatches.incrementAndGet();
+        }
+        return null;
     }
 
     @Override
     protected void done()
     {
         lastCallForEmittingOutstandingBatches( new Sender() );
+        if ( downstreamWorkSync != null )
+        {
+            try
+            {
+                downstreamWorkSync.apply( new SendDownstream( -1, null, downstreamIdleTime ) );
+            }
+            catch ( ExecutionException e )
+            {
+                issuePanic( e.getCause() );
+            }
+        }
         super.done();
     }
 
@@ -183,6 +212,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
     {
         private long sendTime;
         private long ticket;
+        private AsyncApply downstreamAsync;
 
         @Override
         public void send( Object batch )
@@ -190,7 +220,7 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
             long time = nanoTime();
             try
             {
-                sendDownstream( ticket, batch );
+                downstreamAsync = sendDownstream( ticket, batch, downstreamAsync );
             }
             finally
             {

@@ -27,7 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.staging.Step;
 
 import static java.lang.Math.min;
 import static java.lang.Math.round;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.io.ByteUnit.gibiBytes;

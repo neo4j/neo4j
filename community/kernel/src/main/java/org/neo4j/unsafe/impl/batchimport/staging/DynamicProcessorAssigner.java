@@ -51,7 +51,7 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
 
     public DynamicProcessorAssigner( Configuration config )
     {
-        super( 500, MILLISECONDS );
+        super( 100, MILLISECONDS );
         this.config = config;
         this.availableProcessors = config.maxNumberOfProcessors();
     }
@@ -83,7 +83,6 @@ public class DynamicProcessorAssigner extends ExecutionMonitor.Adapter
         Pair<Step<?>,Float> bottleNeck = execution.stepsOrderedBy( Keys.avg_processing_time, false ).iterator().next();
         Step<?> bottleNeckStep = bottleNeck.first();
         long doneBatches = batches( bottleNeckStep );
-        int usedPermits = 0;
         if ( bottleNeck.other() > 1.0f &&
              batchesPassedSinceLastChange( bottleNeckStep, doneBatches ) >= config.movingAverageSize() )
         {

@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.LongPredicate;
 
+import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.util.MovingAverage;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
@@ -47,6 +48,7 @@ public abstract class AbstractStep<T> implements Step<T>
     private volatile String name;
     @SuppressWarnings( "rawtypes" )
     protected volatile Step downstream;
+    protected volatile WorkSync<Downstream,SendDownstream> downstreamWorkSync;
     private volatile boolean endOfUpstream;
     protected volatile Throwable panic;
     private volatile boolean completed;
@@ -167,6 +169,8 @@ public abstract class AbstractStep<T> implements Step<T>
     {
         assert downstream != this;
         this.downstream = downstream;
+        //noinspection unchecked
+        this.downstreamWorkSync = new WorkSync<>( new Downstream( (Step<Object>) downstream, doneBatches ) );
     }
 
     @Override
