@@ -379,7 +379,7 @@ public class GBPTreeRecoveryIT
 
     private static GBPTree<MutableLong,MutableLong> createIndex( PageCache pageCache, File file ) throws IOException
     {
-        return new GBPTreeBuilder( pageCache, file, new SimpleLongLayout() ).build();
+        return new GBPTreeBuilder<>( pageCache, file, new SimpleLongLayout() ).build();
     }
 
     private PageCache createPageCache()

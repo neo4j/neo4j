@@ -104,7 +104,7 @@ public class GBPTreeConcurrencyIT
         int pageSize = 256;
         PageCache pageCache =
                 pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder( pageCache, directory.file( "index" ), layout ).build();
+        return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
 
     @After

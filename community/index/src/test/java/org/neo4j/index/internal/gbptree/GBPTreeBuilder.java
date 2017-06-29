@@ -40,13 +40,13 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
  */
 class GBPTreeBuilder<KEY,VALUE>
 {
-    PageCache pageCache;
-    File file;
-    int tentativePageSize = 0;
-    Monitor monitor = NO_MONITOR;
-    Header.Reader headerReader = NO_HEADER_READER;
-    Layout<KEY,VALUE> layout;
-    Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
+    private PageCache pageCache;
+    private File file;
+    private int tentativeIndexPageSize;
+    private Monitor monitor = NO_MONITOR;
+    private Header.Reader headerReader = NO_HEADER_READER;
+    private Layout<KEY,VALUE> layout;
+    private Consumer<PageCursor> headerWriter = NO_HEADER_WRITER;
 
     GBPTreeBuilder()
     {
@@ -77,9 +77,9 @@ class GBPTreeBuilder<KEY,VALUE>
         return this;
     }
 
-    GBPTreeBuilder<KEY,VALUE> withIndexPageSize( int tentativePageSize )
+    GBPTreeBuilder<KEY,VALUE> withIndexPageSize( int tentativeIndexPageSize )
     {
-        this.tentativePageSize = tentativePageSize;
+        this.tentativeIndexPageSize = tentativeIndexPageSize;
         return this;
     }
 
@@ -103,6 +103,6 @@ class GBPTreeBuilder<KEY,VALUE>
 
     GBPTree<KEY,VALUE> build() throws IOException
     {
-        return new GBPTree<>( pageCache, file, layout, tentativePageSize, monitor, headerReader, headerWriter );
+        return new GBPTree<>( pageCache, file, layout, tentativeIndexPageSize, monitor, headerReader, headerWriter );
     }
 }

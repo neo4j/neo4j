@@ -360,11 +360,12 @@ public class GBPTreeTest
     {
         // GIVEN
         int pageSize = 256;
-        GBPTreeBuilder<MutableLong,MutableLong> builder = index( pageSize );
+        PageCache pageCache = createPageCache( pageSize );
+        GBPTreeBuilder<MutableLong,MutableLong> builder = new GBPTreeBuilder<>( pageCache, indexFile, layout );
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
         }
-        setFormatVersion( builder.pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
+        setFormatVersion( pageCache, pageSize, GBPTree.FORMAT_VERSION - 1 );
 
         try
         {
@@ -454,7 +455,7 @@ public class GBPTreeTest
         AtomicBoolean throwOnNextIO = new AtomicBoolean();
         PageCache controlledPageCache = pageCacheThatThrowExceptionWhenToldTo( no, throwOnNextIO );
         try ( GBPTree<MutableLong, MutableLong> index =
-                new GBPTreeBuilder( controlledPageCache, indexFile, layout ).build() )
+                new GBPTreeBuilder<>( controlledPageCache, indexFile, layout ).build() )
         {
             // WHEN
             assert throwOnNextIO.compareAndSet( false, true );
@@ -697,7 +698,8 @@ public class GBPTreeTest
         AtomicBoolean enabled = new AtomicBoolean();
         Barrier.Control barrier = new Barrier.Control();
         PageCache pageCacheWithBarrier = pageCacheWithBarrierInClose( enabled, barrier );
-        GBPTree<MutableLong,MutableLong> index = new GBPTreeBuilder( pageCacheWithBarrier, indexFile, layout ).build();
+        GBPTree<MutableLong,MutableLong> index =
+                new GBPTreeBuilder<>( pageCacheWithBarrier, indexFile, layout ).build();
         long key = 10;
         try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
@@ -1064,7 +1066,8 @@ public class GBPTreeTest
             ephemeralFs.mkdirs( indexFile.getParentFile() );
             PageCache pageCache = pageCacheRule.getPageCache( ephemeralFs );
             EphemeralFileSystemAbstraction snapshot;
-            try ( GBPTree<MutableLong, MutableLong> index = new GBPTreeBuilder( pageCache, indexFile, layout ).build() )
+            try ( GBPTree<MutableLong, MutableLong> index =
+                    new GBPTreeBuilder<>( pageCache, indexFile, layout ).build() )
             {
                 insert( index, 0, 1 );
 
@@ -1077,7 +1080,7 @@ public class GBPTreeTest
             // THEN
             MonitorDirty monitorDirty = new MonitorDirty();
             pageCache = pageCacheRule.getPageCache( snapshot );
-            try ( GBPTree<MutableLong, MutableLong> ignored = new GBPTreeBuilder( pageCache, indexFile, layout )
+            try ( GBPTree<MutableLong, MutableLong> ignored = new GBPTreeBuilder<>( pageCache, indexFile, layout )
                     .with( pageCache ).with( monitorDirty ).build() )
             {
             }
@@ -1136,7 +1139,7 @@ public class GBPTreeTest
         try ( PageCache specificPageCache = createPageCache( pageSize ) )
         {
             try ( GBPTree<MutableLong,MutableLong> ignore =
-                    new GBPTreeBuilder( specificPageCache, indexFile, layout ).build() )
+                    new GBPTreeBuilder<>( specificPageCache, indexFile, layout ).build() )
             {
             }
 
@@ -1157,7 +1160,7 @@ public class GBPTreeTest
 
             // WHEN
             try ( GBPTree<MutableLong,MutableLong> index =
-                    new GBPTreeBuilder( specificPageCache, indexFile, layout ).build() )
+                    new GBPTreeBuilder<>( specificPageCache, indexFile, layout ).build() )
             {
                 try ( Writer<MutableLong, MutableLong> ignored = index.writer() )
                 {
@@ -1180,7 +1183,7 @@ public class GBPTreeTest
         AtomicBoolean throwOnNext = new AtomicBoolean();
         IOException exception = new IOException( "My failure" );
         PageCache pageCache = pageCacheThatThrowExceptionWhenToldTo( exception, throwOnNext );
-        try ( GBPTree<MutableLong, MutableLong> index = new GBPTreeBuilder( pageCache, indexFile, layout ).build() )
+        try ( GBPTree<MutableLong, MutableLong> index = new GBPTreeBuilder<>( pageCache, indexFile, layout ).build() )
         {
             // WHEN
             throwOnNext.set( true );
