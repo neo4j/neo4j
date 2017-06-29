@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering;
 
-import static org.neo4j.causalclustering.PortConstants.EphemeralPortMinimum;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -29,10 +27,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
- * A source for free ports from the ephemeral/ dynamic port range, suitable for short lived things like tests.
+ * A source for free ports on this machine
  */
 public class PortAuthority
 {
+    // this is quite an arbitrary choice and not currently configurable - but it works.
+    private static final int PORT_RANGE_MINIMUM = 20000;
+
     private static final PortProvider portProvider;
 
     static
@@ -41,7 +42,7 @@ public class PortAuthority
 
         if ( portAuthorityDirectory == null )
         {
-            portProvider = new SimplePortProvider( new DefaultPortProbe(), EphemeralPortMinimum );
+            portProvider = new SimplePortProvider( new DefaultPortProbe(), PORT_RANGE_MINIMUM );
         }
         else
         {
@@ -49,7 +50,7 @@ public class PortAuthority
             {
                 Path directory = Paths.get( portAuthorityDirectory );
                 Files.createDirectories( directory );
-                PortRepository portRepository = new PortRepository( directory, 20000 );
+                PortRepository portRepository = new PortRepository( directory, PORT_RANGE_MINIMUM );
                 PortProbe portProbe = new DefaultPortProbe();
                 portProvider = new CoordinatingPortProvider( portRepository, portProbe );
             }
@@ -62,6 +63,13 @@ public class PortAuthority
 
     public static int allocatePort()
     {
+        String trace = buildTrace();
+
+        return portProvider.getNextFreePort( trace );
+    }
+
+    private static String buildTrace()
+    {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         try ( PrintWriter printWriter = new PrintWriter( outputStream ) )
@@ -69,6 +77,6 @@ public class PortAuthority
             new Exception().printStackTrace( printWriter );
         }
 
-        return portProvider.getNextFreePort( new String( outputStream.toByteArray() ) );
+        return new String( outputStream.toByteArray() );
     }
 }

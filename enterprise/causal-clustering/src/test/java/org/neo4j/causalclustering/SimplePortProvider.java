@@ -39,7 +39,7 @@ public class SimplePortProvider implements PortProvider
     }
 
     @Override
-    public synchronized int getNextFreePort( String trace )
+    public synchronized int getNextFreePort( String ignored )
     {
         while ( currentPort <= EphemeralPortMaximum )
         {
@@ -51,6 +51,6 @@ public class SimplePortProvider implements PortProvider
             currentPort++;
         }
 
-        throw new IllegalStateException( "There are no more ephemeral/ dynamic ports available" );
+        throw new IllegalStateException( "There are no more ports available" );
     }
 }

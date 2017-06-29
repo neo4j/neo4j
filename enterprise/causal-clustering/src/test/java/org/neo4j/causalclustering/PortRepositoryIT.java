@@ -104,7 +104,7 @@ public class PortRepositoryIT
         }
         catch ( IllegalStateException e )
         {
-            assertThat( e.getMessage(), is( "There are no more ephemeral/ dynamic ports available" ) );
+            assertThat( e.getMessage(), is( "There are no more ports available" ) );
         }
     }
 }

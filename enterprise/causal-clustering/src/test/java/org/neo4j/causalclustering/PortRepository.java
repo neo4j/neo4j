@@ -49,8 +49,10 @@ public class PortRepository
 
             try
             {
+                // synchronize between processes on this machine
                 Files.createFile( portFilePath );
 
+                // write a trace for debugging purposes
                 try ( FileOutputStream fileOutputStream = new FileOutputStream( portFilePath.toFile(), true ) )
                 {
                     fileOutputStream.write( trace.getBytes() );
@@ -69,6 +71,6 @@ public class PortRepository
             }
         }
 
-        throw new IllegalStateException( "There are no more ephemeral/ dynamic ports available" );
+        throw new IllegalStateException( "There are no more ports available" );
     }
 }
