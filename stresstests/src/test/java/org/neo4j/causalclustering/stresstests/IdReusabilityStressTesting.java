@@ -44,8 +44,11 @@ import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helper.RepeatUntilCallable;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -70,6 +73,7 @@ public class IdReusabilityStressTesting
     private static final String DEFAULT_DURATION_IN_MINUTES = "30";
     private static final String DEFAULT_REELECT_INTERVAL_IN_SECONDS = "60";
     private static final String DEFAULT_WORKING_DIR = new File( getProperty( "java.io.tmpdir" ) ).getPath();
+    private static final RelationshipType RELATIONSHIP_TYPE = RelationshipType.withName( "testType" );
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
@@ -180,7 +184,9 @@ public class IdReusabilityStressTesting
             {
                 for ( int j = 0; j < 1_000; j++ )
                 {
-                    db.createNode();
+                    Node start = db.createNode();
+                    Node end = db.createNode();
+                    start.createRelationshipTo( end, RELATIONSHIP_TYPE );
                 }
                 tx.success();
             } );
@@ -236,7 +242,9 @@ public class IdReusabilityStressTesting
             {
                 cluster.coreTx( ( db, tx ) ->
                 {
-                    db.createNode();
+                    Node nodeStart = db.createNode();
+                    Node nodeEnd = db.createNode();
+                    nodeStart.createRelationshipTo( nodeEnd, RELATIONSHIP_TYPE );
                     tx.success();
                 } );
             }
@@ -310,6 +318,7 @@ public class IdReusabilityStressTesting
                 cluster.coreTx( ( db, tx ) ->
                 {
                     Node node = db.getNodeById( rnd.nextInt( idHighRange ) );
+                    Iterables.stream( node.getRelationships() ).forEach( Relationship::delete );
                     node.delete();
 
                     tx.success();
