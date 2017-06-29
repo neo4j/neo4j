@@ -103,12 +103,10 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
     }
 
     @Override
-    protected GraphDatabaseService createGraphDatabase( EphemeralFileSystemAbstraction fs )
+    protected GraphDatabaseService createGraphDatabase()
     {
-        return new TestEnterpriseGraphDatabaseFactory()
-                .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder()
-                .newGraphDatabase();
+        return new TestEnterpriseGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+                .newEmbeddedDatabase( testDir.graphDbDir() );
     }
 
     @Test
@@ -125,6 +123,30 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
 
         // given
         commit();
+        ReadOperations readOperations = readOperationsInNewTransaction();
+
+        // when
+        Iterator<?> constraints = readOperations.constraintsGetAll();
+
+        // then
+        assertEquals( constraint, single( constraints ) );
+    }
+
+    @Test
+    public void shouldBeAbleToStoreAndRetrieveConstraintAfterRestart() throws Exception
+    {
+        // given
+        Statement statement = statementInNewTransaction( SecurityContext.AUTH_DISABLED );
+
+        // when
+        ConstraintDescriptor constraint = createConstraint( statement.schemaWriteOperations(), descriptor );
+
+        // then
+        assertEquals( constraint, single( statement.readOperations().constraintsGetAll() ) );
+
+        // given
+        commit();
+        restartDb();
         ReadOperations readOperations = readOperationsInNewTransaction();
 
         // when

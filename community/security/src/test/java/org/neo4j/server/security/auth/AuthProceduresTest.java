@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -68,7 +69,7 @@ public class AuthProceduresTest extends KernelIntegrationTest
     }
 
     @Override
-    protected TestGraphDatabaseBuilder configure( TestGraphDatabaseBuilder graphDatabaseBuilder )
+    protected GraphDatabaseBuilder configure( GraphDatabaseBuilder graphDatabaseBuilder )
     {
         graphDatabaseBuilder.setConfig( GraphDatabaseSettings.auth_enabled, "true" );
         return graphDatabaseBuilder;
