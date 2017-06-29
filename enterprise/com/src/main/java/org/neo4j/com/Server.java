@@ -19,30 +19,6 @@
  */
 package org.neo4j.com;
 
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
-import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.NamedThreadFactory.daemon;
-import static org.neo4j.helpers.NamedThreadFactory.named;
-
-import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
-import java.time.Clock;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
 import org.jboss.netty.bootstrap.ServerBootstrap;
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.buffer.ChannelBuffers;
@@ -59,6 +35,19 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.net.InetSocketAddress;
+import java.time.Clock;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
@@ -70,6 +59,15 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static java.util.concurrent.Executors.newCachedThreadPool;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.NamedThreadFactory.daemon;
+import static org.neo4j.helpers.NamedThreadFactory.named;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -194,17 +192,6 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         }
         catch ( Exception ex )
         {
-            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP" );
-            builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
-
-            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( builder.start().getInputStream() ) ) )
-            {
-                String output = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
-
-                System.out.println( "something wrong with " + socketAddress );
-                System.out.println( "lsof -i TCP:" + output );
-            }
-
             msgLog.error( "Failed to bind server to " + socketAddress, ex );
             bootstrap.releaseExternalResources();
             targetCallExecutor.shutdownNow();

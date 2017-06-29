@@ -19,14 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.BindException;
-import java.util.concurrent.TimeUnit;
-import java.util.function.BooleanSupplier;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
@@ -39,6 +31,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import io.netty.handler.stream.ChunkedWriteHandler;
+
+import java.net.BindException;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
+
 import org.neo4j.causalclustering.VersionDecoder;
 import org.neo4j.causalclustering.VersionPrepender;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol.State;
@@ -204,18 +202,6 @@ public class CatchupServer extends LifecycleAdapter
         }
         catch ( Exception e )
         {
-            System.out.println( "problems with " + listenAddress );
-//            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP:" + listenAddress.getPort() );
-            ProcessBuilder builder = new ProcessBuilder( "lsof", "-i", "TCP" );
-            builder.inheritIO().redirectOutput( ProcessBuilder.Redirect.PIPE );
-
-            try ( BufferedReader reader = new BufferedReader( new InputStreamReader( builder.start().getInputStream() ) ) )
-            {
-                String output = reader.lines().collect( Collectors.joining( System.lineSeparator() ) );
-
-                System.out.println( "lsof -i TCP:" + output );
-            }
-
             // thanks to netty we need to catch everything and do an instanceof because it does not declare properly
             // checked exception but it still throws them with some black magic at runtime.
             //noinspection ConstantConditions
