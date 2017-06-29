@@ -57,7 +57,8 @@ import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreSizeBean extends ManagementBeanProvider
 {
-    StoreSizeBean()
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
+    public StoreSizeBean()
     {
         super( StoreSize.class );
     }

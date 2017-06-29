@@ -41,7 +41,8 @@ import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreFileBean extends ManagementBeanProvider
 {
-    StoreFileBean()
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
+    public StoreFileBean()
     {
         super( StoreFile.class );
     }

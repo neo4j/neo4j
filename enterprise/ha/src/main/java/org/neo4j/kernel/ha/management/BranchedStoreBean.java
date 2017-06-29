@@ -43,6 +43,7 @@ import static org.neo4j.com.storecopy.StoreUtil.getBranchedDataRootDirectory;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class BranchedStoreBean extends ManagementBeanProvider
 {
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
     public BranchedStoreBean()
     {
         super( BranchedStore.class );

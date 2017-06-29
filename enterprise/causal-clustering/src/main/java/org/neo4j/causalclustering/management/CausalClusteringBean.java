@@ -39,7 +39,8 @@ import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIR
 @Service.Implementation( ManagementBeanProvider.class )
 public class CausalClusteringBean extends ManagementBeanProvider
 {
-    CausalClusteringBean()
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
+    public CausalClusteringBean()
     {
         super( CausalClustering.class );
     }
@@ -49,7 +50,7 @@ public class CausalClusteringBean extends ManagementBeanProvider
     {
         if ( isCausalClustering( management ) )
         {
-            return new CausalClusteringBeanImpl( management );
+            return new CausalClusteringBeanImpl( management, false );
         }
         return null;
     }
@@ -74,15 +75,6 @@ public class CausalClusteringBean extends ManagementBeanProvider
         private final ClusterStateDirectory clusterStateDirectory;
         private final RaftMachine raftMachine;
         private final FileSystemAbstraction fs;
-
-        CausalClusteringBeanImpl( ManagementData management ) throws NotCompliantMBeanException
-        {
-            super( management );
-            clusterStateDirectory = management.resolveDependency( ClusterStateDirectory.class );
-            raftMachine = management.resolveDependency( RaftMachine.class );
-
-            fs = management.getKernelData().getFilesystemAbstraction();
-        }
 
         CausalClusteringBeanImpl( ManagementData management, boolean isMXBean )
         {
