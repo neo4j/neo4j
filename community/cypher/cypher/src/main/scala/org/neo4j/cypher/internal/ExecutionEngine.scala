@@ -173,7 +173,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           val stateBefore = schemaState(tc)
           var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
           if (!touched) {
-            val labelIds: Seq[Int] = extractPlanLabels(plan, preParsedQuery.version, tc)
+            val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
             lockPlanLabels(tc, labelIds)
             val stateAfter = schemaState(tc)
             if (stateBefore eq stateAfter) {
@@ -206,30 +206,26 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
   }
 
-
-  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Int]) = {
-    labelIds.foreach {
-      tc.readOperations.releaseShared(ResourceTypes.LABEL, _)
-    }
+  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
+    tc.readOperations.releaseShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
   }
 
-  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Int]) = {
-    labelIds.foreach {
-      tc.readOperations.acquireShared(ResourceTypes.LABEL, _)
-    }
+  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
+    tc.readOperations.acquireShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
   }
 
-  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc: TransactionalContextWrapper): Seq[Int] = {
+  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc:
+  TransactionalContextWrapper): Seq[Long] = {
     import scala.collection.JavaConverters._
 
     def planLabels = {
-      plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId }
+      plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
     }
 
     version match {
       case CypherVersion.v3_3 => planLabels
       case CypherVersion.v3_2 => planLabels
-      case _ => tc.statement.readOperations().labelsGetAllTokens().asScala.map( t => t.id() ).toSeq
+      case _ => tc.statement.readOperations().labelsGetAllTokens().asScala.map( t => t.id().toLong ).toSeq
     }
   }
 

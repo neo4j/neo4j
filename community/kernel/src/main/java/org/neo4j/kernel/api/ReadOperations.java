@@ -284,11 +284,13 @@ public interface ReadOperations
     //== LOCKING OPERATIONS =====================
     //===========================================
 
-    void acquireExclusive( ResourceType type, long id );
-    void acquireShared(    ResourceType type, long id );
+    void acquireExclusive( ResourceType type, long... id );
 
-    void releaseExclusive( ResourceType type, long id );
-    void releaseShared(    ResourceType type, long id );
+    void acquireShared( ResourceType type, long... id );
+
+    void releaseExclusive( ResourceType type, long... id );
+
+    void releaseShared( ResourceType type, long... id );
 
     //===========================================
     //== LEGACY INDEX OPERATIONS ================

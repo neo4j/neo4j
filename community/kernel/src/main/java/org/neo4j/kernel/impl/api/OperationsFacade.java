@@ -993,28 +993,28 @@ public class OperationsFacade
 
     // <Locking>
     @Override
-    public void acquireExclusive( ResourceType type, long id )
+    public void acquireExclusive( ResourceType type, long... id )
     {
         statement.assertOpen();
         locking().acquireExclusive( statement, type, id );
     }
 
     @Override
-    public void acquireShared( ResourceType type, long id )
+    public void acquireShared( ResourceType type, long... id )
     {
         statement.assertOpen();
         locking().acquireShared( statement, type, id );
     }
 
     @Override
-    public void releaseExclusive( ResourceType type, long id )
+    public void releaseExclusive( ResourceType type, long... id )
     {
         statement.assertOpen();
         locking().releaseExclusive( statement, type, id );
     }
 
     @Override
-    public void releaseShared( ResourceType type, long id )
+    public void releaseShared( ResourceType type, long... id )
     {
         statement.assertOpen();
         locking().releaseShared( statement, type, id );

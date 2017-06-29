@@ -248,15 +248,15 @@ public class LeaderOnlyLockManager implements Locks
         }
 
         @Override
-        public void releaseShared( ResourceType resourceType, long resourceId )
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
         {
-            localClient.releaseShared( resourceType, resourceId );
+            localClient.releaseShared( resourceType, resourceIds );
         }
 
         @Override
-        public void releaseExclusive( ResourceType resourceType, long resourceId )
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
         {
-            localClient.releaseExclusive( resourceType, resourceId );
+            localClient.releaseExclusive( resourceType, resourceIds );
         }
 
         @Override

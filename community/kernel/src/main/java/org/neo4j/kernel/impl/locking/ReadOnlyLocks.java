@@ -71,13 +71,13 @@ public class ReadOnlyLocks implements Locks
         }
 
         @Override
-        public void releaseShared( ResourceType resourceType, long resourceId )
+        public void releaseShared( ResourceType resourceType, long... resourceIds )
         {
             fail();
         }
 
         @Override
-        public void releaseExclusive( ResourceType resourceType, long resourceId )
+        public void releaseExclusive( ResourceType resourceType, long... resourceIds )
         {
             fail();
         }

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.enterprise.lock.forseti;
 
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -35,8 +35,8 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIntMap;
 import org.neo4j.collection.primitive.PrimitiveLongVisitor;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.lock.forseti.ForsetiLockManager.DeadlockResolutionStrategy;
 import org.neo4j.kernel.impl.locking.ActiveLock;
@@ -536,21 +536,27 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
 
         try
         {
-            if ( releaseLocalLock( resourceType, resourceId, sharedLockCounts[resourceType.typeId()] ) )
+            PrimitiveLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
+            PrimitiveLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            ConcurrentMap<Long,ForsetiLockManager.Lock> resourceTypeLocks = lockMaps[resourceType.typeId()];
+            for ( long resourceId : resourceIds )
             {
-                return;
-            }
+                if ( releaseLocalLock( resourceType, resourceId, sharedLocks ) )
+                {
+                    return;
+                }
 
-            // Only release if we were not holding an exclusive lock as well
-            if ( !exclusiveLockCounts[resourceType.typeId()].containsKey( resourceId ) )
-            {
-                releaseGlobalLock( lockMaps[resourceType.typeId()], resourceId );
+                // Only release if we were not holding an exclusive lock as well
+                if ( !exclusiveLocks.containsKey( resourceId ) )
+                {
+                    releaseGlobalLock( resourceTypeLocks, resourceId );
+                }
             }
         }
         finally
@@ -560,46 +566,51 @@ public class ForsetiClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
 
         try
         {
-            if ( releaseLocalLock( resourceType, resourceId, exclusiveLockCounts[resourceType.typeId()] ) )
+            PrimitiveLongIntMap exclusiveLocks = exclusiveLockCounts[resourceType.typeId()];
+            ConcurrentMap<Long,ForsetiLockManager.Lock> resourceTypeLocks = lockMaps[resourceType.typeId()];
+            PrimitiveLongIntMap sharedLocks = sharedLockCounts[resourceType.typeId()];
+            for ( long resourceId : resourceIds )
             {
-                return;
-            }
-
-            ConcurrentMap<Long,ForsetiLockManager.Lock> lockMap = lockMaps[resourceType.typeId()];
-            if ( sharedLockCounts[resourceType.typeId()].containsKey( resourceId ) )
-            {
-                // We are still holding a shared lock, so we will release it to be reused
-                ForsetiLockManager.Lock lock = lockMap.get( resourceId );
-                if ( lock instanceof SharedLock )
+                if ( releaseLocalLock( resourceType, resourceId, exclusiveLocks ) )
                 {
-                    SharedLock sharedLock = (SharedLock) lock;
-                    if ( sharedLock.isUpdateLock() )
+                    return;
+                }
+
+                if ( sharedLocks.containsKey( resourceId ) )
+                {
+                    // We are still holding a shared lock, so we will release it to be reused
+                    ForsetiLockManager.Lock lock = resourceTypeLocks.get( resourceId );
+                    if ( lock instanceof SharedLock )
                     {
-                        sharedLock.releaseUpdateLock();
+                        SharedLock sharedLock = (SharedLock) lock;
+                        if ( sharedLock.isUpdateLock() )
+                        {
+                            sharedLock.releaseUpdateLock();
+                        }
+                        else
+                        {
+                            throw new IllegalStateException( "Incorrect state of exclusive lock. Lock should be updated " +
+                                    "to exclusive before attempt to release it. Lock: " + this );
+                        }
                     }
                     else
                     {
-                        throw new IllegalStateException( "Incorrect state of exclusive lock. Lock should be updated " +
-                                                         "to exclusive before attempt to release it. Lock: " + this );
+                        // in case if current lock is exclusive we swap it to new shared lock
+                        SharedLock sharedLock = new SharedLock( this );
+                        resourceTypeLocks.put( resourceId, sharedLock );
                     }
                 }
                 else
                 {
-                    // in case if current lock is exclusive we swap it to new shared lock
-                    SharedLock sharedLock = new SharedLock( this );
-                    lockMap.put( resourceId, sharedLock );
+                    // we do not hold shared lock so we just releasing it
+                    releaseGlobalLock( resourceTypeLocks, resourceId );
                 }
-            }
-            else
-            {
-                // we do not hold shared lock so we just releasing it
-                releaseGlobalLock( lockMap, resourceId );
             }
         }
         finally

@@ -61,12 +61,12 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
     }
 
