@@ -91,14 +91,12 @@ public class CoreEdgeMetricsIT
         cluster = clusterRule.startCluster();
 
         // when
-        CoreGraphDatabase coreDB = cluster.awaitLeader( 5, TimeUnit.SECONDS ).database();
-
-        try ( Transaction tx = coreDB.beginTx() )
+        CoreClusterMember coreMember = cluster.coreTx( ( db, tx ) ->
         {
-            Node node = coreDB.createNode( label( "boo" ) );
+            Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
-        }
+        } );
 
         // then
         for ( CoreClusterMember db : cluster.coreMembers() )
@@ -111,7 +109,7 @@ public class CoreEdgeMetricsIT
             assertAllNodesVisible( db.database() );
         }
 
-        File coreMetricsDir = new File( cluster.getCoreMemberById( 0 ).homeDir(), csvPath.getDefaultValue() );
+        File coreMetricsDir = new File( coreMember.homeDir(), csvPath.getDefaultValue() );
 
         assertEventually( "append index eventually accurate",
                 () -> readLongValue( metricsCsv( coreMetricsDir, CoreMetrics.APPEND_INDEX ) ),
