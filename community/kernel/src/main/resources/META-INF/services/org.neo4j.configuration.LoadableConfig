@@ -1,2 +1,3 @@
 org.neo4j.graphdb.factory.GraphDatabaseSettings
 org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory$Configuration
+org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig
