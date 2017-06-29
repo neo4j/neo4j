@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.rule.TestDirectory;
@@ -36,6 +38,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.io.fs.FileUtils.pathToFileAfterMove;
 
 public class FileUtilsTest
@@ -217,6 +220,28 @@ public class FileUtilsTest
         File to   = new File( "/a/b" );
 
         assertThat( pathToFileAfterMove( from, to, file ).getPath(), is( path( "/a/b/d/f" ) ) );
+    }
+
+    @Test
+    public void allMacsHaveHighIO() throws Exception
+    {
+        assumeTrue( SystemUtils.IS_OS_MAC );
+        assertTrue( FileUtils.highIODevice( Paths.get( "." ), false ) );
+    }
+
+    @Test
+    public void windowsNeverHaveHighIO() throws Exception
+    {
+        // Future work: Maybe we should do like on Mac and assume true on Windows as well?
+        assumeTrue( SystemUtils.IS_OS_WINDOWS );
+        assertFalse( FileUtils.highIODevice( Paths.get( "." ), false ) );
+    }
+
+    @Test
+    public void onLinuxDevShmHasHighIO() throws Exception
+    {
+        assumeTrue( SystemUtils.IS_OS_LINUX );
+        assertTrue( FileUtils.highIODevice( Paths.get( "/dev/shm" ), false ) );
     }
 
     private File directory( String name )

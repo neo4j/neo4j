@@ -383,8 +383,8 @@ public class FileUtils
 
                 Path device = Paths.get( name ).toRealPath(); // Use toRealPath to resolve any symlinks.
                 Path deviceName = device.getName( device.getNameCount() - 1 );
-                Path sysblock = Paths.get( "/sys/block" );
-                Path rotational = sysblock.resolve( deviceName ).resolve( "queue" ).resolve( "rotational" );
+
+                Path rotational = rotationalPathFor( deviceName );
                 if ( Files.exists( rotational ) )
                 {
                     return readFirstCharacter( rotational ) == '0';
@@ -397,8 +397,8 @@ public class FileUtils
                     {
                         len--;
                     }
-                    namePart = namePart.substring( 0, len );
-                    rotational = sysblock.resolve( namePart ).resolve( "queue" ).resolve( "rotational" );
+                    deviceName = Paths.get( namePart.substring( 0, len ) );
+                    rotational = rotationalPathFor( deviceName );
                     if ( Files.exists( rotational ) )
                     {
                         return readFirstCharacter( rotational ) == '0';
@@ -412,6 +412,11 @@ public class FileUtils
         }
 
         return defaultHunch;
+    }
+
+    private static Path rotationalPathFor( Path deviceName )
+    {
+        return Paths.get( "/sys/block" ).resolve( deviceName ).resolve( "queue" ).resolve( "rotational" );
     }
 
     private static int readFirstCharacter( Path file ) throws IOException
