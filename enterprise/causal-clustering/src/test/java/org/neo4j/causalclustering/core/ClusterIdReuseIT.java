@@ -17,10 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.scenarios;
+package org.neo4j.causalclustering.core;
 
 
 import org.apache.commons.lang3.mutable.MutableLong;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,7 +52,14 @@ public class ClusterIdReuseIT
     @Before
     public void setUp() throws Exception
     {
+        EnterpriseCoreEditionModule.idReuse = true;
         cluster = clusterRule.startCluster();
+    }
+
+    @After
+    public void tearDown()
+    {
+        EnterpriseCoreEditionModule.idReuse = false;
     }
 
     @Test

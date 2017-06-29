@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core;
 
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -31,15 +32,19 @@ import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.DefaultIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -49,10 +54,40 @@ public class EnterpriseCoreEditionModuleIntegrationTest
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() );
 
-    @Test
-    public void createBufferedIdComponentsByDefault() throws Exception
+    private Cluster cluster;
+
+    @After
+    public void tearDown()
     {
-        Cluster cluster = clusterRule.startCluster();
+        EnterpriseCoreEditionModule.idReuse = false;
+    }
+
+    @Test
+    public void createNonBufferedIdComponentsByDefaultWithoutIdReuseCapability() throws Exception
+    {
+        cluster = clusterRule.startCluster();
+        CoreClusterMember leader = cluster.awaitLeader();
+        DependencyResolver dependencyResolver = leader.database().getDependencyResolver();
+
+        IdController idController = dependencyResolver.resolveDependency( IdController.class );
+        IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency( IdGeneratorFactory.class );
+
+        assertThat( idController, instanceOf( DefaultIdController.class ) );
+        assertThat( idGeneratorFactory, instanceOf( FreeIdFilteredIdGeneratorFactory.class ) );
+
+        IdGenerator idGenerator = idGeneratorFactory.get( IdType.NODE );
+        idGenerator.freeId( 1 );
+        idGenerator.freeId( 2 );
+        idGenerator.freeId( 3 );
+
+        assertEquals( 0, idGenerator.getDefragCount() );
+    }
+
+    @Test
+    public void createBufferedIdComponentsWhenConfigured() throws Exception
+    {
+        EnterpriseCoreEditionModule.idReuse = true;
+        cluster = clusterRule.startCluster();
         CoreClusterMember leader = cluster.awaitLeader();
         DependencyResolver dependencyResolver = leader.database().getDependencyResolver();
 

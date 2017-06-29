@@ -99,6 +99,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.udc.UsageData;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -106,6 +107,8 @@ import org.neo4j.udc.UsageData;
  */
 public class EnterpriseCoreEditionModule extends EditionModule
 {
+    static boolean idReuse = FeatureToggles.flag( EnterpriseCoreEditionModule.class, "idReuse", false );
+
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
@@ -224,11 +227,12 @@ public class EnterpriseCoreEditionModule extends EditionModule
         coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(), platformModule, clusterStateDirectory.get(),
                 config, replicationModule.getReplicator(), consensusModule.raftMachine(), dependencies, localDatabase );
 
+        this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
+
         createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
 
-        this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
@@ -252,9 +256,17 @@ public class EnterpriseCoreEditionModule extends EditionModule
     protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
             IdGeneratorFactory editionIdGeneratorFactory )
     {
-        super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
-        this.idGeneratorFactory =
-                new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory, coreStateMachinesModule.freeIdCondition );
+        if ( idReuse )
+        {
+            super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+            this.idGeneratorFactory = new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory,
+                    coreStateMachinesModule.freeIdCondition );
+        }
+        else
+        {
+            idController = createDefaultIdController();
+            this.idGeneratorFactory = new FreeIdFilteredIdGeneratorFactory( editionIdGeneratorFactory, () -> false );
+        }
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
