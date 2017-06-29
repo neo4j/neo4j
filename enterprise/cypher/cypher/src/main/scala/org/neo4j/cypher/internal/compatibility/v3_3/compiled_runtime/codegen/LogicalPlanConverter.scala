@@ -56,6 +56,7 @@ object LogicalPlanConverter {
     case p: plans.Skip => skipAsCodeGenPlan(p)
     case p: ProduceResult => produceResultsAsCodeGenPlan(p)
     case p: plans.Projection => projectionAsCodeGenPlan(p)
+    case p: plans.Aggregation if hasLimit(p) => throw new CantCompileQueryException("Not able to combine aggregation and limit")
     case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
     case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
@@ -73,6 +74,12 @@ object LogicalPlanConverter {
     }
 
     override val logicalPlan: LogicalPlan = singleRow
+  }
+
+  private def hasLimit(p: LogicalPlan) = p.treeExists {
+    case _: plans.Limit => true
+    //top is limit + sort
+    case _: plans.Top => true
   }
 
   private def projectionAsCodeGenPlan(projection: plans.Projection) = new CodeGenPlan {

@@ -54,3 +54,19 @@ Feature: SkipLimitAcceptance.feature
       LIMIT -1
       """
     Then a SyntaxError should be raised at compile time: NegativeIntegerArgument
+
+  Scenario: Combining LIMIT and aggregation
+    And having executed:
+      """
+      CREATE (s:Person {name: 'Steven'})
+      """
+    When executing query:
+      """
+      MATCH (p:Person)
+      WITH p LIMIT 1
+      RETURN count(p) AS count
+      """
+    Then the result should be, in order:
+      | count |
+      |   1   |
+    And no side effects
