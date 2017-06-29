@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
@@ -48,7 +49,6 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -86,9 +86,11 @@ public class NeoStoreDataSourceTest
         {
             DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
                     NullLogProvider.getInstance().getLog( DatabaseHealth.class ) );
+            Dependencies dependencies = new Dependencies();
+            dependencies.satisfyDependency( databaseHealth );
 
             theDataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
-                    stringMap(), databaseHealth );
+                    dependencies );
 
             databaseHealth.panic( new Throwable() );
 
@@ -110,7 +112,7 @@ public class NeoStoreDataSourceTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws IOException
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap() );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
         ds.init();
         ds.start();
@@ -125,12 +127,9 @@ public class NeoStoreDataSourceTest
     @Test
     public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws IOException
     {
-        DatabaseHealth health = mock( DatabaseHealth.class );
-        when( health.isHealthy() ).thenReturn( true );
-
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache );
 
         ds.init();
         ds.start();
@@ -146,10 +145,11 @@ public class NeoStoreDataSourceTest
     {
         DatabaseHealth health = mock( DatabaseHealth.class );
         when( health.isHealthy() ).thenReturn( false );
-
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, stringMap(), health );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( health );
+        NeoStoreDataSource ds = dsRule.getDataSource( dir.graphDbDir(), fs.get(), pageCache, dependencies );
 
         ds.init();
         ds.start();
@@ -226,10 +226,11 @@ public class NeoStoreDataSourceTest
         AssertableLogProvider logProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( logProvider, logProvider );
         PageCache pageCache = pageCacheRule.getPageCache( fs.get() );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(), idGeneratorFactory,
-                idTypeConfigurationProvider,
-                pageCache, config, mock( DatabaseHealth.class ), logService );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.graphDbDir(), fs.get(),
+                pageCache, dependencies );
 
         try
         {
@@ -258,7 +259,9 @@ public class NeoStoreDataSourceTest
         IOException ex = new IOException( "boom!" );
         doThrow( ex ).when( databaseHealth )
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
-        NeoStoreDataSource dataSource = dsRule.getDataSource( storeDir, fs, pageCache, emptyMap(), databaseHealth );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependencies( databaseHealth );
+        NeoStoreDataSource dataSource = dsRule.getDataSource( storeDir, fs, pageCache, dependencies );
         dataSource.start();
 
         try

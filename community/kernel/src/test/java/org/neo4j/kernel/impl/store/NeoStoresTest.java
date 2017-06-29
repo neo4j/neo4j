@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.state.PropertyLoader;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -910,7 +911,9 @@ public class NeoStoresTest
 
     private void initializeStores( File storeDir, Map<String,String> additionalConfig ) throws IOException
     {
-        ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, additionalConfig );
+        Dependencies dependencies = new Dependencies();
+        dependencies.satisfyDependency( Config.embeddedDefaults( additionalConfig ) );
+        ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, dependencies );
         ds.init();
         ds.start();
 
