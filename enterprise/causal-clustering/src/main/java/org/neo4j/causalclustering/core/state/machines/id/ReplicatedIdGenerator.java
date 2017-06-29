@@ -19,6 +19,10 @@
  */
 package org.neo4j.causalclustering.core.state.machines.id;
 
+import java.io.File;
+
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.store.id.IdContainer;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
@@ -34,61 +38,71 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdType idType;
     private final Log log;
     private final ReplicatedIdRangeAcquirer acquirer;
-    private volatile long highId;
-    private volatile long defragCount;
-    private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
+    private long highId;
+    private IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
 
-    ReplicatedIdGenerator( IdType idType, long highId, ReplicatedIdRangeAcquirer acquirer, LogProvider
-            logProvider )
+    private IdContainer idContainer;
+
+    ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
+            ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse )
     {
         this.idType = idType;
         this.highId = highId;
         this.acquirer = acquirer;
         this.log = logProvider.getLog( getClass() );
+        idContainer = new IdContainer( fs, file, grabSize, aggressiveReuse );
+        idContainer.init();
     }
 
     @Override
-    public void close()
+    public synchronized void close()
     {
+        idContainer.close( highId );
     }
 
     @Override
-    public void freeId( long id )
+    public synchronized void freeId( long id )
     {
+        idContainer.freeId( id );
     }
 
     @Override
-    public long getHighId()
+    public synchronized long getHighId()
     {
         return highId;
     }
 
     @Override
-    public void setHighId( long id )
+    public synchronized void setHighId( long id )
     {
         this.highId = max( this.highId, id );
     }
 
     @Override
-    public long getHighestPossibleIdInUse()
+    public synchronized long getHighestPossibleIdInUse()
     {
         return highId - 1;
     }
 
     @Override
-    public long getNumberOfIdsInUse()
+    public synchronized long getNumberOfIdsInUse()
     {
-        return highId - defragCount;
+        return highId - getDefragCount();
     }
 
     @Override
     public synchronized long nextId()
     {
+        long id = idContainer.getReusableId();
+        if ( id != IdContainer.NO_RESULT )
+        {
+            return id;
+        }
+
         long nextId = idQueue.next();
         if ( nextId == VALUE_REPRESENTING_NULL )
         {
-            IdAllocation allocation;
-            allocation = acquirer.acquireIds( idType );
+            IdAllocation allocation = acquirer.acquireIds( idType );
 
             assert allocation.getIdRange().getRangeLength() > 0;
             log.debug( "Received id allocation " + allocation + " for " + idType );
@@ -99,7 +113,7 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         throw new UnsupportedOperationException( "Should never be called" );
     }
@@ -107,7 +121,6 @@ class ReplicatedIdGenerator implements IdGenerator
     private long storeLocally( IdAllocation allocation )
     {
         setHighId( allocation.getHighestIdInUse() + 1 ); // high id is certainly bigger than the highest id in use
-        this.defragCount = allocation.getDefragCount();
         this.idQueue = new IdRangeIterator( respectingHighId( allocation.getIdRange() ) );
         return idQueue.next();
     }
@@ -132,18 +145,19 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public long getDefragCount()
+    public synchronized long getDefragCount()
     {
-        return this.defragCount;
+        return idContainer.getFreeIdCount();
     }
 
     @Override
-    public void delete()
+    public synchronized void delete()
     {
+        idContainer.delete();
     }
 
     @Override
-    public String toString()
+    public synchronized String toString()
     {
         return getClass().getSimpleName() + "[" + this.idQueue + "]";
     }

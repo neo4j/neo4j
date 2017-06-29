@@ -86,14 +86,13 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
-import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -244,8 +243,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final IdReuseEligibility eligibleForReuse;
-    private final IdTypeConfigurationProvider idTypeConfigurationProvider;
     private final JobScheduler scheduler;
     private final Config config;
     private final LockService lockService;
@@ -274,6 +271,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
+    private final IdController idController;
     private final AccessCapability accessCapability;
 
     private StorageEngine storageEngine;
@@ -290,8 +288,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             File storeDir,
             Config config,
             IdGeneratorFactory idGeneratorFactory,
-            IdReuseEligibility eligibleForReuse,
-            IdTypeConfigurationProvider idTypeConfigurationProvider,
             LogService logService,
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
@@ -321,13 +317,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             AvailabilityGuard availabilityGuard,
             SystemNanoClock clock,
             AccessCapability accessCapability,
-            StoreCopyCheckPointMutex storeCopyCheckPointMutex )
+            StoreCopyCheckPointMutex storeCopyCheckPointMutex,
+            IdController idController )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.eligibleForReuse = eligibleForReuse;
-        this.idTypeConfigurationProvider = idTypeConfigurationProvider;
         this.tokenNameLookup = tokenNameLookup;
         this.dependencyResolver = dependencyResolver;
         this.scheduler = scheduler;
@@ -359,6 +354,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         this.accessCapability = accessCapability;
 
         readOnly = config.get( Configuration.read_only );
+        this.idController = idController;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
@@ -430,6 +426,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
 
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+
+            Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
+            idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
@@ -567,17 +566,12 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
             Runnable schemaStateChangeCallback, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
     {
-        // TODO we should break this dependency on the kernelModule (which has not yet been created at this point in
-        // TODO the code) and instead let information about generations of transactions flow through the StorageEngine
-        // TODO API
-        Supplier<KernelTransactionsSnapshot> transactionSnapshotSupplier =
-                () -> kernelModule.kernelTransactions().get();
-        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config, idGeneratorFactory,
-                eligibleForReuse, idTypeConfigurationProvider, pageCache, fs, logProvider, propertyKeyTokenHolder,
-                labelTokens, relationshipTypeTokens, schemaStateChangeCallback, constraintSemantics, scheduler,
-                tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering,
-                transactionSnapshotSupplier );
+        RecordStorageEngine storageEngine = new RecordStorageEngine( storeDir, config,
+                pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                schemaStateChangeCallback, constraintSemantics, scheduler, tokenNameLookup, lockService,
+                schemaIndexProvider, indexingServiceMonitor, databaseHealth, labelScanStoreProvider,
+                legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering, idGeneratorFactory,
+                idController );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

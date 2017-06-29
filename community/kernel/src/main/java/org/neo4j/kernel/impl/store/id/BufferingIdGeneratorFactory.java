@@ -41,25 +41,17 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     private final IdGeneratorFactory delegate;
     private final IdTypeConfigurationProvider idTypeConfigurationProvider;
 
-    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate, Supplier<KernelTransactionsSnapshot> boundaries,
+    public BufferingIdGeneratorFactory( IdGeneratorFactory delegate,
             IdReuseEligibility eligibleForReuse, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.delegate = delegate;
         this.idTypeConfigurationProvider = idTypeConfigurationProvider;
-        initialize( boundaries, eligibleForReuse );
+        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
     }
 
-    private void initialize( Supplier<KernelTransactionsSnapshot> boundaries, IdReuseEligibility eligibleForReuse )
+    public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
     {
-        this.boundaries = boundaries;
-        this.safeThreshold = snapshot -> snapshot.allClosed() && eligibleForReuse.isEligible( snapshot );
-        for ( BufferingIdGenerator generator : overriddenIdGenerators )
-        {
-            if ( generator != null )
-            {
-                generator.initialize( boundaries, safeThreshold );
-            }
-        }
+        boundaries = transactionsSnapshotSupplier;
     }
 
     @Override
@@ -72,32 +64,14 @@ public class BufferingIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( File filename, int grabSize, IdType idType, long highId, long maxId )
     {
+        assert boundaries != null : "Factory needs to be initialized before usage";
+
         IdGenerator generator = delegate.open( filename, grabSize, idType, highId, maxId );
         IdTypeConfiguration typeConfiguration = getIdTypeConfiguration(idType);
         if ( typeConfiguration.allowAggressiveReuse() )
         {
             BufferingIdGenerator bufferingGenerator = new BufferingIdGenerator( generator );
-
-            // If shutdown was CLEAN
-            // BufferingIdGeneratorFactory has lifecycle:
-            //   - Construct
-            //   - open (all store files)
-            //   - initialize
-            //
-            // If Shutdown was UNCLEAN
-            // BufferingIdGeneratorFactory has lifecycle:
-            //   - Construct
-            //   - open (all store files) will fail
-            //   - initialize (with all generators being null)
-            //   - recovery is performed
-            //   - open (all store files) again
-            //   - initialize will NOT be called again so...
-            //   - call initialize on generators after open
-            //   = that is why this if-statement is here
-            if ( boundaries != null )
-            {
-                bufferingGenerator.initialize( boundaries, safeThreshold );
-            }
+            bufferingGenerator.initialize( boundaries, safeThreshold );
             overriddenIdGenerators[idType.ordinal()] = bufferingGenerator;
             generator = bufferingGenerator;
         }

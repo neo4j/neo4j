@@ -23,12 +23,16 @@ import java.io.File;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BooleanSupplier;
 
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
+import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.replication.RaftReplicator;
 import org.neo4j.causalclustering.core.replication.Replicator;
+import org.neo4j.causalclustering.core.state.machines.id.CommandIndexTracker;
 import org.neo4j.causalclustering.core.state.machines.id.IdAllocationState;
+import org.neo4j.causalclustering.core.state.machines.id.IdReusabilityCondition;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdAllocationStateMachine;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdGeneratorFactory;
 import org.neo4j.causalclustering.core.state.machines.id.ReplicatedIdRangeAcquirer;
@@ -58,6 +62,7 @@ import org.neo4j.kernel.impl.factory.CommunityEditionModule;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
@@ -90,7 +95,7 @@ public class CoreStateMachinesModule
     public static final String ID_ALLOCATION_NAME = "id-allocation";
     public static final String LOCK_TOKEN_NAME = "lock-token";
 
-    public final ReplicatedIdGeneratorFactory idGeneratorFactory;
+    public final IdGeneratorFactory idGeneratorFactory;
     public final IdTypeConfigurationProvider idTypeConfigurationProvider;
     public final LabelTokenHolder labelTokenHolder;
     public final PropertyKeyTokenHolder propertyKeyTokenHolder;
@@ -99,9 +104,10 @@ public class CoreStateMachinesModule
     public final CommitProcessFactory commitProcessFactory;
 
     public final CoreStateMachines coreStateMachines;
+    public final BooleanSupplier freeIdCondition;
 
     public CoreStateMachinesModule( MemberId myself, PlatformModule platformModule, File clusterStateDirectory,
-            Config config, RaftReplicator replicator, LeaderLocator leaderLocator, Dependencies dependencies,
+            Config config, RaftReplicator replicator, RaftMachine raftMachine, Dependencies dependencies,
             LocalDatabase localDatabase )
     {
         StateStorage<IdAllocationState> idAllocationState;
@@ -131,12 +137,10 @@ public class CoreStateMachinesModule
                         logProvider );
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-
-        this.idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem,
-                idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider ) );
-
-        life.add( this.idGeneratorFactory );
+        CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
+        freeIdCondition = new IdReusabilityCondition( commandIndexTracker, raftMachine, myself );
+        this.idGeneratorFactory =
+                createIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider, idTypeConfigurationProvider );
 
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
@@ -168,12 +172,12 @@ public class CoreStateMachinesModule
                         logProvider );
 
         ReplicatedTransactionStateMachine replicatedTxStateMachine =
-                new ReplicatedTransactionStateMachine( replicatedLockTokenStateMachine,
+                new ReplicatedTransactionStateMachine( commandIndexTracker, replicatedLockTokenStateMachine,
                         config.get( state_machine_apply_max_batch_size ), logProvider );
 
         dependencies.satisfyDependencies( replicatedTxStateMachine );
 
-        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, leaderLocator,
+        lockManager = createLockManager( config, platformModule.clock, logging, replicator, myself, raftMachine,
                 replicatedLockTokenStateMachine );
 
         RecoverConsensusLogIndex consensusLogIndexRecovery = new RecoverConsensusLogIndex( dependencies, logProvider );
@@ -214,14 +218,12 @@ public class CoreStateMachinesModule
         return allocationSizes;
     }
 
-    private ReplicatedIdGeneratorFactory createIdGeneratorFactory(
-            FileSystemAbstraction fileSystem,
-            final ReplicatedIdRangeAcquirer idRangeAcquirer,
-            final LogProvider logProvider,
+    private IdGeneratorFactory createIdGeneratorFactory( FileSystemAbstraction fileSystem,
+            final ReplicatedIdRangeAcquirer idRangeAcquirer, final LogProvider logProvider,
             IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
-        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer, logProvider,
-                idTypeConfigurationProvider );
+        return new ReplicatedIdGeneratorFactory( fileSystem, idRangeAcquirer,
+                logProvider, idTypeConfigurationProvider );
     }
 
     private Locks createLockManager( final Config config, Clock clock, final LogService logging,

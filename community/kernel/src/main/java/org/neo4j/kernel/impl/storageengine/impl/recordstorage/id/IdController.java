@@ -20,7 +20,9 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
 
 
-import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import java.util.function.Supplier;
+
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -29,11 +31,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  */
 public interface IdController extends Lifecycle
 {
-    /**
-     * Retrieve id generation factory for current storage engine
-     * @return id generation factory
-     */
-    IdGeneratorFactory getIdGeneratorFactory();
 
     /**
      * Clear underlying id generation infrastructure (clear buffer of ids to reuse, reset buffers, etc.)
@@ -44,4 +41,6 @@ public interface IdController extends Lifecycle
      * Perform ids related maintenance.
      */
     void maintenance();
+
+    void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier );
 }

@@ -19,22 +19,48 @@
  */
 package org.neo4j.kernel.ha.factory;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.function.Predicate;
 
 import org.neo4j.com.storecopy.StoreUtil;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.test.ha.ClusterRule;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class HighlyAvailableEditionModuleTest
+public class HighlyAvailableEditionModuleIntegrationTest
 {
+    @Rule
+    public ClusterRule clusterRule = new ClusterRule( getClass() );
+
+    @Test
+    public void createBufferedIdComponentsByDefault() throws Exception
+    {
+        ClusterManager.ManagedCluster managedCluster = clusterRule.startCluster();
+        DependencyResolver dependencyResolver = managedCluster.getMaster().getDependencyResolver();
+
+        IdController idController = dependencyResolver.resolveDependency( IdController.class );
+        IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency( IdGeneratorFactory.class );
+
+        assertThat( idController, instanceOf( BufferedIdController.class ) );
+        assertThat( idGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
+    }
+
     @Test
     public void fileWatcherFileNameFilter()
     {

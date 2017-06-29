@@ -65,21 +65,17 @@ public class FreeIdKeeper implements Closeable
     private long maxReadPosition;
     private long readPosition; // the place from where we read. Always <= maxReadPosition
 
-    public FreeIdKeeper( StoreChannel channel, int threshold, boolean aggressiveReuse ) throws IOException
+    public FreeIdKeeper( StoreChannel channel, int threshold, boolean aggressiveReuse,  int initialPosition ) throws IOException
     {
         this.channel = channel;
         this.threshold = threshold;
         this.aggressiveReuse = aggressiveReuse;
-        this.lowWatermarkForChannelPosition = channel.position();
+        this.lowWatermarkForChannelPosition = initialPosition;
         readPosition = lowWatermarkForChannelPosition;
-        restoreIdsOnStartup();
-    }
 
-    private void restoreIdsOnStartup() throws IOException
-    {
-        maxReadPosition = channel.size(); // this is always true regardless of aggressiveReuse. It only matters once we start writing
+        // this is always true regardless of aggressiveReuse. It only matters once we start writing
+        maxReadPosition = this.channel.size();
         defraggedIdCount = ( maxReadPosition - lowWatermarkForChannelPosition ) / ID_ENTRY_SIZE;
-        readIdBatch();
     }
 
     public void freeId( long id )
@@ -247,26 +243,6 @@ public class FreeIdKeeper implements Closeable
                     "can go", newPosition, lowWatermarkForChannelPosition ) );
         }
         channel.position( newPosition );
-    }
-
-    /**
-     * Utility method that will dump all defragged id's to console. Do not call
-     * while running store using this id generator since it could corrupt the id
-     * generator (not thread safe). This method will close the id generator after
-     * being invoked.
-     */
-    // TODO make this a nice, cosy, reusable visitor instead?
-    public synchronized void dumpFreeIds() throws IOException
-    {
-        while ( canReadMoreIdBatches() )
-        {
-            readIdBatch();
-        }
-        for ( Long id : freeIds )
-        {
-            System.out.print( " " + id );
-        }
-        close();
     }
 
     private void defragReusableIdsInFile( ByteBuffer writeBuffer ) throws IOException

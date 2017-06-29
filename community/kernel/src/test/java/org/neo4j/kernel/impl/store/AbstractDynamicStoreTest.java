@@ -83,6 +83,7 @@ public class AbstractDynamicStoreTest
             DynamicRecord first = createDynamicRecord( 1, store, 0 );
             DynamicRecord second = createDynamicRecord( 2, store, 0 );
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
+            store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
             store.updateRecord( first );
@@ -108,6 +109,7 @@ public class AbstractDynamicStoreTest
             DynamicRecord first = createDynamicRecord( 1, store, 0 );
             DynamicRecord second = createDynamicRecord( 2, store, 0 );
             DynamicRecord third = createDynamicRecord( 3, store, 10 );
+            store.setHighId( 3 );
 
             first.setNextBlock( second.getId() );
             store.updateRecord( first );

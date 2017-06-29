@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.junit.After;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -31,8 +32,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Predicate;
 import java.util.stream.LongStream;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -269,7 +268,7 @@ public class NodeStoreTest
     public void shouldCloseStoreFileOnFailureToOpen() throws Exception
     {
         // GIVEN
-        final AtomicBoolean fired = new AtomicBoolean();
+        final MutableBoolean fired = new MutableBoolean();
         FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( efs.get() )
         {
             @Override
@@ -280,14 +279,8 @@ public class NodeStoreTest
                     @Override
                     public int read( ByteBuffer dst ) throws IOException
                     {
-                        Exception stack = new Exception();
-                        if ( containsStackTraceElement( stack, item -> item.getMethodName().equals( "initGenerator" ) ) &&
-                             !containsStackTraceElement( stack, item -> item.getMethodName().equals( "createNodeStore" ) ) )
-                        {
-                            fired.set( true );
-                            throw new IOException( "Proving a point here" );
-                        }
-                        return super.read( dst );
+                        fired.setValue( true );
+                        throw new IOException( "Proving a point here" );
                     }
                 };
             }
@@ -303,24 +296,8 @@ public class NodeStoreTest
         {
             // THEN
             assertTrue( contains( e, IOException.class ) );
-            assertTrue( fired.get() );
+            assertTrue( fired.booleanValue() );
         }
-    }
-
-    private static boolean containsStackTraceElement( Throwable cause,
-            final Predicate<StackTraceElement> predicate )
-    {
-        return contains( cause, item ->
-        {
-            for ( StackTraceElement element : item.getStackTrace() )
-            {
-                if ( predicate.test( element ) )
-                {
-                    return true;
-                }
-            }
-            return false;
-        } );
     }
 
     @Test

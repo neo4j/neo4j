@@ -23,29 +23,24 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.IOException;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.store.InvalidIdGeneratorException;
 import org.neo4j.kernel.impl.store.id.validation.IdCapacityExceededException;
 import org.neo4j.kernel.impl.store.id.validation.NegativeIdException;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.ProcessTestUtil.executeSubProcess;
 
 public class IdGeneratorImplTest
 {
     @Rule
     public final EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final File file = new File( "ids" );
 
     @Test
@@ -166,95 +161,5 @@ public class IdGeneratorImplTest
 
         // Then
         assertThat( idGenerator.getHighId(), equalTo( 42L ) );
-    }
-
-    @Test
-    public void shouldForceStickyMark() throws Exception
-    {
-        // GIVEN
-        try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
-        {
-            File dir = new File( "target/test-data/" + getClass().getName() );
-            fs.mkdirs( dir );
-            File file = new File( dir, "ids" );
-            fs.deleteFile( file );
-            IdGeneratorImpl.createGenerator( fs, file, 0, false );
-
-            // WHEN opening the id generator, where the jvm crashes right after
-            executeSubProcess( getClass(), 1, MINUTES, file.getAbsolutePath() );
-
-            // THEN
-            try
-            {
-                IdGeneratorImpl.readHighId( fs, file );
-                fail( "Should have thrown, saying something with sticky generator" );
-            }
-            catch ( InvalidIdGeneratorException e )
-            {
-                // THEN Good
-            }
-        }
-    }
-
-    @Test
-    public void shouldDeleteIfOpen() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
-
-        // WHEN
-        idGenerator.delete();
-
-        // THEN
-        assertFalse( fsr.get().fileExists( file ) );
-    }
-
-    @Test
-    public void shouldDeleteIfClosed() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 42, false );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 100, 100, false, 42 );
-        idGenerator.close();
-
-        // WHEN
-        idGenerator.delete();
-
-        // THEN
-        assertFalse( fsr.get().fileExists( file ) );
-    }
-
-    @Test
-    public void shouldTruncateTheFileIfOverwriting() throws Exception
-    {
-        // GIVEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 10, true );
-        IdGeneratorImpl idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        for ( int i = 0; i < 17; i++ )
-        {
-            idGenerator.freeId( i );
-        }
-        idGenerator.close();
-        assertThat( (int) fsr.get().getFileSize( file ), greaterThan( IdGeneratorImpl.HEADER_SIZE ) );
-
-        // WHEN
-        IdGeneratorImpl.createGenerator( fsr.get(), file, 30, false );
-
-        // THEN
-        assertEquals( IdGeneratorImpl.HEADER_SIZE, (int) fsr.get().getFileSize( file ) );
-        assertEquals( 30, IdGeneratorImpl.readHighId( fsr.get(), file ) );
-        idGenerator = new IdGeneratorImpl( fsr.get(), file, 5, 100, false, 30 );
-        assertEquals( 30, idGenerator.nextId() );
-    }
-
-    public static void main( String[] args ) throws IOException
-    {
-        // Leave it opened
-        try ( DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
-        {
-            new IdGeneratorImpl( fileSystem, new File( args[0] ), 100, 100, false, 42 );
-        }
-        System.exit( 0 );
     }
 }

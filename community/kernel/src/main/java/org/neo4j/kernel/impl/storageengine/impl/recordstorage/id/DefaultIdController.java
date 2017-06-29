@@ -20,6 +20,9 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage.id;
 
 
+import java.util.function.Supplier;
+
+import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -29,17 +32,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class DefaultIdController extends LifecycleAdapter implements IdController
 {
-
-    private IdGeneratorFactory idGeneratorFactory;
-
-    public DefaultIdController( IdGeneratorFactory idGeneratorFactory )
+    public DefaultIdController()
     {
-        this.idGeneratorFactory = idGeneratorFactory;
-    }
-
-    public IdGeneratorFactory getIdGeneratorFactory()
-    {
-        return idGeneratorFactory;
     }
 
     @Override
@@ -49,6 +43,11 @@ public class DefaultIdController extends LifecycleAdapter implements IdControlle
 
     @Override
     public void maintenance()
+    {
+    }
+
+    @Override
+    public void initialize( Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier )
     {
     }
 }
