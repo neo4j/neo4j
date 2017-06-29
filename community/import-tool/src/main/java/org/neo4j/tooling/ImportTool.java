@@ -380,7 +380,7 @@ public class ImportTool
         boolean enableStacktrace;
         Number processors = null;
         Input input = null;
-        int badTolerance;
+        long badTolerance;
         Charset inputEncoding;
         boolean skipBadRelationships;
         boolean skipDuplicateNodes;
@@ -522,7 +522,7 @@ public class ImportTool
         finally
         {
             Collector collector = input.badCollector();
-            int numberOfBadEntries = collector.badEntries();
+            long numberOfBadEntries = collector.badEntries();
             collector.close();
             IOUtils.closeAll( badOutput );
 
@@ -582,7 +582,7 @@ public class ImportTool
         };
     }
 
-    private static Collector getBadCollector( int badTolerance, boolean skipBadRelationships,
+    private static Collector getBadCollector( long badTolerance, boolean skipBadRelationships,
             boolean skipDuplicateNodes, boolean ignoreExtraColumns, boolean skipBadEntriesLogging,
             OutputStream badOutput )
     {
@@ -590,10 +590,10 @@ public class ImportTool
         return skipBadEntriesLogging ? silentBadCollector( badTolerance, collect ) : badCollector( badOutput, badTolerance, collect );
     }
 
-    private static Integer parseNumberOrUnlimited( Args args, Options option )
+    private static long parseNumberOrUnlimited( Args args, Options option )
     {
         String value = args.get( option.key(), option.defaultValue().toString() );
-        return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Integer.parseInt( value );
+        return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Long.parseLong( value );
     }
 
     private static Config loadDbConfig( File file ) throws IOException
