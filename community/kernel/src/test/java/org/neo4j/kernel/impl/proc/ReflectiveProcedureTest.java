@@ -41,6 +41,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.Singleton;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -201,15 +202,16 @@ public class ReflectiveProcedureTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("Procedures must return a Stream of records, where a record is a concrete class%n" +
-                                 "that you define, with public non-final fields defining the fields in the record.%n" +
-                                 "If you''d like your procedure to return `String`, you could define a record class " +
-                                 "like:%n" +
-                                 "public class Output '{'%n" +
-                                 "    public String out;%n" +
-                                 "'}'%n" +
-                                 "%n" +
-                                 "And then define your procedure as returning `Stream<Output>`." ));
+        exception.expectMessage(
+                String.format( "Procedures must return a Stream of records, where a record is a concrete class%n" +
+                               "that you define, with public non-final fields defining the fields in the record.%n" +
+                               "If you''d like your procedure to return `String`, you could define a record class " +
+                               "like:%n" +
+                               "public class Output '{'%n" +
+                               "    public String out;%n" +
+                               "'}'%n" +
+                               "%n" +
+                               "And then define your procedure as returning `Stream<Output>`." ) );
 
         // When
         compile( ProcedureWithInvalidRecordOutput.class ).get( 0 );
@@ -220,10 +222,11 @@ public class ReflectiveProcedureTest
     {
         // Expect
         exception.expect( ProcedureException.class );
-        exception.expectMessage( String.format("The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
-                                 "annotated as a @Context field,%n" +
-                                 "but it is static. @Context fields must be public, non-final and non-static,%n" +
-                                 "because they are reset each time a procedure is invoked." ));
+        exception.expectMessage(
+                String.format( "The field `gdb` in the class named `ProcedureWithStaticContextAnnotatedField` is " +
+                               "annotated as a @Context field,%n" +
+                               "but it is static. @Context fields must be public, non-final and non-static,%n" +
+                               "because they are reset each time a procedure is invoked." ) );
 
         // When
         compile( ProcedureWithStaticContextAnnotatedField.class ).get( 0 );
@@ -246,7 +249,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc = compile( ProcedureWithOverriddenName.class ).get( 0 );
 
         // Then
-        assertEquals("org.mystuff.thisisActuallyTheName", proc.signature().name().toString() );
+        assertEquals( "org.mystuff.thisisActuallyTheName", proc.signature().name().toString() );
     }
 
     @Test
@@ -256,7 +259,7 @@ public class ReflectiveProcedureTest
         CallableProcedure proc = compile( ProcedureWithSingleName.class ).get( 0 );
 
         // Then
-        assertEquals("singleName", proc.signature().name().toString() );
+        assertEquals( "singleName", proc.signature().name().toString() );
     }
 
     @Test
@@ -278,7 +281,7 @@ public class ReflectiveProcedureTest
     public void shouldSupportProcedureDeprecation() throws Throwable
     {
         // Given
-        Log log = mock(Log.class);
+        Log log = mock( Log.class );
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, ProcedureConfig.DEFAULT );
 
@@ -314,9 +317,9 @@ public class ReflectiveProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.listCoolPeople") ) );
+                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.listCoolPeople" ) ) );
 
-        Log log = mock(Log.class);
+        Log log = mock( Log.class );
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
 
@@ -335,9 +338,9 @@ public class ReflectiveProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.NOTlistCoolPeople") ) );
+                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.NOTlistCoolPeople" ) ) );
 
-        Log log = mock(Log.class);
+        Log log = mock( Log.class );
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
 
@@ -346,8 +349,9 @@ public class ReflectiveProcedureTest
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
         // Then
         verify( log )
-                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( proc.isEmpty(), is(true) );
+                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't " +
+                       "be loaded." );
+        assertThat( proc.isEmpty(), is( true ) );
     }
 
     @Test
@@ -355,8 +359,8 @@ public class ReflectiveProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "empty") ) );
-        Log log = mock(Log.class);
+                genericMap( procedure_whitelist.name(), "empty" ) ) );
+        Log log = mock( Log.class );
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
 
@@ -373,8 +377,8 @@ public class ReflectiveProcedureTest
     {
         // Given
         ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "") ) );
-        Log log = mock(Log.class);
+                genericMap( procedure_whitelist.name(), "" ) ) );
+        Log log = mock( Log.class );
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
 
@@ -383,8 +387,9 @@ public class ReflectiveProcedureTest
                 procedureCompiler.compileProcedure( SingleReadOnlyProcedure.class, Optional.empty(), false );
         // Then
         verify( log )
-                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
-        assertThat( proc.isEmpty(), is(true) );
+                .warn( "The procedure 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't " +
+                       "be loaded." );
+        assertThat( proc.isEmpty(), is( true ) );
     }
 
     public static class MyOutputRecord
@@ -425,6 +430,20 @@ public class ReflectiveProcedureTest
         }
     }
 
+    @Test
+    public void shouldRunSingletonProcedure() throws Throwable
+    {
+        // Given
+        CallableProcedure proc = compile( SingletonProcedure.class ).get( 0 );
+
+        // When
+        RawIterator<Object[],ProcedureException> out1 = proc.apply( new BasicContext(), new Object[0] );
+        RawIterator<Object[],ProcedureException> out2 = proc.apply( new BasicContext(), new Object[0] );
+
+        // Then
+        assertEquals( out1.next()[0], out2.next()[0] );
+    }
+
     public static class SingleReadOnlyProcedure
     {
         @Procedure
@@ -449,7 +468,7 @@ public class ReflectiveProcedureTest
         @Procedure
         public Stream<NonStatic> voidOutput()
         {
-            return Stream.of(new NonStatic());
+            return Stream.of( new NonStatic() );
         }
 
         public class NonStatic
@@ -494,7 +513,7 @@ public class ReflectiveProcedureTest
     public static class ProcedureWithInvalidRecordOutput
     {
         @Procedure
-        public String test( )
+        public String test()
         {
             return "Testing";
         }
@@ -506,7 +525,7 @@ public class ReflectiveProcedureTest
         public static GraphDatabaseService gdb;
 
         @Procedure
-        public Stream<MyOutputRecord> test( )
+        public Stream<MyOutputRecord> test()
         {
             return null;
         }
@@ -515,7 +534,7 @@ public class ReflectiveProcedureTest
     public static class ProcedureThatThrowsNullMsgExceptionAtInvocation
     {
         @Procedure
-        public Stream<MyOutputRecord> throwsAtInvocation( )
+        public Stream<MyOutputRecord> throwsAtInvocation()
         {
             throw new IndexOutOfBoundsException();
         }
@@ -524,7 +543,7 @@ public class ReflectiveProcedureTest
     public static class ProcedureThatThrowsNullMsgExceptionMidStream
     {
         @Procedure
-        public Stream<MyOutputRecord> throwsInStream( )
+        public Stream<MyOutputRecord> throwsInStream()
         {
             return Stream.generate( () ->
             {
@@ -600,6 +619,23 @@ public class ReflectiveProcedureTest
         @Procedure( value = "badProc", deprecatedBy = "newProc" )
         public void badProc()
         {
+        }
+    }
+
+    @Singleton
+    public static class SingletonProcedure
+    {
+        private static long value;
+
+        public SingletonProcedure()
+        {
+            value = System.nanoTime();
+        }
+
+        @Procedure
+        public Stream<MyOutputRecord> value()
+        {
+            return Stream.of( new MyOutputRecord( Long.toHexString( value ) ) );
         }
     }
 

@@ -55,6 +55,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.PerformsWrites;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.Singleton;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -113,7 +114,7 @@ class ReflectiveProcedureCompiler
                 QualifiedName procName = extractName( fcnDefinition, method, valueName, definedName );
                 if ( config.isWhitelisted( procName.toString() ) )
                 {
-                    out.add( compileFunction( fcnDefinition, constructor, method,procName ) );
+                    out.add( compileFunction( fcnDefinition, constructor, method, procName ) );
                 }
                 else
                 {
@@ -230,7 +231,7 @@ class ReflectiveProcedureCompiler
     }
 
     private CallableProcedure compileProcedure( Class<?> procDefinition, MethodHandle constructor, Method method,
-            Optional<String> warning, boolean fullAccess, QualifiedName procName  )
+            Optional<String> warning, boolean fullAccess, QualifiedName procName )
             throws ProcedureException, IllegalAccessException
     {
         MethodHandle procedureMethod = lookup.unreflect( method );
@@ -267,7 +268,8 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( procName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
+                                           " is not available due to having restricted access rights, check " +
+                                           "configuration." );
                 log.warn( description.get() );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
@@ -276,10 +278,11 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        boolean singleton = procDefinition.isAnnotationPresent( Singleton.class );
         ProcedureSignature signature =
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
                         config.rolesFor( procName.toString() ), description, warning );
-        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
+        return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters, singleton );
     }
 
     private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
@@ -290,8 +293,9 @@ class ReflectiveProcedureCompiler
         if ( procName.namespace() == null || procName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, " +
-                            "e.g. `@UserFunction(\"org.example.com.%s\")", procName.name() );
+                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. " +
+                    "`@UserFunction(\"org.example.com.%s\")",
+                    procName.name() );
         }
 
         List<FieldSignature> inputSignature = inputSignatureDeterminer.signatureFor( method );
@@ -313,7 +317,8 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( procName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
+                                           " is not available due to having restricted access rights, check " +
+                                           "configuration." );
                 log.warn( description.get() );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
@@ -322,11 +327,13 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        boolean singleton = procDefinition.isAnnotationPresent( Singleton.class );
         UserFunctionSignature signature =
                 new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( procName.toString() ), description );
 
-        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters );
+        return new ReflectiveUserFunction( signature, constructor, procedureMethod, valueConverter, setters,
+                singleton );
     }
 
     private CallableUserAggregationFunction compileAggregationFunction( Class<?> definition, MethodHandle constructor,
@@ -335,8 +342,9 @@ class ReflectiveProcedureCompiler
         if ( funcName.namespace() == null || funcName.namespace().length == 0 )
         {
             throw new ProcedureException( Status.Procedure.ProcedureRegistrationFailed,
-                    "It is not allowed to define functions in the root namespace please use a namespace, " +
-                            "e.g. `@UserFunction(\"org.example.com.%s\")", funcName.name() );
+                    "It is not allowed to define functions in the root namespace please use a namespace, e.g. " +
+                    "`@UserFunction(\"org.example.com.%s\")",
+                    funcName.name() );
         }
 
         //find update and result method
@@ -427,7 +435,8 @@ class ReflectiveProcedureCompiler
             catch ( ComponentInjectionException e )
             {
                 description = Optional.of( funcName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
+                                           " is not available due to having restricted access rights, check " +
+                                           "configuration." );
                 log.warn( description.get() );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
@@ -437,12 +446,13 @@ class ReflectiveProcedureCompiler
             }
         }
 
+        boolean singleton = definition.isAnnotationPresent( Singleton.class );
         UserFunctionSignature signature =
                 new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                         config.rolesFor( funcName.toString() ), description );
 
         return new ReflectiveUserAggregationFunction( signature, constructor, creator, updateMethod, resultMethod,
-                valueConverter, setters );
+                valueConverter, setters, singleton );
     }
 
     private Optional<String> deprecated( Method method, Supplier<String> supplier, String warning )
@@ -514,12 +524,18 @@ class ReflectiveProcedureCompiler
 
     private abstract static class ReflectiveBase
     {
-
         final List<FieldInjections.FieldSetter> fieldSetters;
+        private final boolean singleton;
+        protected Object[] args;
+        protected Object cls;
+        protected final MethodHandle constructor;
 
-        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters )
+        ReflectiveBase( List<FieldInjections.FieldSetter> fieldSetters, MethodHandle constructor,
+                boolean singleton )
         {
             this.fieldSetters = fieldSetters;
+            this.constructor = constructor;
+            this.singleton = singleton;
         }
 
         protected void inject( Context ctx, Object object ) throws ProcedureException
@@ -530,12 +546,25 @@ class ReflectiveProcedureCompiler
             }
         }
 
-        protected Object[] args( int numberOfDeclaredArguments, Object cls, Object[] input )
+        protected void self( Object self )
         {
-            Object[] args = new Object[numberOfDeclaredArguments + 1];
-            args[0] = cls;
-            System.arraycopy( input, 0, args, 1, numberOfDeclaredArguments );
-            return args;
+            args[0] = self;
+        }
+
+        protected void args( Object[] input )
+        {
+            System.arraycopy( input, 0, args, 1, input.length );
+        }
+
+        protected void loadLazily( Context ctx, int numberOfDeclaredArguments ) throws Throwable
+        {
+            if ( !singleton || cls == null )
+            {
+                cls = constructor.invoke();
+                //API injection
+                inject( ctx, cls );
+                args = new Object[numberOfDeclaredArguments + 1];
+            }
         }
     }
 
@@ -545,16 +574,18 @@ class ReflectiveProcedureCompiler
         private final OutputMapper outputMapper;
         private final MethodHandle constructor;
         private final MethodHandle procedureMethod;
+        private final boolean singleton;
 
         ReflectiveProcedure( ProcedureSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, OutputMapper outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldInjections.FieldSetter> fieldSetters, boolean singleton )
         {
-            super( fieldSetters );
+            super( fieldSetters, constructor, singleton );
             this.constructor = constructor;
             this.procedureMethod = procedureMethod;
             this.signature = signature;
             this.outputMapper = outputMapper;
+            this.singleton = singleton;
         }
 
         @Override
@@ -580,12 +611,11 @@ class ReflectiveProcedureCompiler
                             numberOfDeclaredArguments, input.length );
                 }
 
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
-
-                // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
+                //Load class, inject API
+                loadLazily( ctx, numberOfDeclaredArguments );
+                //Set up argument
+                self( cls );
+                args( input );
 
                 Object rs = procedureMethod.invokeWithArguments( args );
 
@@ -659,15 +689,13 @@ class ReflectiveProcedureCompiler
 
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
-        private final MethodHandle constructor;
         private final MethodHandle udfMethod;
 
         ReflectiveUserFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle procedureMethod, TypeMappers.NeoValueConverter outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldInjections.FieldSetter> fieldSetters, boolean singleton )
         {
-            super( fieldSetters );
-            this.constructor = constructor;
+            super( fieldSetters, constructor, singleton );
             this.udfMethod = procedureMethod;
             this.signature = signature;
             this.valueConverter = outputMapper;
@@ -696,13 +724,13 @@ class ReflectiveProcedureCompiler
                             numberOfDeclaredArguments, input.length );
                 }
 
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
+                // Set up class, inject API etc
+                loadLazily( ctx, numberOfDeclaredArguments );
+                // Set up arguments
+                self( cls );
+                args( input );
 
                 // Call the method
-                Object[] args = args( numberOfDeclaredArguments, cls, input );
-
                 Object rs = udfMethod.invokeWithArguments( args );
 
                 return valueConverter.toNeoValue( rs );
@@ -729,7 +757,6 @@ class ReflectiveProcedureCompiler
 
         private final TypeMappers.NeoValueConverter valueConverter;
         private final UserFunctionSignature signature;
-        private final MethodHandle constructor;
         private final MethodHandle creator;
         private final MethodHandle updateMethod;
         private final MethodHandle resultMethod;
@@ -737,10 +764,10 @@ class ReflectiveProcedureCompiler
         ReflectiveUserAggregationFunction( UserFunctionSignature signature, MethodHandle constructor,
                 MethodHandle creator, MethodHandle updateMethod, MethodHandle resultMethod,
                 TypeMappers.NeoValueConverter outputMapper,
-                List<FieldInjections.FieldSetter> fieldSetters )
+                List<FieldInjections.FieldSetter> fieldSetters,
+                boolean singleton )
         {
-            super( fieldSetters );
-            this.constructor = constructor;
+            super( fieldSetters, constructor, singleton );
             this.creator = creator;
             this.updateMethod = updateMethod;
             this.resultMethod = resultMethod;
@@ -762,11 +789,11 @@ class ReflectiveProcedureCompiler
             // at least the executing session, but we don't yet have good interfaces to the kernel to model that with.
             try
             {
+                int numberOfDeclaredArguments = signature.inputSignature().size();
 
-                Object cls = constructor.invoke();
-                //API injection
-                inject( ctx, cls );
+                loadLazily( ctx, numberOfDeclaredArguments );
                 Object aggregator = creator.invoke( cls );
+                self( aggregator );
 
                 return new Aggregator()
                 {
@@ -775,7 +802,6 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            int numberOfDeclaredArguments = signature.inputSignature().size();
                             if ( numberOfDeclaredArguments != input.length )
                             {
                                 throw new ProcedureException( Status.Procedure.ProcedureCallFailed,
@@ -784,7 +810,7 @@ class ReflectiveProcedureCompiler
                                         numberOfDeclaredArguments, input.length );
                             }
                             // Call the method
-                            Object[] args = args( numberOfDeclaredArguments, aggregator, input );
+                            args( input );
 
                             updateMethod.invokeWithArguments( args );
                         }
@@ -809,7 +835,7 @@ class ReflectiveProcedureCompiler
                     {
                         try
                         {
-                            return valueConverter.toNeoValue( resultMethod.invoke(aggregator) );
+                            return valueConverter.toNeoValue( resultMethod.invoke( aggregator ) );
                         }
                         catch ( Throwable throwable )
                         {

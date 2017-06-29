@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
+import org.neo4j.procedure.Singleton;
 import org.neo4j.procedure.UserFunction;
 
 import static junit.framework.TestCase.assertEquals;
@@ -325,6 +326,19 @@ public class ReflectiveUserFunctionTest
         }
     }
 
+    @Test
+    public void shouldHandleSingletons() throws Throwable
+    {
+        CallableUserFunction func = compile( SingletonFunction.class ).get( 0 );
+
+        // When
+        Object out1 = func.apply( new BasicContext(), new Object[0] );
+        Object out2 = func.apply( new BasicContext(), new Object[0] );
+
+        // Then
+        assertThat(out1, equalTo( out2 ) );
+    }
+
     public static class LoggingFunction
     {
         @Context
@@ -484,6 +498,22 @@ public class ReflectiveUserFunctionTest
         public Object badFunc()
         {
             return null;
+        }
+    }
+
+    @Singleton
+    public static class SingletonFunction
+    {
+        private long value;
+        public SingletonFunction()
+        {
+            value = System.nanoTime();
+        }
+
+        @UserFunction
+        public long value()
+        {
+            return value;
         }
     }
 

@@ -45,6 +45,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Name;
+import org.neo4j.procedure.Singleton;
 import org.neo4j.procedure.UserAggregationFunction;
 import org.neo4j.procedure.UserAggregationResult;
 import org.neo4j.procedure.UserAggregationUpdate;
@@ -421,6 +422,20 @@ public class ReflectiveUserAggregationFunctionTest
                 fail( "Unexpected function: " + name );
             }
         }
+    }
+
+    @Test
+    public void shouldRunSingletonFunction() throws Throwable
+    {
+        // Given
+        CallableUserAggregationFunction func = compile( SingletonFunction.class ).get( 0 );
+
+        // When
+        CallableUserAggregationFunction.Aggregator aggregator1 = func.create( new BasicContext() );
+        CallableUserAggregationFunction.Aggregator aggregator2 = func.create( new BasicContext() );
+
+        // Then
+        assertEquals( aggregator1.result(), aggregator2.result() );
     }
 
     public static class SingleAggregationFunction
@@ -865,6 +880,44 @@ public class ReflectiveUserAggregationFunctionTest
             String result()
             {
                 return "Testing";
+            }
+        }
+    }
+
+    @Singleton
+    public static class SingletonFunction
+    {
+        private long value;
+
+        public SingletonFunction()
+        {
+            value = System.nanoTime();
+        }
+
+        @UserAggregationFunction
+        public InnerAggregator test()
+        {
+            return new InnerAggregator( value );
+        }
+
+        public static class InnerAggregator
+        {
+            private final long value;
+
+            public InnerAggregator( long value )
+            {
+                this.value = value;
+            }
+
+            @UserAggregationUpdate
+            public void update()
+            {
+            }
+
+            @UserAggregationResult
+            public long result()
+            {
+                return value;
             }
         }
     }
