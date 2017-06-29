@@ -20,7 +20,6 @@
 package org.neo4j.io.fs;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -719,49 +718,6 @@ public class FileUtils
         {
             super( e );
         }
-    }
-
-    /**
-     * Calculates the size of a given directory or file.
-     *
-     * @param path to the file or directory.
-     * @return the size, in bytes, of the file or the total size of the content in the directory, including
-     * subdirectories.
-     */
-    public static long size( File path )
-    {
-        final MutableLong size = new MutableLong();
-
-        try
-        {
-            Files.walkFileTree( path.toPath(), new SimpleFileVisitor<Path>()
-            {
-                @Override
-                public FileVisitResult visitFile( Path file, BasicFileAttributes attrs )
-                {
-                    size.add( attrs.size() );
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override
-                public FileVisitResult visitFileFailed( Path file, IOException exc )
-                {
-                    return FileVisitResult.CONTINUE; // Ignore exception
-                }
-
-                @Override
-                public FileVisitResult postVisitDirectory( Path dir, IOException exc )
-                {
-                    return FileVisitResult.CONTINUE; // Ignore exception
-                }
-            } );
-        }
-        catch ( IOException e )
-        {
-            throw new AssertionError( "Exceptions during file size calculations should never happen", e );
-        }
-
-        return size.getValue();
     }
 
     /**

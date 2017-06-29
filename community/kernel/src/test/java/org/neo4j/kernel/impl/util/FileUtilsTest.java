@@ -31,6 +31,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Paths;
 
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -47,6 +49,7 @@ public class FileUtilsTest
 {
     public TestDirectory testDirectory = TestDirectory.testDirectory();
     public ExpectedException expected = ExpectedException.none();
+    public FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Rule
     public RuleChain chain = RuleChain.outerRule( testDirectory ).around( expected );
@@ -256,7 +259,7 @@ public class FileUtilsTest
             fileWriter.append( 'a' );
         }
 
-        assertThat( size( file ), is( 1L )  );
+        assertThat( size( fs, file ), is( 1L )  );
     }
 
     @Test
@@ -275,7 +278,7 @@ public class FileUtilsTest
             fileWriter.append( 'a' );
         }
 
-        assertThat( size( dir ), is( 3L ) );
+        assertThat( size( fs, dir ), is( 3L ) );
     }
 
     private File directory( String name )
