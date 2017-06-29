@@ -1357,7 +1357,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val predicate = generator.declare(typeRef[IndexQuery], s"${iterVar}Query")
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
-    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
+    val boxedValue =
+      if (codeGenType.isPrimitive) Expression.box(value)
+      else invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]), value)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
       val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))

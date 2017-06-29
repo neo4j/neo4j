@@ -307,6 +307,20 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result.toList should contain theSameElementsAs List(Map("root" -> root1), Map("root" -> root2), Map("root" -> root3))
   }
 
+  test("should handle list properties in index") {
+    // Given
+    graph.createIndex("L", "prop")
+    val node1 = createLabeledNode(Map("prop" -> Array(1,2,3)), "L")
+    val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
+
+    // Then
+    result.toList should equal(List(Map("n" -> node1)))
+    result should useOperationTimes("NodeIndexSeek", 1)
+  }
+
   private def setUpDatabaseForTests() {
     updateWithBothPlannersAndCompatibilityMode(
       """CREATE (architect:Matrix { name:'The Architect' }),
