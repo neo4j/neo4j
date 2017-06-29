@@ -29,11 +29,13 @@ import java.util.Enumeration;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assume.assumeTrue;
-
+/**
+ * Test various IPv6 configuration options on a single HA instance.
+ */
 public class HaIPv6ConfigurationTest
 {
     @Rule
@@ -46,7 +48,7 @@ public class HaIPv6ConfigurationTest
                 .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
                 .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::1", 5000 ) )
                 .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", 5000 ) )
-                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", 6000 ) )
+                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::1", 6000 ) )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .newGraphDatabase();
 
@@ -62,8 +64,7 @@ public class HaIPv6ConfigurationTest
     @Test
     public void testClusterWithLinkLocalAddress() throws Throwable
     {
-        boolean foundAnIpv6LinkLocalAddress = false;
-        InetAddress inetAddress = null;
+        InetAddress inetAddress;
 
         Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
         while ( nics.hasMoreElements() )
@@ -73,16 +74,16 @@ public class HaIPv6ConfigurationTest
             while ( inetAddresses.hasMoreElements() )
             {
                 inetAddress = inetAddresses.nextElement();
-                if ( inetAddress instanceof Inet6Address && inetAddress.isLinkLocalAddress() )
+                if ( inetAddress instanceof Inet6Address && inetAddress.isLinkLocalAddress() && inetAddress.isReachable( 1000 ) )
                 {
-                    foundAnIpv6LinkLocalAddress = true;
-                    break;
+                    testWithAddress( inetAddress );
                 }
             }
         }
+    }
 
-        assumeTrue( foundAnIpv6LinkLocalAddress );
-
+    private void testWithAddress( InetAddress inetAddress ) throws Exception
+    {
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
                 .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( inetAddress.getHostAddress(), 5000 ) )
@@ -90,6 +91,12 @@ public class HaIPv6ConfigurationTest
                 .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", 6000 ) )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
 
         db.shutdown();
     }
@@ -104,6 +111,12 @@ public class HaIPv6ConfigurationTest
                 .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", 6000 ) )
                 .setConfig( ClusterSettings.server_id, "1" )
                 .newGraphDatabase();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
 
         db.shutdown();
     }

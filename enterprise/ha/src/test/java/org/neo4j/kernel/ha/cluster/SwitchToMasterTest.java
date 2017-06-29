@@ -56,6 +56,25 @@ public class SwitchToMasterTest
     }
 
     @Test
+    public void switchToMasterShouldUseIPv6ConfigSettingIfSuitable() throws Exception
+    {
+        // given
+        Config config = new Config(
+                stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "[fe80::1]:6001" ) );
+        URI me = new URI( "ha://[::1]" );
+
+        MasterServer masterServer = mock( MasterServer.class );
+
+        // when
+        when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( "[fe80::1]", 6001 ) );
+
+        URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
+
+        // then
+        assertEquals( "Wrong address", "ha://[fe80::1]:6001?serverId=1", result.toString() );
+    }
+
+    @Test
     public void switchToMasterShouldIgnoreWildcardInConfig() throws Exception
     {
         // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
@@ -82,6 +101,35 @@ public class SwitchToMasterTest
 
         // then
         assertEquals( "Wrong address", "ha://127.0.0.1:6001?serverId=1", result.toString() );
+    }
+
+    @Test
+    public void switchToMasterShouldIgnoreIPv6WildcardInConfig() throws Exception
+    {
+        // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
+
+        // given
+        Config config = new Config(
+                stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "[::]:6001" ) );
+        URI me = new URI( "ha://[::1]" );
+
+        MasterServer masterServer = mock( MasterServer.class );
+
+        // when
+        when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( "[fe80::1]", 6001 ) );
+
+        URI result = SwitchToMaster.getMasterUri( me, masterServer, config );
+
+        // then
+        assertEquals( "Wrong address", "ha://[fe80:0:0:0:0:0:0:1]:6001?serverId=1", result.toString() );
+
+        // when masterServer is 0.0.0.0
+        when( masterServer.getSocketAddress() ).thenReturn( new InetSocketAddress( 6001 ) );
+
+        result = SwitchToMaster.getMasterUri( me, masterServer, config );
+
+        // then
+        assertEquals( "Wrong address", "ha://[::1]:6001?serverId=1", result.toString() );
     }
 
     @Test
