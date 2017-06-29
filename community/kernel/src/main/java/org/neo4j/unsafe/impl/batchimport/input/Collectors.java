@@ -34,7 +34,7 @@ public class Collectors
         return silentBadCollector( tolerance, BadCollector.COLLECT_ALL );
     }
 
-    public static Collector silentBadCollector( int tolerance, int collect )
+    public static Collector silentBadCollector( long tolerance, int collect )
     {
         return badCollector( NullOutputStream.NULL_OUTPUT_STREAM, tolerance, collect );
     }
@@ -44,7 +44,7 @@ public class Collectors
         return badCollector( out, tolerance, BadCollector.COLLECT_ALL, false );
     }
 
-    public static Collector badCollector( OutputStream out, int tolerance, int collect )
+    public static Collector badCollector( OutputStream out, long tolerance, int collect )
     {
         return new BadCollector( out, tolerance, collect, false );
     }
