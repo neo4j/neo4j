@@ -107,7 +107,7 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
  */
 public class EnterpriseCoreEditionModule extends EditionModule
 {
-    static boolean idReuse = FeatureToggles.flag( EnterpriseCoreEditionModule.class, "idReuse", false );
+    public static boolean idReuse = FeatureToggles.flag( EnterpriseCoreEditionModule.class, "idReuse", false );
 
     private final ConsensusModule consensusModule;
     private final CoreTopologyService topologyService;
