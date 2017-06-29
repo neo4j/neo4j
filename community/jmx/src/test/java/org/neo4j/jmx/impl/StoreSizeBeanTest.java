@@ -151,49 +151,49 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void sumAllNodeRelatedFiles() throws Exception
+    public void verifyGroupingOfNodeRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
-    public void sumAllPropertyRelatedFiles() throws Exception
+    public void verifyGroupingOfPropertyRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 5, 10 ), storeSizeBean.getPropertyStoreSize() );
     }
 
     @Test
-    public void sumAllStringRelatedFiles() throws Exception
+    public void verifyGroupingOfStringRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
-    public void sumAllArrayRelatedFiles() throws Exception
+    public void verifyGroupingOfArrayRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
-    public void sumAllRelationshipRelatedFiles() throws Exception
+    public void verifyGroupingOfRelationshipRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 15, 22 ), storeSizeBean.getRelationshipStoreSize() );
     }
 
     @Test
-    public void sumAllLabelRelatedFiles() throws Exception
+    public void verifyGroupingOfLabelRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 23, 26 ), storeSizeBean.getLabelStoreSize() );
     }
 
     @Test
-    public void sumAllCountStoreRelatedFiles() throws Exception
+    public void verifyGroupingOfCountStoreRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
@@ -202,7 +202,7 @@ public class StoreSizeBeanTest
     }
 
     @Test
-    public void sumAllSchemaRelatedFiles() throws Exception
+    public void verifyGroupingOfSchemaRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
         assertEquals( getExpected( 27, 28 ), storeSizeBean.getSchemaStoreSize() );
