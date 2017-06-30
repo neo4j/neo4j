@@ -32,6 +32,19 @@ import org.neo4j.kernel.impl.util.Listener;
 
 public class PropertyTraverser
 {
+    /**
+     * Traverses a property record chain and finds the record containing the property with key {@code propertyKey}.
+     * If none is found and {@code strict} is {@code true} then {@link IllegalStateException} is thrown,
+     * otherwise id value of {@link Record#NO_NEXT_PROPERTY} is returned.
+     *
+     * @param primitive {@link PrimitiveRecord} which is the owner of the chain.
+     * @param propertyKey property key token id to look for.
+     * @param propertyRecords access to records.
+     * @param strict dictates behavior on property key not found. If {@code true} then {@link IllegalStateException}
+     * is thrown, otherwise value of {@link Record#NO_NEXT_PROPERTY} is returned.
+     * @return property record id containing property with the given {@code propertyKey}, otherwise if
+     * {@code strict} is false value of {@link Record#NO_NEXT_PROPERTY}.
+     */
     public long findPropertyRecordContaining( PrimitiveRecord primitive, int propertyKey,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords, boolean strict )
     {
