@@ -350,7 +350,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public void removeNodeProperty( long node, String propertyName )
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
-        propertyDeletor.removeProperty( getNodeRecord( node ), propertyKey, recordAccess.getPropertyRecords() );
+        propertyDeletor.removePropertyIfExists( getNodeRecord( node ), propertyKey, recordAccess.getPropertyRecords() );
         flushStrategy.flush();
     }
 
@@ -359,7 +359,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                                             String propertyName )
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
-        propertyDeletor.removeProperty( getRelationshipRecord( relationship ), propertyKey,
+        propertyDeletor.removePropertyIfExists( getRelationshipRecord( relationship ), propertyKey,
                 recordAccess.getPropertyRecords() );
         flushStrategy.flush();
     }

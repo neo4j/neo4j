@@ -1399,6 +1399,35 @@ public class BatchInsertTest
         assertEquals( properties, inserter.getNodeProperties( node ) );
     }
 
+    @Test
+    public void shouldIgnoreRemovingNonExistentNodeProperty() throws Exception
+    {
+        // given
+        BatchInserter inserter = globalInserter;
+        long id = inserter.createNode( Collections.<String,Object>emptyMap() );
+
+        // when
+        inserter.removeNodeProperty( id, "non-existent" );
+
+        // then no exception should be thrown, this mimics GraphDatabaseService behaviour
+    }
+
+    @Test
+    public void shouldIgnoreRemovingNonExistentRelationshipProperty() throws Exception
+    {
+        // given
+        BatchInserter inserter = globalInserter;
+        Map<String,Object> noProperties = Collections.<String,Object>emptyMap();
+        long nodeId1 = inserter.createNode( noProperties );
+        long nodeId2 = inserter.createNode( noProperties );
+        long id = inserter.createRelationship( nodeId1, nodeId2, MyRelTypes.TEST, noProperties );
+
+        // when
+        inserter.removeRelationshipProperty( id, "non-existent" );
+
+        // then no exception should be thrown, this mimics GraphDatabaseService behaviour
+    }
+
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
             int out, int in, int loop )
     {

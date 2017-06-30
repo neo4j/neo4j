@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.Exceptions;
 
+import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -314,7 +315,7 @@ public interface NumberArrayFactory
 
         private long fractionOf( long length )
         {
-            return length / 10;
+            return min( length / 10, Integer.MAX_VALUE );
         }
 
         @Override

@@ -64,12 +64,51 @@ public class PropertyDeleter
         primitive.setNextProp( Record.NO_NEXT_PROPERTY.intValue() );
     }
 
+    /**
+     * Removes property with given {@code propertyKey} from property chain owner by the primitive found in
+     * {@code primitiveProxy} if it exists.
+     *
+     * @param primitiveProxy access to the primitive record pointing to the start of the property chain.
+     * @param propertyKey the property key token id to look for and remove.
+     * @param propertyRecords access to records.
+     * @return {@code true} if the property was found and removed, otherwise {@code false}.
+     */
+    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<Long,P,Void> primitiveProxy,
+            int propertyKey, RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
+    {
+        PrimitiveRecord primitive = primitiveProxy.forReadingData();
+        long propertyId = // propertyData.getId();
+                traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, false );
+        if ( !Record.NO_NEXT_PROPERTY.is( propertyId ) )
+        {
+            removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Removes property with given {@code propertyKey} from property chain owner by the primitive found in
+     * {@code primitiveProxy}.
+     *
+     * @param primitiveProxy access to the primitive record pointing to the start of the property chain.
+     * @param propertyKey the property key token id to look for and remove.
+     * @param propertyRecords access to records.
+     * @throws IllegalStateException if property key was not found in the property chain.
+     */
     public <P extends PrimitiveRecord> void removeProperty( RecordProxy<Long,P,Void> primitiveProxy, int propertyKey,
             RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
         long propertyId = // propertyData.getId();
                 traverser.findPropertyRecordContaining( primitive, propertyKey, propertyRecords, true );
+        removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
+    }
+
+    private <P extends PrimitiveRecord> void removeProperty( RecordProxy<Long,P,Void> primitiveProxy, int propertyKey,
+            RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords, PrimitiveRecord primitive,
+            long propertyId )
+    {
         RecordProxy<Long, PropertyRecord, PrimitiveRecord> recordChange =
                 propertyRecords.getOrLoad( propertyId, primitive );
         PropertyRecord propRecord = recordChange.forChangingData();
