@@ -195,6 +195,22 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     }
   }
 
+  test("MATCH (n:FOO) WITH n, COLLECT(DISTINCT { res:CASE WHEN EXISTS ((n)-[:BAR*]->()) THEN 42 END }) as x RETURN n, x") {
+    val node1 = createLabeledNode("FOO")
+    val node2 = createNode()
+    relate(node1, node2, "BAR")
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """
+        |MATCH (n:FOO)
+        |WITH n, COLLECT (DISTINCT{
+        |res:CASE WHEN EXISTS((n)-[:BAR*]->()) THEN 42 END
+        |}) as x RETURN n, x
+      """.stripMargin
+    )
+
+    result.toList should equal(List(Map("n" -> node1, "x" -> List(Map("res" -> 42)))))
+  }
+
   test("case expressions and pattern expressions") {
     val n1 = createLabeledNode(Map("prop" -> 42), "A")
 
