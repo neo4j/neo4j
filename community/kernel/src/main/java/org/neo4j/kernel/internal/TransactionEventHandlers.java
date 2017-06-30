@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.neo4j.graphdb.Node;
@@ -125,7 +124,7 @@ public class TransactionEventHandlers
         {
             try
             {
-                handlerStates.add( handler, handler.beforeCommit( txData ) );
+                handlerStates.add( handler ).setState( handler.beforeCommit( txData ) );
             }
             catch ( Throwable t )
             {
@@ -179,11 +178,15 @@ public class TransactionEventHandlers
     public static class HandlerAndState
     {
         private final TransactionEventHandler handler;
-        private final Object state;
+        private Object state;
 
-        public HandlerAndState( TransactionEventHandler<?> handler, Object state )
+        public HandlerAndState( TransactionEventHandler<?> handler )
         {
             this.handler = handler;
+        }
+
+        void setState( Object state )
+        {
             this.state = state;
         }
     }
@@ -216,9 +219,11 @@ public class TransactionEventHandlers
             return error;
         }
 
-        public void add( TransactionEventHandler<?> handler, Object state )
+        public HandlerAndState add( TransactionEventHandler<?> handler )
         {
-            states.add( new HandlerAndState( handler, state ) );
+            HandlerAndState result = new HandlerAndState( handler );
+            states.add( result );
+            return result;
         }
     }
 
