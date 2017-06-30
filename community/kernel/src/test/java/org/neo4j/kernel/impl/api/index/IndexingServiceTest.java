@@ -654,8 +654,15 @@ public class IndexingServiceTest
     private void waitForIndexesToComeOnline( IndexingService indexing, long... indexRuleIds )
             throws IndexNotFoundKernelException
     {
+        waitForIndexesToGetIntoState( indexing, ONLINE, indexRuleIds );
+    }
+
+    private void waitForIndexesToGetIntoState( IndexingService indexing, InternalIndexState state,
+            long... indexRuleIds )
+            throws IndexNotFoundKernelException
+    {
         long end = currentTimeMillis() + SECONDS.toMillis( 30 );
-        while ( !allOnline( indexing, indexRuleIds ) )
+        while ( !allInState( indexing, state, indexRuleIds ) )
         {
             if ( currentTimeMillis() > end )
             {
@@ -664,11 +671,12 @@ public class IndexingServiceTest
         }
     }
 
-    private boolean allOnline( IndexingService indexing, long[] indexRuleIds ) throws IndexNotFoundKernelException
+    private boolean allInState( IndexingService indexing, InternalIndexState state,
+            long[] indexRuleIds ) throws IndexNotFoundKernelException
     {
         for ( long indexRuleId : indexRuleIds )
         {
-            if ( indexing.getIndexProxy( indexRuleId ).getState() != InternalIndexState.ONLINE )
+            if ( indexing.getIndexProxy( indexRuleId ).getState() != state )
             {
                 return false;
             }
@@ -698,7 +706,7 @@ public class IndexingServiceTest
         IndexingService.Monitor monitor = new IndexingService.MonitorAdapter()
         {
 
-            private Set<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new HashSet<>();
+            private final Set<IndexEntryUpdate<LabelSchemaDescriptor>> updates = new HashSet<>();
 
             @Override
             public void applyingRecoveredData( PrimitiveLongSet recoveredNodeIds )
@@ -898,6 +906,7 @@ public class IndexingServiceTest
 
         // when
         indexing.createIndexes( IndexRule.indexRule( indexId, index, PROVIDER_DESCRIPTOR ) );
+        waitForIndexesToGetIntoState( indexing, InternalIndexState.FAILED, indexId );
         verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
 
         // then
@@ -933,6 +942,7 @@ public class IndexingServiceTest
         ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass( Boolean.class );
 
         // when
+        waitForIndexesToGetIntoState( indexing, InternalIndexState.FAILED, indexId );
         verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
 
         // then
