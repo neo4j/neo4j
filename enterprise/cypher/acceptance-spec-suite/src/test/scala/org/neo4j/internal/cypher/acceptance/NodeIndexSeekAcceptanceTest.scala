@@ -321,6 +321,20 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with NewPlanne
     result should useOperationTimes("NodeIndexSeek", 1)
   }
 
+  test("should handle list properties in unique index") {
+    // Given
+    graph.createConstraint("L", "prop")
+    val node1 = createLabeledNode(Map("prop" -> Array(1,2,3)), "L")
+    val node2 = createLabeledNode(Map("prop" -> Array(3,2,1)), "L")
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:L) WHERE n.prop = [1,2,3] RETURN n")
+
+    // Then
+    result.toList should equal(List(Map("n" -> node1)))
+    result should useOperationTimes("NodeUniqueIndexSeek", 1)
+  }
+
   private def setUpDatabaseForTests() {
     updateWithBothPlannersAndCompatibilityMode(
       """CREATE (architect:Matrix { name:'The Architect' }),
