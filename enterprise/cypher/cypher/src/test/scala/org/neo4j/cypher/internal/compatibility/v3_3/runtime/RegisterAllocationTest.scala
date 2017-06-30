@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("only single allnodes scan") {
@@ -181,7 +181,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
       PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
 
     val expandAllocations = allocations(skip)
-    expandAllocations should equal(labelScanAllocations)
+    expandAllocations shouldBe theSameInstanceAs(labelScanAllocations)
   }
 
   test("all we need is to apply ourselves") {
@@ -208,7 +208,68 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
         "z" -> LongSlot(1, nullable = false, CTNode)
       ), numberOfLongs = 2, numberOfReferences = 0))
 
-    allocations(apply) should equal(rhsPipeline)
+    allocations(apply) shouldBe theSameInstanceAs(rhsPipeline)
   }
 
+  test("aggregation used for distinct") {
+    // given
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val distinct = Aggregation(leaf, Map("x" -> varFor("x")), Map.empty)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(distinct)
+
+    // then
+    allocations should have size 2
+    allocations(leaf) should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    allocations(leaf) should equal(allocations(distinct))
+    allocations(leaf) shouldNot be theSameInstanceAs allocations(distinct)
+  }
+
+  test("optional travels through aggregation used for distinct") {
+    // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val optional = Optional(leaf)(solved)
+    val distinct = Aggregation(optional, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")), Map.empty)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(distinct)
+
+    // then
+    allocations should have size 3
+    allocations(leaf) should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    allocations(optional) should be theSameInstanceAs allocations(leaf)
+    allocations(distinct) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map(
+      "x" -> LongSlot(0, nullable = true, CTNode),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny)
+    )))
+  }
+
+  test("optional travels through aggregation") {
+    // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val optional = Optional(leaf)(solved)
+    val distinct = Aggregation(optional,
+      groupingExpressions = Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")),
+      aggregationExpression = Map("count" -> CountStar()(pos)))(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(distinct)
+
+    // then
+    allocations should have size 3
+    allocations(leaf) should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+
+    allocations(optional) should be theSameInstanceAs allocations(leaf)
+    allocations(distinct) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 2, slots = Map(
+      "x" -> LongSlot(0, nullable = true, CTNode),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny),
+      "count" -> RefSlot(1, nullable = true, CTAny)
+    )))
+  }
 }

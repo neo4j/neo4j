@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 import scala.collection.mutable
 
@@ -32,6 +33,13 @@ object RegisterAllocation {
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
 
     def allocate(lp: LogicalPlan, pipelineInfo: PipelineInformation, nullable: Boolean): Unit = lp match {
+      case Aggregation(source, groupingExpressions, aggregationExpressions) =>
+        allocate(source, pipelineInfo, nullable = false)
+        val newPipelineInfo = PipelineInformation.empty
+        addExpressions(groupingExpressions, pipelineInfo, newPipelineInfo)
+        addExpressions(aggregationExpressions, pipelineInfo, newPipelineInfo)
+        result += (lp -> newPipelineInfo)
+
       case leaf: NodeLogicalLeafPlan =>
         pipelineInfo.newLong(leaf.idName.name, nullable, CTNode)
         result += (lp -> pipelineInfo)
@@ -91,6 +99,18 @@ object RegisterAllocation {
     allocate(lp, allocations, nullable = false)
 
     result.toMap
+  }
+
+  private def addExpressions(groupingExpressions: Map[String, Expression],
+                             oldPipeline: PipelineInformation,
+                             newPipeline: PipelineInformation) = {
+    groupingExpressions foreach {
+      case (key, ast.Variable(ident)) =>
+        val slotInfo = oldPipeline(ident)
+        newPipeline.add(ident, slotInfo)
+      case (key, exp) =>
+        newPipeline.newReference(key, nullable = true, CTAny)
+    }
   }
 }
 

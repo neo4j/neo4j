@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class PipelineInformationTest extends CypherFunSuite {
   test("can't overwrite variable name by mistake1") {
@@ -72,8 +72,8 @@ class PipelineInformationTest extends CypherFunSuite {
     pipeline.newReference("a", nullable = false, CTNode)
 
     // then
-    pipeline.slots should contain("a" -> RefSlot(0, nullable = false, CTNode))
-    clone.slots shouldNot contain("a" -> RefSlot(0, nullable = false, CTNode))
+    pipeline("a") should equal(RefSlot(0, nullable = false, CTNode))
+    clone.get("a") shouldBe empty
     clone.numberOfReferences should equal(0)
   }
 }
