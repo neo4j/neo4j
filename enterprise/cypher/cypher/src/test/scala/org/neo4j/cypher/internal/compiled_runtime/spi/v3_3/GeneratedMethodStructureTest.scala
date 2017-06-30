@@ -25,9 +25,9 @@ import org.neo4j.codegen.bytecode.ByteCode
 import org.neo4j.codegen.source.SourceCode
 import org.neo4j.codegen.{CodeGenerationStrategy, CodeGenerator, Expression, MethodDeclaration}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi._
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContextCreator
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.EnterpriseRuntimeContextCreator
 import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, CostCompatibility}
 import org.neo4j.cypher.internal.compatibility.{v2_3, v3_1, v3_2}
 import org.neo4j.cypher.internal.compiler.v3_3._

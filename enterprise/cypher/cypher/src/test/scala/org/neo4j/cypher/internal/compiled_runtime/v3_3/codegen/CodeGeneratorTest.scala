@@ -25,8 +25,8 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Projection => PlanProjection, _}

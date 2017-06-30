@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_3
 
 import org.neo4j.cypher.internal.compatibility.v3_3.WrappedMonitors
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.BuildCompiledExecutionPlan
+import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.BuildCompiledExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
