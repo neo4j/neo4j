@@ -32,92 +32,103 @@ object RegisterAllocation {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
 
-    def allocate(lp: LogicalPlan, pipelineInfo: PipelineInformation, nullable: Boolean): Unit = lp match {
+    def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation = lp match {
       case Aggregation(source, groupingExpressions, aggregationExpressions) =>
-        allocate(source, pipelineInfo, nullable = false)
-        val newPipelineInfo = PipelineInformation.empty
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = PipelineInformation.empty
 
         def addExpressions(groupingExpressions: Map[String, Expression]) = {
           groupingExpressions foreach {
             case (key, ast.Variable(ident)) =>
-              val slotInfo = pipelineInfo(ident)
-              newPipelineInfo.add(ident, slotInfo)
+              val slotInfo = oldPipeline(ident)
+              newPipeline.add(ident, slotInfo)
             case (key, exp) =>
-              newPipelineInfo.newReference(key, nullable = true, CTAny)
+              newPipeline.newReference(key, nullable = true, CTAny)
           }
         }
 
         addExpressions(groupingExpressions)
         addExpressions(aggregationExpressions)
-        result += (lp -> newPipelineInfo)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case Projection(source, expressions) =>
-        allocate(source, pipelineInfo, nullable = nullable)
+        val pipeline = allocate(source, nullable, argument)
         expressions foreach {
           case (key, ast.Variable(ident)) =>
             // it's already there. no need to add a new slot for it
           case (key, exp) =>
-            pipelineInfo.newReference(key, nullable = true, CTAny)
+            pipeline.newReference(key, nullable = true, CTAny)
         }
-        result += (lp -> pipelineInfo)
+        result += (lp -> pipeline)
+        pipeline
 
       case leaf: NodeLogicalLeafPlan =>
-        pipelineInfo.newLong(leaf.idName.name, nullable, CTNode)
-        result += (lp -> pipelineInfo)
+        val pipeline = argument.getOrElse(PipelineInformation.empty)
+        pipeline.newLong(leaf.idName.name, nullable, CTNode)
+        result += (lp -> pipeline)
+        pipeline
 
       case ProduceResult(_, source) =>
-        allocate(source, pipelineInfo, nullable)
-        result += (lp -> pipelineInfo)
+        val pipeline = allocate(source, nullable, argument)
+        result += (lp -> pipeline)
+        pipeline
 
       case Selection(_, source) =>
-        allocate(source, pipelineInfo, nullable)
-        result += (lp -> pipelineInfo)
+        val pipeline = allocate(source, nullable, argument)
+        result += (lp -> pipeline)
+        pipeline
 
       case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        allocate(source, pipelineInfo, nullable)
-        val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(relName, nullable, CTRelationship)
-        newPipelineInfo.newLong(to, nullable, CTNode)
-        result += (lp -> newPipelineInfo)
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newLong(relName, nullable, CTRelationship)
+        newPipeline.newLong(to, nullable, CTNode)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case Expand(source, _, _, _, _, IdName(relName), ExpandInto) =>
-        allocate(source, pipelineInfo, nullable)
-        val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(relName, nullable, CTRelationship)
-        result += (lp -> newPipelineInfo)
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newLong(relName, nullable, CTRelationship)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case Optional(source, _) =>
-        allocate(source, pipelineInfo, nullable = true)
-        result += (lp -> pipelineInfo)
+        val pipeline = allocate(source, nullable = true, argument)
+        result += (lp -> pipeline)
+        pipeline
 
       case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandAll, _) =>
-        allocate(source, pipelineInfo, nullable)
-        val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(rel, nullable = true, CTRelationship)
-        newPipelineInfo.newLong(to, nullable = true, CTNode)
-        result += (lp -> newPipelineInfo)
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newLong(rel, nullable = true, CTRelationship)
+        newPipeline.newLong(to, nullable = true, CTNode)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandInto, _) =>
-        allocate(source, pipelineInfo, nullable)
-        val newPipelineInfo = pipelineInfo.deepClone()
-        newPipelineInfo.newLong(rel, nullable = true, CTRelationship)
-        result += (lp -> newPipelineInfo)
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newLong(rel, nullable = true, CTRelationship)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case Skip(source, _) =>
-        allocate(source, pipelineInfo, nullable)
-        result += (lp -> pipelineInfo)
+        val pipeline = allocate(source, nullable, argument)
+        result += (lp -> pipeline)
+        pipeline
 
       case Apply(lhs, rhs) =>
-        allocate(lhs, pipelineInfo, nullable)
-        val newPipelineInfo = pipelineInfo.deepClone()
-        allocate(rhs, newPipelineInfo, nullable)
-        result += (lp -> newPipelineInfo)
+        val lhsPipeline = allocate(lhs, nullable, argument)
+        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+        result += (lp -> rhsPipeline)
+        rhsPipeline
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
-    val allocations = PipelineInformation.empty
-    allocate(lp, allocations, nullable = false)
+    allocate(lp, nullable = false, None)
 
     result.toMap
   }
