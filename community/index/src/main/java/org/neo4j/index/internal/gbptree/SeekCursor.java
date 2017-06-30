@@ -353,6 +353,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean verifyExpectedFirstAfterGoToNext;
 
+    /**
+     * Whether or not this seeker have been closed.
+     */
+    private boolean closed;
+
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
             Supplier<Root> rootCatchup, long lastFollowedPointerGeneration ) throws IOException
@@ -516,7 +521,20 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 }
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            try
+            {
+                checkOutOfBounds( cursor );
+            }
+            catch ( TreeInconsistencyException e )
+            {
+                // Only check the closed status here when we get an out of bounds to avoid making
+                // this check for every call to next.
+                if ( closed )
+                {
+                    throw new IllegalStateException( "Tried to use seeker after it was closed" );
+                }
+                throw e;
+            }
 
             // Act
             if ( !endedUpOnExpectedNode() )
@@ -1049,5 +1067,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     public void close()
     {
         cursor.close();
+        closed = true;
     }
 }

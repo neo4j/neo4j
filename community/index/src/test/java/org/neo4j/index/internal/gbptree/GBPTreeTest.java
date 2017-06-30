@@ -600,6 +600,44 @@ public class GBPTreeTest
         verifyHeader( expectedBytes );
     }
 
+    @Test
+    public void shouldThrowIllegalStateExceptionOnCallingNextAfterClose() throws Exception
+    {
+        // given
+        try ( GBPTree<MutableLong,MutableLong> tree = index().build() )
+        {
+            try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
+            {
+                MutableLong value = new MutableLong();
+                for ( int i = 0; i < 10; i++ )
+                {
+                    value.setValue( i );
+                    writer.put( value, value );
+                }
+            }
+
+            RawCursor<Hit<MutableLong,MutableLong>,IOException> seek =
+                    tree.seek( new MutableLong( 0 ), new MutableLong( Long.MAX_VALUE ) );
+            assertTrue( seek.next() );
+            assertTrue( seek.next() );
+            seek.close();
+
+            for ( int i = 0; i < 2; i++ )
+            {
+                try
+                {
+                    // when
+                    seek.next();
+                    fail( "Should have failed" );
+                }
+                catch ( IllegalStateException e )
+                {
+                    // then good
+                }
+            }
+        }
+    }
+
     private void verifyHeaderDataAfterClose( BiConsumer<GBPTree<MutableLong,MutableLong>,byte[]> beforeClose ) throws IOException
     {
         byte[] expectedHeader = new byte[12];
