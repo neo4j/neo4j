@@ -28,6 +28,8 @@ import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
  */
 public class IntTracker extends AbstractTracker<IntArray>
 {
+    static final int DEFAULT_VALUE = -1;
+
     public IntTracker( IntArray array )
     {
         super( array );

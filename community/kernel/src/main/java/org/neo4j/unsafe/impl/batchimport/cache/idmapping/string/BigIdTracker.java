@@ -19,14 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache.idmapping.string;
 
-import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
+import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
 
 /**
- * {@link Tracker} capable of keeping {@code long} range values, using {@link LongArray}.
+ * {@link Tracker} capable of keeping 6B range values, using {@link ByteArray}.
  */
-public class LongTracker extends AbstractTracker<LongArray>
+public class BigIdTracker extends AbstractTracker<ByteArray>
 {
-    public LongTracker( LongArray array )
+    static final byte[] DEFAULT_VALUE = new byte[] {-1, -1, -1, -1, -1, -1};
+
+    public BigIdTracker( ByteArray array )
     {
         super( array );
     }
@@ -34,12 +36,12 @@ public class LongTracker extends AbstractTracker<LongArray>
     @Override
     public long get( long index )
     {
-        return array.get( index );
+        return array.get6ByteLong( index, 0 );
     }
 
     @Override
     public void set( long index, long value )
     {
-        array.set( index, value );
+        array.set6ByteLong( index, 0, value );
     }
 }
