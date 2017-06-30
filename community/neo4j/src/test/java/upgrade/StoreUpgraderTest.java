@@ -215,8 +215,8 @@ public class StoreUpgraderTest
     public void shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly()
             throws IOException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() +
-                                             "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
+        File comparisonDirectory = directory.directory(
+                "shouldRefuseToUpgradeIfAnyOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, dbDirectory );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
@@ -242,8 +242,8 @@ public class StoreUpgraderTest
     public void shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly()
             throws IOException
     {
-        File comparisonDirectory = new File( "target/" + StoreUpgraderTest.class.getSimpleName() +
-                                            "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
+        File comparisonDirectory = directory.directory(
+                "shouldRefuseToUpgradeIfAllOfTheStoresWereNotShutDownCleanly-comparison" );
         removeCheckPointFromTxLog( fileSystem, dbDirectory );
         fileSystem.deleteRecursively( comparisonDirectory );
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
