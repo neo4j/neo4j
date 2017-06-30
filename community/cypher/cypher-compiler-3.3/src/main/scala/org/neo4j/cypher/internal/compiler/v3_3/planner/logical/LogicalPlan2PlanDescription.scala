@@ -73,9 +73,6 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
         val entityByIdRhs = EntityByIdRhs(relIds)
         PlanDescriptionImpl(id, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(entityByIdRhs), variables)
 
-      case _: LegacyNodeIndexSeek | _: LegacyRelationshipIndexSeek =>
-        PlanDescriptionImpl(id, "LegacyIndexSeek", NoChildren, Seq.empty, variables)
-
       case _: LoadCSV =>
         PlanDescriptionImpl(id, "LoadCSV", NoChildren, Seq.empty, variables)
 

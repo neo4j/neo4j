@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.LegacyIndexHint
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
-case class LegacyNodeIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
-                              (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
+case object simplifyPredicates extends Rewriter {
+  override def apply(input: AnyRef) = instance.apply(input)
 
-  def availableSymbols: Set[IdName] = argumentIds + idName
-}
+  private val instance: Rewriter = bottomUp(Rewriter.lift {
+    case in@In(exp, ListLiteral(values@Seq(idValueExpr))) if values.size == 1 =>
+      Equals(exp, idValueExpr)(in.position)
 
-case class LegacyRelationshipIndexSeek(idName: IdName, hint: LegacyIndexHint, argumentIds: Set[IdName])
-                                      (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
-
-  def availableSymbols: Set[IdName] = argumentIds + idName
+    // This form is used to make composite index seeks and scans
+    case AndedPropertyInequalities(_, _, predicates) if predicates.size == 1 =>
+      predicates.head
+  })
 }

@@ -142,15 +142,7 @@ abstract class LogicalPlan
         (acc) => acc :+ SchemaIndexSeekUsage(idName.name, label.name, propertyKeys.map(_.name))
       case NodeIndexScan(idName, label, propertyKey, _) =>
         (acc) => acc :+ SchemaIndexScanUsage(idName.name, label.name, propertyKey.name)
-      case LegacyNodeIndexSeek(idName, NodeByIdentifiedIndex(_, index, _, _), _) =>
-        (acc) => acc :+ LegacyNodeIndexUsage(idName.name, index)
-      case LegacyNodeIndexSeek(idName, NodeByIndexQuery(_, index, _), _) =>
-        (acc) => acc :+ LegacyNodeIndexUsage(idName.name, index)
-      case LegacyRelationshipIndexSeek(idName, RelationshipByIdentifiedIndex(_, index, _, _), _) =>
-        (acc) => acc :+ LegacyRelationshipIndexUsage(idName.name, index)
-      case LegacyRelationshipIndexSeek(idName, RelationshipByIndexQuery(_, index, _), _) =>
-        (acc) => acc :+ LegacyRelationshipIndexUsage(idName.name, index)
-    }
+      }
   }
 }
 

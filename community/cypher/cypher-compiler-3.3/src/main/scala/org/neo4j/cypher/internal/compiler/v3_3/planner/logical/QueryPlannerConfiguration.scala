@@ -51,9 +51,6 @@ object QueryPlannerConfiguration {
     // MATCH (n) RETURN n
     allNodesLeafPlanner,
 
-    // Legacy indices
-    legacyHintLeafPlanner,
-
     // Handles OR between other leaf planners
     OrLeafPlanner(leafPlanFromExpressions))
 

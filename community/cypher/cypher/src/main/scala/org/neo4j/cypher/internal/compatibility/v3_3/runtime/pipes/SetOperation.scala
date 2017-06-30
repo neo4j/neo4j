@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -37,23 +36,6 @@ sealed trait SetOperation {
 }
 
 object SetOperation {
-
-  import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
-
-  def toSetOperation(pattern: SetMutatingPattern)(implicit table: SemanticTable) = pattern match {
-    case SetLabelPattern(IdName(name), labels) =>
-      SetLabelsOperation(name, labels.map(LazyLabel(_)))
-    case SetNodePropertyPattern(IdName(name), propKey, expression) =>
-      SetNodePropertyOperation(name, LazyPropertyKey(propKey.name), toCommandExpression(expression))
-    case SetNodePropertiesFromMapPattern(IdName(name), expression, removeOtherProps) =>
-      SetNodePropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
-    case SetRelationshipPropertyPattern(IdName(name), propKey, expression) =>
-      SetRelationshipPropertyOperation(name, LazyPropertyKey(propKey.name), toCommandExpression(expression))
-    case SetRelationshipPropertiesFromMapPattern(IdName(name), expression, removeOtherProps) =>
-      SetRelationshipPropertyFromMapOperation(name, toCommandExpression(expression), removeOtherProps)
-    case SetPropertyPattern(entity, propKey, expression) =>
-      SetPropertyOperation(toCommandExpression(entity), LazyPropertyKey(propKey.name), toCommandExpression(expression))
-  }
 
   private[pipes] def toMap(executionContext: ExecutionContext, state: QueryState, expression: Expression) = {
     /* Make the map expression look like a map */

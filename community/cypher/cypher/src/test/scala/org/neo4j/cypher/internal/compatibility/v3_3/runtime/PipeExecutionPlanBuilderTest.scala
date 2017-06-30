@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverters, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{FakeIdMap, Id}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
@@ -67,7 +68,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
 
 
   val factory = new PipeBuilderFactory {
-    override def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id])
+    override def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
                       (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) = new PipeBuilder {
       def build(plan: LogicalPlan) = plan match {
         case LeafPlan(n) => LeafPipe(n)
@@ -83,7 +84,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     }
   }
 
-  private val builder = new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory)
+  private val builder = new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory, expressionConverters = CommunityExpressionConverters)
   private implicit val planContext = mock[PlanContext]
   private implicit val pipeContext = mock[PipeExecutionBuilderContext]
 

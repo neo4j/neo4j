@@ -91,8 +91,6 @@ object CardinalityCostModel extends CostModel {
     => DEFAULT_COST_PER_ROW
 
     case _: FindShortestPaths |
-         _: LegacyNodeIndexSeek |
-         _: LegacyRelationshipIndexSeek |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek
     => 12.0

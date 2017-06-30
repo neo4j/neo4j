@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 
@@ -50,7 +50,7 @@ case class SingleSeekRhs(expr: Expression) extends SeekRhs {
     SingleQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(toCommandExpression(ListLiteral(Seq(expr))(expr.position)))
+    ManySeekArgs(CommunityExpressionConverters.toCommandExpression(ListLiteral(Seq(expr))(expr.position)))
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
@@ -68,5 +68,5 @@ case class MultiSeekRhs(expr: Expression) extends SeekRhs {
     ManyQueryExpression(expr)
 
   def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(toCommandExpression(expr))
+    ManySeekArgs(CommunityExpressionConverters.toCommandExpression(expr))
 }
