@@ -40,7 +40,6 @@ import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.neo4j.csv.reader.IllegalMultilineFieldException;
-import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -70,6 +69,7 @@ import org.neo4j.unsafe.impl.batchimport.input.csv.Type;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.joining;
 import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -199,9 +199,9 @@ public class ImportToolTest
             assertEquals( 4097, nodeCount );
 
             tx.success();
-            ResourceIterator<Node> nodes = dbRule.findNodes( DynamicLabel.label( "FIRST 4096" ) );
+            ResourceIterator<Node> nodes = dbRule.findNodes( label( "FIRST 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
-            nodes = dbRule.findNodes( DynamicLabel.label( "SECOND 4096" ) );
+            nodes = dbRule.findNodes( label( "SECOND 4096" ) );
             assertEquals( 1, Iterators.asList( nodes ).size() );
         }
     }
@@ -394,20 +394,13 @@ public class ImportToolTest
 
         // THEN
         // Expected value for integer types
-        String iExpected = "[";
-        for ( String value : values )
-        {
-            iExpected += value.trim() + ", ";
-        }
-        iExpected = iExpected.substring( 0, iExpected.length() - 2 ) + "]";
+        String iExpected = joinStringArray( values );
 
         // Expected value for floating point types
-        String fExpected = "[";
-        for ( String value : values )
-        {
-            fExpected += Double.valueOf( value.trim() ) + ", ";
-        }
-        fExpected = fExpected.substring( 0, fExpected.length() - 2 ) + "]";
+        String fExpected = Arrays.stream( values ).map( String::trim )
+                                                  .map( Double::valueOf )
+                                                  .map( String::valueOf )
+                                                  .collect( joining( ", ", "[", "]")  );
 
         int nodeCount = 0;
         try ( Transaction tx = dbRule.beginTx() )
@@ -473,12 +466,7 @@ public class ImportToolTest
         importTool( "--into", dbRule.getStoreDirAbsolutePath(), "--quote", "'", "--nodes", data.getAbsolutePath() );
 
         // THEN
-        String expected = "[";
-        for ( String value : values )
-        {
-            expected += value.trim() + ", ";
-        }
-        expected = expected.substring( 0, expected.length() - 2 ) + "]";
+        String expected = joinStringArray( values );
 
         int nodeCount = 0;
         try ( Transaction tx = dbRule.beginTx() )
@@ -520,25 +508,9 @@ public class ImportToolTest
         // GIVEN
         // Faster to do all successful in one import than in N separate tests
         String[] values =
-                new String[]{ "true", "  true", "true   ", "  true  ", " false ", "false ", " false", "bla bla",
-                        " truebutnotreally  " };
-
-        String expected = "[";
-        for ( String value : values )
-        {
-            if ( value.contains( "bla" ) )
-            {
-                expected += "false, ";
-            }
-            else if ( value.contains( "notreally" ) )
-            {
-                expected += "false]";
-            }
-            else
-            {
-                expected += value.trim() + ", ";
-            }
-        }
+                new String[]{ "true", "  true", "true   ", "  true  ", " false ", "false ", " false", "false ",
+                        " false" };
+        String expected = joinStringArray( values );
 
         File data = writeArrayCsv( new String[]{ "b:boolean[]" }, values );
 
@@ -880,7 +852,7 @@ public class ImportToolTest
             // also all nodes in the label index should exist
             for ( int i = 0; i < MAX_LABEL_ID; i++ )
             {
-                Label label = Label.label( labelName( i ) );
+                Label label = label( labelName( i ) );
                 try ( ResourceIterator<Node> nodesByLabel = db.findNodes( label ) )
                 {
                     while ( nodesByLabel.hasNext() )
@@ -1784,7 +1756,7 @@ public class ImportToolTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = db.beginTx() )
         {
-            assertNotNull( db.findNode( Label.label( labelName ), "name", "abc\"def\\\"ghi" ) );
+            assertNotNull( db.findNode( label( labelName ), "name", "abc\"def\\\"ghi" ) );
         }
     }
 
@@ -1898,6 +1870,11 @@ public class ImportToolTest
         return data;
     }
 
+    private String joinStringArray( String[] values )
+    {
+        return Arrays.stream( values ).map( String::trim ).collect( joining( ", ", "[", "]" ) );
+    }
+
     private File data( String... lines ) throws Exception
     {
         File file = file( fileName( "data.csv" ) );
@@ -1916,7 +1893,7 @@ public class ImportToolTest
         return node -> node.getProperty( "id", "" ).equals( id );
     }
 
-    protected void assertNodeHasLabels( Node node, String[] names )
+    private void assertNodeHasLabels( Node node, String[] names )
     {
         for ( String name : names )
         {
@@ -2308,7 +2285,7 @@ public class ImportToolTest
         };
     }
 
-    public static void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
+    static void assertExceptionContains( Exception e, String message, Class<? extends Exception> type )
             throws Exception
     {
         if ( !contains( e, message, type ) )
@@ -2328,7 +2305,7 @@ public class ImportToolTest
         return line -> line >= startingAt && line < endingAt;
     }
 
-    public static void importTool( String... arguments ) throws IOException
+    static void importTool( String... arguments ) throws IOException
     {
         ImportTool.main( arguments, true );
     }
