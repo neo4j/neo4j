@@ -21,8 +21,10 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charArray;
@@ -32,11 +34,14 @@ import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
+
+import static java.lang.String.format;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
+import static org.neo4j.values.virtual.VirtualValues.range;
 
 public class ListTest
 {
@@ -197,5 +202,38 @@ public class ListTest
         assertEqual(
                 list( "a", list( 'b', list( "c" ) ) ),
                 list( 'a', list( "b", list( 'c' ) ) ) );
+    }
+
+    private ListValue[] lists =
+            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
+
+                    range( 1L, 8L, 3L ),
+                    VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
+                    VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
+                    {
+                        long l = ((LongValue) anyValue).longValue();
+                        return l != 1L && l != 4L && l != 7L;
+                    } ),
+                    VirtualValues.slice( list( -2L, 1L, 4L, 7L, 10L ), 1, 4 ),
+                    VirtualValues.drop( list( -2L, 1L, 4L, 7L ), 1 ),
+                    VirtualValues.take( list( 1L, 4L, 7L, 10L, 13L ), 3 ),
+                    VirtualValues.transform( list( 0L, 3L, 6L ),
+                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 1L ) ),
+                    VirtualValues.reverse( list( 7L, 4L, 1L ) )};
+
+    @Test
+    public void shouldTreatDifferentListImplementationSimilar()
+    {
+        for ( ListValue list1 : lists )
+        {
+            for ( ListValue list2 : lists )
+            {
+                assertEqual( list1, list2 );
+                assertArrayEquals(
+                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
+                                list2.getClass().getSimpleName() ),
+                        list1.asArray(), list2.asArray() );
+            }
+        }
     }
 }

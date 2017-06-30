@@ -193,7 +193,7 @@ public final class Values
         return new ByteArray.Direct( value );
     }
 
-    public static Value longArray( long[] value )
+    public static LongArray longArray( long[] value )
     {
         return new LongArray.Direct( value );
     }

@@ -72,7 +72,8 @@ public class AnyValueComparatorTest
 
             // Edge
             edge( 1L ),
-            edgeValue( 2L, 1L, 2L, stringValue( "type" ), emptyMap() ),
+            edgeValue( 2L, nodeValue( 1L, labels( stringValue( "L" ) ), emptyMap() ),
+                    nodeValue( 2L, labels( stringValue( "L" ) ), emptyMap() ), stringValue( "type" ), emptyMap() ),
             edge( 3L ),
 
             // Path

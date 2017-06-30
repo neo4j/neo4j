@@ -19,11 +19,13 @@
  */
 package org.neo4j.values.virtual;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.VirtualValue;
 
 /**
  * Entry point to the virtual values library.
@@ -31,6 +33,9 @@ import org.neo4j.values.VirtualValue;
 @SuppressWarnings( "WeakerAccess" )
 public final class VirtualValues
 {
+    public static MapValue EMPTY_MAP = new MapValue( Collections.emptyMap() );
+    public static ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
+
     private VirtualValues()
     {
     }
@@ -39,12 +44,56 @@ public final class VirtualValues
 
     public static ListValue list( AnyValue... values )
     {
-        return new ListValue( values );
+        return new ListValue.ArrayListValue( values );
+    }
+
+    public static ListValue range( long start, long end, long step )
+    {
+        return new ListValue.IntegralRangeListValue( start, end, step );
+    }
+
+    public static ListValue fromArray( ArrayValue arrayValue )
+    {
+        return new ListValue.ArrayValueListValue( arrayValue );
+    }
+
+    public static ListValue filter( ListValue list, Function<AnyValue,Boolean> filter )
+    {
+        return new ListValue.FilteredListValue( list, filter );
+    }
+
+    public static ListValue slice( ListValue list, int from, int to )
+    {
+        int f = Math.max( from, 0 );
+        int t = Math.min( to, list.size() );
+        return new ListValue.ListSlice( list, f, t );
+    }
+
+    public static ListValue drop( ListValue list, int n )
+    {
+        int start = Math.max( 0, Math.min( n, list.size() ) );
+        return new ListValue.ListSlice( list, start, list.size() );
+    }
+
+    public static ListValue take( ListValue list, int n )
+    {
+        int end = Math.max( 0, Math.min( n, list.size() ) );
+        return new ListValue.ListSlice( list, 0, end );
+    }
+
+    public static ListValue transform( ListValue list, Function<AnyValue,AnyValue> transForm )
+    {
+        return new ListValue.TransformedListValue( list, transForm );
+    }
+
+    public static ListValue reverse( ListValue list )
+    {
+        return new ListValue.ReversedList( list );
     }
 
     public static MapValue emptyMap()
     {
-        return new MapValue( new HashMap<>() );
+        return EMPTY_MAP;
     }
 
     public static MapValue map( String[] keys, AnyValue[] values )
@@ -58,7 +107,7 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static MapValue map( HashMap<String,AnyValue> map )
+    public static MapValue map( Map<String,AnyValue> map )
     {
         return new MapValue( map );
     }
@@ -83,12 +132,12 @@ public final class VirtualValues
         return new PathValue( nodes, edges );
     }
 
-    public static VirtualValue pointCartesian( double x, double y )
+    public static PointValue pointCartesian( double x, double y )
     {
-        return new PointValue.CarthesianPointValue( x, y );
+        return new PointValue.CartesianPointValue( x, y );
     }
 
-    public static VirtualValue pointGeographic( double latitude, double longitude )
+    public static PointValue pointGeographic( double latitude, double longitude )
     {
         return new PointValue.GeographicPointValue( latitude, longitude );
     }
@@ -98,8 +147,9 @@ public final class VirtualValues
         return new NodeValue( id, labels, properties );
     }
 
-    public static EdgeValue edgeValue( long id, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    public static EdgeValue edgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
+            MapValue properties )
     {
-        return new EdgeValue( id, startNodeId, endNodeId, type, properties );
+        return new EdgeValue( id, startNode, endNode, type, properties );
     }
 }
