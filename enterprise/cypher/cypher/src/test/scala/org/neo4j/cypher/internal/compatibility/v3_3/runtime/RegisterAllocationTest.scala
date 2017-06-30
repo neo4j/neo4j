@@ -272,4 +272,22 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
       "count" -> RefSlot(1, nullable = true, CTAny)
     )))
   }
+
+  test("labelscan with projection") {
+    // given
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(projection)
+
+    // then
+    allocations should have size 2
+    allocations(leaf) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny)
+    )))
+    allocations(projection) shouldBe theSameInstanceAs (allocations(leaf))
+  }
+
 }

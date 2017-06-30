@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 import scala.collection.mutable
@@ -36,9 +36,30 @@ object RegisterAllocation {
       case Aggregation(source, groupingExpressions, aggregationExpressions) =>
         allocate(source, pipelineInfo, nullable = false)
         val newPipelineInfo = PipelineInformation.empty
-        addExpressions(groupingExpressions, pipelineInfo, newPipelineInfo)
-        addExpressions(aggregationExpressions, pipelineInfo, newPipelineInfo)
+
+        def addExpressions(groupingExpressions: Map[String, Expression]) = {
+          groupingExpressions foreach {
+            case (key, ast.Variable(ident)) =>
+              val slotInfo = pipelineInfo(ident)
+              newPipelineInfo.add(ident, slotInfo)
+            case (key, exp) =>
+              newPipelineInfo.newReference(key, nullable = true, CTAny)
+          }
+        }
+
+        addExpressions(groupingExpressions)
+        addExpressions(aggregationExpressions)
         result += (lp -> newPipelineInfo)
+
+      case Projection(source, expressions) =>
+        allocate(source, pipelineInfo, nullable = nullable)
+        expressions foreach {
+          case (key, ast.Variable(ident)) =>
+            // it's already there. no need to add a new slot for it
+          case (key, exp) =>
+            pipelineInfo.newReference(key, nullable = true, CTAny)
+        }
+        result += (lp -> pipelineInfo)
 
       case leaf: NodeLogicalLeafPlan =>
         pipelineInfo.newLong(leaf.idName.name, nullable, CTNode)
@@ -99,18 +120,6 @@ object RegisterAllocation {
     allocate(lp, allocations, nullable = false)
 
     result.toMap
-  }
-
-  private def addExpressions(groupingExpressions: Map[String, Expression],
-                             oldPipeline: PipelineInformation,
-                             newPipeline: PipelineInformation) = {
-    groupingExpressions foreach {
-      case (key, ast.Variable(ident)) =>
-        val slotInfo = oldPipeline(ident)
-        newPipeline.add(ident, slotInfo)
-      case (key, exp) =>
-        newPipeline.newReference(key, nullable = true, CTAny)
-    }
   }
 }
 
