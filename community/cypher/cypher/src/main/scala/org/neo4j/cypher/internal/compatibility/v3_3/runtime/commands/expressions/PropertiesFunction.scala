@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.AnyValue
 
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
-  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
+  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) =
     value match {
-      case IsMap(mapValue) => mapValue(state.query).toMap
+      case IsMap(mapValue) => mapValue
       case v =>
         throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
     }

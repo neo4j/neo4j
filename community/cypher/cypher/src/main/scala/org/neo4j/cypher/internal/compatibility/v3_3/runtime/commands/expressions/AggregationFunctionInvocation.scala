@@ -20,27 +20,24 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
+import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends AggregationExpression {
+  private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = null
 
-    override def result(implicit state:QueryState) = {
-      val isGraphKernelResultValue = state.query.isGraphKernelResultValue _
-      val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
-      scalaValues.asDeepScalaValue(aggregator.result)
-    }
+    override def result(implicit state:QueryState): AnyValue = valueConverter(aggregator.result)
 
     override def apply(data: ExecutionContext)
                       (implicit state: QueryState) = {
-      val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
-      val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(data)(state)))
+      val argValues = arguments.map(arg => arg(data)(state))
       aggregator.update(argValues)
     }
 
@@ -50,8 +47,6 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
       }
       inner
     }
-
-
   }
 
   override def rewrite(f: (Expression) => Expression): Expression = f(

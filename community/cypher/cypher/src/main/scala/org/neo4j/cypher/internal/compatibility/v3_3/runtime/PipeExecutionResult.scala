@@ -24,13 +24,11 @@ import java.util
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl, Version}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
@@ -44,12 +42,13 @@ class PipeExecutionResult(val result: ResultIterator,
                           val executionPlanBuilder: () => InternalPlanDescription,
                           val executionMode: ExecutionMode,
                           val executionType: InternalQueryType)
-  extends InternalExecutionResult
-  with ListSupport {
+  extends InternalExecutionResult {
 
   self =>
 
-  val javaValues = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
+  private val query = state.query
+  val javaValues = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
+  val scalaValues = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
@@ -64,7 +63,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = javaValues.asDeepJavaValue(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = Eagerly.immutableMapValues(result.next(), query.asObject).asJava.asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -73,18 +72,14 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = {
-      val value = self.next()
-      val result = Eagerly.immutableMapValues(value, javaValues.asDeepJavaValue).asJava
-      result
-    }
+    def next() = Eagerly.immutableMapValues(result.next(), query.asObject).asJava
   }
 
-  override def toList: List[Predef.Map[String, Any]] = result.toList
+  override def toList: List[Predef.Map[String, Any]] = result.toList.map(Eagerly.immutableMapValues(_, query.asObject))
 
   def hasNext = result.hasNext
 
-  def next() = result.next()
+  def next() = Eagerly.immutableMapValues(Eagerly.immutableMapValues(result.next(), query.asObject), scalaValues.asDeepScalaValue)
 
   def queryStatistics() = state.getStatistics
 

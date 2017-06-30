@@ -20,37 +20,36 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsMap}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, IsMap, ListSupport}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, ListSupport}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.values._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with ListSupport {
   def arguments = Seq(expression, index)
 
-  def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     value match {
       case IsMap(m) =>
         val item = index(ctx)
-        if (item == null) null
+        if (item == Values.NO_VALUE) Values.NO_VALUE
         else {
-          val key = CastSupport.castOrFail[String](item)
-          m(state.query).getOrElse(key, null)
+          val key = CastSupport.castOrFail[TextValue](item)
+          m.get(key.stringValue())
         }
 
       case IsList(collection) =>
         val item = index(ctx)
-        if (item == null) null
+        if (item == Values.NO_VALUE) Values.NO_VALUE
         else {
           var idx = validateTypeAndRange(item)
-          val collectionValue = collection.toIndexedSeq
 
           if (idx < 0)
-            idx = collectionValue.size + idx
+            idx = collection.size + idx
 
-          if (idx >= collectionValue.size || idx < 0) null
-          else collectionValue.apply(idx)
+          if (idx >= collection.size || idx < 0) Values.NO_VALUE
+          else collection.value(idx)
         }
 
       case _ =>
@@ -59,11 +58,11 @@ with ListSupport {
     }
   }
 
-  private def validateTypeAndRange(item: Any): Int = {
-    val number = CastSupport.castOrFail[Number](item)
+  private def validateTypeAndRange(item: AnyValue): Int = {
+    val number = CastSupport.castOrFail[NumberValue](item)
 
     val longValue = number match {
-      case _: java.lang.Double | _: java.lang.Float =>
+      case _: FloatValue =>
         throw new CypherTypeException(s"Cannot index a list using an non-integer number, got $number")
       case _ => number.longValue()
     }

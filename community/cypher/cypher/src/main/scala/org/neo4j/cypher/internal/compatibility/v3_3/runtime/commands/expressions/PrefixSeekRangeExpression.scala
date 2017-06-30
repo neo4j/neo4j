@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.PrefixRange
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.values.AnyValue
 
 case class PrefixSeekRangeExpression(range: PrefixRange[Expression]) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = throw new
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = throw new
       InternalException("This should never be called")
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)

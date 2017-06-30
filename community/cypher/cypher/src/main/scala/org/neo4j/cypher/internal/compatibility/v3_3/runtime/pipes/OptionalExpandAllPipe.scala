@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.Node
+import org.neo4j.values.AnyValues
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
                                  types: LazyTypes, predicate: Predicate)
@@ -40,9 +41,9 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
         val fromNode = getFromNode(row)
         fromNode match {
           case n: Node =>
-            val relationships = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
+            val relationships = state.query.getRelationshipsForIds(n.getId, dir, types.types(state.query))
             val matchIterator = relationships.map {
-              case r => row.newWith2(relName, r, toName, r.getOtherNode(n))
+              case r => row.newWith2(relName, AnyValues.asEdgeValue(r), toName, AnyValues.asNodeValue(r.getOtherNode(n)))
             }.filter(ctx => predicate.isTrue(ctx))
 
             if (matchIterator.isEmpty) {

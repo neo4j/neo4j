@@ -23,54 +23,55 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, PathImpl}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue, VirtualValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
+import scala.collection.mutable.ArrayBuffer
 
 case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit queryState: QueryState) = {
-    def get(x: String): PropertyContainer = ctx(x).asInstanceOf[PropertyContainer]
+  override def apply(ctx: ExecutionContext)(implicit queryState: QueryState): AnyValue = {
+    def getNode(x: String): NodeValue = ctx(x).asInstanceOf[NodeValue]
+
+    def getRel(x: String): EdgeValue = ctx(x).asInstanceOf[EdgeValue]
+
+    def getPath(x: String): PathValue = ctx(x).asInstanceOf[PathValue]
 
     val firstNode = getFirstNode(pathPattern)
 
-    val p: Seq[PropertyContainer] = pathPattern.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
-      case SingleNode(name, _, _)                => soFar :+ get(name)
-      case RelatedTo(_, right, relName, _, _, _) => soFar :+ get(relName) :+ get(right.name)
-      case path: PathPattern                     => getPath(ctx, path.pathName, soFar)
-    })
-
-    buildPath(p)
+    val nodes = ArrayBuffer.empty[NodeValue]
+    val rels = ArrayBuffer.empty[EdgeValue]
+    nodes.append(getNode(firstNode))
+    for (path <- pathPattern) {
+      path match {
+        case SingleNode(name, _, _) =>
+          nodes.append(getNode(name))
+        case RelatedTo(_, right, relName, _, _, _) =>
+          nodes.append(getNode(right.name))
+          rels.append(getRel(relName))
+        case path: PathPattern =>
+          val p = getPath(path.pathName)
+          val n = p.nodes()
+          if (n.head == nodes.last) {
+            nodes.append(n: _*)
+            rels.append(p.edges(): _*)
+          } else {
+            nodes.append(n.reverse: _*)
+            rels.append(p.edges().reverse: _*)
+          }
+      }
+    }
+    VirtualValues.path(nodes.toArray, rels.toArray)
   }
 
   private def getFirstNode(pathPattern: Seq[Pattern]): String =
     pathPattern.head match {
       case RelatedTo(left, _, _, _, _, _) => left.name
-      case SingleNode(name, _, _)         => name
-      case path: PathPattern              => path.left.name
+      case SingleNode(name, _, _) => name
+      case path: PathPattern => path.left.name
     }
-
-  private def buildPath(pieces: Seq[PropertyContainer]): Path =
-    if (pieces.contains(null))
-      null
-    else
-      new PathImpl(pieces: _*)
-
-  private def getPath(m: Map[String, Any], key: String, soFar: List[PropertyContainer]): List[PropertyContainer] = {
-    val m1 = m(key)
-
-    if (m1 == null)
-      return null::Nil
-
-    val path = m1.asInstanceOf[Path].iterator().asScala.toList
-    val pathTail = if (path.head == soFar.last) {
-      path.tail
-    } else {
-      path.reverse.tail
-    }
-
-    soFar ++ pathTail
-  }
 
   override def rewrite(f: (Expression) => Expression) = f(this)
 
@@ -78,51 +79,4 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
 
   override def symbolTableDependencies =
     pathPattern.flatMap(_.possibleStartPoints).map(_._1).toSet
-}
-
-trait PathExtractor {
-  def pathPattern:Seq[Pattern]
-  def getPath(ctx: Map[String, Any]): Path = {
-    def get(x: String): PropertyContainer = ctx(x).asInstanceOf[PropertyContainer]
-
-    val firstNode: String = getFirstNode
-
-    val p: Seq[PropertyContainer] = pathPattern.foldLeft(get(firstNode) :: Nil)((soFar, p) => p match {
-      case SingleNode(name, _, _)                => soFar :+ get(name)
-      case RelatedTo(_, right, relName, _, _, _) => soFar :+ get(relName) :+ get(right.name)
-      case path: PathPattern                     => getPath(ctx, path.pathName, soFar)
-    })
-
-    buildPath(p)
-  }
-
-  private def getFirstNode[U]: String =
-    pathPattern.head match {
-      case RelatedTo(left, _, _, _, _, _) => left.name
-      case SingleNode(name, _, _)         => name
-      case path: PathPattern              => path.left.name
-    }
-
-  private def buildPath(pieces: Seq[PropertyContainer]): Path =
-    if (pieces.contains(null))
-      null
-    else
-      new PathImpl(pieces: _*)
-
-  //WARNING: This method can return NULL
-  private def getPath(m: Map[String, Any], key: String, soFar: List[PropertyContainer]): List[PropertyContainer] = {
-    val m1 = m(key)
-
-    if (m1 == null)
-      return null::Nil
-
-    val path = m1.asInstanceOf[Path].iterator().asScala.toList
-    val pathTail = if (path.head == soFar.last) {
-      path.tail
-    } else {
-      path.reverse.tail
-    }
-
-    soFar ++ pathTail
-  }
 }

@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.Values
 
 case class Null() extends Expression {
-  def apply(v1: ExecutionContext)(implicit state: QueryState) = null
+  def apply(v1: ExecutionContext)(implicit state: QueryState) = Values.NO_VALUE
 
   def rewrite(f: (Expression) => Expression): Expression = f(this)
 

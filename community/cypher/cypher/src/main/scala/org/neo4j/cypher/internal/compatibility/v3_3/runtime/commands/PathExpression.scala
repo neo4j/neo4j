@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.Match
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.{AnyValue, Values}
 
 /*
 This class does pattern matching inside an Expression. It's used as a fallback when the
@@ -49,7 +51,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
     filter(isNamed).
     distinct
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyRef = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
       case Some(null) => true
@@ -59,12 +61,12 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
     })
 
     if (returnNull) {
-      null
+      Values.NO_VALUE
     } else {
-      matchingContext.
+      VirtualValues.list(matchingContext.
         getMatches(ctx, state). // find matching subgraphs
         filter(predicate.isTrue(_)(state)). // filter out graphs not matching the predicate
-        map(projection.apply(_)(state)) // project from found subgraphs
+        map(projection.apply(_)(state)).toArray:_*) // project from found subgraphs
     }
   }
 

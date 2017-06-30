@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.values.AnyValues
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
@@ -46,7 +47,7 @@ case class NodeIndexSeekPipe(ident: String,
     val index = indexFactory(state)
     val baseContext = state.createOrGetInitialContext()
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
-    resultNodes.map(node => baseContext.newWith1(ident, node))
+    resultNodes.map(node => baseContext.newWith1(ident, AnyValues.asNodeValue(node)))
   }
 
 }

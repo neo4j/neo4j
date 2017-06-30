@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.Value
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -173,7 +174,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.removeProperty(id, propertyKeyId)
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Value) {
       propertiesSet.increase()
       inner.setProperty(id, propertyKeyId, value)
     }

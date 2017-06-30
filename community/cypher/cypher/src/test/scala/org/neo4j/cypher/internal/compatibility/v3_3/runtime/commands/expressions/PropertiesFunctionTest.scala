@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class PropertiesFunctionTest extends CypherFunSuite {
 

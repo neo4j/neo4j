@@ -20,34 +20,30 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, EntityNotFoundException}
-import org.neo4j.graphdb.{Node, NotFoundException, Relationship}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.{AnyValue, Values}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
 {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = mapExpr(ctx) match {
-    case null => null
-    case n: Node =>
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = mapExpr(ctx) match {
+    case n if n == Values.NO_VALUE => Values.NO_VALUE
+    case n: NodeValue =>
       propertyKey.getOptId(state.query) match {
-        case None => null
-        case Some(propId) => state.query.nodeOps.getProperty(n.getId, propId)
+        case None => Values.NO_VALUE
+        case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId)
       }
     case r: Relationship =>
       propertyKey.getOptId(state.query) match {
         case None => null
         case Some(propId) => state.query.relationshipOps.getProperty(r.getId, propId)
       }
-    case IsMap(mapFunc) => try {
-      mapFunc(state.query).getOrElse(propertyKey.name, null)
-    } catch {
-      case _: EntityNotFoundException => null
-      case _: NotFoundException => null
-    }
+    case IsMap(mapFunc) => mapFunc.get(propertyKey.name)
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 

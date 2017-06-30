@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.AnyValue
 
 case class KeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {
 
-  override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState) = value match {
-    case IsMap(map) => map(state.query).keys.toList
+  override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState) = value match {
+    case IsMap(map) => map.keys
 
     case x =>
       throw new CypherTypeException(s"Expected $expr to be a node, a relationship, or a literal map, but it was ${x.getClass.getSimpleName}")

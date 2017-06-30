@@ -43,6 +43,7 @@ case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends
     }
   }
 
+  hashCode()
   private var len = -1
 
   override def length: Int = if (len != -1) len

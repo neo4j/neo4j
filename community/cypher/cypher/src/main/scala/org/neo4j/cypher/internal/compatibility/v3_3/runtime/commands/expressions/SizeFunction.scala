@@ -20,20 +20,20 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.graphdb.Path
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.{AnyValue, TextValue, Values}
 
 case class SizeFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
-  with ListSupport {
+    with ListSupport {
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = value match {
-    case _: Path    => throw new CypherTypeException("SIZE cannot be used on paths")
-    case s: String  => s.length()
-    case x          => makeTraversable(x).toIndexedSeq.length
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case _: PathValue => throw new CypherTypeException("SIZE cannot be used on paths")
+    case s: TextValue => Values.longValue(s.length())
+    case x => Values.longValue(makeTraversable(x).size())
   }
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))

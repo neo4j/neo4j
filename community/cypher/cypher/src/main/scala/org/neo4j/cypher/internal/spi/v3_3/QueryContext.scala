@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.values.storable.Value
+import org.neo4j.values.AnyValue
 
 import scala.collection.Iterator
 
@@ -70,7 +72,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator
 
@@ -155,18 +157,20 @@ trait QueryContext extends TokenContext {
 
   def nodeIsDense(node: Long): Boolean
 
+  def asObject(value: AnyValue): Any
+
   // Legacy dependency between kernel and compiler
   def variableLengthPathExpand(node: PatternNode,
-                               realNode: Node,
+                               realNode: Long,
                                minHops: Option[Int],
                                maxHops: Option[Int],
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
 
-  def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
 
-  def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                       filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 
   def nodeCountByCountStore(labelId: Int): Long
@@ -202,11 +206,11 @@ trait QueryContext extends TokenContext {
 trait Operations[T <: PropertyContainer] {
   def delete(obj: T)
 
-  def setProperty(obj: Long, propertyKeyId: Int, value: Any)
+  def setProperty(obj: Long, propertyKeyId: Int, value: Value)
 
   def removeProperty(obj: Long, propertyKeyId: Int)
 
-  def getProperty(obj: Long, propertyKeyId: Int): Any
+  def getProperty(obj: Long, propertyKeyId: Int): Value
 
   def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 

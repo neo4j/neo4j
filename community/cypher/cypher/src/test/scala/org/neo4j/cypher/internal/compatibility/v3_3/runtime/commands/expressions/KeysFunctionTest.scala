@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class KeysFunctionTest extends CypherFunSuite {
 

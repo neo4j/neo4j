@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.graphdb.Node
+import org.neo4j.values.{AnyValues, TextValue}
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
@@ -41,9 +42,9 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
     val value = valueExpr(baseContext)(state)
 
     val resultNodes = value match {
-      case value: String =>
-        queryContextCall(state, descriptor, value).
-          map(node => baseContext.newWith1(ident, node))
+      case value: TextValue =>
+        queryContextCall(state, descriptor, value.stringValue()).
+          map(node => baseContext.newWith1(ident, AnyValues.asNodeValue(node)))
       case null =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")

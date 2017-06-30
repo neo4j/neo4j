@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 
 class ConstantCachedInTest extends CachedInTest {
@@ -42,9 +45,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith1("x", 1)
-    val vNull = ExecutionContext.empty.newWith1("x", null)
-    val v14 = ExecutionContext.empty.newWith1("x", 14)
+    val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
+    val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -62,10 +65,9 @@ abstract class CachedInTest extends CypherFunSuite {
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
     implicit val state = QueryStateHelper.empty
-
-    val v1 = ExecutionContext.empty.newWith1("x", 1)
-    val vNull = ExecutionContext.empty.newWith1("x", null)
-    val v14 = ExecutionContext.empty.newWith1("x", 14)
+    val v1 = ExecutionContext.empty.newWith1("x",intValue(1))
+    val vNull = ExecutionContext.empty.newWith1("x",NO_VALUE)
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -84,9 +86,10 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith1("x", 1)
-    val vNull = ExecutionContext.empty.newWith1("x", null)
-    val v14 = ExecutionContext.empty.newWith1("x", 14)
+
+    val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
+    val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(None)
@@ -108,9 +111,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith1("x", Seq(1,2))
-    val vNull = ExecutionContext.empty.newWith1("x", null)
-    val v14 = ExecutionContext.empty.newWith1("x", 14)
+    val v1 = ExecutionContext.empty.newWith1("x", toListValue(Seq(1,2)))
+    val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))

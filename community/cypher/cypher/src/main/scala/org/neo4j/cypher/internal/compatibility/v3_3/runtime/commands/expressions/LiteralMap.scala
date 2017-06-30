@@ -20,17 +20,20 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
+import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class LiteralMap(data: Map[String, Expression]) extends Expression with GraphElementPropertyFunctions {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    data.map {
+
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    VirtualValues.map(data.map {
       case (k, e) => (k, e(ctx))
-    }
+    }.asJava)
 
   def rewrite(f: (Expression) => Expression) = f(LiteralMap(data.rewrite(f)))
 

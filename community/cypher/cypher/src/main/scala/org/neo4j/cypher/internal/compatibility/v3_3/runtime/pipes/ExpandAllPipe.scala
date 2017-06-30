@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -37,10 +38,10 @@ case class ExpandAllPipe(source: Pipe,
       row =>
         getFromNode(row) match {
           case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n, dir, types.types(state.query))
+            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n.getId, dir, types.types(state.query))
             relationships.map {
               case r =>
-                row.newWith2(relName, r, toName, r.getOtherNode(n))
+                row.newWith2(relName, AnyValues.asEdgeValue(r), toName, AnyValues.asNodeValue(r.getOtherNode(n)))
             }
 
           case null => None

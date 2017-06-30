@@ -24,17 +24,19 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Effec
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 sealed abstract class StartPipe[T <: PropertyContainer](source: Pipe,
                                                         name: String,
                                                         createSource: EntityProducer[T]) extends PipeWithSource(source) {
   def variableType: CypherType
+  def asAnyValue(in: T): AnyValue
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.flatMap(ctx => {
       val source = createSource(ctx, state)
       source.map(x => {
-        ctx.newWith1(name, x)
+        ctx.newWith1(name, asAnyValue(x))
       })
     })
   }
@@ -47,10 +49,14 @@ case class NodeStartPipe(source: Pipe,
                         (val id: Id = new Id)
   extends StartPipe[Node](source, name, createSource) {
   def variableType = CTNode
+
+  override def asAnyValue(in: Node): AnyValue = AnyValues.asNodeValue(in)
 }
 
 case class RelationshipStartPipe(source: Pipe, name: String, createSource: EntityProducer[Relationship])
                                 (val id: Id = new Id) extends StartPipe[Relationship](source, name, createSource) {
   def variableType = CTRelationship
+
+  override def asAnyValue(in: Relationship): AnyValue = AnyValues.asEdgeValue(in)
 }
 

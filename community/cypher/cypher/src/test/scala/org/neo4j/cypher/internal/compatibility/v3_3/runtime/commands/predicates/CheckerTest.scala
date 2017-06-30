@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class CheckerTest extends CypherFunSuite {
 
@@ -41,7 +42,7 @@ class CheckerTest extends CypherFunSuite {
     input should not be 'empty
     val (result, newChecker) = buildUp.contains("123")
     input shouldBe 'empty
-    newChecker shouldBe a [SetChecker]
+    newChecker shouldBe a[SetChecker]
     result should equal(Some(true))
   }
 
@@ -51,24 +52,18 @@ class CheckerTest extends CypherFunSuite {
     buildUp.contains(List(1, 2, 3)) should equal((Some(true), buildUp))
   }
 
-  test("type tests") {
-    (equi(1) == equi(1.0)) should equal(true)
-    (equi('a') == equi("a")) should equal(true)
-    (eq(Array(1, 2, 3)) == eq(List(1.0, 2.0D, 3l))) should equal(true)
-  }
-
   test("null in lhs on an BuildUp") {
     val buildUp = new BuildUp(Iterator(42))
     buildUp.contains(null) should equal((None, buildUp))
   }
 
   test("null in lhs on an FastChecker") {
-    val fastChecker = new SetChecker(mutable.Set(equi(42)), Some(false))
+    val fastChecker = new SetChecker(mutable.Set(42), Some(false))
     fastChecker.contains(null) should equal((None, fastChecker))
   }
 
   test("null in rhs on an FastChecker") {
-    val fastChecker = new SetChecker(mutable.Set(equi(42)), None)
+    val fastChecker = new SetChecker(mutable.Set(42), None)
     fastChecker.contains(4) should equal((None, fastChecker))
     fastChecker.contains(42) should equal((Some(true), fastChecker))
     fastChecker.contains(null) should equal((None, fastChecker))
@@ -84,32 +79,31 @@ class CheckerTest extends CypherFunSuite {
   }
 
   test("buildUp can handle maps on the lhs") {
-    val buildUp = new BuildUp(Iterator(1,2,3))
+    val buildUp = new BuildUp(Iterator(1, 2, 3))
     val (result, newChecker) = buildUp.contains(Map("a" -> 42))
     result should equal(Some(false))
-    newChecker shouldBe a [SetChecker]
+    newChecker shouldBe a[SetChecker]
   }
 
   test("fastChecker can handle maps on the lhs") {
-    val buildUp = new SetChecker(mutable.Set(equi(1),equi(2),equi(3)), Some(false))
+    val buildUp = new SetChecker(mutable.Set(1, 2, 3), Some(false))
     val (result, newChecker) = buildUp.contains(Map("a" -> 42))
     result should equal(Some(false))
-    newChecker shouldBe a [SetChecker]
+    newChecker shouldBe a[SetChecker]
   }
 
   test("buildUp can handle maps on the rhs") {
-    val buildUp = new BuildUp(Iterator(1,2,3, Map("a" -> 42)))
+    val buildUp = new BuildUp(Iterator(1, 2, 3, Map("a" -> 42)))
     val (result, newChecker) = buildUp.contains("apa")
     result should equal(Some(false))
-    newChecker shouldBe a [SetChecker]
+    newChecker shouldBe a[SetChecker]
   }
 
   test("buildUp handles a single null in the collection") {
     val buildUp = new BuildUp(Iterator(null))
     val (result, newChecker) = buildUp.contains("apa")
     result should equal(None)
-    newChecker shouldBe a [NullListChecker.type]
+    newChecker shouldBe a[NullListChecker.type]
   }
 
-  private def equi(x: Any): Equivalent = Equivalent(x)
 }

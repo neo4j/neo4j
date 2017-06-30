@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable
 
@@ -34,7 +35,8 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
 
   expressions.values.foreach(_.registerOwningPipe(this))
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     // Run the return item expressions, and replace the execution context's with their values
     val result = input.map(ctx => {
       val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx)(state))
@@ -45,18 +47,17 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
      * The filtering is done by extracting from the context the values of all return expressions, and keeping them
      * in a set.
      */
-    var seen = mutable.Set[Equivalent]()
+    var seen = mutable.Set[AnyValue]()
 
-    result.filter {
-       case ctx =>
-         val values = Equivalent(keyNames.map(ctx))
+    result.filter { ctx =>
+      val values = VirtualValues.list(keyNames.map(ctx): _*)
 
-         if (seen.contains(values)) {
-           false
-         } else {
-           seen += values
-           true
-         }
+      if (seen.contains(values)) {
+        false
+      } else {
+        seen += values
+        true
+      }
     }
   }
 }

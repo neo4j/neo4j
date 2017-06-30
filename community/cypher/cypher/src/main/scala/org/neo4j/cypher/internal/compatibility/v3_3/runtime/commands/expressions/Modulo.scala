@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
+import org.neo4j.values._
+
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: Number, b: Number): Any = (a, b) match {
-    case (l1: java.lang.Double, _) => l1 % b.doubleValue()
-    case (_, l2: java.lang.Double) => a.doubleValue() % l2
-    case (l1: java.lang.Float, _) => l1 % b.floatValue()
-    case (_, l2: java.lang.Float) => a.floatValue() % l2
+  def calc(a: NumberValue, b: NumberValue): AnyValue = (a, b) match {
+    case (l1: DoubleValue, _) => Values.doubleValue(l1.doubleValue() % b.doubleValue())
+    case (_, l2: DoubleValue) => Values.doubleValue(a.doubleValue() % l2.doubleValue())
+    case (l1: FloatValue, _) => Values.floatValue(l1.value() % b.doubleValue().toFloat)
+    case (_, l2: FloatValue) => Values.floatValue(a.doubleValue().toFloat % l2.value())
 
     //no floating point values, then we treat everything else as longs
-    case _ => a.longValue() % b.longValue()
+    case _ => Values.longValue(a.longValue() % b.longValue())
   }
 
   def rewrite(f: (Expression) => Expression) = f(Modulo(a.rewrite(f), b.rewrite(f)))

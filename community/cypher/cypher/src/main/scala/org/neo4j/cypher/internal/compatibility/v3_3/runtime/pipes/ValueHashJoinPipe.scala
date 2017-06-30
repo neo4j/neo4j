@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 
@@ -46,21 +47,22 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
       return Iterator.empty
 
     val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey = rhsExpression(context) if joinKey != null}
+                      joinKey = rhsExpression(context) if joinKey != Values.NO_VALUE}
       yield {
-        val equiKey = Equivalent(joinKey)
-        val seq = table.getOrElse(equiKey, mutable.MutableList.empty)
+
+        val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
         seq.map(context.mergeWith)
       }
+
     result.flatten
   }
 
   private def buildProbeTable(input: Iterator[ExecutionContext])(implicit state: QueryState) = {
-    val table = new mutable.HashMap[Equivalent, mutable.MutableList[ExecutionContext]]
+    val table = new mutable.HashMap[AnyValue, mutable.MutableList[ExecutionContext]]
 
     for (context <- input;
          joinKey = lhsExpression(context) if joinKey != null) {
-      val seq = table.getOrElseUpdate(Equivalent(joinKey), mutable.MutableList.empty)
+      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
       seq += context
     }
 

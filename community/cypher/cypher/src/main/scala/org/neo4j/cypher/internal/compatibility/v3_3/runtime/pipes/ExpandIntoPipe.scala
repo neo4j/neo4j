@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.Node
+import org.neo4j.values.AnyValues
 
 /**
  * Expand when both end-points are known, find all relationships of the given
@@ -61,7 +62,7 @@ case class ExpandIntoPipe(source: Pipe,
                 .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
               if (relationships.isEmpty) Iterator.empty
-              else relationships.map(row.newWith1(relName, _))
+              else relationships.map(r => row.newWith1(relName, AnyValues.asEdgeValue(r)))
             }
 
           case null =>

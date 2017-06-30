@@ -20,56 +20,56 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
+import org.neo4j.values._
 
 trait TypeSafeMathSupport {
-  def plus(left: Any, right: Any): Any = {
+  def plus(left: NumberValue, right: NumberValue): AnyValue = {
 
     try {
       (left, right) match {
-        case (null, _) => null
-        case (_, null) => null
+        case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
 
-        case (l: Byte, r: Byte) => l + r
-        case (l: Byte, r: Double) => l + r
-        case (l: Byte, r: Float) => l + r
-        case (l: Byte, r: Int) => l + r.toLong
-        case (l: Byte, r: Long) => Math.addExact(l, r)
-        case (l: Byte, r: Short) => l + r
+        case (l: ByteValue, r: ByteValue) => Values.intValue(l.value() + r.value())
+        case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
+        case (l: ByteValue, r: IntValue) => Values.longValue(l.value() + r.value().toLong)
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() + r.value())
 
-        case (l: Double, r: Byte) => l + r
-        case (l: Double, r: Double) => l + r
-        case (l: Double, r: Float) => l + r
-        case (l: Double, r: Int) => l + r
-        case (l: Double, r: Long) => l + r
-        case (l: Double, r: Short) => l + r
+        case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() + r.value())
+        case (l: DoubleValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: DoubleValue, r: FloatValue) => Values.doubleValue(l.value() + r.value())
+        case (l: DoubleValue, r: IntValue) => Values.doubleValue(l.value() + r.value())
+        case (l: DoubleValue, r: LongValue) => Values.doubleValue(l.value() + r.value())
+        case (l: DoubleValue, r: ShortValue) => Values.doubleValue(l.value() + r.value())
 
-        case (l: Float, r: Byte) => l + r
-        case (l: Float, r: Double) => l + r
-        case (l: Float, r: Float) => l + r
-        case (l: Float, r: Int) => l + r
-        case (l: Float, r: Long) => l + r
-        case (l: Float, r: Short) => l + r
+        case (l: FloatValue, r: ByteValue) => Values.floatValue(l.value() + r.value())
+        case (l: FloatValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: FloatValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
+        case (l: FloatValue, r: IntValue) => Values.floatValue(l.value() + r.value())
+        case (l: FloatValue, r: LongValue) => Values.floatValue(l.value() + r.value())
+        case (l: FloatValue, r: ShortValue) => Values.floatValue(l.value() + r.value())
 
-        case (l: Int, r: Byte) => l.toLong + r
-        case (l: Int, r: Double) => l + r
-        case (l: Int, r: Float) => l + r
-        case (l: Int, r: Int) => l.toLong + r.toLong
-        case (l: Int, r: Long) => Math.addExact(l, r)
-        case (l: Int, r: Short) => l + r
+        case (l: IntValue, r: ByteValue) => Values.intValue(l.value() + r.value())
+        case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
+        case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() + r.longValue())
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.addExact(l.value(), r.value()))
+        case (l: IntValue, r: ShortValue) => Values.intValue(l.value() + r.value())
 
-        case (l: Long, r: Byte) => Math.addExact(l, r)
-        case (l: Long, r: Double) => l + r
-        case (l: Long, r: Float) => l + r
-        case (l: Long, r: Int) => Math.addExact(l, r)
-        case (l: Long, r: Long) => Math.addExact(l, r)
-        case (l: Long, r: Short) => Math.addExact(l, r)
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.addExact(l.value(),r.value()))
 
-        case (l: Short, r: Byte) => l + r
-        case (l: Short, r: Double) => l + r
-        case (l: Short, r: Float) => l + r
-        case (l: Short, r: Int) => l + r
-        case (l: Short, r: Long) => Math.addExact(l, r)
-        case (l: Short, r: Short) => l + r
+        case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() + r.value())
+        case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() + r.value())
+        case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() + r.value())
+        case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() + r.longValue())
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.addExact(l.value(),r.value()))
+        case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() + r.value())
       }
     } catch {
       case e: java.lang.ArithmeticException =>
@@ -77,103 +77,100 @@ trait TypeSafeMathSupport {
     }
   }
 
-  def divide(left: Any, right: Any): Any = {
+  def divide(left: NumberValue, right: NumberValue): AnyValue = {
     (left, right) match {
-      case (null, _) => null
-      case (_, null) => null
+      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
 
-      case (l: Byte, r: Byte)   => l / r
-      case (l: Byte, r: Double) => l / r
-      case (l: Byte, r: Float)  => l / r
-      case (l: Byte, r: Int)    => l / r
-      case (l: Byte, r: Long)   => l / r
-      case (l: Byte, r: Short)  => l / r
+      case (l: ByteValue, r: ByteValue) => Values.intValue(l.value() / r.value())
+      case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
+      case (l: ByteValue, r: IntValue) => Values.longValue(l.value() / r.value().toLong)
+      case (l: ByteValue, r: LongValue) => Values.longValue(l.value() / r.value())
+      case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() / r.value())
 
-      case (l: Double, r: Byte)   => l / r
-      case (l: Double, r: Double) => l / r
-      case (l: Double, r: Float)  => l / r
-      case (l: Double, r: Int)    => l / r
-      case (l: Double, r: Long)   => l / r
-      case (l: Double, r: Short)  => l / r
+      case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() / r.value())
+      case (l: DoubleValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: DoubleValue, r: FloatValue) => Values.doubleValue(l.value() / r.value())
+      case (l: DoubleValue, r: IntValue) => Values.doubleValue(l.value() / r.value())
+      case (l: DoubleValue, r: LongValue) => Values.doubleValue(l.value() / r.value())
+      case (l: DoubleValue, r: ShortValue) => Values.doubleValue(l.value() / r.value())
 
-      case (l: Float, r: Byte)   => l / r
-      case (l: Float, r: Double) => l / r
-      case (l: Float, r: Float)  => l / r
-      case (l: Float, r: Int)    => l / r
-      case (l: Float, r: Long)   => l / r
-      case (l: Float, r: Short)  => l / r
+      case (l: FloatValue, r: ByteValue) => Values.floatValue(l.value() / r.value())
+      case (l: FloatValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: FloatValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
+      case (l: FloatValue, r: IntValue) => Values.floatValue(l.value() / r.value())
+      case (l: FloatValue, r: LongValue) => Values.floatValue(l.value() / r.value())
+      case (l: FloatValue, r: ShortValue) => Values.floatValue(l.value() / r.value())
 
-      case (l: Int, r: Byte)   => l / r
-      case (l: Int, r: Double) => l / r
-      case (l: Int, r: Float)  => l / r
-      case (l: Int, r: Int)    => l / r
-      case (l: Int, r: Long)   => l / r
-      case (l: Int, r: Short)  => l / r
+      case (l: IntValue, r: ByteValue) => Values.intValue(l.value() / r.value())
+      case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
+      case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() / r.longValue())
+      case (l: IntValue, r: LongValue) => Values.longValue(l.value() /  r.value())
+      case (l: IntValue, r: ShortValue) => Values.intValue(l.value() / r.value())
 
-      case (l: Long, r: Byte)   => l / r
-      case (l: Long, r: Double) => l / r
-      case (l: Long, r: Float)  => l / r
-      case (l: Long, r: Int)    => l / r
-      case (l: Long, r: Long)   => l / r
-      case (l: Long, r: Short)  => l / r
+      case (l: LongValue, r: ByteValue) => Values.longValue(l.value() / r.value())
+      case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
+      case (l: LongValue, r: IntValue) => Values.longValue(l.value() / r.value())
+      case (l: LongValue, r: LongValue) => Values.longValue(l.value() / r.value())
+      case (l: LongValue, r: ShortValue) => Values.longValue(l.value() / r.value())
 
-      case (l: Short, r: Byte)   => l / r
-      case (l: Short, r: Double) => l / r
-      case (l: Short, r: Float)  => l / r
-      case (l: Short, r: Int)    => l / r
-      case (l: Short, r: Long)   => l / r
-      case (l: Short, r: Short)  => l / r
+      case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() / r.value())
+      case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
+      case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
+      case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() / r.longValue())
+      case (l: ShortValue, r: LongValue) => Values.longValue(l.value() / r.value())
+      case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() / r.value())
 
     }
   }
 
-  def minus(left: Any, right: Any): Any = {
+  def minus(left: NumberValue, right: NumberValue): AnyValue = {
     try {
       (left, right) match {
-        case (null, _) => null
-        case (_, null) => null
+        case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+        case (l: ByteValue, r: ByteValue) => Values.intValue(l.value() - r.value())
+        case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
+        case (l: ByteValue, r: IntValue) => Values.longValue(l.value() - r.value().toLong)
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
-        case (l: Byte, r: Byte) => l - r
-        case (l: Byte, r: Double) => l - r
-        case (l: Byte, r: Float) => l - r
-        case (l: Byte, r: Int) => l - r.toLong
-        case (l: Byte, r: Long) => Math.subtractExact(l, r)
-        case (l: Byte, r: Short) => l - r
+        case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() - r.value())
+        case (l: DoubleValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: DoubleValue, r: FloatValue) => Values.doubleValue(l.value() - r.value())
+        case (l: DoubleValue, r: IntValue) => Values.doubleValue(l.value() - r.value())
+        case (l: DoubleValue, r: LongValue) => Values.doubleValue(l.value() - r.value())
+        case (l: DoubleValue, r: ShortValue) => Values.doubleValue(l.value() - r.value())
 
-        case (l: Double, r: Byte) => l - r
-        case (l: Double, r: Double) => l - r
-        case (l: Double, r: Float) => l - r
-        case (l: Double, r: Int) => l - r
-        case (l: Double, r: Long) => l - r
-        case (l: Double, r: Short) => l - r
+        case (l: FloatValue, r: ByteValue) => Values.floatValue(l.value() - r.value())
+        case (l: FloatValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: FloatValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
+        case (l: FloatValue, r: IntValue) => Values.floatValue(l.value() - r.value())
+        case (l: FloatValue, r: LongValue) => Values.floatValue(l.value() - r.value())
+        case (l: FloatValue, r: ShortValue) => Values.floatValue(l.value() - r.value())
 
-        case (l: Float, r: Byte) => l - r
-        case (l: Float, r: Double) => l - r
-        case (l: Float, r: Float) => l - r
-        case (l: Float, r: Int) => l - r
-        case (l: Float, r: Long) => l - r
-        case (l: Float, r: Short) => l - r
+        case (l: IntValue, r: ByteValue) => Values.intValue(l.value() - r.value())
+        case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
+        case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() - r.longValue())
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(), r.value()))
+        case (l: IntValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
-        case (l: Int, r: Byte) => l - r
-        case (l: Int, r: Double) => l - r
-        case (l: Int, r: Float) => l - r
-        case (l: Int, r: Int) => l.toLong - r.toLong
-        case (l: Int, r: Long) => Math.subtractExact(l, r)
-        case (l: Int, r: Short) => l - r
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
 
-        case (l: Long, r: Byte) => Math.subtractExact(l, r)
-        case (l: Long, r: Double) => l - r
-        case (l: Long, r: Float) => l - r
-        case (l: Long, r: Int) => Math.subtractExact(l, r)
-        case (l: Long, r: Long) => Math.subtractExact(l, r)
-        case (l: Long, r: Short) => Math.subtractExact(l, r)
-
-        case (l: Short, r: Byte) => l - r
-        case (l: Short, r: Double) => l - r
-        case (l: Short, r: Float) => l - r
-        case (l: Short, r: Int) => l - r.toLong
-        case (l: Short, r: Long) => Math.subtractExact(l, r)
-        case (l: Short, r: Short) => l - r
+        case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() - r.value())
+        case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() - r.value())
+        case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() - r.value())
+        case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() - r.longValue())
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.subtractExact(l.value(),r.value()))
+        case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() - r.value())
 
       }
     } catch {
@@ -182,53 +179,52 @@ trait TypeSafeMathSupport {
     }
   }
 
-  def multiply(left: Any, right: Any): Any = {
+  def multiply(left: NumberValue, right: NumberValue): AnyValue = {
     try {
       (left, right) match {
-        case (null, _) => null
-        case (_, null) => null
+        case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
 
-        case (l: Byte, r: Byte) => l * r
-        case (l: Byte, r: Double) => l * r
-        case (l: Byte, r: Float) => l * r
-        case (l: Byte, r: Int) => Math.multiplyExact(l, r.toLong)
-        case (l: Byte, r: Long) => Math.multiplyExact(l, r)
-        case (l: Byte, r: Short) => l * r
+        case (l: ByteValue, r: ByteValue) => Values.intValue(l.value() * r.value())
+        case (l: ByteValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: ByteValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
+        case (l: ByteValue, r: IntValue) => Values.longValue(l.value() * r.value().toLong)
+        case (l: ByteValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: ByteValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
-        case (l: Double, r: Byte) => l * r
-        case (l: Double, r: Double) => l * r
-        case (l: Double, r: Float) => l * r
-        case (l: Double, r: Int) => l * r
-        case (l: Double, r: Long) => l * r
-        case (l: Double, r: Short) => l * r
+        case (l: DoubleValue, r: ByteValue) => Values.doubleValue(l.value() * r.value())
+        case (l: DoubleValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: DoubleValue, r: FloatValue) => Values.doubleValue(l.value() * r.value())
+        case (l: DoubleValue, r: IntValue) => Values.doubleValue(l.value() * r.value())
+        case (l: DoubleValue, r: LongValue) => Values.doubleValue(l.value() * r.value())
+        case (l: DoubleValue, r: ShortValue) => Values.doubleValue(l.value() * r.value())
 
-        case (l: Float, r: Byte) => l * r
-        case (l: Float, r: Double) => l * r
-        case (l: Float, r: Float) => l * r
-        case (l: Float, r: Int) => l * r
-        case (l: Float, r: Long) => l * r
-        case (l: Float, r: Short) => l * r
+        case (l: FloatValue, r: ByteValue) => Values.floatValue(l.value() * r.value())
+        case (l: FloatValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: FloatValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
+        case (l: FloatValue, r: IntValue) => Values.floatValue(l.value() * r.value())
+        case (l: FloatValue, r: LongValue) => Values.floatValue(l.value() * r.value())
+        case (l: FloatValue, r: ShortValue) => Values.floatValue(l.value() * r.value())
 
-        case (l: Int, r: Byte) => l * r
-        case (l: Int, r: Double) => l * r
-        case (l: Int, r: Float) => l * r
-        case (l: Int, r: Int) => Math.multiplyExact(l.toLong, r.toLong)
-        case (l: Int, r: Long) => Math.multiplyExact(l, r)
-        case (l: Int, r: Short) => Math.multiplyExact(l.toLong, r.toLong)
+        case (l: IntValue, r: ByteValue) => Values.intValue(l.value() * r.value())
+        case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
+        case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() * r.longValue())
+        case (l: IntValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(), r.value()))
+        case (l: IntValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
-        case (l: Long, r: Byte) => Math.multiplyExact(l, r)
-        case (l: Long, r: Double) => l * r
-        case (l: Long, r: Float) => l * r
-        case (l: Long, r: Int) => Math.multiplyExact(l, r.toLong)
-        case (l: Long, r: Long) => Math.multiplyExact(l, r.toLong)
-        case (l: Long, r: Short) => Math.multiplyExact(l, r.toLong)
+        case (l: LongValue, r: ByteValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: LongValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
+        case (l: LongValue, r: IntValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: LongValue, r: ShortValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
 
-        case (l: Short, r: Byte) => Math.multiplyExact(l.toLong, r)
-        case (l: Short, r: Double) => l * r
-        case (l: Short, r: Float) => l * r
-        case (l: Short, r: Int) => Math.multiplyExact(l, r.toLong)
-        case (l: Short, r: Long) => Math.multiplyExact(l, r)
-        case (l: Short, r: Short) => Math.multiplyExact(l.toLong, r.toLong)
+        case (l: ShortValue, r: ByteValue) => Values.intValue(l.value() * r.value())
+        case (l: ShortValue, r: DoubleValue) => Values.doubleValue(l.value() * r.value())
+        case (l: ShortValue, r: FloatValue) => Values.floatValue(l.value() * r.value())
+        case (l: ShortValue, r: IntValue) => Values.longValue(l.longValue() * r.longValue())
+        case (l: ShortValue, r: LongValue) => Values.longValue(Math.multiplyExact(l.value(),r.value()))
+        case (l: ShortValue, r: ShortValue) => Values.intValue(l.value() * r.value())
 
       }
     } catch {

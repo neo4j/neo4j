@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.{FloatValue, IntegralValue, NumberValue, Values}
 
 /**
  * AVG computation is calculated using cumulative moving average approach:
@@ -40,15 +42,23 @@ class AvgFunction(val value: Expression)
 
   def result(implicit state: QueryState) =
     if (count > 0) {
-      sum.value
+      Values.intValue(sum.value.asInstanceOf[Int])
     } else {
-      null
+      Values.NO_VALUE
     }
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
-      val next = divide(minus(number, sum.value), count.toDouble)
+      val diff = minus(number, Values.intValue(sum.value.asInstanceOf[Int])) match {
+        case v: NumberValue => v
+        case _ => throw new InternalException("cannot average non-numbers")
+      }
+      val next: Number = divide(diff, Values.doubleValue(count.toDouble)) match {
+        case v: FloatValue => v.doubleValue()
+        case v: IntegralValue => v.longValue()
+        case _ => throw new InternalException("cannot average non-numbers")
+      }
       sum = sum.add(next)
     })
   }

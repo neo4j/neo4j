@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import scala.collection.JavaConverters._
 
 case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: Expression)
                       (val id: Id = new Id)
@@ -32,7 +33,7 @@ case class ForeachPipe(source: Pipe, inner: Pipe, variable: String, expression: 
     input.map {
       (outerContext) =>
         val values = makeTraversable(expression(outerContext)(state))
-        values.foreach { v =>
+        values.iterator().asScala.foreach { v =>
           val innerState = state.withInitialContext(outerContext.newWith1(variable, v))
           inner.createResults(innerState).length // exhaust the iterator, in case there's a merge read increasing cardinality inside the foreach
         }

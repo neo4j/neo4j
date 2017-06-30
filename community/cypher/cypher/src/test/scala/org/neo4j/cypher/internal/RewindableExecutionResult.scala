@@ -51,7 +51,7 @@ object RewindableExecutionResult {
       case other: PipeExecutionResult =>
         exceptionHandler.runSafely {
           new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
-            other.executionMode, READ_WRITE)
+                                  other.executionMode, READ_WRITE)
         }
       case other: StandardInternalExecutionResult =>
         exceptionHandler.runSafely {
@@ -353,7 +353,8 @@ object RewindableExecutionResult {
 
     override def close(): Unit = inner.close()
 
-    override def notifications: Iterable[Notification] = inner.notifications.map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification)
+    override def notifications: Iterable[Notification] = inner.notifications
+      .map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification)
 
     private def lift(position: frontend.v3_1.InputPosition): InputPosition = {
       InputPosition.apply(position.offset, position.line, position.column)
@@ -488,7 +489,8 @@ object RewindableExecutionResult {
 
     override def close(): Unit = inner.close()
 
-    override def notifications: Iterable[Notification] = inner.notifications.map(org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper.asKernelNotification)
+    override def notifications: Iterable[Notification] = inner.notifications
+      .map(org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper.asKernelNotification)
 
 
     private def lift(position: frontend.v3_2.InputPosition): InputPosition = {

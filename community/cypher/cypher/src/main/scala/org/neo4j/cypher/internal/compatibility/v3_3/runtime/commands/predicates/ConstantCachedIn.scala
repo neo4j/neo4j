@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.{AnyValue, Values}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -38,10 +39,10 @@ case class ConstantCachedIn(value: Expression, list: Expression) extends Predica
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState) = {
     val inChecker = state.cachedIn.getOrElseUpdate(list, {
       val listValue = list(ctx)
-      val checker = if (listValue == null)
+      val checker = if (listValue == Values.NO_VALUE)
         NullListChecker
       else {
-        val input = makeTraversable(listValue).toIterator
+        val input = makeTraversable(listValue)
         if (input.isEmpty) AlwaysFalseChecker else new BuildUp(input)
       }
       new InCheckContainer(checker)
@@ -68,19 +69,18 @@ case class DynamicCachedIn(value: Expression, list: Expression) extends Predicat
 
   // These two are here to make the fields accessible without conflicting with the case classes
   override def isMatch(ctx: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val listValue = list(ctx)
+    val listValue: AnyValue = list(ctx)
 
-    if(listValue == null)
+    if(listValue == Values.NO_VALUE)
       return None
 
     val traversable = makeTraversable(listValue)
-    val inputIterator = traversable.toIterator
 
-    if(inputIterator.isEmpty)
+    if(traversable.isEmpty)
       return Some(false)
 
     val inChecker = state.cachedIn.getOrElseUpdate(traversable, {
-      val checker = new BuildUp(inputIterator)
+      val checker = new BuildUp(traversable)
       new InCheckContainer(checker)
     })
 
@@ -108,7 +108,7 @@ object CachedIn {
 This is a simple container that keep the latest state of the cached IN check
  */
 class InCheckContainer(var checker: Checker) {
-  def contains(value: Any): Option[Boolean] = {
+  def contains(value: AnyValue): Option[Boolean] = {
     val (result, newChecker) = checker.contains(value)
     checker = newChecker
     result

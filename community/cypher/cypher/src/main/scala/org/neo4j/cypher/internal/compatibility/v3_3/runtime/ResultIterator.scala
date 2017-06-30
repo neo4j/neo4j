@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaListWrapper
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.values.AnyValue
 
 import scala.collection.immutable
 
-trait ResultIterator extends Iterator[immutable.Map[String, Any]] {
+trait ResultIterator extends Iterator[immutable.Map[String, AnyValue]] {
   def toEager: EagerResultIterator
   def wasMaterialized: Boolean
   def close()
@@ -46,7 +45,7 @@ class EagerResultIterator(result: ResultIterator) extends ResultIterator {
   override def close() = result.close()
 }
 
-class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
+class ClosingIterator(inner: Iterator[collection.Map[String, AnyValue]],
                       closer: TaskCloser,
                       exceptionDecorator: CypherException => CypherException) extends ResultIterator {
 
@@ -65,20 +64,11 @@ class ClosingIterator(inner: Iterator[collection.Map[String, Any]],
     }
   }
 
-  override def next(): Map[String, Any] = failIfThrows {
+  override def next(): Map[String, AnyValue] = failIfThrows {
     if (closer.isClosed) Iterator.empty.next()
 
     val value = inner.next()
-    val result = Eagerly.immutableMapValues(value, materialize)
-    result
-  }
-
-  private def materialize(v: Any): Any = v match {
-    case (x: JavaListWrapper[_]) => x
-    case (x: Stream[_])   => x.map(materialize).toIndexedSeq
-    case (x: collection.Map[_, _])   => Eagerly.immutableMapValues(x.toMap, materialize)
-    case (x: Iterable[_]) => x.map(materialize)
-    case x => x
+    value.toMap
   }
 
   override def close() {

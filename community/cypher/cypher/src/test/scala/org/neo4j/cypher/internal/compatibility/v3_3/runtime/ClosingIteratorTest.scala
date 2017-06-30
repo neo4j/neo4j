@@ -23,6 +23,8 @@ import org.mockito.Matchers.anyBoolean
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.values.Values.intValue
 
 class ClosingIteratorTest extends CypherFunSuite {
   var taskCloser: TaskCloser = _
@@ -35,14 +37,14 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("should not close prematurely") {
     //Given
-    val wrapee   = Iterator(Map("k" -> 42))
+    val wrapee   = Iterator(Map("k" -> intValue(42)))
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
     //When
     val result = iterator.next()
 
     //Then
     verify(taskCloser, never()).close(anyBoolean())
-    result should equal(Map[String, Any]("k" -> 42))
+    result should equal(Map[String, Any]("k" -> intValue(42)))
   }
 
   test("should cleanup even for empty iterator") {
@@ -77,7 +79,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("exception in hasNext should fail transaction") {
     //Given
-    val wrapee = mock[Iterator[Map[String, Any]]]
+    val wrapee = mock[Iterator[Map[String, AnyValue]]]
     when(wrapee.hasNext).thenThrow(new RuntimeException)
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
@@ -90,7 +92,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("exception in next should fail transaction") {
     //Given
-    val wrapee = mock[Iterator[Map[String, Any]]]
+    val wrapee = mock[Iterator[Map[String, AnyValue]]]
     when(wrapee.hasNext).thenReturn(true)
     when(wrapee.next()).thenThrow(new RuntimeException)
 
@@ -105,7 +107,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("close runs cleanup") {
     //Given
-    val wrapee   = Iterator(Map("k" -> 42), Map("k" -> 43))
+    val wrapee   = Iterator(Map("k" -> intValue(42)), Map("k" -> intValue(43)))
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When

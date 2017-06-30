@@ -22,22 +22,24 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
 import scala.collection.mutable
 
 trait VarLengthPredicate {
-  def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean
-  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean
+  def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean
+  def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean
 }
 
 object VarLengthPredicate {
 
   val NONE: VarLengthPredicate = new VarLengthPredicate {
 
-    override def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean = true
+    override def filterNode(row: ExecutionContext, state:QueryState)(node: NodeValue): Boolean = true
 
-    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: Relationship): Boolean = true
+    override def filterRelationship(row: ExecutionContext, state:QueryState)(rel: EdgeValue): Boolean = true
   }
 }
 case class VarLengthExpandPipe(source: Pipe,
@@ -52,19 +54,19 @@ case class VarLengthExpandPipe(source: Pipe,
                                nodeInScope: Boolean,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
                               (val id: Id = new Id) extends PipeWithSource(source) {
-  private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
-                              row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
-    val stack = new mutable.Stack[(Node, Seq[Relationship])]
+  private def varLengthExpand(node: NodeValue, state: QueryState, maxDepth: Option[Int],
+                              row: ExecutionContext): Iterator[(NodeValue, Seq[EdgeValue])] = {
+    val stack = new mutable.Stack[(NodeValue, Seq[EdgeValue])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(Node, Seq[Relationship])] {
-      def next(): (Node, Seq[Relationship]) = {
+    new Iterator[(NodeValue, Seq[EdgeValue])] {
+      def next(): (NodeValue, Seq[EdgeValue]) = {
         val (node, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row,state)(node)) {
-          val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
+          val relationships: Iterator[EdgeValue] = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(AnyValues.asEdgeValue)
 
           relationships.filter(filteringStep.filterRelationship(row, state)).foreach { rel =>
-            val otherNode = rel.getOtherNode(node)
+            val otherNode = rel.otherNode(node)
             if (!rels.contains(rel) && filteringStep.filterNode(row,state)(otherNode)) {
               stack.push((otherNode, rels :+ rel))
             }
@@ -87,14 +89,14 @@ case class VarLengthExpandPipe(source: Pipe,
     input.flatMap {
       row => {
         fetchFromContext(row, fromName) match {
-          case n: Node =>
+          case n: NodeValue =>
             val paths = varLengthExpand(n, state, max, row)
             paths.collect {
               case (node, rels) if rels.length >= min && isToNodeValid(row, node) =>
-                row.newWith2(relName, rels, toName, node)
+                row.newWith2(relName, VirtualValues.list(rels:_*), toName, node)
             }
 
-          case null => Iterator(row.newWith2(relName, null, toName, null))
+          case v if v == Values.NO_VALUE => Iterator(row.newWith2(relName, null, toName, null))
 
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }

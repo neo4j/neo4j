@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.Values.{doubleArray, intArray}
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -159,16 +162,16 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   test("should support joining on arrays") {
     // given
-    val ints = Array(1, 2, 3)
-    val doubles = Array(1.0, 2.0, 3.0)
+    val ints = intArray(Array(1, 2, 3))
+    val doubles = doubleArray(Array(1.0, 2.0, 3.0))
 
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
-    when(left.createResults(queryState)).thenReturn(rows("a", ints, Array(2, 3, 4)))
+    when(left.createResults(queryState)).thenReturn(rows("a", ints, intArray(Array(2, 3, 4))))
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
-    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, Array(0, 1, 2)))
+    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, intArray(Array(0, 1, 2))))
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
@@ -178,9 +181,9 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
   }
 
 
-  private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
-  private def rows(variable: String, values: Any*): Iterator[ExecutionContext] =
+  private def rows(variable: String, values: AnyValue*): Iterator[ExecutionContext] =
     values.map(x => ExecutionContext.from(variable -> x)).iterator
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {

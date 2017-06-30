@@ -86,7 +86,7 @@ trait CachingExpandInto {
   private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
                           relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start, localDirection, relTypes)
+    val relationships = query.getRelationshipsForIds(start.getId, localDirection, relTypes)
     new PrefetchingIterator[Relationship] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[Relationship](2)

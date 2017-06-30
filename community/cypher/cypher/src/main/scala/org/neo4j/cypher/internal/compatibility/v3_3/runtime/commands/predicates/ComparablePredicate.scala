@@ -20,27 +20,27 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.storable.Values
+import org.neo4j.values.AnyValues
 
-abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate with Comparer {
+abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
+
   def compare(comparisonResult: Int): Boolean
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
-    val l: Any = left(m)
-    val r: Any = right(m)
+    val l = left(m)
+    val r = right(m)
 
-    if (l == null || r == null) None
-    else (l, r) match {
-      case (d: Double, _) if d.isNaN => None
-      case (_, d: Double) if d.isNaN => None
-      case (_, _) => compareForComparability(None, l, r)(state).map(result => compare(result))
-    }
+    if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
+    else Some(compare(AnyValues.COMPARATOR.compare(l, r)))
   }
 
   def sign: String
+
   override def toString = left.toString() + " " + sign + " " + right.toString()
+
   def containsIsNull = false
 
   def arguments = Seq(left, right)
@@ -55,11 +55,12 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
   }
 }
 
-case class Equals(a: Expression, b: Expression) extends Predicate with Comparer {
-  def other(x:Expression):Option[Expression] = {
-    if      (x == a) Some(b)
+case class Equals(a: Expression, b: Expression) extends Predicate {
+
+  def other(x: Expression): Option[Expression] = {
+    if (x == a) Some(b)
     else if (x == b) Some(a)
-    else             None
+    else None
   }
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
@@ -67,9 +68,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
     val b1 = b(m)
 
     (a1, b1) match {
-      case (null, _) => None
-      case (_, null) => None
-      case _         => Some(Equivalent(a1) == b1)
+      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None
+      case _ => Some(a1.equals(b1))
     }
   }
 
@@ -77,7 +77,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 
   def containsIsNull = (a, b) match {
     case (Variable(_), Literal(null)) => true
-    case _                              => false
+    case _ => false
   }
 
   def rewrite(f: (Expression) => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))
@@ -88,25 +88,37 @@ case class Equals(a: Expression, b: Expression) extends Predicate with Comparer 
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
+
   def compare(comparisonResult: Int) = comparisonResult < 0
+
   def sign: String = "<"
+
   def rewrite(f: (Expression) => Expression) = f(LessThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
+
   def compare(comparisonResult: Int) = comparisonResult > 0
+
   def sign: String = ">"
+
   def rewrite(f: (Expression) => Expression) = f(GreaterThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
+
   def compare(comparisonResult: Int) = comparisonResult <= 0
+
   def sign: String = "<="
+
   def rewrite(f: (Expression) => Expression) = f(LessThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
+
   def compare(comparisonResult: Int) = comparisonResult >= 0
+
   def sign: String = ">="
+
   def rewrite(f: (Expression) => Expression) = f(GreaterThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }

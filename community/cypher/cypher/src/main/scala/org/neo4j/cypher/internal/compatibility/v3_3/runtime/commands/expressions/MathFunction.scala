@@ -24,6 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.values._
+import org.neo4j.values.storable._
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
 
@@ -36,9 +39,9 @@ abstract class MathFunction(arg: Expression) extends Expression with NumericHelp
 
 abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = arg(ctx)
-    if (null == value) null else apply(asDouble(value))
+    if (Values.NO_VALUE == value) Values.NO_VALUE else Values.doubleValue(apply(asDouble(value).doubleValue()))
   }
 
   def apply(value: Double): Double
@@ -46,38 +49,35 @@ abstract class NullSafeMathFunction(arg: Expression) extends MathFunction(arg) {
 
 trait NumericHelper {
 
-  protected def asLongEntityId(a: Any): Long = a match {
-    case _ if a.isInstanceOf[Double] || a.isInstanceOf[Float] =>
+  protected def asLongEntityId(a: AnyValue): LongValue = a match {
+    case _ if a.isInstanceOf[FloatValue] =>
       throw new CypherTypeException("Expected entity id to be an integral value")
     case _ =>
       asLong(a)
   }
 
-  protected def asDouble(a: Any) = asNumber(a).doubleValue()
+  protected def asDouble(a: AnyValue): DoubleValue = Values.doubleValue(asNumber(a).doubleValue())
 
-  protected def asInt(a: Any) = asNumber(a).intValue()
+  protected def asInt(a: AnyValue): IntValue = Values.intValue(asNumber(a).longValue().toInt)
 
-  protected def asLong(a: Any) = asNumber(a).longValue()
+  protected def asLong(a: AnyValue): LongValue = Values.longValue(asNumber(a).longValue())
 
-  private def asNumber(a: Any): Number = a match {
+  private def asNumber(a: AnyValue): NumberValue = a match {
     case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
-    case a: Number => a
+    case n if n == Values.NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
+    case n: NumberValue => n
     case _ => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
   }
 }
 
 case class AbsFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = argument(ctx)
-    if (null == value) null
+    if (Values.NO_VALUE == value) Values.NO_VALUE
     else value match {
-      case f: java.lang.Float => Math.abs(f).toDouble
-      case d: java.lang.Double => Math.abs(d)
-      case b: java.lang.Byte => Math.abs(b.toLong)
-      case s: java.lang.Short => Math.abs(s.toLong)
-      case i: java.lang.Integer => Math.abs(i).toLong
-      case l: java.lang.Long => Math.abs(l)
+      case f: IntegralValue => Values.longValue(Math.abs(f.longValue()))
+      case d: NumberValue =>  Values.doubleValue(Math.abs(d.doubleValue()))
       case x => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + x.toString)
     }
   }
@@ -108,13 +108,13 @@ case class AtanFunction(argument: Expression) extends NullSafeMathFunction(argum
 
 case class Atan2Function(y: Expression, x: Expression) extends Expression with NumericHelper {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val yValue = y(ctx)
     val xValue = x(ctx)
     if (null == yValue || null == xValue)
       null
     else
-      math.atan2(asDouble(yValue), asDouble(xValue))
+      Values.doubleValue(math.atan2(asDouble(yValue).doubleValue(), asDouble(xValue).doubleValue()))
   }
 
   override def arguments = Seq(x, y)
@@ -154,7 +154,7 @@ case class DegreesFunction(argument: Expression) extends NullSafeMathFunction(ar
 
 case class EFunction() extends Expression() {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.E
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.E
 
   override def arguments = Seq()
 
@@ -193,7 +193,7 @@ case class Log10Function(argument: Expression) extends NullSafeMathFunction(argu
 
 case class PiFunction() extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = math.Pi
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.PI
 
   override def arguments = Seq()
 
@@ -232,7 +232,7 @@ case class TanFunction(argument: Expression) extends NullSafeMathFunction(argume
 
 case class RandFunction() extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Double = math.random
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = Values.doubleValue(math.random)
 
   override def arguments = Seq()
 
@@ -243,15 +243,15 @@ case class RandFunction() extends Expression {
 
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val stepVal = asLong(step(ctx))
-    if (stepVal == 0L)
+    if (stepVal.longValue() == 0L)
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
     val startVal = asLong(start(ctx))
     val inclusiveEndVal = asLong(end(ctx))
 
-    IndexedInclusiveLongRange(startVal, inclusiveEndVal, stepVal)
+    VirtualValues.range(startVal.longValue(), inclusiveEndVal.longValue(), stepVal.longValue())
   }
 
   override def arguments = Seq(start, end, step)
@@ -266,11 +266,11 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = argument(ctx)
-    if (null == value) null
+    if (Values.NO_VALUE == value) Values.NO_VALUE
     else {
-      Math.signum(asDouble(value)).toLong
+      Values.longValue(Math.signum(asDouble(value).doubleValue()).toLong)
     }
   }
 

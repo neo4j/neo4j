@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.graphdb.Node
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -29,7 +31,7 @@ import scala.collection.mutable.ListBuffer
 case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
                                 (val id: Id = new Id)
   extends PipeWithSource(source) {
-  val nullColumns: Seq[(String, Null)] = nullableVariables.map(_ -> null).toSeq
+  val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -79,7 +81,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
   private def computeKey(context: ExecutionContext): Option[IndexedSeq[Long]] = {
     val key = new Array[Long](myVariables.length)
 
-    for (idx <- 0 until myVariables.length) {
+    for (idx <- myVariables.indices) {
       key(idx) = context(myVariables(idx)) match {
         case n: Node => n.getId
         case _ => return None

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.NameId
+import org.neo4j.values.Values
 
 case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
                                       (val id: Id = new Id) extends Pipe {
@@ -41,6 +42,6 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
           count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }
     }
-    Seq(baseContext.newWith1(ident, count)).iterator
+    Seq(baseContext.newWith1(ident, Values.longValue(count))).iterator
   }
 }

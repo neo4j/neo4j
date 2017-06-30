@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Map
 
@@ -47,7 +47,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
   def createInitialHistory: InitialHistory = {
 
     val relationshipsInContextButNotInPattern = source.collect {
-      case (key, r: Relationship) if !boundRels.contains(key) && variablesInClause.contains(key) => r
+      case (key, r: EdgeValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
     }.toIndexedSeq
 
     new InitialHistory(source, relationshipsInContextButNotInPattern)
@@ -86,14 +86,14 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
 
     val current: MatchingPair = remaining.head
 
-    val currentNodeId = current.entity.asInstanceOf[Node].getId
+    val currentNodeId = current.entity.asInstanceOf[NodeValue].id()
 
     current.patternNode.canUseThis(currentNodeId, state, history.toMap) &&
       traverseNextSpecificNode(remaining, history, yielder, current, alreadyInExtraWork = false)
   }
 
   private def traverseNextNodeFromRelationship[U](rel: GraphRelationship,
-                                                  gNode: Node,
+                                                  gNode: NodeValue,
                                                   nextPNode: PatternNode,
                                                   currentRel: PatternRelationship,
                                                   history: History,
@@ -235,7 +235,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
     """, history, resultMap))
   }
 
-  private def debug(rel: GraphRelationship, node: Node, pNode: PatternNode, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {
+  private def debug(rel: GraphRelationship, node: NodeValue, pNode: PatternNode, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {
     if (isDebugging)
       println(String.format("""traverseNextNodeFromRelationship
     rel=%s

@@ -19,77 +19,83 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual._
+import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 
 final class PathValueBuilder {
-  private val builder = Vector.newBuilder[PropertyContainer]
+
+  private val nodes = ArrayBuffer.empty[NodeValue]
+  private val rels = ArrayBuffer.empty[EdgeValue]
   private var nulled = false
-  private var previousNode: Node = null
-  def result(): PathImpl = if (nulled) null else new PathImpl(builder.result(): _*)
+  private var previousNode: NodeValue = null
+  def result(): PathValue = if (nulled) null else VirtualValues.path(nodes.toArray, rels.toArray)
 
   def clear(): PathValueBuilder =  {
-    builder.clear()
+    nodes.clear()
+    rels.clear()
     nulled = false
     this
   }
 
-  def addNode(node: Node): PathValueBuilder = nullCheck(node) {
+  def addNode(node: NodeValue): PathValueBuilder = nullCheck(node) {
     previousNode = node
-    builder += node
+    nodes += node
     this
   }
 
-  def addIncomingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
-    builder += rel
-    previousNode = rel.getStartNode
-    builder += previousNode
+  def addIncomingRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+    rels += rel
+    previousNode = rel.startNode()
+    nodes += previousNode
     this
   }
 
-  def addOutgoingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
-    builder += rel
-    previousNode = rel.getEndNode
-    builder += previousNode
+  def addOutgoingRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+    rels += rel
+    previousNode = rel.endNode()
+    nodes += previousNode
     this
   }
 
-  def addUndirectedRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
-    if (rel.getStartNode == previousNode) addOutgoingRelationship(rel)
-    else if (rel.getEndNode == previousNode) addIncomingRelationship(rel)
+  def addUndirectedRelationship(rel: EdgeValue): PathValueBuilder = nullCheck(rel) {
+    if (rel.startNode() == previousNode) addOutgoingRelationship(rel)
+    else if (rel.endNode() == previousNode) addIncomingRelationship(rel)
     else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
   }
 
-  def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
+  def addIncomingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
     val iterator = rels.iterator
     while (iterator.hasNext)
-      addIncomingRelationship(iterator.next())
+      addIncomingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
-  def addOutgoingRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
+  def addOutgoingRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
     val iterator = rels.iterator
     while (iterator.hasNext)
-      addOutgoingRelationship(iterator.next())
+      addOutgoingRelationship(iterator.next().asInstanceOf[EdgeValue])
     this
   }
 
-  def addUndirectedRelationships(rels: Iterable[Relationship]): PathValueBuilder = nullCheck(rels) {
+  def addUndirectedRelationships(rels: ListValue): PathValueBuilder = nullCheck(rels) {
     val relIterator = rels.iterator
 
-    def consumeIterator(i: Iterator[Relationship]) =
+    def consumeIterator(i: Iterator[AnyValue]) =
       while (i.hasNext)
-        addUndirectedRelationship(i.next())
+        addUndirectedRelationship(i.next().asInstanceOf[EdgeValue])
 
 
     if (relIterator.hasNext) {
-      val first = relIterator.next()
-      val rightDirection = first.getStartNode == previousNode || first.getEndNode == previousNode
+      val first = relIterator.next().asInstanceOf[EdgeValue]
+      val rightDirection = first.startNode() == previousNode || first.endNode() == previousNode
 
       if (rightDirection) {
         addUndirectedRelationship(first)
-        consumeIterator(relIterator)
+        consumeIterator(relIterator.asScala)
       } else {
-        consumeIterator(relIterator.toIndexedSeq.reverseIterator)
+        consumeIterator(relIterator.asScala.toIndexedSeq.reverseIterator)
         addUndirectedRelationship(first)
       }
     }

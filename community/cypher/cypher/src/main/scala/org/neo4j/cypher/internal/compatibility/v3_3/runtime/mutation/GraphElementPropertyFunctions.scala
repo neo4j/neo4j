@@ -19,21 +19,24 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
+import java.util.function.BiConsumer
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.{AnyValue, Values}
 
-import scala.collection.JavaConverters._
 import scala.collection.Map
 
 trait GraphElementPropertyFunctions extends ListSupport {
 
   implicit class RichMap(m: Map[String, Expression]) {
+
     def rewrite(f: (Expression) => Expression): Map[String, Expression] = m.map {
       case (k, v) => k -> v.rewrite(f)
     }
@@ -41,48 +44,52 @@ trait GraphElementPropertyFunctions extends ListSupport {
     def symboltableDependencies: Set[String] = m.values.flatMap(_.symbolTableDependencies).toSet
   }
 
-  def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext, state: QueryState) {
+  def setProperties(pc: PropertyContainer, props: Map[String, Expression], context: ExecutionContext,
+                    state: QueryState) {
     props.foreach {
       case ("*", expression) => setAllMapKeyValues(expression, context, pc, state)
       case (key, expression) => setSingleValue(expression, context, pc, key, state)
     }
   }
 
-  def toString(m:Map[String,Expression]):String = m.map {
+  def toString(m: Map[String, Expression]): String = m.map {
     case (k, e) => "%s: %s".format(k, e.toString)
   }.mkString("{", ", ", "}")
 
-  def getMapFromExpression(v: Any): Map[String, Any] = {
+  def getMapFromExpression(v: AnyValue): MapValue = {
     v match {
-      case null                    => throw new InvalidArgumentException("Property map expression is null")
-      case _: collection.Map[_, _] => v.asInstanceOf[collection.Map[String, Any]].toMap
-      case _: JavaMap[_, _]        => v.asInstanceOf[JavaMap[String, Any]].asScala.toMap
-      case _                       => throw new CypherTypeException(s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
+      case null => throw new InvalidArgumentException("Property map expression is null")
+      case x if x == Values.NO_VALUE => throw new InvalidArgumentException("Property map expression is null")
+      case m: MapValue => m
+      case _ => throw new CypherTypeException(
+        s"Don't know how to extract parameters from this type: ${v.getClass.getName}")
     }
   }
 
-  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer, state: QueryState) {
+  private def setAllMapKeyValues(expression: Expression, context: ExecutionContext, pc: PropertyContainer,
+                                 state: QueryState) {
     val map = getMapFromExpression(expression(context)(state))
 
     pc match {
-      case n: Node => map.foreach {
-        case (key, value) =>
+      case n: Node => map.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(key: String, value: AnyValue): Unit =
           state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      }
+      })
 
-      case r: Relationship => map.foreach {
-        case (key, value) =>
+      case r: Relationship => map.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(key: String, value: AnyValue): Unit =
           state.query.relationshipOps.setProperty(r.getId, state.query.getOrCreatePropertyKeyId(key), makeValueNeoSafe(value))
-      }
+      })
     }
   }
 
-  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String, state: QueryState) {
-    val unsafeValue: Any = expression(context)(state)
-    if (unsafeValue != null) {
+  private def setSingleValue(expression: Expression, context: ExecutionContext, pc: PropertyContainer, key: String,
+                             state: QueryState) {
+    val unsafeValue: AnyValue = expression(context)(state)
+    if (unsafeValue != Values.NO_VALUE) {
       val value = makeValueNeoSafe(unsafeValue)
       pc match {
-        case n: Node  =>
+        case n: Node =>
           state.query.nodeOps.setProperty(n.getId, state.query.getOrCreatePropertyKeyId(key), value)
 
         case r: Relationship =>

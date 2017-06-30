@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -63,8 +62,6 @@ class EagerAggregationPipeTest extends CypherFunSuite {
       Map[String, Any]("a" -> 1, "b" -> 2, "count(*)" -> 1),
       Map[String, Any]("a" -> 2, "b" -> 2, "count(*)" -> 1)
     )
-
-    getResults(aggregationPipe).toString() shouldNot include(classOf[Equivalent].getSimpleName)
   }
 
   test("should aggregate count(*) on three grouping columns") {
@@ -85,8 +82,6 @@ class EagerAggregationPipeTest extends CypherFunSuite {
       Map[String, Any]("a" -> 1, "b" -> 2, "c" -> 3, "count(*)" -> 1),
       Map[String, Any]("a" -> 2, "b" -> 2, "c" -> 4, "count(*)" -> 1)
     )
-
-    getResults(aggregationPipe).toString() shouldNot include(classOf[Equivalent].getSimpleName)
   }
 
   test("should handle grouping on null") {

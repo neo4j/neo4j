@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValues
 
 class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
 
@@ -75,8 +76,8 @@ class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElement
   }
 
   implicit class CheckValeNeoSafe(expected: Array[_]) {
-
-    def ==>(vals: Any*) =
-      makeValueNeoSafe(vals) should equal(expected)
+    import scala.collection.JavaConverters._
+    def ==>(vals: Any*): Unit =
+      makeValueNeoSafe(AnyValues.asListValue(vals.asJava)) should equal(expected)
   }
 }

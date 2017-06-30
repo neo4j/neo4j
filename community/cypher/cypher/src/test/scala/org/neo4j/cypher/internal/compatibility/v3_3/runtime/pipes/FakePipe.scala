@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, MapExecutionContext}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.values.AnyValues
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.Map
@@ -30,8 +31,8 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
 
-  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    data.map(m => ExecutionContext.empty.newWith(m.toSeq))
+  def internalCreateResults(state: QueryState): Iterator[MapExecutionContext] =
+    data.map(m => ExecutionContext(collection.mutable.Map(m.mapValues(AnyValues.of)toSeq: _*)))
 
   var id = new Id
 }

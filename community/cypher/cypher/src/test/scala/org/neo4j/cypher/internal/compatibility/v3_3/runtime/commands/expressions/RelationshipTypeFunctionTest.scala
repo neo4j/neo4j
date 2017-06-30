@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Relationship, RelationshipType}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
@@ -52,6 +53,6 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
   test("should throw if encountering anything other than a relationship") {
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
-    a [ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute((), null)
+    a [ParameterWrongTypeException] should be thrownBy RelationshipTypeFunction(Variable("r")).compute(1337L, null)
   }
 }

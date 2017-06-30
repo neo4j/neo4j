@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Map
 
@@ -31,7 +32,7 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                              predicates: Seq[Predicate],
                              variablesInClause: Set[String]) extends MatcherBuilder {
   def getMatches(sourceRow: ExecutionContext, state:QueryState): Traversable[ExecutionContext] = {
-    val bindings: Map[String, Any] = sourceRow.filter(_._2.isInstanceOf[PropertyContainer])
+    val bindings: Map[String, AnyValue] = sourceRow.filter(s => s._2.isInstanceOf[NodeValue] || s._2.isInstanceOf[EdgeValue])
     val boundPairs: Map[String, Set[MatchingPair]] = extractBoundMatchingPairs(bindings)
 
     val undirectedBoundRelationships: Iterable[PatternRelationship] = bindings.keys.
@@ -56,16 +57,16 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
                                                              Iterable[PatternRelationship], bindings: Map[String,
     Any]): Seq[Map[String, Set[MatchingPair]]] = {
     val toList = undirectedBoundRelationships.map(patternRel => {
-      val rel = bindings(patternRel.key).asInstanceOf[Relationship]
+      val rel = bindings(patternRel.key).asInstanceOf[EdgeValue]
       val x = patternRel.key -> Set(MatchingPair(patternRel, rel))
 
       // Outputs the first direction of the pattern relationship
-      val a1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.getStartNode))
-      val a2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.getEndNode))
+      val a1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.startNode()))
+      val a2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.endNode()))
 
       // Outputs the second direction of the pattern relationship
-      val b1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.getEndNode))
-      val b2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.getStartNode))
+      val b1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.endNode()))
+      val b2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.startNode()))
 
       Seq(Map(x, a1, a2), Map(x, b1, b2))
     }).toList
@@ -85,14 +86,14 @@ class PatternMatchingBuilder(patternGraph: PatternGraph,
 
 
   private def extractBoundMatchingPairs(bindings: Map[String, Any]): Map[String, Set[MatchingPair]] = bindings.flatMap {
-    case (key, node: Node) if patternGraph.contains(key) =>
+    case (key, node: NodeValue) if patternGraph.contains(key) =>
       Seq(key -> patternGraph(key).map(pNode => MatchingPair(pNode, node)).toSet)
-    case (key, rel: Relationship) if patternGraph.contains(key) =>
+    case (key, rel: EdgeValue) if patternGraph.contains(key) =>
       val patternRels = patternGraph(key).asInstanceOf[Seq[PatternRelationship]]
       patternRels.flatMap(pRel => {
         def extractMatchingPairs(startNode: PatternNode, endNode: PatternNode): Seq[(String, Set[MatchingPair])] = {
-          val t1 = startNode.key -> Set(MatchingPair(startNode, rel.getStartNode))
-          val t2 = endNode.key -> Set(MatchingPair(endNode, rel.getEndNode))
+          val t1 = startNode.key -> Set(MatchingPair(startNode, rel.startNode()))
+          val t2 = endNode.key -> Set(MatchingPair(endNode, rel.endNode()))
           val t3 = pRel.key -> Set(MatchingPair(pRel, rel))
 
           // Check that found end nodes correspond to what is already in scope

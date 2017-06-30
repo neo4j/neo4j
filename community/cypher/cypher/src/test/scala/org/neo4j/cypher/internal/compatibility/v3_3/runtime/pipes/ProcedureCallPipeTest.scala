@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class ProcedureCallPipeTest
   extends CypherFunSuite
@@ -34,6 +35,7 @@ class ProcedureCallPipeTest
     with AstConstructionTestSupport {
 
   val procedureName = QualifiedName(List.empty, "foo")
+  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty))
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
@@ -42,7 +44,7 @@ class ProcedureCallPipeTest
 
     val pipe = ProcedureCallPipe(
       source = lhs,
-      name = procedureName,
+      signature = signature,
       callMode = LazyReadOnlyCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
@@ -65,7 +67,7 @@ class ProcedureCallPipeTest
 
     val pipe = ProcedureCallPipe(
       source = lhs,
-      name = procedureName,
+      signature = signature,
       callMode = EagerReadWriteCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
@@ -87,7 +89,7 @@ class ProcedureCallPipeTest
 
     val pipe = ProcedureCallPipe(
       source = lhs,
-      name = procedureName,
+      signature = signature,
       callMode = EagerReadWriteCallMode(emptyStringArray),
       argExprs = Seq(Variable("a")),
       rowProcessing = PassThroughRow,

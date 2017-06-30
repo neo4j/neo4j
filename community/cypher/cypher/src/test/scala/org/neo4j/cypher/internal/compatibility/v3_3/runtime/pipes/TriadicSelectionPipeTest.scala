@@ -25,8 +25,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.NodeProxy
+import org.neo4j.values.storable.Values
 
 import scala.collection.{Map, mutable}
+import scala.collection.Map
+import org.neo4j.values.virtual.VirtualValues
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
   test("triadic from input with no cycles") {
@@ -163,14 +166,14 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
 
   private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
     def nodeWithId(id: Long) = {
-      new NodeProxy(null, id)
+      VirtualValues.nodeValue(id, Array.empty, VirtualValues.EMPTY_MAP)
     }
 
     data.flatMap {
       case (x, related) =>
         related.map {
           case a: Int => Map(keys(1) -> nodeWithId(a), keys(0) -> nodeWithId(x))
-          case null => Map(keys(1) -> null, keys(0) -> nodeWithId(x))
+          case null => Map(keys(1) -> Values.NO_VALUE, keys(0) -> nodeWithId(x))
         }
     }
   }

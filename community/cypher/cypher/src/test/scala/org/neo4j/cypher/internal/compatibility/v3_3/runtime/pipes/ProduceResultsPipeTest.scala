@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.AnyValue
 
 class ProduceResultsPipeTest extends CypherFunSuite {
 
@@ -59,5 +61,9 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     val result = pipe.createResults(queryState).toList
 
     result shouldBe empty
+  }
+
+  private def ctx(data: (String, AnyValue)*): ExecutionContext = {
+    new ExecutionContext().newWith(Map(data: _*))
   }
 }

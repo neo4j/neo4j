@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.Node
+import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.values.virtual.NodeValue
 
 case class GetDegree(node: Expression, typ: Option[KeyToken], direction: SemanticDirection) extends NullInNullOutExpression(node) {
 
@@ -36,8 +37,8 @@ case class GetDegree(node: Expression, typ: Option[KeyToken], direction: Semanti
     }
   }
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
-    case n: Node => getDegree(state.query, n.getId)
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case n: NodeValue => Values.longValue(getDegree(state.query, n.id()))
     case other   => throw new CypherTypeException(s"Type mismatch: expected a node but was $other of type ${other.getClass.getSimpleName}")
   }
 

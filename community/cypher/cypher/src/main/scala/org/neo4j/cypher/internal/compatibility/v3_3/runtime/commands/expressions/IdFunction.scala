@@ -22,13 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class IdFunction(inner: Expression) extends NullInNullOutExpression(inner) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = value match {
-    case node: Node        => node.getId
-    case rel: Relationship => rel.getId
-    case x => throw new CypherTypeException("Expected `%s` to be a node or relationship, but it was ``".format(inner, x.getClass.getSimpleName))
+
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case node: NodeValue => Values.longValue(node.id())
+    case rel: EdgeValue => Values.longValue(rel.id())
+    case x => throw new CypherTypeException(
+      "Expected `%s` to be a node or relationship, but it was `%s`".format(inner, x.getClass.getSimpleName))
   }
 
   def rewrite(f: (Expression) => Expression) = f(IdFunction(inner.rewrite(f)))

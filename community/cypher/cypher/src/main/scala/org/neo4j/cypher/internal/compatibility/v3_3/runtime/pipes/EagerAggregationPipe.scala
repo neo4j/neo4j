@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.mutable.{Map => MutableMap}
 
@@ -39,9 +40,9 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
 
     implicit val s = state
 
-    val result = MutableMap[Equals, Seq[AggregationFunction]]()
+    val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
     val keyNames = keyExpressions.toList
-    val aggregationNames: Seq[String] = aggregations.keys.toIndexedSeq
+    val aggregationNames: IndexedSeq[String] = aggregations.keys.toIndexedSeq
     val keyNamesSize = keyNames.size
     val mapSize = keyNamesSize + aggregationNames.size
 
@@ -58,25 +59,27 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     // You'll just have to trust that the original authors spent time profiling and making sure that this
     // code runs really fast.
     // If you feel like cleaning it up - please make sure to not regress in performance. This is a hot spot.
-    def createResults(key: Any, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
+    def createResults(key: AnyValue, aggregator: scala.Seq[AggregationFunction]): ExecutionContext = {
       val newMap = MutableMaps.create(mapSize)
 
       //add key values
       keyNamesSize match {
         case 1 =>
-          newMap += keyNames.head -> key.asInstanceOf[Equivalent].originalValue
+          newMap += keyNames.head -> key
         case 2 =>
-          val t2 = key.asInstanceOf[(Equivalent, Equivalent)]
-          newMap += keyNames.head -> t2._1.originalValue +=
-                    keyNames.last -> t2._2.originalValue
+          val t2 = key.asInstanceOf[ListValue]
+          newMap += keyNames.head -> t2.head +=
+                    keyNames.last -> t2.last
         case 3 =>
-          val t3 = key.asInstanceOf[(Equivalent, Equivalent, Equivalent)]
-          newMap += keyNames.head -> t3._1.originalValue +=
-                    keyNames.tail.head -> t3._2.originalValue +=
-                    keyNames.last -> t3._3.originalValue
+          val t3 = key.asInstanceOf[ListValue]
+          newMap += keyNames.head -> t3.value(0) +=
+                    keyNames.tail.head -> t3.value(1) +=
+                    keyNames.last -> t3.value(2)
         case _ =>
-          val listOfValues = key.asInstanceOf[List[Equivalent]]
-          (keyNames zip listOfValues.map(_.originalValue)).foreach(newMap += _)
+          val listOfValues = key.asInstanceOf[ListValue]
+          for (i <- aggregationNames.indices) {
+            newMap += keyNames(i) -> listOfValues.value(i)
+          }
       }
 
       //add aggregated values
@@ -86,11 +89,11 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
     }
 
     input.foreach(ctx => {
-      val groupValues: Equals = keyNamesSize match {
-        case 1 => Equivalent(ctx(keyNames.head))
-        case 2 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.last)))
-        case 3 => (Equivalent(ctx(keyNames.head)),Equivalent(ctx(keyNames.tail.head)),Equivalent(ctx(keyNames.last)))
-        case _ => keyNames.map( k => Equivalent(ctx(k)))
+      val groupValues = keyNamesSize match {
+        case 1 => ctx(keyNames.head)
+        case 2 => VirtualValues.list(ctx(keyNames.head), ctx(keyNames.last))
+        case 3 =>  VirtualValues.list(ctx(keyNames.head), ctx(keyNames.tail.head), ctx(keyNames.last))
+        case _ => VirtualValues.list(keyNames.map(k => ctx(k)):_*)
       }
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toIndexedSeq

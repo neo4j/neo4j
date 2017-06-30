@@ -23,26 +23,27 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
+import org.neo4j.values._
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def operand = "/"
 
   def verb = "divide"
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val aVal = a(ctx)
     val bVal = b(ctx)
 
     (aVal, bVal) match {
-      case (_, 0) => throw new ArithmeticException("/ by zero")
-      case (null, _) => null
-      case (_, null) => null
-      case (x: Number, y: Number) => calc(x, y)
+      case (_, l:IntegralValue) if l.longValue() == 0L  => throw new ArithmeticException("/ by zero")
+      case (_, l:FloatValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
+      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+      case (x: NumberValue, y: NumberValue) => calc(x, y)
       case _ => throwTypeError(bVal, aVal)
     }
   }
 
-  def calc(a: Number, b: Number) = divide(a, b)
+  def calc(a: NumberValue, b: NumberValue): AnyValue = divide(a, b)
 
   def rewrite(f: (Expression) => Expression) = f(Divide(a.rewrite(f), b.rewrite(f)))
 

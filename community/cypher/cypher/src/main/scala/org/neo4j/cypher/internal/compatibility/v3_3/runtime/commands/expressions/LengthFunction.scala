@@ -20,19 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.graphdb.Path
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.{AnyValue, TextValue, Values}
 
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)
   with ListSupport {
   //NOTE all usage except for paths is deprecated
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Long = value match {
-    case path: Path => path.length()
-    case s: String  => s.length()
-    case x          => makeTraversable(x).toIndexedSeq.length
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case path: PathValue => Values.intValue(path.size())
+    case s: TextValue  => Values.intValue(s.length())
+    case x          => Values.intValue(makeTraversable(x).size())
   }
 
   def rewrite(f: (Expression) => Expression) = f(LengthFunction(inner.rewrite(f)))

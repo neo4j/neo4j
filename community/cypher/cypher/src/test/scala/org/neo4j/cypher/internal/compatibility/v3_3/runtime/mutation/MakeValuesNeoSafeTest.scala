@@ -21,38 +21,36 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.Values._
+import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.Array._
 
 class MakeValuesNeoSafeTest extends CypherFunSuite {
 
   test("string collection turns into string array") {
-    makeValueNeoSafe(Seq("a", "b")) should equal(Array("a", "b"))
+    makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray(Array("a", "")))
   }
 
   test("empty collection in is empty array") {
-    makeValueNeoSafe(Seq()) should equal(Array())
+    makeValueNeoSafe(list()) should equal(stringArray(Array.empty))
   }
 
   test("retains type of primitive arrays") {
-    Seq(emptyLongArray, emptyShortArray, emptyByteArray, emptyIntArray,
-      emptyDoubleArray, emptyFloatArray, emptyBooleanArray).foreach { array =>
+    Seq(longArray(emptyLongArray), shortArray(emptyShortArray), byteArray(emptyByteArray), intArray(emptyIntArray),
+        doubleArray(emptyDoubleArray), floatArray(emptyFloatArray), booleanArray(emptyBooleanArray)).foreach { array =>
 
       makeValueNeoSafe(array) should equal(array)
-      makeValueNeoSafe(array).getClass
-        .getComponentType should equal(array.getClass.getComponentType)
     }
   }
 
   test("string arrays work") {
     val array = Array[String]()
 
-    makeValueNeoSafe(array) should equal(array)
-    makeValueNeoSafe(array).getClass
-      .getComponentType should equal(array.getClass.getComponentType)
+    makeValueNeoSafe(stringArray(array)) should equal(array)
   }
 
   test("mixed types are not ok") {
-    intercept[CypherTypeException](makeValueNeoSafe(Seq("a", 12, false)))
+    intercept[CypherTypeException](makeValueNeoSafe(list(stringValue("a"), intValue(12), booleanValue(false))))
   }
 }

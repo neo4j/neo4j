@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
+import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.values.virtual.ListValue
+
 import scala.collection.mutable
 
 /**
@@ -26,11 +29,11 @@ import scala.collection.mutable
   * each checking using the contains() method returns both the result of the IN check and the new state.
   */
 trait Checker {
-  def contains(value: Any): (Option[Boolean], Checker)
+  def contains(value: AnyValue): (Option[Boolean], Checker)
 }
 
-class BuildUp(iterator: Iterator[Any]) extends Checker {
-  private val cachedSet: mutable.Set[Equivalent] = new mutable.HashSet[Equivalent]
+class BuildUp(iterator: ListValue) extends Checker {
+  private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
 
   // If we don't return true, this is what we will return. If the collection contains any nulls, we'll return None,
   // else we return Some(false).
@@ -38,35 +41,35 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
 
   assert(iterator.nonEmpty)
 
-  override def contains(value: Any): (Option[Boolean], Checker) = {
-    if (value == null) (None, this)
+  override def contains(value: AnyValue): (Option[Boolean], Checker) = {
+    if (value == Values.NO_VALUE) (None, this)
     else {
-      val eqValue = Equivalent(value)
-      if (cachedSet.contains(eqValue))
+      if (cachedSet.contains(value))
         (Some(true), this)
       else
         checkAndBuildUpCache(value)
     }
   }
 
-  private def checkAndBuildUpCache(value: Any): (Option[Boolean], Checker) = {
+  private def checkAndBuildUpCache(value: AnyValue): (Option[Boolean], Checker) = {
     var foundMatch = false
-    while (iterator.nonEmpty && !foundMatch) {
-      val nextValue = iterator.next()
+    var i = 0
+    while (i < iterator.size() && !foundMatch) {
+      val nextValue = iterator.value(i)
 
-      if (nextValue == null) {
+      if (nextValue == Values.NO_VALUE) {
         falseResult = None
       } else {
-        val next = Equivalent(nextValue)
-        cachedSet.add(next)
-        foundMatch = next == value
+        cachedSet.add(nextValue)
+        foundMatch = nextValue.equals(value)
       }
+      i = i + 1
     }
 
     if (cachedSet.isEmpty) {
       (None, NullListChecker)
     } else {
-      val nextState = if (iterator.nonEmpty) this else new SetChecker(cachedSet, falseResult)
+      val nextState = if (i < iterator.size()) this else new SetChecker(cachedSet, falseResult)
       val result = if (foundMatch) Some(true) else falseResult
 
       (result, nextState)
@@ -75,25 +78,23 @@ class BuildUp(iterator: Iterator[Any]) extends Checker {
 }
 
 case object AlwaysFalseChecker extends Checker {
-  override def contains(value: Any): (Option[Boolean], Checker) = (Some(false), this)
+  override def contains(value: AnyValue): (Option[Boolean], Checker) = (Some(false), this)
 }
 
 case object NullListChecker extends Checker {
-  override def contains(value: Any): (Option[Boolean], Checker) = (None, this)
+  override def contains(value: AnyValue): (Option[Boolean], Checker) = (None, this)
 }
 
 // This is the final form for this cache.
-class SetChecker(cachedSet: mutable.Set[Equivalent], falseResult: Option[Boolean]) extends Checker {
+class SetChecker(cachedSet: mutable.Set[AnyValue], falseResult: Option[Boolean]) extends Checker {
 
   assert(cachedSet.nonEmpty)
 
-  override def contains(value: Any): (Option[Boolean], Checker) = {
-    if (value == null)
+  override def contains(value: AnyValue): (Option[Boolean], Checker) = {
+    if (value == Values.NO_VALUE)
       (None, this)
     else {
-      val eqValue = Equivalent(value)
-
-      val exists = cachedSet.contains(eqValue)
+      val exists = cachedSet.contains(value)
       val result = if (exists) Some(true) else falseResult
       (result, this)
     }

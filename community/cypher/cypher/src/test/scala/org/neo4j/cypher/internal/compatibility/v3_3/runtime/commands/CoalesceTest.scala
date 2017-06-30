@@ -51,7 +51,7 @@ class CoalesceTest extends CypherFunSuite {
 }
 
 case class BreakingExpression() extends Expression {
-  def apply(v1: ExecutionContext)(implicit state: QueryState) {
+  def apply(v1: ExecutionContext)(implicit state: QueryState) = {
     import org.scalatest.Assertions._
     fail("Coalesce is not lazy")
   }

@@ -21,33 +21,36 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{IsList, ListSupport}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
+
+import scala.collection.JavaConverters._
 
 sealed trait SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any]
+  def expressions(ctx: ExecutionContext, state: QueryState): ListValue
   def registerOwningPipe(pipe: Pipe): Unit
 }
 
 object SeekArgs {
   object empty extends SeekArgs {
-    def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = Iterable.empty
+    def expressions(ctx: ExecutionContext, state: QueryState):  ListValue = VirtualValues.EMPTY_LIST
 
     override def registerOwningPipe(pipe: Pipe){}
   }
 }
 
 case class SingleSeekArg(expr: Expression) extends SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] =
+  def expressions(ctx: ExecutionContext, state: QueryState): ListValue =
     expr(ctx)(state) match {
-      case value => Iterable(value)
+      case value => VirtualValues.list(value)
     }
 
   override def registerOwningPipe(pipe: Pipe): Unit = expr.registerOwningPipe(pipe)
 }
 
 case class ManySeekArgs(coll: Expression) extends SeekArgs {
-  def expressions(ctx: ExecutionContext, state: QueryState): Iterable[Any] = {
+  def expressions(ctx: ExecutionContext, state: QueryState): ListValue = {
     coll(ctx)(state) match {
       case IsList(values) => values
     }
@@ -57,13 +60,13 @@ case class ManySeekArgs(coll: Expression) extends SeekArgs {
 }
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: SeekArgs)
-                           (val id: Id = new Id) extends Pipe with ListSupport  {
+                           (val id: Id = new Id) extends Pipe {
 
   nodeIdsExpr.registerOwningPipe(this)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val ctx = state.createOrGetInitialContext()
     val nodeIds = nodeIdsExpr.expressions(ctx, state)
-    new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator)
+    new NodeIdSeekIterator(ident, ctx, state.query.nodeOps, nodeIds.iterator().asScala)
   }
 }

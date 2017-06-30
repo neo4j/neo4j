@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
-  private val seen = scala.collection.mutable.Set[Equivalent]()
+  private val seen = scala.collection.mutable.Set[AnyValue]()
   private var seenNull = false
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState) {
@@ -37,9 +37,8 @@ class DistinctFunction(value: Expression, inner: AggregationFunction) extends Ag
         inner(ctx)
       }
     } else {
-      val equiValue = Equivalent(data)
-      if (!seen.contains(equiValue)) {
-        seen += equiValue
+      if (!seen.contains(data)) {
+        seen += data
         inner(ctx)
       }
     }

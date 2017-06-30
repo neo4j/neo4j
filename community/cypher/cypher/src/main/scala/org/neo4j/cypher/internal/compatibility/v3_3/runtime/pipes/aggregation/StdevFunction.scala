@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.{AnyValue, AnyValues, Values}
 
 class StdevFunction(val value: Expression, val population:Boolean)
   extends AggregationFunction
@@ -37,9 +38,9 @@ class StdevFunction(val value: Expression, val population:Boolean)
   private var count:Int = 0
   private var total:Double = 0
 
-  def result(implicit state: QueryState): Any = {
+  def result(implicit state: QueryState): AnyValue = {
     if(count < 2) {
-      0.0
+      Values.ZERO_FLOAT
     } else {
       val avg = total/count
       val variance = if(population) {
@@ -49,15 +50,15 @@ class StdevFunction(val value: Expression, val population:Boolean)
         val sumOfDeltas = temp.foldLeft(0.0)((acc, e) => {val delta = e - avg; acc + (delta * delta) })
         sumOfDeltas / (count - 1)
       }
-      math.sqrt(variance)
+      Values.doubleValue(math.sqrt(variance))
     }
   }
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {
       count += 1
-      total += asDouble(number)
-      temp = temp :+ asDouble(number)
+      total += number.doubleValue()
+      temp = temp :+ number.doubleValue()
     })
   }
 }

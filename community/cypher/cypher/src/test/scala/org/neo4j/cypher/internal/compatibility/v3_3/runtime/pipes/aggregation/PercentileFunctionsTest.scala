@@ -23,16 +23,17 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.{AnyValue, AnyValues}
 
 trait PercentileTest {
   implicit val state = QueryStateHelper.empty
 
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
-  def getPercentile(percentile: Double, values: List[Any]): Any = {
+  def getPercentile(percentile: Double, values: List[Any]): AnyValue = {
     val func = createAggregator(Variable("x"), Literal(percentile))
     values.foreach(value => {
-      func(ExecutionContext.from("x" -> value))(QueryStateHelper.empty)
+      func(ExecutionContext.from("x" -> AnyValues.of(value)))(QueryStateHelper.empty)
     })
     func.result
   }
@@ -123,77 +124,77 @@ class PercentileContTest extends CypherFunSuite with PercentileTest with Numeric
 
   test("singleOne") {
     val values = List(1.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(1.0 +- .01)
   }
 
   test("manyOnes") {
     val values = List(1.0, 1.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(1.0 +- .01)
   }
 
   test("oneTwoThree") {
     val values = List(1.0, 2.0, 3.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.25, values)) should equal(1.5 +- .01)
-    asDouble(getPercentile(0.33, values)) should equal(1.66 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(2.0 +- .01)
-    asDouble(getPercentile(0.66, values)) should equal(2.32 +- .01)
-    asDouble(getPercentile(0.75, values)) should equal(2.5 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(2.98 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(3.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)).doubleValue() should equal(1.5 +- .01)
+    asDouble(getPercentile(0.33, values)).doubleValue() should equal(1.66 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(2.0 +- .01)
+    asDouble(getPercentile(0.66, values)).doubleValue() should equal(2.32 +- .01)
+    asDouble(getPercentile(0.75, values)).doubleValue() should equal(2.5 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(2.98 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(3.0 +- .01)
   }
 
   test("oneTwoThreeFour") {
     val values = List(1.0, 2.0, 3.0, 4.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.25, values)) should equal(1.75 +- .01)
-    asDouble(getPercentile(0.33, values)) should equal(1.99 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(2.5 +- .01)
-    asDouble(getPercentile(0.66, values)) should equal(2.98 +- .01)
-    asDouble(getPercentile(0.75, values)) should equal(3.25 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(3.97 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(4.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)).doubleValue() should equal(1.75 +- .01)
+    asDouble(getPercentile(0.33, values)).doubleValue() should equal(1.99 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(2.5 +- .01)
+    asDouble(getPercentile(0.66, values)).doubleValue() should equal(2.98 +- .01)
+    asDouble(getPercentile(0.75, values)).doubleValue() should equal(3.25 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(3.97 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(4.0 +- .01)
   }
 
   test("oneTwoThreeFourFive") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.25, values)) should equal(2.0 +- .01)
-    asDouble(getPercentile(0.33, values)) should equal(2.32 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(3.0 +- .01)
-    asDouble(getPercentile(0.66, values)) should equal(3.64 +- .01)
-    asDouble(getPercentile(0.75, values)) should equal(4.0 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(4.96 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(5.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.0 +- .01)
+    asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.32 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(3.0 +- .01)
+    asDouble(getPercentile(0.66, values)).doubleValue() should equal(3.64 +- .01)
+    asDouble(getPercentile(0.75, values)).doubleValue() should equal(4.0 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(4.96 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(5.0 +- .01)
   }
 
   test("oneTwoThreeFourFiveSix") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.25, values)) should equal(2.25 +- .01)
-    asDouble(getPercentile(0.33, values)) should equal(2.65 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(3.5 +- .01)
-    asDouble(getPercentile(0.66, values)) should equal(4.3 +- .01)
-    asDouble(getPercentile(0.75, values)) should equal(4.75 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(5.95 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(6.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.25 +- .01)
+    asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.65 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(3.5 +- .01)
+    asDouble(getPercentile(0.66, values)).doubleValue() should equal(4.3 +- .01)
+    asDouble(getPercentile(0.75, values)).doubleValue() should equal(4.75 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(5.95 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(6.0 +- .01)
   }
 
   test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
-    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
-    asDouble(getPercentile(0.25, values)) should equal(2.5 +- .01)
-    asDouble(getPercentile(0.33, values)) should equal(2.98 +- .01)
-    asDouble(getPercentile(0.50, values)) should equal(4.0 +- .01)
-    asDouble(getPercentile(0.66, values)) should equal(4.96 +- .01)
-    asDouble(getPercentile(0.75, values)) should equal(5.5 +- .01)
-    asDouble(getPercentile(0.99, values)) should equal(6.94 +- .01)
-    asDouble(getPercentile(1.00, values)) should equal(7.0 +- .01)
+    asDouble(getPercentile(0.0, values)).doubleValue() should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)).doubleValue() should equal(2.5 +- .01)
+    asDouble(getPercentile(0.33, values)).doubleValue() should equal(2.98 +- .01)
+    asDouble(getPercentile(0.50, values)).doubleValue() should equal(4.0 +- .01)
+    asDouble(getPercentile(0.66, values)).doubleValue() should equal(4.96 +- .01)
+    asDouble(getPercentile(0.75, values)).doubleValue() should equal(5.5 +- .01)
+    asDouble(getPercentile(0.99, values)).doubleValue() should equal(6.94 +- .01)
+    asDouble(getPercentile(1.00, values)).doubleValue() should equal(7.0 +- .01)
   }
 }

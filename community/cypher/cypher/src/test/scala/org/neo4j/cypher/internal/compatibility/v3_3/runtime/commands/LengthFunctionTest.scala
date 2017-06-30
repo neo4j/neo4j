@@ -20,17 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{LengthFunction, PathImpl, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
 
 class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
     //given
     val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m = ExecutionContext.from("p" -> p)
+    val m = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
     //when
@@ -39,7 +41,6 @@ class LengthFunctionTest extends CypherFunSuite {
     //then
     result should equal(1)
   }
-
   test("length can still be used on collections") {
     //given
     val l = Seq("it", "was", "the")

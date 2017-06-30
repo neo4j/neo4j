@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.Values
 
 class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -38,7 +39,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("should work by applying a  on the rhs") {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
-    val rhsData = "c" -> 36
+    val rhsData = "c" -> Values.intValue(36)
     val rhs = pipeWithResults { (state) => Iterator(ExecutionContext.empty += rhsData) }
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList

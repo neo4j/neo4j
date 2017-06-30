@@ -35,6 +35,6 @@ case class SkipPipe(source: Pipe, exp: Expression)
 
     val skip = asInt(exp(state.createOrGetInitialContext())(state))
 
-    input.drop(skip)
+    input.drop(skip.value())
   }
 }

@@ -20,17 +20,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 /*
 Contains an expression that is really a pipe. An inner expression is run for every row returned by the inner pipe, and
 the result of the NestedPipeExpression evaluation is a collection containing the result of these inner expressions
  */
 case class NestedPipeExpression(pipe: Pipe, inner: Expression) extends Expression {
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val innerState = state.withInitialContext(ctx).withDecorator(state.decorator.innerDecorator(owningPipe))
-    pipe.createResults(innerState).map(ctx => inner(ctx)).toIndexedSeq
+    VirtualValues.list(pipe.createResults(innerState).map(ctx => inner(ctx)).toArray:_*)
   }
 
   override def rewrite(f: (Expression) => Expression) = f(NestedPipeExpression(pipe, inner.rewrite(f)))

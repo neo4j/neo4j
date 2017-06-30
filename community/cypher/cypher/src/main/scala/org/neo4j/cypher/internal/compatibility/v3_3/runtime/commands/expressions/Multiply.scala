@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
+import org.neo4j.values.{AnyValue, NumberValue}
+
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
-  def calc(a: Number, b: Number) = multiply(a, b)
+  def calc(a: NumberValue, b: NumberValue): AnyValue = multiply(a, b)
 
   def rewrite(f: (Expression) => Expression) = f(Multiply(a.rewrite(f), b.rewrite(f)))
 

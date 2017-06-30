@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.Node
+import org.neo4j.values.AnyValues
 
 import scala.collection.mutable.ListBuffer
 
@@ -52,7 +53,7 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
               val it = relationships.toIterator
               val filteredRows = ListBuffer.empty[ExecutionContext]
               while (it.hasNext) {
-                val candidateRow = row.newWith1(relName, it.next())
+                val candidateRow = row.newWith1(relName, AnyValues.asEdgeValue(it.next()))
 
                 if (predicate.isTrue(candidateRow)(state)) {
                   filteredRows.append(candidateRow)

@@ -57,8 +57,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        val neoValue = makeValueNeoSafe(valueVal)
-        state.query.nodeOps.indexGet(idxName, keyVal, neoValue)
+        state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
       }
   }
 
@@ -125,8 +124,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        val neoValue = makeValueNeoSafe(valueVal)
-        state.query.relationshipOps.indexGet(idxName, keyVal, neoValue)
+        state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
       }
   }
 

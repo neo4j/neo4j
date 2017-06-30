@@ -19,48 +19,46 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
-import org.neo4j.graphdb.{Node, Path, Relationship}
-
-import scala.collection.JavaConverters._
+import org.neo4j.values.virtual._
 
 abstract class GraphRelationship {
-  def getOtherNode(node: Node): Node
+  def getOtherNode(node: NodeValue): NodeValue
 }
 
-case class SingleGraphRelationship(rel: Relationship) extends GraphRelationship {
-  def getOtherNode(node: Node): Node = rel.getOtherNode(node)
+case class SingleGraphRelationship(rel: EdgeValue) extends GraphRelationship {
+  def getOtherNode(node: NodeValue): NodeValue = rel.otherNode(node)
 
   override def canEqual(that: Any) = that.isInstanceOf[SingleGraphRelationship] ||
-    that.isInstanceOf[Relationship] ||
+    that.isInstanceOf[EdgeValue] ||
     that.isInstanceOf[VariableLengthGraphRelationship]
 
   override def equals(obj: Any) = obj match {
-    case VariableLengthGraphRelationship(p) => p.relationships().asScala.exists(_ == rel)
+    case VariableLengthGraphRelationship(p) => p.edges().contains(rel)
 
-    case p: Path => p.relationships().asScala.exists(_ == rel)
+    case p: PathValue => p.edges().contains(rel)
     case x => x == this || x == rel
   }
 
   override def toString = rel.toString
 }
 
-case class VariableLengthGraphRelationship(path: Path) extends GraphRelationship {
-  def getOtherNode(node: Node): Node = {
+case class VariableLengthGraphRelationship(path: PathValue) extends GraphRelationship {
+  def getOtherNode(node: NodeValue): NodeValue = {
     if (path.startNode() == node) path.endNode()
     else if (path.endNode() == node) path.startNode()
     else throw new IllegalArgumentException("Node is not start nor end of path.")
   }
 
   override def canEqual(that: Any) = that.isInstanceOf[VariableLengthGraphRelationship] ||
-    that.isInstanceOf[Path] ||
+    that.isInstanceOf[PathValue] ||
     that.isInstanceOf[SingleGraphRelationship]
 
   override def equals(obj: Any) = obj match {
-    case r: Relationship => path.relationships().asScala.exists(_ == r)
-    case x => obj == this || (obj == path && path.length() > 0)
+    case r: EdgeValue => path.edges().contains(r)
+    case x => obj == this || (obj == path && path.size() > 0)
   }
 
-  def relationships: List[Relationship] = path.relationships().asScala.toList
+  def relationships: ListValue = VirtualValues.list(path.edges():_*)
 
   override def toString = path.toString
 }

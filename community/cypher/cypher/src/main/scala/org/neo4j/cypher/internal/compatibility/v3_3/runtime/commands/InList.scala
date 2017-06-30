@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.ListValue
 
 import scala.collection.Seq
 
@@ -32,16 +34,16 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
   with ListSupport
   with Closure {
 
-  type CollectionPredicate[U] = ((U) => Option[Boolean]) => Option[Boolean]
+  type CollectionPredicate = ((AnyValue) => Option[Boolean]) => Option[Boolean]
 
-  def seqMethod[U](f: Seq[U]): CollectionPredicate[U]
+  def seqMethod(f: ListValue): CollectionPredicate
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val list = collectionExpression(m)
 
     if (list == null) None
     else {
-      val seq = makeTraversable(list).toIndexedSeq
+      val seq = makeTraversable(list)
 
       seqMethod(seq)(item => predicate.isMatch(m.newWith1(id, item)))
     }
@@ -63,21 +65,20 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 case class AllInList(collection: Expression, symbolName: String, inner: Predicate)
   extends InList(collection, symbolName, inner) {
 
-  private def forAll[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+  private def forAll(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
-    for (item <- collectionValue) {
-      predicate(item) match {
+    for (i <- 0 to collectionValue.size()) {
+      predicate(collectionValue.value(i))  match {
         case Some(false) => return Some(false)
         case None        => result = None
         case _           =>
       }
     }
-
     result
   }
 
-  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = forAll(value)
+  def seqMethod(value: ListValue): CollectionPredicate = forAll(value)
   def name = "all"
 
   def rewrite(f: (Expression) => Expression) =
@@ -90,11 +91,10 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
 case class AnyInList(collection: Expression, symbolName: String, inner: Predicate)
   extends InList(collection, symbolName, inner) {
 
-  private def exists[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+  private def exists(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(false)
-
-    for (item <- collectionValue) {
-      predicate(item) match {
+    for (i <- 0 to collectionValue.size()) {
+      predicate(collectionValue.value(i)) match {
         case Some(true) => return Some(true)
         case None       => result = None
         case _          =>
@@ -104,7 +104,7 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
     result
   }
 
-  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = exists(value)
+  def seqMethod(value: ListValue): CollectionPredicate = exists(value)
 
   def name = "any"
 
@@ -118,11 +118,11 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
 case class NoneInList(collection: Expression, symbolName: String, inner: Predicate)
   extends InList(collection, symbolName, inner) {
 
-  private def none[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+  private def none(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
-    for (item <- collectionValue) {
-      predicate(item) match {
+    for (i <- 0 to collectionValue.size()) {
+      predicate(collectionValue.value(i)) match {
         case Some(true) => return Some(false)
         case None       => result = None
         case _          =>
@@ -132,7 +132,7 @@ case class NoneInList(collection: Expression, symbolName: String, inner: Predica
     result
   }
 
-  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = none(value)
+  def seqMethod(value: ListValue): CollectionPredicate = none(value)
 
   def name = "none"
 
@@ -146,11 +146,11 @@ case class NoneInList(collection: Expression, symbolName: String, inner: Predica
 case class SingleInList(collection: Expression, symbolName: String, inner: Predicate)
   extends InList(collection, symbolName, inner) {
 
-  private def single[U](collectionValue: Seq[U])(predicate: (U => Option[Boolean])): Option[Boolean] = {
+  private def single(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var matched = false
 
-    for (item <- collectionValue) {
-      predicate(item) match {
+    for (i <- 0 to collectionValue.size()) {
+      predicate(collectionValue.value(i)) match {
         case Some(true) if matched => return Some(false)
         case Some(true)            => matched = true
         case None                  => return None
@@ -161,7 +161,7 @@ case class SingleInList(collection: Expression, symbolName: String, inner: Predi
     Some(matched)
   }
 
-  def seqMethod[U](value: Seq[U]): CollectionPredicate[U] = single(value)
+  def seqMethod(value: ListValue): CollectionPredicate = single(value)
 
   def name = "single"
 

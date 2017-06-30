@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ListBuffer
 
 class CollectFunction(value:Expression) extends AggregationFunction {
-  val collection = new ListBuffer[Any]()
+  val collection = new ListBuffer[AnyValue]()
 
   def apply(data: ExecutionContext)(implicit state:QueryState) {
     value(data) match {
@@ -35,5 +37,5 @@ class CollectFunction(value:Expression) extends AggregationFunction {
     }
   }
 
-  def result(implicit state: QueryState): Any = collection.toIndexedSeq
+  def result(implicit state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)
 }

@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValues
 
 case class ParameterExpression(parameterName: String) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = state.getParam(parameterName)
+  //TODO paramters should have already been transformed
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = AnyValues.of(state.getParam(parameterName))
 
   override def toString(): String = "{" + parameterName + "}"
 

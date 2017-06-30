@@ -46,7 +46,8 @@ trait CypherSerializer {
   protected def serialize(a: Any, qtx: QueryContext): String = a match {
     case x: Node         => x.toString + serializeProperties(x, qtx)
     case x: Relationship => ":" + x.getType.name() + "[" + x.getId + "]" + serializeProperties(x, qtx)
-    case IsMap(m)        => makeString(m, qtx)
+    //TODO
+    //case IsMap(m)        => makeString(m, qtx)
     case IsList(coll)    => coll.map(elem => serialize(elem, qtx)).mkString("[", ",", "]")
     case x: String       => "\"" + x + "\""
     case v: KeyToken     => v.name

@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import java.util.Comparator
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.AnyValue
 
 import scala.math._
 
@@ -32,14 +33,14 @@ import scala.math._
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
 abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
-  extends PipeWithSource(source) with Comparer {
+  extends PipeWithSource(source)  {
 
   val sortItems: Array[SortDescription] = sortDescription.toArray
   private val sortItemsCount: Int = sortItems.length
 
-  type SortDataWithContext = (Array[Any], ExecutionContext)
+  type SortDataWithContext = (Array[AnyValue], ExecutionContext)
 
-  class LessThanComparator(comparer: Comparer)(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
+  class LessThanComparator()(implicit qtx : QueryState) extends Ordering[SortDataWithContext] {
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
       val v1 = a._1
       val v2 = b._1
@@ -92,7 +93,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
           result(last) = arrayEntry(input.next())
         }
 
-        val lessThan = new LessThanComparator(this)
+        val lessThan = new LessThanComparator()
         if (input.isEmpty) {
           result.slice(0,last + 1).sorted(lessThan).iterator.map(_._2)
         } else {
@@ -135,7 +136,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
       input
     else {
 
-      val lessThan = new LessThanComparator(this)
+      val lessThan = new LessThanComparator()
 
       val first = input.next()
       var result = arrayEntry(first)
@@ -165,7 +166,7 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
     if (input.isEmpty)
       Iterator.empty
     else {
-      val lessThan = new LessThanComparator(this)
+      val lessThan = new LessThanComparator()
 
       val first = input.next()
       var best = arrayEntry(first)

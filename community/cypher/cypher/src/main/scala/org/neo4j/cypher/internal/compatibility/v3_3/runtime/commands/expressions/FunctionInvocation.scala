@@ -20,25 +20,23 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
+import org.neo4j.values._
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
   extends Expression with GraphElementPropertyFunctions {
+  private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-   val query = state.query
-
-    val isGraphKernelResultValue = query.isGraphKernelResultValue _
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
-    val argValues = arguments.map(arg => converter.asDeepJavaValue(arg(ctx)(state)))
-
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+    val query = state.query
+    val argValues = arguments.map(arg => {
+      query.asObject(arg(ctx)(state))
+    })
     val result = query.callFunction(signature.name, argValues, signature.allowed)
-
-    scalaValues.asDeepScalaValue(result)
+    valueConverter(result)
   }
 
   override def rewrite(f: (Expression) => Expression) =

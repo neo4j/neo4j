@@ -36,6 +36,6 @@ case class LimitPipe(source: Pipe, exp: Expression)
 
     val limit = asInt(exp(state.createOrGetInitialContext())(state))
 
-    input.take(limit)
+    input.take(limit.value())
   }
 }

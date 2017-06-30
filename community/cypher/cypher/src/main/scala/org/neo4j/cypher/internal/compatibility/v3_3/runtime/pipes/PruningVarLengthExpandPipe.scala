@@ -23,7 +23,8 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class PruningVarLengthExpandPipe(source: Pipe,
                                       fromName: String,
@@ -78,7 +79,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     * @param expandMap   maps NodeID -> FullExpandDepths
     */
   class PrePruningDFS(whenEmptied: State,
-                      node: Node,
+                      node: NodeValue,
                       val path: Array[Long],
                       val pathLength: Int,
                       val state: QueryState,
@@ -86,7 +87,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
                       expandMap: PrimitiveLongObjectMap[FullExpandDepths]
                      ) extends State with Expandable with CheckPath {
 
-    private var rels: Iterator[Relationship] = _
+    private var rels: Iterator[EdgeValue] = _
 
     /*
     Loads the relationship iterator of the nodes before min length has been reached.
@@ -98,7 +99,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
       while (rels.hasNext) {
         val r = rels.next()
-        val relId = r.getId
+        val relId = r.id
 
         if (!seenRelationshipInPath(relId)) {
           val nextState: State = traverseRelationship(r, relId)
@@ -116,8 +117,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     /**
       * Creates the appropriate state for following a relationship to the next node.
       */
-    private def traverseRelationship(r: Relationship, relId: Long): State = {
-      val nextNode = r.getOtherNode(node)
+    private def traverseRelationship(r: EdgeValue, relId: Long): State = {
+      val nextNode = r.otherNode(node)
       path(pathLength) = relId
       val nextPathLength = pathLength + 1
       if (nextPathLength >= self.min)
@@ -173,7 +174,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     *                                 node.
     **/
   class PruningDFS(whenEmptied: State,
-                   node: Node,
+                   node: NodeValue,
                    val path: Array[Long],
                    val pathLength: Int,
                    val state: QueryState,
@@ -196,9 +197,9 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingDepthBefore(currentRelIdx)) {
             val rel = fullExpandDepths.rels(currentRelIdx)
-            val relId = rel.getId
+            val relId = rel.id
             if (!seenRelationshipInPath(relId)) {
-              val nextNode = rel.getOtherNode(node)
+              val nextNode = rel.otherNode(node)
               path(pathLength) = relId
               val nextState = new PruningDFS(whenEmptied = this,
                 node = nextNode,
@@ -213,7 +214,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           }
         }
 
-        expandMap.put(node.getId, fullExpandDepths)
+        expandMap.put(node.id(), fullExpandDepths)
       }
 
       updateMinFullExpandDepth(currentFullExpandDepth)
@@ -244,7 +245,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       }
 
     private def initiateRecursion() = {
-      fullExpandDepths = expandMap.get(node.getId)
+      fullExpandDepths = expandMap.get(node.id())
       if (fullExpandDepths == null) {
         val relIter = expand(row, node)
         fullExpandDepths = FullExpandDepths(relIter.toArray)
@@ -269,8 +270,8 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         nextState.next()
       }
 
-    private def getNodeFromRow(row: ExecutionContext): Node =
-      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[Node]
+    private def getNodeFromRow(row: ExecutionContext): NodeValue =
+      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
   }
 
   trait CheckPath {
@@ -295,23 +296,23 @@ case class PruningVarLengthExpandPipe(source: Pipe,
     /**
       * List all relationships of a node, given the predicates of this pipe.
       */
-    def expand(row: ExecutionContext, node: Node) = {
-      val relationships = state.query.getRelationshipsForIds(node, dir, types.types(state.query))
+    def expand(row: ExecutionContext, node: NodeValue) = {
+      val relationships = state.query.getRelationshipsForIds(node.id(), dir, types.types(state.query)).map(AnyValues.asEdgeValue)
       relationships.filter(r => {
         filteringStep.filterRelationship(row, state)(r) &&
-          filteringStep.filterNode(row, state)(r.getOtherNode(node))
+          filteringStep.filterNode(row, state)(r.otherNode(node))
       })
     }
   }
 
   object FullExpandDepths {
-    def apply(rels: Array[Relationship]) = new FullExpandDepths(rels)
+    def apply(rels: Array[EdgeValue]) = new FullExpandDepths(rels)
 
     val UNINITIALIZED: FullExpandDepths = null
   }
 
   class FullExpandDepths(// all relationships that connect to this node, filtered by the var-length predicates
-                         val rels: Array[Relationship]) {
+                         val rels: Array[EdgeValue]) {
     // The fully expanded depth for each relationship in rels
     val depths = new Array[Int](rels.length)
 
@@ -325,7 +326,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
       while (i < rels.length) {
-        if (rels(i).getId != incomingRelId)
+        if (rels(i).id() != incomingRelId)
           min = math.min(depths(i), min)
         i += 1
       }

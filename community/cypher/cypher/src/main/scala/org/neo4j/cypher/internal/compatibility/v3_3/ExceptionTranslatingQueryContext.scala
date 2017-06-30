@@ -30,6 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3._
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 
 import scala.collection.Iterator
 
@@ -199,7 +201,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateRelTypeId(relTypeName: String) =
     translateException(inner.getOrCreateRelTypeId(relTypeName))
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]) =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]) =
     translateException(inner.getRelationshipsForIds(node, dir, types))
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
@@ -226,13 +228,16 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))
 
-  override def variableLengthPathExpand(node: PatternNode, realNode: Node, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
+  override def asObject(value: AnyValue) =
+    translateException(inner.asObject(value))
+
+  override def variableLengthPathExpand(node: PatternNode, realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
     translateException(inner.variableLengthPathExpand(node, realNode, minHops, maxHops, direction, relTypes))
 
-  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
     translateException(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]) =
     translateException(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
 
   override def nodeCountByCountStore(labelId: Int) =
@@ -260,13 +265,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def delete(obj: T) =
       translateException(inner.delete(obj))
 
-    override def setProperty(id: Long, propertyKey: Int, value: Any) =
+    override def setProperty(id: Long, propertyKey: Int, value: Value) =
       translateException(inner.setProperty(id, propertyKey, value))
 
     override def getById(id: Long): T =
       translateException(inner.getById(id))
 
-    override def getProperty(id: Long, propertyKeyId: Int): Any =
+    override def getProperty(id: Long, propertyKeyId: Int): Value =
       translateException(inner.getProperty(id, propertyKeyId))
 
     override def hasProperty(id: Long, propertyKeyId: Int): Boolean =

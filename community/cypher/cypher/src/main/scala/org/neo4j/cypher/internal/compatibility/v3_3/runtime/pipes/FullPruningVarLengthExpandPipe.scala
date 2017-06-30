@@ -23,7 +23,8 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class FullPruningVarLengthExpandPipe(source: Pipe,
                                           fromName: String,
@@ -76,7 +77,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     * node.
     **/
   class PruningDFS(state: FullPruneState,
-                   node: Node,
+                   node: NodeValue,
                    val path: Array[Long],
                    val pathLength: Int,
                    val queryState: QueryState,
@@ -91,7 +92,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     var relationshipCursor = 0
     var nodeState: NodeState = UNINITIALIZED
 
-    def nextEndNode(): Node = {
+    def nextEndNode(): NodeValue = {
 
       initiate()
 
@@ -103,9 +104,9 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingStepsBefore(currentRelIdx)) {
             val rel = nodeState.rels(currentRelIdx)
-            val relId = rel.getId
+            val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
-              val nextNode = rel.getOtherNode(node)
+              val nextNode = rel.otherNode(node)
               path(pathLength) = relId
               val endNode = state.push( new PruningDFS(
                                       state = state,
@@ -131,10 +132,10 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
 
       if (!nodeState.isEmitted && pathLength >= self.min) {
         nodeState.isEmitted = true
-        expandMap.put(node.getId, nodeState)
+        expandMap.put(node.id(), nodeState)
         node
       } else {
-        expandMap.put(node.getId, nodeState)
+        expandMap.put(node.id(), nodeState)
         null
       }
     }
@@ -174,7 +175,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     }
 
     private def initiate() = {
-      nodeState = expandMap.get(node.getId)
+      nodeState = expandMap.get(node.id())
       if (nodeState == UNINITIALIZED) {
         nodeState = new NodeState()
       }
@@ -211,7 +212,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     */
   class NodeState() {
     // All relationships that connect to this node, filtered by the var-length predicates
-    var rels: Array[Relationship] = _
+    var rels: Array[EdgeValue] = _
     // The fully expanded depth for each relationship in rels
     var depths:Array[Byte] = _
     // True if this node has been emitted before
@@ -227,7 +228,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
       var i = 0
       while (i < rels.length) {
-        if (rels(i).getId != incomingRelId) {
+        if (rels(i).id() != incomingRelId) {
           min = math.min(depths(i), min)
         }
         i += 1
@@ -242,12 +243,12 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     /**
       * If not already done, list all relationships of a node, given the predicates of this pipe.
       */
-    def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: Node) = {
+    def ensureExpanded(queryState: QueryState, row: ExecutionContext, node: NodeValue) = {
       if ( rels == null ) {
-        val allRels = queryState.query.getRelationshipsForIds(node, dir, types.types(queryState.query))
+        val allRels = queryState.query.getRelationshipsForIds(node.id(), dir, types.types(queryState.query)).map(AnyValues.asEdgeValue)
         rels = allRels.filter(r => {
           filteringStep.filterRelationship(row, queryState)(r) &&
-            filteringStep.filterNode(row, queryState)(r.getOtherNode(node))
+            filteringStep.filterNode(row, queryState)(r.otherNode(node))
         }).toArray
         depths = new Array[Byte](rels.length)
       }
@@ -282,7 +283,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
                                 prevLocalRelIndex = -1,
                                 prevNodeState = NodeState.NOOP) )
         } else {
-          var maybeEndNode: Node = null
+          var maybeEndNode: NodeValue = null
           while ( depth >= 0 && maybeEndNode == null ) {
             maybeEndNode = nodeState(depth).nextEndNode()
             if (maybeEndNode == null) pop()
@@ -296,7 +297,7 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       else inputRow.newWith1(self.toName, endNode)
     }
 
-    def push( pruningDFS: PruningDFS ): Node = {
+    def push( pruningDFS: PruningDFS ): NodeValue = {
       depth += 1
       nodeState(depth) = pruningDFS
       pruningDFS.nextEndNode()
@@ -307,8 +308,8 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
       depth -= 1
     }
 
-    private def getNodeFromRow(row: ExecutionContext): Node =
-      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[Node]
+    private def getNodeFromRow(row: ExecutionContext): NodeValue =
+      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
   }
 
   class FullyPruningIterator(
@@ -360,8 +361,8 @@ case class FullPruningVarLengthExpandPipe(source: Pipe,
     }
 
 
-    private def getNodeFromRow(row: ExecutionContext): Node =
-      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[Node]
+    private def getNodeFromRow(row: ExecutionContext): NodeValue =
+      row.getOrElse(fromName, throw new InternalException(s"Expected a node on `$fromName`")).asInstanceOf[NodeValue]
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

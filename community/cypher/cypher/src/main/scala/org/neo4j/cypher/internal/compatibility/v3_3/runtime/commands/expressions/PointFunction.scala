@@ -19,21 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, Points}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.{AnyValue, AnyValues}
 
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
-
-  override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = value match {
-    case IsMap(mapCreator) =>
-      val map = mapCreator(state.query)
-      if (map.exists(_._2 == null)) {
-        null
-      } else {
-        Points.fromMap(map)
-      }
+  override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case IsMap(mapCreator) => AnyValues.fromMap(mapCreator)
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 

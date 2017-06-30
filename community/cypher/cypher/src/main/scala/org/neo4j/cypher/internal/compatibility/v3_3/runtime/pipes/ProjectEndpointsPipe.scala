@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.VirtualValues.reverse
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue, VirtualValues}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
@@ -48,7 +50,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
       case Some((startNode, endNode, rels)) if !directed =>
         Iterator(
           context.newWith2(start, startNode, end, endNode),
-          context.newWith3(start, endNode, end, startNode, relName, rels.reverse)
+          context.newWith3(start, endNode, end, startNode, relName, reverse(rels))
         )
       case None =>
         Iterator.empty
@@ -69,27 +71,36 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     }
   }
 
-  private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(Node, Node)] = {
-    val rel = Some(context(relName).asInstanceOf[Relationship]).filter(hasAllowedType)
+  private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
+    val rel = Some(context(relName).asInstanceOf[EdgeValue]).filter(hasAllowedType)
     rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
   }
 
-  private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(Node, Node, Seq[Relationship])] = {
-    val rels = makeTraversable(context(relName)).toIndexedSeq.asInstanceOf[Seq[Relationship]]
-    if (rels.nonEmpty && rels.forall(hasAllowedType)) {
-      pickStartAndEnd(rels.head, rels.last, context, qtx).map { case (s, e) => (s, e, rels) }
+  private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue, ListValue)] = {
+    val rels = makeTraversable(context(relName))
+    if (rels.nonEmpty && allHasAllowedType(rels)) {
+      pickStartAndEnd(rels.head.asInstanceOf[EdgeValue], rels.last.asInstanceOf[EdgeValue], context, qtx).map { case (s, e) => (s, e, rels) }
     } else {
       None
     }
   }
 
-  private def hasAllowedType(rel: Relationship): Boolean =
-    relTypes.map(_.names.contains(rel.getType.name())).getOrElse(true)
+  private def allHasAllowedType(rels: ListValue): Boolean = {
+    val iterator = rels.iterator()
+    while(iterator.hasNext) {
+      val next = iterator.next().asInstanceOf[EdgeValue]
+      if (!hasAllowedType(next)) return false
+    }
+    true
+  }
 
-  private def pickStartAndEnd(relStart: Relationship, relEnd: Relationship,
-                              context: ExecutionContext, qtx: QueryContext): Option[(Node, Node)] = {
-    val startNode = qtx.relationshipStartNode(relStart)
-    val endNode = qtx.relationshipEndNode(relEnd)
+  private def hasAllowedType(rel: EdgeValue): Boolean =
+    relTypes.forall(_.names.contains(rel.`type`().stringValue()))
+
+  private def pickStartAndEnd(relStart: EdgeValue, relEnd: EdgeValue,
+                              context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
+    val startNode = relStart.startNode()
+    val endNode = relStart.endNode()
     Some((startNode, endNode)).filter {
       case (s, e) =>
         (!startInScope || context(start) == s) && (!endInScope || context(end) == e)

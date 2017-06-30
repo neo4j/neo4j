@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.{AnyValue, AnyValues, Values}
 
 import scala.collection.Set
 
@@ -50,9 +50,9 @@ abstract class History {
 
 }
 
-class InitialHistory(source : ExecutionContext, alreadySeen: Seq[Relationship]) extends History {
+class InitialHistory(source : ExecutionContext, alreadySeen: Seq[EdgeValue]) extends History {
   def hasSeen(p: Any) = p match {
-    case r: Relationship => alreadySeen.contains(r)
+    case r: EdgeValue => alreadySeen.contains(r)
     case _               => false
   }
 
@@ -74,15 +74,15 @@ class AddedHistory(val parent : History, val pair : MatchingPair) extends Histor
     parent.toMap.newWith(toIndexedSeq(pair))
   }
 
-  def toIndexedSeq(p: MatchingPair) : Seq[(String,Any)] = {
+  def toIndexedSeq(p: MatchingPair) : Seq[(String, AnyValue)] = {
     p match {
-      case MatchingPair(pe: PatternNode, entity: Node)                                                  => Seq(pe.key -> entity)
+      case MatchingPair(pe: PatternNode, entity: NodeValue)                                                  => Seq(pe.key -> entity)
       case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship)                       => Seq(pe.key -> entity.rel)
-      case MatchingPair(pe: VariableLengthPatternRelationship, null)                                    => Seq(pe.key -> null) ++ pe.relIterable.map(_ -> null)
-      case MatchingPair(pe: PatternRelationship, null)                                                  => Seq(pe.key -> null)
+      case MatchingPair(pe: VariableLengthPatternRelationship, null)                                    => Seq(pe.key -> Values.NO_VALUE) ++ pe.relIterable.map(_ -> Values.NO_VALUE)
+      case MatchingPair(pe: PatternRelationship, null)                                                  => Seq(pe.key -> Values.NO_VALUE)
       case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => {
         relationshipIterable(pe, entity) match {
-          case Some(aPair) => Seq(pe.key -> entity.path, aPair)
+          case Some((key, rels)) => Seq(pe.key -> entity.path, (key, rels))
           case None        => Seq(pe.key -> entity.path)
         }
 
@@ -90,5 +90,6 @@ class AddedHistory(val parent : History, val pair : MatchingPair) extends Histor
     }
   }
 
-  private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, Any)] = pe.relIterable.map(_->entity.relationships)
+  private def relationshipIterable(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship):Option[(String, ListValue)]
+  = pe.relIterable.map(_->entity.relationships)
 }

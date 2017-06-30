@@ -22,15 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
-import org.neo4j.graphdb.Node
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{NodeValue, VirtualValues}
 
 case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
-  override def compute(value: Any, m: ExecutionContext)
-                      (implicit state: QueryState): Any = value match {
-    case n: Node =>
-      val ctx = state.query
-      ctx.getLabelsForNode(n.getId).map(ctx.getLabelName).toList
+  override def compute(value: AnyValue, m: ExecutionContext)
+                      (implicit state: QueryState): AnyValue = value match {
+    case n: NodeValue => VirtualValues.list(n.labels():_*)
     case x => throw new ParameterWrongTypeException("Expected a Node, got: " + x)
   }
 

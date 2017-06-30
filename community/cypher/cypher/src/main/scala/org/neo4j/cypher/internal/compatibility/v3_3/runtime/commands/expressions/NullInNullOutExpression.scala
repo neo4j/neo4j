@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.{AnyValue, Values}
 
 abstract class NullInNullOutExpression(argument: Expression) extends Expression {
-  def compute(value: Any, m: ExecutionContext)(implicit state:QueryState): Any
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state:QueryState): AnyValue
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = argument(ctx) match {
-    case null => null
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = argument(ctx) match {
+    case x if x == Values.NO_VALUE => Values.NO_VALUE
     case x    => compute(x, ctx)
   }
 }

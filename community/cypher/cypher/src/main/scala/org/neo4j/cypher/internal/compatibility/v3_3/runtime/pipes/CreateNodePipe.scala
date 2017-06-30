@@ -19,20 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection.Map
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createNode(_, state))
@@ -41,28 +42,28 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
     val node = state.query.createNode()
     setProperties(context, state, node.getId)
     setLabels(context, state, node.getId)
-    context += key -> node
+    context += key -> AnyValues.asNodeValue(node)
   }
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
     properties.foreach { expr =>
       expr(context)(state) match {
-        case _: Node | _: Relationship =>
+        case _: NodeValue | _: EdgeValue =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
-        case IsMap(f) =>
-          val propertiesMap: Map[String, Any] = f(state.query)
-          propertiesMap.foreach {
-            case (k, v) => setProperty(nodeId, k, v, state.query)
-          }
+        case IsMap(map) =>
+          map.foreach(new BiConsumer[String, AnyValue] {
+            override def accept(k: String, v: AnyValue): Unit = setProperty(nodeId, k, v, state.query)
+          })
+
         case _ =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
       }
     }
   }
 
-  private def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) {
+  private def setProperty(nodeId: Long, key: String, value: AnyValue, qtx: QueryContext) {
     //do not set properties for null values
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       handleNull(key)
     } else {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)

@@ -20,27 +20,30 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.values._
+import org.neo4j.values.virtual.ListValue
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val aVal = a(ctx)
     val bVal = b(ctx)
 
     (aVal, bVal) match {
-      case (null, _)              => null
-      case (_, null)              => null
-      case (x: Number, y: Number) => plus(x,y)
-      case (x: String, y: String) => x + y
-      case (IsList(x), IsList(y)) => x ++ y
-      case (IsList(x), y)         => x ++ Seq(y)
-      case (x, IsList(y))         => Seq(x) ++ y
-      case (x: String, y: Number) => x + y.toString
-      case (x: Number, y: String) => x.toString + y
+      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+      case (x: IntegralValue, y: IntegralValue) => Values.longValue(StrictMath.addExact(x.longValue(),y.longValue()))
+      case (x: NumberValue, y: NumberValue) => Values.doubleValue(x.doubleValue() + y.doubleValue())
+      case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
+      case (x: ListValue, y: ListValue) => AnyValues.concat(x, y)
+      case (x: ListValue, y)         => AnyValues.appendToList(x, y)
+      case (x, y: ListValue)         => AnyValues.prependToList(y, x)
+      case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
+      case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
+      case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())
+      case (x: FloatValue, y: TextValue) => Values.stringValue(x.doubleValue() + y.stringValue())
       case _                      => throw new CypherTypeException("Don't know how to add `" + aVal.toString + "` and `" + bVal.toString + "`")
     }
   }

@@ -55,7 +55,7 @@ class QueryState(val query: QueryContext,
 
   def readTimeStamp(): Long = timeReader.getTime
 
-  def getParam(key: String): Any =
+  def  getParam(key: String): Any =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)

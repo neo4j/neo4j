@@ -24,6 +24,7 @@ import java.util.{List => JavaList, Map => JavaMap}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.values.AnyValue
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

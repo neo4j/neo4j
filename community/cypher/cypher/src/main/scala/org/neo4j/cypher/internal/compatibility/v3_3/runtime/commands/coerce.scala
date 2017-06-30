@@ -20,40 +20,39 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.values._
+import org.neo4j.values.virtual._
 
 object coerce {
 
-  def apply(value: Any, typ: CypherType)(implicit context: QueryContext): Any = {
-    val result = if (value == null) null else try {
+  def apply(value: AnyValue, typ: CypherType)(implicit context: QueryContext): AnyValue = {
+    val result = if (value == Values.NO_VALUE) Values.NO_VALUE else try {
       typ match {
         case CTAny => value
-        case CTString => value.asInstanceOf[String]
-        case CTNode => value.asInstanceOf[Node]
-        case CTRelationship => value.asInstanceOf[Relationship]
-        case CTPath => value.asInstanceOf[Path]
-        case CTInteger => value.asInstanceOf[Number].longValue()
-        case CTFloat => value.asInstanceOf[Number].doubleValue()
+        case CTString => value.asInstanceOf[TextValue]
+        case CTNode => value.asInstanceOf[NodeValue]
+        case CTRelationship => value.asInstanceOf[EdgeValue]
+        case CTPath => value.asInstanceOf[PathValue]
+        case CTInteger => value.asInstanceOf[IntegralValue]
+        case CTFloat => value.asInstanceOf[FloatValue]
         case CTMap => value match {
-          case IsMap(m) => m(context)
+          case IsMap(m) => m
           case _ => throw cantCoerce(value, typ)
         }
         case t: ListType => value match {
-          case p: Path if t.innerType == CTNode => throw cantCoerce(value, typ)
-          case p: Path if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-          case IsList(coll) if t.innerType == CTAny => coll
-          case IsList(coll) => coll.map(coerce(_, t.innerType))
+          case p: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
+          case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+          case p: PathValue => p.asList
+          case l: ListValue if t.innerType == CTAny => l
           case _ => throw cantCoerce(value, typ)
         }
-        case CTBoolean => value.asInstanceOf[Boolean]
-        case CTNumber => value.asInstanceOf[Number]
-        case CTPoint => value.asInstanceOf[Point]
-        case CTGeometry => value.asInstanceOf[Geometry]
+        case CTBoolean => value.asInstanceOf[BooleanValue]
+        case CTNumber => value.asInstanceOf[NumberValue]
+        case CTPoint => value.asInstanceOf[PointValue]
+        case CTGeometry => value.asInstanceOf[PointValue]
         case _ => throw cantCoerce(value, typ)
       }
     }

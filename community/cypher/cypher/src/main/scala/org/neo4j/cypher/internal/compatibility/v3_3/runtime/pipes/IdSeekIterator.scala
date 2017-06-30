@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.spi.v3_3.Operations
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 abstract class IdSeekIterator[T <: PropertyContainer]
   extends Iterator[ExecutionContext] with NumericHelper {
@@ -30,11 +31,12 @@ abstract class IdSeekIterator[T <: PropertyContainer]
   private var cachedEntity: T = computeNextEntity()
 
   protected def operations: Operations[T]
-  protected def entityIds: Iterator[Any]
+  protected def entityIds: Iterator[AnyValue]
+  protected def asAnyValue(entity: T): AnyValue
 
   protected def hasNextEntity = cachedEntity != null
 
-  protected def nextEntity() = {
+  protected def nextEntity(): T = {
     if (hasNextEntity) {
       val result = cachedEntity
       cachedEntity = computeNextEntity()
@@ -47,8 +49,9 @@ abstract class IdSeekIterator[T <: PropertyContainer]
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
       val id = asLongEntityId(entityIds.next())
-      if (operations.exists(id))
-        return operations.getById(asLongEntityId(id))
+      if (operations.exists(id.longValue()))
+        return operations.getById(id.longValue())
+
     }
     null.asInstanceOf[T]
   }
@@ -57,13 +60,15 @@ abstract class IdSeekIterator[T <: PropertyContainer]
 final class NodeIdSeekIterator(ident: String,
                                baseContext: ExecutionContext,
                                protected val operations: Operations[Node],
-                               protected val entityIds: Iterator[Any])
+                               protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[Node] {
 
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext =
-    baseContext.newWith1(ident, nextEntity())
+    baseContext.newWith1(ident, asAnyValue(nextEntity()))
+
+  override protected def asAnyValue(entity: Node): AnyValue = AnyValues.asNodeValue(entity)
 }
 
 final class DirectedRelationshipIdSeekIterator(ident: String,
@@ -71,15 +76,18 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                toNode: String,
                                                baseContext: ExecutionContext,
                                                protected val operations: Operations[Relationship],
-                                               protected val entityIds: Iterator[Any])
+                                               protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[Relationship] {
 
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.newWith3(ident, rel, fromNode, rel.getStartNode, toNode, rel.getEndNode)
+    baseContext.newWith3(ident, AnyValues.asEdgeValue(rel), fromNode, AnyValues.asNodeValue(rel.getStartNode), toNode,
+                         AnyValues.asNodeValue(rel.getEndNode))
   }
+
+  override protected def asAnyValue(entity: Relationship): AnyValue = AnyValues.asEdgeValue(entity)
 }
 
 final class UndirectedRelationshipIdSeekIterator(ident: String,
@@ -87,7 +95,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  toNode: String,
                                                  baseContext: ExecutionContext,
                                                  protected val operations: Operations[Relationship],
-                                                 protected val entityIds: Iterator[Any])
+                                                 protected val entityIds: Iterator[AnyValue])
   extends IdSeekIterator[Relationship] {
 
   private var lastEntity: Relationship = null
@@ -100,13 +108,16 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.newWith3(ident, lastEntity, fromNode, lastEnd, toNode, lastStart)
+      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastEnd),
+                           toNode, AnyValues.asNodeValue(lastStart))
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.getStartNode
       lastEnd = lastEntity.getEndNode
-      baseContext.newWith3(ident, lastEntity, fromNode, lastStart, toNode, lastEnd)
+      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastStart), toNode,
+                           AnyValues.asNodeValue(lastEnd))
     }
   }
+  override protected def asAnyValue(entity: Relationship): AnyValue = AnyValues.asEdgeValue(entity)
 }

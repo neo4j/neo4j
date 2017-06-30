@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.{AnyValue, NumberValue, Values}
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])
   extends NullInNullOutExpression(collection) with ListSupport {
   def arguments: Seq[Expression] = from.toIndexedSeq ++ to.toIndexedSeq :+ collection
 
-  private val function: (Iterable[Any], ExecutionContext, QueryState) => Any =
+  private val function: (ListValue, ExecutionContext, QueryState) => AnyValue =
     (from, to) match {
       case (Some(f), Some(n)) => fullSlice(f, n)
       case (Some(f), None)    => fromSlice(f)
@@ -37,7 +37,7 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
       case (None, None)       => (coll, _, _) => coll
     }
 
-  private def fullSlice(from: Expression, to: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
+  private def fullSlice(from: Expression, to: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
     val maybeFromValue = asInt(from, ctx, state)
     val maybeToValue = asInt(to, ctx, state)
     (maybeFromValue, maybeToValue) match {
@@ -46,52 +46,54 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
       case (Some(fromValue), Some(toValue)) =>
         val size = collectionValue.size
         if (fromValue >= 0 && toValue >= 0)
-          collectionValue.slice(fromValue, toValue)
+          VirtualValues.slice(collectionValue, fromValue, toValue)
         else if (fromValue >= 0) {
           val end = size + toValue
-          collectionValue.slice(fromValue, end)
+          VirtualValues.slice(collectionValue, fromValue, end)
         } else if (toValue >= 0) {
           val start = size + fromValue
-          collectionValue.slice(start, toValue)
+          VirtualValues.slice(collectionValue, start, toValue)
         } else {
           val start = size + fromValue
           val end = size + toValue
-          collectionValue.slice(start, end)
+          VirtualValues.slice(collectionValue, start, end)
         }
     }
   }
 
-  private def fromSlice(from: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
+  private def fromSlice(from: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
     val fromValue = asInt(from, ctx, state)
     fromValue match {
-      case None => null
-      case Some(value) if value >= 0 => collectionValue.drop(value)
+      case None => Values.NO_VALUE
+      case Some(value) if value >= 0 =>
+        VirtualValues.drop(collectionValue, value)
       case Some(value) =>
         val end = collectionValue.size + value
-        collectionValue.drop(end)
+        VirtualValues.drop(collectionValue, end)
     }
   }
 
-  private def toSlice(from: Expression)(collectionValue: Iterable[Any], ctx: ExecutionContext, state: QueryState) = {
+  private def toSlice(from: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
     val toValue = asInt(from, ctx, state)
     toValue match {
       case None => null
-      case Some(value) if value >= 0 => collectionValue.take(value)
+      case Some(value) if value >= 0 =>
+       VirtualValues.take(collectionValue, value)
       case Some(value) =>
         val end = collectionValue.size + value
-        collectionValue.take(end)
+        VirtualValues.take(collectionValue, end)
     }
   }
 
 
   def asInt(e: Expression, ctx: ExecutionContext, state: QueryState): Option[Int] = {
     val index = e(ctx)(state)
-    if (index == null) None
-    else Some(CastSupport.castOrFail[Number](index).intValue())
+    if (index == Values.NO_VALUE) None
+    else Some(CastSupport.castOrFail[NumberValue](index).longValue().toInt)
   }
 
-  def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = {
-    val collectionValue: Iterable[Any] = makeTraversable(value)
+  def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
+    val collectionValue = makeTraversable(value)
     function(collectionValue, ctx, state)
   }
 

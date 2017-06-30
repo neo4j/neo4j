@@ -24,24 +24,28 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.{AnyValue, AnyValues, Values}
 
+import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalExpressions: Map[String, Expression])
   extends Expression with GraphElementPropertyFunctions {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val variableValue = ctx(id)
 
     val mapOfProperties = variableValue match {
-      case null => return null
-      case IsMap(m) => if (includeAllProps) m(state.query) else Map.empty
+      case v if v == Values.NO_VALUE => return Values.NO_VALUE
+      case IsMap(m) => if (includeAllProps) m else VirtualValues.emptyMap()
     }
     val mapOfLiteralValues = literalExpressions.map {
       case (k, e) => (k, e(ctx))
-    }.toMap
+    }.toMap.asJava
 
-    mapOfProperties ++ mapOfLiteralValues
+
+    AnyValues.combine(mapOfProperties, VirtualValues.map(mapOfLiteralValues))
   }
 
   override def rewrite(f: (Expression) => Expression) =

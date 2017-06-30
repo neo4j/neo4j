@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureSignature, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
   def apply(signature: ProcedureSignature) =
@@ -39,7 +39,7 @@ case object FlatMapAndAppendToRow extends ProcedureCallRowProcessing
 case object PassThroughRow extends ProcedureCallRowProcessing
 
 case class ProcedureCallPipe(source: Pipe,
-                             name: QualifiedName,
+                             signature: ProcedureSignature,
                              callMode: ProcedureCallMode,
                              argExprs: Seq[Expression],
                              rowProcessing: ProcedureCallRowProcessing,
@@ -47,38 +47,33 @@ case class ProcedureCallPipe(source: Pipe,
                              resultIndices: Seq[(Int, String)])
                             (val id: Id = new Id)
 
-  extends PipeWithSource(source) with ListSupport {
+  extends PipeWithSource(source) {
 
   argExprs.foreach(_.registerOwningPipe(this))
 
+  private val maybeConverter = signature.outputSignature.map(_.map(v => ValueConversion.getValueConverter(v.typ)).toArray)
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
     case PassThroughRow => internalCreateResultsByPassingThrough _
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val converter = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
 
-    rowProcessor(input, state, converter)
+    rowProcessor(input, state)
   }
 
-  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState,
-                                               converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
-    val builder = Seq.newBuilder[(String, Any)]
+    val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
-
-    val isGraphKernelResultValue = qtx.isGraphKernelResultValue _
-    val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
-
+    val converter = maybeConverter.get
     input flatMap { input =>
-      val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
-      val results = callMode.callProcedure(qtx, name, argValues)
+      val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
+      val results = callMode.callProcedure(qtx, signature.name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
-          val javaValue = resultValues(k)
-          val scalaValue = scalaValues.asDeepScalaValue(javaValue)
-          builder += v -> scalaValue
+          val javaValue = converter(k)(resultValues(k))
+          builder += v -> javaValue
         }
         val rowEntries = builder.result()
         val output = input.newWith(rowEntries)
@@ -88,11 +83,11 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState, converter: RuntimeJavaValueConverter): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
-      val argValues = argExprs.map(arg => converter.asDeepJavaValue(arg(input)(state)))
-      val results = callMode.callProcedure(qtx, name, argValues)
+      val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
+      val results = callMode.callProcedure(qtx, signature.name, argValues)
       // the iterator here should be empty; we'll drain just in case
       while (results.hasNext) results.next()
       input

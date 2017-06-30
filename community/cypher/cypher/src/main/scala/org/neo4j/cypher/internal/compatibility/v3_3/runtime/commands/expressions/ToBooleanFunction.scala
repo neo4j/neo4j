@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
+import org.neo4j.values.{AnyValue, BooleanValue, TextValue, Values}
 
 case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
@@ -30,11 +31,11 @@ case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToBooleanFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
-    case b: Boolean => b
-    case v: String =>
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case b: BooleanValue => b
+    case v: TextValue =>
       try {
-        v.trim.toBoolean
+        Values.booleanValue(v.stringValue().trim.toBoolean)
       } catch {
         case e: IllegalArgumentException =>
           null

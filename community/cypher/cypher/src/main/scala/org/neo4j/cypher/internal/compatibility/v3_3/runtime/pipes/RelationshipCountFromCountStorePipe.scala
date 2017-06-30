@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.NameId
+import org.neo4j.values.{AnyValues, Values}
 
 case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
                                                typeNames: LazyTypes, endLabel: Option[LazyLabel])
@@ -41,7 +42,7 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
     }
 
     val baseContext = state.createOrGetInitialContext()
-    Seq(baseContext.newWith1(ident, count)).iterator
+    Seq(baseContext.newWith1(ident, Values.longValue(count))).iterator
   }
 
   private def getLabelId(lazyLabel: Option[LazyLabel], state: QueryState): Option[Int] = lazyLabel match {

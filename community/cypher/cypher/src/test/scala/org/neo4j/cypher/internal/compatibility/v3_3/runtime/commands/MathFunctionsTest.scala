@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.DoubleValue
 class MathFunctionsTest extends CypherFunSuite with NumericHelper {
 
   test("absTests") {
@@ -46,80 +47,80 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("acosTests") {
-    asDouble(calc(AcosFunction(Literal(.7)))) should equal(0.795398830184144 +- 0.00001)
+    asDouble(calc(AcosFunction(Literal(.7)))).doubleValue() should equal(0.795398830184144 +- 0.00001)
     intercept[CypherTypeException](calc(AcosFunction(Literal("wut"))))
   }
 
   test("asinTests") {
-    asDouble(calc(AsinFunction(Literal(.7)))) should equal(0.775397496610753 +- 0.00001)
+    asDouble(calc(AsinFunction(Literal(.7)))).doubleValue() should equal(0.775397496610753 +- 0.00001)
     intercept[CypherTypeException](calc(AsinFunction(Literal("wut"))))
   }
 
   test("atanTests") {
-    asDouble(calc(AtanFunction(Literal(.7)))) should equal(0.610725964389209 +- 0.00001)
+    asDouble(calc(AtanFunction(Literal(.7)))).doubleValue() should equal(0.610725964389209 +- 0.00001)
     intercept[CypherTypeException](calc(AtanFunction(Literal("wut"))))
   }
 
   test("atan2Tests") {
-    asDouble(calc(Atan2Function(Literal(.7),Literal(.8)))) should equal(0.718829999621624 +- 0.00001)
-    asDouble(calc(Atan2Function(Literal(.8),Literal(.8)))) should equal(0.785398163397448 +- 0.00001)
+    asDouble(calc(Atan2Function(Literal(.7),Literal(.8)))).doubleValue() should equal(0.718829999621624 +- 0.00001)
+    asDouble(calc(Atan2Function(Literal(.8),Literal(.8)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
     intercept[CypherTypeException](calc(Atan2Function(Literal("wut"), Literal(.7))))
   }
 
   test("ceilTests") {
-    asDouble(calc(CeilFunction(Literal(.7)))) should equal(1.0 +- 0.00001)
-    asDouble(calc(CeilFunction(Literal(-.7)))) should equal(0.0 +- 0.00001)
+    asDouble(calc(CeilFunction(Literal(.7)))).doubleValue() should equal(1.0 +- 0.00001)
+    asDouble(calc(CeilFunction(Literal(-.7)))).doubleValue() should equal(0.0 +- 0.00001)
     intercept[CypherTypeException](calc(CeilFunction(Literal("wut"))))
   }
 
   test("cosTests") {
-    asDouble(calc(CosFunction(Literal(.7)))) should equal(0.764842187284489 +- 0.00001)
+    asDouble(calc(CosFunction(Literal(.7)))).doubleValue() should equal(0.764842187284489 +- 0.00001)
     intercept[CypherTypeException](calc(CosFunction(Literal("wut"))))
   }
 
   test("cotTests") {
-    asDouble(calc(CotFunction(Literal(.7)))) should equal(1.18724183212668 +- 0.00001)
-    asDouble(calc(CotFunction(Literal(0.0)))) should equal(Double.PositiveInfinity +- 0.00001)
+    asDouble(calc(CotFunction(Literal(.7)))).doubleValue() should equal(1.18724183212668 +- 0.00001)
+    asDouble(calc(CotFunction(Literal(0.0)))).doubleValue() should equal(Double.PositiveInfinity +- 0.00001)
     intercept[CypherTypeException](calc(CotFunction(Literal("wut"))))
   }
 
   test("degreesTests") {
-    asDouble(calc(DegreesFunction(Literal(0.785398163397448)))) should equal(45.0 +- 0.00001)
-    asDouble(calc(DegreesFunction(Literal(0.0)))) should equal(0.0 +- 0.00001)
+    asDouble(calc(DegreesFunction(Literal(0.785398163397448)))).doubleValue() should equal(45.0 +- 0.00001)
+    asDouble(calc(DegreesFunction(Literal(0.0)))).doubleValue() should equal(0.0 +- 0.00001)
     intercept[CypherTypeException](calc(DegreesFunction(Literal("wut"))))
   }
 
   test("eTests") {
-    asDouble(calc(EFunction())) should equal(2.718281828459045 +- 0.00001)
+    asDouble(calc(EFunction())).doubleValue() should equal(2.718281828459045 +- 0.00001)
   }
 
   test("expTests") {
-    asDouble(calc(ExpFunction(Literal(3.2)))) should equal(24.532530197109352 +- 0.00001)
+    asDouble(calc(ExpFunction(Literal(3.2)))).doubleValue() should equal(24.532530197109352 +- 0.00001)
     intercept[CypherTypeException](calc(ExpFunction(Literal("wut"))))
   }
 
   test("floorTests") {
-    asDouble(calc(FloorFunction(Literal(0.9)))) should equal(0.0 +- 0.00001)
-    asDouble(calc(FloorFunction(Literal(-0.9)))) should equal(-1.0 +- 0.00001)
+    asDouble(calc(FloorFunction(Literal(0.9)))).doubleValue() should equal(0.0 +- 0.00001)
+    asDouble(calc(FloorFunction(Literal(-0.9)))).doubleValue() should equal(-1.0 +- 0.00001)
     intercept[CypherTypeException](calc(FloorFunction(Literal("wut"))))
   }
 
   test("logTests") {
-    asDouble(calc(LogFunction(Literal(27.0)))) should equal(3.295836866004329 +- 0.00001)
+    asDouble(calc(LogFunction(Literal(27.0)))).doubleValue() should equal(3.295836866004329 +- 0.00001)
     intercept[CypherTypeException](calc(LogFunction(Literal("wut"))))
   }
 
   test("log10Tests") {
-    asDouble(calc(Log10Function(Literal(27.0)))) should equal(1.4313637641589874 +- 0.00001)
+    asDouble(calc(Log10Function(Literal(27.0)))).doubleValue() should equal(1.4313637641589874 +- 0.00001)
     intercept[CypherTypeException](calc(Log10Function(Literal("wut"))))
   }
 
   test("piTests") {
-    asDouble(calc(PiFunction())) should equal(3.141592653589793 +- 0.00001)
+    asDouble(calc(PiFunction())).doubleValue() should equal(3.141592653589793 +- 0.00001)
   }
 
   test("radiansTests") {
-    asDouble(calc(RadiansFunction(Literal(45.0)))) should equal(0.785398163397448 +- 0.00001)
+    asDouble(calc(RadiansFunction(Literal(45.0)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
     intercept[CypherTypeException](calc(RadiansFunction(Literal("wut"))))
   }
 
@@ -132,12 +133,12 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("sinTests") {
-    asDouble(calc(SinFunction(Literal(0.7)))) should equal(0.644217687237691 +- 0.00001)
+    asDouble(calc(SinFunction(Literal(0.7)))).doubleValue() should equal(0.644217687237691 +- 0.00001)
     intercept[CypherTypeException](calc(SinFunction(Literal("wut"))))
   }
 
   test("tanTests") {
-    asDouble(calc(TanFunction(Literal(0.7)))) should equal(0.8422883804630794 +- 0.00001)
+    asDouble(calc(TanFunction(Literal(0.7)))).doubleValue() should equal(0.8422883804630794 +- 0.00001)
     intercept[CypherTypeException](calc(TanFunction(Literal("wut"))))
   }
 

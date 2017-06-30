@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 /**
  * Base class for aggregation functions. The function is stateful
@@ -36,6 +37,6 @@ abstract class AggregationFunction {
   /**
    * The aggregated result.
    */
-  def result(implicit state:QueryState): Any
+  def result(implicit state:QueryState): AnyValue
 }
 

@@ -20,15 +20,16 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 object ListLiteral {
   val empty = Literal(Seq())
 }
 
 case class ListLiteral(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = arguments.map(e => e(ctx))
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = VirtualValues.list(arguments.map(e => e(ctx)):_*)
 
   def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 

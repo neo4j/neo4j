@@ -21,15 +21,17 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, InequalitySeekRangeExpression, PrefixSeekRangeExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException}
 import org.neo4j.graphdb.Node
+import org.neo4j.values.{AnyValue, Value, Values}
 
 import scala.collection.GenTraversableOnce
+import scala.collection.JavaConverters._
 
 object indexQuery extends GraphElementPropertyFunctions {
   def apply(queryExpression: QueryExpression[Expression],
@@ -41,16 +43,16 @@ object indexQuery extends GraphElementPropertyFunctions {
 
     // Index exact value seek on single value
     case SingleQueryExpression(inner) =>
-      val value = inner(m)(state)
+      val value: AnyValue = inner(m)(state)
       lookupNodes(Seq(value), index)
 
     // Index exact value seek on multiple values, by combining the results of multiple index seeks
     case ManyQueryExpression(inner) =>
       inner(m)(state) match {
-        case IsList(coll) => coll.toSet.toIndexedSeq.flatMap {
-          value: Any => lookupNodes(Seq(value), index)
+        case IsList(coll) => coll.iterator().asScala.toSet.toIndexedSeq.flatMap {
+          value: AnyValue => lookupNodes(Seq(value), index)
         }.iterator
-        case null => Iterator.empty
+        case v if v == Values.NO_VALUE => Iterator.empty
         case _ => throw new CypherTypeException(s"Expected the value for looking up :$labelName(${propertyNames.mkString(",")}) to be a collection but it was not.")
       }
 
@@ -79,19 +81,19 @@ object indexQuery extends GraphElementPropertyFunctions {
       index(Seq(range)).toIterator
   }
 
-  private def lookupNodes(values: Seq[Any], index: Seq[Any] => GenTraversableOnce[Node]): Iterator[Node] = {
+  private def lookupNodes(values: Seq[AnyValue], index: Seq[AnyValue] => GenTraversableOnce[Node]): Iterator[Node] = {
     // If any of the values we are searching for is null, the whole expression that this index seek represents
     // collapses into a null value, which will not match any nodes.
-    if (values.contains(null))
+    if (values.contains(Values.NO_VALUE))
       Iterator.empty
     else {
-      val neoValues: Seq[Any] = values.map(makeValueNeoSafe)
+      val neoValues = values.map(makeValueNeoSafe)
       val index1 = index(neoValues)
       index1.toIterator
     }
   }
 
-  private def expressionValues(m: ExecutionContext, state: QueryState)(queryExpression: QueryExpression[Expression]): Seq[Any] = {
+  private def expressionValues(m: ExecutionContext, state: QueryState)(queryExpression: QueryExpression[Expression]): Seq[AnyValue] = {
     queryExpression match {
 
       case SingleQueryExpression(inner) =>
@@ -99,7 +101,7 @@ object indexQuery extends GraphElementPropertyFunctions {
 
       case ManyQueryExpression(inner) =>
         inner(m)(state) match {
-          case IsList(coll) => coll.toSeq
+          case IsList(coll) => coll.asArray()
           case null => Seq.empty
           case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
         }

@@ -19,43 +19,33 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, ListSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{ArrayValue, Value, Values}
+import org.neo4j.values.virtual.ListValue
 
-import scala.collection.mutable
+import scala.collection.JavaConverters._
 
-object makeValueNeoSafe extends (Any => Any) with ListSupport {
+object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
 
-  def apply(a: Any): Any = if (isList(a)) {
-    transformTraversableToArray(makeTraversable(a))
-  } else {
-    a
+  def apply(a: AnyValue): Value = a match {
+    case value: Value => value
+    case IsList(l) => transformTraversableToArray(l)
+    case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
-
   /*
   This method finds the type that we can use for the primitive array that Neo4j wants
   We can't just find the nearest common supertype - we need a type that the other values
   can be coerced to according to Cypher coercion rules
    */
-  private def transformTraversableToArray(a: Any): Any = {
-    val traversable = a.asInstanceOf[Traversable[_]]
-    val seq: Seq[Any] = traversable.toIndexedSeq
-
-    if (seq.isEmpty && traversable.isInstanceOf[mutable.WrappedArray[_]]) {
-      // if the user sent an array by parameter we can use it directly
-      val array = a.asInstanceOf[mutable.WrappedArray[_]].array
-      if (array.getClass.getComponentType.isPrimitive)
-        array
-      else
-        Array[String]()
-    } else if (seq.isEmpty) {
-      Array[String]()
+  private def transformTraversableToArray(a: ListValue): ArrayValue = {
+    if (a.isEmpty) {
+      Values.stringArray(Array.empty)
     } else {
-      val typeValue = seq.reduce(CastSupport.merge)
+      val typeValue = a.iterator().asScala.reduce(CastSupport.merge)
       val converter = CastSupport.getConverter(typeValue)
-
-      converter.arrayConverter(seq.map(converter.valueConverter))
+      converter.arrayConverter(a)
     }
   }
-
 }

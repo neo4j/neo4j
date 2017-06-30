@@ -23,30 +23,32 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.values._
 
 case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
+
   def symbolTableDependencies: Set[String] = a.symbolTableDependencies
 
   def arguments: Seq[Expression] = Seq(a)
 
   def rewrite(f: (Expression) => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
 
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = value match {
-    case v: Number =>
-      v.longValue()
-    case v: String =>
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case v: LongValue => v
+    case v: NumberValue => Values.longValue(v.longValue())
+    case v: TextValue =>
       try {
-        java.lang.Long.parseLong(v)
+        Values.longValue(java.lang.Long.parseLong(v.stringValue()))
       } catch {
         case e: Exception =>
-        try {
-          val d = BigDecimal(v)
-          if (d <= Long.MaxValue && d >= Long.MinValue) d.toLong
-          else throw new CypherTypeException(s"integer, $v, is too large")
-        } catch {
-          case e: NumberFormatException =>
-            null
-        }
+          try {
+            val d = BigDecimal(v.stringValue())
+            if (d <= Long.MaxValue && d >= Long.MinValue) Values.longValue(d.toLong)
+            else throw new CypherTypeException(s"integer, $v, is too large")
+          } catch {
+            case _: NumberFormatException =>
+              Values.NO_VALUE
+          }
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a String or Number, got: " + v.toString)

@@ -21,16 +21,17 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.{AnyValue, NumberValue, Values}
 
 trait NumericExpressionOnly {
   def name: String
 
   def value: Expression
 
-  def actOnNumber[U](obj: Any, f: Number => U) {
+  def actOnNumber[U](obj: AnyValue, f: NumberValue => U) {
     obj match {
-      case null =>
-      case number: Number => f(number)
+      case x if x == Values.NO_VALUE =>
+      case number: NumberValue => f(number)
       case _ =>
         throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))
     }
