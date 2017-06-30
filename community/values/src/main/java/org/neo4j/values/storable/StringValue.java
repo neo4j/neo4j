@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-abstract class StringValue extends TextValue
+public abstract class StringValue extends TextValue
 {
     abstract String value();
 
@@ -105,6 +105,12 @@ abstract class StringValue extends TextValue
         String value()
         {
             return value;
+        }
+
+        @Override
+        public int length()
+        {
+            return value.length();
         }
     }
 }

@@ -25,13 +25,18 @@ import static java.lang.String.format;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class ShortValue extends IntegralValue
+public final class ShortValue extends IntegralValue
 {
     private final short value;
 
     ShortValue( short value )
     {
         this.value = value;
+    }
+
+    public short value()
+    {
+        return value;
     }
 
     @Override

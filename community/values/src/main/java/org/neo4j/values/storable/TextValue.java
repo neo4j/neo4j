@@ -27,6 +27,8 @@ public abstract class TextValue extends ScalarValue
 
     public abstract String stringValue();
 
+    public abstract int length();
+
     abstract int compareTo( TextValue other );
 
     @Override

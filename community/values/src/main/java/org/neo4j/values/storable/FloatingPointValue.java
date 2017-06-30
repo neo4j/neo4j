@@ -19,10 +19,8 @@
  */
 package org.neo4j.values.storable;
 
-abstract class FloatingPointValue extends NumberValue
+public abstract class FloatingPointValue extends NumberValue
 {
-    abstract double doubleValue();
-
     @Override
     public final int hashCode()
     {
@@ -68,5 +66,11 @@ abstract class FloatingPointValue extends NumberValue
     public int compareTo( FloatingPointValue other )
     {
         return Double.compare( doubleValue(), other.doubleValue() );
+    }
+
+    @Override
+    public long longValue()
+    {
+        return (long) doubleValue();
     }
 }

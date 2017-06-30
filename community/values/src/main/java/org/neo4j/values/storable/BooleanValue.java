@@ -25,7 +25,7 @@ import static java.lang.String.format;
  * This does not extend AbstractProperty since the JVM can take advantage of the 4 byte initial field alignment if
  * we don't extend a class that has fields.
  */
-final class BooleanValue extends ScalarValue
+public final class BooleanValue extends ScalarValue
 {
     private final boolean value;
 

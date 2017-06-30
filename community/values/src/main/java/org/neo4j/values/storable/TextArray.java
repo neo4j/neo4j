@@ -58,6 +58,7 @@ abstract class TextArray extends ArrayValue
         return false;
     }
 
+
     @Override
     public boolean equals( double[] x )
     {

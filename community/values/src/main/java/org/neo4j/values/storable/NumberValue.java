@@ -21,6 +21,10 @@ package org.neo4j.values.storable;
 
 public abstract class NumberValue extends ScalarValue
 {
+    public abstract double doubleValue();
+
+    public abstract long longValue();
+
     abstract int compareTo( IntegralValue other );
 
     abstract int compareTo( FloatingPointValue other );

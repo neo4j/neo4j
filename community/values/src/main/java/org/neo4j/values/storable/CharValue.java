@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-final class CharValue extends TextValue
+public final class CharValue extends TextValue
 {
     final char value;
 
@@ -88,6 +88,12 @@ final class CharValue extends TextValue
     public String stringValue()
     {
         return Character.toString( value );
+    }
+
+    @Override
+    public int length()
+    {
+        return 1;
     }
 
     @Override

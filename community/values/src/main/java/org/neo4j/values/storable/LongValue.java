@@ -30,6 +30,11 @@ public final class LongValue extends IntegralValue
         this.value = value;
     }
 
+    public long value()
+    {
+        return value;
+    }
+
     @Override
     public long longValue()
     {

@@ -27,17 +27,17 @@ import static java.lang.String.format;
 public class EdgeValue extends VirtualEdgeValue
 {
     private final long id;
-    private final long startNodeId;
-    private final long endNodeId;
+    private final NodeValue startNode;
+    private final NodeValue endNode;
     private final TextValue type;
     private final MapValue properties;
 
-    EdgeValue( long id, long startNodeId, long endNodeId, TextValue type, MapValue properties )
+    EdgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type, MapValue properties )
     {
         assert properties != null;
 
-        this.startNodeId = startNodeId;
-        this.endNodeId = endNodeId;
+        this.startNode = startNode;
+        this.endNode = endNode;
         this.id = id;
         this.type = type;
         this.properties = properties;
@@ -46,7 +46,7 @@ public class EdgeValue extends VirtualEdgeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-        writer.writeEdge( id, startNodeId, endNodeId, type, properties );
+        writer.writeEdge( id, startNode.id(), endNode.id(), type, properties );
     }
 
     @Override
@@ -55,14 +55,14 @@ public class EdgeValue extends VirtualEdgeValue
         return format( "-[%d]-", id );
     }
 
-    public long startNode()
+    public NodeValue startNode()
     {
-        return startNodeId;
+        return startNode;
     }
 
-    public long endNode()
+    public NodeValue endNode()
     {
-        return endNodeId;
+        return endNode;
     }
 
     @Override
@@ -79,5 +79,10 @@ public class EdgeValue extends VirtualEdgeValue
     public MapValue properties()
     {
         return properties;
+    }
+
+    public NodeValue otherNode( NodeValue node )
+    {
+        return node.equals( startNode ) ? endNode : startNode;
     }
 }

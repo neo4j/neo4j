@@ -20,12 +20,15 @@
 package org.neo4j.values.storable;
 
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.AnyValue;
 
 /**
  * Array of one of the storable primitives
  */
 public abstract class ArrayValue extends Value implements SequenceValue
 {
+    public abstract int length();
+
     @Override
     public boolean equals( boolean x )
     {

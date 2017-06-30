@@ -42,8 +42,15 @@ public final class Values
 {
     public static final Value MIN_NUMBER = Values.doubleValue( Double.NEGATIVE_INFINITY );
     public static final Value MAX_NUMBER = Values.doubleValue( Double.NaN );
+    public static final Value ZERO_FLOAT = Values.doubleValue( 0.0 );
+    public static final Value ZERO_INT = Values.longValue( 0 );
     public static final Value MIN_STRING = Values.stringValue( "" );
     public static final Value MAX_STRING = Values.booleanValue( false );
+    public static final BooleanValue TRUE = Values.booleanValue( true );
+    public static final BooleanValue FALSE = Values.booleanValue( false );
+    public static final TextValue EMPTY_STRING = Values.stringValue( "" );
+    public static final DoubleValue E = Values.doubleValue( Math.E );
+    public static final DoubleValue PI = Values.doubleValue( Math.PI );
 
     private Values()
     {
@@ -143,52 +150,52 @@ public final class Values
         throw new UnsupportedOperationException( "Unsupported type of Number " + number.toString() );
     }
 
-    public static Value longValue( long value )
+    public static LongValue longValue( long value )
     {
         return new LongValue( value );
     }
 
-    public static Value intValue( int value )
+    public static IntValue intValue( int value )
     {
         return new IntValue( value );
     }
 
-    public static Value shortValue( short value )
+    public static ShortValue shortValue( short value )
     {
         return new ShortValue( value );
     }
 
-    public static Value byteValue( byte value )
+    public static ByteValue byteValue( byte value )
     {
         return new ByteValue( value );
     }
 
-    public static Value booleanValue( boolean value )
+    public static BooleanValue booleanValue( boolean value )
     {
         return new BooleanValue( value );
     }
 
-    public static Value charValue( char value )
+    public static CharValue charValue( char value )
     {
         return new CharValue( value );
     }
 
-    public static Value doubleValue( double value )
+    public static DoubleValue doubleValue( double value )
     {
         return new DoubleValue( value );
     }
 
-    public static Value floatValue( float value )
+    public static FloatValue floatValue( float value )
     {
         return new FloatValue( value );
     }
 
-    public static Value stringArray( String[] value )
+    public static TextArray stringArray( String[] value )
     {
         return new StringArray.Direct( value );
     }
 
-    public static Value byteArray( byte[] value )
+    public static ByteArray byteArray( byte[] value )
     {
         return new ByteArray.Direct( value );
     }
@@ -198,32 +205,32 @@ public final class Values
         return new LongArray.Direct( value );
     }
 
-    public static Value intArray( int[] value )
+    public static IntArray intArray( int[] value )
     {
         return new IntArray.Direct( value );
     }
 
-    public static Value doubleArray( double[] value )
+    public static DoubleArray doubleArray( double[] value )
     {
         return new DoubleArray.Direct( value );
     }
 
-    public static Value floatArray( float[] value )
+    public static FloatArray floatArray( float[] value )
     {
         return new FloatArray.Direct( value );
     }
 
-    public static Value booleanArray( boolean[] value )
+    public static BooleanArray booleanArray( boolean[] value )
     {
         return new BooleanArray.Direct( value );
     }
 
-    public static Value charArray( char[] value )
+    public static CharArray charArray( char[] value )
     {
         return new CharArray.Direct( value );
     }
 
-    public static Value shortArray( short[] value )
+    public static ShortArray shortArray( short[] value )
     {
         return new ShortArray.Direct( value );
     }

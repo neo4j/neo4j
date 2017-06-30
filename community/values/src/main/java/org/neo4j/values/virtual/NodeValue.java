@@ -40,12 +40,12 @@ public class NodeValue extends VirtualNodeValue
         this.properties = properties;
     }
 
-    TextValue[] labels()
+    public TextValue[] labels()
     {
         return labels;
     }
 
-    MapValue properties()
+    public MapValue properties()
     {
         return properties;
     }
@@ -53,7 +53,7 @@ public class NodeValue extends VirtualNodeValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-       writer.writeNode( id, labels, properties  );
+        writer.writeNode( id, labels, properties );
     }
 
     @Override
@@ -67,5 +67,4 @@ public class NodeValue extends VirtualNodeValue
     {
         return format( "(%d)", id );
     }
-
 }

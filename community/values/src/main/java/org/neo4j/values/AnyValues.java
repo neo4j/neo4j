@@ -23,22 +23,30 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.StreamSupport;
 
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.PointValue;
 import org.neo4j.values.virtual.VirtualValueGroup;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
-import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
-import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public final class AnyValues
@@ -51,6 +59,7 @@ public final class AnyValues
 
     /**
      * Creates an AnyValue by doing type inspection. Do not use in production code where performance is important.
+     *
      * @param object the object to turned into a AnyValue
      * @return the AnyValue corresponding to object.
      */
@@ -73,13 +82,7 @@ public final class AnyValues
             }
             else if ( object instanceof Path )
             {
-                Path path = (Path) object;
-                NodeValue[] nodes = stream( path.nodes().spliterator(), false )
-                        .map( AnyValues::asNodeValue ).toArray( NodeValue[]::new );
-                EdgeValue[] edges = stream( path.relationships().spliterator(), false )
-                        .map( AnyValues::asEdgeValue ).toArray( EdgeValue[]::new );
-
-                return VirtualValues.path( nodes, edges );
+                return asPathValue( (Path) object );
             }
             else if ( object instanceof Map<?,?> )
             {
@@ -87,9 +90,7 @@ public final class AnyValues
             }
             else if ( object instanceof Collection<?> )
             {
-                AnyValue[] anyValues =
-                        ((Collection<?>) object).stream().map( AnyValues::of ).toArray( AnyValue[]::new );
-                return list( anyValues );
+                return asListValue( (Collection<?>) object );
             }
             else
             {
@@ -99,17 +100,68 @@ public final class AnyValues
         }
     }
 
+    public static ListValue asListValue( Iterable<?> collection )
+    {
+        AnyValue[] anyValues =
+                Iterables.stream( collection ).map( AnyValues::of ).toArray( AnyValue[]::new );
+        return list( anyValues );
+    }
+
     public static NodeValue asNodeValue( Node node )
     {
         TextValue[] values = stream( node.getLabels().spliterator(), false )
                 .map( l -> stringValue( l.name() ) ).toArray( TextValue[]::new );
-        return nodeValue( node.getId(), values, asMapValue( node.getAllProperties() ) );
+        return VirtualValues.nodeValue( node.getId(), values, asMapValue( node.getAllProperties() ) );
     }
 
     public static EdgeValue asEdgeValue( Relationship rel )
     {
-        return edgeValue( rel.getId(), rel.getStartNodeId(), rel.getEndNodeId(),
-                stringValue( rel.getType().name() ), asMapValue( rel.getAllProperties() ) );
+        return VirtualValues
+                .edgeValue( rel.getId(), asNodeValue( rel.getStartNode() ), asNodeValue( rel.getEndNode() ),
+                        stringValue( rel.getType().name() ), asMapValue( rel.getAllProperties() ) );
+    }
+
+    public static AnyValue asNodeOrEdgeValue( PropertyContainer container )
+    {
+        if ( container instanceof Node )
+        {
+            return asNodeValue( (Node) container );
+        }
+        else if ( container instanceof Relationship )
+        {
+            return asEdgeValue( (Relationship) container );
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "Cannot produce a node or edge from " + container.getClass().getName() );
+        }
+    }
+
+    public static PathValue asPathValue( Path path )
+    {
+        NodeValue[] nodes = stream( path.nodes().spliterator(), false )
+                .map( AnyValues::asNodeValue ).toArray( NodeValue[]::new );
+        EdgeValue[] edges = stream( path.relationships().spliterator(), false )
+                .map( AnyValues::asEdgeValue ).toArray( EdgeValue[]::new );
+
+        return VirtualValues.path( nodes, edges );
+    }
+
+    public static ListValue asListOfEdges( Iterable<Relationship> rels )
+    {
+        return VirtualValues.list( StreamSupport.stream( rels.spliterator(), false )
+                .map( AnyValues::asEdgeValue ).toArray( EdgeValue[]::new ) );
+    }
+
+    public static ListValue asListOfEdges( Relationship[] rels )
+    {
+        EdgeValue[] edgeValues = new EdgeValue[rels.length];
+        for ( int i = 0; i < edgeValues.length; i++ )
+        {
+            edgeValues[i] = asEdgeValue( rels[i] );
+        }
+        return VirtualValues.list( edgeValues );
     }
 
     public static MapValue asMapValue( Map<String,Object> map )
@@ -121,5 +173,90 @@ public final class AnyValues
         }
 
         return map( newMap );
+    }
+
+    public static ListValue concat( ListValue... lists )
+    {
+        int totalSize = 0;
+        for ( ListValue list : lists )
+        {
+            totalSize += list.size();
+        }
+
+        AnyValue[] anyValues = new AnyValue[totalSize];
+        int startPoint = 0;
+        for ( ListValue list : lists )
+        {
+            System.arraycopy( list.asArray(), 0, anyValues, startPoint, list.size() );
+            startPoint += list.size();
+        }
+
+        return VirtualValues.list( anyValues );
+    }
+
+    public static MapValue combine( MapValue a, MapValue b )
+    {
+        HashMap<String,AnyValue> map = new HashMap<>( a.size() + b.size() );
+        a.foreach( map::put );
+        b.foreach( map::put );
+        return VirtualValues.map( map );
+    }
+
+    public static ListValue appendToList( ListValue list, AnyValue value )
+    {
+        AnyValue[] newValues = new AnyValue[list.size() + 1];
+        System.arraycopy( list.asArray(), 0, newValues, 0, list.size() );
+        newValues[list.size()] = value;
+        return VirtualValues.list( newValues );
+    }
+
+    public static ListValue prependToList( ListValue list, AnyValue value )
+    {
+        AnyValue[] newValues = new AnyValue[list.size() + 1];
+        newValues[0] = value;
+        System.arraycopy( list.asArray(), 0, newValues, 1, list.size() );
+        return VirtualValues.list( newValues );
+    }
+
+    public static PointValue fromMap( MapValue map )
+    {
+        if ( map.containsKey( "x" ) && map.containsKey( "y" ) )
+        {
+            double x = ((NumberValue) map.get( "x" )).doubleValue();
+            double y = ((NumberValue) map.get( "y" )).doubleValue();
+            TextValue crs = (TextValue) map.get( "crs" );
+            if ( crs == Values.NO_VALUE || crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.name() ) )
+            {
+                return VirtualValues.pointCartesian( x, y );
+            }
+            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name() ) )
+            {
+                return VirtualValues.pointGeographic( x, y );
+            }
+            else
+            {
+                throw new IllegalArgumentException( "Unknown coordinate reference system: " + crs.stringValue() );
+            }
+        }
+        else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
+        {
+            double latitude = ((NumberValue) map.get( "x" )).doubleValue();
+            double longitude = ((NumberValue) map.get( "y" )).doubleValue();
+            TextValue crs = (TextValue) map.get( "crs" );
+            if ( crs == Values.NO_VALUE || crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name() ) )
+            {
+                return VirtualValues.pointGeographic( latitude, longitude );
+            }
+            else
+            {
+                throw new IllegalArgumentException(
+                        "Geographic points does not support coordinate reference system: " + crs.stringValue() );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException(
+                    "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
+        }
     }
 }
