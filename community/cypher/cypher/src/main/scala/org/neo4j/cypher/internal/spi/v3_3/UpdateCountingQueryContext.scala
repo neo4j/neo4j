@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.values.Value
+import org.neo4j.values.storable.Value
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 

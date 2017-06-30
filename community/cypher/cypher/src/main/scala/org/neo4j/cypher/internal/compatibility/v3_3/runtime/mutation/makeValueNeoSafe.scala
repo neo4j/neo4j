@@ -41,7 +41,7 @@ object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
    */
   private def transformTraversableToArray(a: ListValue): ArrayValue = {
     if (a.isEmpty) {
-      Values.stringArray(Array.empty)
+      Values.stringArray(Array.empty:_*)
     } else {
       val typeValue = a.iterator().asScala.reduce(CastSupport.merge)
       val converter = CastSupport.getConverter(typeValue)

@@ -36,7 +36,7 @@ object ImplicitValueConversion {
 
   implicit def toStringValue(s: String): TextValue = stringValue(s)
 
-  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s)
+  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s:_*)
 
   implicit def toByteArrayValue(s: Array[Byte]): ArrayValue = byteArray(s)
 

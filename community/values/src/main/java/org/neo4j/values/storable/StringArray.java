@@ -26,7 +26,7 @@ import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
-abstract class StringArray extends TextArray
+public abstract class StringArray extends TextArray
 {
     abstract String[] value();
 

@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
@@ -56,7 +57,7 @@ public class VirtualValueTestUtil
         {
             labelValues[i] = stringValue( labels[i] );
         }
-        return nodeValue( id, labelValues, emptyMap() );
+        return nodeValue( id, stringArray( labels ), emptyMap() );
     }
 
     public static VirtualValue path( VirtualValue... pathElements )
@@ -134,7 +135,7 @@ public class VirtualValueTestUtil
     public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> nodeValue( id, new TextValue[]{stringValue( "L" )}, emptyMap() ) )
+                .mapToObj( id -> nodeValue( id, stringArray( "L" ), emptyMap() ) )
                 .toArray( NodeValue[]::new );
     }
 

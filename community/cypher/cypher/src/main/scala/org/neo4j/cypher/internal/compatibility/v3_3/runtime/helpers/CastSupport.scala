@@ -101,7 +101,7 @@ object CastSupport {
   /*Returns a converter given a type value*/
   def getConverter(x: AnyValue): Converter = x match {
     case _: CharValue => Converter(transform(new ArrayConverterWriter(classOf[Char], a => Values.charArray(a.asInstanceOf[Array[Char]]))))
-    case _: TextValue => Converter(transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]))))
+    case _: TextValue => Converter(transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]:_*))))
     case _: BooleanValue => Converter(transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
     case _: ByteValue => Converter(transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
     case _: IntValue => Converter(transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
@@ -135,7 +135,7 @@ object CastSupport {
 
     override def writeNodeReference(nodeId: Long): Unit = fail()
 
-    override def writeNode(nodeId: Long, labels: Array[TextValue],
+    override def writeNode(nodeId: Long, labels: TextArray,
                            properties: MapValue): Unit = fail()
 
     override def writeEdgeReference(edgeId: Long): Unit = fail()

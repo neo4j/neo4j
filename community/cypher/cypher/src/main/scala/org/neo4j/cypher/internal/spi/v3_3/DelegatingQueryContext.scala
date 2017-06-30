@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
-import org.neo4j.values.{AnyValue, Value}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 
 import scala.collection.Iterator
 

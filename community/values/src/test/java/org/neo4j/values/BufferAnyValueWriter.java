@@ -22,6 +22,7 @@ package org.neo4j.values;
 import java.util.Arrays;
 
 import org.neo4j.values.storable.BufferValueWriter;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
@@ -102,7 +103,7 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     }
 
     @Override
-    public void writeNode( long nodeId, TextValue[] labels, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws RuntimeException
     {
         buffer.add( Specials.writeNode( nodeId, labels, properties ) );
     }
@@ -166,10 +167,10 @@ public class BufferAnyValueWriter extends BufferValueWriter implements AnyValueW
     public static class Specials
     {
 
-        public static Special writeNode( long nodeId, TextValue[] labels, MapValue properties )
+        public static Special writeNode( long nodeId, TextArray labels, MapValue properties )
         {
             return new Special( SpecialKind.WriteNode, Arrays.hashCode( new Object[]{nodeId, properties} ) +
-                                                       31 * Arrays.hashCode( labels ) );
+                                                       31 * labels.hashCode() );
         }
 
         public static Special writeEdge( long edgeId, long startNodeId, long endNodeId, TextValue type,

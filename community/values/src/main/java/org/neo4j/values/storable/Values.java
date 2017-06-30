@@ -190,7 +190,7 @@ public final class Values
         return new FloatValue( value );
     }
 
-    public static TextArray stringArray( String[] value )
+    public static TextArray stringArray( String...value )
     {
         return new StringArray.Direct( value );
     }

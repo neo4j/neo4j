@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import org.neo4j.values.virtual.VirtualValueTestUtil;
 
 import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.edges;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
@@ -39,7 +40,6 @@ import static org.neo4j.values.virtual.VirtualValueTestUtil.nodes;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
-import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.node;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 import static org.neo4j.values.virtual.VirtualValues.path;
@@ -67,13 +67,13 @@ public class AnyValueComparatorTest
 
             // Node
             node( 1L ),
-            nodeValue( 2L, labels( stringValue( "L" ) ), emptyMap() ),
+            nodeValue( 2L, stringArray( "L" ), emptyMap() ),
             node( 3L ),
 
             // Edge
             edge( 1L ),
-            edgeValue( 2L, nodeValue( 1L, labels( stringValue( "L" ) ), emptyMap() ),
-                    nodeValue( 2L, labels( stringValue( "L" ) ), emptyMap() ), stringValue( "type" ), emptyMap() ),
+            edgeValue( 2L, nodeValue( 1L, stringArray( "L" ), emptyMap() ),
+                    nodeValue( 2L, stringArray( "L" ), emptyMap() ), stringValue( "type" ), emptyMap() ),
             edge( 3L ),
 
             // Path

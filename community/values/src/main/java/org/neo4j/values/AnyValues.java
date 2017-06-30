@@ -44,7 +44,6 @@ import org.neo4j.values.virtual.VirtualValueGroup;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.stream.StreamSupport.stream;
-import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.list;
 import static org.neo4j.values.virtual.VirtualValues.map;
 
@@ -109,16 +108,12 @@ public final class AnyValues
 
     public static NodeValue asNodeValue( Node node )
     {
-        TextValue[] values = stream( node.getLabels().spliterator(), false )
-                .map( l -> stringValue( l.name() ) ).toArray( TextValue[]::new );
-        return VirtualValues.nodeValue( node.getId(), values, asMapValue( node.getAllProperties() ) );
+        return VirtualValues.fromNodeProxy( node );
     }
 
     public static EdgeValue asEdgeValue( Relationship rel )
     {
-        return VirtualValues
-                .edgeValue( rel.getId(), asNodeValue( rel.getStartNode() ), asNodeValue( rel.getEndNode() ),
-                        stringValue( rel.getType().name() ), asMapValue( rel.getAllProperties() ) );
+        return VirtualValues.fromRelationshipProxy( rel );
     }
 
     public static AnyValue asNodeOrEdgeValue( PropertyContainer container )
@@ -166,13 +161,7 @@ public final class AnyValues
 
     public static MapValue asMapValue( Map<String,Object> map )
     {
-        HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
-        for ( Map.Entry<String,Object> entry : map.entrySet() )
-        {
-            newMap.put( entry.getKey(), of( entry.getValue() ) );
-        }
-
-        return map( newMap );
+        return map( mapValues( map ) );
     }
 
     public static ListValue concat( ListValue... lists )
@@ -258,5 +247,16 @@ public final class AnyValues
             throw new IllegalArgumentException(
                     "A point must contain either 'x' and 'y' or 'latitude' and 'longitude'" );
         }
+    }
+
+    private static Map<String,AnyValue> mapValues( Map<String,Object> map )
+    {
+        HashMap<String,AnyValue> newMap = new HashMap<>( map.size() );
+        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        {
+            newMap.put( entry.getKey(), of( entry.getValue() ) );
+        }
+
+        return newMap;
     }
 }

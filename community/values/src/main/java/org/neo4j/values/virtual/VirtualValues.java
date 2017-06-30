@@ -24,7 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.ArrayValue;
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 
 /**
@@ -112,11 +116,6 @@ public final class VirtualValues
         return new MapValue( map );
     }
 
-    public static TextValue[] labels( TextValue... labels )
-    {
-        return labels;
-    }
-
     public static NodeReference node( long id )
     {
         return new NodeReference( id );
@@ -142,14 +141,24 @@ public final class VirtualValues
         return new PointValue.GeographicPointValue( latitude, longitude );
     }
 
-    public static NodeValue nodeValue( long id, TextValue[] labels, MapValue properties )
+    public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )
     {
-        return new NodeValue( id, labels, properties );
+        return new NodeValue.DirectNodeValue( id, labels, properties );
+    }
+
+    public static NodeValue fromNodeProxy( Node node )
+    {
+        return new NodeValue.NodeProxyWrappingNodeValue( node );
     }
 
     public static EdgeValue edgeValue( long id, NodeValue startNode, NodeValue endNode, TextValue type,
             MapValue properties )
     {
-        return new EdgeValue( id, startNode, endNode, type, properties );
+        return new EdgeValue.DirectEdgeValue( id, startNode, endNode, type, properties );
+    }
+
+    public static EdgeValue fromRelationshipProxy( Relationship relationship )
+    {
+        return new EdgeValue.RelationshipProxyWrappingEdgeValue( relationship );
     }
 }

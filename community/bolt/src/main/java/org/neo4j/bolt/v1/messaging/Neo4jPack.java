@@ -36,6 +36,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.TextArray;
 import org.neo4j.values.TextValue;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
@@ -93,6 +94,7 @@ public class Neo4jPack
             }
         }
 
+        //TODO this needs to go away as well since it is relying on pack(Object)
         public void packRawMap( Map<String,Object> map ) throws IOException
         {
             packMapHeader( map.size() );
@@ -128,14 +130,14 @@ public class Neo4jPack
         }
 
         @Override
-        public void writeNode( long nodeId, TextValue[] labels, MapValue properties ) throws IOException
+        public void writeNode( long nodeId, TextArray labels, MapValue properties ) throws IOException
         {
             packStructHeader( 3, Neo4jPack.NODE );
             pack( nodeId );
-            packListHeader( labels.length );
-            for ( TextValue label : labels )
+            packListHeader( labels.length() );
+            for ( int i = 0; i < labels.length(); i++ )
             {
-                label.writeTo( this );
+                labels.valueAt( i ).writeTo( this );
             }
             properties.writeTo( this );
         }
@@ -231,7 +233,7 @@ public class Neo4jPack
                     EdgeValue edge = edges[i / 2];
                     int index = edgeIndexes.getOrDefault( edge.id(), NO_SUCH_ID );
 
-                    if ( node.id() == edge.startNode() )
+                    if ( node.id() == edge.startNode().id() )
                     {
                         pack( index );
                     }

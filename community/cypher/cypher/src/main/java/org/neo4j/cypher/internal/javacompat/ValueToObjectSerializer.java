@@ -32,6 +32,7 @@ import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.TextArray;
 import org.neo4j.values.TextValue;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
@@ -69,7 +70,7 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
     }
 
     @Override
-    public void writeNode( long nodeId, TextValue[] labels, MapValue properties ) throws RuntimeException
+    public void writeNode( long nodeId, TextArray ignore, MapValue properties ) throws RuntimeException
     {
         writeValue( nodeManager.newNodeProxyById( nodeId ) );
     }

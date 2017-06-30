@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, ParameterWrongTypeException}
@@ -180,11 +179,11 @@ case class SplitFunction(orig: Expression, separator: Expression)
       Values.NO_VALUE
     } else {
       if (separatorVal.length > 0) {
-        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray))
+        VirtualValues.fromArray(Values.stringArray(split(Vector.empty, origVal, 0, separatorVal).toArray:_*))
       } else if (origVal.isEmpty) {
         VirtualValues.list(Values.EMPTY_STRING)
       } else {
-        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray))
+        VirtualValues.fromArray(Values.stringArray(origVal.sliding(1).toArray:_*))
       }
     }
   }

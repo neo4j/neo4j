@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-abstract class TextArray extends ArrayValue
+public abstract class TextArray extends ArrayValue
 {
     abstract String stringValue( int offset );
 

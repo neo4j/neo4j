@@ -19,13 +19,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Equivalent
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure
-import org.neo4j.values.storable.Values
 import org.scalacheck._
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
 
 class Neo4jValueComparisonTest extends CypherFunSuite {
 
@@ -115,37 +110,4 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
   }
 
   def notKnownLuceneBug(a: Any, b: Any): Boolean = a != -0.0 && b != -0.0
-
-  test("compare equality between modules") {
-    GeneratorDrivenPropertyChecks.forAll(testCase) {
-      case ValuePair(l, r) =>
-        val compiledL2R = CompiledEquivalenceUtils.equals(l, r)
-        val compiledR2L = CompiledEquivalenceUtils.equals(r, l)
-        val interpretedL2R = Equivalent(l).equals(r)
-        val interpretedR2L = Equivalent(r).equals(l)
-
-        if (compiledL2R != compiledR2L) fail(s"compiled (l = r)[$compiledL2R] = (r = l)[$compiledR2L]")
-        if (interpretedL2R != interpretedR2L) fail(s"interpreted (l = r)[$interpretedL2R] = (r = l)[$interpretedR2L]")
-        if (compiledL2R != interpretedL2R) fail(s"compiled[$compiledL2R] = interpreted[$interpretedL2R]")
-
-        if (l != null && r != null) {
-          val lValue = Values.of(l)
-          val rValue = Values.of(r)
-          val propertyL2R = lValue.equals(rValue)
-          val propertyR2L = rValue.equals(lValue)
-          if (propertyL2R != propertyR2L) fail(s"property (l = r)[$propertyL2R] = (r = l)[$propertyR2L]")
-          if (propertyL2R != interpretedL2R) fail(s"property[$propertyL2R] = interpreted[$interpretedL2R]")
-
-          if (propertyL2R && notKnownLuceneBug(l,r)) {
-            val lString = LuceneDocumentStructure.encodeValueField(lValue).stringValue()
-            val rString = LuceneDocumentStructure.encodeValueField(rValue).stringValue()
-            val index = lString.equals(rString)
-
-            if (!index)
-              fail(s"if property comparison yields true ($propertyL2R), the index string comparison must also yield true ($index)")
-          }
-        }
-
-    }
-  }
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
-import org.neo4j.kernel.impl.core.NodeProxy
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 import scala.collection.{Map, mutable}
@@ -166,7 +166,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
 
   private def createFakeDataWith(keys: Array[String], data: (Int, List[Any])*) = {
     def nodeWithId(id: Long) = {
-      VirtualValues.nodeValue(id, Array.empty, VirtualValues.EMPTY_MAP)
+      VirtualValues.nodeValue(id, Values.stringArray(), VirtualValues.EMPTY_MAP)
     }
 
     data.flatMap {
@@ -192,7 +192,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
         case Some(context: ExecutionContext) =>
           in.flatMap { m =>
             if (m(keys(0)) == context(keys(0))) {
-              val stringToProxy: mutable.Map[String, Any] = collection.mutable.Map(m.toSeq: _*)
+              val stringToProxy: mutable.Map[String, AnyValue] = collection.mutable.Map(m.toSeq: _*)
               Some(ExecutionContext(stringToProxy))
             }
             else None
