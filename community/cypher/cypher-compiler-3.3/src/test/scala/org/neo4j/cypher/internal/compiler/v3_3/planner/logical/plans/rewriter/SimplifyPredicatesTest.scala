@@ -46,9 +46,9 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
     selection.endoRewrite(simplifyPredicates) should equal(selection)
   }
 
-  test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop <> 1") {
-    val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
-    val variable = Variable("a")(pos)
+  test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop > 42") {
+    val singleRow: LogicalPlan = Argument(Set(IdName("x")))(solved)(Map.empty)
+    val variable = Variable("x")(pos)
     val property = Property(variable, PropertyKeyName("prop")(pos))(pos)
     val greaterThan = GreaterThan(property, SignedDecimalIntegerLiteral("42")(pos))(pos)
     val complexForm = AndedPropertyInequalities(variable, property, NonEmptyList(greaterThan))
