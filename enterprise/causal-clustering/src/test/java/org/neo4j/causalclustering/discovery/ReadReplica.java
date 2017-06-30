@@ -26,6 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.IntFunction;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -55,14 +56,12 @@ public class ReadReplica implements ClusterMember
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
-    public ReadReplica( File parentDir, int serverId, DiscoveryServiceFactory discoveryServiceFactory,
-            List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String,String> extraParams,
-            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
+    public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
+                        DiscoveryServiceFactory discoveryServiceFactory,
+                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
+                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
     {
         this.serverId = serverId;
-        int boltPort = 9000 + serverId;
-        int httpPort = 11000 + serverId;
-        int txPort = 20000 + serverId;
 
         String initialHosts = coreMemberHazelcastAddresses.stream().map( AdvertisedSocketAddress::toString )
                 .collect( joining( "," ) );
@@ -94,6 +93,7 @@ public class ReadReplica implements ClusterMember
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
 
         config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
+        config.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + backupPort );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
@@ -146,6 +146,12 @@ public class ReadReplica implements ClusterMember
     public ClientConnectorAddresses clientConnectorAddresses()
     {
         return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
+    }
+
+    @Override
+    public String settingValue( String settingName )
+    {
+        return config.get(settingName);
     }
 
     public File storeDir()

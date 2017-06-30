@@ -35,6 +35,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -52,8 +53,7 @@ public class BackupCoreIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withNumberOfCoreMembers( 3 )
-            .withNumberOfReadReplicas( 0 )
-            .withInstanceCoreParam( OnlineBackupSettings.online_backup_server, serverId -> ":" + (8000 + serverId) );
+            .withNumberOfReadReplicas( 0 );
 
     private Cluster cluster;
     private File backupsDir;
@@ -102,7 +102,12 @@ public class BackupCoreIT
         InetSocketAddress inetSocketAddress = db.getDependencyResolver()
                 .resolveDependency( Config.class ).get( CausalClusteringSettings.transaction_advertised_address )
                 .socketAddress();
-        return inetSocketAddress.getHostName() + ":" + (inetSocketAddress.getPort() + 2000);
+
+        HostnamePort hostnamePort = db.getDependencyResolver()
+                .resolveDependency( Config.class )
+                .get( OnlineBackupSettings.online_backup_server );
+
+        return inetSocketAddress.getHostName() + ":" + hostnamePort.getPort();
     }
 
     static String[] backupArguments( String from, File backupsDir, String name )

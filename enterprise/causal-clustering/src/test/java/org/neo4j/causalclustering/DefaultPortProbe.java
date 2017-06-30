@@ -17,19 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering;
 
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import java.io.IOException;
+import java.net.ServerSocket;
 
-public interface ClusterMember<T extends GraphDatabaseAPI>
+public class DefaultPortProbe implements PortProbe
 {
-    void start();
-
-    void shutdown();
-
-    T database();
-
-    ClientConnectorAddresses clientConnectorAddresses();
-
-    String settingValue( String settingName );
+    @Override
+    public boolean isOccupied( int port )
+    {
+        try ( ServerSocket ignored = new ServerSocket( port ) )
+        {
+            return false;
+        }
+        catch ( IOException e )
+        {
+            return true;
+        }
+    }
 }

@@ -26,10 +26,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Map;
-import java.util.function.IntFunction;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -41,7 +38,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
@@ -66,19 +62,12 @@ public class ClusterSeedingIT
         fsa = fileSystemRule.get();
 
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
                 new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
 
         baseBackupDir = testDir.directory( "backups" );
-    }
-
-    private Map<String,IntFunction<String>> backupParams()
-    {
-        return singletonMap(
-                OnlineBackupSettings.online_backup_server.name(),
-                serverId -> ":" + (8000 + serverId) );
     }
 
     @After
@@ -134,7 +123,7 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
         cluster.start();
 
         // when: creating a backup
@@ -154,7 +143,7 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), backupParams(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
         cluster.start();
         createEmptyNodes( cluster, 100 );
 

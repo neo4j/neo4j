@@ -25,4 +25,10 @@ public class AdvertisedSocketAddress extends SocketAddress
     {
         super( hostname, port );
     }
+
+    public static AdvertisedSocketAddress from( String address )
+    {
+        String[] tokens = address.split( ":" );
+        return new AdvertisedSocketAddress( tokens[0], Integer.valueOf( tokens[1] ) );
+    }
 }
