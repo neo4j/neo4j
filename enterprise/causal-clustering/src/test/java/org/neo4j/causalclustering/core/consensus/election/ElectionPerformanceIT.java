@@ -19,6 +19,7 @@
  */
 package org.neo4j.causalclustering.core.consensus.election;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Set;
@@ -93,6 +94,7 @@ public class ElectionPerformanceIT
         assertThat( result.timeoutCount, is( 0L ) );
     }
 
+    @Ignore( "This belongs better in a benchmarking suite." )
     @Test
     public void electionPerformance_RapidConditions() throws Throwable
     {
