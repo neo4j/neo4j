@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.graphdb.{Node, Path, Relationship}
-import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.{AnyValue, AnyValues}
 
 object ValueConversion {
   def getValueConverter(cType: CypherType): Any => AnyValue = cType match {

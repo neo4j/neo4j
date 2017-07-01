@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.{AnyValues, DoubleValue}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.DoubleValue
 
 trait StdevTest {
   implicit val state = QueryStateHelper.empty
@@ -36,7 +37,7 @@ trait StdevTest {
       func(ExecutionContext.from("x" -> AnyValues.of(value)))(QueryStateHelper.empty)
     })
     func.result match {
-      case x:DoubleValue => x.doubleValue()
+      case x: DoubleValue => x.doubleValue()
       case _ => -99.0
     }
   }

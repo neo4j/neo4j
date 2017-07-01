@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values._
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual._
 
 object coerce {

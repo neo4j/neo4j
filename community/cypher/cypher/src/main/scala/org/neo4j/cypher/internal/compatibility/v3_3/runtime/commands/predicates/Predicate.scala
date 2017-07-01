@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.graphdb._
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
-import org.neo4j.values.{BooleanValue, TextValue, Values}
+import org.neo4j.values.storable.{BooleanValue, NumberValue, TextValue, Values}
 
 import scala.util.{Failure, Success, Try}
 

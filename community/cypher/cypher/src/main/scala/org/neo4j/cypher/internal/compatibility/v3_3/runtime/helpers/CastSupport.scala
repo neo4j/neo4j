@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.values.{AnyValue, AnyValueWriter}
-import org.neo4j.values.storable._
-import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
+import org.neo4j.values.{AnyValue, AnyValueWriter}
 
 import scala.reflect.ClassTag
 

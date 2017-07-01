@@ -27,8 +27,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, VirtualValues}
-import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

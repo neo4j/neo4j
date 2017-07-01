@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-
 
 class ConstantCachedInTest extends CachedInTest {
   override def createPredicate(lhs: Variable, rhs: Expression): Predicate = ConstantCachedIn(lhs, rhs)

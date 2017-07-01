@@ -36,6 +36,7 @@ import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
 
 import static java.lang.String.format;
+import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;

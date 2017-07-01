@@ -26,10 +26,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.{Map, mutable}
-import scala.collection.Map
-import org.neo4j.values.virtual.VirtualValues
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
   test("triadic from input with no cycles") {

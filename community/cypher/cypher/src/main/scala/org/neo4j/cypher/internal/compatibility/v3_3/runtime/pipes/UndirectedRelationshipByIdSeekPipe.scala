@@ -24,8 +24,11 @@ import java.util.function
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
+
 import scala.collection.JavaConverters._
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)

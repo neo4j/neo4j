@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values._
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.ListValue
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {

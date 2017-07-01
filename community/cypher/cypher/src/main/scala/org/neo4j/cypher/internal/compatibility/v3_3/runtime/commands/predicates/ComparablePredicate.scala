@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.storable.Values
 import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 

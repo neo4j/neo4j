@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.values._
+import org.neo4j.values.storable.{DoubleValue, FloatValue, NumberValue, Values}
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: NumberValue, b: NumberValue): AnyValue = (a, b) match {

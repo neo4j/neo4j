@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.Values
+import org.neo4j.values.storable.Values
 
 case class Null() extends Expression {
   def apply(v1: ExecutionContext)(implicit state: QueryState) = Values.NO_VALUE

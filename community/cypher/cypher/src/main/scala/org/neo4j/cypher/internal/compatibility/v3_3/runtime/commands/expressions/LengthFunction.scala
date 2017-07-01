@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.values.{AnyValue, TextValue, Values}
 
 case class LengthFunction(inner: Expression)
   extends NullInNullOutExpression(inner)

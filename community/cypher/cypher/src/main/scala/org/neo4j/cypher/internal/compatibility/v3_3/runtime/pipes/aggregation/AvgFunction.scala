@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.{FloatValue, IntegralValue, NumberValue, Values}
+import org.neo4j.values.storable.{FloatValue, IntegralValue, NumberValue, Values}
 
 /**
  * AVG computation is calculated using cumulative moving average approach:

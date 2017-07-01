@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
-import org.neo4j.values.{AnyValue, TextValue, Values}
 
 case class ReverseFunction(argument: Expression) extends NullInNullOutExpression(argument) {
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {

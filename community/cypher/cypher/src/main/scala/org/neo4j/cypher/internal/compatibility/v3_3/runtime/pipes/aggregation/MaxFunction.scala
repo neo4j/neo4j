@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.{AnyValue, AnyValues}
 
 trait MinMax extends AggregationFunction {
   def value: Expression

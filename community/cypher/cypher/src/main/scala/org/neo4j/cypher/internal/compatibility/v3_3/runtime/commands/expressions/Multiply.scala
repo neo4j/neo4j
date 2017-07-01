@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import org.neo4j.values.{AnyValue, NumberValue}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.NumberValue
 
 case class Multiply(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: NumberValue, b: NumberValue): AnyValue = multiply(a, b)

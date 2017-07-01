@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.Values._
+import org.neo4j.values.storable.Values._
 import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.Array._
@@ -29,11 +29,11 @@ import scala.Array._
 class MakeValuesNeoSafeTest extends CypherFunSuite {
 
   test("string collection turns into string array") {
-    makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray(Array("a", "")))
+    makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray("a", ""))
   }
 
   test("empty collection in is empty array") {
-    makeValueNeoSafe(list()) should equal(stringArray(Array.empty))
+    makeValueNeoSafe(list()) should equal(stringArray())
   }
 
   test("retains type of primitive arrays") {
@@ -47,7 +47,7 @@ class MakeValuesNeoSafeTest extends CypherFunSuite {
   test("string arrays work") {
     val array = Array[String]()
 
-    makeValueNeoSafe(stringArray(array)) should equal(array)
+    makeValueNeoSafe(stringArray()) should equal(array)
   }
 
   test("mixed types are not ok") {

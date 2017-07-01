@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, ListSupport}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.{AnyValue, NumberValue, Values}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{NumberValue, Values}
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 case class ListSlice(collection: Expression, from: Option[Expression], to: Option[Expression])

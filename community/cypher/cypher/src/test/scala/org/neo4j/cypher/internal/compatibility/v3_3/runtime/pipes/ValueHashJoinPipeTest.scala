@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.{AnyValue, Values}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.values.Values.{doubleArray, intArray}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.{doubleArray, intArray}
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 

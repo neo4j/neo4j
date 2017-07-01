@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.SeqCombiner.combine
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException}
 import org.neo4j.graphdb.Node
-import org.neo4j.values.{AnyValue, Value, Values}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 import scala.collection.GenTraversableOnce
 import scala.collection.JavaConverters._

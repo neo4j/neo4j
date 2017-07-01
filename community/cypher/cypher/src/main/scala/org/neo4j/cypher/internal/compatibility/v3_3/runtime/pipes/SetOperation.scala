@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNe
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, NodeValue}
-import org.neo4j.values.{AnyValue, Values}
 
 import scala.collection.Map
 

@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
 import org.neo4j.graphdb.Node
-import org.neo4j.values.{AnyValues, TextValue}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.TextValue
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,

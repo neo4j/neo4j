@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, ExecutionContext}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.graphdb.spatial.{Coordinate, Geometry, Point}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.PointValue
-import org.neo4j.values.{AnyValue, DoubleValue, Values}
 
 case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
 

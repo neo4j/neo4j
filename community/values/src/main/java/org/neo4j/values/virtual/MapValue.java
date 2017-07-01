@@ -26,8 +26,8 @@ import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.Values;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.Values;
 
 public final class MapValue extends VirtualValue
 {

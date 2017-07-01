@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 class StdevFunction(val value: Expression, val population:Boolean)
   extends AggregationFunction

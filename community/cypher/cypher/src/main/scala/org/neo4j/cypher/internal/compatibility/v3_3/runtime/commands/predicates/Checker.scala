@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
-import org.neo4j.values.{AnyValue, Values}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
 import scala.collection.mutable

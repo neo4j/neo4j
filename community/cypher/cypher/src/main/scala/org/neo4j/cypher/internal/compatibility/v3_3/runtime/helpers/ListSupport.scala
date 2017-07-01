@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{ArrayValue, Values}
 import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
-import org.neo4j.values.{AnyValue, ArrayValue, Values}
 
 import scala.collection.Seq
 

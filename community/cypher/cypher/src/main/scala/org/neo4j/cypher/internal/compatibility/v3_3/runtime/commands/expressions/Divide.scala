@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
 import org.neo4j.values._
+import org.neo4j.values.storable.{FloatValue, IntegralValue, NumberValue, Values}
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def operand = "/"

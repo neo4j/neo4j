@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.PatternGraphBuilder
@@ -29,8 +28,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.Match
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.values.{AnyValue, Values}
+
 
 /*
 This class does pattern matching inside an Expression. It's used as a fallback when the

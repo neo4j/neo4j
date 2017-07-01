@@ -20,14 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, PathImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.graphdb.{Path, PropertyContainer}
-import org.neo4j.values.{AnyValue, AnyValues, Values}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue, VirtualValues}
 
-import scala.collection.JavaConverters._
-import scala.collection.Map
 import scala.collection.mutable.ArrayBuffer
 
 case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression {

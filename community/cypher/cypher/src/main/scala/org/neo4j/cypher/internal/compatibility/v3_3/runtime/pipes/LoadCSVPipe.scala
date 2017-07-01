@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.LoadExternalResourceException
 import org.neo4j.cypher.internal.ir.v3_3.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values._
-import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.{TextValue, Values}
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters._
@@ -104,7 +104,8 @@ case class LoadCSVPipe(source: Pipe,
       val urlString: String = urlExpression(context).asInstanceOf[String]
       val url = getImportURL(urlString, state.query)
 
-      val iterator: Iterator[Array[TextValue]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping).map(_.map(s => Values.stringValue(s)))
+      val iterator: Iterator[Array[TextValue]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
+        .map(_.map(s => Values.stringValue(s)))
       format match {
         case HasHeaders =>
           val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
