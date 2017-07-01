@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.function.BiFunction;
 import java.util.function.Supplier;
@@ -123,17 +125,31 @@ public class SwitchToMaster implements AutoCloseable
 
     static URI getMasterUri( URI me, MasterServer masterServer, Config config )
     {
-
         String hostname = config.get( HaSettings.ha_server ).getHost();
-        if ( hostname == null || hostname.contains( "0.0.0.0" ) )
+        InetSocketAddress masterSocketAddress = masterServer.getSocketAddress();
+
+        if ( hostname == null || isWildcard( hostname ) )
         {
-            String masterAddress = ServerUtil.getHostString( masterServer.getSocketAddress() );
-            hostname = masterAddress.contains( "0.0.0.0" ) ? me.getHost() : masterAddress;
+            InetAddress masterAddress = masterSocketAddress.getAddress();
+            hostname = masterAddress.isAnyLocalAddress() ? me.getHost() : ServerUtil.getHostString( masterSocketAddress );
+            hostname = ensureWrapForIPv6Uri( hostname );
         }
 
-        int port = masterServer.getSocketAddress().getPort();
+        return URI.create( "ha://" + hostname + ":" + masterSocketAddress.getPort() + "?serverId=" + myId( config ) );
+    }
 
-        return URI.create( "ha://" + hostname + ":" + port + "?serverId=" + myId( config ) );
+    private static String ensureWrapForIPv6Uri( String hostname )
+    {
+        if ( hostname.contains( ":" ) && !hostname.contains( "[" ) )
+        {
+            hostname = "[" + hostname + "]";
+        }
+        return hostname;
+    }
+
+    private static boolean isWildcard( String hostname )
+    {
+        return hostname.contains( "0.0.0.0" ) || hostname.contains( "[::]" ) || hostname.contains( "[0:0:0:0:0:0:0:0]" );
     }
 
     private static InstanceId myId( Config config )
