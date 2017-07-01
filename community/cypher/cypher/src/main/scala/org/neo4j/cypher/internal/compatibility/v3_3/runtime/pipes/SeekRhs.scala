@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManyQueryExpression, QueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 
@@ -38,19 +37,15 @@ trait SeekRhs {
   def map(f: Expression => Expression): SeekRhs
 
   def asQueryExpression: QueryExpression[Expression]
-  def asCommandSeekArgs: SeekArgs
 }
 
 case class SingleSeekRhs(expr: Expression) extends SeekRhs {
   def sizeHint = None
 
-  override def map(f: Expression => Expression) = copy(f(expr))
+  override def map(f: Expression => Expression): SingleSeekRhs = copy(f(expr))
 
   def asQueryExpression: SingleQueryExpression[Expression] =
     SingleQueryExpression(expr)
-
-  def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(CommunityExpressionConverters.toCommandExpression(ListLiteral(Seq(expr))(expr.position)))
 }
 
 case class MultiSeekRhs(expr: Expression) extends SeekRhs {
@@ -66,7 +61,4 @@ case class MultiSeekRhs(expr: Expression) extends SeekRhs {
 
   def asQueryExpression: ManyQueryExpression[Expression] =
     ManyQueryExpression(expr)
-
-  def asCommandSeekArgs: SeekArgs =
-    ManySeekArgs(CommunityExpressionConverters.toCommandExpression(expr))
 }

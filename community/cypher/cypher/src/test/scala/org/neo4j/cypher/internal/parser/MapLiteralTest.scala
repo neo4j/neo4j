@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.parser
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3.parser.{Expressions, ParserTest}
@@ -47,5 +47,6 @@ class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with 
       legacy.LiteralMap(Map("inner1" -> legacy.LiteralMap(Map("inner2" -> legacy.Literal("Value")))))
   }
 
-  def convert(astNode: ast.Expression): legacy.Expression = toCommandExpression(astNode)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
+  def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(astNode)
 }

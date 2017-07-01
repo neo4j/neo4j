@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.mockito.Mockito.{atLeastOnce, verify, when}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters.toCommandExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken.Resolved
@@ -51,8 +50,12 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
   implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val converters = new ExpressionConverters(CommunityExpressionConverter)
 
-  val planBuilder = new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors, expressionConverters = CommunityExpressionConverters)
+  private val planBuilder = {
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    new PipeExecutionPlanBuilder(Clock.systemUTC(), monitors, expressionConverters = converters)
+  }
 
   def build(f: PlannerQuery with CardinalityEstimation => LogicalPlan): PipeInfo = {
     val logicalPlan = f(solved)
@@ -106,7 +109,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(toCommandExpression(astCollection)))())
+    pipeInfo.pipe should equal(NodeByIdSeekPipe("n", ManySeekArgs(converters.toCommandExpression(astCollection)))())
   }
 
   test("simple relationship by id seek query") {
@@ -132,7 +135,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(toCommandExpression(astCollection)), toNode, fromNode)())
+    pipeInfo.pipe should equal(DirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(astCollection)), toNode, fromNode)())
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
@@ -146,7 +149,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
-    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(toCommandExpression(astCollection)), toNode, fromNode)())
+    pipeInfo.pipe should equal(UndirectedRelationshipByIdSeekPipe("r", ManySeekArgs(converters.toCommandExpression(astCollection)), toNode, fromNode)())
   }
 
   test("simple cartesian product") {

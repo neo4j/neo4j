@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -49,11 +50,12 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
       case Some(plan) => plan match {
         // Global call: CALL foo.bar.baz("arg1", 2)
         case StandAloneProcedureCall(signature, args, types, indices) =>
+          val converters = new ExpressionConverters(CommunityExpressionConverter)
           Some(ProcedureCallExecutionPlan(signature, args, types, indices,
-                                          context.notificationLogger.notifications))
+                                          context.notificationLogger.notifications, converters))
 
         // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
-        case CreateNodeKeyConstraint(node, label, props) =>
+        case CreateNodeKeyConstraint(_, label, props) =>
           Some(PureSideEffectExecutionPlan("CreateNodeKeyConstraint", SCHEMA_WRITE, (ctx) => {
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
             ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
@@ -68,7 +70,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
 
         // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
         // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
-        case CreateUniquePropertyConstraint(node, label, props) =>
+        case CreateUniquePropertyConstraint(_, label, props) =>
           Some(PureSideEffectExecutionPlan("CreateUniqueConstraint", SCHEMA_WRITE, (ctx) => {
             val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
             ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))

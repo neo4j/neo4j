@@ -19,24 +19,36 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ProjectedPath._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ProjectedPath, Expression => CommandExpression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{predicates, expressions => commandexpressions, values => commandvalues}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ManySeekArgs, SeekArgs, SingleSeekArg}
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.{Many, One, Zero, ZeroOneOrMany}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ManySeekableArgs, SeekableArgs, SingleSeekableArg}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection, ast}
 import org.neo4j.graphdb.Direction
 
-trait ExpressionConverters {
+
+trait ExpressionConverter {
+  def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[CommandExpression]
+}
+
+class ExpressionConverters(converters: ExpressionConverter*) {
 
   self =>
 
-  def toCommandExpression(expression: ast.Expression): CommandExpression =
-    toCommandExpression(expression, self)
+  def toCommandExpression(expression: ast.Expression): CommandExpression = {
+    converters foreach { c: ExpressionConverter =>
+        c.toCommandExpression(expression, this) match {
+          case Some(x) => return x
+          case None =>
+        }
+    }
 
-  def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath
+    throw new InternalException(s"Unknown expression type during transformation (${expression.getClass})")
+  }
 
   def toCommandPredicate(in: ast.Expression): Predicate = in match {
     case e: ast.PatternExpression => predicates.NonEmpty(toCommandExpression(e))
@@ -48,6 +60,9 @@ trait ExpressionConverters {
       case c => predicates.CoercedPredicate(c)
     }
   }
+
+  def toCommandPredicate(e: Option[ast.Expression]): Predicate =
+    e.map(self.toCommandPredicate).getOrElse(predicates.True())
 
   def toCommandSeekArgs(seek: SeekableArgs): SeekArgs = seek match {
     case SingleSeekableArg(expr) => SingleSeekArg(toCommandExpression(expr))
@@ -64,7 +79,39 @@ trait ExpressionConverters {
     }
   }
 
-  protected def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): CommandExpression
+  def toCommandProjectedPath(e: ast.PathExpression): ProjectedPath = {
+    def project(pathStep: PathStep): Projector = pathStep match {
+
+      case NodePathStep(Variable(node), next) =>
+        singleNodeProjector(node, project(next))
+
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
+        singleIncomingRelationshipProjector(rel, project(next))
+
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
+        singleOutgoingRelationshipProjector(rel, project(next))
+
+      case SingleRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
+        singleUndirectedRelationshipProjector(rel, project(next))
+
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.INCOMING, next) =>
+        multiIncomingRelationshipProjector(rel, project(next))
+
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.OUTGOING, next) =>
+        multiOutgoingRelationshipProjector(rel, project(next))
+
+      case MultiRelationshipPathStep(Variable(rel), SemanticDirection.BOTH, next) =>
+        multiUndirectedRelationshipProjector(rel, project(next))
+
+      case NilPathStep =>
+        nilProjector
+    }
+
+    val projector = project(e.step)
+    val dependencies = e.step.dependencies.map(_.name)
+
+    ProjectedPath(dependencies, projector)
+  }
 }
 
 object DirectionConverter {

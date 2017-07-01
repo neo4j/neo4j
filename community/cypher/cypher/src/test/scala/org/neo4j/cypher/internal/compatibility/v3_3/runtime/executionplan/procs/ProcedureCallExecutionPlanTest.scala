@@ -24,6 +24,7 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.NormalMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -33,10 +34,12 @@ import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalConte
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
+
   test("should be able to call procedure with single argument") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty)
+                                          notifications = Set.empty, converters)
 
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
@@ -49,7 +52,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty)
+                                          notifications = Set.empty, converters)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -62,7 +65,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty)
+                                          notifications = Set.empty, converters)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)

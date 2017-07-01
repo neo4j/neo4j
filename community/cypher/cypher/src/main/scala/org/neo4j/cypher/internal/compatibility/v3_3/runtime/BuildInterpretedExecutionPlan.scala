@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
@@ -45,7 +45,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors, expressionConverters = CommunityExpressionConverters)
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors, expressionConverters = converters)
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
