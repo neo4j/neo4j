@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -44,6 +45,7 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestLabels;
 import org.neo4j.test.rule.DatabaseRule;
@@ -494,11 +496,17 @@ public class TestTransactionEvents
         @Override
         public T beforeCommit( TransactionData data ) throws Exception
         {
-            if ( willFail )
+            try
             {
-                throw new Exception( "Just failing commit, that's all" );
+                return source.beforeCommit( data );
             }
-            return source.beforeCommit( data );
+            finally
+            {
+                if ( willFail )
+                {
+                    throw new Exception( "Just failing commit, that's all" );
+                }
+            }
         }
     }
 
@@ -1131,6 +1139,47 @@ public class TestTransactionEvents
         assertThat( deletedToString.get(), containsString( format( "(%d)", endNode.getId() ) ) );
     }
 
+    @Test
+    public void shouldGetCallToAfterRollbackEvenIfBeforeCommitFailed() throws Exception
+    {
+        // given
+        CapturingEventHandler<Integer> firstWorkingHandler = new CapturingEventHandler<>( () -> 5 );
+        String failureMessage = "Massive fail";
+        CapturingEventHandler<Integer> faultyHandler = new CapturingEventHandler<>( () ->
+        {
+            throw new RuntimeException( failureMessage );
+        } );
+        CapturingEventHandler<Integer> otherWorkingHandler = new CapturingEventHandler<>( () -> 10 );
+        dbRule.registerTransactionEventHandler( firstWorkingHandler );
+        dbRule.registerTransactionEventHandler( faultyHandler );
+        dbRule.registerTransactionEventHandler( otherWorkingHandler );
+
+        boolean failed = false;
+        try ( Transaction tx = dbRule.beginTx() )
+        {
+            // when
+            dbRule.createNode();
+            tx.success();
+        }
+        catch ( Exception e )
+        {
+            assertTrue( Exceptions.contains( e, failureMessage, RuntimeException.class ) );
+            failed = true;
+        }
+        assertTrue( failed );
+
+        // then
+        assertTrue( firstWorkingHandler.beforeCommitCalled );
+        assertTrue( firstWorkingHandler.afterRollbackCalled );
+        assertEquals( 5, firstWorkingHandler.afterRollbackState.intValue() );
+        assertTrue( faultyHandler.beforeCommitCalled );
+        assertTrue( faultyHandler.afterRollbackCalled );
+        assertNull( faultyHandler.afterRollbackState );
+        assertTrue( otherWorkingHandler.beforeCommitCalled );
+        assertTrue( otherWorkingHandler.afterRollbackCalled );
+        assertEquals( 10, otherWorkingHandler.afterRollbackState.intValue() );
+    }
+
     private Node createNode( String... properties )
     {
         try ( Transaction tx = dbRule.beginTx() )
@@ -1253,6 +1302,42 @@ public class TestTransactionEvents
             this.startNode = relationship.getStartNode();
             this.type = relationship.getType().name();
             this.endNode = relationship.getEndNode();
+        }
+    }
+
+    static class CapturingEventHandler<T> implements TransactionEventHandler<T>
+    {
+        private final Supplier<T> stateSource;
+        boolean beforeCommitCalled;
+        boolean afterCommitCalled;
+        T afterCommitState;
+        boolean afterRollbackCalled;
+        T afterRollbackState;
+
+        CapturingEventHandler( Supplier<T> stateSource )
+        {
+            this.stateSource = stateSource;
+        }
+
+        @Override
+        public T beforeCommit( TransactionData data ) throws Exception
+        {
+            beforeCommitCalled = true;
+            return stateSource.get();
+        }
+
+        @Override
+        public void afterCommit( TransactionData data, T state )
+        {
+            afterCommitCalled = true;
+            afterCommitState = state;
+        }
+
+        @Override
+        public void afterRollback( TransactionData data, T state )
+        {
+            afterRollbackCalled = true;
+            afterRollbackState = state;
         }
     }
 }

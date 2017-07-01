@@ -113,8 +113,9 @@ public interface TransactionEventHandler<T>
      * can provide will require a new transaction to be opened.
      *
      * @param data the changes that were attempted to be committed in this transaction.
-     * @param state the object returned by
-     *            {@link #beforeCommit(TransactionData)}.
+     * @param state the object returned by {@link #beforeCommit(TransactionData)}.
+     * If this handler failed when executing {@link #beforeCommit(TransactionData)} this
+     * {@code state} will be {@code null}.
      */
     // TODO: should this method take a parameter describing WHY the tx failed?
     void afterRollback( TransactionData data, T state );
