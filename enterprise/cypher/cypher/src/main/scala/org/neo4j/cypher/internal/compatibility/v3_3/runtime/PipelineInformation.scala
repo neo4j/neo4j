@@ -72,6 +72,9 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
     case _ => throw new InternalException("Uh oh... There was no slot for `$name`")
   }
 
+  def foreachSlot[U](f: ((String,Slot)) => U): Unit =
+    slots.foreach(f)
+
   def canEqual(other: Any): Boolean = other.isInstanceOf[PipelineInformation]
 
   override def equals(other: Any): Boolean = other match {

@@ -290,4 +290,26 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(projection) shouldBe theSameInstanceAs (allocations(leaf))
   }
 
+  test("cartesian product") {
+    // given
+    val lhs = NodeByLabelScan(IdName("x"), LabelName("label1")(pos), Set.empty)(solved)
+    val rhs = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
+    val Xproduct = CartesianProduct(lhs, rhs)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(Xproduct)
+
+    // then
+    allocations should have size 3
+    allocations(lhs) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode)
+    )))
+    allocations(rhs) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
+      "y" -> LongSlot(0, nullable = false, CTNode)
+    )))
+    allocations(Xproduct) should equal(PipelineInformation(numberOfLongs = 2, numberOfReferences = 0, slots = Map(
+      "x" -> LongSlot(0, nullable = false, CTNode),
+      "y" -> LongSlot(1, nullable = false, CTNode)
+    )))
+  }
 }

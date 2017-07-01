@@ -125,6 +125,18 @@ object RegisterAllocation {
         result += (lp -> rhsPipeline)
         rhsPipeline
 
+      case CartesianProduct(lhs, rhs) =>
+        val lhsPipeline = allocate(lhs, nullable, argument)
+        val rhsPipeline = allocate(rhs, nullable, argument)
+        val cartesianProductPipeline = lhsPipeline.deepClone()
+        rhsPipeline.foreachSlot {
+          case (k,slot) =>
+            cartesianProductPipeline.add(k, slot)
+        }
+        result += (lp -> cartesianProductPipeline)
+        cartesianProductPipeline
+
+
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
