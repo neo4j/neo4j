@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.EntityProducerFactory
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{AggregationExpression, Literal, Expression => CommandExpression}
@@ -54,7 +53,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case SingleRow() =>
         SingleRowPipe()(id)
 
-      case arg@Argument(_) =>
+      case Argument(_) =>
         ArgumentPipe()(id = id)
 
       case AllNodesScan(IdName(ident), _) =>
@@ -125,9 +124,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         LockNodesPipe(source, nodesToLock.map(_.name))()
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-        val foo: Seq[Predicate] = predicates.map(buildPredicate)
-        val bar: Option[Predicate] = foo.reduceOption(_ andWith _)
-        val baz: Object = bar.getOrElse(True())
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
 
@@ -302,7 +298,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       }
     }
 
-    //partition particate on whether they deal with nodes or rels
+    //partition predicates on whether they deal with nodes or rels
     val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
     val nodeCommand = asCommand(nodePreds)
     val relCommand = asCommand(relPreds)
@@ -382,7 +378,6 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
   }
 
   private val resolver = new KeyTokenResolver
-  private val entityProducerFactory = new EntityProducerFactory
   implicit private val monitor = monitors.newMonitor[PipeMonitor]()
   implicit val table: SemanticTable = context.semanticTable
 
