@@ -269,10 +269,10 @@ object CommunityExpressionConverters extends ExpressionConverters {
     case e: ast.Parameter => toCommandParameter(e)
     case e: ast.CaseExpression => caseExpression(e, self)
     case e: ast.PatternExpression =>
-      val legacyPatterns = e.pattern.asLegacyPatterns
-      commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns), false)
-    case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns, toCommandPredicate(e.predicate), self.toCommandExpression(e.projection), true)
-    case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)
+      val legacyPatterns = e.pattern.asLegacyPatterns(self)
+      commands.PathExpression(legacyPatterns, predicates.True(), PathExtractorExpression(legacyPatterns), allowIntroducingNewIdentifiers = false)
+    case e: ast.PatternComprehension => commands.PathExpression(e.pattern.asLegacyPatterns(self), toCommandPredicate(e.predicate), self.toCommandExpression(e.projection), allowIntroducingNewIdentifiers = true)
+    case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None, self).head)
     case e: ast.HasLabels => hasLabels(e, self)
     case e: ast.ListLiteral => commandexpressions.ListLiteral(toCommandExpression(e.expressions, self): _*)
     case e: ast.MapExpression => commandexpressions.LiteralMap(mapItems(e.items, self))
