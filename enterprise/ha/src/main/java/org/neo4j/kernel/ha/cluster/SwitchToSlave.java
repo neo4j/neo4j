@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha.cluster;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
 import java.util.function.Function;
@@ -336,11 +337,28 @@ public abstract class SwitchToSlave
 
     private URI createHaURI( URI me, Server<?,?> server )
     {
-        String hostString = ServerUtil.getHostString( server.getSocketAddress() );
-        int port = server.getSocketAddress().getPort();
+        InetSocketAddress serverSocketAddress = server.getSocketAddress();
+        String hostString = ServerUtil.getHostString( serverSocketAddress );
+
+        String host = isWildcard( hostString ) ? me.getHost() : hostString;
+        host = ensureWrapForIpv6Uri( host );
+
         InstanceId serverId = config.get( ClusterSettings.server_id );
-        String host = hostString.contains( HighAvailabilityModeSwitcher.INADDR_ANY ) ? me.getHost() : hostString;
-        return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
+        return URI.create( "ha://" + host + ":" + serverSocketAddress.getPort() + "?serverId=" + serverId );
+    }
+
+    private String ensureWrapForIpv6Uri( String host )
+    {
+        if ( host.contains( ":" ) && !host.contains( "[" ) )
+        {
+            host = "[" + host + "]";
+        }
+        return host;
+    }
+
+    private static boolean isWildcard( String hostString )
+    {
+        return hostString.contains( "0.0.0.0" ) || hostString.contains( "::" ) || hostString.contains( "0:0:0:0:0:0:0:0" );
     }
 
     MasterClient newMasterClient( URI masterUri, URI me, StoreId storeId, LifeSupport life )

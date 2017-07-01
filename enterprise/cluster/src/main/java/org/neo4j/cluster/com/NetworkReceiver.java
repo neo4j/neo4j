@@ -38,6 +38,9 @@ import org.jboss.netty.util.ThreadNameDeterminer;
 import org.jboss.netty.util.ThreadRenamingRunnable;
 
 import java.net.ConnectException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -240,18 +243,23 @@ public class NetworkReceiver
         }
     }
 
-    URI getURI( InetSocketAddress address )
+    URI getURI( InetSocketAddress socketAddress )
     {
         String uri;
 
-        // Socket.toString() already prepends a /
-        if ( address.getAddress().getHostAddress().startsWith( "0" ) )
+        InetAddress address = socketAddress.getAddress();
+
+        if ( address instanceof Inet6Address )
         {
-            uri = CLUSTER_SCHEME + "://0.0.0.0:" + address.getPort();
+            uri = CLUSTER_SCHEME + "://" + wrapAddressForIPv6Uri( address.getHostAddress() ) + ":" + socketAddress.getPort();
+        }
+        else if ( address instanceof Inet4Address )
+        {
+            uri = CLUSTER_SCHEME + "://" + address.getHostAddress() + ":" + socketAddress.getPort();
         }
         else
         {
-            uri = CLUSTER_SCHEME + "://" + address.getAddress().getHostAddress() + ":" + address.getPort();
+            throw new IllegalArgumentException( "Address type unknown" );
         }
 
         // Add name if given
@@ -333,6 +341,10 @@ public class NetworkReceiver
             InetSocketAddress remote = (InetSocketAddress) ctx.getChannel().getRemoteAddress();
             String remoteAddress = remote.getAddress().getHostAddress();
             URI fromHeader = URI.create( message.getHeader( Message.FROM ) );
+            if ( remote.getAddress() instanceof Inet6Address )
+            {
+                remoteAddress = wrapAddressForIPv6Uri( remoteAddress );
+            }
             fromHeader = URI.create( fromHeader.getScheme() + "://" + remoteAddress + ":" + fromHeader.getPort() );
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
@@ -362,5 +374,10 @@ public class NetworkReceiver
                 msgLog.error( "Receive exception:", e.getCause() );
             }
         }
+    }
+
+    private static String wrapAddressForIPv6Uri( String address )
+    {
+        return "[" + address + "]";
     }
 }
