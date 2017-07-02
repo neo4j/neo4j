@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 import scala.collection.mutable
@@ -39,7 +39,7 @@ object RegisterAllocation {
 
         def addExpressions(groupingExpressions: Map[String, Expression]) = {
           groupingExpressions foreach {
-            case (key, ast.Variable(ident)) =>
+            case (key, parserAst.Variable(ident)) =>
               val slotInfo = oldPipeline(ident)
               newPipeline.add(ident, slotInfo)
             case (key, exp) =>
@@ -55,7 +55,7 @@ object RegisterAllocation {
       case Projection(source, expressions) =>
         val pipeline = allocate(source, nullable, argument)
         expressions foreach {
-          case (key, ast.Variable(ident)) =>
+          case (key, parserAst.Variable(ident)) =>
             // it's already there. no need to add a new slot for it
           case (key, exp) =>
             pipeline.newReference(key, nullable = true, CTAny)

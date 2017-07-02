@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
-import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -189,7 +189,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
         EagerAggregationPipe(
           source,
           groupingExpressions.keySet,
-          Eagerly.immutableMapValues[String, ast.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
+          Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
         )(id = id)
 
       case FindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>
@@ -363,7 +363,7 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
       case TriadicSelection(positivePredicate, _, sourceId, seenId, targetId, _) =>
         TriadicSelectionPipe(positivePredicate, lhs, sourceId.name, seenId.name, targetId.name, rhs)(id = id)
 
-      case ValueHashJoin(_, _, ast.Equals(lhsExpression, rhsExpression)) =>
+      case ValueHashJoin(_, _, frontEndAst.Equals(lhsExpression, rhsExpression)) =>
         ValueHashJoinPipe(buildExpression(lhsExpression), buildExpression(rhsExpression), lhs, rhs)(id = id)
 
       case ForeachApply(_, _, variable, expression) =>
@@ -392,13 +392,13 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
     override def apply(that: AnyRef): AnyRef = instance.apply(that)
   }
 
-  private def buildExpression(expr: ast.Expression)(implicit planContext: PlanContext): CommandExpression = {
+  private def buildExpression(expr: frontEndAst.Expression)(implicit planContext: PlanContext): CommandExpression = {
     val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
 
     expressionConverters.toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
   }
 
-  private def buildPredicate(expr: ast.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
     val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
 
     expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
