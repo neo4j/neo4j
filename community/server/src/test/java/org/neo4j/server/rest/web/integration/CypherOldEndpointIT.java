@@ -31,7 +31,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
 {
-    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
+    private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
 
     @Test
     public void periodicCommitTest() throws Exception
@@ -40,7 +40,7 @@ public class CypherOldEndpointIT extends AbstractRestFunctionalTestBase
         {
             // begin
             HTTP.Response begin = http.POST(
-                    "/db/data/cypher",
+                    "db/data/cypher",
                     quotedJson( "{ 'query': 'USING PERIODIC COMMIT 100 LOAD CSV FROM \\\"" + url + "\\\" AS line CREATE ();' }" )
             );
             assertThat( begin.status(), equalTo( 200 ) );

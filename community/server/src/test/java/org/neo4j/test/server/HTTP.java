@@ -70,9 +70,9 @@ public class HTTP
         return BUILDER.withHeaders( kvPairs );
     }
 
-    public static Builder withBaseUri( String baseUri )
+    public static Builder withBaseUri( URI baseUri )
     {
-        return BUILDER.withBaseUri( baseUri );
+        return BUILDER.withBaseUri( baseUri.toString() );
     }
 
     public static Response POST( String uri )

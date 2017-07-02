@@ -95,6 +95,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         }
         pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
         pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" ) );
+        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "localhost:0" ) );
         pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).enabled.name(), Settings.TRUE ) );
         return pairs.toArray( new Pair[pairs.size()] );
     }

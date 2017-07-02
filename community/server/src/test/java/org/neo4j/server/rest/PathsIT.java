@@ -67,7 +67,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
-        .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+        .post( getServerUri() + "db/data/node/" + a + "/paths" )
         .entity();
         Collection<?> result = (Collection<?>) JsonHelper.readJson( response );
         assertEquals( 2, result.size() );
@@ -105,7 +105,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
         .expectedStatus( Status.OK.getStatusCode() )
         .payload( getAllShortestPathPayLoad( g ) )
-        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .post( getServerUri() + "db/data/node/" + a + "/path" )
         .entity();
         // Get single shortest path
 
@@ -174,7 +174,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         long e = nodeId( data.get(), "e" );
         String response = gen().expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+                .post( getServerUri() + "db/data/node/" + a + "/path" )
                 .entity();
         //
         Map<?, ?> path = JsonHelper.jsonToMap( response );
@@ -222,7 +222,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         long e = nodeId( data.get(), "e" );
         String response = gen().expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/paths" )
+                .post( getServerUri() + "db/data/node/" + a + "/paths" )
                 .entity();
         //
         List<Map<String, Object>> list = JsonHelper.jsonToList( response );
@@ -282,7 +282,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String response = gen()
                 .expectedStatus( Status.OK.getStatusCode() )
                 .payload( getAllPathsUsingDijkstraPayLoad( e, false ) )
-                .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+                .post( getServerUri() + "db/data/node/" + a + "/path" )
                 .entity();
 
         Map<?, ?> path = JsonHelper.jsonToMap( response );
@@ -315,7 +315,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         String entity = gen()
         .expectedStatus( Status.NOT_FOUND.getStatusCode() )
         .payload( noHitsJson )
-        .post( "http://localhost:7474/db/data/node/" + a + "/path" )
+        .post( getServerUri() + "db/data/node/" + a + "/path" )
         .entity();
         System.out.println( entity );
     }
@@ -328,7 +328,7 @@ public class PathsIT extends AbstractRestFunctionalTestBase
 
     private String nodeUri( final long l )
     {
-        return NODES + l;
+        return getServerUri() + "db/data/node/" + l;
     }
 
     private String getAllShortestPathPayLoad( final long to )
@@ -346,6 +346,11 @@ public class PathsIT extends AbstractRestFunctionalTestBase
         + ( includeDefaultCost ? ", \"default_cost\":1" : "" )
         + ", \"relationships\":{\"type\":\"to\", \"direction\":\"out\"}, \"algorithm\":\"dijkstra\"}";
         return json;
+    }
+
+    private String getServerUri()
+    {
+        return server().baseUri().toString();
     }
 
 }

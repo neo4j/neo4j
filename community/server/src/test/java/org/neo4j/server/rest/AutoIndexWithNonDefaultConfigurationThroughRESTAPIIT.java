@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -28,6 +26,8 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import java.io.IOException;
 
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -53,7 +53,7 @@ public class AutoIndexWithNonDefaultConfigurationThroughRESTAPIIT extends Exclus
     @BeforeClass
     public static void allocateServer() throws IOException
     {
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withAutoIndexingEnabledForNodes( "foo", "bar" )
                 .build();

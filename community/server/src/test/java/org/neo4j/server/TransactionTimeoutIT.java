@@ -34,7 +34,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
 public class TransactionTimeoutIT extends ExclusiveServerTestBase
 {
@@ -50,7 +50,8 @@ public class TransactionTimeoutIT extends ExclusiveServerTestBase
     public void shouldHonorReallyLowSessionTimeout() throws Exception
     {
         // Given
-        server = server().withProperty( ServerSettings.transaction_idle_timeout.name(), "1" ).build();
+        server = serverOnRandomPorts()
+                .withProperty( ServerSettings.transaction_idle_timeout.name(), "1" ).build();
         server.start();
 
         String tx = HTTP.POST( txURI(), asList( map( "statement", "CREATE (n)" ) ) ).location();

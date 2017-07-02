@@ -22,6 +22,7 @@ package org.neo4j.server.web;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
@@ -38,12 +39,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 import java.io.IOException;
 import java.net.BindException;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -79,50 +80,24 @@ import static java.lang.String.format;
  */
 public class Jetty9WebServer implements WebServer
 {
+    public static final ListenSocketAddress DEFAULT_ADDRESS = new ListenSocketAddress( "0.0.0.0", 80 );
+
     private boolean wadlEnabled;
     private Collection<InjectableProvider<?>> defaultInjectables;
     private Consumer<Server> jettyCreatedCallback;
     private RequestLog requestLog;
-
-    private static class FilterDefinition
-    {
-        private final Filter filter;
-        private final String pathSpec;
-
-        FilterDefinition( Filter filter, String pathSpec )
-        {
-            this.filter = filter;
-            this.pathSpec = pathSpec;
-        }
-
-        public boolean matches( Filter filter, String pathSpec )
-        {
-            return filter == this.filter && pathSpec.equals( this.pathSpec );
-        }
-
-        public Filter getFilter()
-        {
-            return filter;
-        }
-
-        public String getPathSpec()
-        {
-            return pathSpec;
-        }
-    }
-
-    public static final ListenSocketAddress DEFAULT_ADDRESS = new ListenSocketAddress( "0.0.0.0", 80 );
 
     private Server jetty;
     private HandlerCollection handlers;
     private ListenSocketAddress jettyAddress = DEFAULT_ADDRESS;
     private Optional<ListenSocketAddress> jettyHttpsAddress = Optional.empty();
 
+    private ServerConnector serverConnector;
+    private ServerConnector secureServerConnector;
+
     private final HashMap<String, String> staticContent = new HashMap<>();
-    private final Map<String, JaxRsServletHolderFactory> jaxRSPackages =
-            new HashMap<>();
-    private final Map<String, JaxRsServletHolderFactory> jaxRSClasses =
-            new HashMap<>();
+    private final Map<String, JaxRsServletHolderFactory> jaxRSPackages = new HashMap<>();
+    private final Map<String, JaxRsServletHolderFactory> jaxRSClasses = new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
     private int jettyMaxThreads = 1;
@@ -146,7 +121,8 @@ public class Jetty9WebServer implements WebServer
             JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator( jettyMaxThreads );
 
             jetty = new Server( createQueuedThreadPool( jettyThreadCalculator ) );
-            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddress, jettyThreadCalculator ) );
+            serverConnector = connectorFactory.createConnector( jetty, jettyAddress, jettyThreadCalculator );
+            jetty.addConnector( serverConnector );
 
             jettyHttpsAddress.ifPresent( ( address ) ->
             {
@@ -154,8 +130,8 @@ public class Jetty9WebServer implements WebServer
                 {
                     throw new RuntimeException( "HTTPS set to enabled, but no SSL policy provided" );
                 }
-                jetty.addConnector( sslSocketFactory.createConnector(
-                        jetty, sslPolicy, address, jettyThreadCalculator ) );
+                secureServerConnector = sslSocketFactory.createConnector( jetty, sslPolicy, address, jettyThreadCalculator );
+                jetty.addConnector( secureServerConnector );
             } );
 
             if ( jettyCreatedCallback != null )
@@ -375,6 +351,20 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
+    @Override
+    public InetSocketAddress getLocalHttpAddress()
+    {
+        return new InetSocketAddress( serverConnector.getHost(), serverConnector.getLocalPort() );
+    }
+
+    @Override
+    public InetSocketAddress getLocalHttpsAddress()
+    {
+        return Optional.ofNullable( secureServerConnector)
+                        .map( connector -> new InetSocketAddress( connector.getHost(), connector.getLocalPort() ) )
+                        .orElseThrow( () -> new IllegalStateException( "Secure connector is not configured" ) );
+    }
+
     private void loadAllMounts() throws IOException
     {
         SessionManager sm = new HashSessionManager();
@@ -545,6 +535,33 @@ public class Jetty9WebServer implements WebServer
             context.addFilter( new FilterHolder( filterDef.getFilter() ),
                     filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class )
             );
+        }
+    }
+
+    private static class FilterDefinition
+    {
+        private final Filter filter;
+        private final String pathSpec;
+
+        FilterDefinition( Filter filter, String pathSpec )
+        {
+            this.filter = filter;
+            this.pathSpec = pathSpec;
+        }
+
+        public boolean matches( Filter filter, String pathSpec )
+        {
+            return filter == this.filter && pathSpec.equals( this.pathSpec );
+        }
+
+        public Filter getFilter()
+        {
+            return filter;
+        }
+
+        String getPathSpec()
+        {
+            return pathSpec;
         }
     }
 

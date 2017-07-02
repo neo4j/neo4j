@@ -43,7 +43,8 @@ public class WebServerDirectoryListingTestIT extends ExclusiveServerTestBase
     public void shouldDisallowDirectoryListings() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .build();
         server.start();
 
         // When

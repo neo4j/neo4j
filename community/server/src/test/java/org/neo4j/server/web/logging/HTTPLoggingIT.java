@@ -68,7 +68,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         String directoryPrefix = testName.getMethodName();
         File logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
 
-        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning().persistent()
+        NeoServer server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.FALSE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toString() )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
@@ -103,7 +103,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         File logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
         final String query = "?explicitlyEnabled=" + randomString();
 
-        NeoServer server = CommunityServerBuilder.server().withDefaultDatabaseTuning().persistent()
+        NeoServer server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.TRUE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )

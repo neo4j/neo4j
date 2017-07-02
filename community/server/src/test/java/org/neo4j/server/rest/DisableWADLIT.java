@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest;
 
-import java.net.URI;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Test;
+
+import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
 
@@ -34,7 +34,7 @@ public class DisableWADLIT extends AbstractRestFunctionalTestBase
     @Test
     public void should404OnAnyUriEndinginWADL() throws Exception
     {
-        URI nodeUri = new URI( "http://localhost:7474/db/data/application.wadl" );
+        URI nodeUri = new URI( server().baseUri() + "db/data/application.wadl" );
 
         HttpClient httpclient = new DefaultHttpClient();
         try

@@ -63,7 +63,7 @@ public class RedirectToBrowserTestIT extends ExclusiveServerTestBase
                 .TEXT_HTML_TYPE ).get( server.baseUri().toString() );
 
         assertEquals( 303, response.getStatus() );
-        assertEquals( new URI( "http://localhost:7474/browser/" ), response.getLocation() );
+        assertEquals( new URI( server.baseUri() + "browser/" ), response.getLocation() );
         response.close();
     }
 

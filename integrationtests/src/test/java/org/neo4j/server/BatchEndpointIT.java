@@ -28,7 +28,6 @@ import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.ServerTestUtils.getRelativePath;
 import static org.neo4j.server.ServerTestUtils.getSharedTestTemporaryFolder;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
@@ -54,7 +53,7 @@ public class BatchEndpointIT
                 "{'method': 'POST', 'to': '/node', 'body': {'age': 1}, 'id': 1} ]";
 
         // When
-        Response response = withBaseUri( neo4j.httpURI().toString() )
+        Response response = withBaseUri( neo4j.httpURI() )
                 .withHeaders( "Content-Type", "application/json" )
                 .POST( "db/data/batch", quotedJson( body ) );
 
