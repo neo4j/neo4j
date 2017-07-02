@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb._
 import org.neo4j.kernel.impl.core.NodeProxy
 
-import scala.collection.Map
+import scala.collection.{Map, mutable}
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
   private implicit val monitor = mock[PipeMonitor]
@@ -187,10 +187,13 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val in = createFakeDataWith(keys, data: _*)
 
     new FakePipe(in, keys(0) -> CTNode, keys(1) -> CTNode) {
-      override def internalCreateResults(state: QueryState) = state.initialContext match {
+      override def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = state.initialContext match {
         case Some(context: ExecutionContext) =>
           in.flatMap { m =>
-            if (m(keys(0)) == context(keys(0))) Some(ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
+            if (m(keys(0)) == context(keys(0))) {
+              val stringToProxy: mutable.Map[String, Any] = collection.mutable.Map(m.toSeq: _*)
+              Some(ExecutionContext(stringToProxy))
+            }
             else None
           }.iterator
         case _ => Iterator.empty

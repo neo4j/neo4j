@@ -25,13 +25,22 @@ import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.{Iterator, immutable}
 
 object ExecutionContext {
-  def empty = new ExecutionContext()
+  def empty: ExecutionContext = apply()
 
-  def from(x: (String, Any)*) = new ExecutionContext().newWith(x)
+  def from(x: (String, Any)*): ExecutionContext = apply().newWith(x)
+
+  def apply(m: MutableMap[String, Any] = MutableMaps.empty) = new ExecutionContext(m, 0)
+
+  def apply(numberOfLongs: Int) = new ExecutionContext(m = null, numberOfLongs = 0)
 }
 
-case class ExecutionContext(m: MutableMap[String, Any] = MutableMaps.empty)
+case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: Int)
   extends MutableMap[String, Any] {
+
+  private val longs = new Array[Long](numberOfLongs)
+
+  def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
+  def getLongAt(offset: Int): Long = longs(offset)
 
   def get(key: String): Option[Any] = m.get(key)
 
