@@ -292,7 +292,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
 
     private String getDataUri()
     {
-        return "http://localhost:7474/db/data/";
+        return server.baseUri() + "db/data/";
     }
 
     public String getSchemaConstraintUri()
