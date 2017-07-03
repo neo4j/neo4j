@@ -20,6 +20,7 @@
 package org.neo4j.index.backup;
 
 import org.apache.commons.io.FilenameUtils;
+import org.apache.lucene.index.IndexFileNames;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -145,24 +146,18 @@ public class IndexBackupIT
     private void compareSnapshotFiles( Set<String> firstSnapshotFileNames, Set<String> secondSnapshotFileNames,
             FileSystemAbstraction fileSystem )
     {
-        Set<String> firstSnapshotIndexesSegments = firstSnapshotFileNames.stream()
-                        .filter( this::segmentsFilePredicate )
-                        .collect( Collectors.toSet() );
-        Set<String> secondSnapshotIndexesSegments = secondSnapshotFileNames.stream()
-                .filter( this::segmentsFilePredicate )
-                .collect( Collectors.toSet() );
         assertThat( format( "Should have %d modified index segment files. Snapshot segment files are: %s",
-                        NUMBER_OF_INDEXES, firstSnapshotIndexesSegments ), firstSnapshotIndexesSegments,
+                        NUMBER_OF_INDEXES, firstSnapshotFileNames ), firstSnapshotFileNames,
                 hasSize( NUMBER_OF_INDEXES ) );
-        for ( String fileName : firstSnapshotIndexesSegments )
+        for ( String fileName : firstSnapshotFileNames )
         {
             assertFalse( "Snapshot segments fileset should not have files from another snapshot set." +
-                            describeFileSets( firstSnapshotIndexesSegments, secondSnapshotIndexesSegments ),
-                    secondSnapshotIndexesSegments.contains( fileName ) );
+                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
+                    secondSnapshotFileNames.contains( fileName ) );
             String path = FilenameUtils.getFullPath( fileName );
             assertTrue( "Snapshot should contain files for index in path: " + path + "." +
-                            describeFileSets( firstSnapshotIndexesSegments, secondSnapshotIndexesSegments ),
-                    secondSnapshotIndexesSegments.stream().anyMatch( name -> name.startsWith( path ) ) );
+                            describeFileSets( firstSnapshotFileNames, secondSnapshotFileNames ),
+                    secondSnapshotFileNames.stream().anyMatch( name -> name.startsWith( path ) ) );
             assertTrue( format( "Snapshot segment file '%s' should exist.", fileName ),
                     fileSystem.fileExists( new File( fileName ) ) );
         }
@@ -199,7 +194,9 @@ public class IndexBackupIT
 
     private Set<String> getFileNames( ResourceIterator<File> files )
     {
-        return files.stream().map( File::getAbsolutePath ).collect( Collectors.toSet() );
+        return files.stream().map( File::getAbsolutePath )
+                .filter( this::segmentsFilePredicate )
+                .collect( Collectors.toSet() );
     }
 
     private void forceCheckpoint( CheckPointer checkPointer ) throws IOException
@@ -256,6 +253,6 @@ public class IndexBackupIT
 
     private boolean segmentsFilePredicate( String fileName )
     {
-        return fileName.contains( "segments_" );
+        return FilenameUtils.getName( fileName ).startsWith( IndexFileNames.SEGMENTS );
     }
 }
