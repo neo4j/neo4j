@@ -983,13 +983,6 @@ public class OperationsFacade
         schemaWrite().constraintDrop( statement, constraint );
     }
 
-    @Override
-    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().uniqueIndexDrop( statement, descriptor );
-    }
-
     // </SchemaWrite>
 
     // <Locking>
