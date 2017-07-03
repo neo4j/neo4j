@@ -1374,7 +1374,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val predicate = generator.declare(typeRef[IndexQuery], s"${iterVar}Query")
     val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
-    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
+    val boxedValue =
+      if (codeGenType.isPrimitive) Expression.box(value)
+      else invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]), value)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
       val descriptor = body.load(descriptorVar)
       val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
@@ -1382,20 +1384,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
       body.assign(local, invoke(readOperations, indexQuery, descriptor,
         newArray(typeRef[IndexQuery], predicate)))
-    }
-  }
-
-  override def indexUniqueSeek(nodeVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
-    val predicate = generator.declare(typeRef[IndexQuery.ExactPredicate], s"${nodeVar}Query")
-    val local = generator.declare(typeRef[Long], nodeVar)
-    val boxedValue = if (codeGenType.isPrimitive) Expression.box(value) else value
-    handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      val descriptor = body.load(descriptorVar)
-      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
-      val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
-      body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
-      body.assign(local, invoke(readOperations, indexQuery, descriptor,
-        newArray(typeRef[IndexQuery.ExactPredicate], predicate)))
     }
   }
 

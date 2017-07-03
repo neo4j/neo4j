@@ -554,4 +554,210 @@ public abstract class CompiledConversionUtils
         }
     }
 
+    //In the store we only support primitives, String, and arrays thereof.
+    //In cypher we must make an effort to transform Cypher lists to appropriate arrays whenever
+    //we are using sending values down to the store or to an index.
+    public static Object makeValueNeoSafe( Object object )
+    {
+        if ( object == null )
+        {
+            return null;
+        }
+        if ( hasSafeType( object ) )
+        {
+            return object;
+        }
+        else if ( object instanceof Object[] )
+        {
+            return safeArray( (Object[]) object );
+        }
+        else if ( object instanceof List<?> )
+        {
+            return safeArray( (List<?>) object );
+        }
+        throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
+    }
+
+    private static Object safeArray( Object[] array )
+    {
+        if ( array.length == 0 )
+        {
+            return new String[0];
+        }
+        else
+        {
+            Class<?> type = array[0].getClass();
+            for ( int i = 1; i < array.length; i++ )
+            {
+                type = mergeType( type, array[i].getClass() );
+            }
+
+            Object safeArray = Array.newInstance( type, array.length );
+            for ( int i = 0; i < array.length; i++ )
+            {
+                Array.set( safeArray, i, castIt( array[i], type ) );
+            }
+            return safeArray;
+        }
+    }
+
+    private static Object safeArray( List<?> list )
+    {
+        if ( list.size() == 0 )
+        {
+            return new String[0];
+        }
+        else
+        {
+            Class<?> type = null;
+            for ( Object o : list )
+            {
+                if ( type == null )
+                {
+                    type = o.getClass();
+                }
+                else
+                {
+                    type = mergeType( type, o.getClass() );
+                }
+            }
+
+            Object safeArray = Array.newInstance( type, list.size() );
+            int i = 0;
+            for ( Object o : list )
+            {
+                Array.set( safeArray, i++, castIt( o, type ) );
+            }
+            return safeArray;
+        }
+    }
+
+    private static Object castIt( Object value, Class<?> type )
+    {
+        if ( value instanceof Number )
+        {
+            Number number = (Number) value;
+            if ( type == Long.class )
+            {
+                return number.longValue();
+            }
+            else if ( type == Integer.class )
+            {
+                return number.intValue();
+            }
+            else if ( type == Short.class )
+            {
+                return number.shortValue();
+            }
+            else if ( type == Byte.class )
+            {
+                return number.byteValue();
+            }
+            else if ( type == Float.class )
+            {
+                return number.floatValue();
+            }
+            else if ( type == Double.class )
+            {
+                return number.doubleValue();
+            }
+            else
+            {
+                throw new CypherTypeException( "Cannot handle numbers of type " + type.getName(), null );
+            }
+        }
+        else
+        {
+            return value;
+        }
+    }
+
+    private static boolean hasSafeType( Object value )
+    {
+        if ( value instanceof String )
+        {
+            return true;
+        }
+        else if ( value instanceof Long )
+        {
+            return true;
+        }
+        else if ( value instanceof Integer )
+        {
+            return true;
+        }
+        else if ( value instanceof Boolean )
+        {
+            return true;
+        }
+        else if ( value instanceof Double )
+        {
+            return true;
+        }
+        else if ( value instanceof Float )
+        {
+            return true;
+        }
+        else if ( value instanceof Short )
+        {
+            return true;
+        }
+        else if ( value instanceof Byte )
+        {
+            return true;
+        }
+        else if ( value.getClass().isArray() && value.getClass().getComponentType().isPrimitive() )
+        {
+            return true;
+        }
+        else
+        {
+            return false;
+        }
+    }
+
+    static Class<?> mergeType( Class<?> type1, Class<?> type2 )
+    {
+        if ( type1 == String.class && type2 == String.class )
+        {
+            return String.class;
+        }
+        else if ( type1 == Boolean.class && type2 == Boolean.class )
+        {
+            return Boolean.class;
+        }
+        else if ( type1 == Character.class && type2 == Character.class )
+        {
+            return Character.class;
+        }
+        else if ( Number.class.isAssignableFrom( type1 ) && Number.class.isAssignableFrom( type2 ) )
+        {
+            if ( type1 == Double.class || type2 == Double.class )
+            {
+                return Double.class;
+            }
+            else if ( type1 == Float.class || type2 == Float.class )
+            {
+                return Float.class;
+            }
+            else if ( type1 == Long.class || type2 == Long.class )
+            {
+                return Long.class;
+            }
+            else if ( type1 == Integer.class || type2 == Integer.class )
+            {
+                return Integer.class;
+            }
+            else if ( type1 == Short.class || type2 == Short.class )
+            {
+                return Short.class;
+            }
+            else if ( type1 == Byte.class || type2 == Byte.class )
+            {
+                return Byte.class;
+            }
+        }
+        throw new CypherTypeException( "Property values can only be primitive types or arrays thereof", null );
+    }
+
 }
