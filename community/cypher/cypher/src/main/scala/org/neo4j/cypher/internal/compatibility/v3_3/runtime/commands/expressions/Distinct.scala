@@ -33,4 +33,6 @@ case class Distinct(innerAggregator: AggregationExpression, expression: Expressi
   }
 
   override def symbolTableDependencies = innerAggregator.symbolTableDependencies ++ expression.symbolTableDependencies
+
+  override def arguments = Seq(expression, innerAggregator)
 }
