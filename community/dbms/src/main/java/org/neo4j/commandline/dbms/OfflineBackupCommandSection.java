@@ -23,9 +23,9 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.admin.AdminCommandSection;
 
-public class OffineBackupCommandSection extends AdminCommandSection
+public class OfflineBackupCommandSection extends AdminCommandSection
 {
-    private static final OffineBackupCommandSection OFFINE_BACKUP_COMMAND_SECTION = new OffineBackupCommandSection();
+    private static final OfflineBackupCommandSection OFFINE_BACKUP_COMMAND_SECTION = new OfflineBackupCommandSection();
 
     public static AdminCommandSection instance()
     {
