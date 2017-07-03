@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -259,6 +260,11 @@ public abstract class AbstractConstraintCreationIT<Constraint extends Constraint
             SchemaWriteOperations statement = schemaWriteOperationsInNewTransaction();
             constraint = createConstraint( statement, descriptor );
             commit();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            // Make sure all schema changes are stable, to avoid any synchronous schema state invalidation
+            db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
         SchemaStateCheck schemaState = new SchemaStateCheck().setUp();
         {
