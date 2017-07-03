@@ -24,7 +24,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.LoadableConfig;
@@ -35,7 +34,7 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
 {
     private ArrayList<ConfigurationMigrator> migrators = new ArrayList<>();
 
-    public AnnotationBasedConfigurationMigrator( @Nonnull Iterable<LoadableConfig> settingsClasses )
+    AnnotationBasedConfigurationMigrator( @Nonnull Iterable<LoadableConfig> settingsClasses )
     {
         for ( LoadableConfig loadableConfig : settingsClasses )
         {
@@ -67,9 +66,9 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
      * @param annotation
      */
     @SuppressWarnings( {"rawtypes", "unchecked"} )
-    public static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type, Class annotation )
+    private static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type, Class annotation )
     {
-        List<Pair<Field,T>> found = new ArrayList<Pair<Field,T>>();
+        List<Pair<Field,T>> found = new ArrayList<>();
         for ( Field field : clazz.getDeclaredFields() )
         {
             try
@@ -83,29 +82,12 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
                     found.add( Pair.of( field, (T) fieldValue ) );
                 }
             }
-            catch ( IllegalAccessException ignored )
+            catch ( IllegalAccessException | NullPointerException ignored )
             {
-                // Field  is not public
-                continue;
-            }
-            catch ( NullPointerException npe )
-            {
-                // Field is not static
-                continue;
+                // Field is not public or static
             }
         }
 
         return found;
-    }
-
-    /**
-     * Find all static fields of a given type.
-     *
-     * @param clazz
-     * @param type
-     */
-    public static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type )
-    {
-        return findStatic( clazz, type, null );
     }
 }

@@ -77,7 +77,6 @@ public class DiscoveryService
                 // Use the config verbatim since it seems sane
                 return outputFormat
                         .ok( new DiscoveryRepresentation( managementUri, dataUri, advertisedSocketAddress ) );
-
             }
         }
         else

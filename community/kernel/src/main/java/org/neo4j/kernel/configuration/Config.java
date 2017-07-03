@@ -38,6 +38,7 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.ConfigOptions;
@@ -82,6 +83,9 @@ public class Config implements DiagnosticsProvider, Configuration
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log;
     private ConfigValues settingsFunction;
+    private static final Consumer<Map<String,String>> NO_POST_PROCESSING = settings ->
+    {
+    };
 
     /**
      * @return a configuration with embedded defaults
@@ -146,9 +150,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
             Collection<ConfigurationValidator> additionalValidators )
     {
-        return new Config( configFile, additionalConfig, settings ->
-        {
-        }, additionalValidators, Optional.empty() );
+        return new Config( configFile, additionalConfig, NO_POST_PROCESSING, additionalValidators, Optional.empty() );
     }
 
     /**
@@ -238,9 +240,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         Map<String,String> newParams = new HashMap<>( params ); // copy is returned
         newParams.putAll( additionalConfig );
-        return new Config( Optional.empty(), newParams, settings ->
-        {
-        }, validators, Optional.of( log ) );
+        return new Config( Optional.empty(), newParams, NO_POST_PROCESSING, validators, Optional.of( log ) );
     }
 
     /**
@@ -252,10 +252,9 @@ public class Config implements DiagnosticsProvider, Configuration
     public Config withDefaults( Map<String,String> additionalDefaults )
     {
         Map<String,String> newParams = new HashMap<>( this.params ); // copy is returned
-        additionalDefaults.entrySet().forEach( s -> newParams.putIfAbsent( s.getKey(), s.getValue() ) );
-        return new Config( Optional.empty(), newParams, settings ->
-        {
-        }, validators, Optional.of( log ) );
+        additionalDefaults.forEach( newParams::putIfAbsent );
+
+        return new Config( Optional.empty(), newParams, NO_POST_PROCESSING, validators, Optional.of( log ) );
     }
 
     /**
@@ -561,14 +560,14 @@ public class Config implements DiagnosticsProvider, Configuration
     @Nonnull
     public List<HttpConnector> httpConnectors()
     {
-        return httpConnectors( params );
+        return httpConnectors( params ).collect( Collectors.toList() );
     }
 
     /**
      * @return list of all configured http connectors
      */
     @Nonnull
-    public static List<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
+    private static Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream()
                 .map( Connector::new )
@@ -592,8 +591,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
                     return new HttpConnector( name,
                             HttpConnectorValidator.encryptionSetting( name, defaultEncryption ).apply( params::get ) );
-                } )
-                .collect( Collectors.toList() );
+                } );
     }
 
     /**
@@ -609,9 +607,9 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return list of all configured http connectors which are enabled
      */
     @Nonnull
-    public static List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
+    private static List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
     {
-        return httpConnectors( params ).stream()
+        return httpConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
     }
