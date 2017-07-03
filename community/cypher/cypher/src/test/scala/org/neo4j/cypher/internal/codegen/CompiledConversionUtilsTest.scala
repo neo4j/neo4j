@@ -23,12 +23,12 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.frontend.v3_2.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
-
 
 class CompiledConversionUtilsTest extends CypherFunSuite {
 
@@ -95,11 +95,37 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
   test("should handle toSet") {
     import scala.collection.JavaConverters._
     CompiledConversionUtils.toSet(null) should equal(Set.empty.asJava)
-    CompiledConversionUtils.toSet(List(1,1,2,3).asJava) should equal(Set(1,2,3).asJava)
-    CompiledConversionUtils.toSet(IntStream.of(1,2,3,1)) should equal(Set(1,2,3).asJava)
-    CompiledConversionUtils.toSet(LongStream.of(1L,2L,3L,1L)) should equal(Set(1L,2L,3L).asJava)
-    CompiledConversionUtils.toSet(DoubleStream.of(1.1,2.2,3.3,1.1)) should equal(Set(1.1,2.2,3.3).asJava)
-    CompiledConversionUtils.toSet(Array(1, 1 ,3, 2)) should equal(Set(1, 2, 3).asJava)
+    CompiledConversionUtils.toSet(List(1, 1, 2, 3).asJava) should equal(Set(1, 2, 3).asJava)
+    CompiledConversionUtils.toSet(IntStream.of(1, 2, 3, 1)) should equal(Set(1, 2, 3).asJava)
+    CompiledConversionUtils.toSet(LongStream.of(1L, 2L, 3L, 1L)) should equal(Set(1L, 2L, 3L).asJava)
+    CompiledConversionUtils.toSet(DoubleStream.of(1.1, 2.2, 3.3, 1.1)) should equal(Set(1.1, 2.2, 3.3).asJava)
+    CompiledConversionUtils.toSet(Array(1, 1, 3, 2)) should equal(Set(1, 2, 3).asJava)
+  }
+
+  val testMakeSafe = Seq(
+    Array(1, 2, 3) -> classOf[Array[Int]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Byte.box(3)) -> classOf[Array[java.lang.Byte]],
+    Array[AnyRef](Byte.box(1), Byte.box(2), Short.box(3)) -> classOf[Array[java.lang.Short]],
+    Array[AnyRef](Byte.box(1), Long.box(2), Short.box(3)) -> classOf[Array[java.lang.Long]],
+    Array[AnyRef](Double.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Double]],
+    Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Float]],
+    Array[AnyRef]("foo", "bar", "baz") -> classOf[Array[java.lang.String]],
+    Array[AnyRef](Boolean.box(true), Boolean.box(false)) -> classOf[Array[java.lang.Boolean]],
+
+    List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava -> classOf[Array[java.lang.Byte]],
+    List(Byte.box(1), Byte.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Short]],
+    List(Byte.box(1), Long.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Long]],
+    List(Double.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Double]],
+    List(Byte.box(1), Long.box(2), Float.box(3)).asJava -> classOf[Array[java.lang.Float]],
+    List("foo", "bar", "baz").asJava -> classOf[Array[java.lang.String]],
+    List(Boolean.box(true), Boolean.box(false)).asJava -> classOf[Array[java.lang.Boolean]]
+  )
+
+  testMakeSafe.foreach {
+    case (v, t) =>
+      test(s"$v should have type $t") {
+        makeValueNeoSafe(v).getClass should equal(t)
+      }
   }
 
   val testEquality = Seq(
@@ -127,7 +153,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43)) -> true,
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 41)) -> false,
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43, 44)) -> false
-    )
+  )
 
   testEquality.foreach {
     case (v, expected) =>
@@ -175,7 +201,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (null, null),
     (node, new NodeIdWrapperImpl(11L)),
     (rel, new RelationshipIdWrapperImpl(13L)),
-    (Array(node, rel), Array( new NodeIdWrapperImpl(11L), new RelationshipIdWrapperImpl(13L)))
+    (Array(node, rel), Array(new NodeIdWrapperImpl(11L), new RelationshipIdWrapperImpl(13L)))
   )
 
   testLoadParameter.foreach {
