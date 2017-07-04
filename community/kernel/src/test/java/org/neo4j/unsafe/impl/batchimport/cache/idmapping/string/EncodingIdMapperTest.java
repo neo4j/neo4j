@@ -818,7 +818,7 @@ public class EncodingIdMapperTest
         }
 
         @Override
-        public int badEntries()
+        public long badEntries()
         {
             throw new UnsupportedOperationException();
         }
