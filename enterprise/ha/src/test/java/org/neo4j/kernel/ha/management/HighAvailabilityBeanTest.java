@@ -80,7 +80,6 @@ public class HighAvailabilityBeanTest
             new ClusterDatabaseInfoProvider( clusterMembers, lastTxIdGetter, lastUpdateTime );
     private DefaultFileSystemAbstraction fileSystem;
     private KernelData kernelData;
-    private ManagementData data;
     private HighAvailability haBean;
 
     @Before
@@ -88,7 +87,7 @@ public class HighAvailabilityBeanTest
     {
         fileSystem = new DefaultFileSystemAbstraction();
         kernelData = new TestHighlyAvailableKernelData();
-        data = new ManagementData( bean, kernelData, ManagementSupport.load() );
+        ManagementData data = new ManagementData( bean, kernelData, ManagementSupport.load() );
 
         when( db.getDependencyResolver() ).thenReturn( dependencies );
         haBean = (HighAvailability) new HighAvailabilityBean().createMBean( data );
@@ -225,8 +224,8 @@ public class HighAvailabilityBeanTest
 
         // THEN
         assertEquals( 3, instances.length );
-        assertEquals( 2, count( instances, instance -> instance.isAlive() ) );
-        assertEquals( 2, count( instances, instance -> instance.isAvailable() ) );
+        assertEquals( 2, count( instances, ClusterMemberInfo::isAlive ) );
+        assertEquals( 2, count( instances, ClusterMemberInfo::isAvailable ) );
     }
 
     @Test

@@ -413,6 +413,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
+        dependencies.satisfyDependency( schemaIndexProvider );
 
         labelScanStoreProvider = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                 new NamedLabelScanStoreSelectionStrategy( config ) );
@@ -490,6 +491,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
+            dependencies.satisfyDependency( legacyIndexProviderLookup );
         }
         catch ( Throwable e )
         {

@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class PrimitivesBean extends ManagementBeanProvider
 {
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
     public PrimitivesBean()
     {
         super( Primitives.class );

@@ -24,14 +24,24 @@ import java.io.IOException;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.jmx.StoreFile;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.transaction.log.LogFile;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+
+import static org.neo4j.kernel.impl.store.StoreFactory.NODE_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_ARRAYS_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.PROPERTY_STRINGS_STORE_NAME;
+import static org.neo4j.kernel.impl.store.StoreFactory.RELATIONSHIP_STORE_NAME;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreFileBean extends ManagementBeanProvider
 {
+    @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
     public StoreFileBean()
     {
         super( StoreFile.class );
@@ -43,19 +53,23 @@ public final class StoreFileBean extends ManagementBeanProvider
         return new StoreFileImpl( management );
     }
 
-    private static class StoreFileImpl extends Neo4jMBean implements StoreFile
+    static class StoreFileImpl extends Neo4jMBean implements StoreFile
     {
-        private static final String NODE_STORE = "neostore.nodestore.db";
-        private static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
-        private static final String PROPERTY_STORE = "neostore.propertystore.db";
-        private static final String ARRAY_STORE = "neostore.propertystore.db.arrays";
-        private static final String STRING_STORE = "neostore.propertystore.db.strings";
+        private static final String NODE_STORE = MetaDataStore.DEFAULT_NAME + NODE_STORE_NAME;
+        private static final String RELATIONSHIP_STORE = MetaDataStore.DEFAULT_NAME +  RELATIONSHIP_STORE_NAME;
+        private static final String PROPERTY_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_STORE_NAME;
+        private static final String ARRAY_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_ARRAYS_STORE_NAME;
+        private static final String STRING_STORE = MetaDataStore.DEFAULT_NAME + PROPERTY_STRINGS_STORE_NAME;
+
         private File storePath;
         private LogFile logFile;
+        private FileSystemAbstraction fs;
 
         StoreFileImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
+
+            fs = management.getKernelData().getFilesystemAbstraction();
 
             DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
             dataSourceManager.addListener( new DataSourceManager.Listener()
@@ -63,8 +77,13 @@ public final class StoreFileBean extends ManagementBeanProvider
                 @Override
                 public void registered( NeoStoreDataSource ds )
                 {
-                    logFile = ds.getDependencyResolver().resolveDependency( LogFile.class );
+                    logFile = resolveDependency( ds, LogFile.class );
                     storePath = resolvePath( ds );
+                }
+
+                private <T> T resolveDependency( NeoStoreDataSource ds, Class<T> clazz )
+                {
+                    return ds.getDependencyResolver().resolveDependency( clazz );
                 }
 
                 @Override
@@ -91,96 +110,48 @@ public final class StoreFileBean extends ManagementBeanProvider
         @Override
         public long getTotalStoreSize()
         {
-            return storePath == null ? 0 : sizeOf( storePath );
+            return storePath == null ? 0 : FileUtils.size( fs, storePath );
         }
 
         @Override
         public long getLogicalLogSize()
         {
-            return logFile == null ? 0 : sizeOf( logFile.currentLogFile() );
-        }
-
-        private static long sizeOf( File file )
-        {
-            if ( file.isFile() )
-            {
-                return file.length();
-            }
-            else if ( file.isDirectory() )
-            {
-                long size = 0;
-                File[] files = file.listFiles();
-                if ( files == null )
-                {
-                    return 0;
-                }
-                for ( File child : files )
-                {
-                    size += sizeOf( child );
-                }
-                return size;
-            }
-            return 0;
-        }
-
-        private long sizeOf( String name )
-        {
-            return sizeOf( new File( storePath, name ) );
+            return logFile == null ? 0 : FileUtils.size( fs, logFile.currentLogFile() );
         }
 
         @Override
         public long getArrayStoreSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
             return sizeOf( ARRAY_STORE );
         }
 
         @Override
         public long getNodeStoreSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
             return sizeOf( NODE_STORE );
         }
 
         @Override
         public long getPropertyStoreSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
             return sizeOf( PROPERTY_STORE );
         }
 
         @Override
         public long getRelationshipStoreSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
             return sizeOf( RELATIONSHIP_STORE );
         }
 
         @Override
         public long getStringStoreSize()
         {
-            if ( storePath == null )
-            {
-                return 0;
-            }
-
             return sizeOf( STRING_STORE );
+        }
+
+        private long sizeOf( String name )
+        {
+            return storePath == null ? 0 : FileUtils.size( fs, new File( storePath, name ) );
         }
     }
 }

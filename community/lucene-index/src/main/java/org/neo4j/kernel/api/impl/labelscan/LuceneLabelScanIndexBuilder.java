@@ -55,7 +55,7 @@ public class LuceneLabelScanIndexBuilder extends AbstractLuceneIndexBuilder<Luce
      * @param format document format
      * @return index builder
      */
-    public LuceneLabelScanIndexBuilder withDocumentFormat( BitmapDocumentFormat format )
+    LuceneLabelScanIndexBuilder withDocumentFormat( BitmapDocumentFormat format )
     {
         this.format = format;
         return this;
@@ -72,7 +72,7 @@ public class LuceneLabelScanIndexBuilder extends AbstractLuceneIndexBuilder<Luce
                             : buildWritable();
     }
 
-    public LabelScanIndex buildWritable()
+    LabelScanIndex buildWritable()
     {
         return new WritableDatabaseLabelScanIndex( format, storageBuilder.build() );
     }

@@ -169,4 +169,11 @@ public interface LabelScanStore extends Lifecycle
      * @throws IOException on I/O error checking the presence of a store.
      */
     boolean hasStore() throws IOException;
+
+    /**
+     * Returns the path to label scan store, might be a directory or a file depending on the implementation.
+     *
+     * @return the directory or file where the label scan store is persisted.
+     */
+    File getLabelScanStoreFile();
 }

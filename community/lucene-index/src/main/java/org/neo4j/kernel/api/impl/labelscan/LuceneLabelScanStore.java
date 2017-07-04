@@ -47,16 +47,18 @@ public class LuceneLabelScanStore implements LabelScanStore
     // We get in a full store stream here in case we need to fully rebuild the store if it's missing or corrupted.
     private final FullStoreChangeStream fullStoreStream;
     private final Monitor monitor;
+    private final File storeDir;
     private boolean needsRebuild;
     private boolean switchBackToReadOnly;
 
-    public LuceneLabelScanStore( LuceneLabelScanIndexBuilder indexBuilder,
-            FullStoreChangeStream fullStoreStream, Monitor monitor )
+    public LuceneLabelScanStore( LuceneLabelScanIndexBuilder indexBuilder, FullStoreChangeStream fullStoreStream,
+            Monitor monitor, File storeDir )
     {
         this.indexBuilder = indexBuilder;
         this.luceneIndex = indexBuilder.build();
         this.fullStoreStream = fullStoreStream;
         this.monitor = monitor;
+        this.storeDir = storeDir;
     }
 
     @Override
@@ -201,5 +203,11 @@ public class LuceneLabelScanStore implements LabelScanStore
     public boolean hasStore() throws IOException
     {
         return luceneIndex.exists();
+    }
+
+    @Override
+    public File getLabelScanStoreFile()
+    {
+        return LabelScanStoreProvider.getLuceneStoreDirectory( storeDir );
     }
 }

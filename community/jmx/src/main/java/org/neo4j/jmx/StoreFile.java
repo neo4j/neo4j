@@ -20,7 +20,9 @@
 package org.neo4j.jmx;
 
 @ManagementInterface( name = StoreFile.NAME )
-@Description( "Information about the sizes of the different parts of the Neo4j graph store" )
+@Description( "This bean is deprecated, use StoreSize bean instead; " +
+        "Information about the sizes of the different parts of the Neo4j graph store" )
+@Deprecated
 public interface StoreFile
 {
     String NAME = "Store file sizes";
@@ -37,8 +39,8 @@ public interface StoreFile
     @Description( "The amount of disk space used to store relationships, in bytes." )
     long getRelationshipStoreSize();
 
-    @Description( "The amount of disk space used to store properties "
-                  + "(excluding string values and array values), in bytes." )
+    @Description( "The amount of disk space used to store properties " +
+            "(excluding string values and array values), in bytes." )
     long getPropertyStoreSize();
 
     @Description( "The amount of disk space used to store string properties, in bytes." )

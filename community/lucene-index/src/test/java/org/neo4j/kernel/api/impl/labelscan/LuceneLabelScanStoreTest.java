@@ -76,7 +76,7 @@ public class LuceneLabelScanStoreTest extends LabelScanStoreTest
                 .withConfig( config )
                 .withDocumentFormat( documentFormat );
 
-        return new LuceneLabelScanStore( indexBuilder, fullStoreChangeStream, monitor );
+        return new LuceneLabelScanStore( indexBuilder, fullStoreChangeStream, monitor, rootFolder );
     }
 
     @Override

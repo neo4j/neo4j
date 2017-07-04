@@ -67,6 +67,7 @@ public class FileUtils
 
     private FileUtils()
     {
+        throw new AssertionError();
     }
 
     public static void deleteRecursively( File directory ) throws IOException
@@ -514,7 +515,7 @@ public class FileUtils
 
     public static LineListener echo( final PrintStream target )
     {
-        return line -> target.println( line );
+        return target::println;
     }
 
     public static void readTextFile( File file, LineListener listener ) throws IOException
@@ -716,6 +717,36 @@ public class FileUtils
         public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
         {
             super( e );
+        }
+    }
+
+    /**
+     * Calculates the size of a given directory or file given the provided abstract filesystem.
+     *
+     * @param fs the filesystem abstraction to use
+     * @param path to the file or directory.
+     * @return the size, in bytes, of the file or the total size of the content in the directory, including
+     * subdirectories.
+     */
+    public static long size( FileSystemAbstraction fs, File path )
+    {
+        if ( fs.isDirectory( path ) )
+        {
+            long size = 0L;
+            File[] files = fs.listFiles( path );
+            if ( files == null )
+            {
+                return 0L;
+            }
+            for ( File child : files )
+            {
+                size += size( fs, child );
+            }
+            return size;
+        }
+        else
+        {
+            return fs.getFileSize( path );
         }
     }
 }

@@ -75,6 +75,17 @@
 
         <dependency>
             <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-jmx</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-management</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-consistency-check</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
