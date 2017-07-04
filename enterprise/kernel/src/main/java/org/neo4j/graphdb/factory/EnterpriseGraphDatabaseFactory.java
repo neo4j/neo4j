@@ -22,9 +22,9 @@ package org.neo4j.graphdb.factory;
 import java.io.File;
 import java.util.Map;
 
-import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
