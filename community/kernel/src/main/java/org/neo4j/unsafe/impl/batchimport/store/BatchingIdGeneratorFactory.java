@@ -54,12 +54,7 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
-        IdGenerator generator = idGenerators.get( idType );
-        if ( generator == null )
-        {
-            idGenerators.put( idType, generator = new BatchingIdGenerator( fs, fileName, highId ) );
-        }
-        return generator;
+        return idGenerators.computeIfAbsent( idType, k -> new BatchingIdGenerator( fs, fileName, highId ) );
     }
 
     @Override

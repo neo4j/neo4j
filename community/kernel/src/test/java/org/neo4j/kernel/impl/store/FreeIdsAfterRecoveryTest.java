@@ -24,9 +24,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -38,8 +36,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.HEADER_SIZE;
-import static org.neo4j.kernel.impl.store.id.IdGeneratorImpl.markAsSticky;
 
 public class FreeIdsAfterRecoveryTest
 {
@@ -73,12 +69,6 @@ public class FreeIdsAfterRecoveryTest
         for ( long id = 0; id < 15; id++ )
         {
             idGenerator.freeId( id );
-        }
-        idGenerator.close();
-        // marking as sticky to simulate a crash
-        try ( StoreChannel channel = fileSystemRule.get().open( nodeIdFile, "rw" ) )
-        {
-            markAsSticky( channel, ByteBuffer.allocate( HEADER_SIZE ) );
         }
 
         // WHEN

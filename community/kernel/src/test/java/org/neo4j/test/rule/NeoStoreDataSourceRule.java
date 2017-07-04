@@ -54,6 +54,8 @@ import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
@@ -126,8 +128,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         LabelScanStoreProvider labelScanStoreProvider =
                 nativeLabelScanStoreProvider( storeDir, fs, pageCache, config, logService, monitors );
-        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                idConfigurationProvider,
+        dataSource = new NeoStoreDataSource( storeDir, config, idGeneratorFactory,
                 logService, mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ),
                 dependencyResolverForNoIndexProvider( labelScanStoreProvider ), mock( PropertyKeyTokenHolder.class ),
                 mock( LabelTokenHolder.class ), mock( RelationshipTypeTokenHolder.class ), locksFactory,
@@ -141,7 +142,10 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( Procedures.class ),
                 IOLimiter.unlimited(),
                 availabilityGuard, clock,
-                new CanWrite(), new StoreCopyCheckPointMutex() );
+                new CanWrite(), new StoreCopyCheckPointMutex(),
+                new BufferedIdController(
+                        new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                                idConfigurationProvider ), jobScheduler ));
 
         return dataSource;
     }

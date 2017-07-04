@@ -19,21 +19,55 @@
  */
 package org.neo4j.kernel.impl.factory;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.function.Predicate;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.MetaDataStore;
+import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
-public class CommunityEditionModuleTest
+public class CommunityEditionModuleIntegrationTest
 {
+    @Rule
+    public TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    @Test
+    public void createBufferedIdComponentsByDefault()
+    {
+        GraphDatabaseAPI database =
+                (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.graphDbDir() );
+        try
+        {
+            DependencyResolver dependencyResolver = database.getDependencyResolver();
+            IdController idController = dependencyResolver.resolveDependency( IdController.class );
+            IdGeneratorFactory idGeneratorFactory = dependencyResolver.resolveDependency( IdGeneratorFactory.class );
+
+            assertThat( idController, instanceOf( BufferedIdController.class ) );
+            assertThat( idGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
+        }
+        finally
+        {
+            database.shutdown();
+        }
+    }
+
     @Test
     public void fileWatcherFileNameFilter()
     {
