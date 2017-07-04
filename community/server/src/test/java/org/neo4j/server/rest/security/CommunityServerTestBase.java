@@ -45,7 +45,7 @@ public class CommunityServerTestBase extends ExclusiveServerTestBase
 
     protected void startServer( boolean authEnabled ) throws IOException
     {
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();

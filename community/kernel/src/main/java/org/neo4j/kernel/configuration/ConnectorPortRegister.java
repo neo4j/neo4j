@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.bolt;
+package org.neo4j.kernel.configuration;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,7 +27,7 @@ import org.neo4j.helpers.HostnamePort;
 /**
  * Connector tracker that keeps information about local address that any configured connector get during bootstrapping.
  */
-public class BoltPortRegister
+public class ConnectorPortRegister
 {
 
     private final ConcurrentHashMap<String,HostnamePort> connectorsInfo = new ConcurrentHashMap<>();

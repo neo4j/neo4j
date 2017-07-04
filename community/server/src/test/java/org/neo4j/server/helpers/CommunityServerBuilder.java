@@ -33,6 +33,7 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -60,6 +61,8 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class CommunityServerBuilder
 {
+    private static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
+
     protected final LogProvider logProvider;
     private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
     private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", 7473 );
@@ -80,7 +83,8 @@ public class CommunityServerBuilder
     {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new ImpermanentGraphDatabase( storeDir,
-                config.with( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true" ) ),
+                config.with( stringMap( GraphDatabaseFacadeFactory.Configuration.ephemeral.name(), "true",
+                                         new BoltConnector( "bolt" ).listen_address.name(), "localhost:0") ),
                 GraphDatabaseDependencies.newDependencies( dependencies ) );
     };
 
@@ -99,6 +103,11 @@ public class CommunityServerBuilder
     public static CommunityServerBuilder server()
     {
         return new CommunityServerBuilder( NullLogProvider.getInstance() );
+    }
+
+    public static CommunityServerBuilder serverOnRandomPorts()
+    {
+        return server().onRandomPorts();
     }
 
     public CommunityNeoServer build() throws IOException
@@ -287,6 +296,13 @@ public class CommunityServerBuilder
     public CommunityServerBuilder withAutoIndexingEnabledForNodes( String... keys )
     {
         autoIndexedNodeKeys = keys;
+        return this;
+    }
+
+    public CommunityServerBuilder onRandomPorts()
+    {
+        this.onHttpsAddress( ANY_ADDRESS );
+        this.onAddress( ANY_ADDRESS );
         return this;
     }
 

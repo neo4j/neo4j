@@ -43,7 +43,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     {
         // Given
         assumeTrue( browserIsLoaded() );
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -57,7 +58,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldNotWhitelistConsoleService() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();
@@ -71,7 +73,8 @@ public class AuthorizationWhitelistIT extends ExclusiveServerTestBase
     public void shouldNotWhitelistDB() throws Exception
     {
         // Given
-        server = CommunityServerBuilder.server().withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
+        server = CommunityServerBuilder.serverOnRandomPorts()
+                .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" ).build();
 
         // When
         server.start();

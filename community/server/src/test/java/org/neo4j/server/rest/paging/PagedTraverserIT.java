@@ -81,7 +81,7 @@ public class PagedTraverserIT extends ExclusiveServerTestBase
     public static void setupServer() throws Exception
     {
         clock = Clocks.fakeClock();
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock( clock )
                 .build();

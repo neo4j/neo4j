@@ -40,7 +40,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class DeadlockIT extends AbstractRestFunctionalTestBase
 {
-    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
+    private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
 
     @Rule
     public OtherThreadRule<Object> otherThread = new OtherThreadRule<>();
@@ -59,7 +59,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
         }
 
         // When I lock node:First
-        HTTP.Response begin = http.POST( "/db/data/transaction",
+        HTTP.Response begin = http.POST( "db/data/transaction",
                 quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:First) SET n.prop=1' } ] }" ));
 
         // and I lock node:Second, and wait for a lock on node:First in another transaction
@@ -82,7 +82,7 @@ public class DeadlockIT extends AbstractRestFunctionalTestBase
     {
         return state ->
         {
-            HTTP.Response post = http.POST( "/db/data/transaction",
+            HTTP.Response post = http.POST( "db/data/transaction",
                     quotedJson( "{ 'statements': [ { 'statement': 'MATCH (n:Second) SET n.prop=1' } ] }" ) );
             secondNodeLocked.countDown();
             http.POST( post.location(),

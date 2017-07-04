@@ -35,8 +35,8 @@ import java.util.concurrent.ThreadFactory;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.PortBindException;
-import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -52,7 +52,7 @@ public class NettyServer extends LifecycleAdapter
 
     private final Map<BoltConnector, ProtocolInitializer> bootstrappersMap;
     private final ThreadFactory tf;
-    private final BoltPortRegister connectionRegister;
+    private final ConnectorPortRegister connectionRegister;
     private EventLoopGroup bossGroup;
     private EventLoopGroup selectorGroup;
 
@@ -71,7 +71,7 @@ public class NettyServer extends LifecycleAdapter
      * @param connectorRegister register to keep local address information on all configured connectors
      */
     public NettyServer( ThreadFactory tf, Map<BoltConnector, ProtocolInitializer> initializersMap,
-            BoltPortRegister connectorRegister )
+            ConnectorPortRegister connectorRegister )
     {
         this.bootstrappersMap = initializersMap;
         this.tf = tf;

@@ -37,7 +37,7 @@ import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 @RunWith( Theories.class )
@@ -58,7 +58,7 @@ public class LegacyIndexIT extends ExclusiveServerTestBase
     @Before
     public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
-        server = server().withHttpsEnabled()
+        server = serverOnRandomPorts().withHttpsEnabled()
                 .withProperty( "dbms.shell.enabled", "false" )
                 .withProperty( "dbms.security.auth_enabled", "false" )
                 .withProperty( ServerSettings.maximum_response_header_size.name(), "5000" )

@@ -19,12 +19,12 @@
  */
 package org.neo4j.server;
 
-import java.net.URI;
-
 import org.dummy.web.service.DummyThirdPartyWebService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import java.net.URI;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
@@ -33,13 +33,11 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.helpers.ServerHelper;
 import org.neo4j.server.helpers.Transactor;
-import org.neo4j.server.helpers.UnitOfWork;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.server.helpers.FunctionalTestHelper.CLIENT;
 
 public class NeoServerJAXRSIT extends ExclusiveServerTestBase
@@ -76,7 +74,7 @@ public class NeoServerJAXRSIT extends ExclusiveServerTestBase
     @Test
     public void shouldLoadThirdPartyJaxRsClasses() throws Exception
     {
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withThirdPartyJaxRsPackage( "org.dummy.web.service",
                         DummyThirdPartyWebService.DUMMY_WEB_SERVICE_MOUNT_POINT )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )

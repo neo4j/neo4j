@@ -98,7 +98,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
         HttpClient httpclient = new DefaultHttpClient();
         try
         {
-            HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/" + likes );
+            HttpGet httpget = new HttpGet( getServerUri() + "db/data/relationship/" + likes );
             httpget.setHeader( "Accept", "application/json" );
             httpget.setHeader( "Host", "dummy.neo4j.org" );
             HttpResponse response = httpclient.execute( httpget );
@@ -109,7 +109,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
             System.out.println( entityBody );
 
             assertThat( entityBody, containsString( "http://dummy.neo4j.org/db/data/relationship/" + likes ) );
-            assertThat( entityBody, not( containsString( "localhost:7474" ) ) );
+            assertThat( entityBody, not( containsString( getServerUri() ) ) );
         }
         finally
         {
@@ -123,7 +123,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
         HttpClient httpclient = new DefaultHttpClient();
         try
         {
-            HttpGet httpget = new HttpGet( "http://localhost:7474/db/data/relationship/" + likes );
+            HttpGet httpget = new HttpGet( getServerUri() + "db/data/relationship/" + likes );
 
             httpget.setHeader( "Accept", "application/json" );
             HttpResponse response = httpclient.execute( httpget );
@@ -131,7 +131,7 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
 
             String entityBody = IOUtils.toString( entity.getContent(), StandardCharsets.UTF_8 );
 
-            assertThat( entityBody, containsString( "http://localhost:7474/db/data/relationship/" + likes ) );
+            assertThat( entityBody, containsString( getServerUri() + "db/data/relationship/" + likes ) );
         }
         finally
         {
@@ -314,6 +314,11 @@ public class RetrieveRelationshipsFromNodeIT extends AbstractRestFunctionalDocTe
         assertNotNull( entity );
         isLegalJson( entity );
         response.close();
+    }
+
+    private String getServerUri()
+    {
+        return server().baseUri().toString();
     }
 
     private void isLegalJson( String entity ) throws IOException, JsonParseException

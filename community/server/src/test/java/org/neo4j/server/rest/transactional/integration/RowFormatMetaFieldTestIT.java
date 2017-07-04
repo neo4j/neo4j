@@ -40,7 +40,7 @@ import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
 public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
 {
-    private final HTTP.Builder http = HTTP.withBaseUri( "http://localhost:7474" );
+    private final HTTP.Builder http = HTTP.withBaseUri( server().baseUri() );
 
     private String commitResource;
 
@@ -48,7 +48,7 @@ public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase
     public void setUp()
     {
         // begin
-        Response begin = http.POST( "/db/data/transaction" );
+        Response begin = http.POST( "db/data/transaction" );
 
         assertThat( begin.status(), equalTo( 201 ) );
         assertHasTxLocation( begin );

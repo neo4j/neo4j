@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -74,4 +75,14 @@ public interface WebServer
     void setDefaultInjectables( Collection<InjectableProvider<?>> defaultInjectables );
 
     void setJettyCreatedCallback( Consumer<Server> callback );
+
+    /**
+     * @return local http connector bind port
+     */
+    InetSocketAddress getLocalHttpAddress();
+
+    /**
+     * @return local https connector bind port
+     */
+    InetSocketAddress getLocalHttpsAddress();
 }

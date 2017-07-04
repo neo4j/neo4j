@@ -116,7 +116,7 @@ public class TransactionTerminationIT
                 .newServer() );
 
         GraphDatabaseService db = server.graph();
-        HTTP.Builder http = withBaseUri( server.httpURI().toString() );
+        HTTP.Builder http = withBaseUri( server.httpURI() );
 
         long value1 = 1L;
         long value2 = 2L;

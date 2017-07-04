@@ -25,7 +25,9 @@ import org.junit.Test;
 import java.io.IOException;
 import javax.ws.rs.core.MediaType;
 
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -37,6 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.server.HTTP.POST;
 
 public class ServerConfigIT extends ExclusiveServerTestBase
@@ -58,7 +61,9 @@ public class ServerConfigIT extends ExclusiveServerTestBase
                 .build();
         server.start();
 
-        assertEquals( nonDefaultAddress, server.getAddress() );
+        HostnamePort localHttpAddress = getLocalHttpAddress();
+        assertEquals( nonDefaultAddress.getPort(), localHttpAddress.getPort() );
+        assertEquals( nonDefaultAddress.getHostname(), localHttpAddress.getHost() );
 
         JaxRsResponse response = new RestRequest( server.baseUri() ).get();
 
@@ -69,20 +74,20 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldPickupRelativeUrisForMangementApiAndRestApi() throws IOException
     {
-        String dataUri = "/a/different/data/uri/";
-        String managementUri = "/a/different/management/uri/";
+        String dataUri = "a/different/data/uri/";
+        String managementUri = "a/different/management/uri/";
 
-        server = server().withRelativeRestApiUriPath( dataUri )
+        server = serverOnRandomPorts().withRelativeRestApiUriPath( "/" + dataUri )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
-                .withRelativeManagementApiUriPath( managementUri )
+                .withRelativeManagementApiUriPath( "/" + managementUri )
                 .build();
         server.start();
 
-        JaxRsResponse response = new RestRequest().get( "http://localhost:7474" + dataUri,
+        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + dataUri,
                 MediaType.TEXT_HTML_TYPE );
         assertEquals( 200, response.getStatus() );
 
-        response = new RestRequest().get( "http://localhost:7474" + managementUri );
+        response = new RestRequest().get( server.baseUri().toString() + managementUri );
         assertEquals( 200, response.getStatus() );
         response.close();
     }
@@ -90,11 +95,11 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldGenerateWADLWhenExplicitlyEnabledInConfig() throws IOException
     {
-        server = server().withProperty( ServerSettings.wadl_enabled.name(), "true" )
+        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), "true" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + "application.wadl",
                 MediaType.WILDCARD_TYPE );
 
         assertEquals( 200, response.getStatus() );
@@ -106,11 +111,11 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotGenerateWADLWhenNotExplicitlyEnabledInConfig() throws IOException
     {
-        server = server()
+        server = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + "application.wadl",
                 MediaType.WILDCARD_TYPE );
 
         assertEquals( 404, response.getStatus() );
@@ -119,45 +124,47 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     @Test
     public void shouldNotGenerateWADLWhenExplicitlyDisabledInConfig() throws IOException
     {
-        server = server().withProperty( ServerSettings.wadl_enabled.name(), "false" )
+        server = serverOnRandomPorts().withProperty( ServerSettings.wadl_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
-        JaxRsResponse response = new RestRequest().get( "http://localhost:7474/application.wadl",
+        JaxRsResponse response = new RestRequest().get( server.baseUri().toString() + "application.wadl",
                 MediaType.WILDCARD_TYPE );
 
         assertEquals( 404, response.getStatus() );
     }
 
     @Test
-    public void shouldEnablConsoleServiceByDefault() throws IOException
+    public void shouldEnableConsoleServiceByDefault() throws IOException
     {
         // Given
-        server = server().usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() ).build();
+        server = serverOnRandomPorts()
+                .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
+                .build();
         server.start();
 
         // When & then
-        assertEquals( 200, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
+        assertEquals( 200, new RestRequest().get( server.baseUri().toString() + "db/manage/server/console" ).getStatus() );
     }
 
     @Test
     public void shouldDisableConsoleServiceWhenAskedTo() throws IOException
     {
         // Given
-        server = server().withProperty( ServerSettings.console_module_enabled.name(), "false" )
+        server = serverOnRandomPorts().withProperty( ServerSettings.console_module_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
 
         // When & then
-        assertEquals( 404, new RestRequest().get( "http://localhost:7474/db/manage/server/console" ).getStatus() );
+        assertEquals( 404, new RestRequest().get( server.baseUri().toString() + "db/manage/server/console" ).getStatus() );
     }
 
     @Test
     public void shouldHaveSandboxingEnabledByDefault() throws Exception
     {
         // Given
-        server = server()
+        server = serverOnRandomPorts()
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
         server.start();
@@ -203,11 +210,18 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // and all other tests depend on it being sandboxed.
         GlobalJavascriptInitializer.initialize( GlobalJavascriptInitializer.Mode.SANDBOXED );
 
-        server = server().withProperty( ServerSettings.script_sandboxing_enabled.name(), "false" )
+        server = serverOnRandomPorts().withProperty( ServerSettings.script_sandboxing_enabled.name(), "false" )
                 .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                 .build();
 
         // When
         server.start();
+    }
+
+    private HostnamePort getLocalHttpAddress()
+    {
+        ConnectorPortRegister connectorPortRegister = server.getDatabase().getGraph().getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
+        return connectorPortRegister.getLocalAddress( "http" );
     }
 }

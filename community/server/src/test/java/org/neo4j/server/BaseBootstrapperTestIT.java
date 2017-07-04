@@ -78,7 +78,8 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", "dbms.connector.http.type=HTTP",
-                "-c", "dbms.connector.http.enabled=true"
+                "-c", "dbms.connector.http.enabled=true",
+                "-c", "dbms.connector.http.advertised_address=localhost:0"
         );
 
         // Then
@@ -96,6 +97,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
+        properties.put( "dbms.connector.http.advertised_address", "localhost:0" );
         store( properties, configFile );
 
         // When
@@ -117,6 +119,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
+        properties.put( "dbms.connector.http.advertised_address", "localhost:0" );
         store( properties, configFile );
 
         // When

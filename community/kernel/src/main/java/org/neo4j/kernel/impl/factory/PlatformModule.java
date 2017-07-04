@@ -32,8 +32,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.api.bolt.BoltPortRegister;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
@@ -209,7 +209,7 @@ public class PlatformModule
         storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
-        dependencies.satisfyDependency( new BoltPortRegister() );
+        dependencies.satisfyDependency( new ConnectorPortRegister() );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }

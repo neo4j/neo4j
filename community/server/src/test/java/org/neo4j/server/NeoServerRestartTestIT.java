@@ -100,7 +100,6 @@ public abstract class NeoServerRestartTestIT extends ExclusiveServerTestBase
             catch ( Exception e )
             {
                 failure.set( true );
-                e.printStackTrace();
             }
         };
     }

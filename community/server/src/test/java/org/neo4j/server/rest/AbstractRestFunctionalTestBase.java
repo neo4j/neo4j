@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
@@ -54,8 +55,6 @@ import static org.neo4j.server.rest.web.Surface.PATH_SCHEMA_INDEX;
 
 public class AbstractRestFunctionalTestBase extends SharedServerTestBase implements GraphHolder
 {
-    protected static final String NODES = "http://localhost:7474/db/data/node/";
-
     @Rule
     public TestData<Map<String,Node>> data = TestData.producedThrough( GraphDescription.createGraphFor( this, true ) );
 
@@ -123,12 +122,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
 
     protected static String getDataUri()
     {
-        return "http://localhost:7474/db/data/";
+        return "http://localhost:" + getLocalHttpPort() + "/db/data/";
     }
 
     protected String getDatabaseUri()
     {
-        return "http://localhost:7474/db/";
+        return "http://localhost:" + getLocalHttpPort() + "/db/";
     }
 
     protected String getNodeUri( Node node )
@@ -277,5 +276,12 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public String getSchemaConstraintLabelUniquenessPropertyUri( String label, String property )
     {
         return getDataUri() + PATH_SCHEMA_CONSTRAINT + "/" + label + "/uniqueness/" + property;
+    }
+
+    public static int getLocalHttpPort()
+    {
+        ConnectorPortRegister connectorPortRegister = server().getDatabase().getGraph().getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
+        return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 }

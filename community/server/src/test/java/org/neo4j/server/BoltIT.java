@@ -19,17 +19,18 @@
  */
 package org.neo4j.server;
 
-import java.io.IOException;
-import java.util.Map;
-
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import java.io.IOException;
+import java.util.Map;
+
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
@@ -40,6 +41,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
 public class BoltIT extends ExclusiveServerTestBase
 {
@@ -64,11 +66,13 @@ public class BoltIT extends ExclusiveServerTestBase
         server = server().withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
                 .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
                 .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" )
                 .usingDataDir( tmpDir.getRoot().getAbsolutePath() ).build();
         server.start();
+        ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
 
         // Then
-        assertEventuallyServerResponds( "localhost", 7687 );
+        assertEventuallyServerResponds( "localhost", connectorPortRegister.getLocalAddress( "bolt" ).getPort() );
     }
 
     @Test
@@ -77,8 +81,9 @@ public class BoltIT extends ExclusiveServerTestBase
         // When
         startServerWithBoltEnabled();
 
+        ConnectorPortRegister connectorPortRegister = getDependency( ConnectorPortRegister.class );
         // Then
-        assertEventuallyServerResponds( "localhost", 7687 );
+        assertEventuallyServerResponds( "localhost", connectorPortRegister.getLocalAddress( "bolt" ).getPort()  );
     }
 
     @Test
@@ -141,7 +146,7 @@ public class BoltIT extends ExclusiveServerTestBase
     private void startServerWithBoltEnabled( String advertisedHost, int advertisedPort, String listenHost,
             int listenPort ) throws IOException
     {
-        server = server()
+        server = serverOnRandomPorts()
                 .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
                 .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
                 .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
@@ -160,5 +165,10 @@ public class BoltIT extends ExclusiveServerTestBase
                 new byte[]{(byte) 0x60, (byte) 0x60, (byte) 0xB0, (byte) 0x17, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                         0, 0} );
         assertThat( conn.recv( 4 ), equalTo( new byte[]{0, 0, 0, 1} ) );
+    }
+
+    private <T> T getDependency( Class<T> clazz )
+    {
+        return server.getDatabase().getGraph().getDependencyResolver().resolveDependency( clazz );
     }
 }
