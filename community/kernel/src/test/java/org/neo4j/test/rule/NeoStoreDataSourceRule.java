@@ -148,8 +148,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new CanWrite(), new StoreCopyCheckPointMutex(),
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
-                        new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                                idConfigurationProvider ), jobScheduler ));
+                new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
+                        idConfigurationProvider ), jobScheduler ) );
         return dataSource;
     }
 
