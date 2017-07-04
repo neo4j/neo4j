@@ -51,7 +51,7 @@ public class BadCollector implements Collector
     public static final int COLLECT_ALL = BAD_RELATIONSHIPS | DUPLICATE_NODES | EXTRA_COLUMNS;
 
     private final PrintStream out;
-    private final int tolerance;
+    private final long tolerance;
     private final int collect;
     private long[] leftOverDuplicateNodeIds = new long[10];
     private int leftOverDuplicateNodeIdsCursor;
@@ -59,15 +59,15 @@ public class BadCollector implements Collector
 
     // volatile since one importer thread calls collect(), where this value is incremented and later the "main"
     // thread calls badEntries() to get a count.
-    private volatile int badEntries;
-    public static final int UNLIMITED_TOLERANCE = -1;
+    private volatile long badEntries;
+    public static final long UNLIMITED_TOLERANCE = -1;
 
-    public BadCollector( OutputStream out, int tolerance, int collect )
+    public BadCollector( OutputStream out, long tolerance, int collect )
     {
         this(out, tolerance, collect, false);
     }
 
-    public BadCollector( OutputStream out, int tolerance, int collect, boolean skipBadEntriesLogging )
+    public BadCollector( OutputStream out, long tolerance, int collect, boolean skipBadEntriesLogging )
     {
         this.out = new PrintStream( out );
         this.tolerance = tolerance;
@@ -115,7 +115,7 @@ public class BadCollector implements Collector
     }
 
     @Override
-    public int badEntries()
+    public long badEntries()
     {
         return badEntries;
     }
