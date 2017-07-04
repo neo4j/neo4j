@@ -354,14 +354,14 @@ public class Jetty9WebServer implements WebServer
     @Override
     public InetSocketAddress getLocalHttpAddress()
     {
-        return new InetSocketAddress( serverConnector.getHost(), serverConnector.getLocalPort() );
+        return toSocketAddress( serverConnector );
     }
 
     @Override
     public InetSocketAddress getLocalHttpsAddress()
     {
         return Optional.ofNullable( secureServerConnector)
-                        .map( connector -> new InetSocketAddress( connector.getHost(), connector.getLocalPort() ) )
+                        .map( Jetty9WebServer::toSocketAddress )
                         .orElseThrow( () -> new IllegalStateException( "Secure connector is not configured" ) );
     }
 
@@ -538,6 +538,11 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
+    private static InetSocketAddress toSocketAddress( ServerConnector connector )
+    {
+        return new InetSocketAddress( connector.getHost(), connector.getLocalPort() );
+    }
+
     private static class FilterDefinition
     {
         private final Filter filter;
@@ -558,7 +563,6 @@ public class Jetty9WebServer implements WebServer
         {
             return filter;
         }
-
         String getPathSpec()
         {
             return pathSpec;
