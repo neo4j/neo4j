@@ -42,6 +42,8 @@ On top of that, to build Debian packages and Neo4j Desktop:
 
 == Building Neo4j ==
 
+Before you start running the unit and integration tests in the Neo4j Maven project on a Linux-like system, you should ensure your limit on open files is set to a reasonable value. You can test it with `ulimit -n`. We recommend you have a limit of at least 40K. 
+
 * A plain `mvn clean install` will only build the individual jar files. 
 * Test execution is, of course, part of the build.
 * To add execution of integration tests, use: `mvn clean install -DrunITs`.
