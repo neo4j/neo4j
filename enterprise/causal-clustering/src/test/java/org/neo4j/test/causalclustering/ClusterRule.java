@@ -199,4 +199,10 @@ public class ClusterRule extends ExternalResource
         this.recordFormat = recordFormat;
         return this;
     }
+
+    public ClusterRule withClusterDirectory( File clusterDirectory )
+    {
+        this.clusterDirectory = clusterDirectory;
+        return this;
+    }
 }
