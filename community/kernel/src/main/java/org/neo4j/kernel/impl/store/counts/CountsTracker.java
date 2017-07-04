@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.store.counts;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.Optional;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -47,6 +46,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
@@ -87,11 +87,11 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
             File baseFile )
     {
-        this( logProvider, fs, pages, config, baseFile, Clocks.systemClock() );
+        this( logProvider, fs, pages, config, baseFile, Clocks.nanoClock() );
     }
 
     public CountsTracker( final LogProvider logProvider, FileSystemAbstraction fs, PageCache pages, Config config,
-            File baseFile, Clock clock )
+                          File baseFile, SystemNanoClock clock )
     {
         super( fs, pages, baseFile, new RotationMonitor()
         {
