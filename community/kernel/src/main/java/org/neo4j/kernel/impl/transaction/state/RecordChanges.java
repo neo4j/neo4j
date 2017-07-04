@@ -76,12 +76,12 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     }
 
     @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public RecordProxy<KEY,RECORD,ADDITIONAL> setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
     {
         RecordChange<KEY, RECORD, ADDITIONAL> recordChange =
                 new RecordChange<>( recordChanges, changeCounter, key, newRecord, loader, false, additionalData );
         recordChanges.put( key, recordChange );
-        recordChange.forChangingData();
+        return recordChange;
     }
 
     @Override

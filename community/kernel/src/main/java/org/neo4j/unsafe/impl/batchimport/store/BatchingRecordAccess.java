@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
+import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.util.collection.ArrayCollection;
 
@@ -71,7 +72,7 @@ public abstract class BatchingRecordAccess<KEY,RECORD,ADDITIONAL> implements Rec
     }
 
     @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public RecordProxy<KEY,RECORD,ADDITIONAL> setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }

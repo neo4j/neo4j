@@ -38,7 +38,7 @@ public interface RecordAccess<KEY,RECORD,ADDITIONAL>
 
     RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key );
 
-    void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData );
+    RecordProxy<KEY,RECORD,ADDITIONAL> setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData );
 
     /**
      * Creates a new record with the given {@code key}. Any {@code additionalData} is set in the
