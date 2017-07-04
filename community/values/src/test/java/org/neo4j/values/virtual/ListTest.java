@@ -79,10 +79,10 @@ public class ListTest
         assertEqualValues( list( 1.5f, -5f ), floatArray( new float[]{1.5f, -5f} ) );
         assertEqualValues( list( 1 ), intArray( new int[]{1} ) );
         assertEqualValues( list( 1, -3 ), intArray( new int[]{1, -3} ) );
-        assertEqualValues( list( 2l ), longArray( new long[]{2l} ) );
-        assertEqualValues( list( 2l, -3l ), longArray( new long[]{2l, -3l} ) );
+        assertEqualValues( list( 2L ), longArray( new long[]{2L} ) );
+        assertEqualValues( list( 2L, -3L ), longArray( new long[]{2L, -3L} ) );
         assertEqualValues( list( (short) 2 ), shortArray( new short[]{(short) 2} ) );
-        assertEqualValues( list( (short) 2l, (short) -3l ), shortArray( new short[]{(short) 2l, (short) -3l} ) );
+        assertEqualValues( list( (short) 2, (short) -3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertEqualValues( list( "hi" ), stringArray( new String[]{"hi"} ) );
         assertEqualValues( list( "hi", "ho" ), stringArray( new String[]{"hi", "ho"} ) );
     }
@@ -129,10 +129,10 @@ public class ListTest
         assertNotEqualValues( list( 1.5f, 5f ), floatArray( new float[]{1.5f, -5f} ) );
         assertNotEqualValues( list( 1, 3 ), intArray( new int[]{1, -3} ) );
         assertNotEqualValues( list( -3 ), intArray( new int[]{1, -3} ) );
-        assertNotEqualValues( list( 2l, 3l ), longArray( new long[]{2l, -3l} ) );
-        assertNotEqualValues( list( 2l ), longArray( new long[]{2l, -3l} ) );
-        assertNotEqualValues( list( (short) 2l, (short) 3l ), shortArray( new short[]{(short) 2l, (short) -3l} ) );
-        assertNotEqualValues( list( (short) 2l ), shortArray( new short[]{(short) 2l, (short) -3l} ) );
+        assertNotEqualValues( list( 2L, 3L ), longArray( new long[]{2L, -3L} ) );
+        assertNotEqualValues( list( 2L ), longArray( new long[]{2L, -3L} ) );
+        assertNotEqualValues( list( (short) 2, (short) 3 ), shortArray( new short[]{(short) 2, (short) -3} ) );
+        assertNotEqualValues( list( (short) 2 ), shortArray( new short[]{(short) 2, (short) -3} ) );
         assertNotEqualValues( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
         assertNotEqualValues( list( "hello" ), stringArray( new String[]{"hi"} ) );
     }

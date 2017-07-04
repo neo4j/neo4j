@@ -44,7 +44,7 @@ final class ListValue extends VirtualValue implements SequenceValue
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof SequenceValue))
+        if ( other == null || !(other instanceof SequenceValue) )
         {
             return false;
         }
@@ -86,7 +86,7 @@ final class ListValue extends VirtualValue implements SequenceValue
 
         if ( x == 0 )
         {
-            for (int i = 0; i < length(); i++ )
+            for ( int i = 0; i < length(); i++ )
             {
                 x = comparator.compare( this.values[i], otherList.values[i] );
                 if ( x != 0 )
