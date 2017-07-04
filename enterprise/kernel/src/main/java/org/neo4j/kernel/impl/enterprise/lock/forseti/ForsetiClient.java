@@ -127,6 +127,11 @@ public class ForsetiClient implements Locks.Client
 
     private volatile boolean hasLocks;
 
+    private final ReleaseExclusiveLocksAndClearSharedVisitor releaseExclusiveAndClearSharedVisitor =
+            new ReleaseExclusiveLocksAndClearSharedVisitor();
+    private final ReleaseSharedDontCheckExclusiveVisitor releaseSharedDontCheckExclusiveVisitor =
+            new ReleaseSharedDontCheckExclusiveVisitor();
+
     /**
      * When we *wait* for a specific lock to be released to us, we assign it to this field. This helps us during the
      * secondary deadlock verification process, where we traverse the waiter/lock-owner dependency graph.
@@ -549,9 +554,8 @@ public class ForsetiClient implements Locks.Client
             {
                 if ( releaseLocalLock( resourceType, resourceId, sharedLocks ) )
                 {
-                    return;
+                    continue;
                 }
-
                 // Only release if we were not holding an exclusive lock as well
                 if ( !exclusiveLocks.containsKey( resourceId ) )
                 {
@@ -579,7 +583,7 @@ public class ForsetiClient implements Locks.Client
             {
                 if ( releaseLocalLock( resourceType, resourceId, exclusiveLocks ) )
                 {
-                    return;
+                    continue;
                 }
 
                 if ( sharedLocks.containsKey( resourceId ) )
@@ -1158,9 +1162,4 @@ public class ForsetiClient implements Locks.Client
             return false;
         }
     }
-
-    private final ReleaseExclusiveLocksAndClearSharedVisitor releaseExclusiveAndClearSharedVisitor =
-            new ReleaseExclusiveLocksAndClearSharedVisitor();
-    private final ReleaseSharedDontCheckExclusiveVisitor releaseSharedDontCheckExclusiveVisitor =
-            new ReleaseSharedDontCheckExclusiveVisitor();
 }

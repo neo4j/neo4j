@@ -279,14 +279,11 @@ public class CommunityLockClient implements Locks.Client
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
-                if ( resource.releaseReference() != 0 )
+                if ( resource.releaseReference() == 0 )
                 {
-                    return;
+                    localLocks.remove( resourceId );
+                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
                 }
-
-                localLocks.remove( resourceId );
-
-                manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
             }
         }
         finally
@@ -305,13 +302,11 @@ public class CommunityLockClient implements Locks.Client
             for ( long resourceId : resourceIds )
             {
                 LockResource resource = localLocks.get( resourceId );
-                if ( resource.releaseReference() != 0 )
+                if ( resource.releaseReference() == 0 )
                 {
-                    return;
+                    localLocks.remove( resourceId );
+                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
                 }
-                localLocks.remove( resourceId );
-
-                manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
             }
         }
         finally
