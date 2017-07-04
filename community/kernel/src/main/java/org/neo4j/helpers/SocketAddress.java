@@ -20,7 +20,11 @@
 package org.neo4j.helpers;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Objects;
+
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * Socket address derived from configuration.
@@ -28,6 +32,8 @@ import java.util.Objects;
  */
 public class SocketAddress
 {
+    private static final Collection<String> WILDCARDS = asSet( "0.0.0.0", "::" );
+
     private final String hostname;
     private final int port;
 
@@ -55,10 +61,24 @@ public class SocketAddress
         return new InetSocketAddress( hostname, port );
     }
 
+    public boolean isWildcard()
+    {
+        return WILDCARDS.contains( hostname );
+    }
+
     @Override
     public String toString()
     {
-        return hostname + ":" + port;
+        if ( hostname.contains( ":" ) )
+        {
+            // for ipv6 addresses we use brackets, as is common
+            return format( "[%s]:%s", hostname, port );
+        }
+        else
+        {
+            // hostnames and ipv4 addresses do not use brackets
+            return format( "%s:%s", hostname, port );
+        }
     }
 
     @Override
