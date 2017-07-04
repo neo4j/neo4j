@@ -21,6 +21,9 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+
 import static java.lang.String.format;
 
 abstract class LongArray extends IntegralArray
@@ -42,6 +45,10 @@ abstract class LongArray extends IntegralArray
     @Override
     public boolean equals( Object other )
     {
+        if ( other instanceof SequenceValue )
+        {
+            return equals( (SequenceValue) other );
+        }
         return other != null && other instanceof Value && equals( (Value) other );
     }
 
@@ -116,6 +123,12 @@ abstract class LongArray extends IntegralArray
     public Object asObject()
     {
         return value();
+    }
+
+    @Override
+    public AnyValue value( int offset )
+    {
+        return Values.longValue( longValue( offset ) );
     }
 
     static final class Direct extends LongArray

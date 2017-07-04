@@ -17,37 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.storable;
+package org.neo4j.values;
 
-import org.neo4j.values.AnyValues;
-import org.neo4j.values.SequenceValue;
-
-/**
- * Array of one of the storable primitives
- */
-abstract class ArrayValue extends Value implements SequenceValue
+public interface SequenceValue
 {
-    @Override
-    public boolean equals( SequenceValue other )
-    {
-        return AnyValues.equalityOfValuesInSequences( this, other );
-    }
+    boolean equals( SequenceValue other );
 
-    @Override
-    public boolean equals( boolean x )
-    {
-        return false;
-    }
+    AnyValue value( int offset );
 
-    @Override
-    public boolean equals( char x )
-    {
-        return false;
-    }
-
-    @Override
-    public boolean equals( String x )
-    {
-        return false;
-    }
+    int length();
 }

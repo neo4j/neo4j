@@ -33,6 +33,10 @@ public abstract class VirtualValue extends AnyValue
     @Override
     public final boolean equals( Object other )
     {
+        if ( (other instanceof SequenceValue) && (this instanceof SequenceValue) )
+        {
+            return ((SequenceValue) this).equals( (SequenceValue) other );
+        }
         return other != null && other instanceof VirtualValue && equals( (VirtualValue) other );
     }
 

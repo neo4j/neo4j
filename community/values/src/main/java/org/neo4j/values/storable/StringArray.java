@@ -21,6 +21,9 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+
 import static java.lang.String.format;
 
 abstract class StringArray extends TextArray
@@ -42,6 +45,10 @@ abstract class StringArray extends TextArray
     @Override
     public boolean equals( Object other )
     {
+        if ( other instanceof SequenceValue )
+        {
+            return equals( (SequenceValue) other );
+        }
         return other != null && other instanceof Value && equals( (Value) other );
     }
 
@@ -97,6 +104,12 @@ abstract class StringArray extends TextArray
     public String prettyPrint()
     {
         return Arrays.toString( value() );
+    }
+
+    @Override
+    public AnyValue value( int offset )
+    {
+        return Values.stringValue( stringValue( offset ) );
     }
 
     static final class Direct extends StringArray

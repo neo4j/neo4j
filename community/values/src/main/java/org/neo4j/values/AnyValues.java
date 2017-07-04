@@ -32,4 +32,23 @@ public final class AnyValues
      */
     public static final Comparator<AnyValue> COMPARATOR =
             new AnyValueComparator( Values.COMPARATOR, VirtualValueGroup::compareTo );
+
+    public static boolean equalityOfValuesInSequences( SequenceValue a, SequenceValue b )
+    {
+        if ( a.length() != b.length() )
+        {
+            return false;
+        }
+
+        for ( int i = 0; i < a.length(); i++ )
+        {
+            AnyValue myValue = a.value( i );
+            AnyValue otherValue = b.value( i );
+            if ( myValue.equals( otherValue ) == false )
+            {
+                return false;
+            }
+        }
+        return true;
+    }
 }
