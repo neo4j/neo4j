@@ -363,8 +363,12 @@ public class HighlyAvailableEditionModule
         paxosLife.add( (Lifecycle)clusterEvents );
         paxosLife.add( localClusterMemberAvailability );
 
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging.getInternalLogProvider(), requestContextFactory, fs ) );
+        HaIdGeneratorFactory editionIdGeneratorFactory = (HaIdGeneratorFactory) createIdGeneratorFactory( masterDelegateInvocationHandler,
+                logging.getInternalLogProvider(), requestContextFactory, fs );
+        eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
+        createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         // TODO There's a cyclical dependency here that should be fixed
@@ -412,12 +416,12 @@ public class HighlyAvailableEditionModule
 
         SwitchToSlave switchToSlaveInstance = chooseSwitchToSlaveStrategy( platformModule, config, dependencies, logging, monitors,
                 masterDelegateInvocationHandler, requestContextFactory, clusterMemberAvailability,
-                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory );
+                masterClientResolver, updatePullerProxy, pullerFactory, slaveServerFactory, editionIdGeneratorFactory );
 
         final Factory<MasterImpl.SPI> masterSPIFactory =
                 () -> new DefaultMasterImplSPI( platformModule.graphDatabaseFacade, platformModule.fileSystem,
                         platformModule.monitors,
-                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, idGeneratorFactory,
+                        labelTokenHolder, propertyKeyTokenHolder, relationshipTypeTokenHolder, this.idGeneratorFactory,
                         platformModule.dependencies.resolveDependency( TransactionCommitProcess.class ),
                         platformModule.dependencies.resolveDependency( CheckPointer.class ),
                         platformModule.dependencies.resolveDependency( TransactionIdStore.class ),
@@ -451,7 +455,7 @@ public class HighlyAvailableEditionModule
                             logEntryReader.get() );
                 };
 
-        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, (HaIdGeneratorFactory) idGeneratorFactory,
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, editionIdGeneratorFactory,
                 config, dependencies.provideDependency( SlaveFactory.class ),
                 conversationManagerFactory,
                 masterFactory,
@@ -528,8 +532,6 @@ public class HighlyAvailableEditionModule
 
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
-        eligibleForIdReuse = new HaIdReuseEligibility( members, platformModule.clock, idReuseSafeZone );
-
         registerRecovery( platformModule.databaseInfo, dependencies, logging );
 
         UsageData usageData = dependencies.resolveDependency( UsageData.class );
@@ -563,14 +565,13 @@ public class HighlyAvailableEditionModule
             dependencies, LogService logging, Monitors monitors, DelegateInvocationHandler<Master>
             masterDelegateInvocationHandler, RequestContextFactory requestContextFactory, ClusterMemberAvailability
             clusterMemberAvailability, MasterClientResolver masterClientResolver, UpdatePuller updatePullerProxy,
-                                                       PullerFactory pullerFactory,
-                                                       Function<Slave, SlaveServer> slaveServerFactory )
+            PullerFactory pullerFactory, Function<Slave, SlaveServer> slaveServerFactory, HaIdGeneratorFactory idGeneratorFactory )
     {
         switch ( config.get( HaSettings.branched_data_copying_strategy ) )
         {
             case branch_then_copy:
                 return new SwitchToSlaveBranchThenCopy( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
@@ -582,7 +583,7 @@ public class HighlyAvailableEditionModule
                         monitors, platformModule.transactionMonitor );
             case copy_then_branch:
                 return new SwitchToSlaveCopyThenBranch( platformModule.storeDir, logging,
-                        platformModule.fileSystem, config, dependencies, (HaIdGeneratorFactory) idGeneratorFactory,
+                        platformModule.fileSystem, config, dependencies, idGeneratorFactory,
                         masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
                         pullerFactory,
                         platformModule.kernelExtensions.listFactories(), masterClientResolver,
@@ -651,16 +652,14 @@ public class HighlyAvailableEditionModule
             RequestContextFactory requestContextFactory,
             FileSystemAbstraction fs )
     {
-        idGeneratorFactory = new HaIdGeneratorFactory(
-                masterDelegateInvocationHandler, logging, requestContextFactory, fs, idTypeConfigurationProvider );
-
+        HaIdGeneratorFactory idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
+                requestContextFactory, fs, idTypeConfigurationProvider );
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
          * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
          * happen until events start arriving and that will set us to the proper state anyway.
          */
-        ((HaIdGeneratorFactory) idGeneratorFactory).switchToMaster();
-
+        idGeneratorFactory.switchToMaster();
         return idGeneratorFactory;
     }
 

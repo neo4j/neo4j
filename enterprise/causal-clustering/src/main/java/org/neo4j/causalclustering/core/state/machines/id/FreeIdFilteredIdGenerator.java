@@ -17,23 +17,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.consensus.state;
+package org.neo4j.causalclustering.core.state.machines.id;
 
-import java.util.Set;
+import java.util.function.BooleanSupplier;
 
-import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 
-public interface ExposedRaftState
+/**
+ * Id generator that will perform filtering of ids to free using supplied condition.
+ * Id will be freed only if condition is true, otherwise it will be ignored.
+ */
+public class FreeIdFilteredIdGenerator extends IdGenerator.Delegate
 {
-    long lastLogIndexBeforeWeBecameLeader();
+    private final BooleanSupplier freeIdCondition;
 
-    long leaderCommit();
+    FreeIdFilteredIdGenerator( IdGenerator delegate, BooleanSupplier freeIdCondition )
+    {
+        super( delegate );
+        this.freeIdCondition = freeIdCondition;
+    }
 
-    long commitIndex();
-
-    long appendIndex();
-
-    long term();
-
-    Set<MemberId> votingMembers();
+    @Override
+    public void freeId( long id )
+    {
+        if ( freeIdCondition.getAsBoolean() )
+        {
+            super.freeId( id );
+        }
+    }
 }

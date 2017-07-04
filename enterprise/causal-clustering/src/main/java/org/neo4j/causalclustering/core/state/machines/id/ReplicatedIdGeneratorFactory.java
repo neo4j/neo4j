@@ -26,24 +26,21 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
-import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 
-public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements IdGeneratorFactory
+public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
 {
-    private final Map<IdType, SwitchableRaftIdGenerator> generators = new HashMap<>();
+    private final Map<IdType, ReplicatedIdGenerator> generators = new HashMap<>();
     private final FileSystemAbstraction fs;
     private final ReplicatedIdRangeAcquirer idRangeAcquirer;
     private final LogProvider logProvider;
     private IdTypeConfigurationProvider idTypeConfigurationProvider;
-    private boolean replicatedMode;
 
     public ReplicatedIdGeneratorFactory( FileSystemAbstraction fs, ReplicatedIdRangeAcquirer idRangeAcquirer,
-                                   LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider )
+            LogProvider logProvider, IdTypeConfigurationProvider idTypeConfigurationProvider )
     {
         this.fs = fs;
         this.idRangeAcquirer = idRangeAcquirer;
@@ -63,29 +60,23 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
     public IdGenerator open( File fileName, int grabSize, IdType idType, long highId, long maxId )
     {
         IdTypeConfiguration idTypeConfiguration = idTypeConfigurationProvider.getIdTypeConfiguration( idType );
-        boolean aggressiveReuse = idTypeConfiguration.allowAggressiveReuse();
-        return openGenerator( fileName, grabSize, idType, highId, maxId, aggressiveReuse );
+        return openGenerator( fileName, grabSize, idType, highId, maxId, idTypeConfiguration.allowAggressiveReuse() );
     }
 
-    private IdGenerator openGenerator( File fileName, int grabSize, IdType idType, long highId, long maxId,
+    private IdGenerator openGenerator( File file, int grabSize, IdType idType, long highId, long maxId,
             boolean aggressiveReuse )
     {
-        SwitchableRaftIdGenerator previous = generators.remove( idType );
-        if ( previous != null )
+        ReplicatedIdGenerator other = generators.get( idType );
+        if ( other != null )
         {
-            previous.close();
+            other.close();
         }
+        ReplicatedIdGenerator replicatedIdGenerator =
+                new ReplicatedIdGenerator( fs, file, idType, highId, idRangeAcquirer, logProvider, grabSize,
+                        aggressiveReuse );
 
-        IdGenerator initialIdGenerator = new IdGeneratorImpl( fs, fileName, grabSize, maxId, aggressiveReuse, highId );
-        SwitchableRaftIdGenerator switchableIdGenerator =
-                new SwitchableRaftIdGenerator( initialIdGenerator, idType, idRangeAcquirer, logProvider );
-        if ( replicatedMode )
-        {
-            switchableIdGenerator.switchToRaft();
-        }
-
-        generators.put( idType, switchableIdGenerator );
-        return switchableIdGenerator;
+        generators.put( idType, replicatedIdGenerator);
+        return replicatedIdGenerator;
     }
 
     @Override
@@ -97,16 +88,5 @@ public class ReplicatedIdGeneratorFactory extends LifecycleAdapter implements Id
     @Override
     public void create( File fileName, long highId, boolean throwIfFileExists )
     {
-        IdGeneratorImpl.createGenerator( fs, fileName, highId, throwIfFileExists );
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        replicatedMode = true;
-        for ( SwitchableRaftIdGenerator switchableRaftIdGenerator : generators.values() )
-        {
-            switchableRaftIdGenerator.switchToRaft();
-        }
     }
 }

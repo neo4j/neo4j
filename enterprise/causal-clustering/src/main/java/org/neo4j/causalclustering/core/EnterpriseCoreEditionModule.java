@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
 import org.neo4j.causalclustering.core.state.ClusteringModule;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
+import org.neo4j.causalclustering.core.state.machines.id.FreeIdFilteredIdGeneratorFactory;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.procedures.ClusterOverviewProcedure;
@@ -83,6 +84,7 @@ import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -110,6 +112,7 @@ public class EnterpriseCoreEditionModule extends EditionModule
     private final CoreTopologyService topologyService;
     private final LogProvider logProvider;
     private final Config config;
+    private CoreStateMachinesModule coreStateMachinesModule;
 
     public enum RaftLogImplementation
     {
@@ -221,12 +224,16 @@ public class EnterpriseCoreEditionModule extends EditionModule
         ReplicationModule replicationModule = new ReplicationModule( identityModule.myself(), platformModule, config, consensusModule,
                 loggingOutbound, clusterStateDirectory.get(), fileSystem, logProvider );
 
-        CoreStateMachinesModule coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
+        coreStateMachinesModule = new CoreStateMachinesModule( identityModule.myself(),
                 platformModule, clusterStateDirectory.get(), config, replicationModule.getReplicator(),
                 consensusModule.raftMachine(), dependencies, localDatabase );
 
-        this.idGeneratorFactory = coreStateMachinesModule.idGeneratorFactory;
         this.idTypeConfigurationProvider = coreStateMachinesModule.idTypeConfigurationProvider;
+
+        createIdComponents( platformModule, dependencies, coreStateMachinesModule.idGeneratorFactory );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
+
         this.labelTokenHolder = coreStateMachinesModule.labelTokenHolder;
         this.propertyKeyTokenHolder = coreStateMachinesModule.propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = coreStateMachinesModule.relationshipTypeTokenHolder;
@@ -244,6 +251,15 @@ public class EnterpriseCoreEditionModule extends EditionModule
 
         life.add( consensusModule.raftTimeoutService() );
         life.add( coreServerModule.membershipWaiterLifecycle );
+    }
+
+    @Override
+    protected void createIdComponents( PlatformModule platformModule, Dependencies dependencies,
+            IdGeneratorFactory editionIdGeneratorFactory )
+    {
+        super.createIdComponents( platformModule, dependencies, editionIdGeneratorFactory );
+        this.idGeneratorFactory =
+                new FreeIdFilteredIdGeneratorFactory( this.idGeneratorFactory, coreStateMachinesModule.freeIdCondition );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()

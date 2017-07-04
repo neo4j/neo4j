@@ -48,7 +48,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
+import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
@@ -105,8 +105,8 @@ public class RelationshipIdReuseStressIT
 
     private long getHighestUsedIdForRelationships()
     {
-        IdController idController = embeddedDatabase.getDependencyResolver().resolveDependency( IdController.class );
-        return idController.getIdGeneratorFactory().get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
+        IdGeneratorFactory idGeneratorFactory = embeddedDatabase.getDependencyResolver().resolveDependency( IdGeneratorFactory.class );
+        return idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
     }
 
     private void completeFutures( List<Future> futures )

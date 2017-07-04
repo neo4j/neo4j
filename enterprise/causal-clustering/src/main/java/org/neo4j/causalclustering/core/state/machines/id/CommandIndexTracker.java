@@ -17,23 +17,24 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.core.consensus.state;
+package org.neo4j.causalclustering.core.state.machines.id;
 
-import java.util.Set;
-
-import org.neo4j.causalclustering.identity.MemberId;
-
-public interface ExposedRaftState
+/**
+ * Keeps track of the raft command index of last applied transaction.
+ *
+ * As soon as a transaction is successfully applied this will be updated to reflect that.
+ */
+public class CommandIndexTracker
 {
-    long lastLogIndexBeforeWeBecameLeader();
+    private volatile long appliedCommandIndex;
 
-    long leaderCommit();
+    public void setAppliedCommandIndex( long appliedCommandIndex )
+    {
+        this.appliedCommandIndex = appliedCommandIndex;
+    }
 
-    long commitIndex();
-
-    long appendIndex();
-
-    long term();
-
-    Set<MemberId> votingMembers();
+    long getAppliedCommandIndex()
+    {
+        return appliedCommandIndex;
+    }
 }

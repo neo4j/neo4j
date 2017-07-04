@@ -106,7 +106,11 @@ public class CommunityEditionModule extends EditionModule
         statementLocksFactory = createStatementLocksFactory( lockManager, config, logging );
 
         idTypeConfigurationProvider = createIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies.satisfyDependency( createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
+
+        createIdComponents( platformModule, dependencies, createIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        dependencies.satisfyDependency( idGeneratorFactory );
+        dependencies.satisfyDependency( idController );
 
         propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, dataSourceManager, idGeneratorFactory ) ) ) );
@@ -131,8 +135,6 @@ public class CommunityEditionModule extends EditionModule
         coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         ioLimiter = IOLimiter.unlimited();
-
-        eligibleForIdReuse = IdReuseEligibility.ALWAYS;
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
