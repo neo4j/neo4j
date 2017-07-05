@@ -25,4 +25,12 @@ public class ListenSocketAddress extends SocketAddress
     {
         super( hostname, port );
     }
+
+    /**
+     * Textual representation format for a listen socket address.
+     */
+    public static String listenAddress( String hostname, int port )
+    {
+        return new ListenSocketAddress( hostname, port ).toString();
+    }
 }

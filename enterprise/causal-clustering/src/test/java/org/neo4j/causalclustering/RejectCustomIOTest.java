@@ -31,13 +31,13 @@ import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.neo4j.causalclustering.discovery.Cluster.buildAddresses;
-import static org.neo4j.helpers.collection.Iterators.set;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.PageSwapperFactoryForTesting.TEST_PAGESWAPPER_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
@@ -65,8 +65,9 @@ public class RejectCustomIOTest
         {
             Map<String,String> extraParams =
                     stringMap( GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME );
-            CoreClusterMember clusterMember = new CoreClusterMember( 0, 3, buildAddresses( set( 0, 1, 2 ) ), discovery,
-                    defaultFormat().toString(), storeDir.directory(), extraParams, emptyMap() );
+            CoreClusterMember clusterMember = new CoreClusterMember( 0, 3, emptyList(), discovery,
+                    defaultFormat().toString(), storeDir.directory(), extraParams, emptyMap(),
+                    "127.0.0.1", "localhost" );
             clusterMember.start();
             fail( "Should not have created database with custom IO configuration in Core Mode." );
         }
@@ -85,8 +86,9 @@ public class RejectCustomIOTest
             Map<String,String> extraParams =
                     stringMap( GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME );
             ReadReplica clusterMember =
-                    new ReadReplica( storeDir.directory(), 2, discovery, buildAddresses( set( 0, 1, 2 ) ),
-                            extraParams, emptyMap(), defaultFormat().toString() );
+                    new ReadReplica( storeDir.directory(), 2, discovery, emptyList(),
+                            extraParams, emptyMap(), defaultFormat().toString(), new Monitors(),
+                            "127.0.0.1", "localhost" );
             clusterMember.start();
             fail( "Should not have created database with custom IO configuration in Read Replica Mode." );
         }

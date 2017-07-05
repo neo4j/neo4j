@@ -66,19 +66,15 @@ public class SocketAddress
         return WILDCARDS.contains( hostname );
     }
 
+    public boolean isIPv6()
+    {
+        return hostname.contains( ":" );
+    }
+
     @Override
     public String toString()
     {
-        if ( hostname.contains( ":" ) )
-        {
-            // for ipv6 addresses we use brackets, as is common
-            return format( "[%s]:%s", hostname, port );
-        }
-        else
-        {
-            // hostnames and ipv4 addresses do not use brackets
-            return format( "%s:%s", hostname, port );
-        }
+        return format( isIPv6() ? "[%s]:%s" : "%s:%s", hostname, port );
     }
 
     @Override
