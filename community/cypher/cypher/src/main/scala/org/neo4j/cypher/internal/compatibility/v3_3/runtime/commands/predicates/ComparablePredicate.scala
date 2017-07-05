@@ -32,7 +32,11 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val r: Any = right(m)
 
     if (l == null || r == null) None
-    else compareForComparability(None, l, r)(state).map(result => compare(result))
+    else (l, r) match {
+      case (d: Double, _: Number) if d.isNaN => Some(false)
+      case (_:Number, d: Double) if d.isNaN => Some(false)
+      case (_, _) => compareForComparability(None, l, r)(state).map(result => compare(result))
+    }
   }
 
   def sign: String

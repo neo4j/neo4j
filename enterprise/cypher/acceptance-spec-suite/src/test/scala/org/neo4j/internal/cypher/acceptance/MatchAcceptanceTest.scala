@@ -694,6 +694,61 @@ return p""")
     result.toList should equal(List(Map("size" -> 8)))
   }
 
+  test("should handle NaN comparisons correctly") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n) RETURN n.x > 0 AS gt, n.x < 0 AS lt, n.x >= 0 AS ge, n.x <= 0 AS le")
+
+    // Then
+    result.toList should equal(List(Map("gt" -> false, "lt" -> false, "le" -> false, "ge" -> false)))
+  }
+
+  test("should handle NaN comparisons with string correctly") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n) RETURN n.x > 'a' AS gt, n.x < 'a' AS lt, n.x >= 'a' AS ge, n.x <= 'a' AS le")
+
+    // Then
+    result.toList should equal(List(Map("gt" -> null, "lt" -> null, "le" -> null, "ge" -> null)))
+  }
+
+  test("should handle NaN compared to NaN") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("PROFILE MATCH (n) RETURN n.x > n.x AS gt, n.x < n.x AS lt, n.x <= n.x AS le, n.x >= n.x AS ge")
+
+    // Then
+    result.toList should equal(List(Map("gt" -> false, "lt" -> false, "le" -> false, "ge" -> false)))
+  }
+
+  test("should handle NaN null checks correctly") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n) RETURN n.x IS NULL AS nu, n.x IS NOT NULL AS nnu")
+
+    // Then
+    result.toList should equal(List(Map("nu" -> false, "nnu" -> true)))
+  }
+
+  test("should handle NaN equality checks correctly") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN n.x = n.x AS eq, n.x <> n.x as ne")
+
+    // Then
+    result.toList should equal(List(Map("eq" -> false, "ne" -> true)))
+  }
+
   /**
    * Append variable to keys and transform value arrays to lists
    */
