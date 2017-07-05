@@ -19,10 +19,9 @@
  */
 package org.neo4j.helper;
 
-import java.util.concurrent.Callable;
 import java.util.function.BooleanSupplier;
 
-public abstract class RepeatUntilCallable implements Callable<Throwable>
+public abstract class RepeatUntilCallable implements Runnable
 {
     private BooleanSupplier keepGoing;
     private Runnable onFailure;
@@ -34,7 +33,7 @@ public abstract class RepeatUntilCallable implements Callable<Throwable>
     }
 
     @Override
-    public final Throwable call()
+    public final void run()
     {
         try
         {
@@ -45,12 +44,9 @@ public abstract class RepeatUntilCallable implements Callable<Throwable>
         }
         catch ( Throwable t )
         {
-            t.printStackTrace();
             onFailure.run();
-            return t;
+            throw t;
         }
-
-        return null;
     }
 
     protected abstract void doWork();
