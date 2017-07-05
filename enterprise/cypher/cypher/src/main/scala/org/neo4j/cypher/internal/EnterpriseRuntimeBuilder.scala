@@ -28,16 +28,16 @@ import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNo
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
 
 object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
-  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] =
+  def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-            BuildInterpretedExecutionPlan
+            BuildEnterpriseInterpretedExecutionPlan
           }
 
       case Some(InterpretedRuntimeName) =>
-        BuildInterpretedExecutionPlan
+        BuildEnterpriseInterpretedExecutionPlan
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen
@@ -49,9 +49,11 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
         BuildCompiledExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              BuildInterpretedExecutionPlan
+              BuildEnterpriseInterpretedExecutionPlan
           )
 
-      case Some(x) => throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
+      case Some(x) =>
+        throw new InvalidArgumentException(s"This version of Neo4j does not support requested runtime: $x")
     }
+  }
 }
