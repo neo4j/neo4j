@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{plans => logicalPlans}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -169,7 +169,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("let's skip this one") {
     // given
     val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val skip = plans.Skip(allNodesScan, literalInt(42))(solved)
+    val skip = logicalPlans.Skip(allNodesScan, literalInt(42))(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(skip)
