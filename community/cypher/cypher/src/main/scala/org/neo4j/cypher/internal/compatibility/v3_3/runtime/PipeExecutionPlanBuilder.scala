@@ -35,7 +35,7 @@ import scala.collection.mutable
 
 class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
-                               pipeBuilderFactory: PipeBuilderFactory = PipeBuilderFactory(),
+                               pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
   def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
@@ -147,10 +147,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
   }
 }
 
-case class PipeBuilderFactory() {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder =
-    ActualPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
+object CommunityPipeBuilderFactory extends PipeBuilderFactory {
+  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext) =
+  CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
 }
 
 trait PipeBuilder {

@@ -43,9 +43,9 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
  * Responsible for turning a logical plan with argument pipes into a new pipe.
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
-case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-                             idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
-                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
+case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
+                                idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
+                               (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
   def build(plan: LogicalPlan): Pipe = {
     val id = idMap.getOrElse(plan, new Id)

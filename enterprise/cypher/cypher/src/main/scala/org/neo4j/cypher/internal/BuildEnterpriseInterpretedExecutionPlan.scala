@@ -23,18 +23,20 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.RegisteredPipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Phase}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
@@ -58,7 +60,8 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
     ???
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors, expressionConverters = converters)
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
+      expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory())
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
@@ -89,5 +92,14 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
   }
+
+  case class RegisteredPipeBuilderFactory() extends PipeBuilderFactory {
+    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
+             (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
+      new RegisteredPipeBuilder(fallback)
+    }
+  }
+
 
 }
