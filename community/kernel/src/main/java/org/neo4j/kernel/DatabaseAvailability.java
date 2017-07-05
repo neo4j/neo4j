@@ -21,14 +21,13 @@ package org.neo4j.kernel;
 
 import java.time.Clock;
 
-import org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.time.Clocks;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
-
+import static org.neo4j.kernel.AvailabilityGuard.AvailabilityRequirement;
 import static org.neo4j.kernel.AvailabilityGuard.availabilityRequirement;
 
 /**
@@ -93,5 +92,6 @@ public class DatabaseAvailability implements Lifecycle
     public void shutdown()
             throws Throwable
     {
+        // TODO: Starting database. Make sure none can access it through lock or CAS
     }
 }
