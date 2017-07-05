@@ -35,7 +35,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
@@ -103,8 +102,10 @@ public class StoreMigratorTest
     @Test
     public void detectObsoleteCountStoresToRebuildDuringMigration() throws IOException
     {
-        TestStoreMigrator storeMigrator = new TestStoreMigrator( new DefaultFileSystemAbstraction(),
-                mock( PageCache.class ), Config.empty(), NullLogService.getInstance() );
+        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        PageCache pageCache = mock( PageCache.class );
+        Config config = Config.empty();
+        CountsMigrator storeMigrator = new CountsMigrator( fileSystem, pageCache, config );
         Set<String> actualVersions = new TreeSet<>();
         Set<String> expectedVersions = new TreeSet<>(
                 Arrays.stream( StoreVersion.values() ).map( StoreVersion::versionString )
@@ -126,18 +127,4 @@ public class StoreMigratorTest
         assertEquals( expectedVersions, actualVersions );
     }
 
-    private class TestStoreMigrator extends CountsMigrator
-    {
-
-        TestStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, LogService logService )
-        {
-            super( fileSystem, pageCache, config, logService );
-        }
-
-        @Override
-        public boolean countStoreRebuildRequired( String versionToMigrateFrom )
-        {
-            return super.countStoreRebuildRequired( versionToMigrateFrom );
-        }
-    }
 }

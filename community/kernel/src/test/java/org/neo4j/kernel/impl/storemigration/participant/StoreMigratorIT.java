@@ -154,7 +154,7 @@ public class StoreMigratorIT
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG, logService );
+        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         countsMigrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
         migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom,

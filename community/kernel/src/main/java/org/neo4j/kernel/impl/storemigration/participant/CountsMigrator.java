@@ -72,17 +72,15 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     private static final Iterable<StoreFile> COUNTS_STORE_FILES = Iterables
             .iterable( StoreFile.COUNTS_STORE_LEFT, StoreFile.COUNTS_STORE_RIGHT );
     private final Config config;
-    private final LogService logService;
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
 
-    public CountsMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config, LogService logService )
+    public CountsMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
         super( "Count rebuilding" );
         this.fileSystem = fileSystem;
         this.pageCache = pageCache;
         this.config = config;
-        this.logService = logService;
     }
 
     @Override
@@ -107,7 +105,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 // we should use the store directory for information when rebuilding the count store. Note that we
                 // still put the new count store in the migration directory.
                 rebuildCountsFromScratch( storeDir, migrationDir, lastTxId, progressMonitor, versionToMigrateFrom,
-                        pageCache, logService.getInternalLogProvider() );
+                        pageCache, NullLogProvider.getInstance() );
             }
         }
     }

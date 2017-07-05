@@ -91,7 +91,7 @@ public class DatabaseMigrator
                 labelScanStoreProvider );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config, logService );
+        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         storeUpgrader.addParticipant( schemaMigrator );
         storeUpgrader.addParticipant( legacyIndexMigrator );

@@ -446,7 +446,7 @@ public class StoreUpgraderTest
     {
         NullLogService instance = NullLogService.getInstance();
         StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
-        CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig(), instance );
+        CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig() );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
