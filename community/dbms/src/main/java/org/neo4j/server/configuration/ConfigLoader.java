@@ -43,12 +43,6 @@ public class ConfigLoader
     {
     }
 
-    public static Config loadConfig( Optional<File> configFile, Pair<String,String>... configOverrides ) throws
-            IOException
-    {
-        return loadConfig( Optional.empty(), configFile, configOverrides );
-    }
-
     public static Config loadConfig( Optional<File> homeDir, Optional<File> configFile,
             Pair<String,String>... configOverrides )
     {
