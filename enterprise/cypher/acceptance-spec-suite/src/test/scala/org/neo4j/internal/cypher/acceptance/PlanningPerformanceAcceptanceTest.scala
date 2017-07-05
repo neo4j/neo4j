@@ -26,7 +26,8 @@ import org.scalatest.time.SpanSugar._
 
 class PlanningPerformanceAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport with TimeLimitedTests {
 
-  override def timeLimit: Span = 20 seconds
+  // Added an increased duration to make up for the test running in parallel, should preferably be solved in a different way
+  override def timeLimit: Span = 100 seconds
 
   //see https://github.com/neo4j/neo4j/issues/7407
   test("should plan within reasonable time") {
