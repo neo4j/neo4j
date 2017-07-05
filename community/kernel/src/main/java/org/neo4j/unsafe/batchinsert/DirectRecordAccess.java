@@ -83,7 +83,13 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    {
+        throw new UnsupportedOperationException( "Not supported" );
+    }
+
+    @Override
+    public RecordProxy<KEY,RECORD,ADDITIONAL> setRecord( KEY key, RECORD record, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }

@@ -614,7 +614,7 @@ public class TransactionRecordState implements RecordState
 
         //Register the change of the record
         RecordProxy<Long,SchemaRecord,SchemaRule> recordChange = recordChangeSet.getSchemaRuleChanges()
-                .setTo( rule.getId(), records, updatedRule );
+                .setRecord( rule.getId(), records, updatedRule );
         SchemaRecord dynamicRecords = recordChange.forChangingData();
 
         //Update the record

@@ -59,9 +59,15 @@ public class TrackingRecordAccess<RECORD, ADDITIONAL> implements RecordAccess<Lo
     }
 
     @Override
-    public RecordProxy<Long,RECORD,ADDITIONAL> setTo( Long key, RECORD newRecord, ADDITIONAL additionalData )
+    public void setTo( Long key, RECORD newRecord, ADDITIONAL additionalData )
     {
-        return delegate.setTo( key, newRecord, additionalData );
+        delegate.setTo( key, newRecord, additionalData );
+    }
+
+    @Override
+    public RecordProxy<Long,RECORD,ADDITIONAL> setRecord( Long key, RECORD record, ADDITIONAL additionalData )
+    {
+        return delegate.setRecord( key, record, additionalData );
     }
 
     @Override
