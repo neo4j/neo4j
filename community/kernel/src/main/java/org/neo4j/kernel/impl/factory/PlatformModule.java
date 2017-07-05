@@ -183,7 +183,8 @@ public class PlatformModule
         // Anyways please fix this.
         dependencies.satisfyDependency( dataSourceManager );
 
-        availabilityGuard = dependencies.satisfyDependency( createAvailabilityGuard() );
+        availabilityGuard = dependencies.satisfyDependency(
+                new AvailabilityGuard( clock, logging.getInternalLog( AvailabilityGuard.class ) ) );
 
         transactionMonitor = dependencies.satisfyDependency( createTransactionStats() );
 
@@ -197,11 +198,6 @@ public class PlatformModule
         dependencies.satisfyDependency( storeCopyCheckPointMutex );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
-    }
-
-    protected AvailabilityGuard createAvailabilityGuard()
-    {
-        return new AvailabilityGuard( clock, logging.getInternalLog( AvailabilityGuard.class ) );
     }
 
     protected SystemNanoClock createClock()
