@@ -518,20 +518,17 @@ public class Config implements DiagnosticsProvider, Configuration
     @Nonnull
     public List<BoltConnector> boltConnectors()
     {
-        return boltConnectors( params );
+        return boltConnectors( params ).collect( Collectors.toList() );
     }
 
     /**
-     * @return list of all configured bolt connectors
+     * @return stream of all configured bolt connectors
      */
     @Nonnull
-    public static List<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
+    private static Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
     {
-        return allConnectorIdentifiers( params ).stream()
-                .map( BoltConnector::new )
-                .filter( c ->
-                        c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) )
-                .collect( Collectors.toList() );
+        return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
+                c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) );
     }
 
     /**
@@ -549,7 +546,7 @@ public class Config implements DiagnosticsProvider, Configuration
     @Nonnull
     public static List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
     {
-        return boltConnectors( params ).stream()
+        return boltConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
     }
@@ -564,7 +561,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * @return list of all configured http connectors
+     * @return stream of all configured http connectors
      */
     @Nonnull
     private static Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
