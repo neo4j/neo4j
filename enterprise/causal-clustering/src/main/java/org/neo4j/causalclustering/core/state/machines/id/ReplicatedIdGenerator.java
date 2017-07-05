@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.core.state.machines.id;
 
 import java.io.File;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdContainer;
@@ -38,10 +39,10 @@ class ReplicatedIdGenerator implements IdGenerator
     private final IdType idType;
     private final Log log;
     private final ReplicatedIdRangeAcquirer acquirer;
-    private long highId;
-    private IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
-
+    private volatile long highId;
+    private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
     private IdContainer idContainer;
+    private final ReentrantLock idContainerLock = new ReentrantLock();
 
     ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
             ReplicatedIdRangeAcquirer acquirer, LogProvider logProvider, int grabSize, boolean aggressiveReuse )
@@ -55,37 +56,53 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public synchronized void close()
+    public void close()
     {
-        idContainer.close( highId );
+        idContainerLock.lock();
+        try
+        {
+            idContainer.close( highId );
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
     }
 
     @Override
-    public synchronized void freeId( long id )
+    public void freeId( long id )
     {
-        idContainer.freeId( id );
+        idContainerLock.lock();
+        try
+        {
+            idContainer.freeId( id );
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
     }
 
     @Override
-    public synchronized long getHighId()
+    public long getHighId()
     {
         return highId;
     }
 
     @Override
-    public synchronized void setHighId( long id )
+    public void setHighId( long id )
     {
         this.highId = max( this.highId, id );
     }
 
     @Override
-    public synchronized long getHighestPossibleIdInUse()
+    public long getHighestPossibleIdInUse()
     {
         return highId - 1;
     }
 
     @Override
-    public synchronized long getNumberOfIdsInUse()
+    public long getNumberOfIdsInUse()
     {
         return highId - getDefragCount();
     }
@@ -93,7 +110,7 @@ class ReplicatedIdGenerator implements IdGenerator
     @Override
     public synchronized long nextId()
     {
-        long id = idContainer.getReusableId();
+        long id = getReusableId();
         if ( id != IdContainer.NO_RESULT )
         {
             return id;
@@ -113,9 +130,56 @@ class ReplicatedIdGenerator implements IdGenerator
     }
 
     @Override
-    public synchronized IdRange nextIdBatch( int size )
+    public IdRange nextIdBatch( int size )
     {
         throw new UnsupportedOperationException( "Should never be called" );
+    }
+
+    @Override
+    public long getDefragCount()
+    {
+        idContainerLock.lock();
+        try
+        {
+            return idContainer.getFreeIdCount();
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
+    }
+
+    @Override
+    public void delete()
+    {
+        idContainerLock.lock();
+        try
+        {
+            idContainer.delete();
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() + "[" + this.idQueue + "]";
+    }
+
+    private long getReusableId()
+    {
+        idContainerLock.lock();
+        try
+        {
+            return idContainer.getReusableId();
+        }
+        finally
+        {
+            idContainerLock.unlock();
+        }
     }
 
     private long storeLocally( IdAllocation allocation )
@@ -139,26 +203,8 @@ class ReplicatedIdGenerator implements IdGenerator
         {
             throw new IllegalStateException(
                     "IdAllocation state is probably corrupted or out of sync with the cluster. " +
-                    "Local highId is " + highId + " and allocation range is " + idRange );
+                            "Local highId is " + highId + " and allocation range is " + idRange );
         }
         return new IdRange( idRange.getDefragIds(), rangeStart, rangeLength );
-    }
-
-    @Override
-    public synchronized long getDefragCount()
-    {
-        return idContainer.getFreeIdCount();
-    }
-
-    @Override
-    public synchronized void delete()
-    {
-        idContainer.delete();
-    }
-
-    @Override
-    public synchronized String toString()
-    {
-        return getClass().getSimpleName() + "[" + this.idQueue + "]";
     }
 }
