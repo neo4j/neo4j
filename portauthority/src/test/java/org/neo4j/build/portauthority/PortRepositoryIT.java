@@ -17,45 +17,50 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering;
+package org.neo4j.build.portauthority;
 
+import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.causalclustering.PortConstants.EphemeralPortMinimum;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.build.portauthority.PortConstants.EphemeralPortMinimum;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
 
+import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.test.rule.TestDirectory;
+import org.junit.rules.TemporaryFolder;
 
 public class PortRepositoryIT
 {
     @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
     @Test
     public void shouldReservePorts() throws Exception
     {
-        Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
         int port3 = portRepository1.reserveNextPort( "foo" );
 
-        assertThat( asSet( port1, port2, port3 ).size(), is( 3 ) );
+        assertThat( new HashSet<>( asList( port1, port2, port3) ).size(), is( 3 ) );
     }
 
     @Test
     public void shouldCoordinateUsingFileSystem() throws Exception
     {
-        Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( directory, EphemeralPortMinimum );
+        Path temporaryDirectory = temporaryDirectory();
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
+        PortRepository portRepository2 = new PortRepository( temporaryDirectory, EphemeralPortMinimum );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -64,18 +69,15 @@ public class PortRepositoryIT
         int port5 = portRepository2.reserveNextPort( "foo" );
         int port6 = portRepository1.reserveNextPort( "foo" );
 
-        assertThat( asSet( port1, port2, port3, port4, port5, port6 ).size(), is( 6 ) );
+        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 6 ) );
     }
 
     @Test
     @Ignore
     public void shouldNotInterfereWithOtherRepositories() throws Exception
     {
-        Path directory1 = testDirectory.cleanDirectory( "port-repository-1" ).toPath();
-        Path directory2 = testDirectory.cleanDirectory( "port-repository-2" ).toPath();
-
-        PortRepository portRepository1 = new PortRepository( directory1, EphemeralPortMinimum );
-        PortRepository portRepository2 = new PortRepository( directory2, EphemeralPortMinimum );
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
+        PortRepository portRepository2 = new PortRepository( temporaryDirectory(), EphemeralPortMinimum );
 
         int port1 = portRepository1.reserveNextPort( "foo" );
         int port2 = portRepository1.reserveNextPort( "foo" );
@@ -84,14 +86,13 @@ public class PortRepositoryIT
         int port5 = portRepository2.reserveNextPort( "foo" );
         int port6 = portRepository1.reserveNextPort( "foo" );
 
-        assertThat( asSet( port1, port2, port3, port4, port5, port6 ).size(), is( 4 ) );
+        assertThat( new HashSet<>( asList( port1, port2, port3, port4, port5, port6 ) ).size(), is( 4 ) );
     }
 
     @Test
     public void shouldNotOverrun() throws Exception
     {
-        Path directory = testDirectory.cleanDirectory( "port-repository" ).toPath();
-        PortRepository portRepository1 = new PortRepository( directory, 65534 );
+        PortRepository portRepository1 = new PortRepository( temporaryDirectory(), 65534 );
 
         portRepository1.reserveNextPort( "foo" );
         portRepository1.reserveNextPort( "foo" );
@@ -106,5 +107,10 @@ public class PortRepositoryIT
         {
             assertThat( e.getMessage(), is( "There are no more ports available" ) );
         }
+    }
+
+    private Path temporaryDirectory() throws IOException
+    {
+        return temporaryFolder.newFolder("port-repository").toPath();
     }
 }

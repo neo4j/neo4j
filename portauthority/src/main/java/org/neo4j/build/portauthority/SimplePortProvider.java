@@ -17,33 +17,40 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering;
+package org.neo4j.build.portauthority;
+
+import static org.neo4j.build.portauthority.PortConstants.EphemeralPortMaximum;
 
 /**
- * Port provider that relies on state on disk, so that it can coordinate with other {@link CoordinatingPortProvider}s in
- * other JVMs. Suitable for parallel test execution.
+ * Port provider that relies on state in a single JVM. Not suitable for parallel test execution (as in, several JVM
+ * processes executing tests). _Is_ suitable for multi-threaded execution.
  */
-public class CoordinatingPortProvider implements PortProvider
+public class SimplePortProvider implements PortProvider
 {
-    private final PortRepository portRepository;
     private final PortProbe portProbe;
 
-    public CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
+    private int currentPort;
+
+    public SimplePortProvider( PortProbe portProbe, int initialPort )
     {
-        this.portRepository = portRepository;
         this.portProbe = portProbe;
+
+        this.currentPort = initialPort;
     }
 
     @Override
-    public int getNextFreePort( String trace )
+    public synchronized int getNextFreePort( String ignored )
     {
-        int port = portRepository.reserveNextPort( trace );
-
-        while ( portProbe.isOccupied( port ) )
+        while ( currentPort <= EphemeralPortMaximum )
         {
-            port = portRepository.reserveNextPort( trace );
+            if ( !portProbe.isOccupied( currentPort ) )
+            {
+                return currentPort++;
+            }
+
+            currentPort++;
         }
 
-        return port;
+        throw new IllegalStateException( "There are no more ports available" );
     }
 }
