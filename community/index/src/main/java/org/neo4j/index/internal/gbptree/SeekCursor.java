@@ -357,6 +357,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean verifyExpectedFirstAfterGoToNext;
 
+    /**
+     * Whether or not this seeker have been closed.
+     */
+    private boolean closed;
+
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
             Supplier<Root> rootCatchup, long lastFollowedPointerGeneration ) throws IOException
@@ -521,7 +526,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 }
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
-            checkOutOfBounds( cursor );
+            checkOutOfBoundsAndClosed();
 
             // Act
             if ( !endedUpOnExpectedNode() )
@@ -578,6 +583,27 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             // We've come too far and so this means the end of the result set
             return false;
+        }
+    }
+
+    /**
+     * Check out of bounds for cursor. If out of bounds, check if seeker has been closed and throw exception accordingly
+     */
+    private void checkOutOfBoundsAndClosed()
+    {
+        try
+        {
+            checkOutOfBounds( cursor );
+        }
+        catch ( TreeInconsistencyException e )
+        {
+            // Only check the closed status here when we get an out of bounds to avoid making
+            // this check for every call to next.
+            if ( closed )
+            {
+                throw new IllegalStateException( "Tried to use seeker after it was closed" );
+            }
+            throw e;
         }
     }
 
@@ -1058,5 +1084,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     public void close() throws IOException
     {
         cursor.close();
+        closed = true;
     }
 }
