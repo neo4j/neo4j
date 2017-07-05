@@ -39,6 +39,9 @@ public class SocketAddress
 
     public SocketAddress( String hostname, int port )
     {
+        assert !hostname.contains( "[" );
+        assert !hostname.contains( "]" );
+
         this.hostname = hostname;
         this.port = port;
     }

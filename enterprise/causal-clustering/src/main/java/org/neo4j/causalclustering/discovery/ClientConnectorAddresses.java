@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encryption;
 
@@ -155,8 +156,8 @@ public class ClientConnectorAddresses implements Iterable<ClientConnectorAddress
         private static ConnectorUri fromString( String string )
         {
             URI uri = URI.create( string );
-            return new ConnectorUri( Scheme.valueOf( uri.getScheme() ),
-                    new AdvertisedSocketAddress( uri.getHost(), uri.getPort() ) );
+            AdvertisedSocketAddress advertisedSocketAddress = SocketAddressParser.socketAddress( uri.getAuthority(), AdvertisedSocketAddress::new );
+            return new ConnectorUri( Scheme.valueOf( uri.getScheme() ), advertisedSocketAddress );
         }
 
         @Override
