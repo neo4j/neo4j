@@ -1,8 +1,2 @@
 Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT
   In-query call to procedure with argument of type INTEGER accepts value of type FLOAT
-
-// ReturnAcceptance.feature
-Accessing a list with null should return null
-Accessing a list with null as lower bound should return null
-Accessing a list with null as upper bound should return null
-Accessing a map with null should return null
