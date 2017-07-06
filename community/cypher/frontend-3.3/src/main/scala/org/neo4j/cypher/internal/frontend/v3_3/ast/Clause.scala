@@ -62,22 +62,43 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   }
 }
 
-case class LoadGraph(graphUrl: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
-  override def name = "LOAD GRAPH"
+case class FromGraph(graphSpec: GraphSpecifier)(val position: InputPosition) extends Clause with SemanticChecking {
+  override def name = "FROM"
 
   override def semanticCheck: SemanticCheck =
-    graphUrl.semanticCheck(Expression.SemanticContext.Simple) chain
-      graphUrl.expectType(CTString.covariant) chain
+    graphSpec.semanticCheck chain
       ClauseError(name, position)
 }
 
-case class EmitGraph(graphName: Expression)(val position: InputPosition) extends Clause with SemanticChecking {
-  override def name = "EMIT GRAPH"
+case class IntoGraph(graphSpec: GraphSpecifier)(val position: InputPosition) extends Clause with SemanticChecking {
+  override def name = "INTO"
 
   override def semanticCheck: SemanticCheck =
-    graphName.semanticCheck(Expression.SemanticContext.Simple) chain
-      graphName.expectType(CTString.covariant) chain
+    graphSpec.semanticCheck chain
       ClauseError(name, position)
+}
+
+trait GraphSpecifier extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
+  def ref: Variable
+  def url: Option[Expression]
+}
+
+case class NewGraph(ref: Variable, url: Option[Expression])(val position: InputPosition) extends GraphSpecifier {
+  override def semanticCheck: SemanticCheck = {
+    ref.declare(CTGraphRef) chain
+      url.semanticCheck(Expression.SemanticContext.Simple)
+      url.expectType(CTString.covariant)
+  }
+}
+
+case class GraphReference(ref: Variable, _url: Expression)(val position: InputPosition) extends GraphSpecifier {
+  override val url = Some(_url)
+
+  override def semanticCheck: SemanticCheck = {
+    ref.declare(CTGraphRef) chain
+      _url.semanticCheck(Expression.SemanticContext.Simple)
+      _url.expectType(CTString.covariant)
+  }
 }
 
 case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition) extends Clause with SemanticChecking {

@@ -26,17 +26,33 @@ import org.neo4j.graphdb.QueryExecutionException
 
 class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
-  test("load graph should generate error") {
+  test("FROM should generate error") {
     executeAndEnsureError(
-      "LOAD GRAPH 'test' RETURN 1",
-      "The referenced clause LOAD GRAPH is not supported by Neo4j (line 1, column 12 (offset: 11))"
+      "FROM NEW GRAPH foo RETURN 1",
+      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
+    )
+    executeAndEnsureError(
+      "FROM NEW GRAPH foo AT 'graph://url' RETURN 1",
+      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
+    )
+    executeAndEnsureError(
+      "FROM GRAPH foo AT 'graph://url' RETURN 1",
+      "The referenced clause FROM is not supported by Neo4j (line 1, column 6 (offset: 5))"
     )
   }
 
-  test("emit graph should generate error") {
+  test("INTO should generate error") {
     executeAndEnsureError(
-      "MATCH ()--() EMIT GRAPH 'test' RETURN *",
-      "The referenced clause EMIT GRAPH is not supported by Neo4j (line 1, column 25 (offset: 24))"
+      "MATCH ()--() INTO NEW GRAPH foo RETURN *",
+      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
+    )
+    executeAndEnsureError(
+      "MATCH ()--() INTO NEW GRAPH foo AT 'graph://url' RETURN *",
+      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
+    )
+    executeAndEnsureError(
+      "MATCH ()--() INTO GRAPH foo AT 'graph://url' RETURN *",
+      "The referenced clause INTO is not supported by Neo4j (line 1, column 19 (offset: 18))"
     )
   }
 

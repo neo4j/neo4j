@@ -37,16 +37,24 @@ trait Clauses extends Parser
       (ast.LoadCSV(_, _, _, _))
   }
 
-  def LoadGraph: Rule1[ast.LoadGraph] = rule("LOAD GRAPH") {
-    keyword("LOAD GRAPH") ~~
-      Expression ~~>>
-      (ast.LoadGraph(_))
+  def FromGraph: Rule1[ast.FromGraph] = rule("FROM") {
+    keyword("FROM") ~~ GraphSpecifier ~~>> (ast.FromGraph(_))
   }
 
-  def EmitGraph: Rule1[ast.EmitGraph] = rule("EMIT GRAPH") {
-    keyword("EMIT GRAPH") ~~
-      Expression ~~>>
-      (ast.EmitGraph(_))
+  def IntoGraph: Rule1[ast.IntoGraph] = rule("INTO") {
+    keyword("INTO") ~~ GraphSpecifier ~~>> (ast.IntoGraph(_))
+  }
+
+  def GraphSpecifier: Rule1[ast.GraphSpecifier] = rule("GraphSpec") {
+    newGraph | graphRef
+  }
+
+  private def newGraph: Rule1[ast.NewGraph] = rule("new graph") {
+    keyword("NEW GRAPH") ~~ Variable ~~ optional(keyword("AT") ~~ Expression) ~~>> (ast.NewGraph(_, _))
+  }
+
+  private def graphRef: Rule1[ast.GraphReference] = rule("graph ref") {
+    keyword("GRAPH") ~~ Variable ~~ keyword("AT") ~~ Expression ~~>> (ast.GraphReference(_, _))
   }
 
   def ReturnGraph: Rule1[ast.ReturnGraph] = rule("RETURN GRAPH") {
