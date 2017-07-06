@@ -50,11 +50,16 @@ public class CoreAPIAvailabilityGuard
         }
         catch ( AvailabilityGuard.UnavailableException e )
         {
-            if ( guard.isShutdown() )
-            {
-                throw new DatabaseShutdownException();
-            }
-            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage() );
+            throw convertUnavailabilityException( e );
         }
+    }
+
+    public RuntimeException convertUnavailabilityException( Exception e )
+    {
+        if ( guard.isShutdown() )
+        {
+            return new DatabaseShutdownException();
+        }
+        return new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
     }
 }
