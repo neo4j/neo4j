@@ -37,7 +37,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
-import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
@@ -48,6 +47,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.io.fs.FileUtils.readTextFile;
+import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class HTTPLoggingIT extends ExclusiveServerTestBase
@@ -68,7 +68,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         String directoryPrefix = testName.getMethodName();
         File logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
 
-        NeoServer server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
+        NeoServer server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.FALSE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toString() )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
@@ -103,7 +103,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         File logDirectory = testDirectory.directory( directoryPrefix + "-logdir" );
         final String query = "?explicitlyEnabled=" + randomString();
 
-        NeoServer server = CommunityServerBuilder.serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
+        NeoServer server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.TRUE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
