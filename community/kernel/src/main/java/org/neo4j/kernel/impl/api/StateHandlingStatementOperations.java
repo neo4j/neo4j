@@ -1313,7 +1313,6 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
-            throws SchemaRuleNotFoundException
     {
         return storeLayer.indexGetOwningUniquenessConstraintId( index );
     }

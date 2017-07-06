@@ -136,7 +136,10 @@ public class DataIntegrityValidatingStatementOperations implements
 
             if ( existingIndex.type() == UNIQUE )
             {
-                throw new IndexBelongsToConstraintException( index.schema() );
+                if ( schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, existingIndex ) != null )
+                {
+                    throw new IndexBelongsToConstraintException( index.schema() );
+                }
             }
         }
         catch ( IndexBelongsToConstraintException | NoSuchIndexException e )
@@ -248,15 +251,7 @@ public class DataIntegrityValidatingStatementOperations implements
 
     private boolean constraintIndexHasOwner( KernelStatement state, IndexDescriptor descriptor )
     {
-        try
-        {
-            return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
-        }
-        catch ( SchemaRuleNotFoundException e )
-        {
-            throw new IllegalStateException( "Unexpectedly index " + descriptor +
-                    " wasn't found right after getting it", e );
-        }
+        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, descriptor ) != null;
     }
 
     private String checkValidTokenName( String name ) throws IllegalTokenNameException

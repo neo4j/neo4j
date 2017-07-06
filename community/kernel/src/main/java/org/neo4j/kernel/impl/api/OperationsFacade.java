@@ -581,7 +581,7 @@ public class OperationsFacade
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         statement.assertOpen();
         return schemaRead().indexGetOwningUniquenessConstraintId( statement, index );
@@ -981,13 +981,6 @@ public class OperationsFacade
     {
         statement.assertOpen();
         schemaWrite().constraintDrop( statement, constraint );
-    }
-
-    @Override
-    public void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException
-    {
-        statement.assertOpen();
-        schemaWrite().uniqueIndexDrop( statement, descriptor );
     }
 
     // </SchemaWrite>
