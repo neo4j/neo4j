@@ -185,6 +185,50 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     result.toList should equal(List(Map("dist" -> null)))
   }
 
+  test("distance function should return null with null in any kind of point on rhs") {
+    var result = executeWithAllPlanners(
+      """return distance(point({latitude:3,longitude:7}),point({latitude:null,
+        |longitude:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({latitude:3,longitude:7}),point({latitude:3,
+        |longitude:null})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({x:3,y:7}),point({x:null,
+        |y:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({x:3,y:7}),point({x:3,
+        |y:null})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+  }
+
+  test("distance function should return null with null in any kind of point on lhs") {
+    var result = executeWithAllPlanners(
+      """return distance(point({latitude:null,longitude:7}),point({latitude:3,
+        |longitude:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({latitude:3,longitude:null}),point({latitude:3,
+        |longitude:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({x:null,y:7}),point({x:3,
+        |y:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+
+    result = executeWithAllPlanners(
+      """return distance(point({x:3,y:null}),point({x:3,
+        |y:3})) as dist;""".stripMargin)
+    result.toList should equal(List(Map("dist" -> null)))
+  }
+
   test("distance function should fail on wrong type") {
     val error = intercept[SyntaxException](executeWithAllPlanners("RETURN distance(1, 2) as dist"))
     assert(error.getMessage.contains("Type mismatch: expected Point or Geometry but was Integer"))

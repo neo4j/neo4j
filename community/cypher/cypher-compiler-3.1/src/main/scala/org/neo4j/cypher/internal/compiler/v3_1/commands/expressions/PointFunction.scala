@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, _}
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_1.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v3_1.{ExecutionContext, _}
 import org.neo4j.cypher.internal.frontend.v3_1.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_1.symbols._
 
@@ -30,7 +30,11 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = value match {
     case IsMap(mapCreator) =>
-      Points.fromMap(mapCreator(state.query))
+      if(mapCreator(state.query).exists(_._2==null)){
+        null
+      } else {
+        Points.fromMap(mapCreator(state.query))
+      }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 
