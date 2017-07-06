@@ -169,6 +169,12 @@ class ReplicatedIdGenerator implements IdGenerator
         return getClass().getSimpleName() + "[" + this.idQueue + "]";
     }
 
+    static void createGenerator( FileSystemAbstraction fs, File fileName, long highId,
+            boolean throwIfFileExists )
+    {
+        IdContainer.createEmptyIdFile( fs, fileName, highId, throwIfFileExists );
+    }
+
     private long getReusableId()
     {
         idContainerLock.lock();

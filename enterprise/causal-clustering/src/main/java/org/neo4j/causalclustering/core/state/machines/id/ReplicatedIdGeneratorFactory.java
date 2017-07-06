@@ -86,5 +86,6 @@ public class ReplicatedIdGeneratorFactory implements IdGeneratorFactory
     @Override
     public void create( File fileName, long highId, boolean throwIfFileExists )
     {
+        ReplicatedIdGenerator.createGenerator( fs, fileName, highId, throwIfFileExists );
     }
 }
