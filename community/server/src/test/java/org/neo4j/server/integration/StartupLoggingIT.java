@@ -37,6 +37,7 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.configuration.Settings;
@@ -48,6 +49,7 @@ import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.server.AbstractNeoServer.NEO4J_IS_STARTING_MESSAGE;
 
 public class StartupLoggingIT extends ExclusiveServerTestBase
@@ -94,9 +96,22 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
             pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
         }
         pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
-        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" ) );
-        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "localhost:0" ) );
-        pairs.add( Pair.of( new HttpConnector( "http", Encryption.NONE ).enabled.name(), Settings.TRUE ) );
+
+        HttpConnector http = new HttpConnector( "http", Encryption.NONE );
+        pairs.add( Pair.of( http.type.name(), "HTTP" ) );
+        pairs.add( Pair.of( http.advertised_address.name(), "localhost:0" ) );
+        pairs.add( Pair.of( http.enabled.name(), Settings.TRUE ) );
+
+        HttpConnector https = new HttpConnector( "https", Encryption.TLS );
+        pairs.add( Pair.of( https.type.name(), "HTTP" ) );
+        pairs.add( Pair.of( https.advertised_address.name(), "localhost:0" ) );
+        pairs.add( Pair.of( https.enabled.name(), Settings.TRUE ) );
+
+        BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
+        pairs.add( Pair.of( bolt.type.name(), "BOLT" ) );
+        pairs.add( Pair.of( bolt.enabled.name(), "true" ) );
+        pairs.add( Pair.of( bolt.advertised_address.name(), "localhost:0" ) );
+
         return pairs.toArray( new Pair[pairs.size()] );
     }
 
