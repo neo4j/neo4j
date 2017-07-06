@@ -40,7 +40,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.server.helpers.CommunityServerBuilder.serverOnRandomPorts;
 
 public class BoltIT extends ExclusiveServerTestBase
@@ -63,7 +62,7 @@ public class BoltIT extends ExclusiveServerTestBase
     public void shouldLaunchBolt() throws Throwable
     {
         // When I run Neo4j with Bolt enabled
-        server = server().withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
+        server = serverOnRandomPorts().withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
                 .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
                 .withProperty( new BoltConnector( "bolt" ).encryption_level.name(), "REQUIRED" )
                 .withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" )

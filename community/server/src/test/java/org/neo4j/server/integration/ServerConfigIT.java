@@ -24,7 +24,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import java.io.File;
 import javax.management.ObjectName;
 
 import org.neo4j.jmx.impl.ConfigurationBean;
@@ -56,7 +55,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     public void durationsAlwaysHaveUnitsInJMX() throws Throwable
     {
         // Given
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( transaction_timeout.name(), "10" )
                 .build();
 
@@ -74,7 +73,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     {
         // Given
         String configValue = tempDir.newFile().getAbsolutePath();
-        server = CommunityServerBuilder.server().withProperty(
+        server = CommunityServerBuilder.serverOnRandomPorts().withProperty(
         ServerSettings.run_directory.name(), configValue ).build();
 
         // When
@@ -92,7 +91,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
         // Given
         final int customPort = findFreeShellPortToUse( 8881 );
 
-        server = CommunityServerBuilder.server()
+        server = CommunityServerBuilder.serverOnRandomPorts()
                 .withProperty( ShellSettings.remote_shell_enabled.name(), Settings.TRUE )
                 .withProperty( ShellSettings.remote_shell_port.name(), "" + customPort )
                 .build();
@@ -111,7 +110,7 @@ public class ServerConfigIT extends ExclusiveServerTestBase
     public void shouldNotBeAbleToConnectWithShellOnDefaultPortWhenNoShellConfigSupplied() throws Throwable
     {
         // Given
-        server = CommunityServerBuilder.server().build();
+        server = CommunityServerBuilder.serverOnRandomPorts().build();
 
         // When
         server.start();
