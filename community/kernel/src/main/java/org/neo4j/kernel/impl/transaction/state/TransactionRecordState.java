@@ -587,6 +587,22 @@ public class TransactionRecordState implements RecordState
         }
     }
 
+    public void changeSchemaRule( SchemaRule rule, SchemaRule updatedRule )
+    {
+        //Read the current record
+        RecordProxy<Long,SchemaRecord,SchemaRule> change = recordChangeSet.getSchemaRuleChanges()
+                .getOrLoad( rule.getId(), rule );
+        SchemaRecord records = change.forReadingData();
+
+        //Register the change of the record
+        RecordProxy<Long,SchemaRecord,SchemaRule> recordChange = recordChangeSet.getSchemaRuleChanges()
+                .setRecord( rule.getId(), records, updatedRule );
+        SchemaRecord dynamicRecords = recordChange.forChangingData();
+
+        //Update the record
+        dynamicRecords.setDynamicRecords( schemaStore.allocateFrom( updatedRule ) );
+    }
+
     public void addLabelToNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = recordChangeSet.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
@@ -601,13 +617,8 @@ public class TransactionRecordState implements RecordState
 
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
-        RecordProxy<Long, SchemaRecord, SchemaRule> change =
-                recordChangeSet.getSchemaRuleChanges().getOrLoad( indexRule.getId(), indexRule );
-        SchemaRecord records = change.forChangingData();
-
-        indexRule = indexRule.withOwningConstraint( constraintId );
-
-        records.setDynamicRecords( schemaStore.allocateFrom( indexRule ) );
+        IndexRule updatedIndexRule = indexRule.withOwningConstraint( constraintId );
+        changeSchemaRule( indexRule, updatedIndexRule );
     }
 
     public interface PropertyReceiver<P extends StorageProperty>

@@ -234,7 +234,7 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
     {
         acquireSharedSchemaLock( state );
         state.assertOpen();

@@ -47,12 +47,6 @@ public interface SchemaWriteOperations
     /** Drops a {@link IndexDescriptor} from the database */
     void indexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
 
-    /**
-     * This should not be used, it is exposed to allow an external job to clean up constraint indexes.
-     * That external job should become an internal job, at which point this operation should go away.
-     */
-    void uniqueIndexDrop( IndexDescriptor descriptor ) throws DropIndexFailureException;
-
     NodeKeyConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor )
             throws CreateConstraintFailureException, AlreadyConstrainedException, AlreadyIndexedException,
             RepeatedPropertyInCompositeSchemaException;

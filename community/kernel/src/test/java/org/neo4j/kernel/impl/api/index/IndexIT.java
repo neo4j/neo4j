@@ -129,6 +129,31 @@ public class IndexIT extends KernelIntegrationTest
     }
 
     @Test
+    public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
+    {
+        // given
+        PropertyAccessor propertyAccessor = mock( PropertyAccessor.class );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor,
+                false );
+
+        IndexDescriptor constraintIndex = creator.createConstraintIndex( descriptor );
+        // then
+        ReadOperations readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySet(), asSet( readOperations.constraintsGetForLabel( labelId ) ) );
+        commit();
+
+        // when
+        SchemaWriteOperations schemaWriteOperations = schemaWriteOperationsInNewTransaction();
+        schemaWriteOperations.indexDrop( constraintIndex );
+        commit();
+
+        // then
+        readOperations = readOperationsInNewTransaction();
+        assertEquals( emptySet(), asSet( readOperations.indexesGetForLabel( labelId ) ) );
+        commit();
+    }
+
+    @Test
     public void shouldDisallowDroppingIndexThatDoesNotExist() throws Exception
     {
         // given

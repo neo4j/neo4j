@@ -205,7 +205,7 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index ) throws SchemaRuleNotFoundException
+    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
     {
         IndexRule rule = indexRule( index );
         if ( rule != null )
