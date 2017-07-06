@@ -228,7 +228,6 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
         c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
-        c.setProperty( LOGGING_TYPE.getName(), "none" );
 
         c.setNetworkConfig( networkConfig );
 
