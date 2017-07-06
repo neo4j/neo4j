@@ -58,14 +58,11 @@ object Pattern {
       resultMap.values.toSet
     }
   }
-
-  /** Constructs an anonymous pattern (no named graphlet). */
-  def apply(parts: Seq[PatternPart])(p: InputPosition): Pattern = Pattern(None, parts)(p)
 }
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Pattern._
 
-case class Pattern(graphlet: Option[Variable], patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
+case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode with ASTParticle {
 
   lazy val length = this.fold(0) {
     case RelationshipChain(_, _, _) => _ + 1
@@ -75,13 +72,7 @@ case class Pattern(graphlet: Option[Variable], patternParts: Seq[PatternPart])(v
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareVariables(ctx)) chain
       patternParts.foldSemanticCheck(_.semanticCheck(ctx)) chain
-      ensureNoDuplicateRelationships(this, ctx) chain
-      checkGraphlet
-
-  private def checkGraphlet: SemanticCheck = graphlet match {
-    case None => SemanticCheckResult.success
-    case Some(g) => g.declare(CTGraphlet) chain PatternError("Graphlet patterns are not supported by Neo4j", g.position)
-  }
+      ensureNoDuplicateRelationships(this, ctx)
 
   private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
     findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) {

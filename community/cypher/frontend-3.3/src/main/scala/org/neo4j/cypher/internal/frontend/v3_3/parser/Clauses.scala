@@ -68,7 +68,7 @@ trait Clauses extends Parser
 
   def Merge: Rule1[ast.Merge] = rule("MERGE") {
     group(
-      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(None, Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
+      group(keyword("MERGE") ~~ PatternPart) ~~>> (p => ast.Pattern(Seq(p))) ~~ zeroOrMore(MergeAction, separator = WS)
     ) ~~>> (ast.Merge(_, _))
   }
 

@@ -54,20 +54,4 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
       executeWithAllPlanners(query)
     }
   }
-
-  test("matching single graphlet") {
-    val query = "MATCH g := (:A)-->(:B) RETURN g"
-
-    a [SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
-  }
-
-  test("matching multi-pattern graphlet") {
-    val query = "MATCH g := (:A)-->(:B), (:C)-[:T]-(:D) RETURN g"
-
-    a [SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
-  }
 }

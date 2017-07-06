@@ -54,20 +54,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("Matching graphlets") {
-    executeAndEnsureError(
-      "MATCH g := (:A)-->(:B) RETURN g",
-      "Graphlet patterns are not supported by Neo4j (line 1, column 7 (offset: 6))"
-    )
-  }
-
-  test("Matching disconnected graphlet") {
-    executeAndEnsureError(
-      "MATCH g := (:A)-->(:B), (:C)-[:T]-(:D) RETURN g",
-      "Graphlet patterns are not supported by Neo4j (line 1, column 7 (offset: 6))"
-    )
-  }
-
   test("return node that's not there") {
     executeAndEnsureError(
       "match (n) where id(n) = 0 return bar",
