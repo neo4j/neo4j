@@ -186,7 +186,6 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     {
         try
         {
-            availability.assertDatabaseAvailable();
             KernelTransaction kernelTx = sourceModule.kernelAPI.get().newTransaction( type, this.securityContext, timeout );
             kernelTx.registerCloseListener(
                     ( txId ) -> sourceModule.threadToTransactionBridge.unbindTransactionFromCurrentThread() );
@@ -195,7 +194,7 @@ class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         }
         catch ( TransactionFailureException e )
         {
-            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
+            throw availability.convertUnavailabilityException( e );
         }
     }
 }
