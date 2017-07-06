@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Arrays.asList;
-
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
 class CombinedIndexAccessor implements IndexAccessor
