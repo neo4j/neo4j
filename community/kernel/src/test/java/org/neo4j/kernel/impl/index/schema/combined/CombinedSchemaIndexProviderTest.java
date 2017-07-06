@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.combined;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -30,7 +29,6 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -100,31 +98,9 @@ public class CombinedSchemaIndexProviderTest
         SchemaIndexProvider boostProvider = mock( SchemaIndexProvider.class );
         SchemaIndexProvider fallbackProvider = mock( SchemaIndexProvider.class );
 
-        Value[] numberValues = new Value[]
-                {
-                        Values.byteValue( (byte) 1 ),
-                        Values.shortValue( (short) 2 ),
-                        Values.intValue( 3 ),
-                        Values.longValue( 4 ),
-                        Values.floatValue( 5.6f ),
-                        Values.doubleValue( 7.8 )
-                };
-        Value[] otherValues = new Value[]
-                {
-                        Values.booleanValue( true ),
-                        Values.charValue( 'a' ),
-                        Values.stringValue( "bcd" ),
-                        Values.booleanArray( new boolean[2] ),
-                        Values.byteArray( new byte[2] ),
-                        Values.shortArray( new short[2] ),
-                        Values.intArray( new int[2] ),
-                        Values.longArray( new long[2] ),
-                        Values.floatArray( new float[2] ),
-                        Values.doubleArray( new double[2] ),
-                        Values.charArray( new char[2] ),
-                        Values.stringArray( new String[2] ),
-                        Values.NO_VALUE
-                };
+        Value[] numberValues = CombinedIndexTestHelp.valuesSupportedByBoost();
+        Value[] otherValues = CombinedIndexTestHelp.valuesNotSupportedByBoost();
+        Value[] allValues = CombinedIndexTestHelp.allValues();
 
         // Number values should go to boost provider
         for ( Value numberValue : numberValues )
@@ -147,7 +123,6 @@ public class CombinedSchemaIndexProviderTest
         }
 
         // All composite values should go to fallback
-        Value[] allValues = ArrayUtils.addAll( numberValues, otherValues );
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
