@@ -249,7 +249,7 @@ public class IdContainer
      * @param throwIfFileExists if {@code true} will cause an {@link IllegalStateException} to be thrown if
      * the file already exists. if {@code false} will truncate the file writing the header in it.
      */
-    static void createEmptyIdFile( FileSystemAbstraction fs, File file, long highId, boolean throwIfFileExists )
+    public static void createEmptyIdFile( FileSystemAbstraction fs, File file, long highId, boolean throwIfFileExists )
     {
         // sanity checks
         if ( fs == null )
