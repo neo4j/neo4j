@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.internal;
 
+import java.io.File;
 import java.net.URL;
 import java.util.concurrent.TimeUnit;
 
@@ -52,7 +53,7 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
      */
     URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
-    String getStoreDir();
+    File getStoreDir();
 
     /**
      * Begin internal transaction with specified type and access mode

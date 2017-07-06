@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.HashSet;
@@ -229,7 +228,7 @@ public class ReadReplicaReplicationIT
 
     private void gatherLabelScanStoreFiles( GraphDatabaseAPI db, Set<Path> labelScanStoreFiles )
     {
-        Path dbStoreDirectory = Paths.get( db.getStoreDir() ).toAbsolutePath();
+        Path dbStoreDirectory = db.getStoreDir().toPath().toAbsolutePath();
         LabelScanStore labelScanStore = db.getDependencyResolver().resolveDependency( LabelScanStore.class );
         try ( ResourceIterator<File> files = labelScanStore.snapshotStoreFiles() )
         {

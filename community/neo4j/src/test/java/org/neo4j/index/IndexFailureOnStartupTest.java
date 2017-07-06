@@ -126,7 +126,7 @@ public class IndexFailureOnStartupTest
     {
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction() )
         {
-            File indexDir = soleIndexDir( fs, new File( db.getStoreDir() ) );
+            File indexDir = soleIndexDir( fs, db.getStoreDir() );
             File[] files = indexDir.getParentFile()
                     .listFiles( pathname -> pathname.isFile() && pathname.getName().startsWith( "archive-" ) );
             if ( files == null || files.length == 0 )

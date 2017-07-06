@@ -19,7 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.io.File;
 import java.net.URI;
 import java.util.function.Supplier;
 
@@ -89,7 +88,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
         {
             TransactionIdStore transactionIdStore = transactionIdStoreSupplier.get();
             StoreCopyServer copier = new StoreCopyServer( neoStoreDataSource, checkPointerSupplier.get(),
-                    fileSystemAbstraction, new File( graphDatabaseAPI.getStoreDir() ),
+                    fileSystemAbstraction, graphDatabaseAPI.getStoreDir(),
                     monitors.newMonitor( StoreCopyServer.Monitor.class ), pageCache, storeCopyCheckPointMutex );
             LogicalTransactionStore logicalTransactionStore = logicalTransactionStoreSupplier.get();
             LogFileInformation logFileInformation = logFileInformationSupplier.get();

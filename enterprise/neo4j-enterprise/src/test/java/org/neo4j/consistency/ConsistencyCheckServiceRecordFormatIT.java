@@ -115,7 +115,7 @@ public class ConsistencyCheckServiceRecordFormatIT
     {
         ConsistencyCheckService service = new ConsistencyCheckService();
 
-        File storeDir = new File( db.getStoreDir() );
+        File storeDir = db.getStoreDir();
         ConsistencyCheckService.Result result = service.runFullConsistencyCheck( storeDir, Config.empty(),
                 ProgressMonitorFactory.textual( System.out ), FormattedLogProvider.toOutputStream( System.out ), true );
 

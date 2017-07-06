@@ -102,7 +102,7 @@ public class DefaultMasterImplSPI implements MasterImpl.SPI
         this.checkPointer = checkPointer;
         this.neoStoreDataSource = neoStoreDataSource;
         this.mutex = mutex;
-        this.storeDir = new File( graphDb.getStoreDir() );
+        this.storeDir = graphDb.getStoreDir();
         this.txChecksumLookup = new TransactionChecksumLookup( transactionIdStore, logicalTransactionStore );
         this.responsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, graphDb::storeId );
         this.monitors = monitors;

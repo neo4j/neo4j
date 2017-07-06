@@ -159,7 +159,8 @@ public class StartClientIT extends AbstractShellIT
         };
 
         // when
-        startClient.start( new String[]{"-path", db.getStoreDir(), "-c", "CREATE (n {foo:'bar'});"}, ctrlCHandler );
+        startClient.start( new String[]{"-path", db.getStoreDir().getAbsolutePath(), "-c", "CREATE (n {foo:'bar'});"},
+                ctrlCHandler );
 
         // verify
         verify( databaseShellServer ).shutdown();
@@ -175,7 +176,7 @@ public class StartClientIT extends AbstractShellIT
         StartClient client = new StartClient( new PrintStream( out ), new PrintStream( err ) );
 
         // when
-        client.start( new String[]{"-path", db.getStoreDir() + "testDb", "-c",
+        client.start( new String[]{"-path", db.getStoreDir().getAbsolutePath() + "testDb", "-c",
                         "dbinfo -g Configuration unsupported.dbms.edition"},
                 ctrlCHandler );
         // then
@@ -218,7 +219,7 @@ public class StartClientIT extends AbstractShellIT
                 shellServer = new GraphDatabaseShellServer( factory, path, readOnly, configFile );
                 return shellServer;
             }
-        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir() + "test-db", "-config",
+        }.start( new String[]{"-c", "RETURN 1;", "-path", db.getStoreDir().getAbsolutePath() + "test-db", "-config",
                 getClass().getResource( "/config-with-bolt-connector.conf" ).getFile()}, mock( CtrlCHandler.class ) );
         try
         {

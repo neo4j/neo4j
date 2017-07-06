@@ -53,7 +53,7 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
     protected void doWorkOnMember( boolean isCore, int id )
     {
         ClusterMember member = isCore ? cluster.getCoreMemberById( id ) : cluster.getReadReplicaById( id );
-        String storeDir = member.database().getStoreDir();
+        File storeDir = member.database().getStoreDir();
         KernelExtensions kernelExtensions =
                 member.database().getDependencyResolver().resolveDependency( KernelExtensions.class );
         member.shutdown();
@@ -62,17 +62,16 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
         member.start();
     }
 
-    private void assertStoreConsistent( String storeDir, KernelExtensions kernelExtensions )
+    private void assertStoreConsistent( File storeDir, KernelExtensions kernelExtensions )
     {
-        File fromDirectory = new File( storeDir );
-        File parent = fromDirectory.getParentFile();
+        File parent = storeDir.getParentFile();
         try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
               PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs ) )
         {
-            fs.copyRecursively( fromDirectory, storeDirectory.storeDir() );
+            fs.copyRecursively( storeDir, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )
                     .recoverCopiedStore( storeDirectory.storeDir() );
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir} );
+            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()} );
             if ( !result.isSuccessful() )
             {
                 throw new RuntimeException( "Not consistent database in " + storeDir );

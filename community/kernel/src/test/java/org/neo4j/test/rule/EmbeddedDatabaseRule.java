@@ -128,17 +128,11 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     {
         return (EmbeddedDatabaseRule) super.startLazily();
     }
-/*
-    public EmbeddedDatabaseRule withConfig(Config config )
-    {
-        this.config = config;
-        return this;
-    }*/
 
     @Override
-    public String getStoreDir()
+    public File getStoreDir()
     {
-        return temp.root().getPath();
+        return temp.root();
     }
 
     @Override

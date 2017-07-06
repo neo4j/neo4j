@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.database;
 
+import java.io.File;
+
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -31,7 +33,7 @@ public interface Database extends Lifecycle
         Database newDatabase( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies );
     }
 
-    String getLocation();
+    File getLocation();
 
     GraphDatabaseFacade getGraph();
 

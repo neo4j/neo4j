@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 import org.junit.After;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.Node;
@@ -182,7 +181,7 @@ public class TestLogPruning
         GraphDatabaseBuilder builder = gdf.newImpermanentDatabaseBuilder();
         builder.setConfig( keep_logical_logs, logPruning );
         this.db = (GraphDatabaseAPI) builder.newGraphDatabase();
-        files = new PhysicalLogFiles( new File( db.getStoreDir() ), PhysicalLogFile.DEFAULT_NAME, fs );
+        files = new PhysicalLogFiles( db.getStoreDir(), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }
 

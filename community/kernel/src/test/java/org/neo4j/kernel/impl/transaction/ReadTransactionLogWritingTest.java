@@ -95,7 +95,7 @@ public class ReadTransactionLogWritingTest
     {
         GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
         FileSystemAbstraction fs = db.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
-        File storeDir = new File( db.getStoreDir() );
+        File storeDir = db.getStoreDir();
         try
         {
             CountingLogHook<LogEntry> logicalLogCounter = new CountingLogHook<>();

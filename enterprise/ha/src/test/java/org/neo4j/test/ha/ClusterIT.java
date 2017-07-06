@@ -309,7 +309,7 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File storeDir = new File( slave.getStoreDir() );
+            File storeDir = slave.getStoreDir();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
             clearLastTransactionCommitTimestampField( storeDir );
@@ -342,7 +342,7 @@ public class ClusterIT
             cluster.sync();
 
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            File storeDir = new File( slave.getStoreDir() );
+            File storeDir = slave.getStoreDir();
             ClusterManager.RepairKit slaveRepairKit = cluster.shutdown( slave );
 
             clearLastTransactionCommitTimestampField( storeDir );

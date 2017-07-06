@@ -699,9 +699,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
-    public String getStoreDir()
+    public File getStoreDir()
     {
-        return spi.storeDir().getAbsolutePath();
+        return spi.storeDir();
     }
 
     @Override

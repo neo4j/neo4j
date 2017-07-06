@@ -65,10 +65,9 @@ public class LifecycleManagingDatabase implements Database
     }
 
     @Override
-    public String getLocation()
+    public File getLocation()
     {
-        File file = config.get( DatabaseManagementSystemSettings.database_path );
-        return file.getAbsolutePath();
+        return config.get( DatabaseManagementSystemSettings.database_path );
     }
 
     @Override

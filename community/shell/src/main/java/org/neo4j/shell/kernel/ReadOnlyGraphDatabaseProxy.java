@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.kernel;
 
+import java.io.File;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.Collections;
@@ -1053,7 +1054,7 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
-    public String getStoreDir()
+    public File getStoreDir()
     {
         return actual.getStoreDir();
     }
