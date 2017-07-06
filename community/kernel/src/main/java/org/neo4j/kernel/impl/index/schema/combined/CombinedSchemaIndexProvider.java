@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.NumberType;
 import org.neo4j.values.storable.Value;
 
@@ -75,8 +76,16 @@ public class CombinedSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String failure = boostProvider.getPopulationFailure( indexId );
-        return failure != null ? failure : fallbackProvider.getPopulationFailure( indexId );
+        String boostFailure = boostProvider.getPopulationFailure( indexId );
+        String fallbackFailure = fallbackProvider.getPopulationFailure( indexId );
+        if ( boostFailure != null )
+        {
+            return fallbackFailure == null ? boostFailure : boostFailure + " and " + fallbackFailure;
+        }
+        else
+        {
+            return fallbackFailure;
+        }
     }
 
     @Override
@@ -108,7 +117,7 @@ public class CombinedSchemaIndexProvider extends SchemaIndexProvider
         }
 
         Value singleValue = values[0];
-        if ( singleValue.numberType() != NumberType.NO_NUMBER )
+        if ( singleValue.numberType() != NumberType.NO_NUMBER && !(singleValue instanceof ArrayValue) )
         {
             // It's a number, the boost can handle this
             return boost;
