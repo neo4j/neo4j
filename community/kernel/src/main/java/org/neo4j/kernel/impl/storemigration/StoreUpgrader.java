@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
@@ -121,7 +120,7 @@ public class StoreUpgrader
         }
 
         // One or more participants would like to do migration
-        progressMonitor.started();
+        progressMonitor.started( participants.size() );
 
         MigrationStatus migrationStatus = MigrationStatus.readMigrationStatus( fileSystem, migrationStateFile );
         String versionToMigrateFrom = null;
@@ -142,15 +141,6 @@ public class StoreUpgrader
                     MigrationStatus.moving.maybeReadInfo( fileSystem, migrationStateFile, versionToMigrateFrom );
             moveMigratedFilesToStoreDirectory( participants, migrationDirectory, storeDirectory,
                     versionToMigrateFrom, upgradableDatabase.currentVersion() );
-            MigrationStatus.countsRebuilding.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
-        }
-
-        if ( MigrationStatus.countsRebuilding.isNeededFor( migrationStatus ) )
-        {
-            versionToMigrateFrom = MigrationStatus.countsRebuilding.maybeReadInfo(
-                    fileSystem, migrationStateFile, versionToMigrateFrom );
-            rebuildCountsInStoreDirectory( participants, storeDirectory, versionToMigrateFrom );
-            MigrationStatus.completed.setMigrationStatus( fileSystem, migrationStateFile, versionToMigrateFrom );
         }
 
         cleanup( participants, migrationDirectory );
@@ -209,22 +199,6 @@ public class StoreUpgrader
         }
     }
 
-    private void rebuildCountsInStoreDirectory( List<StoreMigrationParticipant> participants, File storeDirectory,
-            String versionToMigrateFrom )
-    {
-        try
-        {
-            for ( StoreMigrationParticipant participant : participants )
-            {
-                participant.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnableToUpgradeException( "Unable to move migrated files into place", e );
-        }
-    }
-
     private void migrateToIsolatedDirectory( File storeDir, File migrationDirectory, String versionToMigrateFrom )
     {
         try
@@ -232,8 +206,7 @@ public class StoreUpgrader
             int index = 1;
             for ( StoreMigrationParticipant participant : participants )
             {
-                Section section = progressMonitor.startSection(
-                        format( "%s (%d/%d)", participant.getName(), index, participants.size() ) );
+                Section section = progressMonitor.startSection( participant.getName() );
                 participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
                 section.completed();

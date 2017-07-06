@@ -23,8 +23,9 @@ public interface MigrationProgressMonitor
 {
     /**
      * Signals that the migration process has started.
+     * @param numStages The number of migration stages is the migration process that we are monitoring.
      */
-    void started();
+    void started( int numStages );
 
     /**
      * Signals that migration goes into section with given {@code name}.

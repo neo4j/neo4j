@@ -151,13 +151,16 @@ public class StoreMigratorIT
         fs.mkdirs( migrationDir );
         migrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
-        migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom,
-                upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
         progressMonitor = new SilentMigrationProgressMonitor();
-        migrator = new StoreMigrator( fs, pageCache, CONFIG, logService );
-        migrator.rebuildCounts( storeDirectory, versionToMigrateFrom, upgradableDatabase.currentVersion() );
+        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
+        countsMigrator.migrate( storeDirectory, migrationDir, progressMonitor.startSection( "section" ),
+                versionToMigrateFrom, upgradableDatabase.currentVersion() );
+        migrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom,
+                upgradableDatabase.currentVersion() );
+        countsMigrator.moveMigratedFiles( migrationDir, storeDirectory, versionToMigrateFrom,
+                upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
         StoreFactory storeFactory =

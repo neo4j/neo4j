@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
@@ -42,10 +43,12 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     private final int highRelationshipTypeId;
     private final CountsAccessor.Updater countsUpdater;
     private final NumberArrayFactory cacheFactory;
+    private final MigrationProgressMonitor.Section progressMonitor;
 
-    public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache,
-            Configuration config, int highLabelId, int highRelationshipTypeId,
-            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory )
+    public ProcessRelationshipCountsDataStep( StageControl control, NodeLabelsCache cache, Configuration config, int
+            highLabelId, int highRelationshipTypeId,
+            CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
+            MigrationProgressMonitor.Section progressMonitor )
     {
         super( control, "COUNT", config, 0 );
         this.cache = cache;
@@ -53,6 +56,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.countsUpdater = countsUpdater;
         this.cacheFactory = cacheFactory;
+        this.progressMonitor = progressMonitor;
     }
 
     @Override
@@ -64,6 +68,7 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
             RelationshipRecord relationship = batch[i];
             processor.process( relationship.getFirstNode(), relationship.getType(), relationship.getSecondNode() );
         }
+        progressMonitor.progress( batch.length );
     }
 
     private RelationshipCountsProcessor processor()

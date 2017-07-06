@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.store;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
@@ -48,6 +50,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
+    private final MigrationProgressMonitor.Section progressMonitor;
 
     public CountsComputer( NeoStores stores )
     {
@@ -58,33 +61,43 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId,
-            int highRelationshipTypeId )
+            int highLabelId, int highRelationshipTypeId )
+    {
+        this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
+                SilentMigrationProgressMonitor.NO_OP_SECTION );
+    }
+
+    public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
+            int highLabelId, int highRelationshipTypeId, MigrationProgressMonitor.Section progressMonitor )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
         this.relationships = relationships;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
+        this.progressMonitor = progressMonitor;
     }
 
     @Override
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
+        progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
         try
         {
             // Count nodes
             superviseDynamicExecution(
-                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater ) );
+                    new NodeCountsStage( Configuration.DEFAULT, cache, nodes, highLabelId, countsUpdater,
+                            progressMonitor ) );
             // Count relationships
             superviseDynamicExecution(
                     new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO ) );
+                            highRelationshipTypeId, countsUpdater, AUTO, progressMonitor ) );
         }
         finally
         {
             cache.close();
+            progressMonitor.completed();
         }
     }
 

@@ -61,10 +61,13 @@ import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationExce
 import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
@@ -359,6 +362,26 @@ public class StoreUpgraderTest
     }
 
     @Test
+    public void upgradeShouldGiveProgressMonitorProgressMessages() throws Exception
+    {
+        // Given
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem, new StoreVersionCheck( pageCache ),
+                getRecordFormats() );
+
+        // When
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        newUpgrader( upgradableDatabase, pageCache, allowMigrateConfig,
+                new VisibleMigrationProgressMonitor( logProvider.getLog( "test" ) ) ).migrateIfNeeded( dbDirectory );
+
+        // Then
+        logProvider.assertContainsLogCallContaining( "Store files" );
+        logProvider.assertContainsLogCallContaining( "Indexes" );
+        logProvider.assertContainsLogCallContaining( "Count rebuilding" );
+        logProvider.assertContainsLogCallContaining( "Successfully finished" );
+    }
+
+    @Test
     public void upgraderShouldCleanupLegacyLeftoverAndMigrationDirs() throws Exception
     {
         // Given
@@ -412,19 +435,25 @@ public class StoreUpgraderTest
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache, Config config )
-            throws IOException
     {
         SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
 
+        return newUpgrader( upgradableDatabase, pageCache, config, progressMonitor );
+    }
+
+    private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache, Config config,
+            MigrationProgressMonitor progressMonitor )
+    {
         NullLogService instance = NullLogService.getInstance();
-        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance
-        );
+        StoreMigrator defaultMigrator = new StoreMigrator( fileSystem, pageCache, getTuningConfig(), instance );
+        CountsMigrator countsMigrator = new CountsMigrator( fileSystem, pageCache, getTuningConfig() );
         SchemaIndexMigrator indexMigrator = new SchemaIndexMigrator( fileSystem, schemaIndexProvider );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fileSystem, pageCache,
                 NullLogProvider.getInstance() );
         upgrader.addParticipant( indexMigrator );
         upgrader.addParticipant( defaultMigrator );
+        upgrader.addParticipant( countsMigrator );
         return upgrader;
     }
 

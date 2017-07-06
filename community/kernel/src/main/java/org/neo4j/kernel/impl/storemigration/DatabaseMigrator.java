@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.LegacyIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
@@ -90,10 +91,12 @@ public class DatabaseMigrator
                 labelScanStoreProvider );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
+        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         storeUpgrader.addParticipant( schemaMigrator );
         storeUpgrader.addParticipant( legacyIndexMigrator );
         storeUpgrader.addParticipant( storeMigrator );
+        storeUpgrader.addParticipant( countsMigrator );
         storeUpgrader.migrateIfNeeded( storeDir );
     }
 }

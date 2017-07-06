@@ -41,6 +41,8 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
@@ -66,7 +68,6 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
@@ -229,14 +230,16 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore, highNodeId );
 
             // Count nodes per label and labels per node
+            MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
             nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
             memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
             executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
+                    neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
+                    memoryUsageStats ) );
             // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
-                    neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
+                    neoStore.getLabelRepository().getHighId(), neoStore.getRelationshipTypeRepository().getHighId(),
+                    countsUpdater, AUTO, progressMonitor.startSection( "Relationships" ) ) );
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
