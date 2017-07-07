@@ -37,6 +37,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseSecurityContext;
@@ -84,7 +85,7 @@ public class ServerGroupsIT
         int nServers = 3;
         cluster = new Cluster( testDir.directory( "cluster" ), nServers, nServers,
                 new HazelcastDiscoveryServiceFactory(), emptyMap(), instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         // when
         cluster.start();

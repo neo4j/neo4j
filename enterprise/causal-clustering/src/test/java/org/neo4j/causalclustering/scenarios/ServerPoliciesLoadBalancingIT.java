@@ -39,6 +39,7 @@ import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.load_balancing.Endpoint;
 import org.neo4j.causalclustering.load_balancing.LoadBalancingResult;
 import org.neo4j.causalclustering.load_balancing.plugins.server_policies.Policies;
@@ -82,8 +83,8 @@ public class ServerPoliciesLoadBalancingIT
     @Test
     public void defaultBehaviour() throws Exception
     {
-        cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
-                new HazelcastDiscoveryServiceFactory(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+        cluster = new Cluster( testDir.directory( "cluster" ), 3, 3, new HazelcastDiscoveryServiceFactory(), emptyMap(),
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
 
@@ -96,7 +97,7 @@ public class ServerPoliciesLoadBalancingIT
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(),
                 stringMap( CausalClusteringSettings.cluster_allow_reads_on_followers.name(), "true" ),
-                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
 
@@ -120,7 +121,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 5, 5,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
         // should use the first rule: only cores for reading
@@ -173,7 +174,7 @@ public class ServerPoliciesLoadBalancingIT
 
         cluster = new Cluster( testDir.directory( "cluster" ), 3, 3,
                 new HazelcastDiscoveryServiceFactory(), coreParams, instanceCoreParams,
-                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME );
+                emptyMap(), instanceReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
         assertGetServersEventuallyMatchesOnAllCores( new CountsMatcher( 3, 1, 2, 3 ), policyContext( "all" ) );

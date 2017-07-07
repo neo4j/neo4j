@@ -58,12 +58,12 @@ public class ClusterMembershipChangeIT
         // when
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        List<AdvertisedSocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
+        List<AdvertisedSocketAddress> onlyServerZero = singletonList( cluster.discoveryAddressForServer( 0 ) );
 
         // then
-        cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 4, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 5, onlyServerZero ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 3 ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 4 ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 5 ).start();
 
         cluster.removeCoreMemberWithMemberId( 0 );
         cluster.removeCoreMemberWithMemberId( 1 );

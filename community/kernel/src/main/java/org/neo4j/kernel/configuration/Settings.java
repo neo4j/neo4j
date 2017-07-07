@@ -44,7 +44,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.SocketAddressFormat;
+import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 
@@ -521,7 +521,7 @@ public class Settings
                 @Override
                 public ListenSocketAddress apply( String value )
                 {
-                    return SocketAddressFormat.socketAddress( value, ListenSocketAddress::new );
+                    return SocketAddressParser.socketAddress( value, ListenSocketAddress::new );
                 }
 
                 @Override
@@ -537,7 +537,7 @@ public class Settings
                 @Override
                 public AdvertisedSocketAddress apply( String value )
                 {
-                    return SocketAddressFormat.socketAddress( value, AdvertisedSocketAddress::new );
+                    return SocketAddressParser.socketAddress( value, AdvertisedSocketAddress::new );
                 }
 
                 @Override
@@ -576,7 +576,7 @@ public class Settings
                 String value = config.apply( name );
                 String hostname = default_listen_address.apply( config );
 
-                return SocketAddressFormat.socketAddress( name, value, hostname, defaultPort, ListenSocketAddress::new );
+                return SocketAddressParser.deriveSocketAddress( name, value, hostname, defaultPort, ListenSocketAddress::new );
             }
 
             @Override
@@ -621,7 +621,7 @@ public class Settings
                 String name = name();
                 String value = config.apply( name );
 
-                return SocketAddressFormat.socketAddress( name, value, hostname, port, AdvertisedSocketAddress::new );
+                return SocketAddressParser.deriveSocketAddress( name, value, hostname, port, AdvertisedSocketAddress::new );
             }
 
             @Override

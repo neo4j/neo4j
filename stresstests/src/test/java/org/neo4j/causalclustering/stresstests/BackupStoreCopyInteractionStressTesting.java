@@ -37,6 +37,7 @@ import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.SocketAddress;
@@ -125,7 +126,7 @@ public class BackupStoreCopyInteractionStressTesting
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         Cluster cluster =
                 new Cluster( clusterDirectory, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams,
-                        instanceCoreParams, readReplicaParams, instanceReadReplicaParams, Standard.LATEST_NAME );
+                        instanceCoreParams, readReplicaParams, instanceReadReplicaParams, Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         AtomicBoolean stopTheWorld = new AtomicBoolean();
         BooleanSupplier notExpired = untilTimeExpired( durationInMinutes, MINUTES );

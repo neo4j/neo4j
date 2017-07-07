@@ -25,9 +25,7 @@ import org.neo4j.causalclustering.discovery.ClientConnectorAddresses.ConnectorUr
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Arrays.asList;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.bolt;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.http;
 import static org.neo4j.causalclustering.discovery.ClientConnectorAddresses.Scheme.https;
@@ -41,11 +39,22 @@ public class ClientConnectorAddressesTest
         ClientConnectorAddresses connectorAddresses = new ClientConnectorAddresses( asList(
                 new ConnectorUri( bolt, new AdvertisedSocketAddress( "host", 1 ) ),
                 new ConnectorUri( http, new AdvertisedSocketAddress( "host", 2 ) ),
-                new ConnectorUri( https, new AdvertisedSocketAddress( "host", 3 ) ) )
+                new ConnectorUri( https, new AdvertisedSocketAddress( "host", 3 ) ),
+                new ConnectorUri( bolt, new AdvertisedSocketAddress( "::1", 4 ) ),
+                new ConnectorUri( http, new AdvertisedSocketAddress( "::", 5 ) ),
+                new ConnectorUri( https, new AdvertisedSocketAddress( "fe80:1:2::3", 6 ) ) )
         );
 
+        String expectedString = "bolt://host:1,http://host:2,https://host:3,bolt://[::1]:4,http://[::]:5,https://[fe80:1:2::3]:6";
+
         // when
-        ClientConnectorAddresses out = ClientConnectorAddresses.fromString( connectorAddresses.toString() );
+        String connectorAddressesString = connectorAddresses.toString();
+
+        // then
+        assertEquals( expectedString, connectorAddressesString );
+
+        // when
+        ClientConnectorAddresses out = ClientConnectorAddresses.fromString( connectorAddressesString );
 
         // then
         assertEquals( connectorAddresses, out );

@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.ReadReplica;
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
@@ -83,7 +84,7 @@ public class SecureClusterIT
 
         cluster = new Cluster( testDir.absolutePath(), noOfCoreMembers, noOfReadReplicas,
                 new HazelcastDiscoveryServiceFactory(), coreParams, emptyMap(), readReplicaParams,
-                emptyMap(), Standard.LATEST_NAME );
+                emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         // install the cryptographic objects for each core
         for ( CoreClusterMember core : cluster.coreMembers() )

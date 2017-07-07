@@ -80,14 +80,17 @@ public class Cluster
     private final Map<String,IntFunction<String>> instanceReadReplicaParams;
     private final String recordFormat;
     private final DiscoveryServiceFactory discoveryServiceFactory;
+    private final String listenAddress;
+    private final String advertisedAddress;
 
     private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
-            DiscoveryServiceFactory discoveryServiceFactory, Map<String,String> coreParams,
-            Map<String,IntFunction<String>> instanceCoreParams, Map<String,String> readReplicaParams,
-            Map<String,IntFunction<String>> instanceReadReplicaParams, String recordFormat )
+            DiscoveryServiceFactory discoveryServiceFactory,
+            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
+            Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
+            String recordFormat, IpFamily ipFamily, boolean useWildcard )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -101,7 +104,9 @@ public class Cluster
         {
             coreServerIds.add( i );
         }
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( coreServerIds );
+        listenAddress = useWildcard ? ipFamily.wildcardAddress() : ipFamily.localhostAddress();
+        advertisedAddress = ipFamily.localhostName();
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreServerIds );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createReadReplicas( noOfReadReplicas, initialHosts, readReplicaParams, instanceReadReplicaParams, recordFormat );
     }
@@ -140,23 +145,20 @@ public class Cluster
 
     public CoreClusterMember addCoreMemberWithId( int memberId )
     {
-        List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
-        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat, advertisedAddress );
+        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
     }
 
-    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
-            List<AdvertisedSocketAddress> initialMembers )
+    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId )
     {
-        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat, initialMembers );
+        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
     }
 
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
-            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat,
-            List<AdvertisedSocketAddress> advertisedAddress )
+            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        CoreClusterMember coreClusterMember =
-                new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, advertisedAddress, discoveryServiceFactory,
-                        recordFormat, parentDir, extraParams, instanceExtraParams );
+        List<AdvertisedSocketAddress> initialMembers = buildInitialHosts( coreMembers.keySet() );
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
+                discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams, listenAddress, advertisedAddress );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
@@ -171,17 +173,17 @@ public class Cluster
         return addReadReplicaWithIdAndRecordFormat( memberId, recordFormat );
     }
 
-    public ReadReplica addReadReplicaWithIdAndMonitors( int memberId, Monitors monitors )
+    public ReadReplica addReadReplicaWithIdAndMonitors( @SuppressWarnings( "SameParameterValue" ) int memberId, Monitors monitors )
     {
         return addReadReplica( memberId, recordFormat, monitors );
     }
 
     private ReadReplica addReadReplica( int memberId, String recordFormat, Monitors monitors )
     {
-        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
+        List<AdvertisedSocketAddress> hazelcastAddresses = buildInitialHosts( coreMembers.keySet() );
         ReadReplica member =
                 new ReadReplica( parentDir, memberId, discoveryServiceFactory, hazelcastAddresses, readReplicaParams,
-                        instanceReadReplicaParams, recordFormat, monitors );
+                        instanceReadReplicaParams, recordFormat, monitors, advertisedAddress, listenAddress );
         readReplicas.put( memberId, member );
         return member;
     }
@@ -226,7 +228,7 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core meber with member id " + memberId );
+            throw new RuntimeException( "Could not remove core member with id " + memberId );
         }
     }
 
@@ -307,7 +309,7 @@ public class Cluster
     public int numberOfCoreMembersReportedByTopology()
     {
         CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
-                .filter( ( member ) -> member.database() != null ).findAny().get();
+                .filter( ( member ) -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.coreServers().members().size();
@@ -365,50 +367,50 @@ public class Cluster
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
         // manner...
         return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) ||
-                isWriteNotOnLeader( e );
+               isWriteNotOnLeader( e );
 
     }
 
     private boolean isWriteNotOnLeader( Throwable e )
     {
         return e instanceof WriteOperationsNotAllowedException &&
-                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
+               e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
     }
 
     private boolean isLockOnFollower( Throwable e )
     {
         return e instanceof AcquireLockTimeoutException &&
-                (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
-                        e.getCause() instanceof NoLeaderFoundException);
+               (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
+                e.getCause() instanceof NoLeaderFoundException);
     }
 
     private boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
-                e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
-                ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
-                        LockSessionExpired;
+               e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
+               ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
+               LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
+    private List<AdvertisedSocketAddress> buildInitialHosts( Set<Integer> coreServerIds )
     {
-        return coreServerIds.stream().map( Cluster::socketAddressForServer ).collect( toList() );
+        return coreServerIds.stream().map( this::discoveryAddressForServer ).collect( toList() );
     }
 
-    public static AdvertisedSocketAddress socketAddressForServer( int id )
+    public AdvertisedSocketAddress discoveryAddressForServer( int id )
     {
-        String advertisedAddress = "127.0.0.1";
         return new AdvertisedSocketAddress( advertisedAddress, 5000 + id );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
-            List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
-            Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         for ( int i = 0; i < noOfCoreMembers; i++ )
         {
             CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
-                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams );
+                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
+                    listenAddress, advertisedAddress );
             coreMembers.put( i, coreClusterMember );
         }
     }
@@ -453,14 +455,14 @@ public class Cluster
 
     private void createReadReplicas( int noOfReadReplicas,
             final List<AdvertisedSocketAddress> coreMemberAddresses,
-            Map<String, String> extraParams,
-            Map<String, IntFunction<String>> instanceExtraParams,
+            Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams,
             String recordFormat )
     {
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
             readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
-                    extraParams, instanceExtraParams, recordFormat, new Monitors() ) );
+                    extraParams, instanceExtraParams, recordFormat, new Monitors(), advertisedAddress, listenAddress ) );
         }
     }
 
@@ -501,7 +503,7 @@ public class Cluster
                 DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
-    public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source,  Collection<T> targets )
+    public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source, Collection<T> targets )
             throws TimeoutException, InterruptedException
     {
         dataMatchesEventually( DbRepresentation.of( source.database() ), targets );
@@ -512,7 +514,7 @@ public class Cluster
      * <code>member</code>. Changes in the <code>member</code> database contents after this method is called do not get
      * picked up and are not part of the comparison.
      *
-     * @param source    The database to check against
+     * @param source  The database to check against
      * @param targets The databases expected to match the contents of <code>member</code>
      */
     public static <T extends ClusterMember> void dataMatchesEventually( DbRepresentation source, Collection<T> targets )

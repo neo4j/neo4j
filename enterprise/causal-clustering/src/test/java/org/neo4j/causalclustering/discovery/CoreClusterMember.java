@@ -49,6 +49,8 @@ import org.neo4j.logging.Level;
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
 import static org.neo4j.causalclustering.core.consensus.log.RaftLog.RAFT_LOG_DIRECTORY_NAME;
+import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class CoreClusterMember implements ClusterMember
@@ -60,7 +62,7 @@ public class CoreClusterMember implements ClusterMember
     private final File raftLogDir;
     private final Map<String, String> config = stringMap();
     private final int serverId;
-    private final String boltAdvertisedAddress;
+    private final String boltAdvertisedSocketAddress;
     private CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId, int clusterSize,
@@ -69,7 +71,9 @@ public class CoreClusterMember implements ClusterMember
                               String recordFormat,
                               File parentDir,
                               Map<String, String> extraParams,
-                              Map<String, IntFunction<String>> instanceExtraParams )
+                              Map<String, IntFunction<String>> instanceExtraParams,
+                              String listenAddress,
+                              String advertisedAddress )
     {
         this.serverId = serverId;
         int hazelcastPort = 5000 + serverId;
@@ -79,17 +83,14 @@ public class CoreClusterMember implements ClusterMember
         int httpPort = 10000 + serverId;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
-
-        AdvertisedSocketAddress advertisedSocketAddress = Cluster.socketAddressForServer( serverId );
-        String advertisedAddress = advertisedSocketAddress.getHostname();
-        String listenAddress = "127.0.0.1";
+        boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
         config.put( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
-        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress + ":" + hazelcastPort );
-        config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress + ":" + txPort );
-        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress + ":" + raftPort );
+        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, hazelcastPort ) );
+        config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
+        config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
         config.put( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( clusterSize ) );
         config.put( CausalClusteringSettings.leader_election_timeout.name(), "500ms" );
@@ -98,13 +99,12 @@ public class CoreClusterMember implements ClusterMember
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );
         config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new BoltConnector( "bolt" ).listen_address.name(), listenAddress + ":" + boltPort );
-        boltAdvertisedAddress = advertisedAddress + ":" + boltPort;
-        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new BoltConnector( "bolt" ).listen_address.name(), listenAddress( listenAddress, boltPort ) );
+        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedSocketAddress );
         config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
         config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress + ":" + httpPort );
-        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress + ":" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress( listenAddress, httpPort ) );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress( advertisedAddress, httpPort ) );
         config.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         config.put( GraphDatabaseSettings.auth_store.name(), new File( parentDir, "auth" ).getAbsolutePath() );
         config.putAll( extraParams );
@@ -129,17 +129,17 @@ public class CoreClusterMember implements ClusterMember
 
     public String boltAdvertisedAddress()
     {
-        return boltAdvertisedAddress;
+        return boltAdvertisedSocketAddress;
     }
 
     public String routingURI()
     {
-        return String.format( "bolt+routing://%s", boltAdvertisedAddress );
+        return String.format( "bolt+routing://%s", boltAdvertisedSocketAddress );
     }
 
     public String directURI()
     {
-        return String.format( "bolt://%s", boltAdvertisedAddress );
+        return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
     @Override
