@@ -60,12 +60,6 @@ the relevant Commercial Agreement.
   <build>
     <plugins>
       <plugin>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <forkCount>1</forkCount>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-jar-plugin</artifactId>
         <configuration>
           <archive>
