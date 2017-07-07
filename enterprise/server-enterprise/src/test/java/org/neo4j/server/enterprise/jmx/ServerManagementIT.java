@@ -75,7 +75,7 @@ public class ServerManagementIT
 
         assertNotNull( server.getDatabase().getGraph() );
         assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
-                server.getDatabase().getLocation() );
+                server.getDatabase().getLocation().getAbsolutePath() );
 
         // Change the database location
         config.augment( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory2 ) );
@@ -85,7 +85,7 @@ public class ServerManagementIT
         // Then
         assertNotNull( server.getDatabase().getGraph() );
         assertEquals( config.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath(),
-                server.getDatabase().getLocation() );
+                server.getDatabase().getLocation().getAbsolutePath() );
     }
 
     private static GraphDatabaseDependencies graphDbDependencies()

@@ -143,7 +143,8 @@ public class TestLifecycleManagedDatabase
     public void shouldBeAbleToGetLocation() throws Throwable
     {
         theDatabase.start();
-        assertThat( theDatabase.getLocation(), is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
+        assertThat( theDatabase.getLocation().getAbsolutePath(),
+                is( dbConfig.get( DatabaseManagementSystemSettings.database_path ).getAbsolutePath() ) );
     }
 
     private LifecycleManagingDatabase.GraphFactory createGraphFactory()
