@@ -104,7 +104,7 @@ public class IndexQueryTransactionStateTest
 
         StateHandlingStatementOperations stateHandlingOperations = new StateHandlingStatementOperations(
                 store,
-                new InternalAutoIndexing( Config.empty(), null ),
+                new InternalAutoIndexing( Config.defaults(), null ),
                 mock( ConstraintIndexCreator.class ),
                 mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), stateHandlingOperations,

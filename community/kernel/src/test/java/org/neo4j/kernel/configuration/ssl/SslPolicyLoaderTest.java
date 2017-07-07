@@ -71,7 +71,7 @@ public class SslPolicyLoaderTest
     public void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
@@ -109,7 +109,7 @@ public class SslPolicyLoaderTest
         // given
         FileUtils.deleteFile( file );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
@@ -134,7 +134,7 @@ public class SslPolicyLoaderTest
     public void shouldThrowIfPolicyNameDoesNotExist() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
@@ -161,7 +161,7 @@ public class SslPolicyLoaderTest
     public void shouldReturnNullPolicyIfNullRequested() throws Exception
     {
         // given
-        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.empty(), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
 
         // when
         SslPolicy sslPolicy = sslPolicyLoader.getPolicy( null );
@@ -174,7 +174,7 @@ public class SslPolicyLoaderTest
     public void shouldNotAllowLegacyPolicyToBeConfigured() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( LegacySslPolicyConfig.LEGACY_POLICY_NAME );

@@ -48,7 +48,7 @@ public class SslPolicyConfigTest
     public void shouldFindPolicyDefaults() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
@@ -95,7 +95,7 @@ public class SslPolicyConfigTest
     public void shouldFindPolicyOverrides() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
@@ -157,7 +157,7 @@ public class SslPolicyConfigTest
     public void shouldFailWithIncompletePathOverrides() throws Exception
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";

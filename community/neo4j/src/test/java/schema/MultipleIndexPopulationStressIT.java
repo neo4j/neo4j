@@ -297,7 +297,7 @@ public class MultipleIndexPopulationStressIT
 
     private void createRandomData( int count ) throws IOException
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         RecordFormats recordFormats =
                 RecordFormatSelector.selectForConfig( config, NullLogProvider.getInstance() );
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),

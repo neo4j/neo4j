@@ -181,7 +181,7 @@ public class ParallelBatchImporterTest
         storeDir.mkdirs();
         final BatchImporter inserter = new ParallelBatchImporter( storeDir,
                 fileSystemRule.get(), null, config, NullLogService.getInstance(),
-                processorAssigner, EMPTY, Config.empty(), getFormat() );
+                processorAssigner, EMPTY, Config.defaults(), getFormat() );
 
         boolean successful = false;
         IdGroupDistribution groups = new IdGroupDistribution( NODE_COUNT, 5, random.random() );

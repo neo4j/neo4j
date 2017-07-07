@@ -344,7 +344,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
@@ -384,7 +384,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 schemaState );
@@ -986,7 +986,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, indexes, logProvider, IndexingService.NO_MONITOR,
                 schemaState ) );
 
@@ -1034,7 +1034,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
                 logProvider, IndexingService.NO_MONITOR, schemaState );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )

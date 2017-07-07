@@ -249,7 +249,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             JobScheduler scheduler = getJobScheduler();
             StatementTokenNameLookup tokenNameLookup = new StatementTokenNameLookup( statement.readOperations() );
 
-            indexService = IndexingServiceFactory.createIndexingService( Config.empty(), scheduler,
+            indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
                     NullLogProvider.getInstance(), IndexingService.NO_MONITOR, getSchemaState() );
             indexService.start();

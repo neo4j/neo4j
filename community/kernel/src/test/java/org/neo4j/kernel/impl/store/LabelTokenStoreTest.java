@@ -49,7 +49,7 @@ public class LabelTokenStoreTest
     private final LogProvider logProvider = mock( LogProvider.class );
     private final DynamicStringStore dynamicStringStore = mock( DynamicStringStore.class );
     private final PageCursor pageCursor = mock( PageCursor.class );
-    private final Config config = Config.empty();
+    private final Config config = Config.defaults();
 
     @Test
     public void forceGetRecordSkipInUsecheck() throws IOException

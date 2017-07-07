@@ -88,14 +88,6 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * @return a configuration with embedded defaults
      */
-    public static Config empty()
-    {
-        return embeddedDefaults( Optional.empty() );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
     public static Config defaults()
     {
         return embeddedDefaults( Optional.empty() );

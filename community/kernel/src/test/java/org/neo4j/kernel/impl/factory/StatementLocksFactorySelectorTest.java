@@ -98,7 +98,7 @@ public class StatementLocksFactorySelectorTest
 
     private static TestStatementLocksFactorySelector newLoader( Locks locks, StatementLocksFactory... factories )
     {
-        return new TestStatementLocksFactorySelector( locks, Config.empty(), NullLogService.getInstance(), factories );
+        return new TestStatementLocksFactorySelector( locks, Config.defaults(), NullLogService.getInstance(), factories );
     }
 
     private static class TestStatementLocksFactorySelector extends StatementLocksFactorySelector

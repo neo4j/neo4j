@@ -70,8 +70,7 @@ public class HighLimitStoreMigrationTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         SchemaIndexProvider schemaIndexProvider = mock( SchemaIndexProvider.class );
 
-        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.empty(), NullLogService.getInstance()
-        );
+        StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, Config.defaults(), NullLogService.getInstance() );
 
         File storeDir = new File( testDirectory.graphDbDir(), "storeDir" );
         File migrationDir = new File( testDirectory.graphDbDir(), "migrationDir" );

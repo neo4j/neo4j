@@ -55,7 +55,7 @@ public class SimpleIndexReaderTest
 {
     private final PartitionSearcher partitionSearcher = mock( PartitionSearcher.class );
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class );
-    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+    private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
     private final TaskCoordinator taskCoordinator = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
 
     @Before

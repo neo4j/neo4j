@@ -65,7 +65,7 @@ public class CommonAbstractStoreBehaviourTest
      * Note that tests MUST use the non-modifying methods, to make alternate copies
      * of this settings class.
      */
-    private static final Config CONFIG = Config.empty().augment( stringMap(
+    private static final Config CONFIG = Config.defaults().augment( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

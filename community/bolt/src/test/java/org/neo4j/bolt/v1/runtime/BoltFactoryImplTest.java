@@ -124,7 +124,7 @@ public class BoltFactoryImplTest
     {
         return new BoltFactoryImpl( db, new UsageData( new OnDemandJobScheduler() ), NullLogService.getInstance(),
                 new ThreadToStatementContextBridge(), mock( Authentication.class ), BoltConnectionTracker.NOOP,
-                Config.empty() );
+                Config.defaults() );
     }
 
     private static GraphDatabaseAPI newDbMock()

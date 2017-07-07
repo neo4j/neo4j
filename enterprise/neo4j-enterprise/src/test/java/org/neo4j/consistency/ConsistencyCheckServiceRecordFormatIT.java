@@ -110,7 +110,7 @@ public class ConsistencyCheckServiceRecordFormatIT
         ConsistencyCheckService service = new ConsistencyCheckService();
 
         File storeDir = db.getStoreDir();
-        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( storeDir, Config.empty(),
+        ConsistencyCheckService.Result result = service.runFullConsistencyCheck( storeDir, Config.defaults(),
                 ProgressMonitorFactory.textual( System.out ), FormattedLogProvider.toOutputStream( System.out ), true );
 
         assertTrue( "Store is inconsistent", result.isSuccessful() );

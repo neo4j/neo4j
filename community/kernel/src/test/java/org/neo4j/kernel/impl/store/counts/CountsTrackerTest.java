@@ -219,7 +219,7 @@ public class CountsTrackerTest
             final Barrier.Control barrier = new Barrier.Control();
             CountsTracker tracker = life.add( new CountsTracker(
                     resourceManager.logProvider(), resourceManager.fileSystem(), resourceManager.pageCache(),
-                    Config.empty(), resourceManager.testPath() )
+                    Config.defaults(), resourceManager.testPath() )
             {
                 @Override
                 protected boolean include( CountsKey countsKey, ReadableBuffer value )
@@ -374,7 +374,7 @@ public class CountsTrackerTest
         {
             tx.incrementNodeCount( labelId, 1 ); // now at 2
         }
-        clock.forward( Config.empty().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
+        clock.forward( Config.defaults().get( GraphDatabaseSettings.counts_store_rotation_timeout ).toMillis() * 2, MILLISECONDS );
         try
         {
             rotation.get();
@@ -411,7 +411,7 @@ public class CountsTrackerTest
     private CountsTracker newTracker( SystemNanoClock clock )
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
-                resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock )
+                resourceManager.pageCache(), Config.defaults(), resourceManager.testPath(), clock )
                 .setInitializer( new DataInitializer<CountsAccessor.Updater>()
                 {
                     @Override

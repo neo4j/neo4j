@@ -61,7 +61,7 @@ public class NonUniqueDatabaseIndexSamplerTest
 
     private final IndexSearcher indexSearcher = mock( IndexSearcher.class, Mockito.RETURNS_DEEP_STUBS );
     private final TaskCoordinator taskControl = new TaskCoordinator( 0, TimeUnit.MILLISECONDS );
-    private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+    private final IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
 
     @Test
     public void nonUniqueSamplingCancel() throws IndexNotFoundKernelException, IOException
@@ -108,7 +108,7 @@ public class NonUniqueDatabaseIndexSamplerTest
             try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
             {
                 NonUniqueLuceneIndexSampler sampler = new NonUniqueLuceneIndexSampler( searcher.getIndexSearcher(),
-                        taskControl.newInstance(), new IndexSamplingConfig( Config.empty() ) );
+                        taskControl.newInstance(), new IndexSamplingConfig( Config.defaults() ) );
 
                 assertEquals( new IndexSample( 2, 2, 2 ), sampler.sampleIndex() );
             }

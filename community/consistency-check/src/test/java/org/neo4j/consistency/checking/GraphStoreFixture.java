@@ -172,7 +172,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             }
             nativeStores.initialize();
 
-            Config config = Config.empty();
+            Config config = Config.defaults();
             OperationalMode operationalMode = OperationalMode.single;
             IndexStoreView indexStoreView =
                     new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );

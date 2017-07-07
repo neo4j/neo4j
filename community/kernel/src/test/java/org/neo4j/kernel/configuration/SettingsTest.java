@@ -92,14 +92,14 @@ public class SettingsTest
     {
         File theDefault = new File( "/some/path" ).getAbsoluteFile();
         Setting<File> setting = pathSetting( "some.setting", theDefault.getAbsolutePath() );
-        assertThat( setting.from( Config.empty() ), is( theDefault ) );
+        assertThat( setting.from( Config.defaults() ), is( theDefault ) );
     }
 
     @Test
     public void pathSettingsAreNullIfThereIsNoValueAndNoDefault()
     {
         Setting<File> setting = pathSetting( "some.setting", NO_DEFAULT );
-        assertThat( setting.from( Config.empty() ), is( nullValue() ) );
+        assertThat( setting.from( Config.defaults() ), is( nullValue() ) );
     }
 
     @Test

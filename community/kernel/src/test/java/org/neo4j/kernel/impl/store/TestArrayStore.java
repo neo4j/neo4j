@@ -67,7 +67,7 @@ public class TestArrayStore
         FileSystemAbstraction fs = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( dir, Config.empty(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( dir, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();

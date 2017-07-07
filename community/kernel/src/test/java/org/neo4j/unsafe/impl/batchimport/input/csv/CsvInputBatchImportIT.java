@@ -100,7 +100,7 @@ public class CsvInputBatchImportIT
     {
         // GIVEN
         BatchImporter importer = new ParallelBatchImporter( directory.graphDbDir(), fileSystemRule.get(),
-                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.empty() );
+                smallBatchSizeConfig(), NullLogService.getInstance(), invisible(), Config.defaults() );
         List<InputNode> nodeData = randomNodeData();
         List<InputRelationship> relationshipData = randomRelationshipData( nodeData );
 

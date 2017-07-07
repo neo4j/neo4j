@@ -98,7 +98,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCreationTimeAndUpgradeTimeOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory( Config.empty() ).openAllNeoStores( true );
+        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -109,7 +109,7 @@ public class StoreFactoryTest
     public void shouldHaveSameCommittedTransactionAndUpgradeTransactionOnStartup() throws Exception
     {
         // When
-        neoStores = storeFactory( Config.empty() ).openAllNeoStores( true );
+        neoStores = storeFactory( Config.defaults() ).openAllNeoStores( true );
         MetaDataStore metaDataStore = neoStores.getMetaDataStore();
 
         // Then
@@ -132,7 +132,7 @@ public class StoreFactoryTest
     @Test( expected = StoreNotFoundException.class )
     public void shouldThrowWhenOpeningNonExistingNeoStores()
     {
-        try ( NeoStores neoStores = storeFactory( Config.empty() ).openAllNeoStores() )
+        try ( NeoStores neoStores = storeFactory( Config.defaults() ).openAllNeoStores() )
         {
             neoStores.getMetaDataStore();
         }
@@ -142,7 +142,7 @@ public class StoreFactoryTest
     public void shouldDelegateDeletionOptionToStores() throws Exception
     {
         // GIVEN
-        StoreFactory storeFactory = storeFactory( Config.empty(), DELETE_ON_CLOSE );
+        StoreFactory storeFactory = storeFactory( Config.defaults(), DELETE_ON_CLOSE );
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores( true );
@@ -156,7 +156,7 @@ public class StoreFactoryTest
     @Test
     public void shouldHandleStoreConsistingOfOneEmptyFile() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( Config.empty() );
+        StoreFactory storeFactory = storeFactory( Config.defaults() );
         FileSystemAbstraction fs = fsRule.get();
         fs.create( new File( storeDir, "neostore.nodestore.db.labels" ) );
         storeFactory.openAllNeoStores( true ).close();
@@ -165,7 +165,7 @@ public class StoreFactoryTest
     @Test
     public void shouldCompleteInitializationOfStoresWithIncompleteHeaders() throws Exception
     {
-        StoreFactory storeFactory = storeFactory( Config.empty() );
+        StoreFactory storeFactory = storeFactory( Config.defaults() );
         storeFactory.openAllNeoStores( true ).close();
         FileSystemAbstraction fs = fsRule.get();
         for ( File f : fs.listFiles( storeDir ) )

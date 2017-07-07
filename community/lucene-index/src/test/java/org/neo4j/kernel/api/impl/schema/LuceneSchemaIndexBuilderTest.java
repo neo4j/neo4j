@@ -76,7 +76,7 @@ public class LuceneSchemaIndexBuilderTest
 
     private Config getDefaultConfig()
     {
-        return Config.empty();
+        return Config.defaults();
     }
 
     private Config getReadOnlyConfig()

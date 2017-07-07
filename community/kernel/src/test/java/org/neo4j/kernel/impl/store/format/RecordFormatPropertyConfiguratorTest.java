@@ -63,7 +63,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void overrideDefaultValuesForCurrentFormat()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 17;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
@@ -77,7 +77,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void checkForMinimumBlockSize()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 60;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 

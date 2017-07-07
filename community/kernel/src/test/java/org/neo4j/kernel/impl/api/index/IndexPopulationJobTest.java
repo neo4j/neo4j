@@ -604,7 +604,7 @@ public class IndexPopulationJobTest
     private IndexPopulator inMemoryPopulator( boolean constraint )
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexDescriptor descriptor = indexDescriptor( FIRST, name, constraint );
         return new InMemoryIndexProvider().getPopulator( 21, descriptor, samplingConfig );
     }

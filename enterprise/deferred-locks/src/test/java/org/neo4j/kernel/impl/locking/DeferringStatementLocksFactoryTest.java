@@ -41,7 +41,7 @@ public class DeferringStatementLocksFactoryTest
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         try
         {
-            factory.initialize( null, Config.empty() );
+            factory.initialize( null, Config.defaults() );
             fail( "Exception expected" );
         }
         catch ( Exception e )

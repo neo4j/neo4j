@@ -58,7 +58,7 @@ public class RestoreDatabaseCommandTest
     public void forceShouldRespectStoreLock() throws Exception
     {
         String databaseName = "to";
-        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -87,7 +87,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -115,7 +115,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -141,7 +141,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.empty(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );

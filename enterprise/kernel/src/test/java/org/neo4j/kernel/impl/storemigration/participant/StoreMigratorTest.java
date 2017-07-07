@@ -104,7 +104,7 @@ public class StoreMigratorTest
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = mock( PageCache.class );
-        Config config = Config.empty();
+        Config config = Config.defaults();
         CountsMigrator storeMigrator = new CountsMigrator( fileSystem, pageCache, config );
         Set<String> actualVersions = new TreeSet<>();
         Set<String> expectedVersions = new TreeSet<>(

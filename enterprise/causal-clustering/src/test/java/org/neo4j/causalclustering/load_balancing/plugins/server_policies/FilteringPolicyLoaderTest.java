@@ -75,7 +75,7 @@ public class FilteringPolicyLoaderTest
                 },
         };
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         for ( Object[] row : input )
         {

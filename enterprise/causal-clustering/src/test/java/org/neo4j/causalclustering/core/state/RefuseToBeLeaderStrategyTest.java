@@ -38,7 +38,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseByDefault() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }
@@ -46,7 +46,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsUnsetAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
@@ -55,7 +55,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldLogWarningIfLicenseIsUnsetAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
 
         Log logMock = mock( Log.class );
@@ -68,7 +68,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsFalseAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
         config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "false" ) );
 
@@ -78,7 +78,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsFalseAndRefuseToBeLeaderIsFalse() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "false" ) );
         config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "false" ) );
 
@@ -88,7 +88,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnTrueIfLicenseIsTrueAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
         config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "true" ) );
 
@@ -98,7 +98,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsTrueAndRefuseToBeLeaderIsUnset() throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "true" ) );
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );

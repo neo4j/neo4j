@@ -35,7 +35,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class HighlyAvailableCommitProcessFactoryTest
@@ -61,7 +60,7 @@ public class HighlyAvailableCommitProcessFactoryTest
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
-                mock( StorageEngine.class ), Config.empty() );
+                mock( StorageEngine.class ), Config.defaults() );
 
         assertThat( commitProcess, not( instanceOf( ReadOnlyTransactionCommitProcess.class ) ) );
         assertThat( Proxy.getInvocationHandler( commitProcess ), instanceOf( DelegateInvocationHandler.class ) );

@@ -75,7 +75,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
         // non-unique sampler which scans the index and counts (potentially duplicates, of which there will
         // be none in a unique index).
 
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         FullScanNonUniqueIndexSampler<KEY,VALUE> sampler =
                 new FullScanNonUniqueIndexSampler<>( tree, layout, indexSamplingConfig );
         return sampler::result;

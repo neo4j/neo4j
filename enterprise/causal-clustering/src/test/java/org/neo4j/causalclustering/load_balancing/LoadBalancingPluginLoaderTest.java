@@ -51,7 +51,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldReturnSelectedPlugin() throws Throwable
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
 
@@ -72,7 +72,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldEnableShufflingOfDelegate() throws Throwable
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "true" ) );
 
@@ -92,7 +92,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldFindServerPoliciesPlugin() throws Throwable
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), ServerPoliciesPlugin.PLUGIN_NAME ) );
         config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
 
@@ -112,7 +112,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldThrowOnInvalidPlugin()
     {
         // given
-        Config config = Config.empty();
+        Config config = Config.defaults();
         config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DOES_NOT_EXIST ) );
 
         try
@@ -131,7 +131,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldNotAcceptInvalidSetting()
     {
         // given
-        Config config = Config.empty().augment( stringMap(
+        Config config = Config.defaults().augment( stringMap(
                 settingFor( DUMMY_PLUGIN_NAME, DummyLoadBalancingPlugin.DO_NOT_USE_THIS_CONFIG ), "true" ) );
         config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
 

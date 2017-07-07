@@ -443,7 +443,7 @@ public class FullCheckIntegrationTest
         while ( rules.hasNext() )
         {
             IndexRule rule = rules.next();
-            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator =
                 storeAccess.indexes().getPopulator( rule.getId(), rule.getIndexDescriptor(), samplingConfig );
             populator.markAsFailed( "Oh noes! I was a shiny index and then I was failed" );
@@ -550,7 +550,7 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesThatAreNotIndexed() throws Exception
     {
         // given
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexRule> indexRuleIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
@@ -576,7 +576,7 @@ public class FullCheckIntegrationTest
     public void shouldReportNodesWithDuplicatePropertyValueInUniqueIndex() throws Exception
     {
         // given
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<IndexRule> indexRuleIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )

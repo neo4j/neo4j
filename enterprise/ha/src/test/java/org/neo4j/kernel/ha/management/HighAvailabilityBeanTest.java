@@ -323,7 +323,7 @@ public class HighAvailabilityBeanTest
         {
             super( HighAvailabilityBeanTest.this.db, HighAvailabilityBeanTest.this.clusterMembers,
                     HighAvailabilityBeanTest.this.dbInfoProvider, HighAvailabilityBeanTest.this.fileSystem, null,
-                    new File( "storeDir" ), Config.empty() );
+                    new File( "storeDir" ), Config.defaults() );
         }
 
         @Override
