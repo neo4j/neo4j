@@ -58,7 +58,7 @@ public class ClusterMembershipChangeIT
         // when
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        List<AdvertisedSocketAddress> onlyServerZero = singletonList( Cluster.socketAddressForServer( 0 ) );
+        List<AdvertisedSocketAddress> onlyServerZero = singletonList( cluster.discoveryAddressForServer( 0 ) );
 
         // then
         cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();

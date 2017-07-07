@@ -78,15 +78,27 @@ public class Cluster
 
     private final File parentDir;
     private final DiscoveryServiceFactory discoveryServiceFactory;
+    private final String listenAddress;
+    private final String advertisedAddress;
 
-    private Map<Integer, CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
+    private Map<Integer,CoreClusterMember> coreMembers = new ConcurrentHashMap<>();
     private Map<Integer,ReadReplica> readReplicas = new ConcurrentHashMap<>();
 
     public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
-                    DiscoveryServiceFactory discoveryServiceFactory,
-                    Map<String, String> coreParams, Map<String, IntFunction<String>> instanceCoreParams,
-                    Map<String, String> readReplicaParams, Map<String, IntFunction<String>> instanceReadReplicaParams,
-                    String recordFormat )
+            DiscoveryServiceFactory discoveryServiceFactory,
+            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
+            Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
+            String recordFormat )
+    {
+        this( parentDir, noOfCoreMembers, noOfReadReplicas, discoveryServiceFactory, coreParams,
+                instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, IpFamily.IPV4, false );
+    }
+
+    public Cluster( File parentDir, int noOfCoreMembers, int noOfReadReplicas,
+            DiscoveryServiceFactory discoveryServiceFactory,
+            Map<String,String> coreParams, Map<String,IntFunction<String>> instanceCoreParams,
+            Map<String,String> readReplicaParams, Map<String,IntFunction<String>> instanceReadReplicaParams,
+            String recordFormat, IpFamily ipFamily, boolean useWildcard )
     {
         this.discoveryServiceFactory = discoveryServiceFactory;
         this.parentDir = parentDir;
@@ -95,7 +107,9 @@ public class Cluster
         {
             coreServerIds.add( i );
         }
-        List<AdvertisedSocketAddress> initialHosts = buildAddresses( coreServerIds );
+        listenAddress = useWildcard ? ipFamily.wildcardAddress() : ipFamily.localhostAddress();
+        advertisedAddress = ipFamily.localhostName();
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreServerIds );
         createCoreMembers( noOfCoreMembers, initialHosts, coreParams, instanceCoreParams, recordFormat );
         createReadReplicas( noOfReadReplicas, initialHosts, readReplicaParams, instanceReadReplicaParams, recordFormat );
     }
@@ -111,15 +125,6 @@ public class Cluster
         finally
         {
             executor.shutdown();
-        }
-    }
-
-    private void waitForReadReplicas( CompletionService<ReadReplicaGraphDatabase> readReplicaGraphDatabaseCompletionService ) throws
-            InterruptedException, ExecutionException
-    {
-        for ( int i = 0; i < readReplicas.size(); i++ )
-        {
-            readReplicaGraphDatabaseCompletionService.take().get();
         }
     }
 
@@ -149,18 +154,18 @@ public class Cluster
     public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
             List<AdvertisedSocketAddress> initialMembers )
     {
-        CoreClusterMember coreClusterMember = new  CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
                 discoveryServiceFactory, StandardV3_0.NAME, parentDir,
-                emptyMap(), emptyMap() );
+                emptyMap(), emptyMap(), listenAddress, advertisedAddress );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
 
     public ReadReplica addReadReplicaWithIdAndRecordFormat( int memberId, String recordFormat )
     {
-        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
-        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory,
-                hazelcastAddresses, stringMap(), emptyMap(), recordFormat );
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
+        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory, initialHosts,
+                stringMap(), emptyMap(), recordFormat, new Monitors(), advertisedAddress, listenAddress );
         readReplicas.put( memberId, member );
         return member;
     }
@@ -170,11 +175,11 @@ public class Cluster
         return addReadReplicaWithIdAndRecordFormat( memberId, StandardV3_0.NAME );
     }
 
-    public ReadReplica addReadReplicaWithIdAndMonitors( int memberId, Monitors monitors )
+    public ReadReplica addReadReplicaWithIdAndMonitors( @SuppressWarnings( "SameParameterValue" ) int memberId, Monitors monitors )
     {
-        List<AdvertisedSocketAddress> hazelcastAddresses = buildAddresses( coreMembers.keySet() );
-        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory,
-                hazelcastAddresses, stringMap(), emptyMap(), StandardV3_0.NAME, monitors );
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
+        ReadReplica member = new ReadReplica( parentDir, memberId, discoveryServiceFactory, initialHosts,
+                stringMap(), emptyMap(), StandardV3_0.NAME, monitors, advertisedAddress, listenAddress );
         readReplicas.put( memberId, member );
         return member;
     }
@@ -219,7 +224,7 @@ public class Cluster
         }
         else
         {
-            throw new RuntimeException( "Could not remove core meber with member id " + memberId );
+            throw new RuntimeException( "Could not remove core member with id " + memberId );
         }
     }
 
@@ -300,7 +305,7 @@ public class Cluster
     public int numberOfCoreMembersReportedByTopology()
     {
         CoreClusterMember aCoreGraphDb = coreMembers.values().stream()
-                .filter( ( member ) -> member.database() != null ).findAny().get();
+                .filter( ( member ) -> member.database() != null ).findAny().orElseThrow( IllegalArgumentException::new );
         CoreTopologyService coreTopologyService = aCoreGraphDb.database().getDependencyResolver()
                 .resolveDependency( CoreTopologyService.class );
         return coreTopologyService.coreServers().members().size();
@@ -309,7 +314,7 @@ public class Cluster
     /**
      * Perform a transaction against the core cluster, selecting the target and retrying as necessary.
      */
-    public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase, Transaction> op ) throws Exception
+    public CoreClusterMember coreTx( BiConsumer<CoreGraphDatabase,Transaction> op ) throws Exception
     {
         // this currently wraps the leader-only strategy, since it is the recommended and only approach
         return leaderTx( op, DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
@@ -317,10 +322,10 @@ public class Cluster
 
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams, Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        List<AdvertisedSocketAddress> advertisedAddress = buildAddresses( coreMembers.keySet() );
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, advertisedAddress,
-                discoveryServiceFactory, recordFormat, parentDir,
-                extraParams, instanceExtraParams );
+        List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
+        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialHosts,
+                discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
+                listenAddress, advertisedAddress );
         coreMembers.put( memberId, coreClusterMember );
         return coreClusterMember;
     }
@@ -331,7 +336,8 @@ public class Cluster
     private CoreClusterMember leaderTx( BiConsumer<CoreGraphDatabase,Transaction> op, int timeout, TimeUnit timeUnit )
             throws Exception
     {
-        ThrowingSupplier<CoreClusterMember,Exception> supplier = () -> {
+        ThrowingSupplier<CoreClusterMember,Exception> supplier = () ->
+        {
             CoreClusterMember member = awaitLeader( timeout, timeUnit );
             CoreGraphDatabase db = member.database();
             if ( db == null )
@@ -367,50 +373,50 @@ public class Cluster
         // TODO: This should really catch all cases of transient failures. Must be able to express that in a clearer
         // manner...
         return (e instanceof IdGenerationException) || isLockExpired( e ) || isLockOnFollower( e ) ||
-                isWriteNotOnLeader( e );
+               isWriteNotOnLeader( e );
 
     }
 
     private boolean isWriteNotOnLeader( Throwable e )
     {
         return e instanceof WriteOperationsNotAllowedException &&
-                e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
+               e.getMessage().startsWith( String.format( LeaderCanWrite.NOT_LEADER_ERROR_MSG, "" ) );
     }
 
     private boolean isLockOnFollower( Throwable e )
     {
         return e instanceof AcquireLockTimeoutException &&
-                (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
-                        e.getCause() instanceof NoLeaderFoundException);
+               (e.getMessage().equals( LeaderOnlyLockManager.LOCK_NOT_ON_LEADER_ERROR_MESSAGE ) ||
+                e.getCause() instanceof NoLeaderFoundException);
     }
 
     private boolean isLockExpired( Throwable e )
     {
         return e instanceof TransactionFailureException &&
-                e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
-                ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
-                        LockSessionExpired;
+               e.getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException &&
+               ((org.neo4j.kernel.api.exceptions.TransactionFailureException) e.getCause()).status() ==
+               LockSessionExpired;
     }
 
-    public static List<AdvertisedSocketAddress> buildAddresses( Set<Integer> coreServerIds )
+    private List<AdvertisedSocketAddress> buildInitialHosts( Set<Integer> coreServerIds )
     {
-        return coreServerIds.stream().map( Cluster::socketAddressForServer ).collect( toList() );
+        return coreServerIds.stream().map( this::discoveryAddressForServer ).collect( toList() );
     }
 
-    public static AdvertisedSocketAddress socketAddressForServer( int id )
+    public AdvertisedSocketAddress discoveryAddressForServer( int id )
     {
-        String advertisedAddress = "127.0.0.1";
         return new AdvertisedSocketAddress( advertisedAddress, (5000 + id) );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
-                                    List<AdvertisedSocketAddress> addresses, Map<String, String> extraParams,
-                                    Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
+            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
         for ( int i = 0; i < noOfCoreMembers; i++ )
         {
             CoreClusterMember coreClusterMember = new CoreClusterMember( i, noOfCoreMembers, addresses,
-                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams );
+                    discoveryServiceFactory, recordFormat, parentDir, extraParams, instanceExtraParams,
+                    listenAddress, advertisedAddress );
             coreMembers.put( i, coreClusterMember );
         }
     }
@@ -454,15 +460,15 @@ public class Cluster
     }
 
     private void createReadReplicas( int noOfReadReplicas,
-                                    final List<AdvertisedSocketAddress> coreMemberAddresses,
-                                    Map<String, String> extraParams,
-                                    Map<String, IntFunction<String>> instanceExtraParams,
-                                    String recordFormat )
+            final List<AdvertisedSocketAddress> coreMemberAddresses,
+            Map<String,String> extraParams,
+            Map<String,IntFunction<String>> instanceExtraParams,
+            String recordFormat )
     {
         for ( int i = 0; i < noOfReadReplicas; i++ )
         {
-            readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses,
-                    extraParams, instanceExtraParams, recordFormat ) );
+            readReplicas.put( i, new ReadReplica( parentDir, i, discoveryServiceFactory, coreMemberAddresses, extraParams,
+                    instanceExtraParams, recordFormat, new Monitors(), advertisedAddress, listenAddress ) );
         }
     }
 
@@ -477,32 +483,33 @@ public class Cluster
      * <code>memberToLookLike</code> are picked up.
      */
     public static void dataOnMemberEventuallyLooksLike( CoreClusterMember memberThatChanges,
-                                                        CoreClusterMember memberToLookLike )
+            CoreClusterMember memberToLookLike )
             throws TimeoutException, InterruptedException
     {
-        await( () -> {
-                try
+        await( () ->
                 {
-                    // We recalculate the DbRepresentation of both source and target, so changes can be picked up
-                    DbRepresentation representationToLookLike = DbRepresentation.of( memberToLookLike.database() );
-                    DbRepresentation representationThatChanges = DbRepresentation.of( memberThatChanges.database() );
-                    return representationToLookLike.equals( representationThatChanges );
-                }
-                catch( DatabaseShutdownException e )
-                {
+                    try
+                    {
+                        // We recalculate the DbRepresentation of both source and target, so changes can be picked up
+                        DbRepresentation representationToLookLike = DbRepresentation.of( memberToLookLike.database() );
+                        DbRepresentation representationThatChanges = DbRepresentation.of( memberThatChanges.database() );
+                        return representationToLookLike.equals( representationThatChanges );
+                    }
+                    catch ( DatabaseShutdownException e )
+                    {
                     /*
                      * This can happen if the database is still in the process of starting. Yes, the naming
                      * of the exception is unfortunate, since it is thrown when the database lifecycle is not
                      * in RUNNING state and therefore signals general unavailability (e.g still starting) and not
                      * necessarily a database that is shutting down.
                      */
-                }
-                return false;
-            },
-            DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
+                    }
+                    return false;
+                },
+                DEFAULT_TIMEOUT_MS, TimeUnit.MILLISECONDS );
     }
 
-    public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source,  Collection<T> targets )
+    public static <T extends ClusterMember> void dataMatchesEventually( ClusterMember source, Collection<T> targets )
             throws TimeoutException, InterruptedException
     {
         dataMatchesEventually( DbRepresentation.of( source.database() ), targets );
@@ -513,7 +520,7 @@ public class Cluster
      * <code>member</code>. Changes in the <code>member</code> database contents after this method is called do not get
      * picked up and are not part of the comparison.
      *
-     * @param source    The database to check against
+     * @param source  The database to check against
      * @param targets The databases expected to match the contents of <code>member</code>
      */
     public static <T extends ClusterMember> void dataMatchesEventually( DbRepresentation source, Collection<T> targets )

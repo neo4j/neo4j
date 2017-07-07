@@ -29,12 +29,14 @@ import java.util.Map;
 import java.util.function.IntFunction;
 
 import org.neo4j.causalclustering.discovery.Cluster;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.neo4j.causalclustering.discovery.IpFamily.IPV4;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ClusterRule extends ExternalResource
@@ -51,6 +53,8 @@ public class ClusterRule extends ExternalResource
     private Map<String,String> readReplicaParams = stringMap();
     private Map<String,IntFunction<String>> instanceReadReplicaParams = new HashMap<>();
     private String recordFormat = StandardV3_0.NAME;
+    private IpFamily ipFamily = IPV4;
+    private boolean useWildcard = false;
 
     public ClusterRule( Class<?> testClass )
     {
@@ -112,7 +116,7 @@ public class ClusterRule extends ExternalResource
         if ( cluster == null )
         {
             cluster = new Cluster( clusterDirectory, noCoreMembers, noReadReplicas, discoveryServiceFactory, coreParams,
-                    instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat );
+                    instanceCoreParams, readReplicaParams, instanceReadReplicaParams, recordFormat, ipFamily, useWildcard );
         }
 
         return cluster;
@@ -197,6 +201,18 @@ public class ClusterRule extends ExternalResource
     public ClusterRule withRecordFormat( String recordFormat )
     {
         this.recordFormat = recordFormat;
+        return this;
+    }
+
+    public ClusterRule withIpFamily( IpFamily ipFamily )
+    {
+        this.ipFamily = ipFamily;
+        return this;
+    }
+
+    public ClusterRule useWildcard( boolean useWildcard )
+    {
+        this.useWildcard = useWildcard;
         return this;
     }
 }

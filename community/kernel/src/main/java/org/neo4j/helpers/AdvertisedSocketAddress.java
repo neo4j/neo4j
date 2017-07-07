@@ -25,4 +25,12 @@ public class AdvertisedSocketAddress extends SocketAddress
     {
         super( hostname, port );
     }
+
+    /**
+     * Textual representation format for an advertised socket address.
+     */
+    public static String advertisedAddress( String hostname, int port )
+    {
+        return new AdvertisedSocketAddress( hostname, port ).toString();
+    }
 }

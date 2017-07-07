@@ -41,7 +41,6 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.Config;
@@ -55,7 +54,10 @@ import static com.hazelcast.spi.properties.GroupProperty.LOGGING_TYPE;
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_FIRST_RUN_DELAY_SECONDS;
 import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SECONDS;
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
+import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
@@ -117,7 +119,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void stop()
     {
         log.info( String.format( "HazelcastCoreTopologyService stopping and unbinding from %s",
-                config.get( CausalClusteringSettings.discovery_listen_address ) ) );
+                config.get( discovery_listen_address ) ) );
 
         scheduler.cancelAndWaitTermination( refreshJob );
 
@@ -138,28 +140,26 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         JoinConfig joinConfig = new JoinConfig();
         joinConfig.getMulticastConfig().setEnabled( false );
-        joinConfig.getAwsConfig().setEnabled( false );
         TcpIpConfig tcpIpConfig = joinConfig.getTcpIpConfig();
         tcpIpConfig.setEnabled( true );
 
-        List<AdvertisedSocketAddress> initialMembers = config.get( CausalClusteringSettings.initial_discovery_members );
+        List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
             tcpIpConfig.addMember( address.toString() );
         }
 
-        Setting<ListenSocketAddress> discovery_listen_address = CausalClusteringSettings.discovery_listen_address;
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
-        InterfacesConfig interfaces = new InterfacesConfig();
-        interfaces.addInterface( hazelcastAddress.getHostname() );
+        NetworkConfig networkConfig = new NetworkConfig();
 
-        if ( !hazelcastAddress.getHostname().equals( "0.0.0.0" ) )
+        if ( !hazelcastAddress.isWildcard() )
         {
+            InterfacesConfig interfaces = new InterfacesConfig();
+            interfaces.addInterface( hazelcastAddress.getHostname() );
             interfaces.setEnabled( true );
+            networkConfig.setInterfaces( interfaces );
         }
 
-        NetworkConfig networkConfig = new NetworkConfig();
-        networkConfig.setInterfaces( interfaces );
         networkConfig.setPort( hazelcastAddress.getPort() );
         networkConfig.setJoin( joinConfig );
         networkConfig.setPortAutoIncrement( false );
@@ -170,6 +170,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), "10" );
         c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
+
+        if ( hazelcastAddress.isIPv6() )
+        {
+            c.setProperty( PREFER_IPv4_STACK.getName(), "false" );
+        }
 
         c.setNetworkConfig( networkConfig );
 
@@ -208,7 +213,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
                       "\n\tRaft:        listen=%s, advertised=%s, " +
                       "\n\tClient Connector Addresses: %s" +
                       "\n]",
-                config.get( CausalClusteringSettings.discovery_listen_address ),
+                config.get( discovery_listen_address ),
                 config.get( CausalClusteringSettings.discovery_advertised_address ),
                 config.get( CausalClusteringSettings.transaction_listen_address ),
                 config.get( CausalClusteringSettings.transaction_advertised_address ),

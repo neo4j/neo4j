@@ -27,7 +27,6 @@ import java.util.function.IntFunction;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -39,6 +38,8 @@ import org.neo4j.server.configuration.ClientConnectorSettings.HttpConnector.Encr
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ReadReplica implements ClusterMember
@@ -48,21 +49,14 @@ public class ReadReplica implements ClusterMember
     private final File neo4jHome;
     private final File storeDir;
     private final int memberId;
-    private final String boltAdvertisedAddress;
+    private final String boltAdvertisedSocketAddress;
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
     public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat )
-    {
-        this( parentDir, memberId, discoveryServiceFactory, coreMemberHazelcastAddresses, extraParams,
-                instanceExtraParams, recordFormat, new Monitors() );
-    }
-
-    public ReadReplica( File parentDir, int memberId, DiscoveryServiceFactory discoveryServiceFactory,
-                        List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
+                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors,
+                        String advertisedAddress, String listenAddress )
     {
         this.memberId = memberId;
         int boltPort = 9000 + memberId;
@@ -70,6 +64,7 @@ public class ReadReplica implements ClusterMember
 
         String initialHosts = coreMemberHazelcastAddresses.stream()
                 .map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
+        boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
         config.put( "dbms.mode", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
@@ -86,13 +81,12 @@ public class ReadReplica implements ClusterMember
 
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
-        boltAdvertisedAddress = "127.0.0.1:" + boltPort;
-        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).listen_address.name(), listenAddress( listenAddress, boltPort ) );
+        config.put( new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedSocketAddress );
         config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
         config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
-        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress( listenAddress, httpPort ) );
+        config.put( new ClientConnectorSettings.HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress( advertisedAddress, httpPort ) );
 
         this.neo4jHome = new File( parentDir, "read-replica-" + memberId );
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
@@ -100,6 +94,7 @@ public class ReadReplica implements ClusterMember
 
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
 
         this.monitors = monitors;
@@ -107,12 +102,12 @@ public class ReadReplica implements ClusterMember
 
     public String boltAdvertisedAddress()
     {
-        return boltAdvertisedAddress;
+        return boltAdvertisedSocketAddress;
     }
 
     public String routingURI()
     {
-        return String.format( "bolt+routing://%s", boltAdvertisedAddress );
+        return String.format( "bolt+routing://%s", boltAdvertisedSocketAddress );
     }
 
     @Override
@@ -161,7 +156,7 @@ public class ReadReplica implements ClusterMember
 
     public String directURI()
     {
-        return String.format( "bolt://%s", boltAdvertisedAddress );
+        return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
     public File homeDir()
