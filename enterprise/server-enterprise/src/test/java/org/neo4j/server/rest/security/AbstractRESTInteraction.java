@@ -42,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -65,6 +66,9 @@ import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIO
 
 abstract class AbstractRESTInteraction extends CommunityServerTestBase implements NeoInteractionLevel<RESTSubject>
 {
+
+    private ConnectorPortRegister connectorPortRegister;
+
     abstract String commitPath();
 
     abstract void consume( Consumer<ResourceIterator<Map<String,Object>>> resultConsumer, JsonNode data );
@@ -79,7 +83,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
 
     AbstractRESTInteraction( Map<String,String> config ) throws IOException
     {
-        CommunityServerBuilder builder = EnterpriseServerBuilder.server();
+        CommunityServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts();
         builder = builder
                 .withProperty( new BoltConnector( "bolt" ).type.name(), "BOLT" )
                 .withProperty( new BoltConnector( "bolt" ).enabled.name(), "true" )
@@ -97,6 +101,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
         this.server = builder.build();
         this.server.start();
         authManager = this.server.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
+        connectorPortRegister = server.getDependencyResolver().resolveDependency( ConnectorPortRegister.class );
     }
 
     @Override
@@ -223,7 +228,7 @@ abstract class AbstractRESTInteraction extends CommunityServerTestBase implement
     @Override
     public HostnamePort lookupConnector( String connectorKey )
     {
-        return new HostnamePort( "localhost", 7687 );
+        return connectorPortRegister.getLocalAddress( connectorKey );
     }
 
     private String parseErrorMessage( HTTP.Response response )

@@ -62,7 +62,7 @@ public class ServerManagementIT
         Config config = ConfigLoader.loadConfig(
                 Optional.of( baseDir.directory() ),
                 EnterpriseServerBuilder
-                        .server()
+                        .serverOnRandomPorts()
                         .withDefaultDatabaseTuning()
                         .usingDataDir( dataDirectory1 )
                         .createConfigFiles(),

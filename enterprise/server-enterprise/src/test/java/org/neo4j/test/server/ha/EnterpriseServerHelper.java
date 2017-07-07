@@ -38,7 +38,7 @@ public class EnterpriseServerHelper
 
     private static EnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
     {
-        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDataDir( databaseDir.getAbsolutePath() );
+        EnterpriseServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts().usingDataDir( databaseDir.getAbsolutePath() );
         if ( persistent )
         {
             builder = (EnterpriseServerBuilder) builder.persistent();

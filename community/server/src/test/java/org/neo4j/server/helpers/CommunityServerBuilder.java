@@ -61,7 +61,7 @@ import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManag
 
 public class CommunityServerBuilder
 {
-    private static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
+    protected static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
 
     protected final LogProvider logProvider;
     private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );

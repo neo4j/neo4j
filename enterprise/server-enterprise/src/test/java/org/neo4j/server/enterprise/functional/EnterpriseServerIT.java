@@ -53,7 +53,7 @@ public class EnterpriseServerIT
     public void shouldBeAbleToStartInHAMode() throws Throwable
     {
         // Given
-        NeoServer server = EnterpriseServerBuilder.server()
+        NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
@@ -69,7 +69,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+            ClientResponse r = client.resource( getHaEndpoint( server ) )
                     .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
@@ -84,7 +84,7 @@ public class EnterpriseServerIT
     public void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
     {
         // Given
-        NeoServer server = EnterpriseServerBuilder.server()
+        NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
@@ -101,7 +101,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+            ClientResponse r = client.resource( getHaEndpoint( server ) )
                     .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 401, r.getStatus() );
         }
@@ -115,7 +115,7 @@ public class EnterpriseServerIT
     public void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
     {
         // Given
-        NeoServer server = EnterpriseServerBuilder.server()
+        NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
@@ -133,7 +133,7 @@ public class EnterpriseServerIT
             assertThat( server.getDatabase().getGraph(), is( instanceOf(HighlyAvailableGraphDatabase.class) ) );
 
             Client client = Client.create();
-            ClientResponse r = client.resource( "http://localhost:7474/db/manage/server/ha" )
+            ClientResponse r = client.resource( getHaEndpoint( server ) )
                     .accept( APPLICATION_JSON ).get( ClientResponse.class );
             assertEquals( 200, r.getStatus() );
             assertThat( r.getEntity( String.class ), containsString( "master" ) );
@@ -142,6 +142,11 @@ public class EnterpriseServerIT
         {
             server.stop();
         }
+    }
+
+    private String getHaEndpoint( NeoServer server )
+    {
+        return server.baseUri().toString() + "db/manage/server/ha";
     }
 
     @After

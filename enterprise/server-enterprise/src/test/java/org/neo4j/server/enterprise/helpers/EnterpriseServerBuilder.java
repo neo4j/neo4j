@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.logging.LogProvider;
@@ -42,6 +43,14 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     public static EnterpriseServerBuilder server()
     {
         return server( NullLogProvider.getInstance() );
+    }
+
+    public static EnterpriseServerBuilder serverOnRandomPorts()
+    {
+        EnterpriseServerBuilder server = server();
+        server.onRandomPorts();
+        server.withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" );
+        return server;
     }
 
     public static EnterpriseServerBuilder server( LogProvider logProvider )

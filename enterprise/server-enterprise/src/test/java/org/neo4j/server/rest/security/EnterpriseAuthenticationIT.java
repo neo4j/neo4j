@@ -19,13 +19,13 @@
  */
 package org.neo4j.server.rest.security;
 
+import org.codehaus.jackson.node.ArrayNode;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.ws.rs.core.HttpHeaders;
-
-import org.codehaus.jackson.node.ArrayNode;
-import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
@@ -40,7 +40,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
     @Override
     public void startServer( boolean authEnabled ) throws IOException
     {
-        server = EnterpriseServerBuilder.server()
+        server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( authEnabled ) )
                 .build();
         server.start();
@@ -97,7 +97,7 @@ public class EnterpriseAuthenticationIT extends AuthenticationIT
 
     private void startServerWithAuthDisabled() throws IOException
     {
-        server = EnterpriseServerBuilder.server()
+        server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), Boolean.toString( false ) )
                 .build();
         server.start();

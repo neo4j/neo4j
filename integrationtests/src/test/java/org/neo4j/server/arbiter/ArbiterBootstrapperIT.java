@@ -17,14 +17,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.enterprise;
+package org.neo4j.server.arbiter;
 
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,9 +51,9 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.ServerCommandLineArgs;
 import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
 import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
@@ -71,11 +70,13 @@ import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;
 import static org.neo4j.helpers.collection.MapUtil.store;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.enterprise.ArbiterBootstrapperTestProxy.START_SIGNAL;
 import static org.neo4j.test.StreamConsumer.IGNORE_FAILURES;
 
 public class ArbiterBootstrapperIT
 {
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+
     @Test
     public void canJoinWithExplicitInitialHosts() throws Exception
     {
@@ -123,8 +124,6 @@ public class ArbiterBootstrapperIT
 
     private static Integer SHOULD_NOT_JOIN;
 
-    @Rule
-    public TestRule dumpPorts = new DumpPortListenerOnNettyBindFailure();
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
@@ -222,7 +221,7 @@ public class ArbiterBootstrapperIT
         try
         {
             process = startArbiterProcess( configDir );
-            new InputStreamAwaiter( process.getInputStream() ).awaitLine( START_SIGNAL, 20, SECONDS );
+            new InputStreamAwaiter( process.getInputStream() ).awaitLine( ArbiterBootstrapperTestProxy.START_SIGNAL, 20, SECONDS );
             handler = new ProcessStreamHandler( process, false, "", IGNORE_FAILURES );
             handler.launch();
 
@@ -260,7 +259,7 @@ public class ArbiterBootstrapperIT
         args.add( ArbiterBootstrapperTestProxy.class.getName() );
         if ( configDir != null )
         {
-            args.add( format( "--%s=%s", ServerCommandLineArgs.CONFIG_DIR_ARG, configDir ) );
+            args.add( String.format( "--%s=%s", ServerCommandLineArgs.CONFIG_DIR_ARG, configDir ) );
         }
         return getRuntime().exec( args.toArray( new String[args.size()] ) );
     }
