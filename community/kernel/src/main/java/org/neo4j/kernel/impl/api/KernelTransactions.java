@@ -322,7 +322,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
 
     private class KernelTransactionImplementationFactory implements Factory<KernelTransactionImplementation>
     {
-        private final Set<KernelTransactionImplementation> transactions;
+        private Set<KernelTransactionImplementation> transactions;
 
         KernelTransactionImplementationFactory( Set<KernelTransactionImplementation> transactions )
         {
@@ -345,7 +345,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
 
     private class GlobalKernelTransactionPool extends LinkedQueuePool<KernelTransactionImplementation>
     {
-        private final Set<KernelTransactionImplementation> transactions;
+        private Set<KernelTransactionImplementation> transactions;
 
         GlobalKernelTransactionPool( Set<KernelTransactionImplementation> transactions,
                 Factory<KernelTransactionImplementation> factory )
