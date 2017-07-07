@@ -19,21 +19,13 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.InOrder;
 
 import java.io.File;
-import java.time.Clock;
 import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.api.KernelAPI;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.configuration.Config;
@@ -44,34 +36,16 @@ import org.neo4j.kernel.impl.factory.EditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.PlatformModule;
-import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.NullLog;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.rule.NeoStoreDataSourceRule;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
-import static org.neo4j.kernel.api.KernelTransaction.Type.explicit;
 
 public class KernelTest
 {
-    private final PageCacheAndDependenciesRule pageCacheRule = new PageCacheAndDependenciesRule();
-    private final NeoStoreDataSourceRule neoStoreRule = new NeoStoreDataSourceRule();
-
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( pageCacheRule ).around( neoStoreRule );
-
     @Test
     public void shouldNotAllowCreationOfConstraintsWhenInHA() throws Exception
     {
@@ -98,29 +72,6 @@ public class KernelTest
         db.shutdown();
     }
 
-    @Test
-    public void shouldIncrementTransactionMonitorBeforeCheckingDatabaseAvailability() throws Exception
-    {
-        // GIVEN
-        AvailabilityGuard availabilityGuard = spy( new AvailabilityGuard( Clock.systemUTC(), NullLog.getInstance() ) );
-        TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependencies( availabilityGuard, transactionMonitor );
-        NeoStoreDataSource dataSource = neoStoreRule.getDataSource( pageCacheRule.directory().absolutePath(),
-                pageCacheRule.fileSystem(), pageCacheRule.pageCache(), dependencies );
-        dataSource.start();
-        KernelAPI kernel = dataSource.getKernel();
-
-        // WHEN
-        try ( KernelTransaction tx = kernel.newTransaction( explicit, AUTH_DISABLED ) )
-        {
-            // THEN
-            InOrder order = inOrder( transactionMonitor, availabilityGuard );
-            order.verify( transactionMonitor, times( 1 ) ).transactionStarted();
-            order.verify( availabilityGuard, times( 1 ) ).await( anyLong() );
-        }
-    }
-
     @SuppressWarnings( "deprecation" )
     class FakeHaDatabase extends ImpermanentGraphDatabase
     {
@@ -145,8 +96,8 @@ public class KernelTest
             new GraphDatabaseFacadeFactory( DatabaseInfo.COMMUNITY,  factory )
             {
                 @Override
-                protected PlatformModule createPlatform( File storeDir, Config config,
-                        GraphDatabaseFacadeFactory.Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+                protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                        GraphDatabaseFacade graphDatabaseFacade )
                 {
                     return new ImpermanentPlatformModule( storeDir, config, databaseInfo, dependencies,
                             graphDatabaseFacade );

@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Function;
-
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -217,6 +216,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     protected GraphDatabaseBuilder.DatabaseCreator createImpermanentDatabaseCreator( final File storeDir,
             final TestGraphDatabaseFactoryState state )
     {
+
         return new GraphDatabaseBuilder.DatabaseCreator()
         {
             @Override
@@ -228,29 +228,23 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                return newTestGraphDatabaseFacadeFactory( storeDir, config, state ).newFacade( storeDir, config,
+                return new TestGraphDatabaseFacadeFactory( state, true ).newFacade( storeDir, config,
                         GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );
             }
         };
     }
 
-    protected GraphDatabaseFacadeFactory newTestGraphDatabaseFacadeFactory( File storeDir,
-            Config config, TestGraphDatabaseFactoryState state )
-    {
-        return new TestGraphDatabaseFacadeFactory( state, true );
-    }
-
-    protected static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
+    static class TestGraphDatabaseFacadeFactory extends GraphDatabaseFacadeFactory
     {
         private final TestGraphDatabaseFactoryState state;
         private final boolean impermanent;
 
-        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
+        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent )
         {
             this( state, impermanent, DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
         }
 
-        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
+        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state, boolean impermanent,
                 DatabaseInfo databaseInfo, Function<PlatformModule,EditionModule> editionFactory )
         {
             super( databaseInfo, editionFactory );
@@ -258,7 +252,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             this.impermanent = impermanent;
         }
 
-        protected TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
+        TestGraphDatabaseFacadeFactory( TestGraphDatabaseFactoryState state )
         {
             this( state, false );
         }
@@ -270,14 +264,15 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             return impermanent ?
                    new ImpermanentTestDatabasePlatformModule( storeDir, config.with( stringMap( ephemeral.name(), TRUE ) ),
                            dependencies, graphDatabaseFacade, this.databaseInfo ) :
-                   new TestDatabasePlatformModule( storeDir, config, this
-                           .databaseInfo, dependencies, graphDatabaseFacade );
+                   new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade, this
+                           .databaseInfo );
         }
 
-        protected class TestDatabasePlatformModule extends PlatformModule
+        class TestDatabasePlatformModule extends PlatformModule
         {
-            protected TestDatabasePlatformModule( File storeDir, Config config, DatabaseInfo databaseInfo,
-                    Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+
+            TestDatabasePlatformModule( File storeDir, Config config, Dependencies dependencies,
+                    GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
             {
                 super( storeDir, config, databaseInfo, dependencies,
                         graphDatabaseFacade );
@@ -324,7 +319,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             ImpermanentTestDatabasePlatformModule( File storeDir, Config config,
                     Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade, DatabaseInfo databaseInfo )
             {
-                super( storeDir, config, databaseInfo, dependencies, graphDatabaseFacade );
+                super( storeDir, config, dependencies, graphDatabaseFacade, databaseInfo );
             }
 
             @Override
