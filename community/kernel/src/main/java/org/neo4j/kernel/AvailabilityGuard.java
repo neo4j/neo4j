@@ -29,6 +29,7 @@ import java.util.function.Function;
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.Log;
 
 /**
@@ -43,11 +44,17 @@ public class AvailabilityGuard
     public static final String DATABASE_AVAILABLE_MSG = "Fulfilling of requirement makes database available: ";
     public static final String DATABASE_UNAVAILABLE_MSG = "Requirement makes database unavailable: ";
 
-    public class UnavailableException extends Exception
+    public class UnavailableException extends Exception implements Status.HasStatus
     {
         public UnavailableException( String message )
         {
             super( message );
+        }
+
+        @Override
+        public Status status()
+        {
+            return Status.General.DatabaseUnavailable;
         }
     }
 
