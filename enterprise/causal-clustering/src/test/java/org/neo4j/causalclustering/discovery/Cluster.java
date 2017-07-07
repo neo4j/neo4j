@@ -151,16 +151,6 @@ public class Cluster
         return addCoreMemberWithId( memberId, stringMap(), emptyMap(), StandardV3_0.NAME );
     }
 
-    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId,
-            List<AdvertisedSocketAddress> initialMembers )
-    {
-        CoreClusterMember coreClusterMember = new CoreClusterMember( memberId, DEFAULT_CLUSTER_SIZE, initialMembers,
-                discoveryServiceFactory, StandardV3_0.NAME, parentDir,
-                emptyMap(), emptyMap(), listenAddress, advertisedAddress );
-        coreMembers.put( memberId, coreClusterMember );
-        return coreClusterMember;
-    }
-
     public ReadReplica addReadReplicaWithIdAndRecordFormat( int memberId, String recordFormat )
     {
         List<AdvertisedSocketAddress> initialHosts = buildInitialHosts( coreMembers.keySet() );
@@ -403,7 +393,7 @@ public class Cluster
         return coreServerIds.stream().map( this::discoveryAddressForServer ).collect( toList() );
     }
 
-    public AdvertisedSocketAddress discoveryAddressForServer( int id )
+    private AdvertisedSocketAddress discoveryAddressForServer( int id )
     {
         return new AdvertisedSocketAddress( advertisedAddress, (5000 + id) );
     }
