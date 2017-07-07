@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.causalclustering.discovery.Cluster;
@@ -151,16 +150,17 @@ public class RestartIT
         Cluster cluster = clusterRule.withNumberOfCoreMembers( 2 ).withNumberOfReadReplicas( 1 ).startCluster();
 
         // when
-        final GraphDatabaseService coreDB = cluster.awaitLeader( 5, TimeUnit.SECONDS ).database();
-
-        try ( Transaction tx = coreDB.beginTx() )
+        CoreClusterMember last = cluster.coreTx( ( db, tx ) ->
         {
-            Node node = coreDB.createNode( label( "boo" ) );
+            Node node = db.createNode( label( "boo" ) );
             node.setProperty( "foobar", "baz_bat" );
             tx.success();
-        }
+        } );
 
         cluster.addCoreMemberWithId( 2 ).start();
+        dataMatchesEventually( last, cluster.coreMembers() );
+        dataMatchesEventually( last, cluster.readReplicas() );
+
         cluster.shutdown();
 
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction() )
