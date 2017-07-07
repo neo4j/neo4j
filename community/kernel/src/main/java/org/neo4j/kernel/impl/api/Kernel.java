@@ -108,7 +108,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         catch ( UnavailableException e )
         {
             transactionMonitor.transactionFinished( false, false );
-            throw new TransactionFailureException( Status.Transaction.TransactionStartFailed, e, e.getMessage() );
+            throw new TransactionFailureException( e.status(), e, e.getMessage() );
         }
         return transactions.newInstance( type, securityContext, timeout );
     }
