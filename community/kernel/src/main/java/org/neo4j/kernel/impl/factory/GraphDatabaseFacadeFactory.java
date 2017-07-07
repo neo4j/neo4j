@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -32,7 +33,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -86,19 +86,19 @@ public class GraphDatabaseFacadeFactory
     {
         @Internal
         public static final Setting<Boolean> ephemeral =
-                setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE );
+                setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE ).build();
 
         @Internal
         public static final Setting<String> lock_manager =
-                setting( "unsupported.dbms.lock_manager", Settings.STRING, "" );
+                setting( "unsupported.dbms.lock_manager", Settings.STRING, "" ).build();
 
         @Internal
         public static final Setting<String> tracer =
-                setting( "unsupported.dbms.tracer", Settings.STRING, (String) null ); // 'null' default.
+                setting( "unsupported.dbms.tracer", Settings.STRING ).build(); // 'null' default.
 
         @Internal
         public static final Setting<String> editionName =
-                setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() );
+                setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() ).build();
     }
 
     protected final DatabaseInfo databaseInfo;

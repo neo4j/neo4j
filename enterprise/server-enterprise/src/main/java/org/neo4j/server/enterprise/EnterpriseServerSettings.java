@@ -38,15 +38,15 @@ public class EnterpriseServerSettings implements LoadableConfig
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +
                   "Setting this to 0 indicates no limit." )
     public static final Setting<Duration> browser_credentialTimeout = setting( "browser.credential_timeout", DURATION,
-            "0" );
+            "0" ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
     public static final Setting<Boolean> browser_retainConnectionCredentials =
-            setting( "browser.retain_connection_credentials", BOOLEAN, TRUE );
+            setting( "browser.retain_connection_credentials", BOOLEAN, TRUE ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the policy for outgoing Neo4j Browser connections." )
     public static final Setting<Boolean> browser_allowOutgoingBrowserConnections =
-            setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
+            setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE ).build();
 }

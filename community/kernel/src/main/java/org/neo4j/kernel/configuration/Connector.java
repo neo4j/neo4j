@@ -57,8 +57,8 @@ public class Connector
     public Connector( String key )
     {
         group = new GroupSettingSupport( Connector.class, key );
-        enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
-        type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ) );
+        enabled = group.scope( setting( "enabled", BOOLEAN, "false" ).build() );
+        type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ).build() );
     }
 
     public enum ConnectorType

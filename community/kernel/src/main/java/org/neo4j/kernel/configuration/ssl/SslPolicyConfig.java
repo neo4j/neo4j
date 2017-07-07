@@ -88,18 +88,18 @@ public class SslPolicyConfig
         GroupSettingSupport group = new GroupSettingSupport( SslPolicyConfig.class, policyName );
 
         this.base_directory = group.scope( pathSetting( "base_directory", NO_DEFAULT ) );
-        this.allow_key_generation = group.scope( setting( "allow_key_generation", BOOLEAN, FALSE ) );
-        this.trust_all = group.scope( setting( "trust_all", BOOLEAN, FALSE ) );
+        this.allow_key_generation = group.scope( setting( "allow_key_generation", BOOLEAN, FALSE ).build() );
+        this.trust_all = group.scope( setting( "trust_all", BOOLEAN, FALSE ).build() );
 
         this.private_key = group.scope( derivedDefault( "private_key", base_directory, "private.key" ) );
         this.public_certificate = group.scope( derivedDefault( "public_certificate", base_directory, "public.crt" ) );
         this.trusted_dir = group.scope( derivedDefault( "trusted_dir", base_directory, "trusted" ) );
         this.revoked_dir = group.scope( derivedDefault( "revoked_dir", base_directory, "revoked" ) );
 
-        this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
-        this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ) );
-        this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, TLS_VERSION_DEFAULTS ) );
-        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, NO_DEFAULT ) );
+        this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ).build() );
+        this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ).build() );
+        this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, TLS_VERSION_DEFAULTS ).build() );
+        this.ciphers = group.scope( setting( "ciphers", STRING_LIST, NO_DEFAULT ).build() );
     }
 
     // TODO: can we make this handle relative paths?

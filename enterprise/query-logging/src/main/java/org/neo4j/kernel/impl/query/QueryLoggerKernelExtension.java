@@ -23,6 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.OutputStream;
 import java.util.EnumSet;
+import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
@@ -31,13 +33,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
+import org.neo4j.scheduler.JobScheduler;
 
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 
@@ -67,16 +69,10 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             final Dependencies dependencies ) throws Throwable
     {
         final Config config = dependencies.config();
-        boolean queryLogEnabled = config.get( GraphDatabaseSettings.log_queries );
         final File queryLogFile = config.get( GraphDatabaseSettings.log_queries_filename );
         final FileSystemAbstraction fileSystem = dependencies.fileSystem();
         final JobScheduler jobScheduler = dependencies.jobScheduler();
         final Monitors monitoring = dependencies.monitoring();
-
-        if ( !queryLogEnabled )
-        {
-            return createEmptyAdapter();
-        }
 
         return new LifecycleAdapter()
         {
@@ -85,7 +81,8 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
             @Override
             public void init() throws Throwable
             {
-                Long thresholdMillis = config.get( GraphDatabaseSettings.log_queries_threshold ).toMillis();
+                LongSupplier thresholdMillis = () -> config.get( GraphDatabaseSettings.log_queries_threshold ).toMillis();
+                BooleanSupplier queryLogEnabled = () -> config.get( GraphDatabaseSettings.log_queries );
                 Long rotationThreshold = config.get( GraphDatabaseSettings.log_queries_rotation_threshold );
                 int maxArchives = config.get( GraphDatabaseSettings.log_queries_max_archives );
                 EnumSet<QueryLogEntryContent> flags = EnumSet.noneOf( QueryLogEntryContent.class );
@@ -115,7 +112,7 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                     closable = rotatingSupplier;
                 }
 
-                QueryLogger logger = new QueryLogger( log, thresholdMillis, flags );
+                QueryLogger logger = new QueryLogger( log, queryLogEnabled, thresholdMillis, flags );
                 monitoring.addMonitorListener( logger );
             }
 
@@ -125,10 +122,5 @@ public class QueryLoggerKernelExtension extends KernelExtensionFactory<QueryLogg
                 closable.close();
             }
         };
-    }
-
-    private Lifecycle createEmptyAdapter()
-    {
-        return new LifecycleAdapter();
     }
 }

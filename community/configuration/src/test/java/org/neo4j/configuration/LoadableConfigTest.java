@@ -236,6 +236,11 @@ public class LoadableConfigTest
 
     private abstract static class StringSetting extends BaseSetting<String>
     {
+        @Override
+        public boolean isReloadable()
+        {
+            return false;
+        }
 
         @Override
         public String valueDescription()

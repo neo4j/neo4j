@@ -71,11 +71,12 @@ public class HttpConnectorValidator extends ConnectorValidator
         switch ( subsetting )
         {
         case "enabled":
-            setting = setting( settingName, BOOLEAN, "false" );
+            setting = (BaseSetting) setting( settingName, BOOLEAN, "false" ).build();
             setting.setDescription( "Enable this connector." );
         break;
         case "type":
-            setting = setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT );
+            setting =
+                    (BaseSetting) setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT ).build();
             setting.setDeprecated( true );
             setting.setDescription( "Connector type. This setting is deprecated and its value will instead be " +
                     "inferred from the name of the connector." );
@@ -137,7 +138,7 @@ public class HttpConnectorValidator extends ConnectorValidator
     @Nonnull
     private static Map<String,String> assertEncryption( @Nonnull String name,
             @Nonnull Setting<?> setting,
-            @Nonnull Map<String,String> rawConfig )
+            @Nonnull Map<String,String> rawConfig ) throws InvalidSettingException
     {
         Map<String,String> result = setting.validate( rawConfig, nullConsumer );
 
@@ -176,7 +177,7 @@ public class HttpConnectorValidator extends ConnectorValidator
             defaultValue )
     {
         Setting<Encryption> s = setting( "dbms.connector." + name + ".encryption",
-                options( Encryption.class ), defaultValue.name() );
+                options( Encryption.class ), defaultValue.name() ).build();
 
         return new BaseSetting<Encryption>()
         {

@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.enterprise.configuration;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -45,9 +45,9 @@ public class EnterpriseEditionSettings implements LoadableConfig
                   "Currently only 'node' and 'relationship' types are supported. " )
     public static Setting<List<IdType>> idTypesToReuse = setting(
             "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ),
-            String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) );
+            String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) ).build();
 
     @Internal
     public static final Setting<String> security_module = setting( "unsupported.dbms.security.module", STRING,
-            ENTERPRISE_SECURITY_MODULE_ID );
+            ENTERPRISE_SECURITY_MODULE_ID ).build();
 }

@@ -472,7 +472,7 @@ public class QueryLoggerTest
     {
         EnumSet<QueryLogEntryContent> flagSet = EnumSet.noneOf( QueryLogEntryContent.class );
         Collections.addAll( flagSet, flags );
-        return new QueryLogger( logProvider.getLog( getClass() ), 10/*ms*/, flagSet );
+        return new QueryLogger( logProvider.getLog( getClass() ), () -> true, () -> 10/*ms*/, flagSet );
     }
 
     private ExecutingQuery query(

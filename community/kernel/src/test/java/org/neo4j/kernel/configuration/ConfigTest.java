@@ -80,25 +80,25 @@ public class ConfigTest
             }
         };
 
-        public static Setting<String> newer = setting( "newer", STRING, "" );
+        public static Setting<String> newer = setting( "newer", STRING, "" ).build();
     }
 
     public static class MySettingsWithDefaults implements LoadableConfig
     {
-        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
+        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" ).build();
 
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE ).build();
 
         @Internal
         @DocumentedDefaultValue( "<documented default value>" )
-        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE ).build();
 
         @Deprecated
         @ReplacedBy( "hello" )
-        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob");
+        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob" ).build();
 
         @Deprecated
-        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement");
+        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" ).build();
     }
 
     private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
@@ -111,9 +111,7 @@ public class ConfigTest
 
     static Config Config( Map<String,String> params )
     {
-        return new Config( Optional.empty(), params, s ->
-        {
-        }, Collections.emptyList(), Optional.empty(),
+        return new Config( Optional.empty(), params, Collections.emptyList(), Optional.empty(),
                 Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
     }
 
@@ -229,7 +227,6 @@ public class ConfigTest
                 new Config( Optional.of( confFile ),
                         stringMap( MySettingsWithDefaults.oldHello.name(), "baah",
                                 MySettingsWithDefaults.oldSetting.name(), "booh" ),
-                        s -> {},
                         Collections.emptyList(), Optional.empty(),
                         Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
 
@@ -252,7 +249,6 @@ public class ConfigTest
                 new Config( Optional.empty(),
                         stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
                                 MySettingsWithDefaults.hello.name(), "ABC"),
-                        s -> {},
                         Collections.emptyList(), Optional.empty(),
                         Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
 
@@ -270,7 +266,6 @@ public class ConfigTest
                 new Config( Optional.empty(),
                         stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
                                 MySettingsWithDefaults.hello.name(), "ABC"),
-                        s -> {},
                         Collections.emptyList(), Optional.empty(),
                         Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
 

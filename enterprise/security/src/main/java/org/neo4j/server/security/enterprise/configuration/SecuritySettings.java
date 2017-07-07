@@ -34,15 +34,16 @@ import org.neo4j.logging.Level;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
@@ -66,14 +67,13 @@ public class SecuritySettings implements LoadableConfig
                   "or it can be an externally provided plugin, with a custom name prefixed by `" +
                   PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`." )
     public static final Setting<String> auth_provider =
-            setting( "dbms.security.auth_provider", STRING, NATIVE_REALM_NAME );
+            setting( "dbms.security.auth_provider", STRING, NATIVE_REALM_NAME ).build();
 
     @Description( "A list of security authentication and authorization providers containing the users and roles. " +
                   "They will be queried in the given order when login is attempted." )
     @Internal
     public static final Setting<List<String>> auth_providers =
-            derivedSetting( "dbms.security.auth_providers", auth_provider,
-                    ( r ) -> Arrays.asList( r ), STRING_LIST );
+            derivedSetting( "dbms.security.auth_providers", auth_provider, Arrays::asList, STRING_LIST );
 
     @Description( "Enable authentication via native authentication provider." )
     @Internal
@@ -125,13 +125,13 @@ public class SecuritySettings implements LoadableConfig
                   "NOTE: You may want to consider using STARTTLS (`dbms.security.ldap.use_starttls`) instead of LDAPS " +
                   "for secure connections, in which case the correct protocol is `ldap`." )
     public static final Setting<String> ldap_server =
-            setting( "dbms.security.ldap.host", STRING, "localhost" );
+            setting( "dbms.security.ldap.host", STRING, "localhost" ).build();
 
     @Description( "Use secure communication with the LDAP server using opportunistic TLS. " +
             "First an initial insecure connection will be made with the LDAP server, and a STARTTLS command will be " +
             "issued to negotiate an upgrade of the connection to TLS before initiating authentication." )
     public static final Setting<Boolean> ldap_use_starttls =
-            setting( "dbms.security.ldap.use_starttls", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.use_starttls", BOOLEAN, FALSE ).build();
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
@@ -139,18 +139,18 @@ public class SecuritySettings implements LoadableConfig
             "* `ignore` ignores any referrals\n" +
             "* `throw` throws an exception, which will lead to authentication failure" )
     public static final Setting<String> ldap_referral =
-            setting( "dbms.security.ldap.referral", STRING, "follow" );
+            setting( "dbms.security.ldap.referral", STRING, "follow" ).build();
 
     @Description( "The timeout for establishing an LDAP connection. If a connection with the LDAP server cannot be " +
                   "established within the given time the attempt is aborted. " +
                   "A value of 0 means to use the network protocol's (i.e., TCP's) timeout value." )
     public static Setting<Duration> ldap_connection_timeout =
-            setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" );
+            setting( "dbms.security.ldap.connection_timeout", DURATION, "30s" ).build();
 
     @Description( "The timeout for an LDAP read request (i.e. search). If the LDAP server does not respond within " +
                   "the given time the request will be aborted. A value of 0 means wait for a response indefinitely." )
     public static Setting<Duration> ldap_read_timeout =
-            setting( "dbms.security.ldap.read_timeout", DURATION, "30s" );
+            setting( "dbms.security.ldap.read_timeout", DURATION, "30s" ).build();
 
     //-----------------------------------------------------
     // LDAP authentication settings
@@ -161,7 +161,7 @@ public class SecuritySettings implements LoadableConfig
                   " and password authentication and SASL is used for more advanced mechanisms. See RFC 2251 LDAPv3 " +
                   "documentation for more details." )
     public static final Setting<String> ldap_authentication_mechanism =
-            setting( "dbms.security.ldap.authentication.mechanism", STRING, "simple" );
+            setting( "dbms.security.ldap.authentication.mechanism", STRING, "simple" ).build();
 
     @Description(
             "LDAP user DN template. An LDAP object is referenced by its distinguished name (DN), and a user DN is " +
@@ -170,7 +170,7 @@ public class SecuritySettings implements LoadableConfig
             "authentication token when logging in. The special token {0} is a " +
             "placeholder where the user principal will be substituted into the DN string." )
     public static final Setting<String> ldap_authentication_user_dn_template =
-            setting( "dbms.security.ldap.authentication.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" );
+            setting( "dbms.security.ldap.authentication.user_dn_template", STRING, "uid={0},ou=users,dc=example,dc=com" ).build();
 
     @Description( "Determines if the result of authentication via the LDAP server should be cached or not. " +
                   "Caching is used to limit the number of LDAP requests that have to be made over the network " +
@@ -183,7 +183,7 @@ public class SecuritySettings implements LoadableConfig
                   "Preferably a conscious decision should be made if this method is considered acceptable by " +
                   "the security standards of the organization in which this Neo4j instance is deployed." )
     public static final Setting<Boolean> ldap_authentication_cache_enabled =
-            setting( "dbms.security.ldap.authentication.cache_enabled", BOOLEAN, "true" );
+            setting( "dbms.security.ldap.authentication.cache_enabled", BOOLEAN, "true" ).build();
 
     @Description( "Perform authentication with sAMAccountName instead of DN.\n" +
                   "Using this setting requires `dbms.security.ldap.authorization.system_username` and " +
@@ -191,7 +191,7 @@ public class SecuritySettings implements LoadableConfig
                   "through ldap directly with the sAMAccountName, instead the login name will be resolved to a DN " +
                   "that will be used to log in with." )
     public static final Setting<Boolean> ldap_authentication_use_samaccountname =
-            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, FALSE ).build();
 
     //-----------------------------------------------------
     // LDAP authorization settings
@@ -213,7 +213,7 @@ public class SecuritySettings implements LoadableConfig
                   "Note that this account only needs read access to the relevant parts of the LDAP directory " +
                   "and does not need to have access rights to Neo4j, or any other systems." )
     public static final Setting<Boolean> ldap_authorization_use_system_account =
-            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, FALSE ).build();
 
     @Description(
             "An LDAP system account username to use for authorization searches when " +
@@ -221,30 +221,30 @@ public class SecuritySettings implements LoadableConfig
             "Note that the `dbms.security.ldap.authentication.user_dn_template` will not be applied to " +
             "this username, so you may have to specify a full DN." )
     public static final Setting<String> ldap_authorization_system_username =
-            setting( "dbms.security.ldap.authorization.system_username", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.system_username", STRING, NO_DEFAULT ).build();
 
     @Description(
             "An LDAP system account password to use for authorization searches when " +
             "`dbms.security.ldap.authorization.use_system_account` is `true`." )
     public static final Setting<String> ldap_authorization_system_password =
-            setting( "dbms.security.ldap.authorization.system_password", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.system_password", STRING, NO_DEFAULT ).build();
 
     @Description( "The name of the base object or named context to search for user objects when " +
                   "LDAP authorization is enabled. A common case is that this matches the last part " +
                   "of `dbms.security.ldap.authentication.user_dn_template`." )
     public static final Setting<String> ldap_authorization_user_search_base =
-            setting( "dbms.security.ldap.authorization.user_search_base", STRING, "ou=users,dc=example,dc=com" );
+            setting( "dbms.security.ldap.authorization.user_search_base", STRING, "ou=users,dc=example,dc=com" ).build();
 
     @Description( "The LDAP search filter to search for a user principal when LDAP authorization is " +
                   "enabled. The filter should contain the placeholder token {0} which will be substituted for the " +
                   "user principal." )
     public static final Setting<String> ldap_authorization_user_search_filter =
-            setting( "dbms.security.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" );
+            setting( "dbms.security.ldap.authorization.user_search_filter", STRING, "(&(objectClass=*)(uid={0}))" ).build();
 
     @Description( "A list of attribute names on a user object that contains groups to be used for mapping to roles " +
                   "when LDAP authorization is enabled." )
     public static final Setting<List<String>> ldap_authorization_group_membership_attribute_names =
-            setting( "dbms.security.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" );
+            setting( "dbms.security.ldap.authorization.group_membership_attributes", STRING_LIST, "memberOf" ).build();
 
     @Description( "An authorization mapping from LDAP group names to Neo4j role names. " +
                   "The map should be formatted as a semicolon separated list of key-value pairs, where the " +
@@ -257,7 +257,7 @@ public class SecuritySettings implements LoadableConfig
                   "         \"cn=Neo4j Schema Manager,cn=users,dc=example,dc=com\" = architect; \\\n" +
                   "         \"cn=Neo4j Administrator,cn=users,dc=example,dc=com\"  = admin" )
     public static final Setting<String> ldap_authorization_group_to_role_mapping =
-            setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT );
+            setting( "dbms.security.ldap.authorization.group_to_role_mapping", STRING, NO_DEFAULT ).build();
 
     //=========================================================================
     // Cache settings
@@ -268,11 +268,11 @@ public class SecuritySettings implements LoadableConfig
                   "Disabling caching while using the LDAP auth provider requires the use of an LDAP system account " +
                   "for resolving authorization information." )
     public static final Setting<Duration> auth_cache_ttl =
-            setting( "dbms.security.auth_cache_ttl", DURATION, "10m" );
+            setting( "dbms.security.auth_cache_ttl", DURATION, "10m" ).build();
 
     @Description( "The maximum capacity for authentication and authorization caches (respectively)." )
     public static final Setting<Integer> auth_cache_max_capacity =
-            setting( "dbms.security.auth_cache_max_capacity", INTEGER, "10000" );
+            setting( "dbms.security.auth_cache_max_capacity", INTEGER, "10000" ).build();
 
     //=========================================================================
     // Security log settings
@@ -286,26 +286,26 @@ public class SecuritySettings implements LoadableConfig
 
     @Description( "Security log level threshold." )
     public static final Setting<Level> security_log_level = setting( "dbms.logs.security.level",
-            options( Level.class ), "INFO" );
+            options( Level.class ), "INFO" ).build();
 
     @Description( "Set to log successful authentication events to the security log. " +
                   "If this is set to `false` only failed authentication events will be logged, which " +
                   "could be useful if you find that the successful events spam the logs too much, " +
                   "and you do not require full auditing capability." )
     public static final Setting<Boolean> security_log_successful_authentication =
-            setting( "dbms.security.log_successful_authentication", BOOLEAN, "true" );
+            setting( "dbms.security.log_successful_authentication", BOOLEAN, "true" ).build();
 
     @Description( "Threshold for rotation of the security log." )
     public static final Setting<Long> store_security_log_rotation_threshold =
-            setting( "dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+            setting( "dbms.logs.security.rotation.size", BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
     public static final Setting<Duration> store_security_log_rotation_delay =
-            setting( "dbms.logs.security.rotation.delay", DURATION, "300s" );
+            setting( "dbms.logs.security.rotation.delay", DURATION, "300s" ).build();
 
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
-            setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+            setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7" ).constraint( min(1) ).build();
 
     //=========================================================================
     // Procedure security settings
@@ -315,7 +315,7 @@ public class SecuritySettings implements LoadableConfig
                   "by the `" + PROC_ALLOWED_SETTING_ROLES + "` setting. If the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME +
                   "` setting is the empty string (default), procedures will be executed according to the same security " +
                   "rules as normal Cypher statements." )
-    public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" );
+    public static final Setting<String> default_allowed = setting( PROC_ALLOWED_SETTING_DEFAULT_NAME, STRING, "" ).build();
 
     @Description( "This provides a finer level of control over which roles can execute procedures than the " +
                   "`" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting. For example: `dbms.security.procedures.roles=" +
@@ -324,7 +324,7 @@ public class SecuritySettings implements LoadableConfig
                   "all procedures in the `apoc.load` namespace that starts with `json` and the role `TriggerHappy` " +
                   "to execute the specific procedure `apoc.trigger.add`. Procedures not matching any of these " +
                   "patterns will be subject to the `" + PROC_ALLOWED_SETTING_DEFAULT_NAME + "` setting." )
-    public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" );
+    public static final Setting<String> procedure_roles = setting( PROC_ALLOWED_SETTING_ROLES, STRING, "" ).build();
 
     //=========================================================================
     // Misc settings
@@ -334,5 +334,5 @@ public class SecuritySettings implements LoadableConfig
     @Description( "Set to true if connection pooling should be used for authorization searches using the " +
                   "system account." )
     public static final Setting<Boolean> ldap_authorization_connection_pooling =
-            setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" );
+            setting( "unsupported.dbms.security.ldap.authorization.connection_pooling", BOOLEAN, "true" ).build();
 }

@@ -22,9 +22,9 @@ package org.neo4j.graphdb.config;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.Optional;
 
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
@@ -108,5 +108,10 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
     default Optional<Function<String, T>> getParser()
     {
         return Optional.empty();
+    }
+
+    default boolean isReloadable()
+    {
+        return false;
     }
 }

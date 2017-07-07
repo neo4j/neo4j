@@ -41,6 +41,7 @@ public class ConfigLoader
 
     private ConfigLoader()
     {
+        throw new AssertionError();
     }
 
     public static Config loadConfig( Optional<File> homeDir, Optional<File> configFile,

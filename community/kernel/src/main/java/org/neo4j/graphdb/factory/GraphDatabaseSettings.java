@@ -66,11 +66,11 @@ import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.matches;
-import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -96,55 +96,55 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Root relative to which directory settings are resolved. This is set in code and should never be " +
             "configured explicitly." )
     public static final Setting<File> neo4j_home =
-            setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT );
+            setting( "unsupported.dbms.directories.neo4j_home", PATH, NO_DEFAULT ).build();
 
     @Title( "Read only database" )
     @Description( "Only allow read operations from this Neo4j instance. " +
             "This mode still requires write access to the directory for lock purposes." )
-    public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE );
+    public static final Setting<Boolean> read_only = setting( "dbms.read_only", BOOLEAN, FALSE ).build();
 
     @Title( "Disconnected" )
     @Internal
     @Description( "Disable all protocol connectors." )
-    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE );
+    public static final Setting<Boolean> disconnected = setting( "unsupported.dbms.disconnected", BOOLEAN, FALSE ).build();
 
     @Description( "Print out the effective Neo4j configuration after startup." )
     @Internal
     public static final Setting<Boolean> dump_configuration = setting( "unsupported.dbms.report_configuration",
-            BOOLEAN, FALSE );
+            BOOLEAN, FALSE ).build();
 
     @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
             "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc). " +
             "This is currently false by default but will be true by default in 4.0." )
     public static final Setting<Boolean> strict_config_validation =
-            setting( "dbms.config.strict_validation", BOOLEAN, FALSE );
+            setting( "dbms.config.strict_validation", BOOLEAN, FALSE ).build();
 
     @Description( "Whether to allow a store upgrade in case the current version of the database starts against an " +
             "older store version. " +
             "Setting this to `true` does not guarantee successful upgrade, it just " +
             "allows an upgrade to be performed." )
     public static final Setting<Boolean> allow_store_upgrade = setting( "dbms.allow_format_migration", BOOLEAN,
-            FALSE );
+            FALSE ).build();
 
     @Description( "Database record format. Enterprise edition only. Valid values: `standard`, `high_limit`. " +
                   "Default value:  `standard`." )
-    public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "" );
+    public static final Setting<String> record_format = setting( "dbms.record_format", Settings.STRING, "" ).build();
 
     // Cypher settings
     // TODO: These should live with cypher
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher.default_language_version",
-            options( "2.3", "3.1", "3.2", "3.3", DEFAULT ), DEFAULT );
+            options( "2.3", "3.1", "3.2", "3.3", DEFAULT ), DEFAULT ).build();
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "cypher.planner",
-            options( "COST", "RULE", DEFAULT ), DEFAULT );
+            options( "COST", "RULE", DEFAULT ), DEFAULT ).build();
 
     @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
-    public static final Setting<Boolean> cypher_hints_error = setting( "cypher.hints_error", BOOLEAN, FALSE );
+    public static final Setting<Boolean> cypher_hints_error = setting( "cypher.hints_error", BOOLEAN, FALSE ).build();
 
     @Description( "This setting is associated with performance optimization. Set this to `true` in situations where " +
                   "it is preferable to have any queries using the 'shortestPath' function terminate as soon as " +
@@ -162,7 +162,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "However, please note that if no paths are found, an error will be thrown at run time, which will " +
                   "need to be handled by the application." )
     public static final Setting<Boolean> forbid_exhaustive_shortestpath = setting(
-            "cypher.forbid_exhaustive_shortestpath", BOOLEAN, FALSE );
+            "cypher.forbid_exhaustive_shortestpath", BOOLEAN, FALSE ).build();
 
     @Description( "This setting is associated with performance optimization. The shortest path algorithm does not " +
                   "work when the start and end nodes are the same. With this setting set to `false` no path will " +
@@ -174,55 +174,54 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "between two common nodes, then re-write the query using a standard Cypher variable length pattern " +
                   "expression followed by ordering by path length and limiting to one result." )
     public static final Setting<Boolean> forbid_shortestpath_common_nodes = setting(
-            "cypher.forbid_shortestpath_common_nodes", BOOLEAN, TRUE );
+            "cypher.forbid_shortestpath_common_nodes", BOOLEAN, TRUE ).build();
 
     @Description( "Set this to specify the default runtime for the default language version." )
     @Internal
     public static final Setting<String> cypher_runtime = setting(
             "unsupported.cypher.runtime",
-            options( "INTERPRETED", "COMPILED", "ENTERPRISE-INTERPRETED" ,  DEFAULT ), DEFAULT );
+            options( "INTERPRETED", "COMPILED", "ENTERPRISE-INTERPRETED" ,  DEFAULT ), DEFAULT ).build();
 
     @Description( "Enable tracing of compilation in cypher." )
     @Internal
-    public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE );
+    public static final Setting<Boolean> cypher_compiler_tracing = setting( "unsupported.cypher.compiler_tracing", BOOLEAN, FALSE ).build();
 
     @Description( "The number of Cypher query execution plans that are cached." )
-    public static Setting<Integer> query_cache_size = setting( "dbms.query_cache_size", INTEGER, "1000", min( 0 ) );
+    public static Setting<Integer> query_cache_size = setting( "dbms.query_cache_size", INTEGER, "1000" ).constraint( min( 0 ) ).build();
 
     @Description( "The threshold when a plan is considered stale. If any of the underlying" +
                   " statistics used to create the plan has changed more than this value, " +
                   "the plan is considered stale and will be replanned. " +
                   "A value of 0 means always replan, and 1 means never replan." )
     public static Setting<Double> query_statistics_divergence_threshold = setting(
-            "cypher.statistics_divergence_threshold", DOUBLE, "0.75", min( 0.0 ), max(
-                    1.0 ) );
+            "cypher.statistics_divergence_threshold", DOUBLE, "0.75" ).constraint( range( 0.0, 1.0 ) ).build();
 
     @Description( "The threshold when a warning is generated if a label scan is done after a load csv " +
                   "where the label has no index" )
     @Internal
     public static Setting<Long> query_non_indexed_label_warning_threshold = setting(
-            "unsupported.cypher.non_indexed_label_warning_threshold", LONG, "10000" );
+            "unsupported.cypher.non_indexed_label_warning_threshold", LONG, "10000" ).build();
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning table size, " +
                   "triggering compaction of candidate plans. The smaller the threshold the faster the planning, " +
                   "but the higher the risk of sub-optimal plans." )
     @Internal
     public static Setting<Integer> cypher_idp_solver_table_threshold = setting(
-            "unsupported.cypher.idp_solver_table_threshold", INTEGER, "128", min( 16 ) );
+            "unsupported.cypher.idp_solver_table_threshold", INTEGER, "128" ).constraint( min( 16 ) ).build();
 
     @Description( "To improve IDP query planning time, we can restrict the internal planning loop duration, " +
                   "triggering more frequent compaction of candidate plans. The smaller the threshold the " +
                   "faster the planning, but the higher the risk of sub-optimal plans." )
     @Internal
     public static Setting<Long> cypher_idp_solver_duration_threshold = setting(
-            "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000", min( 10L ) );
+            "unsupported.cypher.idp_solver_duration_threshold", LONG, "1000" ).constraint( min( 10L ) ).build();
 
     @Description( "The minimum lifetime of a query plan before a query is considered for replanning" )
-    public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" );
+    public static Setting<Duration> cypher_min_replan_interval = setting( "cypher.min_replan_interval", DURATION, "10s" ).build();
 
     @Description( "Determines if Cypher will allow using file URLs when loading data using `LOAD CSV`. Setting this "
                   + "value to `false` will cause Neo4j to fail `LOAD CSV` clauses that load data from the file system." )
-    public static Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE );
+    public static Setting<Boolean> allow_file_urls = setting( "dbms.security.allow_csv_import_from_file_urls", BOOLEAN, TRUE ).build();
 
     @Description( "Sets the root directory for file URLs used with the Cypher `LOAD CSV` clause. This must be set to a single "
                   + "directory, restricting access to only those files within that directory and its subdirectories." )
@@ -235,28 +234,28 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "include quotes in-lined in fields." )
     public static Setting<Boolean> csv_legacy_quote_escaping =
             setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
-                    Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
+                    Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) ).build();
 
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal
     public static final Setting<Duration> transaction_start_timeout =
-            setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
+            setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" ).build();
 
     @Internal
     @Description( "Please use dbms.transaction.timeout instead." )
     @Deprecated
     @ReplacedBy( "dbms.transaction.timeout" )
     public static final Setting<Boolean> execution_guard_enabled =
-            setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
+            setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE ).build();
 
     @Description( "The maximum time interval of a transaction within which it should be completed." )
     public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
-            .valueOf( UNSPECIFIED_TIMEOUT ) );
+            .valueOf( UNSPECIFIED_TIMEOUT ) ).isReloadable().build();
 
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
-            String.valueOf( UNSPECIFIED_TIMEOUT ) );
+            String.valueOf( UNSPECIFIED_TIMEOUT ) ).build();
 
     @Description( "Configures the time interval between transaction monitor checks. Determines how often " +
             "monitor thread will check transaction for timeout." )
@@ -265,7 +264,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
     public static final Setting<Duration> shutdown_transaction_end_timeout =
-            setting( "dbms.shutdown_transaction_end_timeout", DURATION, "10s" );
+            setting( "dbms.shutdown_transaction_end_timeout", DURATION, "10s" ).build();
 
     @Description( "Location of the database plugin directory. Compiled Java JAR files that contain database " +
                  "procedures will be loaded if they are placed in this directory." )
@@ -273,29 +272,29 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Threshold for rotation of the debug log." )
     public static final Setting<Long> store_internal_log_rotation_threshold =
-            setting( "dbms.logs.debug.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+            setting( "dbms.logs.debug.rotation.size", BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Debug log contexts that should output debug level logging" )
     @Internal
     public static final Setting<List<String>> store_internal_debug_contexts = setting( "unsupported.dbms.logs.debug.debug_loggers",
-            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" );
+            list( ",", STRING ), "org.neo4j.diagnostics,org.neo4j.cluster.protocol,org.neo4j.kernel.ha" ).build();
 
     @Description( "Debug log level threshold." )
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
-            options( Level.class ), "INFO" );
+            options( Level.class ), "INFO" ).build();
 
     @Description( "Maximum time to wait for active transaction completion when rotating counts store" )
     @Internal
     public static final Setting<Duration> counts_store_rotation_timeout =
-            setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" );
+            setting( "unsupported.dbms.counts_store_rotation_timeout", DURATION, "10m" ).build();
 
     @Description( "Minimum time interval after last rotation of the debug log before it may be rotated again." )
     public static final Setting<Duration> store_internal_log_rotation_delay =
-            setting( "dbms.logs.debug.rotation.delay", DURATION, "300s" );
+            setting( "dbms.logs.debug.rotation.delay", DURATION, "300s" ).build();
 
     @Description( "Maximum number of history files for the debug log." )
     public static final Setting<Integer> store_internal_log_max_archives =
-            setting( "dbms.logs.debug.rotation.keep_number", INTEGER, "7", min(1) );
+            setting( "dbms.logs.debug.rotation.keep_number", INTEGER, "7" ).constraint( min( 1 ) ).build();
 
     @Description( "Configures the transaction interval between check-points. The database will not check-point more " +
                   "often  than this (unless check pointing is triggered by a different event), but might check-point " +
@@ -305,7 +304,8 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
                   "the database places on the system, as each check-point implies a flushing and forcing of all the " +
                   "store files.  The default is '100000' for a check-point every 100000 transactions." )
-    public static final Setting<Integer> check_point_interval_tx = setting( "dbms.checkpoint.interval.tx", INTEGER, "100000", min(1) );
+    public static final Setting<Integer> check_point_interval_tx =
+            setting( "dbms.checkpoint.interval.tx", INTEGER, "100000" ).constraint( min( 1 ) ).build();
 
     @Description( "Configures the time interval between check-points. The database will not check-point more often " +
                   "than this (unless check pointing is triggered by a different event), but might check-point less " +
@@ -315,7 +315,8 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "of a crash. On the other hand, a longer check-point interval can also reduce the I/O load that " +
                   "the database places on the system, as each check-point implies a flushing and forcing of all the " +
                   "store files." )
-    public static final Setting<Duration> check_point_interval_time = setting( "dbms.checkpoint.interval.time", DURATION, "15m" );
+    public static final Setting<Duration> check_point_interval_time =
+            setting( "dbms.checkpoint.interval.time", DURATION, "15m" ).build();
 
     @Description( "Limit the number of IOs the background checkpoint process will consume per second. " +
                   "This setting is advisory, is ignored in Neo4j Community Edition, and is followed to " +
@@ -329,7 +330,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "The configuration can also be commented out to remove the limitation entirely, and " +
                   "let the checkpointer flush data as fast as the hardware will go. " +
                   "Set this to -1 to disable the IOPS limit." )
-    public static final Setting<Integer> check_point_iops_limit = setting( "dbms.checkpoint.iops.limit", INTEGER, "300" );
+    public static final Setting<Integer> check_point_iops_limit = setting( "dbms.checkpoint.iops.limit", INTEGER, "300" ).build();
 
     // Auto Indexing
     @Description( "Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
@@ -337,14 +338,14 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Deprecated
     public static final Setting<Boolean> node_auto_indexing = setting( "dbms.auto_index.nodes.enabled", BOOLEAN,
-            FALSE);
+            FALSE ).build();
 
     @Description( "A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_nodes_ only." )
     @Internal
     @Deprecated
     public static final Setting<List<String>> node_keys_indexable = setting( "dbms.auto_index.nodes.keys",
-            STRING_LIST, "" );
+            STRING_LIST, "" ).build();
 
     @Description( "Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
             "while `true` enables it by default for properties listed in the dbms.auto_index.relationships.keys " +
@@ -352,19 +353,19 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Deprecated
     public static final Setting<Boolean> relationship_auto_indexing =
-            setting( "dbms.auto_index.relationships.enabled", BOOLEAN, FALSE );
+            setting( "dbms.auto_index.relationships.enabled", BOOLEAN, FALSE ).build();
 
     @Description( "A list of property names (comma separated) that will be indexed by default. This applies to " +
             "_relationships_ only." )
     @Internal
     @Deprecated
     public static final Setting<List<String>> relationship_keys_indexable =
-            setting( "dbms.auto_index.relationships.keys", STRING_LIST, "" );
+            setting( "dbms.auto_index.relationships.keys", STRING_LIST, "" ).build();
 
     // Index sampling
     @Description( "Enable or disable background index sampling" )
     public static final Setting<Boolean> index_background_sampling_enabled =
-            setting( "dbms.index_sampling.background_enabled", BOOLEAN, TRUE );
+            setting( "dbms.index_sampling.background_enabled", BOOLEAN, TRUE ).build();
 
     @Description( "Size of buffer used by index sampling. " +
                  "This configuration setting is no longer applicable as from Neo4j 3.0.3. " +
@@ -372,27 +373,27 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Deprecated
     @ReplacedBy( "dbms.index_sampling.sample_size_limit" )
     public static final Setting<Long> index_sampling_buffer_size = setting( "dbms.index_sampling.buffer_size",
-            BYTES, "64m", min( /* 1m */ 1048576L ), max( (long) Integer.MAX_VALUE ) );
+            BYTES, "64m" ).constraint( range( /* 1m */ 1048576L, (long) Integer.MAX_VALUE ) ).build();
 
     @Description( "Index sampling chunk size limit" )
     public static final Setting<Integer> index_sample_size_limit = setting( "dbms.index_sampling.sample_size_limit",
-            INTEGER, String.valueOf( ByteUnit.mebiBytes( 8 ) ), min( (int) ByteUnit.mebiBytes( 1 ) ),
-            max( Integer.MAX_VALUE ) );
+            INTEGER, String.valueOf( ByteUnit.mebiBytes( 8 ) ) ).constraint( range( (int) ByteUnit.mebiBytes( 1 ),
+            Integer.MAX_VALUE ) ).build();
 
     @Description( "Percentage of index updates of total index size required before sampling of a given index is " +
             "triggered" )
     public static final Setting<Integer> index_sampling_update_percentage =
-            setting( "dbms.index_sampling.update_percentage", INTEGER, "5", min( 0 ) );
+            setting( "dbms.index_sampling.update_percentage", INTEGER, "5" ).constraint( min( 0 ) ).build();
 
     // Lucene settings
     @Description( "The maximum number of open Lucene index searchers." )
     public static Setting<Integer> lucene_searcher_cache_size = setting( "dbms.index_searcher_cache_size",INTEGER,
-            Integer.toString( Integer.MAX_VALUE ), min( 1 ));
+            Integer.toString( Integer.MAX_VALUE ) ).constraint( min( 1 ) ).build();
 
     // Lucene schema indexes
     @Internal
     public static final Setting<Boolean> multi_threaded_schema_index_population_enabled =
-            setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.multi_threaded_schema_index_population_enabled", BOOLEAN, TRUE ).build();
 
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +
@@ -400,21 +401,21 @@ public class GraphDatabaseSettings implements LoadableConfig
             "prune logical logs that only contains transactions older than 10 days from the current time, " +
             "or \"100k txs\" will keep the 100k latest transactions and prune any older transactions." )
     public static final Setting<String> keep_logical_logs = setting( "dbms.tx_log.rotation.retention_policy",
-            STRING, "7 days", illegalValueMessage( "must be `true`/`false` or " +
+            STRING, "7 days" ).constraint( illegalValueMessage( "must be `true`/`false` or " +
                     "of format '<number><optional unit> <type>' for example `100M size` for " +
                     "limiting logical log space on disk to 100Mb," +
-                    " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
+                    " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY) ) ).build();
 
     @Description( "Specifies at which file size the logical log will auto-rotate. " +
                   "`0` means that no rotation will automatically occur based on file size. " )
     public static final Setting<Long> logical_log_rotation_threshold =
-            setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( ByteUnit.mebiBytes( 1 ) ) );
+            setting( "dbms.tx_log.rotation.size", BYTES, "250M" ).constraint( min( ByteUnit.mebiBytes( 1 ) ) ).build();
 
     @Description( "Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
             "but will limit the ability to reuse the space of deleted entities." )
     @Internal
     public static final Setting<Boolean> rebuild_idgenerators_fast =
-            setting( "unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.id_generator_fast_rebuild_enabled", BOOLEAN, TRUE ).build();
 
     // Store memory settings
     @Description( "Target size for pages of mapped memory. If set to 0, then a reasonable default is chosen, " +
@@ -422,7 +423,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     @Deprecated
     public static final Setting<Long> mapped_memory_page_size =
-            setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" );
+            setting( "unsupported.dbms.memory.pagecache.pagesize", BYTES, "0" ).build();
 
     @SuppressWarnings( "unchecked" )
     @Description( "The amount of memory to use for mapping the store files, in bytes (or kilobytes with the 'k' " +
@@ -432,12 +433,13 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "the page cache. If no page cache memory is configured, then a heuristic setting is computed based " +
                   "on available system resources." )
     public static final Setting<Long> pagecache_memory =
-            setting( "dbms.memory.pagecache.size", BYTES, null, min( 8192 * 30L ) );
+            setting( "dbms.memory.pagecache.size", BYTES, null)
+                    .constraint( min( 8192 * 30L ) ).build();
 
     @Description( "Specify which page swapper to use for doing paged IO. " +
                   "This is only used when integrating with proprietary storage technology." )
     public static final Setting<String> pagecache_swapper =
-            setting( "dbms.memory.pagecache.swapper", STRING, (String) null );
+            setting( "dbms.memory.pagecache.swapper", STRING, null ).build();
 
     /**
      * Block size properties values depends from selected record format.
@@ -453,7 +455,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> string_block_size = setting( "unsupported.dbms.block_size.strings", INTEGER,
-            "0", min( 0 ) );
+            "0" ).constraint( min( 0 ) ).build();
 
     @Description( "Specifies the block size for storing arrays. This parameter is only honored when the store is " +
             "created, otherwise it is ignored. " +
@@ -461,7 +463,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> array_block_size = setting( "unsupported.dbms.block_size.array_properties",
-            INTEGER, "0", min( 0 ) );
+            INTEGER, "0" ).constraint( min( 0 ) ).build();
 
     @Description( "Specifies the block size for storing labels exceeding in-lined space in node record. " +
             "This parameter is only honored when the store is created, otherwise it is ignored. " +
@@ -469,13 +471,13 @@ public class GraphDatabaseSettings implements LoadableConfig
             "than the configured block size" )
     @Internal
     public static final Setting<Integer> label_block_size = setting( "unsupported.dbms.block_size.labels", INTEGER,
-            "0", min( 0 ) );
+            "0" ).constraint( min( 0 ) ).build();
 
     @Description( "An identifier that uniquely identifies this graph database instance within this JVM. " +
             "Defaults to an auto-generated number depending on how many instance are started in this JVM." )
     @Internal
-    public static final Setting<String> forced_kernel_id = setting( "unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
-            illegalValueMessage( "has to be a valid kernel identifier", matches( "[a-zA-Z0-9]*" )));
+    public static final Setting<String> forced_kernel_id = setting( "unsupported.dbms.kernel_id", STRING, NO_DEFAULT ).constraint(
+            illegalValueMessage( "has to be a valid kernel identifier", matches( "[a-zA-Z0-9]*" ) ) ).build();
 
     @SuppressWarnings( "unused" )
     @Description( "Amount of time in ms the GC monitor thread will wait before taking another measurement." )
@@ -490,13 +492,14 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Relationship count threshold for considering a node to be dense" )
     public static final Setting<Integer> dense_node_threshold =
-            setting( "dbms.relationship_grouping_threshold", INTEGER, "50", min( 1 ) );
+            setting( "dbms.relationship_grouping_threshold", INTEGER, "50" ).constraint( min( 1 ) ).build();
 
     @Description( "Log executed queries that take longer than the configured threshold, dbms.logs.query.threshold. " +
             "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
             "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
-    public static final Setting<Boolean> log_queries = setting( "dbms.logs.query.enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> log_queries =
+            setting( "dbms.logs.query.enabled", BOOLEAN, FALSE ).isReloadable().build();
 
     @Description( "Path of the logs directory." )
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
@@ -515,38 +518,39 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Log parameters for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_parameter_logging_enabled =
-            setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE );
+            setting( "dbms.logs.query.parameter_logging_enabled", BOOLEAN, TRUE ).build();
 
     @Description( "Log detailed time information for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_detailed_time_logging_enabled =
-            setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE );
+            setting( "dbms.logs.query.time_logging_enabled", BOOLEAN, FALSE ).build();
 
     @Description( "Log allocated bytes for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_allocation_logging_enabled =
-            setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE );
+            setting( "dbms.logs.query.allocation_logging_enabled", BOOLEAN, FALSE ).build();
 
     @Description( "Log page hits and page faults for the executed queries being logged." )
     public static final Setting<Boolean> log_queries_page_detail_logging_enabled =
-            setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE );
+            setting( "dbms.logs.query.page_logging_enabled", BOOLEAN, FALSE ).build();
 
     @Description( "If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged." )
-    public static final Setting<Duration> log_queries_threshold = setting( "dbms.logs.query.threshold", DURATION, "0s" );
+    public static final Setting<Duration> log_queries_threshold =
+            setting( "dbms.logs.query.threshold", DURATION, "0s" ).isReloadable().build();
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
     public static final Setting<Long> log_queries_rotation_threshold = setting( "dbms.logs.query.rotation.size",
-            BYTES, "20m",  min( 0L ), max( Long.MAX_VALUE ) );
+            BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Maximum number of history files for the query log." )
     public static final Setting<Integer> log_queries_max_archives = setting( "dbms.logs.query.rotation.keep_number",
-            INTEGER, "7", min( 1 ) );
+            INTEGER, "7" ).constraint( min( 1 ) ).build();
 
     @Description( "Specifies number of operations that batch inserter will try to group into one batch before " +
                   "flushing data into underlying storage." )
     @Internal
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
-            "10000" );
+            "10000" ).build();
 
     /**
      * @deprecated - lucene label index has been removed.
@@ -577,10 +581,13 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Backend to use for label --> nodes index" )
     @Internal
     public static final Setting<String> label_index =
-            setting( "dbms.label_index", optionsIgnoreCase( LabelIndex.NATIVE.name(), LabelIndex.AUTO.name() ), LabelIndex.NATIVE.name() );
+            setting( "dbms.label_index", optionsIgnoreCase( LabelIndex.NATIVE.name(), LabelIndex.AUTO.name() ),
+                    LabelIndex.NATIVE.name() ).build();
+
+    // Security settings
 
     @Description( "Enable auth requirement to access Neo4j." )
-    public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
+    public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, FALSE ).build();
 
     @Internal
     public static final Setting<File> auth_store =
@@ -588,19 +595,19 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Internal
     public static final Setting<Integer> auth_max_failed_attempts =
-            setting( "unsupported.dbms.security.auth_max_failed_attempts", INTEGER, "3", min( 0 ) );
+            setting( "unsupported.dbms.security.auth_max_failed_attempts", INTEGER, "3" ).constraint( min( 0 ) ).build();
 
     @Description( "A list of procedures and user defined functions (comma separated) that are allowed full access to " +
             "the database. The list may contain both fully-qualified procedure names, and partial names with the " +
             "wildcard '*'. Note that this enables these procedures to bypass security. Use with caution." )
     public static final Setting<String> procedure_unrestricted =
-            setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" );
+            setting( "dbms.security.procedures.unrestricted", Settings.STRING, "" ).build();
 
     @Description( "A list of procedures (comma separated) that are to be loaded. " +
             "The list may contain both fully-qualified procedure names, and partial names with the wildcard '*'. " +
             "If this setting is left empty no procedures will be loaded." )
     public static final Setting<String> procedure_whitelist =
-            setting( "dbms.security.procedures.whitelist", Settings.STRING, "*" );
+            setting( "dbms.security.procedures.whitelist", Settings.STRING, "*" ).build();
     // Bolt Settings
 
     @Description( "Default network interface to listen for incoming connections. " +
@@ -608,18 +615,18 @@ public class GraphDatabaseSettings implements LoadableConfig
             "To bind specific connectors to a specific network interfaces, " +
             "specify the +listen_address+ properties for the specific connector." )
     public static final Setting<String> default_listen_address =
-            setting( "dbms.connectors.default_listen_address", STRING, "127.0.0.1" );
+            setting( "dbms.connectors.default_listen_address", STRING, "127.0.0.1" ).build();
 
     @Description( "Default hostname or IP address the server uses to advertise itself to its connectors. " +
             "To advertise a specific hostname or IP address for a specific connector, " +
             "specify the +advertised_address+ property for the specific connector." )
     public static final Setting<String> default_advertised_address =
-            setting( "dbms.connectors.default_advertised_address", STRING, "localhost" );
+            setting( "dbms.connectors.default_advertised_address", STRING, "localhost" ).build();
 
     @Description( "Create an archive of an index before re-creating it if failing to load on startup." )
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
-            "unsupported.dbms.index.archive_failed", BOOLEAN, "false" );
+            "unsupported.dbms.index.archive_failed", BOOLEAN, FALSE ).build();
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
@@ -631,8 +638,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "The maximum amount of time to wait for the database state represented by the bookmark." )
     public static final Setting<Duration> bookmark_ready_timeout = setting(
-            "dbms.transaction.bookmark_ready_timeout", DURATION, "30s",
-            min( Duration.ofSeconds( 1 ) ) );
+            "dbms.transaction.bookmark_ready_timeout", DURATION, "30s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
@@ -671,8 +677,8 @@ public class GraphDatabaseSettings implements LoadableConfig
         public Connector( String key, @SuppressWarnings( "UnusedParameters" ) String typeDefault )
         {
             group = new GroupSettingSupport( Connector.class, key );
-            enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
-            type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ) );
+            enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ).build() );
+            type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ).build() );
         }
 
         public enum ConnectorType
@@ -718,7 +724,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         {
             super( key, null );
             encryption_level = group.scope(
-                    setting( "tls_level", options( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ));
+                    setting( "tls_level", options( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ).build() );
             Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
             Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                     listenAddress( "listen_address", 7687 ) );

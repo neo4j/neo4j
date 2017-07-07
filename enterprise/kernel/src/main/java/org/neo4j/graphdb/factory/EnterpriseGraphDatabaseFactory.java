@@ -28,6 +28,7 @@ import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 
 /**
  * Factory for Neo4j database instances with Enterprise Edition features.
@@ -52,7 +53,7 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Config config )
             {
                 return new EnterpriseGraphDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        config.with( stringMap( "unsupported.dbms.ephemeral", FALSE ) ),
                         state.databaseDependencies() );
             }
         };

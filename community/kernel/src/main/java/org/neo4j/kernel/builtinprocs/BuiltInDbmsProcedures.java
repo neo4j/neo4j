@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -61,6 +63,19 @@ public class BuiltInDbmsProcedures
                 .map( ConfigResult::new )
                 .filter( c -> c.name.toLowerCase().contains( searchString.toLowerCase() ) )
                 .sorted( Comparator.comparing( c -> c.name ) );
+    }
+
+    @Description( "Reload the active config file of Neo4j. If testRun is true the config will be parsed and validated" +
+            " and the changes will be listed." )
+    @Procedure( name = "dbms.reloadConfig", mode = DBMS )
+    public Stream<ConfigChangeResult> reloadConfig( @Name( value = "dryRun", defaultValue = "false" ) boolean dryRun )
+    {
+        Collection<ConfigChangeResult> result = new LinkedList<>();
+
+        Config currentConfig = graph.getDependencyResolver().resolveDependency( Config.class );
+        currentConfig.reload( ( key, oldValue, newValue ) -> result.add( new ConfigChangeResult( key, oldValue, newValue ) ), dryRun );
+
+        return result.stream();
     }
 
     @Description( "List all procedures in the DBMS." )
@@ -108,6 +123,33 @@ public class BuiltInDbmsProcedures
             this.name = signature.name().toString();
             this.signature = signature.toString();
             this.description = signature.description().orElse( "" );
+        }
+    }
+
+    public static class ConfigChangeResult
+    {
+        public final String type;
+        public final String key;
+        public final String oldValue;
+        public final String newValue;
+
+        private ConfigChangeResult( String key, String oldValue, String newValue )
+        {
+            this.key = key;
+            this.oldValue = oldValue;
+            this.newValue = newValue;
+            if ( oldValue == null )
+            {
+                type = "ADDED";
+            }
+            else if ( newValue == null )
+            {
+                type = "DELETED";
+            }
+            else
+            {
+                type = "CHANGED";
+            }
         }
     }
 }

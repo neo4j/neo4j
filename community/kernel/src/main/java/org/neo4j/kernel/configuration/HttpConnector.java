@@ -73,7 +73,7 @@ public class HttpConnector extends Connector
     {
         super( key );
         this.encryptionLevel = encryptionLevel;
-        encryption = group.scope( setting( "encryption", options( HttpConnector.Encryption.class ), NO_DEFAULT ) );
+        encryption = group.scope( setting( "encryption", options( HttpConnector.Encryption.class ), NO_DEFAULT ).build() );
         Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", encryptionLevel.defaultPort );
         Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                 listenAddress( "listen_address", encryptionLevel.defaultPort ) );

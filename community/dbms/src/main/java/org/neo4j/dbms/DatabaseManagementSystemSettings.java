@@ -22,9 +22,9 @@ package org.neo4j.dbms;
 import java.io.File;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.configuration.Internal;
 
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
@@ -35,7 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class DatabaseManagementSystemSettings implements LoadableConfig
 {
     @Description( "Name of the database to load" )
-    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
+    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" ).build();
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )

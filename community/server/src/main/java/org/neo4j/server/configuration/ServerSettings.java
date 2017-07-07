@@ -48,8 +48,6 @@ import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -61,33 +59,34 @@ public class ServerSettings implements LoadableConfig
     @Description( "Maximum request header size" )
     @Internal
     public static final Setting<Integer> maximum_request_header_size =
-            setting( "unsupported.dbms.max_http_request_header_size", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_request_header_size", INTEGER, "20480" ).build();
 
     @Description( "Maximum response header size" )
     @Internal
     public static final Setting<Integer> maximum_response_header_size =
-            setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
+            setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" ).build();
 
     @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
-    public static final Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
+    public static final Setting<List<String>> security_rules =
+            setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY ).build();
 
     @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
             "specified here." )
     @DocumentedDefaultValue( "Number of available processors (max 500)." )
     public static final Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count", INTEGER,
-            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
-            range( 1, JettyThreadCalculator.MAX_THREADS ) );
+            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ) ).constraint(
+            range( 1, JettyThreadCalculator.MAX_THREADS ) ).build();
 
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time. " +
             "Please use dbms.transaction.timeout instead." )
     @Internal
     @Deprecated
     public static final Setting<Duration> webserver_limit_execution_time = setting( "unsupported.dbms" +
-            ".executiontime_limit.time", DURATION, NO_DEFAULT );
+            ".executiontime_limit.time", DURATION, NO_DEFAULT ).build();
 
     @Internal
     public static final Setting<List<String>> console_module_engines = setting(
-            "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" );
+            "unsupported.dbms.console_module.engines", STRING_LIST, "SHELL" ).build();
 
     @Description( "Comma-separated list of <classname>=<mount point> for unmanaged extensions." )
     public static final Setting<List<ThirdPartyJaxRsPackage>> third_party_packages = setting( "dbms.unmanaged_extension_classes",
@@ -128,10 +127,10 @@ public class ServerSettings implements LoadableConfig
                     return new ThirdPartyJaxRsPackage( pkg, mountPoint );
                 }
             },
-            EMPTY );
+            EMPTY ).build();
 
     @Description( "Enable HTTP request logging." )
-    public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE );
+    public static final Setting<Boolean> http_logging_enabled = setting( "dbms.logs.http.enabled", BOOLEAN, FALSE ).build();
 
     @Description( "Path to HTTP request log." )
     public static final Setting<File> http_log_path =
@@ -140,31 +139,31 @@ public class ServerSettings implements LoadableConfig
 
     @Description( "Number of HTTP logs to keep." )
     public static final Setting<Integer> http_logging_rotation_keep_number =
-            setting( "dbms.logs.http.rotation.keep_number", INTEGER, "5" );
+            setting( "dbms.logs.http.rotation.keep_number", INTEGER, "5" ).build();
 
     @Description( "Size of each HTTP log that is kept." )
     public static final Setting<Long> http_logging_rotation_size = setting( "dbms.logs.http.rotation.size", BYTES,
-            "20m", min(0L), max( Long.MAX_VALUE ) );
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Enable GC Logging" )
-    public static final Setting<Boolean> gc_logging_enabled = setting( "dbms.logs.gc.enabled", BOOLEAN, FALSE);
+    public static final Setting<Boolean> gc_logging_enabled = setting( "dbms.logs.gc.enabled", BOOLEAN, FALSE).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "GC Logging Options" )
     public static final Setting<String> gc_logging_options = setting( "dbms.logs.gc.options", STRING, "" +
             "-XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCApplicationStoppedTime " +
-            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution" );
+            "-XX:+PrintPromotionFailure -XX:+PrintTenuringDistribution" ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Number of GC logs to keep." )
     public static final Setting<Integer> gc_logging_rotation_keep_number =
-            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "5" );
+            setting( "dbms.logs.gc.rotation.keep_number", INTEGER, "5" ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Size of each GC log that is kept." )
     public static final Setting<Long> gc_logging_rotation_size = setting( "dbms.logs.gc.rotation.size", BYTES,
-            "20m", min(0L), max( Long.MAX_VALUE ) );
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
@@ -178,42 +177,43 @@ public class ServerSettings implements LoadableConfig
 
     @Description( "Timeout for idle transactions in the REST endpoint." )
     public static final Setting<Duration> transaction_idle_timeout = setting( "dbms.rest.transaction.idle_timeout",
-            DURATION, "60s" );
+            DURATION, "60s" ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Commands to be run when Neo4j Browser successfully connects to this server. Separate multiple " +
                   "commands with semi-colon." )
-    public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" );
+    public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" ).build();
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
     public static final Setting<String> browser_remoteContentHostnameWhitelist =
-            setting( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost");
+            setting( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost").build();
 
     @Description( "SSL policy name." )
-    public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME );
+    public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME ).build();
 
     @Internal
-    public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" );
+    public static final Setting<URI> rest_api_path = setting( "unsupported.dbms.uris.rest", NORMALIZED_RELATIVE_URI, "/db/data" ).build();
 
     @Internal
     public static final Setting<URI> management_api_path = setting( "unsupported.dbms.uris.management",
-            NORMALIZED_RELATIVE_URI, "/db/manage" );
+            NORMALIZED_RELATIVE_URI, "/db/manage" ).build();
 
     @Internal
-    public static final Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" );
+    public static final Setting<URI> browser_path = setting( "unsupported.dbms.uris.browser", Settings.URI, "/browser/" ).build();
 
     @Internal
     public static final Setting<Boolean> script_sandboxing_enabled =
-            setting( "unsupported.dbms.security.script_sandboxing_enabled", BOOLEAN, TRUE );
+            setting( "unsupported.dbms.security.script_sandboxing_enabled", BOOLEAN, TRUE ).build();
 
     @Internal
     public static final Setting<Boolean> wadl_enabled = setting( "unsupported.dbms.wadl_generation_enabled", BOOLEAN,
-            FALSE );
+            FALSE ).build();
 
     @Internal
-    public static final Setting<Boolean> console_module_enabled = setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
+    public static final Setting<Boolean> console_module_enabled =
+            setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE ).build();
 
     @Internal
-    public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );
+    public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE ).build();
 }

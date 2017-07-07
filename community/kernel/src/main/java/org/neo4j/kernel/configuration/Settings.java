@@ -28,12 +28,14 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
@@ -49,42 +51,38 @@ import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.Iterables;
 
 import static java.lang.Character.isDigit;
+import static java.lang.Double.parseDouble;
+import static java.lang.Float.parseFloat;
 import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_listen_address;
 import static org.neo4j.io.fs.FileUtils.fixSeparatorsInPath;
 
 /**
- * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
+ * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for
+ * example.
  *
- * Each setting has a name, a parser that converts a string to the type of the setting, a default value,
- * an optional inherited setting, and optional value converters.
+ * <p>Each setting has a name, a parser that converts a string to the type of the setting, a default value,
+ * an optional inherited setting, and optional value converters/constraints.
  *
- * A parser is a function that takes a string and converts to some type T. The parser may throw IllegalArgumentException
- * if it fails.
+ * <p>A parser is a function that takes a string and converts to some type T. The parser may throw {@link
+ * IllegalArgumentException} if it fails.
  *
- * The default value is the string representation of what you want as default. Special values are the constants NO_DEFAULT,
- * which means that you don't want any default value at all, and MANDATORY, which means that the user has to specify a value
- * for this setting. Not providing a mandatory value for a setting leads to an IllegalArgumentException.
- *
- * If a setting does not have a provided value, and no default, then
+ * <p>The default value is the string representation of what you want as default. Special constants NO_DEFAULT, which means
+ * that you don't want any default value at all, can be used if no appropriate default value exists.
  */
 public class Settings
 {
     private static final String MATCHES_PATTERN_MESSAGE = "matches the pattern `%s`";
 
-    private interface SettingHelper<T>
-            extends Setting<T>
+    private interface SettingHelper<T> extends Setting<T>
     {
         String lookup( Function<String, String> settings );
 
         String defaultLookup( Function<String, String> settings );
     }
 
-    // Set default value to this if user HAS to set a value
-    @SuppressWarnings( "RedundantStringConstructorCall" )
-    // It's an explicitly allocated string so identity equality checks work
-    public static final String MANDATORY = new String( "mandatory" );
     public static final String NO_DEFAULT = null;
     public static final String EMPTY = "";
 
@@ -110,43 +108,118 @@ public class Settings
 
     public static final String ANY = ".+";
 
-    @SuppressWarnings( "unchecked" )
-    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
-                                          final String defaultValue )
+    /**
+     * Helper class to build a {@link Setting}. A setting always have a name, a parser and a default value.
+     *
+     * @param <T> The concrete type of the setting that is being build
+     */
+    public static final class SettingBuilder<T>
     {
-        return setting( name, parser, defaultValue, (Setting<T>) null );
-    }
+        private final String name;
+        private final Function<String,T> parser;
+        private final String defaultValue;
+        private Setting<T> inheritedSetting;
+        private List<BiFunction<T, Function<String,String>,T>> valueConstraints;
+        private boolean isReloadable;
 
-    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
-                                          final String defaultValue,
-                                          final BiFunction<T, Function<String, String>, T>... valueConverters )
-    {
-        return setting( name, parser, defaultValue, null, valueConverters );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    public static <T> Setting<T> setting( final String name, final Function<String, T> parser,
-                                          final Setting<T> inheritedSetting )
-    {
-        return setting( name, parser, null, inheritedSetting );
-    }
-
-    public static <T> BaseSetting<T> setting( final String name, final Function<String, T> parser,
-                                          final String defaultValue,
-                                          final Setting<T> inheritedSetting, final BiFunction<T, Function<String,
-            String>, T>... valueConverters )
-    {
-        BiFunction<String,Function<String, String>, String> valueLookup = named();
-
-        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
-
-        if ( inheritedSetting != null )
+        private SettingBuilder( @Nonnull final String name, @Nonnull final Function<String,T> parser, @Nullable final String defaultValue )
         {
-            valueLookup = inheritedValue( valueLookup, inheritedSetting );
-            defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
+            this.name = name;
+            this.parser = parser;
+            this.defaultValue = defaultValue;
         }
 
-        return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConverters );
+        /**
+         * Setup a class to inherit from. Both the default value and the actual user supplied value will be inherited.
+         * Limited to one parent, but chains are allowed and works as expected by going up on level until a valid value
+         * is found.
+         *
+         * @param inheritedSetting the setting to inherit value and default value from.
+         * @throws AssertionError if more than one inheritance is provided.
+         */
+        @Nonnull
+        public SettingBuilder<T> inherits( @Nonnull final Setting<T> inheritedSetting )
+        {
+            // Make sure we only inherits from one other setting
+            if ( this.inheritedSetting != null )
+            {
+                throw new AssertionError( "Can only inherit from one setting" );
+            }
+
+            this.inheritedSetting = inheritedSetting;
+            return this;
+        }
+
+        /**
+         * Add a constraint to this setting. If an error occurs, the constraint should throw {@link IllegalArgumentException}.
+         * Constraints are allowed to modify values and they are applied in the order they are attached to the builder.
+         *
+         * @param constraint to add.
+         */
+        @Nonnull
+        public SettingBuilder<T> constraint( @Nonnull final BiFunction<T, Function<String,String>,T> constraint )
+        {
+            if ( valueConstraints == null )
+            {
+                valueConstraints = new LinkedList<>(); // Must guarantee order
+            }
+            valueConstraints.add( constraint );
+            return this;
+        }
+
+        /**
+         * Marks the setting as reloadable.
+         *
+         * @apiNote If called, consumer of this setting should be able to handle this. We should probably find a way to
+         * enforce this other than by documentation.
+         */
+        @Nonnull
+        public SettingBuilder<T> isReloadable()
+        {
+            isReloadable = true;
+            return this;
+        }
+
+        @Nonnull
+        public Setting<T> build()
+        {
+            BiFunction<String,Function<String, String>, String> valueLookup = named();
+            BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue, valueLookup );
+            if ( inheritedSetting != null )
+            {
+                valueLookup = inheritedValue( valueLookup, inheritedSetting );
+                defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
+            }
+
+            return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, isReloadable, valueConstraints );
+        }
+    }
+
+    /**
+     * Start building a setting with default value set to {@link Settings#NO_DEFAULT}.
+     *
+     * @param name of the setting, e.g. "dbms.transaction.timeout".
+     * @param parser that will convert the string representation to the concrete type T.
+     * @param <T> the concrete type of the setting.
+     */
+    @Nonnull
+    public static <T> SettingBuilder<T> setting( @Nonnull final String name, @Nonnull final Function<String, T> parser )
+    {
+        return setting( name, parser, NO_DEFAULT );
+    }
+
+    /**
+     * Start building a setting.
+     *
+     * @param name of the setting, e.g. "dbms.transaction.timeout".
+     * @param parser that will convert the string representation to the concrete type T.
+     * @param defaultValue the string representation of the default value.
+     * @param <T> the concrete type of the setting.
+     */
+    public static <T> SettingBuilder<T> setting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
+            @Nullable final String defaultValue )
+    {
+        return new SettingBuilder<>( name, parser, defaultValue );
     }
 
     public static BiFunction<String,Function<String,String>,String> determineDefaultLookup( String defaultValue,
@@ -155,18 +228,7 @@ public class Settings
         BiFunction<String,Function<String,String>,String> defaultLookup;
         if ( defaultValue != null )
         {
-            // This is explicitly an identity comparison. We are comparing against the known instance above,
-            // using String.equals() here would mean that we could not have settings that have the string "mandatory"
-            // as its default value.
-            //noinspection StringEquality
-            if ( defaultValue == MANDATORY ) // yes, this really is supposed to be ==
-            {
-                defaultLookup = mandatory( valueLookup );
-            }
-            else
-            {
-                defaultLookup = withDefault( defaultValue, valueLookup );
-            }
+            defaultLookup = withDefault( defaultValue, valueLookup );
         }
         else
         {
@@ -383,7 +445,7 @@ public class Settings
         {
             try
             {
-                return Long.parseLong( value );
+                return parseLong( value );
             }
             catch ( NumberFormatException e )
             {
@@ -431,7 +493,7 @@ public class Settings
         {
             try
             {
-                return Float.parseFloat( value );
+                return parseFloat( value );
             }
             catch ( NumberFormatException e )
             {
@@ -453,7 +515,7 @@ public class Settings
         {
             try
             {
-                return Double.parseDouble( value );
+                return parseDouble( value );
             }
             catch ( NumberFormatException e )
             {
@@ -664,7 +726,7 @@ public class Settings
                     mem = mem.substring( 0, mem.length() - 1 );
                 }
 
-                long bytes = Long.parseLong( mem.trim() ) * multiplier;
+                long bytes = parseLong( mem.trim() ) * multiplier;
                 if ( bytes < 0 )
                 {
                     throw new IllegalArgumentException(
@@ -756,19 +818,6 @@ public class Settings
             return "a path";
         }
     };
-
-    /**
-     * For values expressed with a unit such as {@code 100M}.
-     *
-     * <ul>
-     *   <li>100M<br>   ==&gt; 100 * 1024 * 1024</li>
-     *   <li>37261<br>  ==&gt; 37261</li>
-     *   <li>2g<br>     ==&gt; 2 * 1024 * 1024 * 1024</li>
-     *   <li>50m<br>    ==&gt; 50 * 1024 * 1024</li>
-     *   <li>10k<br>    ==&gt; 10 * 1024</li>
-     * </ul>
-     */
-    public static final Function<String, Long> LONG_WITH_OPTIONAL_UNIT = Settings::parseLongWithUnit;
 
     public static <T extends Enum<T>> Function<String, T> options( final Class<T> enumClass )
     {
@@ -991,62 +1040,7 @@ public class Settings
         };
     }
 
-    public static BiFunction<String, Function<String, String>, String> toLowerCase =
-            ( value, settings ) -> value.toLowerCase();
-
-    public static BiFunction<URI,Function<String,String>,URI> normalize = ( value, settings ) ->
-    {
-        String resultStr = value.normalize().toString();
-        if ( resultStr.endsWith( "/" ) )
-        {
-            value = java.net.URI.create( resultStr.substring( 0, resultStr.length() - 1 ) );
-        }
-        return value;
-    };
-
     // Setting converters and constraints
-    public static BiFunction<File, Function<String, String>, File> basePath( final Setting<File> baseSetting )
-    {
-        return new BiFunction<File, Function<String, String>, File>()
-        {
-            @Override
-            public File apply( File path, Function<String, String> settings )
-            {
-                File parent = baseSetting.apply( settings );
-
-                return path.isAbsolute() ? path : new File( parent, path.getPath() );
-            }
-
-            @Override
-            public String toString()
-            {
-                return "is relative to " + baseSetting.name();
-            }
-        };
-    }
-
-    public static BiFunction<File,Function<String,String>,File> isFile = ( path, settings ) ->
-    {
-        if ( path.exists() && !path.isFile() )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "%s must point to a file, not a directory", path.toString() ) );
-        }
-
-        return path;
-    };
-
-    public static BiFunction<File,Function<String,String>,File> isDirectory = ( path, settings ) ->
-    {
-        if ( path.exists() && !path.isDirectory() )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "%s must point to a file, not a directory", path.toString() ) );
-        }
-
-        return path;
-    };
-
     public static long parseLongWithUnit( String numberWithPotentialUnit )
     {
         int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
@@ -1075,7 +1069,7 @@ public class Settings
             }
         }
 
-        return Long.parseLong( number ) * multiplier;
+        return parseLong( number ) * multiplier;
     }
 
     /**
@@ -1189,20 +1183,6 @@ public class Settings
         };
     }
 
-    private static BiFunction<String,Function<String, String>, String> mandatory(
-            final BiFunction<String,Function<String, String>,String> lookup )
-    {
-        return ( name, settings ) ->
-        {
-            String value = lookup.apply( name, settings );
-            if ( value == null )
-            {
-                throw new IllegalArgumentException( "mandatory setting is missing" );
-            }
-            return value;
-        };
-    }
-
     private Settings()
     {
         throw new AssertionError();
@@ -1212,19 +1192,22 @@ public class Settings
     {
         private final String name;
         private final Function<String, T> parser;
-        private final BiFunction<String,Function<String, String>, String> valueLookup;
-        private final BiFunction<String,Function<String, String>, String> defaultLookup;
-        private final BiFunction<T, Function<String, String>, T>[] valueConverters;
+        private final BiFunction<String,Function<String,String>,String> valueLookup;
+        private final BiFunction<String,Function<String,String>,String> defaultLookup;
+        private final boolean isReloadable;
+        private final List<BiFunction<T,Function<String,String>,T>> valueConverters;
 
-        public DefaultSetting( String name, Function<String,T> parser,
+        protected DefaultSetting( String name, Function<String,T> parser,
                 BiFunction<String,Function<String,String>,String> valueLookup,
                 BiFunction<String,Function<String,String>,String> defaultLookup,
-                BiFunction<T,Function<String,String>,T>... valueConverters )
+                boolean isReloadable,
+                List<BiFunction<T,Function<String,String>,T>> valueConverters )
         {
             this.name = name;
             this.parser = parser;
             this.valueLookup = valueLookup;
             this.defaultLookup = defaultLookup;
+            this.isReloadable = isReloadable;
             this.valueConverters = valueConverters;
         }
 
@@ -1265,6 +1248,12 @@ public class Settings
         }
 
         @Override
+        public boolean isReloadable()
+        {
+            return isReloadable;
+        }
+
+        @Override
         public T apply( Function<String, String> settings )
         {
             // Lookup value as string
@@ -1295,9 +1284,12 @@ public class Settings
             {
                 result = parser.apply( value );
                 // Apply converters and constraints
-                for ( BiFunction<T, Function<String, String>, T> valueConverter : valueConverters )
+                if ( valueConverters != null )
                 {
-                    result = valueConverter.apply( result, settings );
+                    for ( BiFunction<T,Function<String,String>,T> valueConverter : valueConverters )
+                    {
+                        result = valueConverter.apply( result, settings );
+                    }
                 }
             }
             catch ( IllegalArgumentException e )
@@ -1314,17 +1306,18 @@ public class Settings
             StringBuilder builder = new StringBuilder(  );
             builder.append( name() ).append( " is " ).append( parser.toString() );
 
-            if ( valueConverters.length > 0 )
+            if ( valueConverters != null && valueConverters.size() > 0 )
             {
                 builder.append( " which " );
-                for ( int i = 0; i < valueConverters.length; i++ )
+                boolean first = true;
+                for ( BiFunction<T,Function<String,String>,T> valueConverter : valueConverters )
                 {
-                    BiFunction<T, Function<String, String>, T> valueConverter = valueConverters[i];
-                    if ( i > 0 )
+                    if ( !first )
                     {
                         builder.append( ", and " );
                     }
                     builder.append( valueConverter );
+                    first = false;
                 }
             }
 

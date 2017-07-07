@@ -61,7 +61,7 @@ public class BoltConnector extends Connector
     {
         super( key );
         encryption_level = group.scope(
-                Settings.setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ) );
+                Settings.setting( "tls_level", options( EncryptionLevel.class ), OPTIONAL.name() ).build() );
         Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
         Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                 listenAddress( "listen_address", 7687 ) );
