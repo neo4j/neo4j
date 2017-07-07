@@ -154,11 +154,6 @@ public class Cluster
         return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
     }
 
-    public CoreClusterMember addCoreMemberWithIdAndInitialMembers( int memberId )
-    {
-        return addCoreMemberWithId( memberId, coreParams, instanceCoreParams, recordFormat );
-    }
-
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
