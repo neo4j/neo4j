@@ -42,6 +42,8 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class CoreStateDownloader
 {
+    private final static String OPERATION_NAME = "download of snapshot";
+
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
     private final RemoteStore remoteStore;
@@ -70,7 +72,7 @@ public class CoreStateDownloader
 
     public void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
     {
-        applicationProcess.pauseApplier();
+        applicationProcess.pauseApplier( OPERATION_NAME );
         try
         {
             /* Extract some key properties before shutting it down. */
@@ -155,7 +157,7 @@ public class CoreStateDownloader
         }
         finally
         {
-            applicationProcess.resumeApplier();
+            applicationProcess.resumeApplier( OPERATION_NAME );
         }
     }
 }

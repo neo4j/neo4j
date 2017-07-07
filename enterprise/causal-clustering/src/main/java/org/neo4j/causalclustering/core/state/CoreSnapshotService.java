@@ -26,6 +26,8 @@ import org.neo4j.causalclustering.core.state.snapshot.CoreStateType;
 
 public class CoreSnapshotService
 {
+    private static final String OPERATION_NAME = "snapshot request";
+
     private final CommandApplicationProcess applicationProcess;
     private final CoreState coreState;
     private final RaftLog raftLog;
@@ -41,7 +43,7 @@ public class CoreSnapshotService
 
     public synchronized CoreSnapshot snapshot() throws Exception
     {
-        applicationProcess.pauseApplier();
+        applicationProcess.pauseApplier( OPERATION_NAME );
         try
         {
             long lastApplied = applicationProcess.lastApplied();
@@ -56,7 +58,7 @@ public class CoreSnapshotService
         }
         finally
         {
-            applicationProcess.resumeApplier();
+            applicationProcess.resumeApplier( OPERATION_NAME );
         }
     }
 
