@@ -71,7 +71,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.LockSessionExpi
 
 public class Cluster
 {
-    private static final int DEFAULT_TIMEOUT_MS = 25_000;
+    private static final int DEFAULT_TIMEOUT_MS = 120_000;
     private static final int DEFAULT_CLUSTER_SIZE = 3;
 
     private final File parentDir;
