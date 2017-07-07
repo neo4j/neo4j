@@ -304,6 +304,23 @@ Feature: PatternPredicates
       | (:A)  |
     And no side effects
 
+  Scenario: Using a optional match after aggregation and before an aggregation
+    And having executed:
+      """
+      CREATE (:Z{key:1})-[:IS_A]->(:A)
+      """
+    When executing query:
+      """
+      MATCH (a:A)
+      WITH count(*) AS aCount
+      OPTIONAL MATCH (z:Z)-[IS_A]->()
+      RETURN aCount, count(distinct z.key) as zCount
+      """
+    Then the result should be:
+      | aCount | zCount |
+      | 1      | 1      |
+    And no side effects
+
   Scenario: Returning a relationship from a pattern predicate
     And having executed:
       """
