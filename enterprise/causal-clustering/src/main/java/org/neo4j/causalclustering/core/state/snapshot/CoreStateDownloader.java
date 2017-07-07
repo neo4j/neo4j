@@ -42,7 +42,7 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class CoreStateDownloader
 {
-    private final static String OPERATION_NAME = "download of snapshot";
+    private static final String OPERATION_NAME = "download of snapshot";
 
     private final LocalDatabase localDatabase;
     private final Lifecycle startStopOnStoreCopy;
