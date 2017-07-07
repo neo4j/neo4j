@@ -288,12 +288,12 @@ public class CommandApplicationProcess
             applyUpTo( lastPossiblyApplying );
         }
 
-        resumeApplier();
+        resumeApplier( "startup" );
     }
 
     public synchronized void stop() throws InterruptedException, IOException
     {
-        pauseApplier();
+        pauseApplier( "shutdown" );
         coreState.flush( applierState.lastApplied );
     }
 
@@ -310,7 +310,7 @@ public class CommandApplicationProcess
         ignoringInterrupts( () -> applierThread.join() );
     }
 
-    public synchronized void pauseApplier()
+    public synchronized void pauseApplier( String reason )
     {
         if ( pauseCount < 0 )
         {
@@ -318,7 +318,7 @@ public class CommandApplicationProcess
         }
 
         pauseCount++;
-        log.info( "Pausing (" + pauseCount + ")" );
+        log.info( format( "Pausing due to %s (count = %d)", reason, pauseCount ) );
 
         if ( pauseCount == 1 )
         {
@@ -326,7 +326,7 @@ public class CommandApplicationProcess
         }
     }
 
-    public synchronized void resumeApplier()
+    public synchronized void resumeApplier( String reason )
     {
         if ( pauseCount <= 0 )
         {
@@ -334,7 +334,7 @@ public class CommandApplicationProcess
         }
 
         pauseCount--;
-        log.info( "Resuming (" + pauseCount + ")" );
+        log.info( format( "Resuming after %s (count = %d)", reason, pauseCount ) );
 
         if ( pauseCount == 0 )
         {
