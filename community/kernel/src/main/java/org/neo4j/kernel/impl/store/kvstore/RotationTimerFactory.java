@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import java.time.Clock;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.time.SystemNanoClock;
 
 public class RotationTimerFactory
 {
-    private Clock clock;
+    private SystemNanoClock clock;
     private long timeoutMillis;
 
-    public RotationTimerFactory( Clock clock, long timeoutMillis )
+    public RotationTimerFactory( SystemNanoClock clock, long timeoutMillis )
     {
         this.clock = clock;
         this.timeoutMillis = timeoutMillis;
@@ -34,29 +36,31 @@ public class RotationTimerFactory
 
     public RotationTimer createTimer()
     {
-        long startTime = clock.millis();
-        return new RotationTimer( startTime, startTime + timeoutMillis );
+        long startTimeNanos = clock.nanos();
+        long timeoutNanos = TimeUnit.MILLISECONDS.toNanos( timeoutMillis );
+        return new RotationTimer( startTimeNanos, startTimeNanos + timeoutNanos );
     }
 
     class RotationTimer
     {
-        private long startTime;
-        private long timeoutTime;
+        private long startTimeNanos;
+        private long deadlineNanos;
 
-        RotationTimer( long startTime, long timeoutTime )
+        RotationTimer( long startTimeNanos, long deadlineNanos )
         {
-            this.startTime = startTime;
-            this.timeoutTime = timeoutTime;
+            this.startTimeNanos = startTimeNanos;
+            this.deadlineNanos = deadlineNanos;
         }
 
         public boolean isTimedOut()
         {
-            return clock.millis() > timeoutTime;
+            return clock.nanos() > deadlineNanos;
         }
 
         public long getElapsedTimeMillis()
         {
-            return clock.millis() - startTime;
+            long elapsedNanos = clock.nanos() - startTimeNanos;
+            return TimeUnit.NANOSECONDS.toMillis( elapsedNanos );
         }
 
     }

@@ -23,6 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,15 +55,17 @@ import static org.neo4j.test.rule.Resources.TestPath.FILE_IN_EXISTING_DIRECTORY;
 
 public class AbstractKeyValueStoreTest
 {
-
     private final ExpectedException expectedException = ExpectedException.none();
     private final Resources resourceManager = new Resources( FILE_IN_EXISTING_DIRECTORY );
+    private final ThreadingRule threading = new ThreadingRule();
+    private final Timeout timeout = Timeout.builder()
+                                           .withTimeout( 20, TimeUnit.SECONDS )
+                                           .withLookingForStuckThread( true )
+                                           .build();
 
     @Rule
-    public final ThreadingRule threading = new ThreadingRule();
-    @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( expectedException )
-            .around( resourceManager );
+            .around( resourceManager ).around( threading ).around( timeout );
 
     private static final HeaderField<Long> TX_ID = new HeaderField<Long>()
     {
@@ -403,11 +406,10 @@ public class AbstractKeyValueStoreTest
         store.rotation.apply( 4L );
     }
 
-    @Test( timeout = 2000 )
+    @Test
     @Resources.Life( STARTED )
     public void shouldFailRotationAfterTimeout() throws IOException
     {
-
         // GIVEN
         final Store store = resourceManager.managed( createTestStore( 0 ) );
 
@@ -593,7 +595,7 @@ public class AbstractKeyValueStoreTest
         private Store( long rotationTimeout, HeaderField<?>... headerFields )
         {
             super( resourceManager.fileSystem(), resourceManager.pageCache(), resourceManager.testPath(), null,
-                    new RotationTimerFactory( Clocks.systemClock(), rotationTimeout ), 16, 16, headerFields );
+                    new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ), 16, 16, headerFields );
             this.headerFields = headerFields;
             setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
             {

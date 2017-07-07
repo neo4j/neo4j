@@ -24,7 +24,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
@@ -48,6 +47,7 @@ import org.neo4j.test.rule.Resources;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
+import org.neo4j.time.SystemNanoClock;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -405,10 +405,10 @@ public class CountsTrackerTest
 
     private CountsTracker newTracker()
     {
-        return newTracker( Clocks.systemClock() );
+        return newTracker( Clocks.nanoClock() );
     }
 
-    private CountsTracker newTracker( Clock clock )
+    private CountsTracker newTracker( SystemNanoClock clock )
     {
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
                 resourceManager.pageCache(), Config.empty(), resourceManager.testPath(), clock )
