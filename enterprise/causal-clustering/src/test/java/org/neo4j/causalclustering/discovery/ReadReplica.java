@@ -43,6 +43,8 @@ import org.neo4j.logging.Level;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.joining;
+import static org.neo4j.helpers.AdvertisedSocketAddress.advertisedAddress;
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ReadReplica implements ClusterMember
@@ -52,19 +54,21 @@ public class ReadReplica implements ClusterMember
     private final File neo4jHome;
     private final File storeDir;
     private final int serverId;
-    private final String boltAdvertisedAddress;
+    private final String boltAdvertisedSocketAddress;
     private ReadReplicaGraphDatabase database;
     private Monitors monitors;
 
     public ReadReplica( File parentDir, int serverId, int boltPort, int httpPort, int txPort, int backupPort,
                         DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
-                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors )
+                        Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors,
+                        String advertisedAddress, String listenAddress)
     {
         this.serverId = serverId;
 
         String initialHosts = coreMemberHazelcastAddresses.stream().map( AdvertisedSocketAddress::toString )
                 .collect( joining( "," ) );
+        boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
         config.put( "dbms.mode", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
@@ -81,23 +85,23 @@ public class ReadReplica implements ClusterMember
 
         config.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         config.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
-        config.put( new BoltConnector( "bolt" ).listen_address.name(), "127.0.0.1:" + boltPort );
-        boltAdvertisedAddress = "127.0.0.1:" + boltPort;
-        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedAddress );
+        config.put( new BoltConnector( "bolt" ).listen_address.name(), listenAddress( listenAddress, boltPort ) );
+        config.put( new BoltConnector( "bolt" ).advertised_address.name(), boltAdvertisedSocketAddress );
         config.put( new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP" );
         config.put( new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true" );
-        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), "127.0.0.1:" + httpPort );
-        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), "127.0.0.1:" + httpPort );
+        config.put( new HttpConnector( "http", Encryption.NONE ).listen_address.name(), listenAddress( listenAddress, httpPort ) );
+        config.put( new HttpConnector( "http", Encryption.NONE ).advertised_address.name(), advertisedAddress( advertisedAddress, httpPort ) );
 
         this.neo4jHome = new File( parentDir, "read-replica-" + serverId );
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
 
-        config.put( CausalClusteringSettings.transaction_listen_address.name(), "127.0.0.1:" + txPort );
-        config.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + backupPort );
+        config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
+        config.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( listenAddress, backupPort ) );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;
         storeDir = new File( new File( new File( neo4jHome, "data" ), "databases" ), "graph.db" );
+        //noinspection ResultOfMethodCallIgnored
         storeDir.mkdirs();
 
         this.monitors = monitors;
@@ -105,12 +109,12 @@ public class ReadReplica implements ClusterMember
 
     public String boltAdvertisedAddress()
     {
-        return boltAdvertisedAddress;
+        return boltAdvertisedSocketAddress;
     }
 
     public String routingURI()
     {
-        return String.format( "bolt+routing://%s", boltAdvertisedAddress );
+        return String.format( "bolt+routing://%s", boltAdvertisedSocketAddress );
     }
 
     @Override
@@ -166,7 +170,7 @@ public class ReadReplica implements ClusterMember
 
     public String directURI()
     {
-        return String.format( "bolt://%s", boltAdvertisedAddress );
+        return String.format( "bolt://%s", boltAdvertisedSocketAddress );
     }
 
     public File homeDir()

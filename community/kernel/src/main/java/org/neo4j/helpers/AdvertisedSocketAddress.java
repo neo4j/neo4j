@@ -26,9 +26,11 @@ public class AdvertisedSocketAddress extends SocketAddress
         super( hostname, port );
     }
 
-    public static AdvertisedSocketAddress from( String address )
+    /**
+     * Textual representation format for an advertised socket address.
+     */
+    public static String advertisedAddress( String hostname, int port )
     {
-        String[] tokens = address.split( ":" );
-        return new AdvertisedSocketAddress( tokens[0], Integer.valueOf( tokens[1] ) );
+        return new AdvertisedSocketAddress( hostname, port ).toString();
     }
 }

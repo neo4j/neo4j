@@ -21,11 +21,15 @@ package org.neo4j.causalclustering.helpers;
 
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Pair;
+
+import static org.neo4j.helpers.collection.Iterables.count;
 
 public class DataCreator
 {
@@ -61,5 +65,17 @@ public class DataCreator
             } );
         }
         return last;
+    }
+
+    public static long countNodes( CoreClusterMember member )
+    {
+        CoreGraphDatabase db = member.database();
+        long count;
+        try ( Transaction tx = db.beginTx() )
+        {
+            count = count( db.getAllNodes() );
+            tx.success();
+        }
+        return count;
     }
 }

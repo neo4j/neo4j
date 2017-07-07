@@ -30,6 +30,7 @@ import java.io.File;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -62,10 +63,10 @@ public class ClusterSeedingIT
         fsa = fileSystemRule.get();
 
         backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         baseBackupDir = testDir.directory( "backups" );
     }
@@ -123,7 +124,7 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
         cluster.start();
 
         // when: creating a backup
@@ -143,7 +144,8 @@ public class ClusterSeedingIT
     {
         // given
         cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME );
+                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+
         cluster.start();
         createEmptyNodes( cluster, 100 );
 

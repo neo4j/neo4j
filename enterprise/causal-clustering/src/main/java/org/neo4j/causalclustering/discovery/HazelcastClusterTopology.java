@@ -43,7 +43,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyMap;
-import static org.neo4j.helpers.SocketAddressFormat.socketAddress;
+import static org.neo4j.helpers.SocketAddressParser.socketAddress;
 import static org.neo4j.helpers.collection.Iterables.asSet;
 
 public class HazelcastClusterTopology

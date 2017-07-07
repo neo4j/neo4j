@@ -25,7 +25,6 @@ import org.junit.Test;
 
 import java.util.List;
 
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
@@ -58,16 +57,10 @@ public class ClusterMembershipChangeIT
         // when
         Cluster cluster = clusterRule.withNumberOfReadReplicas( 0 ).startCluster();
 
-        List<AdvertisedSocketAddress> onlyServerZero = cluster.coreMembers().stream()
-                .map( member -> member.settingValue( CausalClusteringSettings.discovery_listen_address.name() ) )
-                .map( Integer::valueOf )
-                .map( discoveryListenAddress -> new AdvertisedSocketAddress( "127.0.0.1", discoveryListenAddress ) )
-                .collect( toList() );
-
         // then
-        cluster.addCoreMemberWithIdAndInitialMembers( 3, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 4, onlyServerZero ).start();
-        cluster.addCoreMemberWithIdAndInitialMembers( 5, onlyServerZero ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 3 ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 4 ).start();
+        cluster.addCoreMemberWithIdAndInitialMembers( 5 ).start();
 
         cluster.removeCoreMemberWithMemberId( 0 );
         cluster.removeCoreMemberWithMemberId( 1 );

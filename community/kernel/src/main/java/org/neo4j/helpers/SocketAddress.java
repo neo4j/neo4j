@@ -20,7 +20,11 @@
 package org.neo4j.helpers;
 
 import java.net.InetSocketAddress;
+import java.util.Collection;
 import java.util.Objects;
+
+import static java.lang.String.format;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * Socket address derived from configuration.
@@ -28,11 +32,16 @@ import java.util.Objects;
  */
 public class SocketAddress
 {
+    private static final Collection<String> WILDCARDS = asSet( "0.0.0.0", "::" );
+
     private final String hostname;
     private final int port;
 
     public SocketAddress( String hostname, int port )
     {
+        assert !hostname.contains( "[" );
+        assert !hostname.contains( "]" );
+
         this.hostname = hostname;
         this.port = port;
     }
@@ -55,10 +64,20 @@ public class SocketAddress
         return new InetSocketAddress( hostname, port );
     }
 
+    public boolean isWildcard()
+    {
+        return WILDCARDS.contains( hostname );
+    }
+
+    public boolean isIPv6()
+    {
+        return hostname.contains( ":" );
+    }
+
     @Override
     public String toString()
     {
-        return hostname + ":" + port;
+        return format( isIPv6() ? "[%s]:%s" : "%s:%s", hostname, port );
     }
 
     @Override

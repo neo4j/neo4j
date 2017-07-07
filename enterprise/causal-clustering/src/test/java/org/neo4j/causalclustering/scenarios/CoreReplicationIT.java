@@ -45,9 +45,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
+import static org.neo4j.causalclustering.helpers.DataCreator.countNodes;
 import static org.neo4j.function.Predicates.await;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.count;
 
 public class CoreReplicationIT
 {
@@ -310,17 +310,5 @@ public class CoreReplicationIT
         cluster.shutdown();
         // ... and the thread running the tx does not get stuck
         thread.join( TimeUnit.MINUTES.toMillis( 1 ) );
-    }
-
-    private long countNodes( CoreClusterMember member )
-    {
-        CoreGraphDatabase db = member.database();
-        long count;
-        try ( Transaction tx = db.beginTx() )
-        {
-            count = count( db.getAllNodes() );
-            tx.success();
-        }
-        return count;
     }
 }
