@@ -41,7 +41,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.PortAuthority;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -56,7 +55,6 @@ import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.SocketAddressParser;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
@@ -157,12 +155,12 @@ public class Cluster
     private CoreClusterMember addCoreMemberWithId( int memberId, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        List<AdvertisedSocketAddress> initialMembers = extractDiscoveryListenAddresses( coreMembers );
+        List<AdvertisedSocketAddress> initialHosts = extractInitialHosts( coreMembers );
         CoreClusterMember coreClusterMember = createCoreClusterMember(
                 memberId,
                 PortAuthority.allocatePort(),
                 DEFAULT_CLUSTER_SIZE,
-                initialMembers,
+                initialHosts,
                 recordFormat,
                 extraParams,
                 instanceExtraParams
@@ -189,10 +187,10 @@ public class Cluster
 
     private ReadReplica addReadReplica( int memberId, String recordFormat, Monitors monitors )
     {
-        List<AdvertisedSocketAddress> hazelcastAddresses = extractDiscoveryListenAddresses( coreMembers );
+        List<AdvertisedSocketAddress> initialHosts = extractInitialHosts( coreMembers );
         ReadReplica member = createReadReplica(
                 memberId,
-                hazelcastAddresses,
+                initialHosts,
                 readReplicaParams,
                 instanceReadReplicaParams,
                 recordFormat,
@@ -407,26 +405,26 @@ public class Cluster
                LockSessionExpired;
     }
 
-    private static List<AdvertisedSocketAddress> extractDiscoveryListenAddresses( Map<Integer,CoreClusterMember> coreMembers )
+    private List<AdvertisedSocketAddress> extractInitialHosts( Map<Integer,CoreClusterMember> coreMembers )
     {
         return coreMembers.values().stream()
-                .map( member -> member.settingValue( CausalClusteringSettings.discovery_listen_address.name() ) )
-                .map( settingValue -> SocketAddressParser.socketAddress( settingValue, AdvertisedSocketAddress::new ) )
+                .map( CoreClusterMember::discoveryPort )
+                .map( port -> new AdvertisedSocketAddress( advertisedAddress, port ) )
                 .collect( toList() );
     }
 
     private void createCoreMembers( final int noOfCoreMembers,
-            List<AdvertisedSocketAddress> addresses, Map<String,String> extraParams,
+            List<AdvertisedSocketAddress> initialHosts, Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams, String recordFormat )
     {
-        for ( int i = 0; i < addresses.size(); i++ )
+        for ( int i = 0; i < initialHosts.size(); i++ )
         {
-            int discoveryListenAddress = addresses.get( i ).getPort();
+            int discoveryListenAddress = initialHosts.get( i ).getPort();
             CoreClusterMember coreClusterMember = createCoreClusterMember(
                     i,
                     discoveryListenAddress,
                     noOfCoreMembers,
-                    addresses,
+                    initialHosts,
                     recordFormat,
                     extraParams,
                     instanceExtraParams
@@ -438,7 +436,7 @@ public class Cluster
     private CoreClusterMember createCoreClusterMember( int serverId,
                                                        int hazelcastPort,
                                                        int clusterSize,
-                                                       List<AdvertisedSocketAddress> addresses,
+                                                       List<AdvertisedSocketAddress> initialHosts,
                                                        String recordFormat,
                                                        Map<String, String> extraParams,
                                                        Map<String, IntFunction<String>> instanceExtraParams )
@@ -458,7 +456,7 @@ public class Cluster
                 httpPort,
                 backupPort,
                 clusterSize,
-                addresses,
+                initialHosts,
                 discoveryServiceFactory,
                 recordFormat,
                 parentDir,
@@ -470,7 +468,7 @@ public class Cluster
     }
 
     private ReadReplica createReadReplica( int serverId,
-                                           List<AdvertisedSocketAddress> coreMemberHazelcastAddresses,
+                                           List<AdvertisedSocketAddress> initialHosts,
                                            Map<String, String> extraParams,
                                            Map<String, IntFunction<String>> instanceExtraParams,
                                            String recordFormat,
@@ -488,7 +486,7 @@ public class Cluster
                 httpPort,
                 txPort,
                 backupPort, discoveryServiceFactory,
-                coreMemberHazelcastAddresses,
+                initialHosts,
                 extraParams,
                 instanceExtraParams,
                 recordFormat,
@@ -537,7 +535,7 @@ public class Cluster
     }
 
     private void createReadReplicas( int noOfReadReplicas,
-            final List<AdvertisedSocketAddress> coreMemberAddresses,
+            final List<AdvertisedSocketAddress> initialHosts,
             Map<String,String> extraParams,
             Map<String,IntFunction<String>> instanceExtraParams,
             String recordFormat )
@@ -546,7 +544,7 @@ public class Cluster
         {
             ReadReplica readReplica = createReadReplica(
                     i,
-                    coreMemberAddresses,
+                    initialHosts,
                     extraParams,
                     instanceExtraParams,
                     recordFormat,

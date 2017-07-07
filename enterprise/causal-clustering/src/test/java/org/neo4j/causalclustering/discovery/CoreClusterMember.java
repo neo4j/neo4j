@@ -64,10 +64,11 @@ public class CoreClusterMember implements ClusterMember
     private final Map<String, String> config = stringMap();
     private final int serverId;
     private final String boltAdvertisedSocketAddress;
+    private final int discoveryPort;
     private CoreGraphDatabase database;
 
     public CoreClusterMember( int serverId,
-                              int hazelcastPort,
+                              int discoveryPort,
                               int txPort,
                               int raftPort,
                               int boltPort,
@@ -84,6 +85,7 @@ public class CoreClusterMember implements ClusterMember
                               String advertisedAddress )
     {
         this.serverId = serverId;
+        this.discoveryPort = discoveryPort;
 
         String initialMembers = addresses.stream().map( AdvertisedSocketAddress::toString ).collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
@@ -91,7 +93,7 @@ public class CoreClusterMember implements ClusterMember
         config.put( ClusterSettings.mode.name(), ClusterSettings.Mode.CORE.name() );
         config.put( GraphDatabaseSettings.default_advertised_address.name(), advertisedAddress );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialMembers );
-        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, hazelcastPort ) );
+        config.put( CausalClusteringSettings.discovery_listen_address.name(), listenAddress( listenAddress, discoveryPort ) );
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
         config.put( CausalClusteringSettings.raft_listen_address.name(), listenAddress( listenAddress, raftPort ) );
         config.put( CausalClusteringSettings.cluster_topology_refresh.name(), "1000ms" );
@@ -239,5 +241,10 @@ public class CoreClusterMember implements ClusterMember
     public void stopCatchupServer() throws Throwable
     {
         database.getDependencyResolver().resolveDependency( CatchupServer.class).stop();
+    }
+
+    int discoveryPort()
+    {
+        return discoveryPort;
     }
 }
