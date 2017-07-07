@@ -54,7 +54,7 @@ public class ClusterRule extends ExternalResource
     private Map<String,IntFunction<String>> instanceReadReplicaParams = new HashMap<>();
     private String recordFormat = Standard.LATEST_NAME;
     private IpFamily ipFamily = IPV4;
-    private boolean useWildcard = false;
+    private boolean useWildcard;
 
     public ClusterRule( Class<?> testClass )
     {

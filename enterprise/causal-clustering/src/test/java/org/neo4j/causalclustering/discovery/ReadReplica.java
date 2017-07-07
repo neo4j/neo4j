@@ -62,7 +62,7 @@ public class ReadReplica implements ClusterMember
                         DiscoveryServiceFactory discoveryServiceFactory,
                         List<AdvertisedSocketAddress> coreMemberHazelcastAddresses, Map<String, String> extraParams,
                         Map<String, IntFunction<String>> instanceExtraParams, String recordFormat, Monitors monitors,
-                        String advertisedAddress, String listenAddress)
+                        String advertisedAddress, String listenAddress )
     {
         this.serverId = serverId;
 
