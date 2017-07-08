@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
@@ -47,7 +48,7 @@ public class UnavailableIT
     }
 
     @Test
-    public void shouldReturnUnavailableStatus() throws Exception
+    public void shouldReturnUnavailableStatusWhenDoingLongOperation() throws Exception
     {
         // given
         ClusterMember member = cluster.getCoreMemberById( 1 );
@@ -58,6 +59,28 @@ public class UnavailableIT
 
         // then
         try ( Transaction tx = member.database().beginTx() )
+        {
+            tx.success();
+            fail();
+        }
+        catch ( Exception e )
+        {
+            assertEquals( Status.General.DatabaseUnavailable, statusCodeOf( e ) );
+        }
+    }
+
+    @Test
+    public void shouldReturnUnavailableStatusWhenShutdown() throws Exception
+    {
+        // given
+        ClusterMember member = cluster.getCoreMemberById( 1 );
+
+        // when
+        GraphDatabaseAPI db = member.database();
+        member.shutdown();
+
+        // then
+        try ( Transaction tx = db.beginTx() )
         {
             tx.success();
             fail();

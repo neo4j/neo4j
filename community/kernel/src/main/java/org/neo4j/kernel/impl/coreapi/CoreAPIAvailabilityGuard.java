@@ -54,7 +54,7 @@ public class CoreAPIAvailabilityGuard
             {
                 throw new DatabaseShutdownException();
             }
-            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage() );
+            throw new org.neo4j.graphdb.TransactionFailureException( e.getMessage(), e );
         }
     }
 }
