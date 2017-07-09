@@ -132,15 +132,27 @@ public abstract class AbstractShellIT
     {
         if ( remotelyAvailableOnPort == null )
         {
-            remotelyAvailableOnPort = findFreePort();
-            shellServer.makeRemotelyAvailable( remotelyAvailableOnPort, SimpleAppServer.DEFAULT_NAME );
+            int attempts = 0;
+            int port = SimpleAppServer.DEFAULT_PORT;
+            do
+            {
+                try
+                {
+                    shellServer.makeRemotelyAvailable( port, SimpleAppServer.DEFAULT_NAME );
+                    remotelyAvailableOnPort = port;
+                }
+                catch ( Throwable error )
+                {
+                    port++;
+                    attempts++;
+                    if ( attempts == 100 )
+                    {
+                        throw new RuntimeException( "Not able to find free port more them 100 times.", error );
+                    }
+                }
+            }
+            while ( remotelyAvailableOnPort == null );
         }
-    }
-
-    private int findFreePort()
-    {
-        // TODO
-        return SimpleAppServer.DEFAULT_PORT;
     }
 
     protected void restartServer() throws Exception
