@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.phases._
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
@@ -49,6 +50,9 @@ import org.neo4j.kernel.api.query.PlannerInfo
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.util.Try
@@ -178,7 +182,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
 
         val context = queryContext(transactionalContext)
 
-        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
+        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, asValues(params))
 
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
@@ -186,6 +190,19 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
           exceptionHandler.runSafely
         ))
       }
+    }
+    private def asValues(params: Map[String, Any]): Map[String, AnyValue] = Eagerly.immutableMapValues(params, asValue)
+    private def asValue(value: Any): AnyValue = value match {
+      case null => Values.NO_VALUE
+      case s: String => Values.stringValue(s)
+      case d: Double => Values.doubleValue(d)
+      case f: Float => Values.doubleValue(f)
+      case n: Number => Values.longValue(n.longValue())
+      case b: Boolean => Values.booleanValue(b)
+      case m: Map[_, _] => VirtualValues.map(Eagerly.immutableMapValues(m.asInstanceOf[Map[String, Any]], asValue).asJava)
+      case m: java.util.Map[_, _] => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+      case a: TraversableOnce[_] => VirtualValues.list(a.map(asValue).toArray:_*)
+      case c: java.util.Collection[_] => AnyValues.asListValue(c)
     }
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit

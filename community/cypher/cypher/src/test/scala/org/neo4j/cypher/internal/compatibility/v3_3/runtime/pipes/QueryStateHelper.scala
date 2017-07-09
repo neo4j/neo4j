@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
 
@@ -28,7 +29,7 @@ object QueryStateHelper {
   def empty: QueryState = emptyWith()
 
   def emptyWith(query: QueryContext = null, resources: ExternalCSVResource = null,
-                params: Map[String, Any] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
+                params: Map[String, AnyValue] = Map.empty, decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
       initialContext = initialContext, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)

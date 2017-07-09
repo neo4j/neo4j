@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.spi.v3_3.{CSVResources, QueryContext}
+import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
 
@@ -64,7 +65,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
-    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, Any], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
+    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
                                  triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)

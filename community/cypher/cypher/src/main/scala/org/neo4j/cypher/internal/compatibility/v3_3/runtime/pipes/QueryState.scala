@@ -28,12 +28,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
 
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
-                 val params: Map[String, Any],
+                 val params: Map[String, AnyValue],
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val timeReader: TimeReader = new TimeReader,
                  var initialContext: Option[ExecutionContext] = None,
@@ -55,7 +56,7 @@ class QueryState(val query: QueryContext,
 
   def readTimeStamp(): Long = timeReader.getTime
 
-  def  getParam(key: String): Any =
+  def  getParam(key: String): AnyValue =
     params.getOrElse(key, throw new ParameterNotFoundException("Expected a parameter named " + key))
 
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)

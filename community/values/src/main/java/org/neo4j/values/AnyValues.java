@@ -137,7 +137,6 @@ public final class AnyValues
         }
     }
 
-
     public static PointValue asPointValue( Geometry geometry )
     {
         if ( !geometry.getGeometryType().equals( "Point" ) )

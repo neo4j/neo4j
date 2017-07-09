@@ -35,8 +35,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.values.AnyValue
 
-object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
+object
+
+BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
@@ -58,7 +61,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val execPlan = new ExecutionPlan {
       private val fingerprint = context.createFingerprintReference(fp)
 
-      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
+      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult =
         func(queryContext, planType, params)
 
       override def isPeriodicCommit: Boolean = periodicCommitInfo.isDefined
@@ -89,8 +92,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
                                        notificationLogger: InternalNotificationLogger):
-  (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) => {
+  (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]) => {
       val builder = resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode
