@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.{AnyValue, AnyValues}
@@ -36,5 +37,7 @@ object ValueConversion {
     case symbols.CTMap => m => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
     case symbols.ListType(_)  => l => AnyValues.asListValue(l.asInstanceOf[java.util.Collection[_]])
     case symbols.CTAny => o => AnyValues.of(o)
+    case symbols.CTPoint => o => AnyValues.asPointValue(o.asInstanceOf[Point])
+    case symbols.CTGeometry => o => AnyValues.asPointValue(o.asInstanceOf[Geometry])
   }
 }

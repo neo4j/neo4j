@@ -38,7 +38,7 @@ object coerce {
         case CTRelationship => value.asInstanceOf[EdgeValue]
         case CTPath => value.asInstanceOf[PathValue]
         case CTInteger => value.asInstanceOf[IntegralValue]
-        case CTFloat => value.asInstanceOf[FloatValue]
+        case CTFloat => value.asInstanceOf[DoubleValue]
         case CTMap => value match {
           case IsMap(m) => m
           case _ => throw cantCoerce(value, typ)

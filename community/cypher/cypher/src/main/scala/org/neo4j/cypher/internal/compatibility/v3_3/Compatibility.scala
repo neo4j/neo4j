@@ -175,7 +175,10 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
         case CypherExecutionMode.normal => NormalMode
       }
       exceptionHandler.runSafely {
-        val innerResult: InternalExecutionResult = inner.run(queryContext(transactionalContext), innerExecutionMode, params)
+
+        val context = queryContext(transactionalContext)
+
+        val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, params)
 
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),

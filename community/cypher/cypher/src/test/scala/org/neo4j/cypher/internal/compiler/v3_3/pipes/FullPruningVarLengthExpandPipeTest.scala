@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_3.pipes
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, Predicate, True}
@@ -27,14 +28,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.Unre
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.SecurityContext
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = LazyTypes(Seq.empty[String])
@@ -59,7 +60,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList shouldBe List(Map("from" -> n1, "to" -> n2))
+      val toList: Seq[ExecutionContext] = pipeUnderTest.createResults(queryState).toList
+      toList should beEquivalentTo(List(Map("from" -> n1, "to" -> n2)))
     }
   }
 
@@ -72,10 +74,10 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList shouldBe List(
+      pipeUnderTest.createResults(queryState).toList should beEquivalentTo(List(
         Map("from" -> n1, "to" -> n2),
         Map("from" -> n1, "to" -> n1)
-      )
+      ))
     }
   }
 
@@ -97,7 +99,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
       pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
-        nodes.slice(min, max + 1).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
+        nodes.slice(min, max + 1).map(fromNodeProxy).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
       )
     }
   }
@@ -117,7 +119,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
         List(
           Map("from" -> n1, "to" -> n2)
         )
@@ -152,7 +154,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       val queryState = queryStateFrom(graph, tx, Map.empty)
       pipeUnderTest.createResults(queryState).toSet should equal(
         Set(
-          Map("from" -> n1, "to" -> n4)
+          Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
         )
       )
     }
@@ -187,7 +189,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
       val queryState = queryStateFrom(graph, tx, Map.empty)
       pipeUnderTest.createResults(queryState).toSet should equal(
         Set(
-          Map("from" -> n1, "to" -> n4)
+          Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
         )
       )
     }
@@ -211,7 +213,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
         List(
           Map("from" -> n1, "to" -> n2)
         )
@@ -237,7 +239,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toList should equal(
+      pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
         List(
           Map("from" -> n1, "to" -> n2)
         )
@@ -270,13 +272,13 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
-      pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> n1, "to" -> n)).toSet)
+      pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n))).toSet)
     }
   }
 
   test("multiple start nodes") {
     val nodes = (0 to 10) map (_ => createNode())
-
+    val nodeValues = nodes.map(fromNodeProxy)
     nodes.tail.foldLeft(nodes.head) {
       case (x: Node, y: Node) =>
         relate(x, y)
@@ -289,14 +291,14 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     graph.withTx { tx =>
       val queryState = queryStateFrom(graph, tx, Map.empty)
       pipeUnderTest.createResults(queryState).toSet should equal(Set(
-        Map("from" -> nodes(1), "to" -> nodes(2)),
-        Map("from" -> nodes(1), "to" -> nodes(3)),
-        Map("from" -> nodes(1), "to" -> nodes(4)),
-        Map("from" -> nodes(1), "to" -> nodes(5)),
-        Map("from" -> nodes(5), "to" -> nodes(6)),
-        Map("from" -> nodes(5), "to" -> nodes(7)),
-        Map("from" -> nodes(5), "to" -> nodes(8)),
-        Map("from" -> nodes(5), "to" -> nodes(9))
+        Map("from" -> nodeValues(1), "to" -> nodeValues(2)),
+        Map("from" -> nodeValues(1), "to" -> nodeValues(3)),
+        Map("from" -> nodeValues(1), "to" -> nodeValues(4)),
+        Map("from" -> nodeValues(1), "to" -> nodeValues(5)),
+        Map("from" -> nodeValues(5), "to" -> nodeValues(6)),
+        Map("from" -> nodeValues(5), "to" -> nodeValues(7)),
+        Map("from" -> nodeValues(5), "to" -> nodeValues(8)),
+        Map("from" -> nodeValues(5), "to" -> nodeValues(9))
       ))
     }
   }

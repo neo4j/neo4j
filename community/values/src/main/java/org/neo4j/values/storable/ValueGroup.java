@@ -25,12 +25,12 @@ package org.neo4j.values.storable;
  */
 public enum ValueGroup
 {
-    NO_VALUE,
     TEXT,
     BOOLEAN,
     NUMBER,
     NUMBER_ARRAY,
     TEXT_ARRAY,
     BOOLEAN_ARRAY,
-    VIRTUAL;
+    VIRTUAL,
+    NO_VALUE,
 }

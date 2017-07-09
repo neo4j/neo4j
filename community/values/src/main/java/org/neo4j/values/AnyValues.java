@@ -22,17 +22,20 @@ package org.neo4j.values;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.StreamSupport;
 
-import org.neo4j.values.storable.NumberValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.values.storable.NumberValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.ListValue;
@@ -91,11 +94,68 @@ public final class AnyValues
             {
                 return asListValue( (Collection<?>) object );
             }
+            else if ( object instanceof Point )
+            {
+                return asPointValue( (Point) object );
+            }
+            else if ( object instanceof Geometry )
+            {
+                return asPointValue( (Geometry) object );
+            }
+            else if ( object instanceof Object[] )
+            {
+                Object[] array = (Object[]) object;
+                AnyValue[] anyValues = new AnyValue[array.length];
+                for ( int i = 0; i < array.length; i++ )
+                {
+                    anyValues[i] = of( array[i] );
+                }
+                return VirtualValues.list( anyValues );
+            }
             else
             {
                 throw new IllegalArgumentException(
                         String.format( "Cannot convert %s to AnyValue", object.getClass().getName() ) );
             }
+        }
+    }
+
+    public static PointValue asPointValue( Point point )
+    {
+        List<Double> coordinate = point.getCoordinate().getCoordinate();
+        if ( point.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
+        {
+            return VirtualValues.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
+        }
+        else if ( point.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
+        {
+            return VirtualValues.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown coordinate reference system " + point.getCRS() );
+        }
+    }
+
+
+    public static PointValue asPointValue( Geometry geometry )
+    {
+        if ( !geometry.getGeometryType().equals( "Point" ) )
+        {
+            throw new IllegalArgumentException( "Cannot handle geometry type: " + geometry.getCRS().getType() );
+        }
+        List<Double> coordinate = geometry.getCoordinates().get( 0 ).getCoordinate();
+        if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
+        {
+            return VirtualValues.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
+        }
+        else if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
+        {
+            return VirtualValues.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown coordinate reference system " + geometry.getCRS() );
         }
     }
 
@@ -213,12 +273,17 @@ public final class AnyValues
         {
             double x = ((NumberValue) map.get( "x" )).doubleValue();
             double y = ((NumberValue) map.get( "y" )).doubleValue();
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs == Values.NO_VALUE || crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.name() ) )
+            if ( !map.containsKey( "crs" ) )
             {
                 return VirtualValues.pointCartesian( x, y );
             }
-            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name() ) )
+
+            TextValue crs = (TextValue) map.get( "crs" );
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.Cartesian.type() ) )
+            {
+                return VirtualValues.pointCartesian( x, y );
+            }
+            else if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
             {
                 return VirtualValues.pointGeographic( x, y );
             }
@@ -229,12 +294,17 @@ public final class AnyValues
         }
         else if ( map.containsKey( "latitude" ) && map.containsKey( "longitude" ) )
         {
-            double latitude = ((NumberValue) map.get( "x" )).doubleValue();
-            double longitude = ((NumberValue) map.get( "y" )).doubleValue();
-            TextValue crs = (TextValue) map.get( "crs" );
-            if ( crs == Values.NO_VALUE || crs.stringValue().equals( CoordinateReferenceSystem.WGS84.name() ) )
+            double latitude = ((NumberValue) map.get( "latitude" )).doubleValue();
+            double longitude = ((NumberValue) map.get( "longitude" )).doubleValue();
+            if ( !map.containsKey( "crs" ) )
             {
-                return VirtualValues.pointGeographic( latitude, longitude );
+                return VirtualValues.pointGeographic( longitude, latitude );
+            }
+
+            TextValue crs = (TextValue) map.get( "crs" );
+            if ( crs.stringValue().equals( CoordinateReferenceSystem.WGS84.type() ) )
+            {
+                return VirtualValues.pointGeographic( longitude, latitude );
             }
             else
             {

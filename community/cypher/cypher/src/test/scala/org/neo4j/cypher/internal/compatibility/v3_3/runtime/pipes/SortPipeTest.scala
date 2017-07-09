@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.junit.Assert._
+import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.intValue
 import org.scalatest.mock.MockitoSugar
 
 import scala.collection.mutable.{Map => MutableMap}
@@ -36,11 +39,11 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
   }
 
   test("simple sorting is supported") {
-    val list:Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
+    val list: Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
     val source = new FakePipe(list, "x" -> CTString)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
-    assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(Map("x" -> "A"), Map("x" -> "B")))
   }
 
   test("sort by two columns") {
@@ -53,10 +56,10 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Ascending("y")))()
 
-    assertEquals(List(
-      MutableMap("x" -> "A", "y" -> 100),
-      MutableMap("x" -> "B", "y" -> 10),
-      MutableMap("x" -> "B", "y" -> 20)), sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
+      Map("x" -> "A", "y" -> 100),
+      Map("x" -> "B", "y" -> 10),
+      Map("x" -> "B", "y" -> 20)))
   }
 
   test("sort by two columns with one descending") {
@@ -69,10 +72,10 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Descending("y")))()
 
-    assertEquals(List(
-      MutableMap[String, Any]("x" -> "A", "y" -> 100),
-      MutableMap[String, Any]("x" -> "B", "y" -> 20),
-      MutableMap[String, Any]("x" -> "B", "y" -> 10)), sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
+      Map[String, Any]("x" -> "A", "y" -> 100),
+      Map[String, Any]("x" -> "B", "y" -> 20),
+      Map[String, Any]("x" -> "B", "y" -> 10)))
   }
 
   test("should handle null values") {
@@ -80,13 +83,13 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       MutableMap("y" -> 1),
       MutableMap("y" -> null),
       MutableMap("y" -> 2))
-    val source = new FakePipe(list, "y"->CTNumber)
+    val source = new FakePipe(list, "y" -> CTNumber)
 
     val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
-    assertEquals(List(
-      MutableMap("y" -> 1),
-      MutableMap("y" -> 2),
-      MutableMap("y" -> null)), sortPipe.createResults(QueryStateHelper.empty).toList)
+    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+      Map("y" -> intValue(1)),
+      Map("y" -> intValue(2)),
+      Map("y" -> Values.NO_VALUE)))
   }
 }

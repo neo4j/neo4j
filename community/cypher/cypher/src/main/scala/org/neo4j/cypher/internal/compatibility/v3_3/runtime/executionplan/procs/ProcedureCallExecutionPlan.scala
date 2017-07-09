@@ -25,14 +25,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Exp
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, ProcedureCallMode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{Counter, RuntimeJavaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Notification
@@ -98,9 +97,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     }
 
     private def evaluateArguments(ctx: QueryContext, params: Map[String, Any]): Seq[Any] = {
-      val converter = new RuntimeJavaValueConverter(ctx.isGraphKernelResultValue)
       val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-      argExprCommands.map(expr => converter.asDeepJavaValue(expr.apply(ExecutionContext.empty)(state)))
+      argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
     }
 
     private def createNormalPlan =

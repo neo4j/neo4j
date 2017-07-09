@@ -136,9 +136,9 @@ public final class VirtualValues
         return new PointValue.CartesianPointValue( x, y );
     }
 
-    public static PointValue pointGeographic( double latitude, double longitude )
+    public static PointValue pointGeographic( double longitude, double latitude )
     {
-        return new PointValue.GeographicPointValue( latitude, longitude );
+        return new PointValue.GeographicPointValue( longitude, latitude );
     }
 
     public static NodeValue nodeValue( long id, TextArray labels, MapValue properties )

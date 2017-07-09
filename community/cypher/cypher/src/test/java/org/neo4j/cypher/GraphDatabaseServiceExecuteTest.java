@@ -36,7 +36,6 @@ import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 import org.neo4j.test.rule.DatabaseRule;
@@ -88,7 +87,8 @@ public class GraphDatabaseServiceExecuteTest
         assertThat( obj, Matchers.instanceOf(Point.class));
 
         Point point = (Point) obj;
-        assertThat( point.getCoordinate(), equalTo(new Coordinate( 144.317718, -37.031738 )));
+        assertThat( point.getCoordinate().getCoordinate().get(0), equalTo( 144.317718 ));
+        assertThat( point.getCoordinate().getCoordinate().get(1), equalTo( -37.031738  ));
 
         CRS crs = point.getCRS();
         assertThat( crs.getCode(), equalTo(4326));
@@ -238,7 +238,8 @@ public class GraphDatabaseServiceExecuteTest
                 "RETURN distance(point({longitude: 144.317718, latitude: -37.031738}), geometry) AS dist" );
 
         // then
-        Double dist = (Double) result.next().get( "dist" );
+        Object dist1 = result.next().get( "dist" );
+        Double dist = (Double) dist1;
         assertThat( dist, equalTo( 0.0 ) );
 
     }

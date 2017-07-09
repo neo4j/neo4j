@@ -23,8 +23,8 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.NumberValues;
 
 import static java.lang.String.format;
 
@@ -135,9 +135,9 @@ public abstract class PointValue extends VirtualValue
     static class GeographicPointValue extends PointValue
     {
 
-        GeographicPointValue( double latitude, double longitude )
+        GeographicPointValue( double longitude, double latitude )
         {
-            super( latitude, longitude );
+            super( longitude, latitude );
         }
 
         @Override
