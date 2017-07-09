@@ -19,20 +19,52 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipeBuilder
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.ProduceResultRegisterPipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeMonitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipelineInformation}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-class RegisteredPipeBuilder(fallback: PipeBuilder) extends PipeBuilder {
+class RegisteredPipeBuilder(fallback: PipeBuilder,
+                            expressionConverter: ExpressionConverters,
+                            idMap: Map[LogicalPlan, Id],
+                            monitors: Monitors,
+                            pipelineInformation: Map[LogicalPlan, PipelineInformation]) extends PipeBuilder {
+
+  implicit private val monitor = monitors.newMonitor[PipeMonitor]()
+
   override def build(plan: LogicalPlan): Pipe =
     plan match {
       case _ => fallback.build(plan)
     }
 
-  override def build(plan: LogicalPlan, source: Pipe): Pipe =
+  override def build(plan: LogicalPlan, source: Pipe): Pipe = {
+    val id = idMap.getOrElse(plan, new Id)
+
     plan match {
+      case p@ProduceResult(columns, _) =>
+        val pipelineInformation1 = pipelineInformation(p)
+        val runtimeColumns = createProjectionsForResult(columns, pipelineInformation1)
+        ProduceResultRegisterPipe(source, runtimeColumns)(id)
       case _ => fallback.build(plan, source)
     }
+  }
+
+  private def createProjectionsForResult(columns: Seq[String], pipelineInformation1: PipelineInformation) = {
+    val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
+      k =>
+        pipelineInformation1(k) match {
+          case LongSlot(offset, false, CTNode) =>
+            k -> runtimeExpressions.NodeFromRegister(offset)
+        }
+    }
+    runtimeColumns
+  }
 
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe =
     plan match {

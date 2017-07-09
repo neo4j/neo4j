@@ -19,10 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst, plans => physical}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{plans => logical}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, ast => parserAst}
 
 class RegisteredRewriter(pipelineInformation: Map[LogicalPlan, PipelineInformation]) extends Rewriter {
@@ -37,15 +36,16 @@ class RegisteredRewriter(pipelineInformation: Map[LogicalPlan, PipelineInformati
 
     val rewriteCreator: PipelineInformation => Rewriter = { (pipelineInformation: PipelineInformation) =>
       val rewriter: Rewriter = Rewriter.lift {
-        case logical.ProduceResult(columns, src) =>
-          val newColumns: Seq[(String, parserAst.Expression)] = columns map { c =>
-            pipelineInformation(c) match {
-              case LongSlot(offset, false, CTNode) =>
-                c -> runtimeAst.NodeFromRegister(offset)
-            }
-
-          }
-          physical.ProduceResult(newColumns, src)
+        case x => x
+//        case logical.ProduceResult(columns, src) =>
+//          val newColumns: Seq[(String, parserAst.Expression)] = columns map { c =>
+//            pipelineInformation(c) match {
+//              case LongSlot(offset, false, CTNode) =>
+//                c -> runtimeAst.NodeFromRegister(offset)
+//            }
+//
+//          }
+//          physical.ProduceResult(newColumns, src)
       }
 
       rewriter

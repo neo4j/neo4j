@@ -54,14 +54,13 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def createRegisteredRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
-    val logicalPlan = from.logicalPlan
-    val pipelines = RegisterAllocation.allocateRegisters(logicalPlan)
-    val rewrittenPlan = logicalPlan.endoRewrite(new RegisteredRewriter(pipelines))
+    val beforeRewrite = from.logicalPlan
+    val pipelines = RegisterAllocation.allocateRegisters(beforeRewrite)
+    val logicalPlan = beforeRewrite.endoRewrite(new RegisteredRewriter(pipelines))
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
-    ???
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-      expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory())
+      expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
@@ -93,11 +92,12 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
   }
 
-  case class RegisteredPipeBuilderFactory() extends PipeBuilderFactory {
+  case class RegisteredPipeBuilderFactory(pipelineInformation: Map[LogicalPlan, PipelineInformation])
+    extends PipeBuilderFactory {
     def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
              (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
       val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
-      new RegisteredPipeBuilder(fallback)
+      new RegisteredPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation)
     }
   }
 
