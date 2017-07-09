@@ -31,7 +31,7 @@ object ExecutionContext {
 
   def apply(m: MutableMap[String, Any] = MutableMaps.empty) = new ExecutionContext(m, 0)
 
-  def apply(numberOfLongs: Int) = new ExecutionContext(m = null, numberOfLongs = 0)
+  def apply(numberOfLongs: Int) = new ExecutionContext(m = null, numberOfLongs = numberOfLongs)
 }
 
 case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: Int)

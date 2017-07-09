@@ -26,14 +26,17 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
+import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{InternalException, internal}
 import org.neo4j.graphalgo.impl.path.ShortestPath
@@ -53,9 +56,6 @@ import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import JavaConversionSupport._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander, UserDefinedAggregator}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.values.storable.Values
 
 import scala.collection.Iterator
@@ -351,6 +351,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def all: Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetAll())(getById)
 
+    override def allPrimitive: PrimitiveLongIterator =
+      transactionalContext.statement.readOperations().nodesGetAll()
+
     override def indexGet(name: String, key: String, value: Any): Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
 
@@ -425,6 +428,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def all: Iterator[Relationship] = {
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipsGetAll())(getById)
     }
+
+    override def allPrimitive: PrimitiveLongIterator =
+      transactionalContext.statement.readOperations().relationshipsGetAll()
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)

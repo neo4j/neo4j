@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -222,6 +223,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
 
   override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
 
@@ -243,6 +245,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
 
   override def all: Iterator[T] = manyDbHits(inner.all)
+
+  override def allPrimitive: PrimitiveLongIterator = manyDbHits(inner.allPrimitive)
 
   override def isDeletedInThisTx(obj: T): Boolean = inner.isDeletedInThisTx(obj)
 

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -269,6 +270,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def all: Iterator[T] =
       translateException(inner.all)
+
+    override def allPrimitive: PrimitiveLongIterator =
+      translateException(inner.allPrimitive)
 
     override def isDeletedInThisTx(obj: T): Boolean =
       translateException(inner.isDeletedInThisTx(obj))

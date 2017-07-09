@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
@@ -209,6 +210,7 @@ trait Operations[T <: PropertyContainer] {
   def isDeletedInThisTx(obj: T): Boolean
 
   def all: Iterator[T]
+  def allPrimitive: PrimitiveLongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
 
