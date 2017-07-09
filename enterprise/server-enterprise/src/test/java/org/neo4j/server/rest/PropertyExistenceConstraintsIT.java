@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.kernel.impl.annotations.Documented;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.helpers.CommunityServerBuilder;
@@ -80,7 +79,7 @@ public class PropertyExistenceConstraintsIT implements GraphHolder
     {
         suppressAll().call( (Callable<Void>) () ->
         {
-            CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.server( NullLogProvider.getInstance() );
+            CommunityServerBuilder serverBuilder = EnterpriseServerBuilder.serverOnRandomPorts();
 
             PropertyExistenceConstraintsIT.server = ServerHelper.createNonPersistentServer( serverBuilder );
             return null;

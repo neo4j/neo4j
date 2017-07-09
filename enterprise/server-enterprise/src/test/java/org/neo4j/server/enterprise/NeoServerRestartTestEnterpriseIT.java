@@ -31,7 +31,7 @@ public class NeoServerRestartTestEnterpriseIT extends NeoServerRestartTestIT
 {
     protected NeoServer getNeoServer( String customPageSwapperName ) throws IOException
     {
-        CommunityServerBuilder builder = EnterpriseServerBuilder.server()
+        CommunityServerBuilder builder = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.pagecache_swapper.name(), customPageSwapperName );
         return builder.build();
     }

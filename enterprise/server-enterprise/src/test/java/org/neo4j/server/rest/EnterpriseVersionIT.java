@@ -47,7 +47,7 @@ public abstract class EnterpriseVersionIT extends ExclusiveServerTestBase
     public static void setupServer() throws Exception
     {
         FakeClock clock = Clocks.fakeClock();
-        server = EnterpriseServerBuilder.server()
+        server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( staticFolder.getRoot().getAbsolutePath() )
                 .withClock(clock)
                 .build();

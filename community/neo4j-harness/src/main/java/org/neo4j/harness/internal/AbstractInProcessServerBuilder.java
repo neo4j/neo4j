@@ -97,16 +97,16 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
         withConfig( http1.type, "HTTP" );
         withConfig( http1.encryption, Encryption.NONE.name() );
         withConfig( http1.enabled, "true" );
-        withConfig( http1.address, "localhost:" + Integer.toString( freePort( 1001, 3000 ) ) );
+        withConfig( http1.address, "localhost:0" );
 
         withConfig( http2.type, "HTTP" );
         withConfig( http2.encryption, Encryption.TLS.name() );
         withConfig( http2.enabled, "false" );
-        withConfig( http2.address, "localhost:" + Integer.toString( freePort( 3001, 5000 ) ) );
+        withConfig( http2.address, "localhost:0" );
 
         withConfig( bolt0.type, "BOLT" );
         withConfig( bolt0.enabled, "true" );
-        withConfig( bolt0.address, "localhost:" + Integer.toString( freePort( 5001, 9000 ) ) );
+        withConfig( bolt0.address, "localhost:0" );
     }
 
     @Override
@@ -248,18 +248,6 @@ public abstract class AbstractInProcessServerBuilder implements TestServerBuilde
     private String randomFolderName()
     {
         return DigestUtils.md5Hex( Long.toString( ThreadLocalRandom.current().nextLong() ) );
-    }
-
-    private int freePort( int startRange, int endRange )
-    {
-        try
-        {
-            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{startRange, endRange} ).getPort();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to find an available port: " + e.getMessage(), e );
-        }
     }
 
     private static String toStringForThirdPartyPackageProperty( List<ThirdPartyJaxRsPackage> extensions )

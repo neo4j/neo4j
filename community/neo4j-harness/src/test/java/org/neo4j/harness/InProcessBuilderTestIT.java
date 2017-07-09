@@ -83,8 +83,7 @@ public class InProcessBuilderTestIT
     public void shouldLaunchAServerInSpecifiedDirectory() throws Exception
     {
         // Given
-        File workDir = new File( testDir.directory(), "specific" );
-        workDir.mkdir();
+        File workDir = testDir.directory( "specific" );
 
         // When
         try ( ServerControls server = getTestServerBuilder( workDir ).newServer() )
