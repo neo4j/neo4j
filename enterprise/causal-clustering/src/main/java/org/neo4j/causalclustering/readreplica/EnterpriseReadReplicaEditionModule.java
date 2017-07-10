@@ -106,7 +106,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
 import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
-import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
  * This implementation of {@link org.neo4j.kernel.impl.factory.EditionModule} creates the implementations of services
@@ -139,7 +138,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
 
-        lockManager = dependencies.satisfyDependency( createLockManager( config, platformModule.clock, logging ) );
+        lockManager = dependencies.satisfyDependency( new ReadReplicaLockManager() );
 
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 

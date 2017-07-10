@@ -657,4 +657,19 @@ public interface Status
     {
         Status status();
     }
+
+    static Status statusCodeOf( Throwable e )
+    {
+        do
+        {
+            if ( e instanceof Status.HasStatus )
+            {
+                return ((Status.HasStatus) e).status();
+            }
+            e = e.getCause();
+        }
+        while ( e != null );
+
+        return null;
+    }
 }
