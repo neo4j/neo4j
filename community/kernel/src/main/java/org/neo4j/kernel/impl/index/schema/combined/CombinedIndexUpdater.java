@@ -71,11 +71,13 @@ class CombinedIndexUpdater implements IndexUpdater
             {
                 from.process( IndexEntryUpdate.remove(
                         update.getEntityId(), update.indexKey(), update.beforeValues() ) );
-                from.process( IndexEntryUpdate.add(
+                to.process( IndexEntryUpdate.add(
                         update.getEntityId(), update.indexKey(), update.values() ) );
             }
+            break;
         case REMOVED:
             select( update.values(), boostUpdater, fallbackUpdater ).process( update );
+            break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
         }
@@ -84,7 +86,13 @@ class CombinedIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        boostUpdater.close();
-        fallbackUpdater.close();
+        try
+        {
+            boostUpdater.close();
+        }
+        finally
+        {
+            fallbackUpdater.close();
+        }
     }
 }

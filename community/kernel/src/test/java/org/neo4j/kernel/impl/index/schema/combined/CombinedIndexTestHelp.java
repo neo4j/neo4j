@@ -20,17 +20,30 @@
 package org.neo4j.kernel.impl.index.schema.combined;
 
 import org.apache.commons.lang3.ArrayUtils;
+import org.mockito.Mockito;
 
+import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 
 class CombinedIndexTestHelp
 {
+    private static LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
+    private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
+
     private static final Value[] numberValues = new Value[]
             {
                     Values.byteValue( (byte) 1 ),
@@ -82,6 +95,100 @@ class CombinedIndexTestHelp
         catch ( Exception e )
         {
             assertSame( expectedFailure, e );
+        }
+    }
+
+    static IndexEntryUpdate<LabelSchemaDescriptor> add( Value... value )
+    {
+        switch ( value.length )
+        {
+        case 1:
+            return IndexEntryUpdate.add( 0, indexKey, value );
+        case 2:
+            return IndexEntryUpdate.add( 0, compositeIndexKey, value );
+        default:
+            return null;
+        }
+    }
+
+    static IndexEntryUpdate<LabelSchemaDescriptor> remove( Value... value )
+    {
+        switch ( value.length )
+        {
+        case 1:
+            return IndexEntryUpdate.remove( 0, indexKey, value );
+        case 2:
+            return IndexEntryUpdate.remove( 0, compositeIndexKey, value );
+        default:
+            return null;
+        }
+    }
+
+    static IndexEntryUpdate<LabelSchemaDescriptor> change( Value[] before, Value[] after )
+    {
+        return IndexEntryUpdate.change( 0, compositeIndexKey, before, after );
+    }
+
+    static IndexEntryUpdate<LabelSchemaDescriptor> change( Value before, Value after )
+    {
+        return IndexEntryUpdate.change( 0, indexKey, before, after );
+    }
+
+    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable, AutoCloseable combinedCloseable )
+            throws Exception
+    {
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( failingCloseable ).close();
+
+        // when
+        try
+        {
+            combinedCloseable.close();
+            fail( "Should have failed" );
+        }
+        catch ( IOException ignore )
+        {
+        }
+
+        // then
+        verify( successfulCloseable, Mockito.times( 1 ) ).close();
+    }
+
+    static void verifyFailOnSingleCloseFailure( AutoCloseable failingCloseable, AutoCloseable combinedCloseable )
+            throws Exception
+    {
+        IOException expectedFailure = new IOException( "fail" );
+        doThrow( expectedFailure ).when( failingCloseable ).close();
+        try
+        {
+            combinedCloseable.close();
+            fail( "Should have failed" );
+        }
+        catch ( IOException e )
+        {
+            assertSame( expectedFailure, e );
+        }
+    }
+
+    static void verifyCombinedThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable, AutoCloseable combinedCloseable )
+            throws Exception
+    {
+        // given
+        IOException boostFailure = new IOException( "boost" );
+        IOException fallbackFailure = new IOException( "fallback" );
+        doThrow( boostFailure ).when( boostCloseable ).close();
+        doThrow( fallbackFailure ).when( fallbackCloseable ).close();
+
+        try
+        {
+            // when
+            combinedCloseable.close();
+            fail( "Should have failed" );
+        }
+        catch ( IOException e )
+        {
+            // then
+            assertThat( e, anyOf( sameInstance( boostFailure ), sameInstance( fallbackFailure ) ) );
         }
     }
 }

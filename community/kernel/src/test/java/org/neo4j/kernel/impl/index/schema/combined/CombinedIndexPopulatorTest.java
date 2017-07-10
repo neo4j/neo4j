@@ -28,9 +28,12 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.Value;
 
+import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.core.AnyOf.anyOf;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -38,6 +41,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.add;
 import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyCallFail;
 
 public class CombinedIndexPopulatorTest
@@ -45,8 +49,6 @@ public class CombinedIndexPopulatorTest
     private IndexPopulator boostPopulator;
     private IndexPopulator fallbackPopulator;
     private CombinedIndexPopulator combinedIndexPopulator;
-    private LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
-    private LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
 
     @Before
     public void mockComponents()
@@ -173,23 +175,10 @@ public class CombinedIndexPopulatorTest
     private void verifyAddWithCorrectPopulator( IndexPopulator correctPopulator, IndexPopulator wrongPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = indexEntryUpdate( numberValues );
+        IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
         combinedIndexPopulator.add( update );
         verify( correctPopulator, times( 1 ) ).add( update );
         verify( wrongPopulator, times( 0 ) ).add( update );
-    }
-
-    private IndexEntryUpdate<LabelSchemaDescriptor> indexEntryUpdate( Value... value )
-    {
-        switch ( value.length )
-        {
-        case 1:
-            return IndexEntryUpdate.add( 0, indexKey, value );
-        case 2:
-            return IndexEntryUpdate.add( 0, compositeIndexKey, value );
-        default:
-            return null;
-        }
     }
 
     /* verifyDeferredConstraints */
@@ -287,6 +276,7 @@ public class CombinedIndexPopulatorTest
         try
         {
             combinedIndexPopulator.close( true );
+            fail( "Should have failed" );
         }
         catch ( IOException ignore )
         {
@@ -307,6 +297,7 @@ public class CombinedIndexPopulatorTest
         try
         {
             combinedIndexPopulator.close( true );
+            fail( "Should have failed" );
         }
         catch ( IOException ignore )
         {
@@ -314,7 +305,28 @@ public class CombinedIndexPopulatorTest
 
         // then
         verify( fallbackPopulator, times( 1 ) ).close( true );
+    }
 
+    @Test
+    public void closeMustThrowIfBothThrow() throws Exception
+    {
+        // given
+        IOException boostFailure = new IOException( "boost" );
+        IOException fallbackFailure = new IOException( "fallback" );
+        doThrow( boostFailure ).when( boostPopulator ).close( anyBoolean() );
+        doThrow( fallbackFailure ).when( fallbackPopulator).close( anyBoolean() );
+
+        try
+        {
+            // when
+            combinedIndexPopulator.close( anyBoolean() );
+            fail( "Should have failed" );
+        }
+        catch ( IOException e )
+        {
+            // then
+            assertThat( e, anyOf( sameInstance( boostFailure ), sameInstance( fallbackFailure ) ) );
+        }
     }
 
     /* markAsFailed */

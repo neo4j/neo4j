@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema.combined;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.IOException;
 
@@ -35,17 +35,29 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyCombinedThrowIfBothThrow;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyFailOnSingleCloseFailure;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 
 public class CombinedIndexAccessorTest
 {
+    private IndexAccessor boostAccessor;
+    private IndexAccessor fallbackAccessor;
+    private CombinedIndexAccessor combinedIndexAccessor;
+
+    @Before
+    public void setup()
+    {
+        boostAccessor = mock( IndexAccessor.class );
+        fallbackAccessor = mock( IndexAccessor.class );
+        combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
+    }
+
+    /* drop */
+
     @Test
     public void dropMustDropBoostAndFallback() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         // when
         // ... both drop successful
         combinedIndexAccessor.drop();
@@ -57,11 +69,6 @@ public class CombinedIndexAccessorTest
     @Test
     public void dropMustThrowIfDropBoostFail() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         // when
         verifyFailOnSingleDropFailure( boostAccessor, combinedIndexAccessor );
     }
@@ -69,11 +76,6 @@ public class CombinedIndexAccessorTest
     @Test
     public void dropMustThrowIfDropFallbackFail() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         // when
         verifyFailOnSingleDropFailure( fallbackAccessor, combinedIndexAccessor );
     }
@@ -98,9 +100,6 @@ public class CombinedIndexAccessorTest
     public void dropMustThrowIfBothFail() throws Exception
     {
         // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
         IOException boostFailure = new IOException( "boost" );
         IOException fallbackFailure = new IOException( "fallback" );
         doThrow( boostFailure ).when( boostAccessor ).drop();
@@ -119,17 +118,15 @@ public class CombinedIndexAccessorTest
         }
     }
 
+    /* close */
+
     @Test
     public void closeMustCloseBoostAndFallback() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         // when
         // ... both drop successful
         combinedIndexAccessor.close();
+
         // then
         verify( boostAccessor, times( 1 ) ).close();
         verify( fallbackAccessor, times( 1 ) ).close();
@@ -138,104 +135,30 @@ public class CombinedIndexAccessorTest
     @Test
     public void closeMustThrowIfFallbackThrow() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         verifyFailOnSingleCloseFailure( fallbackAccessor, combinedIndexAccessor );
     }
 
     @Test
     public void closeMustThrowIfBoostThrow() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         verifyFailOnSingleCloseFailure( boostAccessor, combinedIndexAccessor );
     }
 
     @Test
     public void closeMustCloseBoostIfFallbackThrow() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         verifyOtherIsClosedOnSingleThrow( fallbackAccessor, boostAccessor, combinedIndexAccessor );
     }
 
     @Test
     public void closeMustCloseFallbackIfBoostThrow() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-
         verifyOtherIsClosedOnSingleThrow( boostAccessor, fallbackAccessor, combinedIndexAccessor );
-    }
-
-    private void verifyOtherIsClosedOnSingleThrow( IndexAccessor failingAccessor, IndexAccessor successfulAccessor,
-            CombinedIndexAccessor combinedIndexAccessor ) throws IOException
-    {
-        IOException failure = new IOException( "fail" );
-        doThrow( failure ).when( failingAccessor ).close();
-
-        // when
-        try
-        {
-            combinedIndexAccessor.close();
-        }
-        catch ( IOException ignore )
-        {
-        }
-
-        // then
-        verify( successfulAccessor, Mockito.times( 1 ) ).close();
-    }
-
-    private void verifyFailOnSingleCloseFailure( IndexAccessor failingAccessor, CombinedIndexAccessor combinedIndexAccessor )
-            throws IOException
-    {
-        IOException expectedFailure = new IOException( "fail" );
-        doThrow( expectedFailure ).when( failingAccessor ).close();
-        try
-        {
-            combinedIndexAccessor.close();
-            fail( "Should have failed" );
-        }
-        catch ( IOException e )
-        {
-            assertSame( expectedFailure, e );
-        }
     }
 
     @Test
     public void closeMustThrowIfBothFail() throws Exception
     {
-        // given
-        IndexAccessor boostAccessor = mock( IndexAccessor.class );
-        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
-        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
-        IOException boostFailure = new IOException( "boost" );
-        IOException fallbackFailure = new IOException( "fallback" );
-        doThrow( boostFailure ).when( boostAccessor ).close();
-        doThrow( fallbackFailure ).when( fallbackAccessor ).close();
-
-        try
-        {
-            // when
-            combinedIndexAccessor.close();
-            fail( "Should have failed" );
-        }
-        catch ( IOException e )
-        {
-            // then0
-            assertThat( e, anyOf( sameInstance( boostFailure ), sameInstance( fallbackFailure ) ) );
-        }
+        verifyCombinedThrowIfBothThrow( boostAccessor, fallbackAccessor, combinedIndexAccessor );
     }
 }
