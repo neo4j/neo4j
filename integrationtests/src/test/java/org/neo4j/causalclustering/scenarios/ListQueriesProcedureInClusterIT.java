@@ -50,6 +50,7 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureInClusterIT
 {
+    private static final int THIRTY_SECONDS_TIMEOUT = 30;
     private final ClusterRule clusterRule =
             new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 ).withNumberOfReadReplicas( 1 );
     private final VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 1000, SECONDS ).build();
@@ -97,7 +98,7 @@ public class ListQueriesProcedureInClusterIT
         //When
         threads.executeAndAwait(
                 executeQuery( CORE_QUERY, executedCoreQueryLatch::countDown ),/*on: */ leaderDb,
-                waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
+                waitingWhileIn( GraphDatabaseFacade.class, "execute" ), THIRTY_SECONDS_TIMEOUT, SECONDS );
 
         //Then
         Optional<Map<String,Object>> coreQueryListing1 = getQueryListing( CORE_QUERY, leaderDb );

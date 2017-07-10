@@ -80,6 +80,7 @@ public class ListQueriesProcedureTest
     };
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
+    private static final int THIRTY_SECONDS_TIMEOUT = 30;
 
     @Test
     public void shouldContainTheQueryItself() throws Exception
@@ -109,7 +110,7 @@ public class ListQueriesProcedureTest
     }
 
     @Test
-    public void shouldProvideElapsedCpuTime() throws Exception
+    public void shouldProvideElapsedCpuTimePlannerConnectionDetailsPageHitsAndFaults() throws Exception
     {
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
@@ -146,6 +147,26 @@ public class ListQueriesProcedureTest
             assertThat( cpuTime2, greaterThanOrEqualTo( (Long) cpuTime1 ) );
             Long waitTime2 = (Long) data.get( "waitTimeMillis" );
             assertThat( waitTime2, greaterThanOrEqualTo( (Long) waitTime1 ) );
+
+            // ListPlannerAndRuntimeUsed
+            // then
+            assertThat( data, hasKey( "planner" ) );
+            assertThat( data, hasKey( "runtime" ) );
+            assertThat( data.get( "planner" ), instanceOf( String.class ) );
+            assertThat( data.get( "runtime" ), instanceOf( String.class ) );
+
+            // SpecificConnectionDetails
+
+            // then
+            assertThat( data, hasKey( "protocol" ) );
+            assertThat( data, hasKey( "clientAddress" ) );
+            assertThat( data, hasKey( "requestUri" ) );
+
+            //ContainPageHitsAndPageFaults
+            // then
+            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
+            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
+
         }
     }
 
@@ -181,24 +202,6 @@ public class ListQueriesProcedureTest
                     greaterThan( 0L ), lessThanOrEqualTo( bytes ) );
             assertThat( data, hasEntry( equalTo( "allocatedBytes" ), allocatedBytes ) );
             assertSame( node, test.resource() );
-        }
-    }
-
-    @Test
-    public void shouldListPlannerAndRuntimeUsed() throws Exception
-    {
-        // given
-        String QUERY = "MATCH (n) SET n.v = n.v - 1";
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, QUERY ) )
-        {
-            // when
-            Map<String,Object> data = getQueryListing( QUERY );
-
-            // then
-            assertThat( data, hasKey( "planner" ) );
-            assertThat( data, hasKey( "runtime" ) );
-            assertThat( data.get( "planner" ), instanceOf( String.class ) );
-            assertThat( data.get( "runtime" ), instanceOf( String.class ) );
         }
     }
 
@@ -259,34 +262,6 @@ public class ListQueriesProcedureTest
                 assertNotNull( "activeLockCount", lockCount );
                 assertEquals( lockCount.intValue(), rowCount ); // note: only true because query is blocked
             }
-        }
-    }
-
-    @Test
-    public void shouldContainSpecificConnectionDetails() throws Exception
-    {
-        // when
-        Map<String,Object> data = getQueryListing( "CALL dbms.listQueries" );
-
-        // then
-        assertThat( data, hasKey( "protocol" ) );
-        assertThat( data, hasKey( "clientAddress" ) );
-        assertThat( data, hasKey( "requestUri" ) );
-    }
-
-    @Test
-    public void shouldContainPageHitsAndPageFaults() throws Exception
-    {
-        // given
-        String query = "MATCH (n) SET n.v = n.v + 1";
-        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
-        {
-            // when
-            Map<String,Object> data = getQueryListing( query );
-
-            // then
-            assertThat( data, hasEntry( equalTo( "pageHits" ), instanceOf( Long.class ) ) );
-            assertThat( data, hasEntry( equalTo( "pageFaults" ), instanceOf( Long.class ) ) );
         }
     }
 
@@ -497,7 +472,7 @@ public class ListQueriesProcedureTest
         {
             db.execute( query ).close();
             return null;
-        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), 5, SECONDS );
+        }, null, waitingWhileIn( GraphDatabaseFacade.class, "execute" ), THIRTY_SECONDS_TIMEOUT, SECONDS );
 
         return new Resource<T>( listQueriesLatch, resource );
     }
