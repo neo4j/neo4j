@@ -134,8 +134,8 @@ class CombinedIndexTestHelp
         return IndexEntryUpdate.change( 0, indexKey, before, after );
     }
 
-    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable, AutoCloseable combinedCloseable )
-            throws Exception
+    static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable,
+            AutoCloseable combinedCloseable ) throws Exception
     {
         IOException failure = new IOException( "fail" );
         doThrow( failure ).when( failingCloseable ).close();
@@ -170,8 +170,8 @@ class CombinedIndexTestHelp
         }
     }
 
-    static void verifyCombinedThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable, AutoCloseable combinedCloseable )
-            throws Exception
+    static void verifyCombinedThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable,
+            AutoCloseable combinedCloseable ) throws Exception
     {
         // given
         IOException boostFailure = new IOException( "boost" );
