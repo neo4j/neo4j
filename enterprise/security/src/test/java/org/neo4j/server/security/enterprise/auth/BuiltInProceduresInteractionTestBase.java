@@ -29,7 +29,6 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -39,9 +38,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
@@ -58,6 +59,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.isA;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.bolt.v1.runtime.integration.TransactionIT.createHttpServer;
 import static org.neo4j.concurrent.Runnables.EMPTY_RUNNABLE;
@@ -640,17 +642,38 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void shouldFailOnTooLargeTXMetaData() throws Throwable
+    public void readUpdatedMetadataValue() throws Exception
     {
-        ArrayList<String> list = new ArrayList<>();
-        for ( int i = 0; i < 200; i++ )
+        GraphDatabaseFacade localGraph = neo.getLocalGraph();
+        try ( Transaction transaction = localGraph.beginTx() )
         {
-            list.add( format( "key%d: '0123456789'", i ) );
+            String testValue = "testValue";
+            String testKey = "test";
+            localGraph.execute( "CALL dbms.setTXMetaData", map( "data", map( testKey, testValue ) ) );
+            Map<String,Object> metadata =
+                    (Map<String,Object>) localGraph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
+            assertEquals( testValue, metadata.get( testKey ) );
         }
-        String longMetaDataMap = "{" + String.join( ", ", list ) + "}";
-        assertFail( writeSubject, "CALL dbms.setTXMetaData( " + longMetaDataMap + " )",
-            "Invalid transaction meta-data, expected the total number of chars for keys and values to be " +
-            "less than 2048, got 3090" );
+    }
+
+    @Test
+    public void readEmptyMetadataInOtherTransaction()
+    {
+        String testValue = "testValue";
+        String testKey = "test";
+        GraphDatabaseFacade localGraph = neo.getLocalGraph();
+        try ( Transaction transaction = localGraph.beginTx() )
+        {
+            localGraph.execute( "CALL dbms.setTXMetaData", map( "data", map( testKey, testValue ) ) );
+            transaction.success();
+        }
+
+        try ( Transaction ignored = localGraph.beginTx() )
+        {
+            Map<String,Object> metadata =
+                    (Map<String,Object>) localGraph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
+            assertNull( metadata.get( testKey ) );
+        }
     }
 
     //---------- procedure guard -----------

@@ -1294,6 +1294,13 @@ public class OperationsFacade
     }
 
     @Override
+    public Map<String,Object> getMetaData()
+    {
+        statement.assertOpen();
+        return statement.getTransaction().getMetaData();
+    }
+
+    @Override
     public Stream<ExecutingQuery> executingQueries()
     {
         statement.assertOpen();
