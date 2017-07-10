@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.labelscan;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -31,6 +31,7 @@ import java.util.function.IntFunction;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -39,32 +40,25 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.count;
 
 public class ReadOnlySlaveHaIT
 {
-    private LifeSupport life;
+    private static LifeSupport life;
+    private static ClusterManager.ManagedCluster cluster;
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @ClassRule
+    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    @Before
-    public void setup()
+    @BeforeClass
+    public static void setup()
     {
         life = new LifeSupport();
+        setupCluster( life );
     }
 
-    @After
-    public void tearDown()
-    {
-        if ( life != null )
-        {
-            life.shutdown();
-        }
-    }
-
-    @Test
-    public void readOnlySlavesMustBeAbleToPullUpdates() throws Exception
+    private static void setupCluster( LifeSupport life )
     {
         int masterId = 1;
         Map<String,IntFunction<String>> instanceConfigMap = MapUtil.genericMap(
@@ -81,10 +75,21 @@ public class ReadOnlySlaveHaIT
         life.add( clusterManager );
         life.start();
 
-        ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
+        cluster = clusterManager.getCluster();
+    }
 
-        // Cluster is up with one read only instance
+    @AfterClass
+    public static void tearDown()
+    {
+        if ( life != null )
+        {
+            life.shutdown();
+        }
+    }
 
+    @Test
+    public void readOnlySlavesMustBeAbleToPullUpdates() throws Exception
+    {
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         Label label = Label.label( "label" );
 
@@ -104,5 +109,24 @@ public class ReadOnlySlaveHaIT
                 assertEquals( 1, count );
             }
         }
+    }
+
+    @Test
+    public void readOnlySlaveMustNotAcceptExternalUpdates() throws Exception
+    {
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
+
+        Exception exception = null;
+        try ( Transaction tx = slave.beginTx() )
+        {
+            slave.createNode();
+            tx.success();
+        }
+        catch ( WriteOperationsNotAllowedException e )
+        {
+            exception = e;
+        }
+
+        assertNotNull( "Expected read only slave to fail when trying to write", exception );
     }
 }
