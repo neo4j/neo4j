@@ -31,12 +31,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
 
+import org.junit.rules.ExternalResource;
+
 import org.neo4j.function.FailableConsumer;
 import org.neo4j.function.Predicates;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.helpers.FailableConcurrentTransfer;
-import org.junit.rules.ExternalResource;
-
 import org.neo4j.test.ReflectionUtil;
 
 import static org.neo4j.function.ThrowingPredicate.throwingPredicate;
@@ -177,6 +177,7 @@ public class ThreadingRule extends ExternalResource
         };
     }
 
+    /*Sample Stacktrace for method on owner*/
     public static Predicate<Thread> waitingWhileIn( final Class<?> owner, final String method )
     {
         return new Predicate<Thread>()

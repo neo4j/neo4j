@@ -42,10 +42,12 @@ import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureInClusterIT
@@ -97,7 +99,7 @@ public class ListQueriesProcedureInClusterIT
 
         //When
         threads.executeAndAwait(
-                executeQuery( CORE_QUERY, executedCoreQueryLatch::countDown ),/*on: */ leaderDb,
+                executeQueryOnLeader( CORE_QUERY, executedCoreQueryLatch ), null,
                 waitingWhileIn( GraphDatabaseFacade.class, "execute" ), THIRTY_SECONDS_TIMEOUT, SECONDS );
 
         //Then
@@ -116,6 +118,16 @@ public class ListQueriesProcedureInClusterIT
         executedCoreQueryLatch.await();
 
         assertFalse( getQueryListing( CORE_QUERY, leaderDb ).isPresent() );
+    }
+
+    private ThrowingFunction<Void, Void, Exception> executeQueryOnLeader( String CORE_QUERY, CountDownLatch executedCoreQueryLatch )
+    {
+        return db ->
+        {
+            cluster.coreTx( ( coreDb, tx ) -> coreDb.execute( CORE_QUERY ) );
+            executedCoreQueryLatch.countDown();
+            return null;
+        };
     }
 
     private void acquireLocksAndSetupCountdownLatch(
@@ -139,16 +151,6 @@ public class ListQueriesProcedureInClusterIT
             } );
             return null;
         }, null );
-    }
-
-    private ThrowingFunction<GraphDatabaseFacade,Void,RuntimeException> executeQuery( String query, Runnable then )
-    {
-        return db ->
-        {
-            db.execute( query );
-            then.run();
-            return null;
-        };
     }
 
     private Optional<Map<String,Object>> getQueryListing( String query, GraphDatabaseFacade db )
