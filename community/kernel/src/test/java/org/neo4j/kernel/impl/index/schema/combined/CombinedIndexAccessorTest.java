@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema.combined;
 
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.IOException;
 
@@ -154,6 +155,47 @@ public class CombinedIndexAccessorTest
         CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
 
         verifyFailOnSingleCloseFailure( boostAccessor, combinedIndexAccessor );
+    }
+
+    @Test
+    public void closeMustCloseBoostIfFallbackThrow() throws Exception
+    {
+        // given
+        IndexAccessor boostAccessor = mock( IndexAccessor.class );
+        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
+        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
+
+        verifyOtherIsClosedOnSingleThrow( fallbackAccessor, boostAccessor, combinedIndexAccessor );
+    }
+
+    @Test
+    public void closeMustCloseFallbackIfBoostThrow() throws Exception
+    {
+        // given
+        IndexAccessor boostAccessor = mock( IndexAccessor.class );
+        IndexAccessor fallbackAccessor = mock( IndexAccessor.class );
+        CombinedIndexAccessor combinedIndexAccessor = new CombinedIndexAccessor( boostAccessor, fallbackAccessor );
+
+        verifyOtherIsClosedOnSingleThrow( boostAccessor, fallbackAccessor, combinedIndexAccessor );
+    }
+
+    private void verifyOtherIsClosedOnSingleThrow( IndexAccessor failingAccessor, IndexAccessor successfulAccessor,
+            CombinedIndexAccessor combinedIndexAccessor ) throws IOException
+    {
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( failingAccessor ).close();
+
+        // when
+        try
+        {
+            combinedIndexAccessor.close();
+        }
+        catch ( IOException ignore )
+        {
+        }
+
+        // then
+        verify( successfulAccessor, Mockito.times( 1 ) ).close();
     }
 
     private void verifyFailOnSingleCloseFailure( IndexAccessor failingAccessor, CombinedIndexAccessor combinedIndexAccessor )

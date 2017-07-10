@@ -276,6 +276,47 @@ public class CombinedIndexPopulatorTest
         } );
     }
 
+    @Test
+    public void closeMustCloseBoostIfFallbackThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( fallbackPopulator ).close( anyBoolean() );
+
+        // when
+        try
+        {
+            combinedIndexPopulator.close( true );
+        }
+        catch ( IOException ignore )
+        {
+        }
+
+        // then
+        verify( boostPopulator, times( 1 ) ).close( true );
+    }
+
+    @Test
+    public void closeMustCloseFallbackIfBoostThrow() throws Exception
+    {
+        // given
+        IOException failure = new IOException( "fail" );
+        doThrow( failure ).when( boostPopulator ).close( anyBoolean() );
+
+        // when
+        try
+        {
+            combinedIndexPopulator.close( true );
+        }
+        catch ( IOException ignore )
+        {
+        }
+
+        // then
+        verify( fallbackPopulator, times( 1 ) ).close( true );
+
+    }
+
     /* markAsFailed */
 
     @Test
