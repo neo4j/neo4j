@@ -32,6 +32,6 @@ final case class ClauseError(clause: String, position: InputPosition) extends Un
   override def references = Seq.empty
 }
 
-final case class PatternError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
+final case class FeatureError(msg: String, position: InputPosition) extends UnsupportedOpenCypher {
   override def references = Seq.empty
 }

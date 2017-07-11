@@ -24,14 +24,14 @@ case class expandStar(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case clause@With(_, ri, _, _, _, _) if ri.includeExisting =>
+    case clause@With(_, ri, _, _, _, _, _) if ri.includeExisting =>
       clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
 
     case clause: PragmaWithout =>
       With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-        orderBy = None, skip = None, limit = None, where = None)(clause.position)
+        graphItems = None, orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-    case clause@Return(_, ri, _, _, _, excludedNames) if ri.includeExisting =>
+    case clause@Return(_, ri, _, _, _, _, excludedNames) if ri.includeExisting =>
       clause.copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>

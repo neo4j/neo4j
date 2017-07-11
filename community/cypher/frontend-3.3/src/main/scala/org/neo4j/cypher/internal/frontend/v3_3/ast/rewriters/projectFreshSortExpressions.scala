@@ -35,10 +35,10 @@ case object projectFreshSortExpressions extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause@With(_, _, None, _, _, None) =>
+    case clause@With(_, _, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause@With(_, ri, orderBy, skip, limit, where) =>
+    case clause@With(_, ri, _, orderBy, skip, limit, where) =>
       val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
       val evaluatedAliases = allAliases -- passedThroughAliases

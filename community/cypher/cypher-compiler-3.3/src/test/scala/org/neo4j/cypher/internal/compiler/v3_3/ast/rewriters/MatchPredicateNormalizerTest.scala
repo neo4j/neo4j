@@ -140,7 +140,7 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
   test("rewrite outgoing pattern to getDegree call") {
     rewrite(parseForRewriting("MATCH (a) WHERE (a)-[:R]->() RETURN a.prop")) should matchPattern {
       case Query(_, SingleQuery(Seq(Match(_, _, _,
-                                             Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _))))=>
+                                             Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _, _))))=>
 
     }
   }
@@ -149,7 +149,7 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
     val rewrite1 = rewrite(parseForRewriting("MATCH (a) WHERE ()-[:R]->(a) RETURN a.prop"))
     rewrite1 should matchPattern {
       case Query(_, SingleQuery(Seq(Match(_, _, _,
-                                          Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _))))=>
+                                          Some(Where(GreaterThan(GetDegree(_,_,_), _)))), Return(_, _, _, _,_, _, _))))=>
 
     }
   }

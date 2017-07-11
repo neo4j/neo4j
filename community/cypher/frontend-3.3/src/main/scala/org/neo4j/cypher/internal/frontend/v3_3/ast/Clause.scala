@@ -101,15 +101,6 @@ case class GraphReference(ref: Variable, _url: Expression)(val position: InputPo
   }
 }
 
-case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition) extends Clause with SemanticChecking {
-  override def name = "RETURN GRAPH"
-
-  override def semanticCheck: SemanticCheck =
-    graphName.semanticCheck(Expression.SemanticContext.Simple) chain
-      graphName.expectType(CTString.covariant) chain
-      ClauseError(name, position)
-}
-
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   override def name = "START"
 
@@ -423,13 +414,15 @@ sealed trait HorizonClause extends Clause with SemanticChecking {
 sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def distinct: Boolean
   def returnItems: ReturnItems
+  def graphItems: Option[GraphReturnItems]
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
   def limit: Option[Limit]
 
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
-      returnItems.semanticCheck
+      returnItems.semanticCheck chain
+      graphItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
     val specialReturnItems = createSpecialReturnItems(previousScope, s)
@@ -480,10 +473,18 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       fail(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
   }
 }
+//
+//object With {
+//  def apply(distinct: Boolean, returnItems: Option[ReturnItems], graphItems: Option[GraphReturnItems],
+//            orderBy: Option[OrderBy], skip: Option[Skip], limit: Option[Limit],
+//            where: Option[Where])(position: InputPosition): With =
+//    With(distinct, returnItems.getOrElse(ReturnItems.empty(position)), graphItems, orderBy, skip, limit, where)(position)
+//}
 
 case class With(
                  distinct: Boolean,
                  returnItems: ReturnItems,
+                 graphItems: Option[GraphReturnItems],
                  orderBy: Option[OrderBy],
                  skip: Option[Skip],
                  limit: Option[Limit],
@@ -504,9 +505,20 @@ case class With(
     case _                     => Seq()
   }
 }
+//
+//object Return {
+//  def apply(distinct: Boolean,
+//            returnItems: Option[ReturnItems],
+//            graphItems: Option[GraphReturnItems],
+//            orderBy: Option[OrderBy],
+//            skip: Option[Skip],
+//            limit: Option[Limit])(position: InputPosition): Return =
+//    Return(distinct, returnItems.getOrElse(ReturnItems.empty(position)), graphItems, orderBy, skip, limit)(position)
+//}
 
 case class Return(distinct: Boolean,
                   returnItems: ReturnItems,
+                  graphItems: Option[GraphReturnItems],
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],

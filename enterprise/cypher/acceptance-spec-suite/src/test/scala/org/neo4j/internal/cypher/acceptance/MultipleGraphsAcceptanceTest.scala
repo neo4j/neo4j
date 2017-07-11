@@ -36,25 +36,21 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   }
 
   test("return named graph") {
-    val query = "MATCH ()--() RETURN GRAPH 'test'"
+    val query = "WITH $param AS foo MATCH ()--() RETURN 1 GRAPHS foo"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) doesNotSupport "returning graphs"
   }
 
-  test("return anonymous graph") {
-    val query = "MATCH ()--() RETURN GRAPH"
+  test("return all graphs") {
+    val query = "MATCH ()--() RETURN 1 GRAPHS *"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) doesNotSupport "returning graphs"
   }
 
   private final case class expect(query: String) {
     import scala.util.{Failure, Success, Try}
 
-    def doesNotSupport(clause: String) = {
+    def doesNotSupport(clause: String): Unit = {
       Try(executeWithCostPlannerAndInterpretedRuntimeOnly(query)) match {
         case _: Success[_] => fail(s"Expected $clause to be unsupported")
         case Failure(exception) =>

@@ -57,10 +57,6 @@ trait Clauses extends Parser
     keyword("GRAPH") ~~ Variable ~~ keyword("AT") ~~ Expression ~~>> (ast.GraphReference(_, _))
   }
 
-  def ReturnGraph: Rule1[ast.ReturnGraph] = rule("RETURN GRAPH") {
-    keyword("RETURN GRAPH") ~~ optional(Expression) ~~>> (ast.ReturnGraph(_))
-  }
-
   def Start: Rule1[ast.Start] = rule("START") {
     group(
       keyword("START") ~~ oneOrMore(StartPoint, separator = CommaSep) ~~ optional(Where)
@@ -105,8 +101,8 @@ trait Clauses extends Parser
   }
 
   def With: Rule1[ast.With] = rule("WITH")(
-    group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
-      | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
+    group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _, _))
+      | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _, _))
   )
 
   def Unwind: Rule1[ast.Unwind] = rule("UNWIND")(
@@ -114,15 +110,15 @@ trait Clauses extends Parser
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN")(
-    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
-      | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
+    group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _, _))
+      | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _, _))
   )
 
   def Pragma: Rule1[ast.Clause] = rule("") {
     keyword("_PRAGMA") ~~ (
       group(
         keyword("WITH NONE") ~ push(ast.ReturnItems(includeExisting = false, Seq())(_)) ~~ optional(Skip) ~~ optional(
-          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, _, _, _))
+          Limit) ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, None, None, _, _, _))
         | group(keyword("WITHOUT") ~~ oneOrMore(Variable, separator = CommaSep)) ~~>> (ast.PragmaWithout(_))
       )
   }
@@ -160,14 +156,21 @@ trait Clauses extends Parser
 
   private def ReturnBody = {
     ReturnItems ~~
+      optional(GraphReturnItems) ~~
       optional(Order) ~~
       optional(Skip) ~~
       optional(Limit)
   }
 
   private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression")(
-    "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
+    str("-") ~~~> ast.ReturnItems.empty
+      | "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
       | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))
+  )
+
+  private def GraphReturnItems: Rule1[ast.GraphReturnItems] = rule("'*', an expression")(
+    keyword("GRAPHS") ~~ oneOrMore(Variable, separator = CommaSep) ~~>> (ast.GraphReturnItems(false, _)) |
+    keyword("GRAPHS") ~~ "*" ~ zeroOrMore(CommaSep ~ Variable) ~~>> (ast.GraphReturnItems(true, _))
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule(

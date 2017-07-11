@@ -51,12 +51,12 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ With(_, ri, None, _, _, None) =>
+    case clause @ With(_, ri, _, None, _, _, None) =>
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
-    case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
+    case clause @ With(distinct, ri, gri, orderBy, skip, limit, where) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
@@ -92,8 +92,10 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
         val introducedVariables = introducedReturnItems.map(_.variable.copyId)
 
         Seq(
-          With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), orderBy = None, skip = None, limit = None, where = None)(clause.position),
-          With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
+          With(distinct = distinct, returnItems = ri.copy(items = firstProjection)(ri.position), graphItems = gri,
+            orderBy = None, skip = None, limit = None, where = None)(clause.position),
+          With(distinct = false, returnItems = ri.copy(items = secondProjection)(ri.position), graphItems = gri,
+            orderBy = updatedOrderBy, skip = skip, limit = limit, where = updatedWhere)(clause.position),
           PragmaWithout(introducedVariables)(clause.position)
         )
       }

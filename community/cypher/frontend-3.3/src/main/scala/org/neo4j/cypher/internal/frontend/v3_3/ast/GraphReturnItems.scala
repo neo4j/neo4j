@@ -14,14 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3.symbols
+package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-object GraphRefType {
-  val instance = new GraphRefType() {
-    override val parentType = CTAny
-    override val toString = "GraphRef"
-    override val toNeoTypeString = "GRAPHREF?"
+import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
+
+case class GraphReturnItems(star: Boolean, items: Seq[Variable])
+                           (val position: InputPosition)
+  extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+
+  override def semanticCheck = {
+    val covariant = CTGraphRef.covariant
+    items.foldSemanticCheck(_.expectType(covariant)) chain
+      FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
   }
-}
 
-sealed trait GraphRefType extends CypherType
+}

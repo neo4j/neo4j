@@ -59,7 +59,6 @@ trait Query extends Parser
     | Foreach
     | With
     | Call
-    | ReturnGraph
     | Return
     | Pragma
   )

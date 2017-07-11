@@ -56,17 +56,24 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("return named graph should generate error") {
+  test("returning graphs should generate error") {
     executeAndEnsureError(
-      "MATCH ()--() RETURN GRAPH 'test'",
-      "The referenced clause RETURN GRAPH is not supported by Neo4j (line 1, column 27 (offset: 26))"
+      "WITH $param AS foo MATCH (a) RETURN 1 GRAPHS foo",
+      "Projecting / returning graphs is not supported by Neo4j (line 1, column 46 (offset: 45))"
     )
   }
 
-  test("return anonymous graph should generate error") {
+  test("projecting graphs should generate error") {
     executeAndEnsureError(
-      "MATCH ()--() RETURN GRAPH",
-      "The referenced clause RETURN GRAPH is not supported by Neo4j (line 1, column 26 (offset: 25))"
+      "WITH $param AS foo MATCH (a) WITH a.name GRAPHS foo RETURN a.name",
+      "Projecting / returning graphs is not supported by Neo4j (line 1, column 49 (offset: 48))"
+    )
+  }
+
+  test("empty return") {
+    executeAndEnsureError(
+      "WITH $param AS foo MATCH (a) RETURN -",
+      "At least one element must be specified for the projection (line 1, column 37 (offset: 36))"
     )
   }
 

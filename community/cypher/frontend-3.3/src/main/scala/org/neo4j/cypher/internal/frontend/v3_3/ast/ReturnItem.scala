@@ -16,12 +16,22 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.{error, success}
 import org.neo4j.cypher.internal.frontend.v3_3._
+
+object ReturnItems {
+  def empty(pos: InputPosition): ReturnItems = ReturnItems(includeExisting = false, Seq.empty)(pos)
+}
 
 case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
   def semanticCheck =
+    ensureNonEmpty chain
     items.semanticCheck chain
     ensureProjectedToUniqueIds
+
+  private def ensureNonEmpty: SemanticCheck = (s: SemanticState) =>
+    if (!includeExisting && items.isEmpty) error(s, FeatureError("At least one element must be specified for the projection", position))
+    else success(s)
 
   def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
@@ -33,7 +43,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
 
   def declareVariables(previousScope: Scope) =
     when (includeExisting) {
-      s => SemanticCheckResult.success(s.importScope(previousScope))
+      s => success(s.importScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
       case Some(variable) if item.expression == variable =>
         val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
@@ -43,7 +53,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     })
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
-    items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
+    items.groupBy(_.name).foldLeft(success) {
        case (acc, (k, items)) if items.size > 1 =>
         acc chain SemanticError("Multiple result columns with the same name are not supported", items.head.position)
        case (acc, _) =>
@@ -80,5 +90,5 @@ case class AliasedReturnItem(expression: Expression, variable: Variable)(val pos
   val alias = Some(variable)
   val name = variable.name
 
-  def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult = SemanticCheckResult.success(state)
+  def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult = success(state)
 }

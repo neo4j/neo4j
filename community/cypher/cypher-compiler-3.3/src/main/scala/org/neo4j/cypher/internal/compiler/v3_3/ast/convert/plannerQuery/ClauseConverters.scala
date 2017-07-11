@@ -89,7 +89,7 @@ object ClauseConverters {
 
   private def addReturnToLogicalPlanInput(acc: PlannerQueryBuilder,
                                           clause: Return): PlannerQueryBuilder = clause match {
-    case Return(distinct, ri, optOrderBy, skip, limit, _) if !ri.includeExisting =>
+    case Return(distinct, ri, _, optOrderBy, skip, limit, _) if !ri.includeExisting =>
 
       val shuffle = asQueryShuffle(optOrderBy).
         withSkip(skip).
@@ -364,7 +364,7 @@ object ClauseConverters {
 
     Handles: ... WITH * [WHERE <predicate>] ...
      */
-    case With(false, ri, None, None, None, where)
+    case With(false, ri, _, None, None, None, where)
       if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
         && ri.items.forall {
@@ -380,7 +380,7 @@ object ClauseConverters {
 
     Handles all other WITH clauses
      */
-    case With(distinct, projection, orderBy, skip, limit, where) =>
+    case With(distinct, projection, _, orderBy, skip, limit, where) =>
       val selections = asSelections(where)
       val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 

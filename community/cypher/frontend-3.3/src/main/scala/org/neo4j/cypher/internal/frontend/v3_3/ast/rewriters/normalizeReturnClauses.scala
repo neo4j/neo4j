@@ -40,7 +40,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ Return(_, ri, None, _, _, _) =>
+    case clause @ Return(_, ri, _, None, _, _, _) =>
       val aliasedItems = ri.items.map({
         case i: AliasedReturnItem =>
           i
@@ -52,7 +52,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
         clause.copy(returnItems = ri.copy(items = aliasedItems)(ri.position))(clause.position)
       )
 
-    case clause @ Return(distinct, ri, orderBy, skip, limit, _) =>
+    case clause @ Return(distinct, ri, gri, orderBy, skip, limit, _) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       var rewrites = Map[Expression, Variable]()
 
@@ -78,9 +78,9 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
       val introducedVariables = if (ri.includeExisting) aliasProjection.map(_.variable.name).toSet else Set.empty[String]
 
       Seq(
-        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position),
+        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position), gri,
           orderBy = newOrderBy, skip = skip, limit = limit, where = None)(clause.position),
-        Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position),
+        Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position), gri,
           orderBy = None, skip = None, limit = None, excludedNames = introducedVariables)(clause.position)
       )
 
