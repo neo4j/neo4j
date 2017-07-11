@@ -911,7 +911,7 @@ public class NeoStoresTest
     private void initializeStores( File storeDir, Map<String,String> additionalConfig ) throws IOException
     {
         Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( Config.builder().withSettings( additionalConfig ) );
+        dependencies.satisfyDependency( Config.defaults( additionalConfig ) );
         ds = dsRule.getDataSource( storeDir, fs.get(), pageCache, dependencies );
         ds.init();
         ds.start();

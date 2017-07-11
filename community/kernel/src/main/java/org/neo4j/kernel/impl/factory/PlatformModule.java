@@ -121,7 +121,7 @@ public class PlatformModule
     public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
-        this( providedStoreDir, Config.defaults().augment( params ), databaseInfo, externalDependencies,
+        this( providedStoreDir, Config.defaults( params ), databaseInfo, externalDependencies,
                 graphDatabaseFacade );
     }
 

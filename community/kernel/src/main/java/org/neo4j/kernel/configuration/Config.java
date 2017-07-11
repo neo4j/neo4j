@@ -107,6 +107,7 @@ public class Config implements DiagnosticsProvider, Configuration
     public static class Builder
     {
         private Map<String,String> initialSettings = stringMap();
+        private Map<String,String> overriddenDefaults = stringMap();
         private List<ConfigurationValidator> validators = new ArrayList<>();
         private File configFile;
         private List<LoadableConfig> settingsClasses;
@@ -196,10 +197,10 @@ public class Config implements DiagnosticsProvider, Configuration
             HttpConnector http = new HttpConnector( "http", NONE );
             HttpConnector https = new HttpConnector( "https", TLS );
             BoltConnector bolt = new BoltConnector( "bolt" );
-            initialSettings.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), TRUE );
-            initialSettings.putIfAbsent( http.enabled.name(), TRUE );
-            initialSettings.putIfAbsent( https.enabled.name(), TRUE );
-            initialSettings.putIfAbsent( bolt.enabled.name(), TRUE );
+            overriddenDefaults.put( GraphDatabaseSettings.auth_enabled.name(), TRUE );
+            overriddenDefaults.put( http.enabled.name(), TRUE );
+            overriddenDefaults.put( https.enabled.name(), TRUE );
+            overriddenDefaults.put( bolt.enabled.name(), TRUE );
 
             // Add server validator
             validators.add( new ServerConfigurationValidator() );
@@ -288,11 +289,11 @@ public class Config implements DiagnosticsProvider, Configuration
             Config config;
             if ( configFile != null )
             {
-                config =  new Config( configFile, initialSettings, validators, loadableConfigs );
+                config =  new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
             }
             else
             {
-                config = new Config( initialSettings, validators, loadableConfigs );
+                config = new Config( initialSettings, overriddenDefaults, validators, loadableConfigs );
             }
 
             if ( connectorsDisabled )
@@ -380,6 +381,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     private Config( Map<String,String> initialSettings,
+            Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
             List<LoadableConfig> settingsClasses )
     {
@@ -387,11 +389,15 @@ public class Config implements DiagnosticsProvider, Configuration
         this.configFile = null;
 
         Map<String,String> validSettings = migrateAndValidateSettings( initialSettings, false );
+
+        overriddenDefaults.forEach( validSettings::putIfAbsent );
+
         replaceSettings( validSettings );
     }
 
     private Config( File configFile,
             Map<String,String> overriddenSettings,
+            Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
             List<LoadableConfig> settingsClasses )
     {
@@ -405,6 +411,8 @@ public class Config implements DiagnosticsProvider, Configuration
         Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
 
         warnAboutDeprecations( validSettings );
+
+        overriddenDefaults.forEach( validSettings::putIfAbsent );
 
         replaceSettings( validSettings );
     }
