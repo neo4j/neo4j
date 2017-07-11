@@ -19,18 +19,15 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
+import java.util.Collection;
 
-public interface DiscoveryServiceFactory
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+public class NoOpResolutionResolver implements ResolutionResolver
 {
-    CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself,
-            JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            ResolutionResolver resolutionResolver );
-
-    TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, ResolutionResolver resolutionResolver );
+    @Override
+    public Collection<AdvertisedSocketAddress> resolve( Collection<AdvertisedSocketAddress> advertisedSocketAddresses )
+    {
+        return advertisedSocketAddresses;
+    }
 }

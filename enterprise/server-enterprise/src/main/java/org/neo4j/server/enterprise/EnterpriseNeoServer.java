@@ -33,9 +33,9 @@ import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ClusterSettings.Mode;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
@@ -100,8 +100,8 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         case HA:
             return lifecycleManagingDatabase( HA_FACTORY );
         case ARBITER:
-            // Should never reach here because this mode is handled separately by the scripts.
-            throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
+            // Should never reach here because this discovery_type is handled separately by the scripts.
+            throw new IllegalArgumentException( "The server cannot be started in ARBITER discovery_type." );
         case CORE:
             return lifecycleManagingDatabase( CORE_FACTORY );
         case READ_REPLICA:

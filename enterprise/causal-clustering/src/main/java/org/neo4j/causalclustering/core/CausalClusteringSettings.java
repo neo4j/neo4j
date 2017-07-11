@@ -27,6 +27,8 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.neo4j.causalclustering.discovery.NoOpResolutionResolver;
+import org.neo4j.causalclustering.discovery.ResolutionResolver;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
@@ -35,6 +37,7 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ADVERTISED_SOCKET_ADDRESS;
@@ -51,6 +54,7 @@ import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
@@ -121,14 +125,36 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
                     NO_DEFAULT );
 
+    public enum DiscoveryType
+    {
+        DNS,
+        LIST
+    }
+
+    @Description( "Configure the discovery type" )
+    public static final Setting<DiscoveryType> discovery_type =
+            setting( "causal_clustering.discovery_type", options( DiscoveryType.class ), DiscoveryType.LIST.name() );
+
+    public static ResolutionResolver chooseResolver( Config config )
+    {
+        CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
+        if ( discoveryType == CausalClusteringSettings.DiscoveryType.DNS )
+        {
+            return new NoOpResolutionResolver();
+        }
+        else
+        {
+            return new NoOpResolutionResolver();
+        }
+    }
+
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =
             setting( "causal_clustering.disable_middleware_logging", BOOLEAN, TRUE );
 
     @Internal // not supported yet
     @Description( "Hazelcast license key" )
-    public static final Setting<String> hazelcast_license_key =
-            setting( "hazelcast.license_key", STRING, NO_DEFAULT );
+    public static final Setting<String> hazelcast_license_key = setting( "hazelcast.license_key", STRING, NO_DEFAULT );
 
     @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =
@@ -192,7 +218,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE);
+            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );
@@ -341,18 +367,18 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<String> load_balancing_plugin =
             setting( "causal_clustering.load_balancing.plugin", STRING, "server_policies" );
 
-    static BaseSetting<String> prefixSetting( final String name, final Function<String, String> parser,
-                                              final String defaultValue )
+    static BaseSetting<String> prefixSetting( final String name, final Function<String,String> parser,
+            final String defaultValue )
     {
-        BiFunction<String, Function<String, String>, String> valueLookup = ( n, settings ) -> settings.apply( n );
-        BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
-                valueLookup );
+        BiFunction<String,Function<String,String>,String> valueLookup = ( n, settings ) -> settings.apply( n );
+        BiFunction<String,Function<String,String>,String> defaultLookup =
+                determineDefaultLookup( defaultValue, valueLookup );
 
         return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup )
         {
 
             @Override
-            public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )
+            public Map<String,String> validate( Map<String,String> rawConfig, Consumer<String> warningConsumer )
                     throws InvalidSettingException
             {
                 // Validate setting, if present or default value otherwise
@@ -361,10 +387,9 @@ public class CausalClusteringSettings implements LoadableConfig
                     apply( rawConfig::get );
                     // only return if it was present though
 
-                    Map<String, String> validConfig = new HashMap<>();
+                    Map<String,String> validConfig = new HashMap<>();
 
-                    rawConfig.keySet().stream()
-                            .filter( key -> key.startsWith( name() ) )
+                    rawConfig.keySet().stream().filter( key -> key.startsWith( name() ) )
                             .forEach( key -> validConfig.put( key, rawConfig.get( key ) ) );
 
                     return validConfig;
@@ -377,9 +402,9 @@ public class CausalClusteringSettings implements LoadableConfig
         };
     }
 
-    @Description("The configuration must be valid for the configured plugin and usually exists" +
+    @Description( "The configuration must be valid for the configured plugin and usually exists" +
             "under matching subkeys, e.g. ..config.server_policies.*" +
-            "This is just a top-level placeholder for the plugin-specific configuration.")
+            "This is just a top-level placeholder for the plugin-specific configuration." )
     public static final Setting<String> load_balancing_config =
             prefixSetting( "causal_clustering.load_balancing.config", STRING, "" );
 
@@ -395,8 +420,9 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Boolean> multi_dc_license =
             setting( "causal_clustering.multi_dc_license", BOOLEAN, FALSE );
 
-    @Description( "Name of the SSL policy to be used by the clustering, as defined under the dbms.ssl.policy.* settings." +
-                  " If no policy is configured then the communication will not be secured." )
+    @Description(
+            "Name of the SSL policy to be used by the clustering, as defined under the dbms.ssl.policy.* settings." +
+                    " If no policy is configured then the communication will not be secured." )
     public static final Setting<String> ssl_policy =
             prefixSetting( "causal_clustering.ssl_policy", STRING, NO_DEFAULT );
 }

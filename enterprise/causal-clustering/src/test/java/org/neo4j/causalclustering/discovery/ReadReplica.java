@@ -71,7 +71,7 @@ public class ReadReplica implements ClusterMember
                 .collect( joining( "," ) );
         boltAdvertisedSocketAddress = advertisedAddress( advertisedAddress, boltPort );
 
-        config.put( "dbms.mode", "READ_REPLICA" );
+        config.put( "dbms.discovery_type", "READ_REPLICA" );
         config.put( CausalClusteringSettings.initial_discovery_members.name(), initialHosts );
         config.put( GraphDatabaseSettings.store_internal_log_level.name(), Level.DEBUG.name() );
         config.put( GraphDatabaseSettings.record_format.name(), recordFormat );

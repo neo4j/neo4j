@@ -19,23 +19,8 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import com.hazelcast.config.InterfacesConfig;
-import com.hazelcast.config.JoinConfig;
-import com.hazelcast.config.MemberAttributeConfig;
-import com.hazelcast.config.NetworkConfig;
-import com.hazelcast.config.TcpIpConfig;
-import com.hazelcast.core.Hazelcast;
-import com.hazelcast.core.HazelcastException;
-import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.MemberAttributeEvent;
-import com.hazelcast.core.MembershipEvent;
-import com.hazelcast.core.MembershipListener;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
+import com.hazelcast.config.*;
+import com.hazelcast.core.*;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -64,6 +49,15 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extr
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
+import static com.hazelcast.spi.properties.GroupProperty.*;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.*;
 import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
@@ -78,6 +72,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
     private final LogProvider logProvider;
+    private final ResolutionResolver resolutionResolver;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -90,8 +85,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
-            LogProvider userLogProvider )
+    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
+            LogProvider logProvider, LogProvider userLogProvider, ResolutionResolver resolutionResolver )
     {
         this.config = config;
         this.sslPolicy = sslPolicy;
@@ -102,6 +97,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        this.resolutionResolver = resolutionResolver;
     }
 
     @Override
@@ -139,8 +135,10 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             {
                 return;
             }
-            membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, HazelcastCoreTopologyService.this::refreshTopology );
+            membershipRegistrationId =
+                    hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
+            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod,
+                    HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
         } );
         startingThread.setDaemon( true );
@@ -188,9 +186,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         tcpIpConfig.setEnabled( true );
 
         List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
-        for ( AdvertisedSocketAddress address : initialMembers )
+        for ( AdvertisedSocketAddress advertisedAddress : resolutionResolver.resolve( initialMembers ) )
         {
-            tcpIpConfig.addMember( address.toString() );
+            tcpIpConfig.addMember( advertisedAddress.toString() );
         }
 
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
@@ -240,15 +238,16 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setNetworkConfig( networkConfig );
 
-        MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
+        MemberAttributeConfig memberAttributeConfig =
+                HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         logConnectionInfo( initialMembers );
 
         JobScheduler.JobHandle logJob = scheduler.schedule( "HazelcastHealth", HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
-                                "cluster. Please consult the logs for more details. Rebooting the server may " +
-                                "solve the problem." ) );
+                        "cluster. Please consult the logs for more details. Rebooting the server may " +
+                        "solve the problem." ) );
 
         try
         {
@@ -272,13 +271,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
     {
-        userLog.info( "My connection info: " +
-                      "[\n\tDiscovery:   listen=%s, advertised=%s," +
-                      "\n\tTransaction: listen=%s, advertised=%s, " +
-                      "\n\tRaft:        listen=%s, advertised=%s, " +
-                      "\n\tClient Connector Addresses: %s" +
-                      "\n]",
-                config.get( discovery_listen_address ),
+        userLog.info( "My connection info: " + "[\n\tDiscovery:   listen=%s, advertised=%s," +
+                        "\n\tTransaction: listen=%s, advertised=%s, " + "\n\tRaft:        listen=%s, advertised=%s, " +
+                        "\n\tClient Connector Addresses: %s" + "\n]", config.get( discovery_listen_address ),
                 config.get( CausalClusteringSettings.discovery_advertised_address ),
                 config.get( CausalClusteringSettings.transaction_listen_address ),
                 config.get( CausalClusteringSettings.transaction_advertised_address ),

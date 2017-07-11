@@ -27,8 +27,9 @@ import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.discovery.ResolutionResolver;
 import org.neo4j.causalclustering.identity.ClusterBinder;
+import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -40,6 +41,7 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.chooseResolver;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
 
 public class ClusteringModule
@@ -56,9 +58,11 @@ public class ClusteringModule
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
+        ResolutionResolver resolutionResolver = chooseResolver( config );
 
-        topologyService = discoveryServiceFactory.coreTopologyService( config, sslPolicy,
-                myself, platformModule.jobScheduler, logProvider, userLogProvider );
+        topologyService = discoveryServiceFactory
+                .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
+                        userLogProvider, resolutionResolver );
 
         life.add( topologyService );
 
@@ -69,7 +73,8 @@ public class ClusteringModule
                         logProvider );
 
         CoreBootstrapper coreBootstrapper =
-                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
+                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config,
+                        logProvider );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );
