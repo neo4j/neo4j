@@ -61,7 +61,8 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     // WHEN
     val idpInnerIterations = determineIDPLoopSizes(numberOfPatternRelationships,
-      cypher_idp_solver_table_threshold, maxTableSizes)
+      cypher_idp_solver_table_threshold, maxTableSizes, Map(cypher_idp_solver_duration_threshold -> "10000"))
+    // Added an increased duration to make up for the test running in parallel, should preferably be solved in a different way
 
     // THEN
     maxTableSizes.slice(0, maxTableSizes.size - 1).foreach { maxTableSize =>
@@ -79,7 +80,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
     // WHEN
     val idpInnerIterations = determineIDPLoopSizes(numberOfPatternRelationships,
-      cypher_idp_solver_duration_threshold, iterationDurationThresholds)
+      cypher_idp_solver_duration_threshold, iterationDurationThresholds, Map.empty)
 
     // THEN
     iterationDurationThresholds.slice(0, iterationDurationThresholds.size - 1).foreach { (duration) =>
@@ -205,11 +206,11 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     expandsAndJoinsCount(plan, Map("expands" -> 0, "joins" -> 0))
   }
 
-  private def determineIDPLoopSizes(numberOfPatternRelationships: Int, configKey: Setting[_], keys: Seq[Int]): Map[Any, Int] = {
+  private def determineIDPLoopSizes(numberOfPatternRelationships: Int, configKey: Setting[_], configValues: Seq[Int], additionalConfig: Map[Setting[_], String]): Map[Any, Int] = {
     val query = makeLongPatternQuery(numberOfPatternRelationships)
     if (VERBOSE) println(configKey)
-    val idpInnerIterations: mutable.Map[Int, Int] = keys.foldLeft(mutable.Map.empty[Int, Int]) { (acc, configValue) =>
-      val config = databaseConfig() + (configKey -> configValue.toString)
+    val idpInnerIterations: mutable.Map[Int, Int] = configValues.foldLeft(mutable.Map.empty[Int, Int]) { (acc, configValue) =>
+      val config = databaseConfig() + (configKey -> configValue.toString) ++ additionalConfig
       runWithConfig(config.toSeq: _*) {
         (engine, db) =>
           graph = db
@@ -226,7 +227,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       }
       acc
     }
-    if (VERBOSE) keys.foreach { (configValue) =>
+    if (VERBOSE) configValues.foreach { (configValue) =>
       println(s"$configValue\t${idpInnerIterations(configValue)}")
     }
     idpInnerIterations.toMap[Any, Int]
