@@ -523,5 +523,3 @@ Feature: PatternPredicates
       | <(:A)-[:X]->(:B)>            | (:B) |
       | <(:A)-[:X]->(:C)-[:X]->(:D)> | (:D) |
     And no side effects
-
-
