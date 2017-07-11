@@ -17,19 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.configuration;
+package org.neo4j.commandline.dbms;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import javax.annotation.Nonnull;
 
-/**
- * Used to add description of deprecated configuration settings.
- */
-@Retention( RetentionPolicy.RUNTIME )
-@Target( {ElementType.TYPE, ElementType.FIELD} )
-public @interface Obsoleted
+import org.neo4j.commandline.admin.AdminCommandSection;
+
+public class OfflineBackupCommandSection extends AdminCommandSection
 {
-    String value();
+    private static final OfflineBackupCommandSection OFFINE_BACKUP_COMMAND_SECTION = new OfflineBackupCommandSection();
+
+    public static AdminCommandSection instance()
+    {
+        return OFFINE_BACKUP_COMMAND_SECTION;
+    }
+
+    @Override
+    @Nonnull
+    public String printable()
+    {
+        return "Offline backup";
+    }
 }

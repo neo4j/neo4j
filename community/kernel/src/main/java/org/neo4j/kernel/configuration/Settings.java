@@ -1205,6 +1205,7 @@ public class Settings
 
     private Settings()
     {
+        throw new AssertionError();
     }
 
     public static class DefaultSetting<T> extends ScopeAwareSetting<T> implements SettingHelper<T>

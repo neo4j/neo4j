@@ -62,7 +62,7 @@ public class DumpCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommandSection commandSection()
     {
-        return OffineBackupCommandSection.instance();
+        return OfflineBackupCommandSection.instance();
     }
 
     @Override

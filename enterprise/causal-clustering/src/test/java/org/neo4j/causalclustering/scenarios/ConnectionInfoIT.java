@@ -19,15 +19,15 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
-
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
 
 import org.neo4j.causalclustering.catchup.CatchupServer;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;

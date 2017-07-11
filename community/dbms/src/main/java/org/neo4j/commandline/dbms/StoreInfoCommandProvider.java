@@ -29,7 +29,6 @@ import org.neo4j.commandline.arguments.Arguments;
 
 public class StoreInfoCommandProvider extends AdminCommand.Provider
 {
-
     public StoreInfoCommandProvider()
     {
         super( "store-info" );

@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -91,6 +92,11 @@ public class GraphDatabaseFactoryState
         }
     }
 
+    /**
+     * @deprecated This method has no side effects now since we moved to service loading instead, {@link LoadableConfig}
+     * should be used.
+     */
+    @Deprecated
     public void addSettingsClasses( Iterable<Class<?>> settings )
     {
         for ( Class<?> setting : settings )
@@ -116,11 +122,11 @@ public class GraphDatabaseFactoryState
 
     public GraphDatabaseFacadeFactory.Dependencies databaseDependencies()
     {
-        return  newDependencies().
-                monitors(monitors).
-                userLogProvider(userLogProvider).
-                settingsClasses(settingsClasses).
+        return newDependencies().
+                monitors( monitors ).
+                userLogProvider( userLogProvider ).
+                settingsClasses( settingsClasses ).
                 urlAccessRules( urlAccessRules ).
-                kernelExtensions(kernelExtensions);
+                kernelExtensions( kernelExtensions );
     }
 }

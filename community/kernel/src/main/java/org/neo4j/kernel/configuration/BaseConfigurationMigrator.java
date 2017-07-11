@@ -22,6 +22,7 @@ package org.neo4j.kernel.configuration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.annotation.Nonnull;
 
 import org.neo4j.logging.Log;
 
@@ -54,7 +55,7 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
         private final String propertyKey;
         private final String deprecationMessage;
 
-        public SpecificPropertyMigration( String propertyKey, String deprecationMessage )
+        SpecificPropertyMigration( String propertyKey, String deprecationMessage )
         {
             this.propertyKey = propertyKey;
             this.deprecationMessage = deprecationMessage;
@@ -84,73 +85,6 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
         public abstract void setValueWithOldSetting( String value, Map<String,String> rawConfiguration );
     }
 
-    public static class PropertyRenamed extends SpecificPropertyMigration
-    {
-        private final String newKey;
-
-        public PropertyRenamed( String oldKey, String newKey, String deprecationMessage )
-        {
-            super( oldKey, deprecationMessage );
-            this.newKey = newKey;
-        }
-
-        @Override
-        public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
-        {
-            rawConfiguration.put( newKey, value );
-        }
-    }
-
-    /**
-     * A simple migration where a config value (usually an enum) has been renamed.
-     * Eg. it used to be `dbms.thing=doit` and now it's `dbm.thing=gogogo`.
-     */
-    public static class ConfigValueChanged implements Migration
-    {
-        private final String propertyKey;
-        private final String oldValue;
-        private final String newValue;
-        private final String message;
-
-        public ConfigValueChanged( String propertyKey, String oldValue, String newValue, String message )
-        {
-            this.propertyKey = propertyKey;
-            this.oldValue = oldValue;
-            this.newValue = newValue;
-            this.message = message;
-        }
-
-        @Override
-        public boolean appliesTo( Map<String,String> rawConfiguration )
-        {
-            return rawConfiguration.containsKey( propertyKey )
-                    && rawConfiguration.get( propertyKey ).equalsIgnoreCase( oldValue );
-        }
-
-        @Override
-        public Map<String,String> apply( Map<String,String> rawConfiguration )
-        {
-            rawConfiguration.put( propertyKey, newValue );
-            return rawConfiguration;
-        }
-
-        @Override
-        public String getDeprecationMessage()
-        {
-            return message;
-        }
-    }
-
-    public static Migration valueChanged( String key, String oldValue, String newValue, String deprecationMessage )
-    {
-        return new ConfigValueChanged( key, oldValue, newValue, deprecationMessage );
-    }
-
-    public static Migration propertyRenamed( String oldKey, String newKey, String deprecationMessage )
-    {
-        return new PropertyRenamed( oldKey, newKey, deprecationMessage );
-    }
-
     private final List<Migration> migrations = new ArrayList<>();
 
     public void add( Migration migration )
@@ -159,7 +93,8 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
     }
 
     @Override
-    public Map<String,String> apply( Map<String,String> rawConfiguration, Log log )
+    @Nonnull
+    public Map<String,String> apply( @Nonnull Map<String,String> rawConfiguration, @Nonnull Log log )
     {
         boolean printedDeprecationMessage = false;
         for ( Migration migration : migrations )

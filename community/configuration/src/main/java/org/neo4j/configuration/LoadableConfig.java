@@ -58,8 +58,7 @@ public interface LoadableConfig
                         setting.setDescription( documentation.value() );
                     }
 
-                    final DocumentedDefaultValue defValue =
-                            f.getAnnotation( DocumentedDefaultValue.class );
+                    final DocumentedDefaultValue defValue = f.getAnnotation( DocumentedDefaultValue.class );
                     if ( defValue != null )
                     {
                         setting.setDocumentedDefaultValue( defValue.value() );
@@ -87,7 +86,6 @@ public interface LoadableConfig
             catch ( IllegalAccessException ignored )
             {
                 // Field is private, ignore it
-                continue;
             }
         }
         return configOptions;

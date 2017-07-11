@@ -40,11 +40,11 @@ import static java.util.stream.Collectors.toList;
 
 public abstract class ConnectorValidator implements SettingGroup<Object>
 {
-    public static final List<String> validTypes =
+    private static final List<String> validTypes =
             Arrays.stream( Connector.ConnectorType.values() )
                     .map( Enum::name )
                     .collect( toList() );
-    public static final String DEPRECATED_CONNECTOR_MSG =
+    static final String DEPRECATED_CONNECTOR_MSG =
             "Warning: connectors with names other than [http,https,bolt] are%n" +
                     "deprecated and support for them will be removed in a future%n" +
                     "version of Neo4j. Offending lines in neo4j.conf:%n%n%s";

@@ -94,7 +94,7 @@ public final class ConfigurationBean extends Neo4jMBean
     public void setAttribute( Attribute attribute )
             throws AttributeNotFoundException, InvalidAttributeValueException, MBeanException, ReflectionException
     {
-        throw new InvalidAttributeValueException( "Not a writeable attribute: " + attribute.getName() );
+        throw new InvalidAttributeValueException( "Not a writable attribute: " + attribute.getName() );
     }
 
     @Override
