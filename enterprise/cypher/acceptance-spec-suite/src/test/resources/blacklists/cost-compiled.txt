@@ -166,3 +166,4 @@ Should allow OR with index and regex predicates
 
 //SkipLimitAcceptance.feature
 Combining LIMIT and aggregation
+Using a optional match after aggregation and before an aggregation
