@@ -241,7 +241,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        File internalLog = config.with( stringMap( logs_directory.name(), storeDir.getCanonicalPath() ) )
+        File internalLog = config.augment( stringMap( logs_directory.name(), storeDir.getCanonicalPath() ) )
                 .get( store_internal_log_path );
         StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
         msgLog = logService.getInternalLog( getClass() );

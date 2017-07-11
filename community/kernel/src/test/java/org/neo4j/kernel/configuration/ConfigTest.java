@@ -160,8 +160,8 @@ public class ConfigTest
     @Test
     public void augmentAnotherConfig() throws Exception
     {
-        Config config = Config().with( stringMap( MySettingsWithDefaults.hello.name(), "Hi" ) );
-        Config anotherConfig = Config().with( stringMap( MySettingsWithDefaults.boolSetting.name(),
+        Config config = Config().augment( stringMap( MySettingsWithDefaults.hello.name(), "Hi" ) );
+        Config anotherConfig = Config().augment( stringMap( MySettingsWithDefaults.boolSetting.name(),
                 Settings.FALSE, MySettingsWithDefaults.hello.name(), "Bye" ) );
 
         config.augment( anotherConfig );
@@ -179,8 +179,8 @@ public class ConfigTest
 
         // When
         first.setLogger( log );
-        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
-        Config third = second.with( stringMap( "third.jibberish", "baaah" ) );
+        Config second = first.augmentDefaults( stringMap( "second.jibberish", "baah" ) );
+        Config third = second.augment( stringMap( "third.jibberish", "baaah" ) );
 
         // Then
         verifyNoMoreInteractions( log );
@@ -205,7 +205,7 @@ public class ConfigTest
 
         // When
         first.setLogger( log );
-        first.with( stringMap( "causal_clustering.jibberish", "baah" ) );
+        first.augment( stringMap( "causal_clustering.jibberish", "baah" ) );
 
         // Then
         verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
@@ -289,8 +289,8 @@ public class ConfigTest
         Config first = Config.builder().withSetting("first.jibberish", "bah" ).withValidator( validator ).build();
 
         // When
-        Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );
-        second.with( stringMap( "third.jibberish", "baah" ) );
+        Config second = first.augmentDefaults( stringMap( "second.jibberish", "baah" ) );
+        second.augment( stringMap( "third.jibberish", "baah" ) );
 
         // Then
         verify( validator, times( 3 ) ).validate( any(), any(), any(), anyBoolean() );

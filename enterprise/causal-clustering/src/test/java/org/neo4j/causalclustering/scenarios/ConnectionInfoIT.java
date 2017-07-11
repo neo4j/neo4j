@@ -39,7 +39,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.causalclustering.ClusterRule;
 
-import static java.util.Collections.singletonMap;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_listen_address;
 
@@ -70,8 +69,7 @@ public class ConnectionInfoIT
         AssertableLogProvider logProvider = new AssertableLogProvider();
         AssertableLogProvider userLogProvider = new AssertableLogProvider();
         CoreSnapshotService snapshotService = mock( CoreSnapshotService.class );
-        Config config = Config.defaults()
-                .with( singletonMap( transaction_listen_address.name(), ":" + testSocket.getLocalPort() ) );
+        Config config = Config.defaults( transaction_listen_address, ":" + testSocket.getLocalPort() );
 
         CatchupServer catchupServer =
                 new CatchupServer( logProvider, userLogProvider, mockSupplier(), mockSupplier(), mockSupplier(),

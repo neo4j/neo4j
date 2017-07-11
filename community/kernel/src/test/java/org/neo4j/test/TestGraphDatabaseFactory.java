@@ -262,7 +262,8 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
                 Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
         {
             return impermanent ?
-                   new ImpermanentTestDatabasePlatformModule( storeDir, config.with( stringMap( ephemeral.name(), TRUE ) ),
+                   new ImpermanentTestDatabasePlatformModule( storeDir,
+                           config.augment( stringMap( ephemeral.name(), TRUE ) ),
                            dependencies, graphDatabaseFacade, this.databaseInfo ) :
                    new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade, this
                            .databaseInfo );

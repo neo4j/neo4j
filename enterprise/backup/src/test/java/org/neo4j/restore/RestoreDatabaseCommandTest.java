@@ -196,9 +196,9 @@ public class RestoreDatabaseCommandTest
         }
     }
 
-    public static Config configWith( Config config, String databaseName, String dataDirectory )
+    private static Config configWith( Config config, String databaseName, String dataDirectory )
     {
-        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
+        return config.augment( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
                 DatabaseManagementSystemSettings.data_directory.name(), dataDirectory ) );
     }
 

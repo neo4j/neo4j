@@ -42,7 +42,6 @@ import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerSt
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.fakeTopologyService;
 import static org.neo4j.causalclustering.readreplica.UserDefinedConfigurationStrategyTest.memberIDs;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConnectRandomlyWithinServerGroupStrategyTest
 {
@@ -52,8 +51,7 @@ public class ConnectRandomlyWithinServerGroupStrategyTest
         // given
         final String myServerGroup = "my_server_group";
 
-        Config configWithMyServerGroup = Config.defaults()
-                .with( stringMap( CausalClusteringSettings.server_groups.name(), myServerGroup ) );
+        Config configWithMyServerGroup = Config.defaults( CausalClusteringSettings.server_groups, myServerGroup );
 
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),
@@ -77,8 +75,7 @@ public class ConnectRandomlyWithinServerGroupStrategyTest
         // given
         final String myServerGroups = "a,b,c";
 
-        Config configWithMyServerGroup = Config.defaults()
-                .with( stringMap( CausalClusteringSettings.server_groups.name(), myServerGroups ) );
+        Config configWithMyServerGroup = Config.defaults( CausalClusteringSettings.server_groups, myServerGroups );
 
         MemberId[] myGroupMemberIds = memberIDs( 10 );
         TopologyService topologyService = fakeTopologyService( fakeCoreTopology( new MemberId( UUID.randomUUID() ) ),

@@ -317,7 +317,7 @@ public class CommonAbstractStoreBehaviourTest
     @Test
     public void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
     {
-        config = config.with( stringMap(
+        config = config.augment( stringMap(
                 CommonAbstractStore.Configuration.rebuild_idgenerators_fast.name(), "false" ) );
         createStore();
         store.setStoreNotOk( new Exception() );

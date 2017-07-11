@@ -306,7 +306,7 @@ public class OnlineBackupCommand implements AdminCommand
         {
             try
             {
-                return config.with( MapUtil.load( additionalConfig.get().toFile() ) );
+                return config.augment( MapUtil.load( additionalConfig.get().toFile() ) );
             }
             catch ( IOException e )
             {

@@ -629,8 +629,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
         {
-            config = config.withDefaults(
-                    stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "1 files" ) );
+            config = config.augmentDefaults( stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "1 files" ) );
         }
         String pruningConf = config.get( GraphDatabaseSettings.keep_logical_logs );
 

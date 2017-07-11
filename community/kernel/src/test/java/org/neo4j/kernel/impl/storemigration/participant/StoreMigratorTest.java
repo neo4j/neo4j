@@ -251,7 +251,7 @@ public class StoreMigratorTest
     private StoreMigrator newStoreMigrator()
     {
         return new StoreMigrator( fileSystemRule, pageCache,
-                Config.empty(), NullLogService.getInstance() );
+                Config.defaults(), NullLogService.getInstance() );
     }
 
     private static class MySection implements MigrationProgressMonitor.Section

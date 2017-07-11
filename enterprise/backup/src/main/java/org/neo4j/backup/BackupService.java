@@ -180,7 +180,8 @@ class BackupService
                     MoveAfterCopy.moveReplaceExisting() );
 
             File debugLogFile =
-                    tuningConfiguration.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
+                    tuningConfiguration
+                            .augment( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
                             .get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
@@ -216,7 +217,7 @@ class BackupService
         }
 
         Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
-        config = config.with( temporaryDbConfig );
+        config = config.augment( temporaryDbConfig );
 
         Map<String,String> configParams = new HashMap<>();
         Set<String> keys = config.getConfiguredSettingKeys();
@@ -239,7 +240,7 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            File debugLogFile = config.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
+            File debugLogFile = config.augment( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
                     .get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );

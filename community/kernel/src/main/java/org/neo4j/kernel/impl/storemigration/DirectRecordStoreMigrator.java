@@ -125,6 +125,6 @@ public class DirectRecordStoreMigrator
             config.put( GraphDatabaseSettings.label_block_size.name(),
                     String.valueOf( legacyStores.getNodeStore().getDynamicLabelStore().getRecordDataSize() ) );
         }
-        return this.config.with( config );
+        return this.config.augment( config );
     }
 }

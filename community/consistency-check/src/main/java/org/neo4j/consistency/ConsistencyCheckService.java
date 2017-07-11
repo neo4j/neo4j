@@ -204,9 +204,9 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
-        config = config.with( stringMap(
-                GraphDatabaseSettings.read_only.name(), TRUE ) );
+        config.augment( stringMap( GraphDatabaseSettings.read_only.name(), TRUE ) );
         OperationalMode operationalMode = OperationalMode.single;
+
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
@@ -278,7 +278,7 @@ public class ConsistencyCheckService
     {
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
-            tuningConfiguration = tuningConfiguration.with(
+            tuningConfiguration = tuningConfiguration.augment(
                     stringMap( GraphDatabaseSettings.neo4j_home.name(), storeDir.getAbsolutePath() ) );
         }
 

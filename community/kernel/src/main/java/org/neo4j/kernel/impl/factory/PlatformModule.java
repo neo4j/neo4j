@@ -121,7 +121,7 @@ public class PlatformModule
     public PlatformModule( File providedStoreDir, Map<String,String> params, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies, GraphDatabaseFacade graphDatabaseFacade )
     {
-        this( providedStoreDir, Config.defaults().with( params ), databaseInfo, externalDependencies,
+        this( providedStoreDir, Config.defaults().augment( params ), databaseInfo, externalDependencies,
                 graphDatabaseFacade );
     }
 
@@ -140,9 +140,8 @@ public class PlatformModule
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
         // SPI - provided services
-        this.config = dependencies.satisfyDependency( config.withDefaults(
-                stringMap( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() )
-        ) );
+        this.config = dependencies.satisfyDependency( config.augmentDefaults(
+                stringMap( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() ) ) );
 
         this.storeDir = providedStoreDir.getAbsoluteFile();
 

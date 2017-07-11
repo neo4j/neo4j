@@ -517,7 +517,7 @@ public class ImportTool
         boolean success;
         LifeSupport life = new LifeSupport();
 
-        File internalLogFile = dbConfig.with( stringMap( logs_directory.name(), logsDir.getCanonicalPath() ) )
+        File internalLogFile = dbConfig.augment( stringMap( logs_directory.name(), logsDir.getCanonicalPath() ) )
                 .get( store_internal_log_path );
         LogService logService = life.add( StoreLogService.withInternalLog( internalLogFile ).build( fs ) );
 

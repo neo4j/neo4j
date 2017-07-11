@@ -55,7 +55,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
@@ -401,8 +400,7 @@ public class ProcedureJarLoaderTest
 
     private ProcedureConfig procedureConfig()
     {
-        Config config = Config.defaults().with(
-                genericMap( procedure_unrestricted.name(), "org.neo4j.kernel.impl.proc.unsafeFullAccess*" ) );
+        Config config = Config.defaults( procedure_unrestricted, "org.neo4j.kernel.impl.proc.unsafeFullAccess*" );
         return new ProcedureConfig( config );
     }
 }

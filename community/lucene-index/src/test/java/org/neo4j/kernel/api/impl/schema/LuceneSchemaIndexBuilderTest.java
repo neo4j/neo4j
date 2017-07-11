@@ -81,6 +81,6 @@ public class LuceneSchemaIndexBuilderTest
 
     private Config getReadOnlyConfig()
     {
-        return getDefaultConfig().with( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        return getDefaultConfig().augment( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
     }
 }

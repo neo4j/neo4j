@@ -184,8 +184,8 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Config withForcedInMemoryConfiguration( Config config )
     {
-        return config.with( stringMap( ephemeral.name(), TRUE ) )
-                .withDefaults( stringMap( pagecache_memory.name(), "8M" ) );
+        return config.augment( stringMap( ephemeral.name(), TRUE ) )
+                .augmentDefaults( stringMap( pagecache_memory.name(), "8M" ) );
     }
 
     protected static class ImpermanentPlatformModule extends PlatformModule

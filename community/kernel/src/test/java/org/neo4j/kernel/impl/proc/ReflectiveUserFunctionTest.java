@@ -32,7 +32,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.proc.BasicContext;
@@ -253,8 +252,8 @@ public class ReflectiveUserFunctionTest
     {
         // Given
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
-                NullLog.getInstance(), new ProcedureConfig( Config.defaults().with( MapUtil
-                .stringMap( GraphDatabaseSettings.procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.listCoolPeople" ) ) ) );
+                NullLog.getInstance(), new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist,
+                "org.neo4j.kernel.impl.proc.listCoolPeople" ) ) );
 
         CallableUserFunction method = compile( SingleReadOnlyFunction.class ).get( 0 );
 
@@ -269,8 +268,7 @@ public class ReflectiveUserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults().with( MapUtil
-                .stringMap( GraphDatabaseSettings.procedure_whitelist.name(), "WrongName" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "WrongName" ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );
@@ -283,8 +281,7 @@ public class ReflectiveUserFunctionTest
         // Given
         Log log = spy(Log.class);
         procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components, new ComponentRegistry(),
-                log, new ProcedureConfig( Config.defaults().with( MapUtil
-                .stringMap( GraphDatabaseSettings.procedure_whitelist.name(), "" ) ) ) );
+                log, new ProcedureConfig( Config.defaults( GraphDatabaseSettings.procedure_whitelist, "" ) ) );
 
         List<CallableUserFunction> method = compile( SingleReadOnlyFunction.class );
         verify( log ).warn( "The function 'org.neo4j.kernel.impl.proc.listCoolPeople' is not on the whitelist and won't be loaded." );

@@ -43,7 +43,6 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
 import static org.neo4j.causalclustering.readreplica.ConnectToRandomCoreServerStrategyTest.fakeCoreTopology;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 
 public class UserDefinedConfigurationStrategyTest
@@ -57,9 +56,8 @@ public class UserDefinedConfigurationStrategyTest
                 fakeReadReplicaTopology( memberIDs( 100 ), new NoEastGroupGenerator() ) );
 
         UserDefinedConfigurationStrategy strategy = new UserDefinedConfigurationStrategy();
-        Config config = Config.defaults()
-                .with( stringMap( CausalClusteringSettings.user_defined_upstream_selection_strategy.name(),
-                        "groups(east); groups(core); halt()" ) );
+        Config config = Config.defaults( CausalClusteringSettings.user_defined_upstream_selection_strategy,
+                        "groups(east); groups(core); halt()" );
 
         strategy.setConfig( config );
         strategy.setTopologyService( topologyService );

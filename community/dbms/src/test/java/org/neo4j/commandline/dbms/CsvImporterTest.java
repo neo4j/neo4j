@@ -60,11 +60,11 @@ public class CsvImporterTest
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
-            Config config = Config.defaults()
-                .with( additionalConfig() )
-                .with( stringMap(
-                                DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath(),
-                                GraphDatabaseSettings.logs_directory.name(), logDir.getAbsolutePath() ) );
+            Config config = Config.builder()
+                    .withSettings( additionalConfig() )
+                    .withSetting( DatabaseManagementSystemSettings.database_path, dbDir.getAbsolutePath() )
+                    .withSetting( GraphDatabaseSettings.logs_directory, logDir.getAbsolutePath() ).build();
+
             CsvImporter csvImporter = new CsvImporter(
                     Args.parse(
                             String.format( "--report-file=%s", reportLocation.getAbsolutePath() ),

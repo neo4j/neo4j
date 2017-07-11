@@ -51,8 +51,8 @@ public class ConfigurablePageCacheRule extends PageCacheRule
         PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
         PageCursorTracerSupplier cursorTracerSupplier = selectConfig( baseConfig.pageCursorTracerSupplier,
                 pageCacheConfig.pageCursorTracerSupplier, DefaultPageCursorTracerSupplier.INSTANCE );
-        Config finalConfig = config.withDefaults( MapUtil.stringMap(
-                GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+        Config finalConfig =
+                config.augmentDefaults( MapUtil.stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
                 fs, finalConfig, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ) )

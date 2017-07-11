@@ -67,7 +67,7 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             public GraphDatabaseService newDatabase( Config config )
             {
                 return new HighlyAvailableGraphDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        config.augment( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
                         state.databaseDependencies() );
             }
         };

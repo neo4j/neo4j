@@ -106,7 +106,7 @@ public class GraphDatabaseFactory
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
                 return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        config.augment( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
                         state.databaseDependencies() );
             }
         };

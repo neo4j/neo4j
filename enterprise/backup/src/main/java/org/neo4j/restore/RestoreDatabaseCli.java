@@ -57,7 +57,7 @@ public class RestoreDatabaseCli implements AdminCommand
                 .withHome( homeDir )
                 .withConnectorsDisabled().build();
 
-        return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
+        return config.augment( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
 
     @Override

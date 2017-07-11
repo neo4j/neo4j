@@ -74,7 +74,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
             throws Throwable
     {
         return new UdcKernelExtension(
-                dependencies.config().with( loadUdcProperties() ),
+                dependencies.config().augment( loadUdcProperties() ),
                 dependencies.dataSourceManager(),
                 dependencies.idGeneratorFactory(),
                 dependencies.startupStats(),

@@ -51,7 +51,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         return params ->
         {
             Config config = Config.defaults( params )
-                                  .with( stringMap( "unsupported.dbms.ephemeral", "false" ) );
+                                  .augment( stringMap( "unsupported.dbms.ephemeral", "false" ) );
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override

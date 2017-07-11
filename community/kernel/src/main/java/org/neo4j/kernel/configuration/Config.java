@@ -118,7 +118,7 @@ public class Config implements DiagnosticsProvider, Configuration
          * @param setting The setting to set.
          * @param value The value of the setting, pre parsed.
          */
-        public <T> Builder withSetting( final Setting<T> setting, final String value )
+        public Builder withSetting( final Setting<?> setting, final String value )
         {
             return withSetting( setting.name(), value );
         }
@@ -357,6 +357,28 @@ public class Config implements DiagnosticsProvider, Configuration
         return builder().withSettings( initialSettings ).build();
     }
 
+    /**
+     * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
+     * @param key The initial setting to use.
+     * @param value The initial value to give the setting.
+     */
+    @Nonnull
+    public static Config defaults( @Nonnull final String key, @Nonnull final String value )
+    {
+        return builder().withSetting( key, value ).build();
+    }
+
+    /**
+     * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
+     * @param setting The initial setting to use.
+     * @param value The initial value to give the setting.
+     */
+    @Nonnull
+    public static Config defaults( @Nonnull final Setting<?> setting, @Nonnull final String value )
+    {
+        return builder().withSetting( setting, value ).build();
+    }
+
     private Config( Map<String,String> initialSettings,
             Collection<ConfigurationValidator> additionalValidators,
             List<LoadableConfig> settingsClasses )
@@ -399,22 +421,6 @@ public class Config implements DiagnosticsProvider, Configuration
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-    }
-
-    /**
-     * Same as {@link Config#augment(Map)}
-     */
-    public Config with( Map<String,String> additionalConfig ) throws InvalidSettingException
-    {
-        return augment( additionalConfig );
-    }
-
-    /**
-     * Same as {@link Config#augmentDefaults(Map)}
-     */
-    public Config withDefaults( Map<String,String> additionalDefaults ) throws InvalidSettingException
-    {
-        return augmentDefaults( additionalDefaults );
     }
 
     /**

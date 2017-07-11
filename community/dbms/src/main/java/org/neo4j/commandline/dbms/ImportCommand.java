@@ -291,6 +291,6 @@ public class ImportCommand implements AdminCommand
                 .withConnectorsDisabled().build();
 
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
+        return config.augment( additionalConfig );
     }
 }
