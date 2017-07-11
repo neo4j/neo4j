@@ -29,15 +29,28 @@ import org.neo4j.values.virtual.VirtualValueGroup;
  */
 public abstract class VirtualValue extends AnyValue
 {
-
     @Override
     public final boolean equals( Object other )
     {
-        if ( (other instanceof SequenceValue) && (this instanceof SequenceValue) )
+        if ( other == null )
         {
-            return ((SequenceValue) this).equals( (SequenceValue) other );
+            return false;
         }
-        return other != null && other instanceof VirtualValue && equals( (VirtualValue) other );
+
+        // suppose that we will only ever call equals with Objects of AnyValue but just in case
+        try
+        {
+            if ( ((AnyValue) other).isSequenceValue() && this.isSequenceValue() )
+            {
+                return ((SequenceValue) this).equals( (SequenceValue) other );
+            }
+            return other instanceof VirtualValue && equals( (VirtualValue) other );
+
+        }
+        catch ( ClassCastException e )
+        {
+            return false;
+        }
     }
 
     @Override

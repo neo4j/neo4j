@@ -24,7 +24,6 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.AnyValues;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 
@@ -42,9 +41,15 @@ final class ListValue extends VirtualValue implements SequenceValue
     }
 
     @Override
+    public boolean isSequenceValue()
+    {
+        return true;
+    }
+
+    @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || !(other instanceof SequenceValue) )
+        if ( other == null || !other.isSequenceValue() )
         {
             return false;
         }
@@ -117,15 +122,10 @@ final class ListValue extends VirtualValue implements SequenceValue
         return sb.toString();
     }
 
+    @Override
     public int length()
     {
         return values.length;
-    }
-
-    @Override
-    public boolean equals( SequenceValue other )
-    {
-        return AnyValues.equalityOfValuesInSequences( this, other );
     }
 
     @Override

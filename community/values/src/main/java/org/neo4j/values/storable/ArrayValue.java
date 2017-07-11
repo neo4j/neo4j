@@ -19,7 +19,7 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.AnyValues;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
 /**
@@ -27,12 +27,6 @@ import org.neo4j.values.SequenceValue;
  */
 abstract class ArrayValue extends Value implements SequenceValue
 {
-    @Override
-    public boolean equals( SequenceValue other )
-    {
-        return AnyValues.equalityOfValuesInSequences( this, other );
-    }
-
     @Override
     public boolean equals( boolean x )
     {
@@ -49,5 +43,35 @@ abstract class ArrayValue extends Value implements SequenceValue
     public boolean equals( String x )
     {
         return false;
+    }
+
+    @Override
+    public boolean isSequenceValue()
+    {
+        return true;
+    }
+
+    @Override
+    public final boolean equals( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        // suppose that we will only ever call equals with Objects of AnyValue but just in case
+        try
+        {
+            if ( ((AnyValue) other).isSequenceValue() )
+            {
+                return ( this).equals( (SequenceValue) other );
+            }
+            return other instanceof Value && equals( (Value) other );
+
+        }
+        catch ( ClassCastException e )
+        {
+            return false;
+        }
     }
 }

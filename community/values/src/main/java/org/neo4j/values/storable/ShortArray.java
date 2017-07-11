@@ -22,7 +22,6 @@ package org.neo4j.values.storable;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.SequenceValue;
 
 import static java.lang.String.format;
 
@@ -40,16 +39,6 @@ abstract class ShortArray extends IntegralArray
     public long longValue( int index )
     {
         return value()[index];
-    }
-
-    @Override
-    public boolean equals( Object other )
-    {
-        if ( other instanceof SequenceValue )
-        {
-            return equals( (SequenceValue) other );
-        }
-        return other != null && other instanceof Value && equals( (Value) other );
     }
 
     @Override
