@@ -51,14 +51,15 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 import static org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature;
+import static org.neo4j.kernel.impl.proc.ResourceInjectionTest.notAvailableMessage;
 
 @SuppressWarnings( "WeakerAccess" )
 public class ProcedureJarLoaderTest
@@ -223,12 +224,8 @@ public class ProcedureJarLoaderTest
         jarloader.loadProcedures( jar );
 
         // Then
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.unsafeProcedure is not available " +
-                        "due to having restricted access rights, check configuration." );
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.unsafeFunction" +
-                        " is not available due to having restricted access rights, check configuration." );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.unsafeProcedure" ) );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.unsafeFunction" ) );
     }
 
     @Test
