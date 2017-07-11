@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Collections.singletonList;
@@ -90,6 +91,27 @@ public class ProcedureIT
     public ExpectedException exception = ExpectedException.none();
 
     private GraphDatabaseService db;
+
+    @Before
+    public void setUp() throws IOException
+    {
+        exceptionsInProcedure.clear();
+        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
+        new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
+        db = new TestEnterpriseGraphDatabaseFactory()
+                .newImpermanentDatabaseBuilder()
+                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
+                .newGraphDatabase();
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( this.db != null )
+        {
+            this.db.shutdown();
+        }
+    }
 
     @Test
     public void shouldCallProcedureWithParameterMap() throws Throwable
@@ -1186,27 +1208,6 @@ public class ProcedureIT
         //Then
         exception.expect( TransactionFailureException.class );
         result.next();
-    }
-
-    @Before
-    public void setUp() throws IOException
-    {
-        exceptionsInProcedure.clear();
-        new JarBuilder().createJarFor( plugins.newFile( "myProcedures.jar" ), ClassWithProcedures.class );
-        new JarBuilder().createJarFor( plugins.newFile( "myFunctions.jar" ), ClassWithFunctions.class );
-        db = new TestGraphDatabaseFactory()
-                .newImpermanentDatabaseBuilder()
-                .setConfig( plugin_dir, plugins.getRoot().getAbsolutePath() )
-                .newGraphDatabase();
-    }
-
-    @After
-    public void tearDown()
-    {
-        if ( this.db != null )
-        {
-            this.db.shutdown();
-        }
     }
 
     public static class Output
