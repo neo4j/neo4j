@@ -552,11 +552,6 @@ public class GraphDatabaseSettings implements LoadableConfig
         NATIVE,
 
         /**
-         * Label index backed by Lucene.
-         */
-        LUCENE,
-
-        /**
          * Selects which ever label index is present in a store, or the default (NATIVE) if no label index present.
          */
         AUTO

@@ -28,19 +28,22 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
  * Tests functionality around missing or corrupted lucene label scan store index, and that
  * the database should repair (i.e. rebuild) that automatically and just work.
  */
-public abstract class LabelScanStoreChaosIT
+public class NativeLabelScanStoreChaosIT
 {
     private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
     {
@@ -50,11 +53,9 @@ public abstract class LabelScanStoreChaosIT
             addSpecificConfig( builder );
         }
     };
-    protected final RandomRule randomRule = new RandomRule();
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );
-
-    protected abstract void addSpecificConfig( GraphDatabaseBuilder builder );
 
     @Test
     public void shouldRebuildDeletedLabelScanStoreOnStartup() throws Exception
@@ -82,9 +83,25 @@ public abstract class LabelScanStoreChaosIT
         assertEquals( asSet( node ), getAllNodesWithLabel( Labels.First ) );
     }
 
-    protected abstract DatabaseRule.RestartAction corruptTheLabelScanStoreIndex();
+    private static File storeFile( File directory )
+    {
+        return new File( directory, NativeLabelScanStore.FILE_NAME );
+    }
 
-    protected abstract DatabaseRule.RestartAction deleteTheLabelScanStoreIndex();
+    private void addSpecificConfig( GraphDatabaseBuilder builder )
+    {
+        builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
+    }
+
+    private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
+    {
+        return ( fs, directory ) -> scrambleFile( storeFile( directory ) );
+    }
+
+    private DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
+    {
+        return ( fs, directory ) -> fs.deleteFile( storeFile( directory ) );
+    }
 
     private Node createLabeledNode( Label... labels )
     {
@@ -104,7 +121,7 @@ public abstract class LabelScanStoreChaosIT
         }
     }
 
-    protected void scrambleFile( File file ) throws IOException
+    private void scrambleFile( File file ) throws IOException
     {
         LabelScanStoreTest.scrambleFile( randomRule.random(), file );
     }

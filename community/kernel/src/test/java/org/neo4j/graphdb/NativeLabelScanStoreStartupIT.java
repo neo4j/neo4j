@@ -26,12 +26,14 @@ import java.io.File;
 import java.io.IOException;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -39,8 +41,10 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 
-public abstract class LabelScanStoreStartupIT
+public class NativeLabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
 
@@ -57,8 +61,6 @@ public abstract class LabelScanStoreStartupIT
     public final RandomRule random = new RandomRule();
 
     private int labelId;
-
-    protected abstract void addSpecificConfig( GraphDatabaseBuilder builder );
 
     @Test
     public void scanStoreStartWithoutExistentIndex() throws IOException
@@ -121,14 +123,30 @@ public abstract class LabelScanStoreStartupIT
         return node;
     }
 
-    protected void scrambleFile( File file ) throws IOException
+    private void scrambleFile( File file ) throws IOException
     {
         LabelScanStoreTest.scrambleFile( random.random(), file );
     }
 
-    protected abstract void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException;
+    private static File storeFile( File directory )
+    {
+        return new File( directory, NativeLabelScanStore.FILE_NAME );
+    }
 
-    protected abstract void deleteLabelScanStoreFiles( File storeDirectory ) throws IOException;
+    private void addSpecificConfig( GraphDatabaseBuilder builder )
+    {
+        builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
+    }
+
+    private void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException
+    {
+        scrambleFile( storeFile( storeDirectory ) );
+    }
+
+    private void deleteLabelScanStoreFiles( File storeDirectory ) throws IOException
+    {
+        assertTrue( storeFile( storeDirectory ).delete() );
+    }
 
     private void checkLabelScanStoreAccessible( LabelScanStore labelScanStore ) throws IOException
     {

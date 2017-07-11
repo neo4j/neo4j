@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -28,19 +29,33 @@ import org.junit.rules.TestName;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public abstract class LabelScanStoreUpdateIT
+public class NativeLabelScanStoreUpdateIT
 {
+    @ClassRule
+    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    {
+        @Override
+        protected void configure( GraphDatabaseBuilder builder )
+        {
+            builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
+        }
+    };
     @Rule
     public final TestName testName = new TestName();
 
@@ -209,7 +224,10 @@ public abstract class LabelScanStoreUpdateIT
         }
     }
 
-    protected abstract GraphDatabaseService db();
+    protected GraphDatabaseService db()
+    {
+        return dbRule;
+    }
 
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {

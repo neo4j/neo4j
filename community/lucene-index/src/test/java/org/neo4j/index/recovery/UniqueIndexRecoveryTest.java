@@ -27,7 +27,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,15 +36,13 @@ import java.util.Random;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings.LabelIndex;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.impl.labelscan.LuceneLabelScanStoreExtension;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
+import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -89,7 +86,7 @@ public class UniqueIndexRecoveryTest
     {
         List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
         extensionFactories.add( kernelExtensionFactory );
-        extensionFactories.add(new LuceneLabelScanStoreExtension());
+        extensionFactories.add( new NativeLabelScanStoreExtension() );
         factory.setKernelExtensions( extensionFactories );
         db = newDb();
     }
@@ -98,7 +95,6 @@ public class UniqueIndexRecoveryTest
     {
         return (GraphDatabaseAPI) factory
                 .newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
-                .setConfig( GraphDatabaseSettings.label_index, LabelIndex.LUCENE.name() )
                 .newGraphDatabase();
     }
 
