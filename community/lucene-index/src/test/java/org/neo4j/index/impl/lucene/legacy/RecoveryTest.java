@@ -31,10 +31,8 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
@@ -165,7 +163,7 @@ public class RecoveryTest
 
         db.shutdown();
 
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get(), OperationalMode.single );
         ds.start();

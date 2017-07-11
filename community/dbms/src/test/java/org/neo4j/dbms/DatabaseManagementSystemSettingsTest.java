@@ -34,7 +34,7 @@ public class DatabaseManagementSystemSettingsTest
     @Test
     public void shouldPutDatabaseDirectoriesIntoDataDatabases()
     {
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( DatabaseManagementSystemSettings.data_directory.name(), "the-data-directory" ) );
         assertThat( config.get( DatabaseManagementSystemSettings.database_path ),
                 equalTo( new File( "the-data-directory/databases/graph.db" ) ) );

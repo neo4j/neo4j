@@ -1236,7 +1236,7 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
 
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.multi_threaded_schema_index_population_enabled.name(), "false" ) );
 
         return life.add( IndexingServiceFactory.createIndexingService( config,

@@ -50,7 +50,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
         return params ->
         {
-            Config config = Config.embeddedDefaults( params )
+            Config config = Config.defaults( params )
                                   .with( stringMap( "unsupported.dbms.ephemeral", "false" ) );
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
@@ -91,7 +91,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override

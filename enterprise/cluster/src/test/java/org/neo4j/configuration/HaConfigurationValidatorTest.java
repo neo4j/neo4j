@@ -26,8 +26,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @RunWith( Parameterized.class )
@@ -58,24 +59,26 @@ public class HaConfigurationValidatorTest
     public void validateOnlyIfModeIsHA() throws Exception
     {
         // when
-        Config config = Config.embeddedDefaults(
+        Config config = Config.fromSettings(
                 stringMap( ClusterSettings.mode.name(), ClusterSettings.Mode.SINGLE.name(),
-                        ClusterSettings.initial_hosts.name(), "" ),
-                Collections.singleton( new HaConfigurationValidator() ) );
+                        ClusterSettings.initial_hosts.name(), "" ) )
+                .withValidator( new HaConfigurationValidator() ).build();
 
         // then
-        assertEquals( "", config.getRaw( ClusterSettings.initial_hosts.name() ).get() );
+        Optional<String> value = config.getRaw( ClusterSettings.initial_hosts.name() );
+        assertTrue( value.isPresent() );
+        assertEquals( "", value.get() );
     }
 
     @Test
     public void validateSuccess() throws Exception
     {
         // when
-        Config config = Config.embeddedDefaults(
+        Config config = Config.fromSettings(
                 stringMap( ClusterSettings.mode.name(), mode.name(),
                         ClusterSettings.server_id.name(), "1",
-                        ClusterSettings.initial_hosts.name(), "localhost,remotehost" ),
-                Collections.singleton( new HaConfigurationValidator() ) );
+                        ClusterSettings.initial_hosts.name(), "localhost,remotehost" ) )
+                .withValidator( new HaConfigurationValidator() ).build();
 
         // then
         assertEquals( asList( new HostnamePort( "localhost" ),
@@ -92,9 +95,9 @@ public class HaConfigurationValidatorTest
         expected.expectMessage( "Missing mandatory value for 'ha.server_id'" );
 
         // when
-        Config.embeddedDefaults(
-                stringMap( ClusterSettings.mode.name(), mode.name() ),
-                Collections.singleton( new HaConfigurationValidator() ) );
+        Config.fromSettings(
+                stringMap( ClusterSettings.mode.name(), mode.name() ) )
+                .withValidator( new HaConfigurationValidator() ).build();
     }
 
     @Test
@@ -105,10 +108,10 @@ public class HaConfigurationValidatorTest
         expected.expectMessage( "Missing mandatory non-empty value for 'ha.initial_hosts'" );
 
         // when
-        Config.embeddedDefaults(
+        Config.fromSettings(
                 stringMap( ClusterSettings.mode.name(), mode.name(),
-                        ClusterSettings.server_id.name(), "1" ),
-                Collections.singleton( new HaConfigurationValidator() ) );
+                        ClusterSettings.server_id.name(), "1" ) )
+                .withValidator( new HaConfigurationValidator() ).build();
     }
 
     @Test
@@ -119,10 +122,10 @@ public class HaConfigurationValidatorTest
         expected.expectMessage( "Missing mandatory non-empty value for 'ha.initial_hosts'" );
 
         // when
-        Config.embeddedDefaults(
+        Config.fromSettings(
                 stringMap( ClusterSettings.mode.name(), mode.name(),
                         ClusterSettings.server_id.name(), "1",
-                        ClusterSettings.initial_hosts.name(), "," ),
-                Collections.singleton( new HaConfigurationValidator() ) );
+                        ClusterSettings.initial_hosts.name(), "," ) )
+                .withValidator( new HaConfigurationValidator() ).build();
     }
 }

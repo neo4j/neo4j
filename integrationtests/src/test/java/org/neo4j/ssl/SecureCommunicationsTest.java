@@ -264,7 +264,7 @@ public class SecureCommunicationsTest
         config.put( policyConfig.trusted_dir.name(), sslResource.trustedDirectory().getPath() );
         config.put( policyConfig.revoked_dir.name(), sslResource.revokedDirectory().getPath() );
 
-        SslPolicyLoader sslPolicyFactory = SslPolicyLoader.create( Config.serverDefaults( config ), NullLogProvider.getInstance() );
+        SslPolicyLoader sslPolicyFactory = SslPolicyLoader.create( Config.fromSettings( config ).build(), NullLogProvider.getInstance() );
 
         SslPolicy sslPolicy = sslPolicyFactory.getPolicy( "default" );
         return forServer ? sslPolicy.nettyServerContext() : sslPolicy.nettyClientContext();

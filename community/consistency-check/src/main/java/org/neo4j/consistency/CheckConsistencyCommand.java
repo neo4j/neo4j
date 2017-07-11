@@ -46,7 +46,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
@@ -242,10 +241,10 @@ public class CheckConsistencyCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        Config config = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
+
+        return Config.fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir ).withConnectorsDisabled()
+                .withSettings( additionalConfig ).build();
     }
 
     public static Arguments arguments()

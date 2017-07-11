@@ -52,7 +52,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class RecordFormatsMigrationIT
@@ -154,7 +153,7 @@ public class RecordFormatsMigrationIT
 
     private void assertStoreFormat( RecordFormats expected ) throws IOException
     {
-        Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+        Config config = Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
         try ( PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystemRule.get(), config ) )
         {
             RecordFormats actual = RecordFormatSelector.selectForStoreOrConfig( config, testDirectory.graphDbDir(),

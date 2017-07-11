@@ -50,7 +50,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.ServerCommandLineArgs;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.InputStreamAwaiter;
 import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.SuppressOutput;
@@ -147,7 +146,7 @@ public class ArbiterBootstrapperIT
 
             LifeSupport moduleLife = new LifeSupport();
             ClusterClientModule clusterClientModule = new ClusterClientModule( moduleLife, new Dependencies(),
-                    new Monitors(), Config.embeddedDefaults( config ), NullLogService.getInstance(),
+                    new Monitors(), Config.defaults( config ), NullLogService.getInstance(),
                     new ServerIdElectionCredentialsProvider() );
 
             ClusterClient client = clusterClientModule.clusterClient;
@@ -176,7 +175,7 @@ public class ArbiterBootstrapperIT
     private File writeConfig( Map<String, String> config ) throws IOException
     {
         config.put( GraphDatabaseSettings.logs_directory.name(), directory.getPath() );
-        File configFile = new File( directory, ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = new File( directory, Config.DEFAULT_CONFIG_FILE_NAME );
         store( config, configFile );
         return directory;
     }

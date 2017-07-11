@@ -19,12 +19,9 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
-import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
@@ -37,6 +34,8 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
+
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -79,7 +78,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     }
 
     @Override
-    protected CommunityNeoServer build( Optional<File> configFile, Config config,
+    protected CommunityNeoServer build( File configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestEnterpriseNeoServer( config, configFile, dependencies, logProvider );
@@ -87,9 +86,9 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
 
     private class TestEnterpriseNeoServer extends EnterpriseNeoServer
     {
-        private final Optional<File> configFile;
+        private final File configFile;
 
-        TestEnterpriseNeoServer( Config config, Optional<File> configFile,
+        TestEnterpriseNeoServer( Config config, File configFile,
                 GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
         {
             super( config, dependencies, logProvider );
@@ -106,7 +105,10 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         public void stop()
         {
             super.stop();
-            configFile.ifPresent( File::delete );
+            if ( configFile != null )
+            {
+                configFile.delete();
+            }
         }
     }
 

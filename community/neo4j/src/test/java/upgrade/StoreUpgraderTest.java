@@ -112,7 +112,7 @@ public class StoreUpgraderTest
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    private final Config allowMigrateConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
+    private final Config allowMigrateConfig = Config.defaults( MapUtil.stringMap( GraphDatabaseSettings
             .allow_store_upgrade.name(), "true" ) );
 
     public StoreUpgraderTest( String version )
@@ -190,7 +190,7 @@ public class StoreUpgraderTest
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config deniedMigrationConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
+        Config deniedMigrationConfig = Config.defaults( MapUtil.stringMap( GraphDatabaseSettings
                 .allow_store_upgrade.name(), "false" ) );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
@@ -467,7 +467,7 @@ public class StoreUpgraderTest
 
     private Config getTuningConfig()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
+        return Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
     }
 
     protected RecordFormats getRecordFormats()

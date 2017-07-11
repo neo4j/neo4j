@@ -84,7 +84,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap() );
+        return Config.defaults( MapUtil.stringMap() );
     }
 
     @Test

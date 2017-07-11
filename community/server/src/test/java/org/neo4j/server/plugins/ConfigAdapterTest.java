@@ -68,7 +68,7 @@ public class ConfigAdapterTest
     {
         // GIVEN
 
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // THEN
@@ -88,7 +88,7 @@ public class ConfigAdapterTest
     @Test
     public void shouldAbleToAccessNonRegisteredPropertyByName()
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 ServerSettings.transaction_idle_timeout.name(), "600ms" ) );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 

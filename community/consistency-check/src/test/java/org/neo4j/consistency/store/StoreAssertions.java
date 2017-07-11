@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
@@ -42,7 +41,7 @@ public class StoreAssertions
 
     public static void assertConsistentStore( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
-        Config configuration = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+        Config configuration = Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
         AssertableLogProvider logger = new AssertableLogProvider();
         ConsistencyCheckService.Result result = new ConsistencyCheckService().runFullConsistencyCheck(
                 storeDir, configuration, ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false );

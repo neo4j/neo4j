@@ -545,7 +545,7 @@ public class KeyValueStoreFileFormatTest
                 throws IOException
         {
             PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config().withPageSize( pageSize );
-            PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.embeddedDefaults( config ) );
+            PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.defaults( config ) );
             return createStore( fs.get(),
                     pageCache, storeFile.get(), 16, 16,
                     headers( headers ), data );

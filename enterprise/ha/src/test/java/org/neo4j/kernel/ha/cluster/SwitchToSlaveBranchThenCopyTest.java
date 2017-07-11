@@ -71,13 +71,13 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertNull;
@@ -351,7 +351,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
     private Config configMock()
     {
-        return Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

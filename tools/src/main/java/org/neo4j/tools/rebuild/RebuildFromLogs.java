@@ -277,7 +277,7 @@ class RebuildFromLogs
     {
         private final GraphDatabaseAPI graphdb;
         private final LabelScanStore labelScanStore;
-        private final Config tuningConfiguration = Config.embeddedDefaults();
+        private final Config tuningConfiguration = Config.defaults();
         private final SchemaIndexProvider indexes;
 
         ConsistencyChecker( File dbDirectory, PageCache pageCache )

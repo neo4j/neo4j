@@ -389,6 +389,6 @@ public class RecordFormatSelectorTest
 
     private static Config config( String recordFormatName )
     {
-        return Config.embeddedDefaults( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ) );
+        return Config.defaults( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ) );
     }
 }

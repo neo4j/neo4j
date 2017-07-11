@@ -63,9 +63,9 @@ public class GraphDatabaseSettingsTest
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
-        assertThat( Config.embeddedDefaults( stringMap( name, "245760" ) ).get( setting ),
+        assertThat( Config.defaults( stringMap( name, "245760" ) ).get( setting ),
                 is( ByteUnit.kibiBytes( 240 ) ) );
-        assertThat( Config.embeddedDefaults( stringMap( name, "2244g" ) ).get( setting ),
+        assertThat( Config.defaults( stringMap( name, "2244g" ) ).get( setting ),
                 is( ByteUnit.gibiBytes( 2244 ) ) );
     }
 
@@ -76,7 +76,7 @@ public class GraphDatabaseSettingsTest
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
         String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
-        Config.embeddedDefaults( stringMap( name, "" + ( pageSize * 2 - 1 ) ) ).get( setting );
+        Config.defaults( stringMap( name, "" + ( pageSize * 2 - 1 ) ) ).get( setting );
     }
 
     @Test
@@ -123,7 +123,7 @@ public class GraphDatabaseSettingsTest
     public void shouldEnableBoltByDefault() throws Exception
     {
         // given
-        Config config = Config.serverDefaults();
+        Config config = Config.builder().withServerDefaults().build();
 
         // when
         BoltConnector boltConnector = config.boltConnectors().get( 0 );
@@ -137,7 +137,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToDisableBoltConnectorWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap( "dbms.connector.bolt.enabled", "false" ) );
+        Config config = Config.defaults( stringMap( "dbms.connector.bolt.enabled", "false" ) );
 
         // then
         assertThat( config.boltConnectors().size(), is( 1 ) );
@@ -148,7 +148,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToOverrideBoltListenAddressesWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt.enabled", "true",
                 "dbms.connector.bolt.listen_address", ":8000" ) );
 
@@ -162,7 +162,7 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveBoltListenAddressFromDefaultListenAddress() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt.enabled", "true",
                 "dbms.connectors.default_listen_address", "0.0.0.0" ) );
 
@@ -176,7 +176,7 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveBoltListenAddressFromDefaultListenAddressAndSpecifiedPort() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connectors.default_listen_address", "0.0.0.0",
                 "dbms.connector.bolt.enabled", "true",
                 "dbms.connector.bolt.listen_address", ":8000" ) );
@@ -190,7 +190,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldStillSupportCustomNameForBoltConnector() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "BOLT",
                 "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",
                 "dbms.connector.random_name_that_will_be_unsupported.listen_address", ":8000" ) );
@@ -205,7 +205,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldSupportMultipleBoltConnectorsWithCustomNames() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt1.type", "BOLT",
                 "dbms.connector.bolt1.enabled", "true",
                 "dbms.connector.bolt1.listen_address", ":8000",
@@ -237,7 +237,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldSupportMultipleBoltConnectorsWithDefaultAndCustomName() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.bolt.type", "BOLT",
                 "dbms.connector.bolt.enabled", "true",
                 "dbms.connector.bolt.listen_address", ":8000",
@@ -259,7 +259,7 @@ public class GraphDatabaseSettingsTest
     public void testServerDefaultSettings() throws Exception
     {
         // given
-        Config config = Config.serverDefaults();
+        Config config = Config.builder().withServerDefaults().build();
 
         // when
         List<HttpConnector> connectors = config.httpConnectors();
@@ -286,7 +286,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToDisableHttpConnectorWithJustOneParameter() throws Exception
     {
         // given
-        Config disableHttpConfig = Config.embeddedDefaults(
+        Config disableHttpConfig = Config.defaults(
                 stringMap( "dbms.connector.http.enabled", "false",
                         "dbms.connector.https.enabled", "false" ) );
 
@@ -299,7 +299,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToOverrideHttpListenAddressWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.http.enabled", "true",
                 "dbms.connector.http.listen_address", ":8000" ) );
 
@@ -324,7 +324,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToOverrideHttpsListenAddressWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.https.enabled", "true",
                 "dbms.connector.https.listen_address", ":8000" ) );
 
@@ -345,7 +345,7 @@ public class GraphDatabaseSettingsTest
         {
             try
             {
-                Config config = Config.embeddedDefaults( stringMap(
+                Config config = Config.defaults( stringMap(
                         GraphDatabaseSettings.bookmark_ready_timeout.name(), value ) );
                 config.get( GraphDatabaseSettings.bookmark_ready_timeout );
                 fail( "Exception expected for value '" + value + "'" );
@@ -361,9 +361,9 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveListenAddressFromDefaultListenAddress() throws Exception
     {
         // given
-        Config config = Config.serverDefaults( stringMap( "dbms.connector.https.enabled", "true",
+        Config config = Config.fromSettings( stringMap( "dbms.connector.https.enabled", "true",
                 "dbms.connector.http.enabled", "true",
-                "dbms.connectors.default_listen_address", "0.0.0.0" ) );
+                "dbms.connectors.default_listen_address", "0.0.0.0" ) ).withServerDefaults().build();
 
         // then
         assertEquals( 2, config.enabledHttpConnectors().size() );
@@ -375,7 +375,7 @@ public class GraphDatabaseSettingsTest
     public void shouldDeriveListenAddressFromDefaultListenAddressAndSpecifiedPorts() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults( stringMap( "dbms.connector.https.enabled", "true",
+        Config config = Config.defaults( stringMap( "dbms.connector.https.enabled", "true",
                 "dbms.connector.http.enabled", "true",
                 "dbms.connectors.default_listen_address", "0.0.0.0",
                 "dbms.connector.http.listen_address", ":8000",
@@ -403,7 +403,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldStillSupportCustomNameForHttpConnector() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
                 "dbms.connector.random_name_that_will_be_unsupported.encryption", "NONE",
                 "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",
@@ -418,7 +418,7 @@ public class GraphDatabaseSettingsTest
     @Test
     public void shouldStillSupportCustomNameForHttpsConnector() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 "dbms.connector.random_name_that_will_be_unsupported.type", "HTTP",
                 "dbms.connector.random_name_that_will_be_unsupported.encryption", "TLS",
                 "dbms.connector.random_name_that_will_be_unsupported.enabled", "true",

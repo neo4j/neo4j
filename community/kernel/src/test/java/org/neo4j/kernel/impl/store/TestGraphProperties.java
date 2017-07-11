@@ -178,7 +178,7 @@ public class TestGraphProperties
         tx.close();
         db.shutdown();
 
-        Config config = Config.embeddedDefaults( Collections.emptyMap() );
+        Config config = Config.defaults( Collections.emptyMap() );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores();

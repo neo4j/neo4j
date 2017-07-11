@@ -104,8 +104,8 @@ public class SharedDiscoveryServiceIT
 
     private Config config()
     {
-        return Config.embeddedDefaults( stringMap(
-         CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
+        return Config.defaults( stringMap(
+                CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
                 new BoltConnector( "bolt" ).enabled.name(), "true",
                 new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );

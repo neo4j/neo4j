@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Function;
@@ -80,7 +80,7 @@ public class Converters
         {
             Comparator<File> sorting = cleverNumberRegexSort ? BY_FILE_NAME_WITH_CLEVER_NUMBERS : BY_FILE_NAME;
             List<File> files = Validators.matchingFiles( new File( name ) );
-            Collections.sort( files, sorting );
+            files.sort( sorting );
             return files.toArray( new File[files.size()] );
         };
     }
@@ -99,10 +99,7 @@ public class Converters
             List<File> files = new ArrayList<>();
             for ( String name : names )
             {
-                for ( File file : eachFileConverter.apply( name ) )
-                {
-                    files.add( file );
-                }
+                files.addAll( Arrays.asList( eachFileConverter.apply( name ) ) );
             }
             return files.toArray( new File[files.size()] );
         };

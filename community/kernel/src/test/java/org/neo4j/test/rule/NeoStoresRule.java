@@ -88,7 +88,7 @@ public class NeoStoresRule extends ExternalResource
 
     private static Config configOf( String... config )
     {
-        return Config.embeddedDefaults( stringMap( config ) );
+        return Config.defaults( stringMap( config ) );
     }
 
     @Override

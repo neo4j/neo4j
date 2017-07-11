@@ -216,7 +216,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void logModuleSetUpError() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap() );
+        Config config = Config.defaults( stringMap() );
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );

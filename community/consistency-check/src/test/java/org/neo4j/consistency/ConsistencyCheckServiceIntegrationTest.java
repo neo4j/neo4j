@@ -101,7 +101,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.embeddedDefaults( settings() );
+        Config configuration = Config.defaults( settings() );
 
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
 
@@ -120,7 +120,7 @@ public class ConsistencyCheckServiceIntegrationTest
         // given
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
-        Config configuration = Config.embeddedDefaults( settings() );
+        Config configuration = Config.defaults( settings() );
 
         // when
         ConsistencyCheckService.Result result = runFullConsistencyCheck( service, configuration );
@@ -139,7 +139,7 @@ public class ConsistencyCheckServiceIntegrationTest
         Date timestamp = new Date();
         ConsistencyCheckService service = new ConsistencyCheckService( timestamp );
         String logsDir = testDirectory.directory().getPath();
-        Config configuration = Config.embeddedDefaults(
+        Config configuration = Config.defaults(
                 settings( GraphDatabaseSettings.logs_directory.name(), logsDir ) );
 
         // when
@@ -158,7 +158,7 @@ public class ConsistencyCheckServiceIntegrationTest
     {
         // given
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.embeddedDefaults( settings() );
+        Config configuration = Config.defaults( settings() );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() )
                 .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
                 .newGraphDatabase();
@@ -199,7 +199,7 @@ public class ConsistencyCheckServiceIntegrationTest
         gds.shutdown();
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.embeddedDefaults(
+        Config configuration = Config.defaults(
                 settings( ConsistencyCheckSettings.consistency_check_graph.name(), Settings.FALSE ) );
 
         // when
@@ -237,7 +237,7 @@ public class ConsistencyCheckServiceIntegrationTest
         FileUtils.deleteRecursively( schemaDir );
 
         ConsistencyCheckService service = new ConsistencyCheckService();
-        Config configuration = Config.embeddedDefaults( settings() );
+        Config configuration = Config.defaults( settings() );
         Result result = runFullConsistencyCheck( service, configuration, storeDir );
 
         // then

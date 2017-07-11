@@ -22,7 +22,6 @@ package org.neo4j.restore;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -34,7 +33,6 @@ import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -55,8 +53,9 @@ public class RestoreDatabaseCli implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        Config config = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        Config config = Config.fromFile( configDir.resolve( "neo4j.conf" ) )
+                .withHome( homeDir )
+                .withConnectorsDisabled().build();
 
         return config.with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }

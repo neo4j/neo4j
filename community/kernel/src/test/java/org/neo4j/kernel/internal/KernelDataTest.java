@@ -177,7 +177,7 @@ public class KernelDataTest
         Kernel( String desiredId )
         {
             super( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
-                    new File( "graph.db" ), Config.embeddedDefaults( config( desiredId ) ) );
+                    new File( "graph.db" ), Config.defaults( config( desiredId ) ) );
             kernels.add( this );
         }
 
@@ -201,11 +201,11 @@ public class KernelDataTest
         }
     }
 
-    private final Collection<Kernel> kernels = new HashSet<Kernel>();
+    private final Collection<Kernel> kernels = new HashSet<>();
 
     private static Map<String,String> config( String desiredId )
     {
-        HashMap<String,String> config = new HashMap<String,String>();
+        HashMap<String,String> config = new HashMap<>();
         if ( desiredId != null )
         {
             config.put( KernelData.forced_id.name(), desiredId );

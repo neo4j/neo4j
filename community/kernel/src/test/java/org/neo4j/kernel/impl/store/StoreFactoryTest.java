@@ -121,7 +121,7 @@ public class StoreFactoryTest
     {
         // when
         StoreFactory readOnlyStoreFactory = storeFactory(
-                Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ) );
+                Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ) );
         neoStores = readOnlyStoreFactory.openAllNeoStores( true );
         long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 

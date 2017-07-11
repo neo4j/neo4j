@@ -27,7 +27,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
 
-import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
@@ -36,10 +35,8 @@ import org.neo4j.cluster.StateMachines;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.cluster.com.NetworkSender;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
@@ -97,7 +94,7 @@ public class MultiPaxosServer
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(
-                    Config.embeddedDefaults(),
+                    Config.defaults(),
                     new InMemoryAcceptorInstanceStore(),
                     electionCredentialsProvider );
             server.addBindingListener( electionCredentialsProvider );

@@ -137,7 +137,7 @@ public class GraphDatabaseFacadeFactory
     public GraphDatabaseFacade initFacade( File storeDir, Map<String,String> params, final Dependencies dependencies,
             final GraphDatabaseFacade graphDatabaseFacade )
     {
-        return initFacade( storeDir, Config.embeddedDefaults( params ), dependencies, graphDatabaseFacade );
+        return initFacade( storeDir, Config.defaults( params ), dependencies, graphDatabaseFacade );
     }
 
     /**

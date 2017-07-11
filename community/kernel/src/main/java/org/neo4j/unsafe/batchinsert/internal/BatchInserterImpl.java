@@ -232,7 +232,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
-        this.config = Config.embeddedDefaults( params );
+        this.config = Config.defaults( params );
 
         life = new LifeSupport();
         this.storeDir = storeDir;

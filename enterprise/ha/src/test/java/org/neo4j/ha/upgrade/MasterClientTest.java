@@ -237,7 +237,7 @@ public class MasterClientTest
 
     private static Config masterConfig()
     {
-        return Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
     }
 
     private static Server.Configuration masterServerConfiguration()

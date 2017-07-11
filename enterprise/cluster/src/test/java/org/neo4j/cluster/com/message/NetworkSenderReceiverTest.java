@@ -21,8 +21,6 @@ package org.neo4j.cluster.com.message;
 
 import org.junit.Test;
 import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.net.URI;
 import java.util.Map;
@@ -302,7 +300,7 @@ public class NetworkSenderReceiverTest
 
         private Server( final CountDownLatch latch, final Map<String, String> config )
         {
-            final Config conf = Config.embeddedDefaults( config );
+            final Config conf = Config.defaults( config );
             networkReceiver = life.add( new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
                     new NetworkReceiver.Configuration()
             {

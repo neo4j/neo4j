@@ -501,7 +501,7 @@ public class MasterImplTest
 
     private Config config()
     {
-        return Config.embeddedDefaults( stringMap(
+        return Config.defaults( stringMap(
                 HaSettings.lock_read_timeout.name(), 20 + "s",
                 ClusterSettings.server_id.name(), "1" ) );
     }

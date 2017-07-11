@@ -20,6 +20,7 @@
 package org.neo4j.server.enterprise;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.server.BlockingBootstrapper;
 import org.neo4j.server.Bootstrapper;
@@ -45,7 +46,7 @@ public class ArbiterEntryPoint
         }
         else
         {
-            int status = new ArbiterBootstrapper().start( args.homeDir(), args.configFile() );
+            int status = new ArbiterBootstrapper().start( args.homeDir(), args.configFile(), Collections.emptyMap() );
             if ( status != 0 )
             {
                 System.exit( status );

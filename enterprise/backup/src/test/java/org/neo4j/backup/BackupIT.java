@@ -578,7 +578,7 @@ public class BackupIT
 
     private static boolean checkLogFileExistence( String directory )
     {
-        return Config.embeddedDefaults( stringMap( logs_directory.name(), directory ) ).get( store_internal_log_path )
+        return Config.defaults( stringMap( logs_directory.name(), directory ) ).get( store_internal_log_path )
                 .exists();
     }
 

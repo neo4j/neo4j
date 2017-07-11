@@ -34,7 +34,6 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.idTypesToReuse;
 
@@ -65,10 +64,10 @@ public class EnterpriseEditionSettingsTest
     @Test
     public void idTypesToReuseCaseInsensitive()
     {
-        Config config1 = Config.embeddedDefaults( stringMap( idTypesToReuse.name(), "node, relationship" ) );
+        Config config1 = Config.defaults( stringMap( idTypesToReuse.name(), "node, relationship" ) );
         assertEquals( asList( IdType.NODE, IdType.RELATIONSHIP ), config1.get( idTypesToReuse ) );
 
-        Config config2 = Config.embeddedDefaults( stringMap( idTypesToReuse.name(), "rElAtIoNshiP, NoDe" ) );
+        Config config2 = Config.defaults( stringMap( idTypesToReuse.name(), "rElAtIoNshiP, NoDe" ) );
         assertEquals( asList( IdType.RELATIONSHIP, IdType.NODE ), config2.get( idTypesToReuse ) );
     }
 
@@ -96,7 +95,7 @@ public class EnterpriseEditionSettingsTest
     private static Config configWithIdTypes( IdType type, IdType... otherTypes )
     {
         String value = stringList( type, otherTypes );
-        return Config.embeddedDefaults( stringMap( idTypesToReuse.name(), value ) );
+        return Config.defaults( stringMap( idTypesToReuse.name(), value ) );
     }
 
     @SafeVarargs

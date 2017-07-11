@@ -166,7 +166,7 @@ public class MultipleIndexPopulationStressIT
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
-                Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
+                Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
         dropIndexes();

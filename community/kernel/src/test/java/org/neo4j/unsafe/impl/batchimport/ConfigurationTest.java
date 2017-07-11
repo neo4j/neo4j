@@ -40,7 +40,7 @@ public class ConfigurationTest
     public void shouldOverrideBigPageCacheMemorySettingContainingUnit() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.embeddedDefaults( stringMap( pagecache_memory.name(), "2g" ) );
+        Config dbConfig = Config.defaults( stringMap( pagecache_memory.name(), "2g" ) );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN
@@ -55,7 +55,7 @@ public class ConfigurationTest
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
-        Config dbConfig = Config.embeddedDefaults( stringMap( pagecache_memory.name(), valueOf( overridden ) ) );
+        Config dbConfig = Config.defaults( stringMap( pagecache_memory.name(), valueOf( overridden ) ) );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN

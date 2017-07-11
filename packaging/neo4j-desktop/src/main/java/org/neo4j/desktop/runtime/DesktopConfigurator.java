@@ -20,20 +20,15 @@
 package org.neo4j.desktop.runtime;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.logging.FormattedLog;
-import org.neo4j.server.configuration.ConfigLoader;
-
-import static org.neo4j.helpers.collection.Pair.pair;
 
 public class DesktopConfigurator
 {
@@ -53,11 +48,11 @@ public class DesktopConfigurator
 
     public void refresh()
     {
-        config = ConfigLoader.loadServerConfig(
-                Optional.of( dbDir.getAbsoluteFile() ),
-                Optional.of( getConfigurationsFile() ),
-                pairs( pair( DatabaseManagementSystemSettings.database_path.name(), dbDir.getAbsolutePath() ) ),
-                Collections.emptyList() );
+        config = Config.fromFile( getConfigurationsFile() )
+                .withHome( dbDir.getAbsoluteFile() )
+                .withServerDefaults()
+                .withSetting( DatabaseManagementSystemSettings.database_path, dbDir.getAbsolutePath() ).build();
+
         config.setLogger( FormattedLog.toOutputStream( System.out ) );
     }
 
@@ -89,10 +84,5 @@ public class DesktopConfigurator
                 .findFirst()
                 .orElse( new HttpConnector( "http" ) )
                 .listen_address.from( config );
-    }
-
-    private Pair<String,String>[] pairs( Pair<String,String>... pairs )
-    {
-        return pairs;
     }
 }

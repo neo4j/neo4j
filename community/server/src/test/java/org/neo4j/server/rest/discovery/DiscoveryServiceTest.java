@@ -21,6 +21,7 @@ package org.neo4j.server.rest.discovery;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Answers;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -30,8 +31,11 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
 import org.neo4j.test.server.EntityOutputFormat;
@@ -51,6 +55,7 @@ public class DiscoveryServiceTest
     private AdvertisedSocketAddress boltAddress;
     private URI dataUri;
     private URI managementUri;
+    private final NeoServer neoServer = mock( NeoServer.class, Answers.RETURNS_DEEP_STUBS.get() );
 
     @Before
     public void setUp() throws URISyntaxException
@@ -59,6 +64,11 @@ public class DiscoveryServiceTest
         boltAddress = new AdvertisedSocketAddress( "www.example.com", 7687 );
         dataUri = new URI( "/data" );
         managementUri = new URI( "/management" );
+
+        // Setup NeoServer
+        ConnectorPortRegister portRegister = mock( ConnectorPortRegister.class );
+        when( portRegister.getLocalAddress( "bolt" ) ).thenReturn( new HostnamePort( "localhost", 7687 ) );
+        when( neoServer.getDatabase().getGraph().getDependencyResolver().resolveDependency( ConnectorPortRegister.class ) ).thenReturn( portRegister );
     }
 
     private Config mockConfig() throws URISyntaxException
@@ -81,7 +91,8 @@ public class DiscoveryServiceTest
     private DiscoveryService testDiscoveryService() throws URISyntaxException
     {
         Config mockConfig = mockConfig();
-        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
+        return new DiscoveryService( mockConfig, new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ),
+                neoServer );
     }
 
     @Test
@@ -137,7 +148,7 @@ public class DiscoveryServiceTest
 
         String baseUri = "http://www.example.com:5435";
         DiscoveryService ds = new DiscoveryService( mockConfig,
-                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ) );
+                new EntityOutputFormat( new JsonFormat(), new URI( baseUri ), null ), neoServer );
 
         Response response = ds.redirectToBrowser();
 

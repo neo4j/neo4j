@@ -45,7 +45,7 @@ public class HighlyAvailableCommitProcessFactoryTest
         HighlyAvailableCommitProcessFactory factory = new HighlyAvailableCommitProcessFactory(
                 new DelegateInvocationHandler<>( TransactionCommitProcess.class ) );
 
-        Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
+        Config config = Config.defaults( stringMap( GraphDatabaseSettings.read_only.name(), "true" ) );
 
         TransactionCommitProcess commitProcess = factory.create( mock( TransactionAppender.class ),
                 mock( StorageEngine.class ), config );

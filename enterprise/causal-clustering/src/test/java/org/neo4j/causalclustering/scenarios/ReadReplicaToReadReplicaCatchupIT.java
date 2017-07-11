@@ -190,7 +190,7 @@ public class ReadReplicaToReadReplicaCatchupIT
             }
             else
             {
-                return current.memberId();
+                return Optional.of( current.memberId() );
             }
         }
     }

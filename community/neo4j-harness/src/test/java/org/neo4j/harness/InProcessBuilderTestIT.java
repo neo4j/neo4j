@@ -178,7 +178,7 @@ public class InProcessBuilderTestIT
         // When
         // create graph db with one node upfront
         Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = Config.embeddedDefaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
+        File storeDir = Config.defaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
                 .get( DatabaseManagementSystemSettings.database_path );
         try
         {

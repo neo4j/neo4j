@@ -33,6 +33,6 @@ public class GraphDatabaseBuilderTestTools
      */
     public static Config createConfigCopy( GraphDatabaseBuilder builder )
     {
-        return Config.embeddedDefaults( builder.getRawConfig() );
+        return Config.defaults( builder.getRawConfig() );
     }
 }

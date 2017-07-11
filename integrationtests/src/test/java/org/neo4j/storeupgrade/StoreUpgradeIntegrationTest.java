@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -166,7 +167,7 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = Config.embeddedDefaults(
+            File storeDir = Config.defaults(
                     stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
                     .get( DatabaseManagementSystemSettings.database_path );
 
@@ -189,7 +190,7 @@ public class StoreUpgradeIntegrationTest
             ServerBootstrapper bootstrapper = new CommunityBootstrapper();
             try
             {
-                bootstrapper.start( rootDir.getAbsoluteFile(), Optional.of( configFile ) );
+                bootstrapper.start( rootDir.getAbsoluteFile(), Optional.of( configFile ), Collections.emptyMap() );
                 assertTrue( bootstrapper.isRunning() );
                 checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
             }

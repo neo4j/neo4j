@@ -58,7 +58,7 @@ public class MasterEpochTest
         StoreId storeId = newStoreIdForCurrentVersion();
         MasterImpl master = new MasterImpl( spi,
                 mock( ConversationManager.class ), mock( MasterImpl.Monitor.class ),
-                Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) ) );
+                Config.defaults( stringMap( ClusterSettings.server_id.name(), "1" ) ) );
         HandshakeResult handshake = master.handshake( 1, storeId ).response();
         master.start();
 

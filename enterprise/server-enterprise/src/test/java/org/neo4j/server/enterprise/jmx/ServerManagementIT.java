@@ -23,15 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.util.Optional;
-
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.NeoServer;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.CleanupRule;
@@ -41,7 +38,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.helpers.collection.Pair.pair;
 
 public class ServerManagementIT
 {
@@ -60,14 +56,14 @@ public class ServerManagementIT
         String dataDirectory1 = baseDir.directory( "data1" ).getAbsolutePath();
         String dataDirectory2 = baseDir.directory( "data2" ).getAbsolutePath();
 
-        Config config = ConfigLoader.loadConfig(
-                Optional.of( baseDir.directory() ),
-                EnterpriseServerBuilder
-                        .serverOnRandomPorts()
-                        .withDefaultDatabaseTuning()
-                        .usingDataDir( dataDirectory1 )
-                        .createConfigFiles(),
-                pair( GraphDatabaseSettings.logs_directory.name(), baseDir.directory( "logs" ).getPath() ) );
+        Config config = Config.fromFile( EnterpriseServerBuilder
+                    .serverOnRandomPorts()
+                    .withDefaultDatabaseTuning()
+                    .usingDataDir( dataDirectory1 )
+                    .createConfigFiles() )
+                .withHome( baseDir.directory() )
+                .withSetting( GraphDatabaseSettings.logs_directory, baseDir.directory( "logs" ).getPath() )
+                .build();
 
         // When
         NeoServer server = cleanup.add( new EnterpriseNeoServer( config, graphDbDependencies(), NullLogProvider

@@ -88,7 +88,7 @@ public class StoreMigration
 
     private static Config getMigrationConfig()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+        return Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,

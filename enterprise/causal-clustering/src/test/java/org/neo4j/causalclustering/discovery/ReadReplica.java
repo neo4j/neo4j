@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.discovery;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.IntFunction;
 
@@ -120,9 +119,9 @@ public class ReadReplica implements ClusterMember
     @Override
     public void start()
     {
-        database = new ReadReplicaGraphDatabase( storeDir, Config.embeddedDefaults( config ),
+        database = new ReadReplicaGraphDatabase( storeDir, Config.defaults( config ),
                 GraphDatabaseDependencies.newDependencies().monitors( monitors ), discoveryServiceFactory,
-                memberId().get() );
+                memberId() );
     }
 
     @Override
@@ -149,7 +148,7 @@ public class ReadReplica implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( Config.defaults( this.config ) );
     }
 
     @Override
@@ -183,9 +182,9 @@ public class ReadReplica implements ClusterMember
         config.put( CausalClusteringSettings.upstream_selection_strategy.name(), key );
     }
 
-    public Optional<MemberId> memberId()
+    public MemberId memberId()
     {
-        return Optional.of( new MemberId( new UUID( serverId, 0 ) ) );
+        return new MemberId( new UUID( serverId, 0 ) );
     }
 
     public int serverId()

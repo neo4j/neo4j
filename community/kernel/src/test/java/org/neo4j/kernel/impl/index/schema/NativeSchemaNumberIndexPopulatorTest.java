@@ -72,7 +72,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     @Before
     public void setupPopulator()
     {
-        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.embeddedDefaults() );
+        IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         populator = createPopulator( pageCache, indexFile, layout, samplingConfig );
     }
 

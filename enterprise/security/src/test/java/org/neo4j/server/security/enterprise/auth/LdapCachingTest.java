@@ -92,7 +92,7 @@ public class LdapCachingTest
 
     private Config getLdapConfig()
     {
-        return Config.embeddedDefaults( stringMap(
+        return Config.defaults( stringMap(
                 SecuritySettings.native_authentication_enabled.name(), "false",
                 SecuritySettings.native_authorization_enabled.name(), "false",
                 SecuritySettings.ldap_authentication_enabled.name(), "true",

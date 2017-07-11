@@ -29,14 +29,12 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.HttpConnector;
@@ -71,7 +69,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     public void shouldLogHelpfulStartupMessages() throws Throwable
     {
         CommunityBootstrapper boot = new CommunityBootstrapper();
-        Pair[] propertyPairs = getPropertyPairs();
+        Map<String,String> propertyPairs = getPropertyPairs();
 
         boot.start( homeDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
         URI uri = boot.getServer().baseUri();
@@ -89,32 +87,28 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         ) );
     }
 
-    private Pair[] getPropertyPairs() throws IOException
+    private Map<String,String> getPropertyPairs() throws IOException
     {
-        List<Pair> pairs = new ArrayList<>();
         Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
-        for ( Map.Entry<String,String> entry : relativeProperties.entrySet() )
-        {
-            pairs.add( Pair.of( entry.getKey(), entry.getValue() ) );
-        }
-        pairs.add( Pair.of( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+
+        relativeProperties.put( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE);
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
-        pairs.add( Pair.of( http.type.name(), "HTTP" ) );
-        pairs.add( Pair.of( http.listen_address.name(), "localhost:0" ) );
-        pairs.add( Pair.of( http.enabled.name(), Settings.TRUE ) );
+        relativeProperties.put( http.type.name(), "HTTP" );
+        relativeProperties.put( http.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( http.enabled.name(), Settings.TRUE );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
-        pairs.add( Pair.of( https.type.name(), "HTTP" ) );
-        pairs.add( Pair.of( https.listen_address.name(), "localhost:0" ) );
-        pairs.add( Pair.of( https.enabled.name(), Settings.TRUE ) );
+        relativeProperties.put( https.type.name(), "HTTP" );
+        relativeProperties.put( https.advertised_address.name(), "localhost:0" );
+        relativeProperties.put( https.enabled.name(), Settings.TRUE );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
-        pairs.add( Pair.of( bolt.type.name(), "BOLT" ) );
-        pairs.add( Pair.of( bolt.enabled.name(), "true" ) );
-        pairs.add( Pair.of( bolt.listen_address.name(), "localhost:0" ) );
+        relativeProperties.put( bolt.type.name(), "BOLT" );
+        relativeProperties.put( bolt.enabled.name(), "true" );
+        relativeProperties.put( bolt.advertised_address.name(), "localhost:0" );
 
-        return pairs.toArray( new Pair[pairs.size()] );
+        return relativeProperties;
     }
 
     @SafeVarargs

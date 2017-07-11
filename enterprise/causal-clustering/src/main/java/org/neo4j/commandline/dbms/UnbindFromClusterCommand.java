@@ -23,11 +23,8 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
@@ -37,12 +34,12 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.server.configuration.ConfigLoader;
+
+import static org.neo4j.kernel.configuration.Config.fromFile;
 
 public class UnbindFromClusterCommand implements AdminCommand
 {
@@ -65,16 +62,10 @@ public class UnbindFromClusterCommand implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        Config config = ConfigLoader.loadConfig( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        Config config = fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir ).build();
         Map<String,String> additionalConfig = new HashMap<>();
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
         return config.with( additionalConfig );
-    }
-
-    private static List<Class<?>> settings()
-    {
-        return Arrays.asList( GraphDatabaseSettings.class, DatabaseManagementSystemSettings.class );
     }
 
     @Override

@@ -267,8 +267,8 @@ public class QueryLoggerIT
 
         executeQueryAndShutdown( database );
 
-        expectedException.expect( FileNotFoundException.class );
-        readAllLines( logFilename );
+        List<String> strings = readAllLines( logFilename );
+        assertEquals( 0, strings.size() );
     }
 
     @Test

@@ -117,7 +117,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), Config.embeddedDefaults(),
+        }.newFacade( directory.graphDbDir(), Config.defaults(),
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 

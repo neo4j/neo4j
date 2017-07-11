@@ -21,13 +21,15 @@ package org.neo4j.server;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Converters;
-import org.neo4j.server.configuration.ConfigLoader;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.collection.Pair.pair;
 
 /**
@@ -46,9 +48,9 @@ public class ServerCommandLineArgs
     public static final String HOME_DIR_ARG = "home-dir";
     public static final String VERSION_ARG = "version";
     private final Args args;
-    private final Pair<String, String>[] configOverrides;
+    private final Map<String, String> configOverrides;
 
-    private ServerCommandLineArgs( Args args, Pair<String, String>[] configOverrides )
+    private ServerCommandLineArgs( Args args, Map<String, String> configOverrides )
     {
         this.args = args;
         this.configOverrides = configOverrides;
@@ -60,7 +62,7 @@ public class ServerCommandLineArgs
         return new ServerCommandLineArgs( args, parseConfigOverrides( args ) );
     }
 
-    public Pair<String, String>[] configOverrides()
+    public Map<String, String> configOverrides()
     {
         return configOverrides;
     }
@@ -68,10 +70,10 @@ public class ServerCommandLineArgs
     public Optional<File> configFile()
     {
         return Optional.ofNullable( args.get( CONFIG_DIR_ARG ) )
-                .map( ( dirPath ) -> new File( dirPath, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+                .map( ( dirPath ) -> new File( dirPath, Config.DEFAULT_CONFIG_FILE_NAME ) );
     }
 
-    private static Pair<String, String>[] parseConfigOverrides( Args arguments )
+    private static Map<String, String> parseConfigOverrides( Args arguments )
     {
         Collection<Pair<String, String>> options = arguments.interpretOptions( "c",
                 Converters.optional(), s ->
@@ -85,7 +87,10 @@ public class ServerCommandLineArgs
                     return pair( s, "true" );
                 } );
 
-        return options.toArray( new Pair[options.size()] );
+        Map<String,String> ret = stringMap();
+        options.forEach( pair -> ret.put( pair.first(), pair.other() ) );
+
+        return ret;
     }
 
     public File homeDir()

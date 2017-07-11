@@ -31,6 +31,8 @@ import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.rest.repr.DiscoveryRepresentation;
 import org.neo4j.server.rest.repr.OutputFormat;
@@ -44,12 +46,15 @@ public class DiscoveryService
 {
     private final Config config;
     private final OutputFormat outputFormat;
+    private final ConnectorPortRegister connectorPortRegister;
 
     // Your IDE might tell you to make this less visible than public. Don't. JAX-RS demands is to be public.
-    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat )
+    public DiscoveryService( @Context Config config, @Context OutputFormat outputFormat, @Context NeoServer neoServer )
     {
         this.config = config;
         this.outputFormat = outputFormat;
+        connectorPortRegister = neoServer.getDatabase().getGraph().getDependencyResolver()
+                .resolveDependency( ConnectorPortRegister.class );
     }
 
     @GET
@@ -68,9 +73,9 @@ public class DiscoveryService
             if ( advertisedSocketAddress.getHostname().equals( "localhost" ) )
             {
                 // Use the port specified in the config, but not the host
+                int boltPort = connectorPortRegister.getLocalAddress( "bolt" ).getPort();
                 return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
-                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(),
-                                advertisedSocketAddress.getPort() ) ) );
+                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), boltPort ) ) );
             }
             else
             {

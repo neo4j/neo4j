@@ -35,7 +35,7 @@ public class LegacySslPolicyConfigTest
     public void shouldBeFoundInServerDefaults() throws Exception
     {
         // given
-        Config serverDefaultConfig = Config.serverDefaults();
+        Config serverDefaultConfig = Config.builder().withServerDefaults().build();
 
         // when
         Stream<ConfigValue> cvStream = serverDefaultConfig.getConfigValues().values().stream();

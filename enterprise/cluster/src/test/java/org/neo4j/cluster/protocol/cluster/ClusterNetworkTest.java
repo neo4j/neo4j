@@ -174,7 +174,7 @@ public class ClusterNetworkTest
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(
-                    Config.embeddedDefaults( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
+                    Config.defaults( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
                             uri.getHost() + ":" + uri.getPort(),
                             ClusterSettings.server_id.name(), "" + i ) ),
                     new InMemoryAcceptorInstanceStore(),

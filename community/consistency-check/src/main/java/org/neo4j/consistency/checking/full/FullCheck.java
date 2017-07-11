@@ -75,7 +75,7 @@ public class FullCheck
         this.statistics = statistics;
         this.threads = threads;
         this.progressFactory = progressFactory;
-        this.samplingConfig = new IndexSamplingConfig( Config.embeddedDefaults() );
+        this.samplingConfig = new IndexSamplingConfig( Config.defaults() );
         this.checkGraph = checkConsistencyConfig.isCheckGraph();
         this.checkIndexes = checkConsistencyConfig.isCheckIndexes();
         this.checkLabelScanStore = checkConsistencyConfig.isCheckLabelScanStore();

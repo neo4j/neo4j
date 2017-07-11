@@ -388,7 +388,7 @@ public class OnlineBackup
 
     private Config defaultConfig()
     {
-        return Config.embeddedDefaults();
+        return Config.defaults();
     }
 
     /**

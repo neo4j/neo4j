@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -38,14 +37,12 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
-import org.neo4j.helpers.Args;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.TimeUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.kernel.impl.util.Converters.toHostnamePort;
 
@@ -296,19 +293,11 @@ public class OnlineBackupCommand implements AdminCommand
         throw new CommandFailed( "Failed to move old backup out of the way: too many old backups." );
     }
 
-    private long parseTimeout( String[] args )
-    {
-        return Args.parse( args ).getDuration( "timeout", TimeUnit.MINUTES.toMillis( 20 ) );
-    }
-
     private Config loadConfig( Optional<Path> additionalConfig ) throws CommandFailed
     {
-        //noinspection unchecked
         return withAdditionalConfig( additionalConfig,
-                ConfigLoader
-                        .loadConfigWithConnectorsDisabled(
-                                Optional.of( homeDir.toFile() ),
-                                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) ) );
+                Config.fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir )
+                        .withConnectorsDisabled().build() );
     }
 
     private Config withAdditionalConfig( Optional<Path> additionalConfig, Config config ) throws CommandFailed

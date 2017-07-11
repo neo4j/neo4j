@@ -104,15 +104,14 @@ public class ConfigTest
     private static MyMigratingSettings myMigratingSettings = new MyMigratingSettings();
     private static MySettingsWithDefaults mySettingsWithDefaults = new MySettingsWithDefaults();
 
-    static Config Config()
+    private static Config Config()
     {
         return Config( Collections.emptyMap() );
     }
 
-    static Config Config( Map<String,String> params )
+    private static Config Config( Map<String,String> params )
     {
-        return new Config( Optional.empty(), params, Collections.emptyList(), Optional.empty(),
-                Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+        return Config.fromSettings( params).withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
     @Rule
@@ -176,7 +175,7 @@ public class ConfigTest
     {
         // Given
         Log log = mock( Log.class );
-        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ) );
+        Config first = Config.defaults( stringMap( "first.jibberish", "bah" ) );
 
         // When
         first.setLogger( log );
@@ -199,10 +198,10 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config first = Config.embeddedDefaults( Optional.of( confFile ),
-                stringMap( GraphDatabaseSettings.strict_config_validation.name(), "false",
+        Config first = Config.fromFile( confFile )
+                .withSettings( stringMap( GraphDatabaseSettings.strict_config_validation.name(), "false",
                         "ha.jibberish", "baah",
-                        "dbms.jibberish", "booh" ) );
+                        "dbms.jibberish", "booh" ) ).build();
 
         // When
         first.setLogger( log );
@@ -224,11 +223,10 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
 
         Config config =
-                new Config( Optional.of( confFile ),
-                        stringMap( MySettingsWithDefaults.oldHello.name(), "baah",
-                                MySettingsWithDefaults.oldSetting.name(), "booh" ),
-                        Collections.emptyList(), Optional.empty(),
-                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+                Config.fromFile( confFile )
+                .withSetting( MySettingsWithDefaults.oldHello, "baah" )
+                .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         // When
         config.setLogger( log );
@@ -245,12 +243,10 @@ public class ConfigTest
             throws Exception
     {
         // Given
-        Config config =
-                new Config( Optional.empty(),
-                        stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
-                                MySettingsWithDefaults.hello.name(), "ABC"),
-                        Collections.emptyList(), Optional.empty(),
-                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+        Config config = Config.builder()
+                .withSetting( MySettingsWithDefaults.secretSetting, "false" )
+                .withSetting( MySettingsWithDefaults.hello, "ABC")
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         // Then
         assertTrue( config.getConfigValues().get( MySettingsWithDefaults.secretSetting.name() ).internal() );
@@ -262,12 +258,10 @@ public class ConfigTest
             throws Exception
     {
         // Given
-        Config config =
-                new Config( Optional.empty(),
-                        stringMap( MySettingsWithDefaults.secretSetting.name(), "false",
-                                MySettingsWithDefaults.hello.name(), "ABC"),
-                        Collections.emptyList(), Optional.empty(),
-                        Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) );
+        Config config = Config.builder()
+                .withSetting(MySettingsWithDefaults.secretSetting, "false")
+                .withSetting( MySettingsWithDefaults.hello, "ABC" )
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
 
         // Then
         assertEquals( Optional.of( "<documented default value>" ),
@@ -292,8 +286,7 @@ public class ConfigTest
             }
         } );
 
-        Config first = Config.embeddedDefaults( stringMap( "first.jibberish", "bah" ),
-                Collections.singleton( validator ) );
+        Config first = Config.builder().withSetting("first.jibberish", "bah" ).withValidator( validator ).build();
 
         // When
         Config second = first.withDefaults( stringMap( "second.jibberish", "baah" ) );

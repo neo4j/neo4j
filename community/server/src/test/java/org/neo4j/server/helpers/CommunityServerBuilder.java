@@ -26,7 +26,6 @@ import java.net.URISyntaxException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -45,7 +44,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
@@ -116,29 +114,29 @@ public class CommunityServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final Optional<File> configFile = buildBefore();
+        final File configFile = buildBefore();
 
         Log log = logProvider.getLog( getClass() );
-        Config config = ConfigLoader.loadServerConfig( configFile );
+        Config config = Config.fromFile( configFile ).withServerDefaults().build();
         config.setLogger( log );
         return build( configFile, config, GraphDatabaseDependencies.newDependencies().userLogProvider( logProvider )
                 .monitors( new Monitors() ) );
     }
 
-    protected CommunityNeoServer build( Optional<File> configFile, Config config,
+    protected CommunityNeoServer build( File configFile, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
         return new TestCommunityNeoServer( config, configFile, dependencies, logProvider );
     }
 
-    public Optional<File> createConfigFiles() throws IOException
+    public File createConfigFiles() throws IOException
     {
         File temporaryConfigFile = ServerTestUtils.createTempConfigFile();
         File temporaryFolder = ServerTestUtils.createTempDir();
 
         ServerTestUtils.writeConfigToFile( createConfiguration( temporaryFolder ), temporaryConfigFile );
 
-        return Optional.of( temporaryConfigFile );
+        return temporaryConfigFile;
     }
 
     public CommunityServerBuilder withClock( Clock clock )
@@ -345,9 +343,9 @@ public class CommunityServerBuilder
                 config.get( ServerSettings.script_sandboxing_enabled ), database.getGraph() );
     }
 
-    protected Optional<File> buildBefore() throws IOException
+    private File buildBefore() throws IOException
     {
-        Optional<File> configFile = createConfigFiles();
+        File configFile = createConfigFiles();
 
         if ( preflightTasks == null )
         {
@@ -365,9 +363,9 @@ public class CommunityServerBuilder
 
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
-        private final Optional<File> configFile;
+        private final File configFile;
 
-        private TestCommunityNeoServer( Config config, Optional<File> configFile, GraphDatabaseFacadeFactory
+        private TestCommunityNeoServer( Config config, File configFile, GraphDatabaseFacadeFactory
                 .Dependencies dependencies, LogProvider logProvider )
         {
             super( config, lifecycleManagingDatabase( persistent ? COMMUNITY_FACTORY : IN_MEMORY_DB ), dependencies,
@@ -385,7 +383,10 @@ public class CommunityServerBuilder
         public void stop()
         {
             super.stop();
-            configFile.ifPresent( File::delete );
+            if ( configFile != null )
+            {
+                configFile.delete();
+            }
         }
     }
 }

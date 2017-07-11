@@ -184,7 +184,7 @@ public interface Configuration
 
         public Overridden( Configuration defaults )
         {
-            this( defaults, Config.embeddedDefaults() );
+            this( defaults, Config.defaults() );
         }
 
         public Overridden( Configuration defaults, Config config )

@@ -39,6 +39,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
@@ -56,9 +57,6 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
@@ -75,134 +73,325 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
  */
 public class Config implements DiagnosticsProvider, Configuration
 {
+    public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
+
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
-    private final Optional<File> configFile;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
+    private File configFile;
     // Messages to this log get replayed into a real logger once logging has been instantiated.
-    private Log log;
+    private Log log = new BufferingLog();
     private ConfigValues settingsFunction;
 
     /**
-     * @return a configuration with embedded defaults
+     * Builder class for a configuration.
+     * <p>
+     * The configuration has three layers of values:
+     * <ol>
+     *   <li>Defaults settings, which is provided by validators.
+     *   <li>File settings, parsed from the configuration file if one is provided.
+     *   <li>Overridden settings, as provided by the user with the {@link Builder#withSettings(Map)} methods.
+     * </ol>
+     * They are added in the order specified, and is thus overridden by each layer.
+     * <p>
+     * Although the builder allows you to override the {@link LoadableConfig}'s with <code>withConfigClasses</code>,
+     * this functionality is mainly for testing. If no classes are provided to the builder, they will be located through
+     * service loading, and this is probably what you want in most of the cases.
+     * <p>
+     * Loaded {@link LoadableConfig}'s, whether provided though service loading or explicitly passed, will be scanned
+     * for validators that provides migration, validation and default values. Migrators can be specified with the
+     * {@link Migrator} annotation and should reside in a class implementing {@link LoadableConfig}.
      */
+    public static class Builder
+    {
+        private Map<String,String> initialSettings = stringMap();
+        private List<ConfigurationValidator> validators = new ArrayList<>();
+        private File configFile;
+        private List<LoadableConfig> settingsClasses;
+        private boolean connectorsDisabled;
+
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param setting The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public <T> Builder withSetting( final Setting<T> setting, final String value )
+        {
+            return withSetting( setting.name(), value );
+        }
+
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param key The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public Builder withSetting( final String key, final String value )
+        {
+            initialSettings.put( key, value );
+            return this;
+        }
+
+        /**
+         * Augment the configuration with the passed settings.
+         *
+         * @param initialSettings settings to augment the configuration with.
+         */
+        public Builder withSettings( final Map<String,String> initialSettings )
+        {
+            this.initialSettings.putAll( initialSettings );
+            return this;
+        }
+
+        /**
+         * Set the classes that contains the {@link Setting} fields. If no classes are provided to the builder, they
+         * will be located through service loading.
+         *
+         * @param loadableConfigs A collection fo class instances providing settings.
+         */
+        @Nonnull
+        public Builder withConfigClasses( final Collection<? extends LoadableConfig> loadableConfigs )
+        {
+            if ( settingsClasses == null )
+            {
+                settingsClasses = new ArrayList<>();
+            }
+            settingsClasses.addAll( loadableConfigs );
+            return this;
+        }
+
+        /**
+         * Provide an additional validator. Validators are automatically localed within classes with
+         * {@link LoadableConfig}, but this allows you to add others.
+         *
+         * @param validator an additional validator.
+         */
+        @Nonnull
+        public Builder withValidator( final ConfigurationValidator validator )
+        {
+            this.validators.add( validator );
+            return this;
+        }
+
+        /**
+         * @see Builder#withValidator(ConfigurationValidator)
+         */
+        @Nonnull
+        public Builder withValidators( final Collection<ConfigurationValidator> validators )
+        {
+            this.validators.addAll( validators );
+            return this;
+        }
+
+        /**
+         * Extends config with defaults for server, i.e. auth and connector settings.
+         */
+        @Nonnull
+        public Builder withServerDefaults()
+        {
+            // Add server defaults
+            HttpConnector http = new HttpConnector( "http", NONE );
+            HttpConnector https = new HttpConnector( "https", TLS );
+            BoltConnector bolt = new BoltConnector( "bolt" );
+            initialSettings.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), TRUE );
+            initialSettings.putIfAbsent( http.enabled.name(), TRUE );
+            initialSettings.putIfAbsent( https.enabled.name(), TRUE );
+            initialSettings.putIfAbsent( bolt.enabled.name(), TRUE );
+
+            // Add server validator
+            validators.add( new ServerConfigurationValidator() );
+
+            return this;
+        }
+
+        /**
+         * Provide a file for initial configuration. The settings added with the {@link Builder#withSettings(Map)}
+         * methods will be applied on top of the settings in the file.
+         *
+         * @param configFile A configuration file to parse for initial settings.
+         */
+        @Nonnull
+        public Builder withFile( final @Nullable File configFile )
+        {
+            this.configFile = configFile;
+            return this;
+        }
+
+        /**
+         * @see Builder#withFile(File)
+         */
+        @Nonnull
+        public Builder withFile( final Path configFile )
+        {
+            return withFile( configFile.toFile() );
+        }
+
+        /**
+         * @param configFile an optional configuration file. If not present, this call changes nothing.
+         */
+        @Nonnull
+        public Builder withFile( Optional<File> configFile )
+        {
+            configFile.ifPresent( file -> this.configFile = file );
+            return this;
+        }
+
+        /**
+         * Specifies the neo4j home directory to be set for this particular config. This will modify {@link
+         * GraphDatabaseSettings#neo4j_home} to the same value as provided. If this is not called, the home directory
+         * will be set to a system specific default home directory.
+         *
+         * @param homeDir The home directory this config belongs to.
+         */
+        @Nonnull
+        public Builder withHome( final File homeDir )
+        {
+            String home = Optional.ofNullable( homeDir ).map( File::getAbsolutePath ).orElse( System.getProperty( "user.dir" ) );
+            initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), home );
+            return this;
+        }
+
+        /**
+         * @see Builder#withHome(File)
+         */
+        @Nonnull
+        public Builder withHome( final Path homeDir )
+        {
+            return withHome( homeDir.toFile() );
+        }
+
+        /**
+         * This will force all connectors to be disabled during creation of the config. This can be useful if an
+         * offline mode is wanted, e.g. in dbms tools or test environments.
+         */
+        @Nonnull
+        public Builder withConnectorsDisabled()
+        {
+            connectorsDisabled = true;
+            return this;
+        }
+
+        /**
+         * @return The config reflecting the state of the builder.
+         * @throws InvalidSettingException is thrown if an invalid setting is encountered and {@link
+         * GraphDatabaseSettings#strict_config_validation} is true.
+         */
+        @Nonnull
+        public Config build() throws InvalidSettingException
+        {
+            List<LoadableConfig> loadableConfigs =
+                    Optional.ofNullable( settingsClasses ).orElse( LoadableConfig.allConfigClasses() );
+
+            Config config;
+            if ( configFile != null )
+            {
+                config =  new Config( configFile, initialSettings, validators, loadableConfigs );
+            }
+            else
+            {
+                config = new Config( initialSettings, validators, loadableConfigs );
+            }
+
+            if ( connectorsDisabled )
+            {
+                config.augment( config.allConnectorIdentifiers().stream().collect(
+                        Collectors.toMap( id -> new Connector( id ).enabled.name(), id -> Settings.FALSE ) ) );
+            }
+
+            return config;
+        }
+    }
+
+    @Nonnull
+    public static Builder builder()
+    {
+        return new Builder();
+    }
+
+    /**
+     * Convenient method for starting building from a file.
+     */
+    @Nonnull
+    public static Builder fromFile( @Nullable final File configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from a file.
+     */
+    @Nonnull
+    public static Builder fromFile( @Nonnull final Path configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from initial settings.
+     */
+    @Nonnull
+    public static Builder fromSettings( final Map<String,String> initialSettings )
+    {
+        return builder().withSettings( initialSettings );
+    }
+
+    /**
+     * @return a configuration with default values.
+     */
+    @Nonnull
     public static Config defaults()
     {
-        return embeddedDefaults( Optional.empty() );
+        return builder().build();
     }
 
     /**
-     * @return a configuration with embedded defaults
+     * @param initialSettings a map with settings to be present in the config.
+     * @return a configuration with default values augmented with the provided <code>initialSettings</code>.
      */
-    public static Config embeddedDefaults( Map<String,String> additionalConfig )
+    @Nonnull
+    public static Config defaults( @Nonnull final Map<String,String> initialSettings )
     {
-        return embeddedDefaults( Optional.empty(), additionalConfig );
+        return builder().withSettings( initialSettings ).build();
     }
 
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Optional<File> configFile )
-    {
-        return embeddedDefaults( configFile, emptyMap() );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( ConfigurationValidator... validators )
-    {
-        return embeddedDefaults( Optional.empty(), emptyMap(), asList( validators ) );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig )
-    {
-        return embeddedDefaults( configFile, additionalConfig, emptyList() );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        return embeddedDefaults( Optional.empty(), additionalConfig, additionalValidators );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        return new Config( configFile, additionalConfig, additionalValidators, Optional.empty() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults()
-    {
-        return serverDefaults( Optional.empty(), emptyMap(), emptyList() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults( Map<String,String> additionalConfig )
-    {
-        return serverDefaults( Optional.empty(), additionalConfig, emptyList() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        ArrayList<ConfigurationValidator> validators = new ArrayList<>();
-        validators.addAll( additionalValidators );
-        validators.add( new ServerConfigurationValidator() );
-
-        HttpConnector http = new HttpConnector( "http", NONE );
-        HttpConnector https = new HttpConnector( "https", TLS );
-        BoltConnector bolt = new BoltConnector( "bolt" );
-
-        Config config = new Config( configFile, additionalConfig, validators, Optional.empty() );
-        return config.augmentDefaults( stringMap(
-                GraphDatabaseSettings.auth_enabled.name(), TRUE,
-                http.enabled.name(), TRUE,
-                https.enabled.name(), TRUE,
-                bolt.enabled.name(), TRUE
-        ) );
-    }
-
-    private Config( Optional<File> configFile,
-            Map<String,String> overriddenSettings,
+    private Config( Map<String,String> initialSettings,
             Collection<ConfigurationValidator> additionalValidators,
-            Optional<Log> log )
-    {
-        this( configFile, overriddenSettings, additionalValidators, log,
-                LoadableConfig.allConfigClasses() );
-    }
-
-    /**
-     * Only package-local to support tests of this class. Other uses should use public factory methods.
-     */
-    Config( Optional<File> configFile,
-            Map<String,String> overriddenSettings,
-            Collection<ConfigurationValidator> additionalValidators,
-            Optional<Log> log,
             List<LoadableConfig> settingsClasses )
     {
-        this.log = log.orElse( new BufferingLog() );
+        this( settingsClasses, additionalValidators );
+        this.configFile = null;
+
+        Map<String,String> validSettings = migrateAndValidateSettings( initialSettings, false );
+        replaceSettings( validSettings );
+    }
+
+    private Config( File configFile,
+            Map<String,String> overriddenSettings,
+            Collection<ConfigurationValidator> additionalValidators,
+            List<LoadableConfig> settingsClasses )
+    {
+        this( settingsClasses, additionalValidators );
         this.configFile = configFile;
 
+        // Read file and override with provided settings
+        Map<String,String> settings = readConfigFile();
+        settings.putAll( overriddenSettings );
+
+        Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
+
+        warnAboutDeprecations( validSettings );
+
+        replaceSettings( validSettings );
+    }
+
+    /**
+     * Common base setup for constructor
+     */
+    private Config( List<LoadableConfig> settingsClasses, Collection<ConfigurationValidator> additionalValidators )
+    {
         configOptions = settingsClasses.stream()
                 .map( LoadableConfig::getConfigOptions )
                 .flatMap( List::stream )
@@ -210,10 +399,6 @@ public class Config implements DiagnosticsProvider, Configuration
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
-
-        Map<String,String> settings = initSettings( configFile, overriddenSettings, this.log );
-        Map<String,String> validSettings = migrateAndValidateSettings( settings, configFile.isPresent() );
-        replaceSettings( validSettings );
     }
 
     /**
@@ -394,7 +579,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
     public Optional<Path> getConfigFile()
     {
-        return configFile.map( File::toPath );
+        return Optional.ofNullable( configFile).map( File::toPath );
     }
 
     @Override
@@ -411,15 +596,14 @@ public class Config implements DiagnosticsProvider, Configuration
         return output.toString();
     }
 
-    public void replaceSettings( Map<String,String> validSettings )
+    private void replaceSettings( Map<String,String> validSettings )
     {
         params.clear();
         params.putAll( validSettings );
         settingsFunction = new ConfigValues( params );
 
         // We only warn when parsing the file so we don't warn about the same setting more than once
-        // TODO: we always have a config file now since we don't make copies
-        configFile.ifPresent( file -> warnAboutDeprecations( validSettings ) );
+
     }
 
     /**
@@ -432,7 +616,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
     @Nonnull
-    public Map<String,String> migrateAndValidateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
+    private Map<String,String> migrateAndValidateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
             throws InvalidSettingException
     {
         Map<String,String> validSettings = migrator.apply( settings, log );
@@ -442,10 +626,10 @@ public class Config implements DiagnosticsProvider, Configuration
 
         // Validate settings
         validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
-                .validate( settingValidators, validSettings, log, configFile.isPresent() );
+                .validate( settingValidators, validSettings, log, warnOnUnknownSettings );
         for ( ConfigurationValidator validator : validators )
         {
-            validSettings = validator.validate( settingValidators, validSettings, log, configFile.isPresent() );
+            validSettings = validator.validate( settingValidators, validSettings, log, warnOnUnknownSettings );
         }
         return validSettings;
     }
@@ -468,15 +652,9 @@ public class Config implements DiagnosticsProvider, Configuration
                 } );
     }
 
-    @Nonnull
-    private static Map<String,String> initSettings( @Nonnull Optional<File> configFile,
-            @Nonnull Map<String,String> overriddenSettings,
-            @Nonnull Log log )
+    private Map<String,String> readConfigFile()
     {
-        Map<String,String> settings = new HashMap<>();
-        configFile.ifPresent( file -> settings.putAll( loadFromFile( file, log ) ) );
-        settings.putAll( overriddenSettings );
-        return settings;
+        return loadFromFile( configFile, log );
     }
 
     @Nonnull
@@ -631,12 +809,12 @@ public class Config implements DiagnosticsProvider, Configuration
      */
     public void reload( ChangeConsumer consumer, boolean dryRun )
     {
-        if ( !configFile.isPresent() )
+        if ( configFile == null )
         {
             return;
         }
 
-        Map<String,String> settings = initSettings( configFile, emptyMap(), this.log );
+        Map<String,String> settings = readConfigFile();
         Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
         performReload( validSettings, consumer, dryRun );
     }

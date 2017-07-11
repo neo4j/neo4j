@@ -190,7 +190,7 @@ public class GraphDatabaseBuilder
      */
     public GraphDatabaseService newGraphDatabase()
     {
-        return creator.newDatabase( Config.embeddedDefaults( config ) );
+        return creator.newDatabase( Config.defaults( config ) );
     }
 
     /**

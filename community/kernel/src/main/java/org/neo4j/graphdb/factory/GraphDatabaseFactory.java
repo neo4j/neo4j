@@ -99,7 +99,7 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override
@@ -124,7 +124,7 @@ public class GraphDatabaseFactory
     protected GraphDatabaseService newDatabase( File storeDir, Map<String,String> settings,
                                                 GraphDatabaseFacadeFactory.Dependencies dependencies )
     {
-        return newDatabase( storeDir, Config.embeddedDefaults( settings ), dependencies );
+        return newDatabase( storeDir, Config.defaults( settings ), dependencies );
     }
 
     protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,

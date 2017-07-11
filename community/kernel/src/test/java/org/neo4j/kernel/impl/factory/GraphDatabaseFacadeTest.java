@@ -63,7 +63,7 @@ public class GraphDatabaseFacadeTest
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( contextBridge );
         when( resolver.resolveDependency( Guard.class ) ).thenReturn( mock( Guard.class ) );
         when( contextBridge.get() ).thenReturn( statement );
-        when( resolver.resolveDependency( Config.class ) ).thenReturn( Config.embeddedDefaults() );
+        when( resolver.resolveDependency( Config.class ) ).thenReturn( Config.defaults() );
 
         graphDatabaseFacade.init( spi );
     }
@@ -81,7 +81,7 @@ public class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx();
 
-        long timeout = Config.embeddedDefaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
+        long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
         verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout );
     }
 
@@ -109,7 +109,7 @@ public class GraphDatabaseFacadeTest
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 
-        long timeout = Config.embeddedDefaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
+        long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
         verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
     }
 }

@@ -70,7 +70,7 @@ public class TestIdGeneratorRebuilding
     public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly() throws IOException
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
+        Config config = Config.defaults( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = testDirectory.file( "nodes" );
 
@@ -122,7 +122,7 @@ public class TestIdGeneratorRebuilding
     public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly() throws Exception
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
+        Config config = Config.defaults( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
@@ -175,7 +175,7 @@ public class TestIdGeneratorRebuilding
     public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage() throws IOException
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
+        Config config = Config.defaults( MapUtil.stringMap(
                 GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
         File storeFile = testDirectory.file( "nodes" );
 

@@ -19,15 +19,15 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-import java.net.URI;
-
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.net.URI;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
 
@@ -73,7 +73,6 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         {
             httpclient.getConnectionManager().shutdown();
         }
-
     }
 
     @Test
@@ -168,7 +167,6 @@ public class ConfigureBaseUriIT extends AbstractRestFunctionalTestBase
         {
             httpclient.getConnectionManager().shutdown();
         }
-
     }
 
     @Test

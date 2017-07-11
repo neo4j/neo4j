@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.junit.Test;
+
 import java.net.InetSocketAddress;
 import java.net.URI;
-
-import org.junit.Test;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -40,7 +40,7 @@ public class SwitchToMasterTest
     public void switchToMasterShouldUseConfigSettingIfSuitable() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "192.168.1.99:6001" ) );
         URI me = new URI( "ha://127.0.0.1" );
 
@@ -59,7 +59,7 @@ public class SwitchToMasterTest
     public void switchToMasterShouldUseIPv6ConfigSettingIfSuitable() throws Exception
     {
         // given
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "[fe80::1]:6001" ) );
         URI me = new URI( "ha://[::1]" );
 
@@ -80,7 +80,7 @@ public class SwitchToMasterTest
         // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
 
         // given
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "0.0.0.0:6001" ) );
         URI me = new URI( "ha://127.0.0.1" );
 
@@ -109,7 +109,7 @@ public class SwitchToMasterTest
         // SwitchToMaster is used to advertise to the rest of the cluster and advertising 0.0.0.0 makes no sense
 
         // given
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), "[::]:6001" ) );
         URI me = new URI( "ha://[::1]" );
 
@@ -135,7 +135,7 @@ public class SwitchToMasterTest
     @Test
     public void switchToMasterShouldHandleNoIpInConfig() throws Exception
     {
-        Config config = Config.embeddedDefaults(
+        Config config = Config.defaults(
                 stringMap( ClusterSettings.server_id.name(), "1", HaSettings.ha_server.name(), ":6001" ) );
 
         MasterServer masterServer = mock( MasterServer.class );

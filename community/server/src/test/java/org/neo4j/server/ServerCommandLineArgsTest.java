@@ -19,16 +19,15 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Optional;
 
-import org.junit.Test;
-
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -39,7 +38,7 @@ public class ServerCommandLineArgsTest
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
         File dir = new File( "/some-dir" ).getAbsoluteFile();
-        Optional<File> expectedFile = Optional.of( new File( dir, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        Optional<File> expectedFile = Optional.of( new File( dir, Config.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
     }
@@ -47,7 +46,7 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldResolveConfigFileRelativeToWorkingDirectory() throws Exception
     {
-        Optional<File> expectedFile = Optional.of( new File( "some-dir", ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        Optional<File> expectedFile = Optional.of( new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }

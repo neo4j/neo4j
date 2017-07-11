@@ -151,7 +151,7 @@ public class CoreClusterMember implements ClusterMember
     @Override
     public void start()
     {
-        database = new CoreGraphDatabase( storeDir, Config.embeddedDefaults( config ),
+        database = new CoreGraphDatabase( storeDir, Config.defaults( config ),
                 GraphDatabaseDependencies.newDependencies(), discoveryServiceFactory );
     }
 
@@ -219,7 +219,7 @@ public class CoreClusterMember implements ClusterMember
     @Override
     public ClientConnectorAddresses clientConnectorAddresses()
     {
-        return ClientConnectorAddresses.extractFromConfig( Config.embeddedDefaults( this.config ) );
+        return ClientConnectorAddresses.extractFromConfig( Config.defaults( this.config ) );
     }
 
     @Override

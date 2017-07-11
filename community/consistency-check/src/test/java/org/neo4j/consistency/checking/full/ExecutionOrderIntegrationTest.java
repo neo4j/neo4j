@@ -25,8 +25,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -77,7 +75,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.withSettings;
@@ -134,7 +131,7 @@ public class ExecutionOrderIntegrationTest
 
     private Config getTuningConfiguration()
     {
-        return Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 
@@ -179,43 +176,6 @@ public class ExecutionOrderIntegrationTest
                 }
                 duplicates.put( message, cur + 1 );
             }
-        }
-    }
-
-    private static void assertSameChecks( Map<String, Throwable> singlePassChecks,
-                                          Map<String, Throwable> multiPassChecks )
-    {
-        if ( !singlePassChecks.keySet().equals( multiPassChecks.keySet() ) )
-        {
-            Map<String, Throwable> missing = new HashMap<>( singlePassChecks );
-            Map<String, Throwable> extras = new HashMap<>( multiPassChecks );
-            missing.keySet().removeAll( multiPassChecks.keySet() );
-            extras.keySet().removeAll( singlePassChecks.keySet() );
-
-            StringBuilder headers = new StringBuilder( "\n" );
-            StringWriter diff = new StringWriter();
-            PrintWriter writer = new PrintWriter( diff );
-            if ( !missing.isEmpty() )
-            {
-                writer.append( "These expected checks were missing:\n" );
-                for ( Map.Entry<String, Throwable> check : missing.entrySet() )
-                {
-                    writer.append( "  " );
-                    headers.append( "Missing: " ).append( check.getKey() ).append( "\n" );
-                    check.getValue().printStackTrace( writer );
-                }
-            }
-            if ( !extras.isEmpty() )
-            {
-                writer.append( "These extra checks were not expected:\n" );
-                for ( Map.Entry<String, Throwable> check : extras.entrySet() )
-                {
-                    writer.append( "  " );
-                    headers.append( "Unexpected: " ).append( check.getKey() ).append( "\n" );
-                    check.getValue().printStackTrace( writer );
-                }
-            }
-            fail( headers.toString() + diff.toString() );
         }
     }
 

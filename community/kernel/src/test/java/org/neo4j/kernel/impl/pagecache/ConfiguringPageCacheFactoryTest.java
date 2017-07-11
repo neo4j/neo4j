@@ -61,7 +61,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         final int pageSize = 8192;
         final long maxPages = 60;
-        Config config = Config.embeddedDefaults( stringMap( pagecache_memory.name(), Long.toString( pageSize * maxPages ) ) );
+        Config config = Config.defaults( stringMap( pagecache_memory.name(), Long.toString( pageSize * maxPages ) ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -80,7 +80,7 @@ public class ConfiguringPageCacheFactoryTest
     public void shouldWarnWhenCreatedWithConfiguredPageCache() throws Exception
     {
         // Given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.mapped_memory_page_size.name(), "4096",
                 pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -103,7 +103,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustUseAndLogConfiguredPageSwapper() throws Exception
     {
         // Given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -127,7 +127,7 @@ public class ConfiguringPageCacheFactoryTest
     public void mustThrowIfConfiguredPageSwapperCannotBeFound() throws Exception
     {
         // Given
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 pagecache_memory.name(), "8m",
                 pagecache_swapper.name(), "non-existing" ) );
 
@@ -146,7 +146,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
 
         // When

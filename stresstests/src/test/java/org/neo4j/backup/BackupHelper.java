@@ -56,7 +56,7 @@ public class BackupHelper
         {
             BackupService backupService = new BackupService( outputStream );
             BackupService.BackupOutcome backupOutcome = backupService.doIncrementalBackupOrFallbackToFull( host, port,
-                    targetDirectory, ConsistencyCheck.FULL, Config.embeddedDefaults(), BackupClient.BIG_READ_TIMEOUT,
+                    targetDirectory, ConsistencyCheck.FULL, Config.defaults(), BackupClient.BIG_READ_TIMEOUT,
                     false );
             consistent = backupOutcome.isConsistent();
         }

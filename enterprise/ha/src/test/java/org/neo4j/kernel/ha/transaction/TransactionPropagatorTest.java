@@ -102,7 +102,7 @@ public class TransactionPropagatorTest
     {
         // GIVEN
         Configuration propagator = TransactionPropagator
-                .from( Config.embeddedDefaults( stringMap( tx_push_strategy.name(), fixed_ascending.name() ) ) );
+                .from( Config.defaults( stringMap( tx_push_strategy.name(), fixed_ascending.name() ) ) );
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN
@@ -117,7 +117,7 @@ public class TransactionPropagatorTest
     {
         // GIVEN
         Configuration propagator = TransactionPropagator
-                .from( Config.embeddedDefaults( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
+                .from( Config.defaults( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN
