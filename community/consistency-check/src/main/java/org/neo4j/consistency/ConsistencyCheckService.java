@@ -51,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -247,8 +246,7 @@ public class ConsistencyCheckService
             KernelExtensions extensions = life.add( new KernelExtensions(
                     kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
             life.start();
-            LabelScanStore labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                    new NamedLabelScanStoreSelectionStrategy( config ) ).getLabelScanStore() );
+            LabelScanStore labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class ).getLabelScanStore() );
             SchemaIndexProvider indexes = life.add( extensions.resolveDependency( SchemaIndexProvider.class,
                     HighestSelectionStrategy.getInstance() ) );
 

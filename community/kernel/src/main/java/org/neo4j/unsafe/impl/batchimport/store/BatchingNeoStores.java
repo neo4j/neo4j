@@ -37,7 +37,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -175,8 +174,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),
                 dependencies, UnsatisfiedDependencyStrategies.ignore() ) );
         life.start();
-        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                new NamedLabelScanStoreSelectionStrategy( neo4jConfig ) ).getLabelScanStore() );
+        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class ).getLabelScanStore() );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
