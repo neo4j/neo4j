@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -36,7 +37,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(list, "x" -> CTString)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(Map("x" -> "A")))
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(Map("x" -> "A")))
   }
 
   test("three ties for the first place are all returned") {
@@ -50,7 +51,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
       Map("x" -> 1, "y" -> 1),
       Map("x" -> 1, "y" -> 2)))
   }
@@ -64,7 +65,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
       Map("x" -> null, "y" -> 1),
       Map("x" -> null, "y" -> 2)))
   }
@@ -79,7 +80,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
       Map("x" -> 1, "y" -> 1)))
   }
 
@@ -93,7 +94,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
       Map("x" -> smaller, "y" -> 1)
     ))
   }
@@ -107,7 +108,7 @@ class Top1WithTiesPipeTest extends CypherFunSuite {
     val source = new FakePipe(input, "x" -> CTInteger, "y" -> CTInteger)
     val sortPipe = Top1WithTiesPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
       Map("x" -> "A", "y" -> 2)
     ))
   }

@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
 import org.neo4j.values._
-import org.neo4j.values.storable.{FloatValue, IntegralValue, NumberValue, Values}
+import org.neo4j.values.storable._
 
 case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def operand = "/"
@@ -37,6 +36,7 @@ case class Divide(a: Expression, b: Expression) extends Arithmetics(a, b) {
 
     (aVal, bVal) match {
       case (_, l:IntegralValue) if l.longValue() == 0L  => throw new ArithmeticException("/ by zero")
+      case (_, l:DoubleValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
       case (_, l:FloatValue) if l.doubleValue() == 0L  => throw new ArithmeticException("/ by zero")
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => calc(x, y)

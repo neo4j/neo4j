@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.NO_VALUE
 
 class PatternComprehensionTest extends CypherFunSuite {
 
@@ -35,21 +36,22 @@ class PatternComprehensionTest extends CypherFunSuite {
     val aTob: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
     val patternComprehension = PathExpression(Seq(aTob), True(), getB, allowIntroducingNewIdentifiers = true)
     val state = QueryStateHelper.empty
-    val ctx = ExecutionContext.empty.newWith1("a", null)
+
+    val ctx = ExecutionContext.empty.newWith1("a", NO_VALUE)
 
     val a = patternComprehension.apply(ctx)(state)
 
-    a should equal(null)
+    a should equal(NO_VALUE)
   }
 
   test("null in null out - end node is null") {
     val aTob: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
     val patternComprehension = PathExpression(Seq(aTob), True(), getB, allowIntroducingNewIdentifiers = true)
     val state = QueryStateHelper.empty
-    val ctx = ExecutionContext.empty.newWith1("b", null)
+    val ctx = ExecutionContext.empty.newWith1("b", NO_VALUE)
 
     val a = patternComprehension.apply(ctx)(state)
 
-    a should equal(null)
+    a should equal(NO_VALUE)
   }
 }

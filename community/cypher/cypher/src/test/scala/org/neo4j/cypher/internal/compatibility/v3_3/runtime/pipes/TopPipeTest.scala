@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValues
 
 import scala.util.Random
 
@@ -29,70 +30,70 @@ class TopPipeTest extends CypherFunSuite {
 
   test("returning top 10 from 5 possible should return all") {
     val input = createFakePipeWith(5)
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(10))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0, 1, 2, 3, 4))
+    result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 10 descending from 3 possible should return all") {
     val input = createFakePipeWith(3)
-    val pipe = new TopNPipe(input, List(Descending("a")), Literal(10))()
+    val pipe = TopNPipe(input, List(Descending("a")), Literal(10))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(2, 1, 0))
+    result should equal(list(2, 1, 0))
   }
 
   test("returning top 5 from 20 possible should return 5 with lowest value") {
     val input = createFakePipeWith(20)
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0, 1, 2, 3, 4))
+    result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("returning top 3 descending from 10 possible values should return three highest values") {
     val input = createFakePipeWith(10)
-    val pipe = new TopNPipe(input, List(Descending("a")), Literal(3))()
+    val pipe = TopNPipe(input, List(Descending("a")), Literal(3))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(9, 8, 7))
+    result should equal(list(9, 8, 7))
   }
 
   test("returning top 5 from a reversed pipe should work correctly") {
     val in = (0 until 100).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0, 1, 2, 3, 4))
+    result should equal(list(0, 1, 2, 3, 4))
   }
 
   test("duplicates should be sorted correctly") {
     val in = ((0 until 5) ++ (0 until 5)).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Descending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Descending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(4, 4, 3, 3, 2))
+    result should equal(list(4, 4, 3, 3, 2))
   }
 
   test("duplicates should be sorted correctly for small lists") {
     val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Descending("a")), Literal(2))()
+    val pipe = TopNPipe(input, List(Descending("a")), Literal(2))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(1,1))
+    result should equal(list(1,1))
   }
 
   test("should handle empty input") {
     val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List.empty)
@@ -101,78 +102,78 @@ class TopPipeTest extends CypherFunSuite {
   test("should handle null input") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(10,null))
+    result should equal(list(10,null))
   }
 
   test("returning top 1 from 5 possible should return lowest") {
     val input = createFakePipeWith(5)
-    val pipe = new Top1Pipe(input, List(Ascending("a")))()
+    val pipe = Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0))
+    result should equal(list(0))
   }
 
   test("returning top 1 descending from 3 possible should return all") {
     val input = createFakePipeWith(3)
-    val pipe = new Top1Pipe(input, List(Descending("a")))()
+    val pipe = Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(2))
+    result should equal(list(2))
   }
 
   test("returning top 1 from 20 possible should return 5 with lowest value") {
     val input = createFakePipeWith(20)
-    val pipe = new Top1Pipe(input, List(Ascending("a")))()
+    val pipe = Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0))
+    result should equal(list(0))
   }
 
   test("returning top 1 descending from 10 possible values should return three highest values") {
     val input = createFakePipeWith(10)
-    val pipe = new Top1Pipe(input, List(Descending("a")))()
+    val pipe = Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(9))
+    result should equal(list(9))
   }
 
   test("returning top 1 from a reversed pipe should work correctly") {
     val in = (0 until 100).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new Top1Pipe(input, List(Ascending("a")))()
+    val pipe = Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(0))
+    result should equal(list(0))
   }
 
   test("duplicates should be sorted correctly with top 1") {
     val in = ((0 until 5) ++ (0 until 5)).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new Top1Pipe(input, List(Descending("a")))()
+    val pipe = Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(4))
+    result should equal(list(4))
   }
 
   test("duplicates should be sorted correctly for small lists with top 1") {
     val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
-    val pipe = new Top1Pipe(input, List(Descending("a")))()
+    val pipe = Top1Pipe(input, List(Descending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(1))
+    result should equal(list(1))
   }
 
   test("top 1 should handle empty input with") {
     val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 
-    val pipe = new Top1Pipe(input, List(Ascending("a")))()
+    val pipe = Top1Pipe(input, List(Ascending("a")))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
     result should equal(List.empty)
@@ -181,11 +182,13 @@ class TopPipeTest extends CypherFunSuite {
   test("top 1 should handle null input") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
 
-    val pipe = new TopNPipe(input, List(Ascending("a")), Literal(5))()
+    val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    result should equal(List(10,null))
+    result should equal(list(10,null))
   }
+
+  private def list(a: Any*) = a.map(AnyValues.of).toList
 
   private def createFakePipeWith(count: Int): FakePipe = {
 

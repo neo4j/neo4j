@@ -62,6 +62,7 @@ object ValueComparisonHelper {
     case (lv: LongValue, v) => lv.longValue() == v
     case (iv: IntValue, v) => iv.value() == v
     case (dv: DoubleValue, v) => dv.value() == v
+    case (a: ArrayValue, v) => a == Values.of(v)
 
     case (l, r) => l == r
   }

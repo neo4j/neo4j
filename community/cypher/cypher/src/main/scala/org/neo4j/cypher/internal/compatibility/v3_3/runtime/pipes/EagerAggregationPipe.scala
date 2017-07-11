@@ -77,7 +77,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
                     keyNames.last -> t3.value(2)
         case _ =>
           val listOfValues = key.asInstanceOf[ListValue]
-          for (i <- aggregationNames.indices) {
+          for (i <- 0 until keyNamesSize) {
             newMap += keyNames(i) -> listOfValues.value(i)
           }
       }

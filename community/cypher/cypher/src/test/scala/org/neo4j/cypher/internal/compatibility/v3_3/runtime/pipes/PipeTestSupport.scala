@@ -78,9 +78,13 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
+    val startId = startNode.getId
+    val endId = endNode.getId
     when(relationship.getId).thenReturn(id)
     when(relationship.getStartNode).thenReturn(startNode)
+    when(relationship.getStartNodeId).thenReturn(startId)
     when(relationship.getEndNode).thenReturn(endNode)
+    when(relationship.getEndNodeId).thenReturn(endId)
     when(relationship.getOtherNode(startNode)).thenReturn(endNode)
     when(relationship.getOtherNode(endNode)).thenReturn(startNode)
     relationship

@@ -28,9 +28,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
@@ -44,7 +43,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
   when(query.relationshipOps).thenReturn(relOps)
 
   test("should return null if argument is null") {
-    properties(null.asInstanceOf[AnyRef]) should be(null.asInstanceOf[AnyRef])
+    properties(null.asInstanceOf[AnyRef]) should be(NO_VALUE)
   }
 
   test("should map Java maps to maps") {
@@ -52,36 +51,35 @@ class PropertiesFunctionTest extends CypherFunSuite {
     m.put("a", "x")
     m.put("b", "y")
 
-    properties(m) should equal(m.asScala)
+    properties(m) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }
 
   test("should map Scala maps to maps") {
     val m = Map("a" -> "x", "b" -> "y")
-    properties(m) should equal(m)
+    properties(m) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
+
   }
 
   test("should map nodes to maps") {
+    val m = new util.HashMap[String, AnyRef]()
+    m.put("a", "x")
+    m.put("b", "y")
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    when(nodeOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
-    when(query.getPropertyKeyName(0)).thenReturn("a")
-    when(query.getPropertyKeyName(1)).thenReturn("b")
-    when(nodeOps.getProperty(0, 0)).thenReturn("x", Seq.empty: _*)
-    when(nodeOps.getProperty(0, 1)).thenReturn("y", Seq.empty: _*)
+    when(node.getAllProperties).thenReturn(m)
 
-    properties(node) should equal(Map("a" -> "x", "b" -> "y"))
+    properties(node) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }
 
   test("should map relationships to maps") {
+    val m = new util.HashMap[String, AnyRef]()
+    m.put("a", "x")
+    m.put("b", "y")
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
-    when(relOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
-    when(query.getPropertyKeyName(0)).thenReturn("a")
-    when(query.getPropertyKeyName(1)).thenReturn("b")
-    when(relOps.getProperty(0, 0)).thenReturn("x", Seq.empty: _*)
-    when(relOps.getProperty(0, 1)).thenReturn("y", Seq.empty: _*)
+    when(rel.getAllProperties).thenReturn(m)
 
-    properties(rel) should equal(Map("a" -> "x", "b" -> "y"))
+    properties(rel) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }
 
   test("should fail trying to map an int") {

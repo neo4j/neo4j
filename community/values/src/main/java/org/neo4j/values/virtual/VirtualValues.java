@@ -70,7 +70,14 @@ public final class VirtualValues
     {
         int f = Math.max( from, 0 );
         int t = Math.min( to, list.size() );
-        return new ListValue.ListSlice( list, f, t );
+        if ( f > t )
+        {
+            return EMPTY_LIST;
+        }
+        else
+        {
+            return new ListValue.ListSlice( list, f, t );
+        }
     }
 
     public static ListValue drop( ListValue list, int n )
@@ -128,6 +135,13 @@ public final class VirtualValues
 
     public static PathValue path( NodeValue[] nodes, EdgeValue[] edges )
     {
+        assert nodes != null;
+        assert edges != null;
+        if ( nodes.length + edges.length % 2 == 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Tried to construct a path that is not built like a path: even number of elements" );
+        }
         return new PathValue( nodes, edges );
     }
 

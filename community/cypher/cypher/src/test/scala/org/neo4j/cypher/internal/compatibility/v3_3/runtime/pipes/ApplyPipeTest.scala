@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -33,7 +34,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData)
+    result should beEquivalentTo(lhsData)
   }
 
   test("should work by applying a  on the rhs") {
@@ -44,7 +45,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData.map(_ + rhsData))
+    result should beEquivalentTo(lhsData.map(_ + rhsData))
   }
 
   test("should work even if inner pipe overwrites values") {
@@ -54,6 +55,6 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = ApplyPipe(lhs, rhs)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData)
+    result should beEquivalentTo(lhsData)
   }
 }

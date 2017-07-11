@@ -38,9 +38,6 @@ public class ValueComparisonTest
     private Comparator<Value> comparator = Values.COMPARATOR;
 
     private Object[] objs = new Object[]{
-            // OTHER
-            null,
-
             // STRING
             "",
             Character.MIN_VALUE,
@@ -87,7 +84,10 @@ public class ValueComparisonTest
             Float.MAX_VALUE,
             Double.MAX_VALUE,
             Double.POSITIVE_INFINITY,
-            Double.NaN
+            Double.NaN,
+
+            // OTHER
+            null
     };
 
     @Test

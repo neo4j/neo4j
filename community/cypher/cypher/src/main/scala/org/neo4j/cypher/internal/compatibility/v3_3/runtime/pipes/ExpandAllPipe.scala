@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.values.AnyValues
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{NodeValue, VirtualValues}
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -37,14 +39,15 @@ case class ExpandAllPipe(source: Pipe,
     input.flatMap {
       row =>
         getFromNode(row) match {
-          case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n.getId, dir, types.types(state.query))
-            relationships.map {
-              case r =>
-                row.newWith2(relName, AnyValues.asEdgeValue(r), toName, AnyValues.asNodeValue(r.getOtherNode(n)))
+          case n: NodeValue =>
+            val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+            relationships.map { r =>
+                val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
+                row
+                  .newWith2(relName, VirtualValues.fromRelationshipProxy(r), toName, VirtualValues.fromNodeProxy(other))
             }
 
-          case null => None
+          case Values.NO_VALUE => None
 
           case value => throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
         }
@@ -53,6 +56,6 @@ case class ExpandAllPipe(source: Pipe,
 
   def typeNames = types.names
 
-  def getFromNode(row: ExecutionContext): Any =
+  def getFromNode(row: ExecutionContext): AnyValue =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 }

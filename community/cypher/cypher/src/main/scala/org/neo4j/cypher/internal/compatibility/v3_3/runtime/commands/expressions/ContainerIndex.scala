@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.values._
-import org.neo4j.values.storable.{FloatValue, NumberValue, TextValue, Values}
+import org.neo4j.values.storable._
 
 case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
 with ListSupport {
@@ -63,7 +63,7 @@ with ListSupport {
     val number = CastSupport.castOrFail[NumberValue](item)
 
     val longValue = number match {
-      case _: FloatValue =>
+      case _: FloatValue | _: DoubleValue=>
         throw new CypherTypeException(s"Cannot index a list using an non-integer number, got $number")
       case _ => number.longValue()
     }

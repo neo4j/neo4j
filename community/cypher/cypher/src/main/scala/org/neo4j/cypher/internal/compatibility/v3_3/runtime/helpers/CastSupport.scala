@@ -103,6 +103,7 @@ object CastSupport {
     case _: TextValue => Converter(transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]:_*))))
     case _: BooleanValue => Converter(transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
     case _: ByteValue => Converter(transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
+    case _: ShortValue => Converter(transform(new ArrayConverterWriter(classOf[Short], a => Values.shortArray(a.asInstanceOf[Array[Short]]))))
     case _: IntValue => Converter(transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
     case _: LongValue => Converter(transform(new ArrayConverterWriter(classOf[Long], a => Values.longArray(a.asInstanceOf[Array[Long]]))))
     case _: FloatValue => Converter(transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
@@ -123,7 +124,7 @@ object CastSupport {
       "Property values can only be of primitive types or arrays thereof")
 
     private def write(value: Any) = {
-      java.lang.reflect.Array.set(_array, index, typ.cast(value))
+      java.lang.reflect.Array.set(_array, index, value)
       index += 1
     }
 

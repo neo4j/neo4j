@@ -24,27 +24,29 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.stringValue
 
 class CoalesceTest extends CypherFunSuite {
 
   test("givenANonNullValueThenReturnsTheValue") {
-    val func = new CoalesceFunction(Literal("a"))
-    calc(func) should equal("a")
+    val func = CoalesceFunction(Literal("a"))
+    calc(func) should equal(stringValue("a"))
   }
 
   test("givenANullValueThenReturnsNull") {
-    val func = new CoalesceFunction(Null())
-    calc(func) should equal(null.asInstanceOf[Any])
+    val func = CoalesceFunction(Null())
+    calc(func) should equal(Values.NO_VALUE)
   }
 
   test("givenOneNullAndOneValueThenReturnsTheValue") {
-    val func = new CoalesceFunction(Null(), Literal("Alistair"))
-    calc(func) should equal("Alistair")
+    val func = CoalesceFunction(Null(), Literal("Alistair"))
+    calc(func) should equal(stringValue("Alistair"))
   }
 
   test("coalesce_should_be_lazy") {
-    val func = new CoalesceFunction(Literal("Hunger"), BreakingExpression())
-    calc(func) should equal("Hunger")
+    val func = CoalesceFunction(Literal("Hunger"), BreakingExpression())
+    calc(func) should equal(stringValue("Hunger"))
   }
 
   private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryStateHelper.empty)

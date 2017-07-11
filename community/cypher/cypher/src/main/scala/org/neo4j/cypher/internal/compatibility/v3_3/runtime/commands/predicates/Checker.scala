@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
+import java.util
+
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
@@ -33,14 +35,15 @@ trait Checker {
   def contains(value: AnyValue): (Option[Boolean], Checker)
 }
 
-class BuildUp(iterator: ListValue) extends Checker {
+class BuildUp(list: ListValue) extends Checker {
+  val iterator: util.Iterator[AnyValue] = list.iterator()
+  assert(iterator.hasNext)
   private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
 
   // If we don't return true, this is what we will return. If the collection contains any nulls, we'll return None,
   // else we return Some(false).
   private var falseResult: Option[Boolean] = Some(false)
 
-  assert(iterator.nonEmpty)
 
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value == Values.NO_VALUE) (None, this)
@@ -54,23 +57,20 @@ class BuildUp(iterator: ListValue) extends Checker {
 
   private def checkAndBuildUpCache(value: AnyValue): (Option[Boolean], Checker) = {
     var foundMatch = false
-    var i = 0
-    while (i < iterator.size() && !foundMatch) {
-      val nextValue = iterator.value(i)
+    while (iterator.hasNext && !foundMatch) {
+      val nextValue = iterator.next()
 
       if (nextValue == Values.NO_VALUE) {
         falseResult = None
       } else {
         cachedSet.add(nextValue)
-        foundMatch = nextValue.equals(value)
+        foundMatch = nextValue == value
       }
-      i = i + 1
     }
-
     if (cachedSet.isEmpty) {
       (None, NullListChecker)
     } else {
-      val nextState = if (i < iterator.size()) this else new SetChecker(cachedSet, falseResult)
+      val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult)
       val result = if (foundMatch) Some(true) else falseResult
 
       (result, nextState)

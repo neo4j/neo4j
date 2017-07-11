@@ -54,9 +54,6 @@ public class AnyValueComparatorTest
     private Comparator<AnyValue> comparator = AnyValues.COMPARATOR;
 
     private Object[] objs = new Object[]{
-            // OTHER
-            null,
-
             // Storable values
             "hello",
             true,
@@ -125,6 +122,8 @@ public class AnyValueComparatorTest
             map( "1", 'b', "2", map( "20", 'a' ) ),
             map( "1", map( "1", map( "1", 'a' ) ), "2", 'x' ),
             map( "1", map( "1", map( "1", 'b' ) ), "2", 'x' ),
+            // OTHER
+            null,
     };
 
     @Test

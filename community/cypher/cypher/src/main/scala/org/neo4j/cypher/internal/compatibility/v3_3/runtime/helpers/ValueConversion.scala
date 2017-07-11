@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.values.{AnyValue, AnyValues}
+
+import scala.collection.JavaConverters._
 
 object ValueConversion {
   def getValueConverter(cType: CypherType): Any => AnyValue = cType match {
@@ -39,5 +43,25 @@ object ValueConversion {
     case symbols.CTAny => o => AnyValues.of(o)
     case symbols.CTPoint => o => AnyValues.asPointValue(o.asInstanceOf[Point])
     case symbols.CTGeometry => o => AnyValues.asPointValue(o.asInstanceOf[Geometry])
+  }
+
+  def asValues(params: Map[String, Any]): Map[String, AnyValue] = Eagerly.immutableMapValues(params, asValue)
+  def asValue(value: Any): AnyValue = value match {
+    case null => Values.NO_VALUE
+    case s: String => Values.stringValue(s)
+    case d: Double => Values.doubleValue(d)
+    case f: Float => Values.doubleValue(f)
+    case n: Number => Values.longValue(n.longValue())
+    case b: Boolean => Values.booleanValue(b)
+    case n: Node => VirtualValues.fromNodeProxy(n)
+    case r: Relationship => VirtualValues.fromRelationshipProxy(r)
+    case p: Path => AnyValues.asPathValue(p)
+    case p: Point => AnyValues.asPointValue(p)
+    case p: Geometry => AnyValues.asPointValue(p)
+    case m: Map[_, _] => VirtualValues.map(Eagerly.immutableMapValues(m.asInstanceOf[Map[String, Any]], asValue).asJava)
+    case m: java.util.Map[_, _] => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
+    case a: TraversableOnce[_] => VirtualValues.list(a.map(asValue).toArray:_*)
+    case c: java.util.Collection[_] => AnyValues.asListValue(c)
+    case a: Array[_] => VirtualValues.list(a.map(asValue):_*)
   }
 }

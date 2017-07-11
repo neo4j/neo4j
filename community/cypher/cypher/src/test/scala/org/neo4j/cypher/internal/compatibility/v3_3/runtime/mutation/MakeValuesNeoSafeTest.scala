@@ -29,7 +29,7 @@ import scala.Array._
 class MakeValuesNeoSafeTest extends CypherFunSuite {
 
   test("string collection turns into string array") {
-    makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray("a", ""))
+    makeValueNeoSafe(list(stringValue("a"), stringValue("b"))) should equal(stringArray("a", "b"))
   }
 
   test("empty collection in is empty array") {
@@ -47,7 +47,7 @@ class MakeValuesNeoSafeTest extends CypherFunSuite {
   test("string arrays work") {
     val array = Array[String]()
 
-    makeValueNeoSafe(stringArray()) should equal(array)
+    makeValueNeoSafe(stringArray()) should equal(stringArray())
   }
 
   test("mixed types are not ok") {

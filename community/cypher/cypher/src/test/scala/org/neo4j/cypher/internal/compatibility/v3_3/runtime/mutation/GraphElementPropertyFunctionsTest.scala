@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.Values._
 
 class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
 
@@ -32,50 +34,50 @@ class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElement
   val double: Double = 1
 
   test("checks") {
-    Array[Byte](1, 1) ==> (byte, byte)
-    Array[Short](1, 1) ==> (byte, short)
-    Array[Int](1, 1) ==> (byte, int)
-    Array[Long](1, 1) ==> (byte, long)
-    Array[Float](1, 1) ==> (byte, float)
-    Array[Double](1, 1) ==> (byte, double)
+    byteArray(Array[Byte](1, 1)) ==> (byte, byte)
+    shortArray(Array[Short](1, 1)) ==> (byte, short)
+    intArray(Array[Int](1, 1)) ==> (byte, int)
+    longArray(Array[Long](1, 1)) ==> (byte, long)
+    floatArray(Array[Float](1, 1)) ==> (byte, float)
+    doubleArray(Array[Double](1, 1)) ==> (byte, double)
 
-    Array[Short](1, 1) ==> (short, byte)
-    Array[Short](1, 1) ==> (short, short)
-    Array[Int](1, 1) ==> (short, int)
-    Array[Long](1, 1) ==> (short, long)
-    Array[Float](1, 1) ==> (short, float)
-    Array[Double](1, 1) ==> (short, double)
+    shortArray(Array[Short](1, 1)) ==> (short, byte)
+    shortArray(Array[Short](1, 1)) ==> (short, short)
+    intArray(Array[Int](1, 1)) ==> (short, int)
+    longArray(Array[Long](1, 1)) ==> (short, long)
+    floatArray(Array[Float](1, 1)) ==> (short, float)
+    doubleArray(Array[Double](1, 1)) ==> (short, double)
 
-    Array[Int](1, 1) ==> (int, byte)
-    Array[Int](1, 1) ==> (int, short)
-    Array[Int](1, 1) ==> (int, int)
-    Array[Long](1, 1) ==> (int, long)
-    Array[Float](1, 1) ==> (int, float)
-    Array[Double](1, 1) ==> (int, double)
+    intArray(Array[Int](1, 1)) ==> (int, byte)
+    intArray(Array[Int](1, 1)) ==> (int, short)
+    intArray(Array[Int](1, 1)) ==> (int, int)
+    longArray(Array[Long](1, 1)) ==> (int, long)
+    floatArray(Array[Float](1, 1)) ==> (int, float)
+    doubleArray(Array[Double](1, 1)) ==> (int, double)
 
-    Array[Long](1, 1) ==> (long, byte)
-    Array[Long](1, 1) ==> (long, short)
-    Array[Long](1, 1) ==> (long, int)
-    Array[Long](1, 1) ==> (long, long)
-    Array[Float](1, 1) ==> (long, float)
-    Array[Double](1, 1) ==> (long, double)
+    longArray(Array[Long](1, 1)) ==> (long, byte)
+    longArray(Array[Long](1, 1)) ==> (long, short)
+    longArray(Array[Long](1, 1)) ==> (long, int)
+    longArray(Array[Long](1, 1)) ==> (long, long)
+    floatArray(Array[Float](1, 1)) ==> (long, float)
+    doubleArray(Array[Double](1, 1)) ==> (long, double)
 
-    Array[Float](1, 1) ==> (float, byte)
-    Array[Float](1, 1) ==> (float, short)
-    Array[Float](1, 1) ==> (float, int)
-    Array[Float](1, 1) ==> (float, long)
-    Array[Float](1, 1) ==> (float, float)
-    Array[Double](1, 1) ==> (float, double)
+    floatArray(Array[Float](1, 1)) ==> (float, byte)
+    floatArray(Array[Float](1, 1)) ==> (float, short)
+    floatArray(Array[Float](1, 1)) ==> (float, int)
+    floatArray(Array[Float](1, 1)) ==> (float, long)
+    floatArray(Array[Float](1, 1)) ==> (float, float)
+    doubleArray(Array[Double](1, 1)) ==> (float, double)
 
-    Array[Double](1, 1) ==> (double, byte)
-    Array[Double](1, 1) ==> (double, short)
-    Array[Double](1, 1) ==> (double, int)
-    Array[Double](1, 1) ==> (double, long)
-    Array[Double](1, 1) ==> (double, float)
-    Array[Double](1, 1) ==> (float, double)
+    doubleArray(Array[Double](1, 1)) ==> (double, byte)
+    doubleArray(Array[Double](1, 1)) ==> (double, short)
+    doubleArray(Array[Double](1, 1)) ==> (double, int)
+    doubleArray(Array[Double](1, 1)) ==> (double, long)
+    doubleArray(Array[Double](1, 1)) ==> (double, float)
+    doubleArray(Array[Double](1, 1)) ==> (float, double)
   }
 
-  implicit class CheckValeNeoSafe(expected: Array[_]) {
+  implicit class CheckValeNeoSafe(expected: ArrayValue) {
     import scala.collection.JavaConverters._
     def ==>(vals: Any*): Unit =
       makeValueNeoSafe(AnyValues.asListValue(vals.asJava)) should equal(expected)

@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ExtractFunction, SizeFunction, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.virtual.VirtualValues.list
 
 class ExtractTest extends CypherFunSuite {
   test("canReturnSomethingFromAnIterable") {
@@ -34,6 +36,6 @@ class ExtractTest extends CypherFunSuite {
 
     val extract = ExtractFunction(collection, "n", expression)
 
-    extract.apply(m)(QueryStateHelper.empty) should equal(Seq(1, 3, 2))
+    extract.apply(m)(QueryStateHelper.empty) should equal(list(intValue(1), intValue(3), intValue(2)))
   }
 }

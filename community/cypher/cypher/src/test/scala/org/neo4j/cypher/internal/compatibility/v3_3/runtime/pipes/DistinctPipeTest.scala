@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Multiply, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.virtual.MapValue
+
+import scala.collection.JavaConverters._
 
 class DistinctPipeTest extends CypherFunSuite {
 
@@ -33,7 +38,7 @@ class DistinctPipeTest extends CypherFunSuite {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
+    result.toList should beEquivalentTo(List(Map("x" -> 1), Map("x" -> 2)))
   }
 
   test("distinct executes expressions") {
@@ -45,7 +50,7 @@ class DistinctPipeTest extends CypherFunSuite {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    result.toList should equal(List(Map("doubled" -> 2), Map("doubled" -> 4)))
+    result.toList should beEquivalentTo(List(Map("doubled" -> 2), Map("doubled" -> 4)))
   }
 
   test("undistinct input passes through") {
@@ -56,25 +61,25 @@ class DistinctPipeTest extends CypherFunSuite {
     val result = pipe.createResults(QueryStateHelper.empty)
 
     //THEN
-    result.toList should equal(List(Map("x" -> 1)))
+    result.toList should beEquivalentTo(List(Map("x" -> 1)))
   }
 
   test("distinct deals with maps containing java arrays") {
     //GIVEN
     val pipe = createDistinctPipe(List(
-      Map("x" -> Map("prop" -> Array[String]("a", "b"))),
-      Map("x" -> Map("prop" -> Array[String]("a", "b")))))
+      Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava),
+      Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava)))
 
     //WHEN
     val result = pipe.createResults(QueryStateHelper.empty).toList
 
     //THEN
     result should have size 1
-    result.head("x").asInstanceOf[Map[String,Array[String]]].apply("prop").toSeq should equal(Seq("a", "b"))
+    result.head("x").asInstanceOf[MapValue].get("prop") should equal(stringArray("a", "b"))
   }
 
   def createDistinctPipe(input: List[Map[String, Any]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {
     val source = new FakePipe(input, "x" -> CTNumber)
-    new DistinctPipe(source, expressions)()
+    DistinctPipe(source, expressions)()
   }
 }

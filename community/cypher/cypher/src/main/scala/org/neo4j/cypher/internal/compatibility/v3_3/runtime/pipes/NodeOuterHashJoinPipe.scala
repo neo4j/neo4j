@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -83,7 +83,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
 
     for (idx <- myVariables.indices) {
       key(idx) = context(myVariables(idx)) match {
-        case n: Node => n.getId
+        case n: NodeValue => n.id
         case _ => return None
       }
     }

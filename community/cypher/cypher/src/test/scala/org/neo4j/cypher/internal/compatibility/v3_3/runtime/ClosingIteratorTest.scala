@@ -116,6 +116,6 @@ class ClosingIteratorTest extends CypherFunSuite {
 
     //Then
     verify(taskCloser).close(success = true)
-    result should equal(Map[String, Any]("k" -> 42))
+    result should equal(Map[String, AnyValue]("k" -> intValue(42)))
   }
 }

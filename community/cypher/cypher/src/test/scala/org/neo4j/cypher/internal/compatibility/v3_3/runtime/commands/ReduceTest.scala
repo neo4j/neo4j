@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.longValue
 
 class ReduceTest extends CypherFunSuite {
 
@@ -36,7 +38,7 @@ class ReduceTest extends CypherFunSuite {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    reduce.apply(m)(s) should equal(6)
+    reduce.apply(m)(s) should equal(longValue(6))
   }
 
   test("returns_null_from_null_collection") {
@@ -47,6 +49,6 @@ class ReduceTest extends CypherFunSuite {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    reduce(m)(s) should equal(null.asInstanceOf[Any])
+    reduce(m)(s) should equal(Values.NO_VALUE)
   }
 }

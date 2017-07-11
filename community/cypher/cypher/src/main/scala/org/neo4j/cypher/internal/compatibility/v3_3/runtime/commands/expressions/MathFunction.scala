@@ -63,7 +63,7 @@ trait NumericHelper {
 
   private def asNumber(a: AnyValue): NumberValue = a match {
     case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
-    case n if n == Values.NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
+    case Values.NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case n: NumberValue => n
     case _ => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
   }

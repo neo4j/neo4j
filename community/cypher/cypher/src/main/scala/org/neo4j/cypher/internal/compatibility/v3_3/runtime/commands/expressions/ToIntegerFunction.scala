@@ -44,7 +44,7 @@ case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
           try {
             val d = BigDecimal(v.stringValue())
             if (d <= Long.MaxValue && d >= Long.MinValue) Values.longValue(d.toLong)
-            else throw new CypherTypeException(s"integer, $v, is too large")
+            else throw new CypherTypeException(s"integer, ${v.stringValue()}, is too large")
           } catch {
             case _: NumberFormatException =>
               Values.NO_VALUE

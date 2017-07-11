@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.mockito.Mockito._
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.longValue
 
 import scala.collection.JavaConverters._
 
@@ -36,16 +37,16 @@ class ContainerIndexTest extends CypherFunSuite {
   val qtx = mock[QueryContext]
   implicit val state = QueryStateHelper.empty.withQueryContext(qtx)
   val ctx = ExecutionContext.empty
-  val expectedNull: Any = null
+  val expectedNull: AnyValue = Values.NO_VALUE
 
   test("handles collection lookup") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))
 
-    idx(0) should equal(1)
-    idx(1) should equal(2)
-    idx(2) should equal(3)
-    idx(3) should equal(4)
-    idx(-1) should equal(4)
+    idx(0) should equal(longValue(1))
+    idx(1) should equal(longValue(2))
+    idx(2) should equal(longValue(3))
+    idx(3) should equal(longValue(4))
+    idx(-1) should equal(longValue(4))
     idx(100) should equal(expectedNull)
   }
 
@@ -66,51 +67,37 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles scala map lookup") {
     implicit val expression = Literal(Map("a" -> 1, "b" -> "foo"))
 
-    idx("a") should equal(1)
-    idx("b") should equal("foo")
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("a") should equal(longValue(1))
+    idx("b") should equal(Values.stringValue("foo"))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles java map lookup") {
     implicit val expression = Literal(Map("a" -> 1, "b" -> "foo").asJava)
 
-    idx("a") should equal(1)
-    idx("b") should equal("foo")
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("a") should equal(longValue(1))
+    idx("b") should equal(Values.stringValue("foo"))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles node lookup") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
+    when(node.getAllProperties).thenReturn(Map("v" -> Long.box(1L)).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     implicit val expression = Literal(node)
 
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
-    val nodeOps = mock[Operations[Node]]
-    when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Int] {
-      override def answer(invocation: InvocationOnMock): Int = 1
-    })
-    when(qtx.nodeOps).thenReturn(nodeOps)
-
-    idx("v") should equal(1)
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("v") should equal(longValue(1))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles relationship lookup") {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
+    when(rel.getAllProperties).thenReturn(Map("v" -> Long.box(1L)).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     implicit val expression = Literal(rel)
 
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
-    val relOps = mock[Operations[Relationship]]
-    when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Int] {
-      override def answer(invocation: InvocationOnMock): Int = 1
-    })
-    when(qtx.relationshipOps).thenReturn(relOps)
-
-    idx("v") should equal(1)
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("v") should equal(longValue(1))
+    idx("c") should equal(expectedNull)
   }
 
   test("should fail when not integer values are passed") {

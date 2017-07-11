@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 
 import scala.collection.Seq
@@ -41,7 +42,7 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
     val list = collectionExpression(m)
 
-    if (list == null) None
+    if (list == Values.NO_VALUE) None
     else {
       val seq = makeTraversable(list)
 
@@ -68,8 +69,9 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
   private def forAll(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
-    for (i <- 0 to collectionValue.size()) {
-      predicate(collectionValue.value(i))  match {
+    val iterator = collectionValue.iterator()
+    while(iterator.hasNext) {
+      predicate(iterator.next())  match {
         case Some(false) => return Some(false)
         case None        => result = None
         case _           =>
@@ -93,14 +95,14 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
 
   private def exists(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(false)
-    for (i <- 0 to collectionValue.size()) {
-      predicate(collectionValue.value(i)) match {
+    val iterator = collectionValue.iterator()
+    while(iterator.hasNext) {
+      predicate(iterator.next()) match {
         case Some(true) => return Some(true)
         case None       => result = None
         case _          =>
       }
     }
-
     result
   }
 
@@ -121,8 +123,9 @@ case class NoneInList(collection: Expression, symbolName: String, inner: Predica
   private def none(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
-    for (i <- 0 to collectionValue.size()) {
-      predicate(collectionValue.value(i)) match {
+    val iterator = collectionValue.iterator()
+    while(iterator.hasNext) {
+      predicate(iterator.next()) match {
         case Some(true) => return Some(false)
         case None       => result = None
         case _          =>
@@ -148,9 +151,9 @@ case class SingleInList(collection: Expression, symbolName: String, inner: Predi
 
   private def single(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var matched = false
-
-    for (i <- 0 to collectionValue.size()) {
-      predicate(collectionValue.value(i)) match {
+    val iterator = collectionValue.iterator()
+    while(iterator.hasNext) {
+      predicate(iterator.next()) match {
         case Some(true) if matched => return Some(false)
         case Some(true)            => matched = true
         case None                  => return None

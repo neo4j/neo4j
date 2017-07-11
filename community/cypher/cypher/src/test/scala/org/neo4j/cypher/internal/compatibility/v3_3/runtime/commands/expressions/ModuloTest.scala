@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{doubleValue, longValue}
 
 class ModuloTest extends CypherFunSuite {
 
@@ -28,13 +29,13 @@ class ModuloTest extends CypherFunSuite {
     // Given
     val modulo = Modulo(mock[Expression], mock[Expression])
 
-    modulo.calc(16000000000000001L, 16000) should equal (1L)
+    modulo.calc(16000000000000001L, 16000) should equal (longValue(1L))
   }
 
   test("should handle large integers and floating point values") {
     // Given
     val modulo = Modulo(mock[Expression], mock[Expression])
 
-    modulo.calc(16000000000000001L, 16000d) should equal (0.0)
+    modulo.calc(16000000000000001L, 16000d) should equal (doubleValue(0.0))
   }
 }

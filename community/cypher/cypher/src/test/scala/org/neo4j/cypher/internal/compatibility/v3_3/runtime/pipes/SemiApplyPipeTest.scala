@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
 
 class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -30,12 +32,12 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SemiApplyPipe(lhs, rhs, negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 1)))
+    result should beEquivalentTo(List(Map("a" -> 1)))
   }
 
   test("should only let through the one that not matches when negated") {
@@ -44,12 +46,12 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SemiApplyPipe(lhs, rhs, negated = true)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 2)))
+    result should beEquivalentTo(List(Map("a" -> 2)))
   }
 
   test("should not let anything through if rhs is empty") {
@@ -69,7 +71,7 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = SemiApplyPipe(lhs, rhs, negated = true)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData)
+    result should beEquivalentTo(lhsData)
   }
 
   test("should let everything through if rhs is nonEmpty") {
@@ -79,7 +81,7 @@ class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = SemiApplyPipe(lhs, rhs, negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData)
+    result should beEquivalentTo(lhsData)
   }
 
   test("should let nothing through if rhs is nonEmpty and negated") {

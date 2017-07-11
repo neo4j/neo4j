@@ -137,6 +137,12 @@ final class NoValue extends Value
     }
 
     @Override
+    public String toString()
+    {
+        return prettyPrint();
+    }
+
+    @Override
     public String prettyPrint()
     {
         return "NO_VALUE";

@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Relationship, RelationshipType}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.stringValue
 
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
@@ -40,14 +41,14 @@ class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSup
     doReturn(false).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
-    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal("T")
+    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal(stringValue("T"))
   }
 
   test("should handle deleted relationships since types are inlined") {
     doReturn(true).when(operations).isDeletedInThisTx(any())
 
     val rel = new FakeRel(null, null, RelationshipType.withName("T"))
-    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal("T")
+    RelationshipTypeFunction(Variable("r")).compute(rel, null) should equal(stringValue("T"))
   }
 
   test("should throw if encountering anything other than a relationship") {

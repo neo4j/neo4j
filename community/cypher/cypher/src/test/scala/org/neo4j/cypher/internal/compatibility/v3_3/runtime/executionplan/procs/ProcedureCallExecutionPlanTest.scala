@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, symbols}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.values.storable.LongValue
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
@@ -119,4 +120,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
   when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
+    override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArguments()(0).asInstanceOf[LongValue].value()
+  })
 }

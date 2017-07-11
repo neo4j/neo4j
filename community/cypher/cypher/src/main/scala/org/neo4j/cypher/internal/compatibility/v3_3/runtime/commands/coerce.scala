@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IsList, IsMap}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual._
+
+import scala.collection.JavaConverters._
 
 object coerce {
 
@@ -37,8 +39,8 @@ object coerce {
         case CTNode => value.asInstanceOf[NodeValue]
         case CTRelationship => value.asInstanceOf[EdgeValue]
         case CTPath => value.asInstanceOf[PathValue]
-        case CTInteger => value.asInstanceOf[IntegralValue]
-        case CTFloat => value.asInstanceOf[DoubleValue]
+        case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
+        case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
         case CTMap => value match {
           case IsMap(m) => m
           case _ => throw cantCoerce(value, typ)
@@ -47,7 +49,8 @@ object coerce {
           case p: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
           case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
           case p: PathValue => p.asList
-          case l: ListValue if t.innerType == CTAny => l
+          case IsList(coll) if t.innerType == CTAny => coll
+          case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, t.innerType)).toArray:_*)
           case _ => throw cantCoerce(value, typ)
         }
         case CTBoolean => value.asInstanceOf[BooleanValue]

@@ -23,48 +23,49 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue}
 
 class ToFloatFunctionTest extends CypherFunSuite {
 
   test("should return null if argument is null") {
-    assert(toFloat(null) === null)
+    assert(toFloat(null) === NO_VALUE)
   }
 
   test("should convert a string to a float") {
-    toFloat("10.599") should be(10.599)
+    toFloat("10.599") should be(doubleValue(10.599))
   }
 
   test("should convert an integer string to a float") {
-    toFloat("21") should be(21.0)
+    toFloat("21") should be(doubleValue(21.0))
   }
 
   test("should convert an integer to a float") {
-    toFloat(23) should be(23.0)
+    toFloat(23) should be(doubleValue(23.0))
   }
 
   test("should return null if the argument is a partially numeric string") {
-    assert(toFloat("20foobar2") === null)
+    assert(toFloat("20foobar2") === NO_VALUE)
   }
 
   test("should convert a string with leading zeros to a float") {
-    toFloat("000123121.5") should be(123121.5)
+    toFloat("000123121.5") should be(doubleValue(123121.5))
   }
 
   test("should convert a string with leading minus to a negative float") {
-    toFloat("-12.66") should be(-12.66)
+    toFloat("-12.66") should be(doubleValue(-12.66))
   }
 
   test("should convert a string with leading minus and zeros to a negative float") {
-    toFloat("-00012.91") should be(-12.91)
+    toFloat("-00012.91") should be(doubleValue(-12.91))
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
-    val caughtException = evaluating { toFloat(new Object) } should produce[ParameterWrongTypeException]
+    val caughtException = evaluating { toFloat(true) } should produce[ParameterWrongTypeException]
     caughtException.getMessage should startWith("Expected a String or Number, got: ")
   }
 
   test("given a float should give the same value back") {
-    toFloat(50.5) should be(50.5)
+    toFloat(50.5) should be(doubleValue(50.5))
   }
 
   private def toFloat(orig: Any) = {

@@ -24,24 +24,26 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.Values.{doubleValue, longValue}
 class MathFunctionsTest extends CypherFunSuite with NumericHelper {
 
   test("absTests") {
-    calc(AbsFunction(Literal(-1))) should equal(1)
-    calc(AbsFunction(Literal(1))) should equal(1)
+    calc(AbsFunction(Literal(-1))) should equal(longValue(1))
+    calc(AbsFunction(Literal(1))) should equal(longValue(1))
     intercept[CypherTypeException](calc(AbsFunction(Literal("wut"))))
   }
 
   test("abs should give only longs back on integral input") {
-    calc(AbsFunction(Literal(Byte.box(-1)))) should equal(1L)
-    calc(AbsFunction(Literal(Short.box(-1)))) should equal(1L)
-    calc(AbsFunction(Literal(Int.box(-1)))) should equal(1L)
-    calc(AbsFunction(Literal(Long.box(-1)))) should equal(1L)
+    calc(AbsFunction(Literal(Byte.box(-1)))) should equal(longValue(1L))
+    calc(AbsFunction(Literal(Short.box(-1)))) should equal(longValue(1L))
+    calc(AbsFunction(Literal(Int.box(-1)))) should equal(longValue(1L))
+    calc(AbsFunction(Literal(Long.box(-1)))) should equal(longValue(1L))
   }
 
   test("abs should give only doubles back on integral input") {
-    calc(AbsFunction(Literal(Float.box(-1.5f)))) should equal(1.5)
-    calc(AbsFunction(Literal(Double.box(-1.5)))) should equal(1.5)
+    calc(AbsFunction(Literal(Float.box(-1.5f)))) should equal(doubleValue(1.5))
+    calc(AbsFunction(Literal(Double.box(-1.5)))) should equal(doubleValue(1.5))
   }
 
   test("acosTests") {
@@ -123,10 +125,10 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("signTests") {
-    calc(SignFunction(Literal(-1))).asInstanceOf[Long] should equal(-1L)
-    calc(SignFunction(Literal(1))).asInstanceOf[Long] should equal(1L)
-    calc(SignFunction(Literal(Double.NegativeInfinity))).asInstanceOf[Long] should equal(-1L)
-    calc(SignFunction(Literal(Math.PI))).asInstanceOf[Long] should equal(1L)
+    calc(SignFunction(Literal(-1))).asInstanceOf[LongValue].longValue() should equal(-1L)
+    calc(SignFunction(Literal(1))).asInstanceOf[LongValue].longValue() should equal(1L)
+    calc(SignFunction(Literal(Double.NegativeInfinity))).asInstanceOf[LongValue].longValue() should equal(-1L)
+    calc(SignFunction(Literal(Math.PI))).asInstanceOf[LongValue].longValue() should equal(1L)
     intercept[CypherTypeException](calc(SignFunction(Literal("wut"))))
   }
 
@@ -141,19 +143,19 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("roundTests") {
-    calc(RoundFunction(Literal(1.5))) should equal(2)
-    calc(RoundFunction(Literal(12.22))) should equal(12)
+    calc(RoundFunction(Literal(1.5))) should equal(doubleValue(2))
+    calc(RoundFunction(Literal(12.22))) should equal(doubleValue(12))
     intercept[CypherTypeException](calc(RoundFunction(Literal("wut"))))
   }
 
   test("powFunction") {
-    calc(Pow(Literal(2), Literal(4))) should equal(math.pow(2, 4))
+    calc(Pow(Literal(2), Literal(4))) should equal(doubleValue(math.pow(2, 4)))
     intercept[CypherTypeException](calc(Pow(Literal("wut"), Literal(2))))
     intercept[CypherTypeException](calc(Pow(Literal(3.1415), Literal("baaaah"))))
   }
 
   test("sqrtFunction") {
-    calc(SqrtFunction(Literal(16))) should equal(4)
+    calc(SqrtFunction(Literal(16))) should equal(doubleValue(4))
     intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
 

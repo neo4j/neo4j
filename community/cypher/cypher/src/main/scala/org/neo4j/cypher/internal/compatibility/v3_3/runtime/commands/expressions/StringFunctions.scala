@@ -53,7 +53,7 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = argument(m) match {
     case v: IntegralValue => Values.stringValue(v.longValue().toString)
-    case v: FloatValue => Values.stringValue(v.doubleValue().toString)
+    case v: FloatingPointValue => Values.stringValue(v.doubleValue().toString)
     case v: TextValue => v
     case v: BooleanValue => Values.stringValue(v.booleanValue().toString)
     case v =>

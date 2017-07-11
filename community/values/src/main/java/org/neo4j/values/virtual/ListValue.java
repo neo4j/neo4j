@@ -240,6 +240,9 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
 
         ListSlice( ListValue inner, int from, int to )
         {
+            assert from >= 0;
+            assert to <= inner.size();
+            assert from <= to;
             this.inner = inner;
             this.from = from;
             this.to = to;

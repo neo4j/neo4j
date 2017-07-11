@@ -55,7 +55,7 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     // If any of the points we need is null, the whole expression will return null
     val returnNull = interestingPoints.exists(key => ctx.get(key) match {
-      case Some(null) => true
+      case Some(Values.NO_VALUE) => true
       case None if !allowIntroducingNewIdentifiers =>
         throw new AssertionError("This execution plan should not exist.")
       case _ => false

@@ -89,8 +89,7 @@ object indexQuery extends GraphElementPropertyFunctions {
       Iterator.empty
     else {
       val neoValues = values.map(makeValueNeoSafe)
-      val index1 = index(neoValues)
-      index1.toIterator
+      index(neoValues).toIterator
     }
   }
 

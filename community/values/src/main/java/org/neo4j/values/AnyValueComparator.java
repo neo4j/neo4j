@@ -22,6 +22,7 @@ package org.neo4j.values;
 import java.util.Comparator;
 
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.VirtualValueGroup;
 
 /**
@@ -43,6 +44,21 @@ class AnyValueComparator implements Comparator<AnyValue>
     public int compare( AnyValue v1, AnyValue v2 )
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
+
+        // NO_VALUE is bigger than all other values, need to check for that up
+        // front
+        if ( v1 == v2 )
+        {
+            return 0;
+        }
+        if ( v1 == Values.NO_VALUE )
+        {
+            return 1;
+        }
+        if ( v2 == Values.NO_VALUE )
+        {
+            return -1;
+        }
 
         boolean isValue1 = v1 instanceof Value;
         boolean isValue2 = v2 instanceof Value;

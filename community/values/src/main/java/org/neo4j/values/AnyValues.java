@@ -122,19 +122,7 @@ public final class AnyValues
 
     public static PointValue asPointValue( Point point )
     {
-        List<Double> coordinate = point.getCoordinate().getCoordinate();
-        if ( point.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
-        {
-            return VirtualValues.pointCartesian( coordinate.get( 0 ), coordinate.get( 1 ) );
-        }
-        else if ( point.getCRS().getCode() == CoordinateReferenceSystem.WGS84.code )
-        {
-            return VirtualValues.pointGeographic( coordinate.get( 0 ), coordinate.get( 1 ) );
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown coordinate reference system " + point.getCRS() );
-        }
+        return toPoint( point );
     }
 
     public static PointValue asPointValue( Geometry geometry )
@@ -143,6 +131,11 @@ public final class AnyValues
         {
             throw new IllegalArgumentException( "Cannot handle geometry type: " + geometry.getCRS().getType() );
         }
+        return toPoint( geometry );
+    }
+
+    private static PointValue toPoint( Geometry geometry )
+    {
         List<Double> coordinate = geometry.getCoordinates().get( 0 ).getCoordinate();
         if ( geometry.getCRS().getCode() == CoordinateReferenceSystem.Cartesian.code )
         {

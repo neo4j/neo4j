@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{EagerReadWriteCallMode, LazyReadOnlyCallMode}
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{IntValue, LongValue}
 
 class ProcedureCallPipeTest
   extends CypherFunSuite
@@ -35,12 +38,12 @@ class ProcedureCallPipeTest
     with AstConstructionTestSupport {
 
   val procedureName = QualifiedName(List.empty, "foo")
-  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, None, None, ProcedureReadOnlyAccess(Array.empty))
+  val signature = ProcedureSignature(procedureName, IndexedSeq.empty, Some(IndexedSeq(FieldSignature("foo", symbols.CTAny))), None, ProcedureReadOnlyAccess(Array.empty))
   val emptyStringArray = Array.empty[String]
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -125,6 +128,12 @@ class ProcedureCallPipeTest
     override def callReadWriteProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
       doIt(name, args, allowed)
+    }
+
+    override def asObject(value: AnyValue): AnyRef = value match {
+      case i: IntValue => Int.box(i.value())
+      case l: LongValue => Long.box(l.value())
+      case _ => throw new IllegalStateException()
     }
 
     private def doIt(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {

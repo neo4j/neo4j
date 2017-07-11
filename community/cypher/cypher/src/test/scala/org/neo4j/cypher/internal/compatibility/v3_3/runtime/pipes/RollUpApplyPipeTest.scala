@@ -23,9 +23,13 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.virtual.VirtualValues
 
 class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("when rhs returns nothing, an empty collection should be produced") {
@@ -38,7 +42,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val result = pipe.createResults(QueryStateHelper.empty).toList
 
     // then
-    result should equal(List(Map("a" -> 1, "x" -> Seq.empty)))
+    result should beEquivalentTo(List(Map("a" -> 1, "x" -> Seq.empty)))
   }
 
   test("when rhs has null values on nullableIdentifiers, a null value should be produced") {
@@ -52,8 +56,8 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     result should equal(List(
-      Map("a" -> null, "x" -> null),
-      Map("a" -> 1, "x" -> Seq.empty)))
+      Map("a" -> NO_VALUE, "x" -> NO_VALUE),
+      Map("a" -> Values.intValue(1), "x" -> VirtualValues.EMPTY_LIST)))
   }
 
   test("when rhs produces multiple rows with values, they are turned into a collection") {
@@ -66,7 +70,7 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val result = pipe.createResults(QueryStateHelper.empty).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> 1, "x" -> Seq(1, 2, 3, 4))))
   }
 

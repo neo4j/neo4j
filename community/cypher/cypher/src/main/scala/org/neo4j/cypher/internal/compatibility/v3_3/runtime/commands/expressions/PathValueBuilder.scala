@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
+
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
@@ -30,7 +32,7 @@ final class PathValueBuilder {
   private val rels = ArrayBuffer.empty[EdgeValue]
   private var nulled = false
   private var previousNode: NodeValue = null
-  def result(): PathValue = if (nulled) null else VirtualValues.path(nodes.toArray, rels.toArray)
+  def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
 
   def clear(): PathValueBuilder =  {
     nodes.clear()

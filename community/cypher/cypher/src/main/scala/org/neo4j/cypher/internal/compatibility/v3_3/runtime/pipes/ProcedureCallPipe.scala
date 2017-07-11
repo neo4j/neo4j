@@ -66,13 +66,12 @@ case class ProcedureCallPipe(source: Pipe,
     val qtx = state.query
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
-    val converter = maybeConverter.get
     input flatMap { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
       val results = callMode.callProcedure(qtx, signature.name, argValues)
       results map { resultValues =>
         resultIndices foreach { case (k, v) =>
-          val javaValue = converter(k)(resultValues(k))
+          val javaValue = maybeConverter.get(k)(resultValues(k))
           builder += v -> javaValue
         }
         val rowEntries = builder.result()

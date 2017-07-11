@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.Node
-import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable.ListBuffer
 
@@ -42,29 +42,29 @@ case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: Strin
       row =>
         val fromNode = getRowNode(row, fromName)
         fromNode match {
-          case fromNode: Node =>
+          case fromNode: NodeValue =>
             val toNode = getRowNode(row, toName)
 
-            if (toNode == null) Iterator.single(row.newWith1(relName, null))
-            else {
-              val relationships = relCache.get(fromNode, toNode, dir)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, types.types(state.query)))
+            toNode match {
+              case Values.NO_VALUE => Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+              case n: NodeValue =>
+                val relationships = relCache.get(fromNode, n, dir)
+                  .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, types.types(state.query)))
 
-              val it = relationships.toIterator
-              val filteredRows = ListBuffer.empty[ExecutionContext]
-              while (it.hasNext) {
-                val candidateRow = row.newWith1(relName, AnyValues.asEdgeValue(it.next()))
-
-                if (predicate.isTrue(candidateRow)(state)) {
-                  filteredRows.append(candidateRow)
+                val it = relationships.toIterator
+                val filteredRows = ListBuffer.empty[ExecutionContext]
+                while (it.hasNext) {
+                  val candidateRow = row.newWith1(relName, it.next())
+                  if (predicate.isTrue(candidateRow)(state)) {
+                    filteredRows.append(candidateRow)
+                  }
                 }
-              }
 
-              if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, null))
-              else filteredRows
+                if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+                else filteredRows
             }
 
-          case null => Iterator(row.newWith1(relName, null))
+          case Values.NO_VALUE => Iterator(row.newWith1(relName, Values.NO_VALUE))
         }
     }
   }

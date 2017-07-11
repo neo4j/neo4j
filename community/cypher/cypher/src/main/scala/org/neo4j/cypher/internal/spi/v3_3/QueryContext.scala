@@ -98,6 +98,7 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
+  //TODO this should be `Seq[AnyValue]`
   def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node]
 
   def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PropertyKeyId, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.storable.Values.longValue
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -48,6 +49,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
@@ -76,6 +78,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n", LazyPropertyKey(PropertyKeyName("prop2")(InputPosition.NONE)), rhs))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
@@ -104,6 +107,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyOperation("n2", LazyPropertyKey(PropertyKeyName("prop")(InputPosition.NONE)), rhs))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     pipe.createResults(state).toVector
@@ -137,6 +141,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId("prop")).thenReturn(None)
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
@@ -169,6 +174,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(20L, 1)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId("prop")).thenReturn(None)
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)
@@ -207,6 +214,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation("n", rhs, removeOtherProps = false))()
 
     val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(10L, 2)).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId("prop")).thenReturn(None)
     when(nodeOps.propertyKeyIds(10)).thenReturn(Iterator.empty)

@@ -26,15 +26,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
-import org.neo4j.graphdb._
+import org.neo4j.values.storable.{BooleanValue, TextValue, Values}
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
-import org.neo4j.values.storable.{BooleanValue, NumberValue, TextValue, Values}
 
 import scala.util.{Failure, Success, Try}
 
 abstract class Predicate extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).map(Values.booleanValue).orNull
+  def apply(ctx: ExecutionContext)(implicit state: QueryState) = isMatch(ctx).map(Values.booleanValue).getOrElse(Values.NO_VALUE)
 
   def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
 
@@ -237,9 +236,9 @@ case class Contains(lhs: Expression, rhs: Expression) extends Predicate with Str
 }
 
 case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
-                                   (implicit converter: String => String = identity) extends Predicate {
+                                   (implicit converter: TextValue => TextValue = identity) extends Predicate {
 
-  lazy val pattern = converter(regexExpr.v.asInstanceOf[String]).r.pattern
+  lazy val pattern = converter(regexExpr.anyVal.asInstanceOf[TextValue]).stringValue().r.pattern
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState) =
     lhsExpr(m) match {
@@ -263,16 +262,16 @@ case class LiteralRegularExpression(lhsExpr: Expression, regexExpr: Literal)
 }
 
 case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
-                            (implicit converter: String => String = identity) extends Predicate {
+                            (implicit converter: TextValue => TextValue = identity) extends Predicate {
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (lhsExpr(m), regexExpr(m)) match {
     case (lhs, rhs) if rhs == Values.NO_VALUE || lhs == Values.NO_VALUE => None
     case (lhs, rhs) =>
-      val rhsAsRegexString = converter(CastSupport.castOrFail[String](rhs))
+      val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
       if (!lhs.isInstanceOf[TextValue])
         None
       else
-        Some(rhsAsRegexString.r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
+        Some(rhsAsRegexString.stringValue().r.pattern.matcher(lhs.asInstanceOf[TextValue].stringValue()).matches())
   }
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
@@ -315,12 +314,12 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = entity(m) match {
 
-    case null =>
+    case Values.NO_VALUE =>
       None
 
     case value =>
-      val node = CastSupport.castOrFail[Node](value)
-      val nodeId = node.getId
+      val node = CastSupport.castOrFail[NodeValue](value)
+      val nodeId = node.id
       val queryCtx = state.query
 
       label.getOptId(state.query) match {

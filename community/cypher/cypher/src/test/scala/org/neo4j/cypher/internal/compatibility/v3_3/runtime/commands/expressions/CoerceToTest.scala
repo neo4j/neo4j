@@ -23,13 +23,15 @@ import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{QueryState, QueryStateHelper}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values._
+import org.neo4j.values.virtual.PointValue
+import org.neo4j.values.virtual.VirtualValues._
 
 import scala.language.postfixOps
 
@@ -50,35 +52,28 @@ class CoerceToTest extends CypherFunSuite {
 
   test("null") {
     testedTypes
-      .coerce(null)
+      .coerce(NO_VALUE)
       .forRemainingTypes { typ => _.to(typ) unchanged }
   }
 
   test("POINT") {
     testedTypes
-      .coerce(mock[Point])
+      .coerce(mock[PointValue])
       .to(CTAny).unchanged
       .to(CTPoint).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
-  test("GEOMETRY") {
-    testedTypes
-      .coerce(mock[Geometry])
-      .to(CTAny).unchanged
-      .to(CTGeometry).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
-  }
 
   test("BOOLEAN") {
     testedTypes
-      .coerce(true)
+      .coerce(TRUE)
       .to(CTAny).unchanged
       .to(CTBoolean).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
 
     testedTypes
-      .coerce(true)
+      .coerce(TRUE)
       .to(CTAny).unchanged
       .to(CTBoolean).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
@@ -86,13 +81,13 @@ class CoerceToTest extends CypherFunSuite {
 
   test("STRING") {
     testedTypes
-      .coerce("")
+      .coerce(EMPTY_STRING)
       .to(CTAny).unchanged
       .to(CTString).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
 
     testedTypes
-      .coerce("Hello")
+      .coerce(stringValue("Hello"))
       .to(CTAny).unchanged
       .to(CTString).unchanged
       .forRemainingTypes { typ => _.notTo(typ) }
@@ -100,7 +95,7 @@ class CoerceToTest extends CypherFunSuite {
 
   test("NODE") {
     testedTypes
-      .coerce(mock[Node])
+      .coerce(nodeValue(11L, stringArray("L"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTNode).unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss
@@ -110,7 +105,8 @@ class CoerceToTest extends CypherFunSuite {
 
   test("RELATIONSHIP") {
     testedTypes
-      .coerce(mock[Relationship])
+      .coerce(edgeValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
+                        stringValue("T"), EMPTY_MAP))
       .to(CTAny).unchanged
       .to(CTRelationship).unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss
@@ -120,84 +116,75 @@ class CoerceToTest extends CypherFunSuite {
 
   test("INTEGER") {
     testedTypes
-      .coerce(1L)
+      .coerce(longValue(1L))
       .to(CTAny).unchanged
       .to(CTNumber).unchanged
       .to(CTInteger).unchanged
-      .to(CTFloat).changedTo(1.0d)
+      .to(CTFloat).changedTo(doubleValue(1.0d))
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
   test("FLOAT") {
     testedTypes
-      .coerce(4.2d)
+      .coerce(doubleValue(4.2d))
       .to(CTAny).unchanged
       .to(CTNumber).unchanged
-      .to(CTInteger).changedTo(4L)
+      .to(CTInteger).changedTo(longValue(4L))
       .to(CTFloat).changedButNotNull
       .forRemainingTypes { typ => _.notTo(typ) }
   }
 
   test("MAP") {
     Seq(
-      new JavaMap[String, Any](),
-      Map.empty[String, Any]
+      EMPTY_MAP
     ).foreach { value =>
       testedTypes
         .coerce(value)
         .to(CTAny).unchanged
-        .to(CTMap).changedTo(Map.empty)
+        .to(CTMap).changedTo(EMPTY_MAP)
         // TODO: IsCollection/IsMap behaviour - Discuss
-        .to(CTList(CTAny)).changedTo(List(Map.empty))
-        .to(CTList(CTMap)).changedTo(List(Map.empty))
-        .to(CTList(CTList(CTAny))).changedTo(List(List(Map.empty)))
-        .to(CTList(CTList(CTMap))).changedTo(List(List(Map.empty)))
+        .to(CTList(CTAny)).changedTo(list(EMPTY_MAP))
+        .to(CTList(CTMap)).changedTo(list(EMPTY_MAP))
+        .to(CTList(CTList(CTAny))).changedTo(list(list(EMPTY_MAP)))
+        .to(CTList(CTList(CTMap))).changedTo(list(list(EMPTY_MAP)))
         .forRemainingTypes { typ => _.notTo(typ) }
     }
   }
 
   test("LIST") {
     Seq(
-      new JavaList[Any](),
-      List.empty[Any]
+      EMPTY_LIST
     ).foreach { value =>
       testedTypes
         .coerce(value)
         .to(CTAny).unchanged
-        .to(CTList(CTAny)).changedTo(List.empty)
-        .to(CTList(CTList(CTString))).changedTo(List.empty)
-        .to(CTList(CTString)).changedTo(List.empty)
-        .to(CTList(CTList(CTBoolean))).changedTo(List.empty)
-        .to(CTList(CTBoolean)).changedTo(List.empty)
-        .to(CTList(CTList(CTInteger))).changedTo(List.empty)
-        .to(CTList(CTInteger)).changedTo(List.empty)
-        .to(CTList(CTList(CTFloat))).changedTo(List.empty)
-        .to(CTList(CTFloat)).changedTo(List.empty)
-        .to(CTList(CTList(CTNumber))).changedTo(List.empty)
-        .to(CTList(CTNumber)).changedTo(List.empty)
-        .to(CTList(CTList(CTPoint))).changedTo(List.empty)
-        .to(CTList(CTPoint)).changedTo(List.empty)
-        .to(CTList(CTList(CTGeometry))).changedTo(List.empty)
-        .to(CTList(CTGeometry)).changedTo(List.empty)
-        .to(CTList(CTList(CTNode))).changedTo(List.empty)
-        .to(CTList(CTNode)).changedTo(List.empty)
-        .to(CTList(CTList(CTRelationship))).changedTo(List.empty)
-        .to(CTList(CTRelationship)).changedTo(List.empty)
-        .to(CTList(CTList(CTPath))).changedTo(List.empty)
-        .to(CTList(CTPath)).changedTo(List.empty)
-        .to(CTList(CTList(CTMap))).changedTo(List.empty)
-        .to(CTList(CTMap)).changedTo(List.empty)
-        .to(CTList(CTList(CTAny))).changedTo(List.empty)
-        .to(CTList(CTAny)).changedTo(List.empty)
+        .to(CTList(CTAny)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTString))).changedTo(EMPTY_LIST)
+        .to(CTList(CTString)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTBoolean))).changedTo(EMPTY_LIST)
+        .to(CTList(CTBoolean)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTInteger))).changedTo(EMPTY_LIST)
+        .to(CTList(CTInteger)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTFloat))).changedTo(EMPTY_LIST)
+        .to(CTList(CTFloat)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTNumber))).changedTo(EMPTY_LIST)
+        .to(CTList(CTNumber)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTPoint))).changedTo(EMPTY_LIST)
+        .to(CTList(CTPoint)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTGeometry))).changedTo(EMPTY_LIST)
+        .to(CTList(CTGeometry)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTNode))).changedTo(EMPTY_LIST)
+        .to(CTList(CTNode)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTRelationship))).changedTo(EMPTY_LIST)
+        .to(CTList(CTRelationship)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTPath))).changedTo(EMPTY_LIST)
+        .to(CTList(CTPath)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTMap))).changedTo(EMPTY_LIST)
+        .to(CTList(CTMap)).changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTAny))).changedTo(EMPTY_LIST)
+        .to(CTList(CTAny)).changedTo(EMPTY_LIST)
         .forRemainingTypes { typ => _.notTo(typ) }
     }
-  }
-
-  test("Nested LISTs with mixed type values") {
-    testedTypes.coerce(List(1.1, 2.0)).to(CTList(CTInteger)).changedTo(List(1, 2))
-    testedTypes.coerce(List(1, 2)).to(CTList(CTFloat)).changedTo(List(1.0, 2.0))
-    testedTypes.coerce(List(3.0)).to(CTList(CTInteger)).changedTo(List(3))
-    testedTypes.coerce(List(3.0)).to(CTList(CTFloat)).changedTo(List(3.0))
   }
 
   override protected def beforeEach(): Unit = {
@@ -217,14 +204,14 @@ class CoerceToTest extends CypherFunSuite {
 
   implicit class RichTypes(allTypes: Set[CypherType]) {
 
-    case class coerce(actualValue: Any)(implicit counter: Counter) {
+    case class coerce(actualValue: AnyValue)(implicit counter: Counter) {
       self =>
 
       private var remaining: Set[CypherType] = allTypes
 
       def notTo(typ: CypherType) = {
         a[CypherTypeException] should be thrownBy {
-          CoerceTo(Literal(actualValue), typ)(ExecutionContext.empty)
+          CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty)
         }
 
         remaining -= typ
@@ -232,8 +219,19 @@ class CoerceToTest extends CypherFunSuite {
         self
       }
 
+      case class TestExpression(in: AnyValue) extends Expression {
+
+        override def rewrite(f: (Expression) => Expression): Expression = this
+
+        override def arguments: Seq[Expression] = Seq.empty
+
+        override def symbolTableDependencies: Set[String] = Set.empty
+        def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = in
+
+      }
+
       case class to(typ: CypherType) {
-        private val coercedValue = CoerceTo(Literal(actualValue), typ)(ExecutionContext.empty)
+        private val coercedValue = CoerceTo(TestExpression(actualValue), typ)(ExecutionContext.empty)
 
         counter += 1
         remaining -= typ

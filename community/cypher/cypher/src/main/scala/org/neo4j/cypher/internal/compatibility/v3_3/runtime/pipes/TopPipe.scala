@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.NumberValue
 
 import scala.math._
 
@@ -78,7 +79,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
     else {
 
       val first = input.next()
-      val count = countExpression(first).asInstanceOf[Number].intValue()
+      val count = countExpression(first).asInstanceOf[NumberValue].longValue().toInt
 
       if (count <= 0) {
         Iterator.empty

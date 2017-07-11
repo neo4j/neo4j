@@ -39,7 +39,7 @@ case class ToBooleanFunction(a: Expression) extends NullInNullOutExpression(a) {
         Values.booleanValue(v.stringValue().trim.toBoolean)
       } catch {
         case e: IllegalArgumentException =>
-          null
+          Values.NO_VALUE
       }
     case v =>
       throw new ParameterWrongTypeException("Expected a Boolean or String, got: " + v.toString)

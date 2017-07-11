@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.Node
-import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 /**
  * Expand when both end-points are known, find all relationships of the given
@@ -53,20 +54,21 @@ case class ExpandIntoPipe(source: Pipe,
       row =>
         val fromNode = getRowNode(row, fromName)
         fromNode match {
-          case fromNode: Node =>
+          case fromNode: NodeValue =>
             val toNode = getRowNode(row, toName)
+            toNode match {
+              case Values.NO_VALUE => Iterator.empty
+              case n: NodeValue =>
 
-            if (toNode == null) Iterator.empty
-            else {
-              val relationships = relCache.get(fromNode, toNode, dir)
-                .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+                val relationships = relCache.get(fromNode, n, dir)
+                  .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
 
-              if (relationships.isEmpty) Iterator.empty
-              else relationships.map(r => row.newWith1(relName, AnyValues.asEdgeValue(r)))
+                if (relationships.isEmpty) Iterator.empty
+                else relationships.map(r => row.newWith1(relName, r))
+              case _ => throw new InternalException(s"$toNode must be node or null")
             }
 
-          case null =>
-            Iterator.empty
+          case Values.NO_VALUE => Iterator.empty
         }
     }
   }

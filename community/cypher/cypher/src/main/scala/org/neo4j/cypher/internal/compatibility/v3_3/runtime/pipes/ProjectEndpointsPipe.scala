@@ -23,9 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
 
 case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
@@ -100,7 +99,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def pickStartAndEnd(relStart: EdgeValue, relEnd: EdgeValue,
                               context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val startNode = relStart.startNode()
-    val endNode = relStart.endNode()
+    val endNode = relEnd.endNode()
     Some((startNode, endNode)).filter {
       case (s, e) =>
         (!startInScope || context(start) == s) && (!endInScope || context(end) == e)

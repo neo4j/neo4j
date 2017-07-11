@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.graphdb.Node
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                            (val id: Id = new Id)
@@ -33,7 +34,7 @@ case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>
       val item = row.get(variable).get
-      if (item != null) removeLabels(row, state, CastSupport.castOrFail[Node](item).getId)
+      if (item != Values.NO_VALUE) removeLabels(row, state, CastSupport.castOrFail[NodeValue](item).id)
       row
     }
   }

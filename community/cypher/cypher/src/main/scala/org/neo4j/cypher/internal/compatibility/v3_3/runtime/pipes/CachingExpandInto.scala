@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.helpers.collection.PrefetchingIterator
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -44,11 +46,11 @@ trait CachingExpandInto {
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  protected def findRelationships(query: QueryContext, fromNode: Node, toNode: Node,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): Iterator[Relationship] = {
+  protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
+                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): Iterator[EdgeValue] = {
 
-    val fromNodeIsDense = query.nodeIsDense(fromNode.getId)
-    val toNodeIsDense = query.nodeIsDense(toNode.getId)
+    val fromNodeIsDense = query.nodeIsDense(fromNode.id())
+    val toNodeIsDense = query.nodeIsDense(toNode.id())
 
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
@@ -83,18 +85,18 @@ trait CachingExpandInto {
     result
   }
 
-  private def relIterator(query: QueryContext, fromNode: Node,  toNode: Node, preserveDirection: Boolean,
+  private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
                           relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
     val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start.getId, localDirection, relTypes)
-    new PrefetchingIterator[Relationship] {
+    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(VirtualValues.fromRelationshipProxy)
+    new PrefetchingIterator[EdgeValue] {
       //we do not expect two nodes to have many connecting relationships
-      val connectedRelationships = new ArrayBuffer[Relationship](2)
+      val connectedRelationships = new ArrayBuffer[EdgeValue](2)
 
-      override def fetchNextOrNull(): Relationship = {
+      override def fetchNextOrNull(): EdgeValue = {
         while (relationships.hasNext) {
           val rel = relationships.next()
-          val other = rel.getOtherNode(start)
+          val other = rel.otherNode(start)
           if (end == other) {
             connectedRelationships.append(rel)
             return rel
@@ -106,46 +108,46 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: Node, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
+  private def getDegree(node: NodeValue, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
     relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.getId, direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node.getId, direction, rels.head)
+      case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
+      case rels if rels.size == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
       case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.getId, direction, rel)
+        (acc, rel)                => acc + query.nodeGetDegree(node.id(), direction, rel)
       )
-    }.getOrElse(query.nodeGetDegree(node.getId, direction))
+    }.getOrElse(query.nodeGetDegree(node.id(), direction))
   }
 
   @inline
-  protected def getRowNode(row: ExecutionContext, col: String): Node = {
+  protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
     row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
-      case n: Node => n
-      case null    => null
+      case n: NodeValue => n
+      case NO_VALUE    => NO_VALUE
       case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
     }
   }
 
   protected final class RelationshipsCache(capacity: Int) {
 
-    val table = new mutable.OpenHashMap[(Long, Long), Seq[Relationship]]()
+    val table = new mutable.OpenHashMap[(Long, Long), Seq[EdgeValue]]()
 
-    def get(start: Node, end: Node, dir: SemanticDirection): Option[Seq[Relationship]] = table.get(key(start, end, dir))
+    def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[EdgeValue]] = table.get(key(start, end, dir))
 
-    def put(start: Node, end: Node, rels: Seq[Relationship], dir: SemanticDirection) = {
+    def put(start: NodeValue, end: NodeValue, rels: Seq[EdgeValue], dir: SemanticDirection) = {
       if (table.size < capacity) {
         table.put(key(start, end, dir), rels)
       }
     }
 
     @inline
-    private def key(start: Node, end: Node, dir: SemanticDirection) = {
+    private def key(start: NodeValue, end: NodeValue, dir: SemanticDirection) = {
       // if direction is BOTH than we keep the key sorted, otherwise direction is important and we keep key as is
-      if (dir != SemanticDirection.BOTH) (start.getId, end.getId)
+      if (dir != SemanticDirection.BOTH) (start.id, end.id())
       else {
-        if (start.getId < end.getId)
-          (start.getId, end.getId)
+        if (start.id() < end.id())
+          (start.id(), end.id())
         else
-          (end.getId, start.getId)
+          (end.id(), start.id())
       }
     }
   }

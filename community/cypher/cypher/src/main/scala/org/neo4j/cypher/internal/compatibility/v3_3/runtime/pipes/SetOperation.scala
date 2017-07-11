@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{MapValue, NodeValue}
+import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
 
 import scala.collection.Map
 
@@ -84,7 +84,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
 
     val value = makeValueNeoSafe(expression(context)(state))
 
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       if (ops.hasProperty(itemId, propertyId)) ops.removeProperty(itemId, propertyId)
     }
     else ops.setProperty(itemId, propertyId, value)
@@ -121,7 +121,7 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
   override def name = "SetNodeProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -132,7 +132,7 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
 
   override def name = "SetRelationshipProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -213,7 +213,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override def name = "SetNodePropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -224,7 +224,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String, expression: 
 
   override def name = "SetRelationshipPropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }

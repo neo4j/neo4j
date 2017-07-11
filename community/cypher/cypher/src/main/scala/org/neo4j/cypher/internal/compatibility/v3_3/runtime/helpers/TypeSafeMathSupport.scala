@@ -106,7 +106,7 @@ trait TypeSafeMathSupport {
       case (l: IntValue, r: ByteValue) => Values.intValue(l.value() / r.value())
       case (l: IntValue, r: DoubleValue) => Values.doubleValue(l.value() / r.value())
       case (l: IntValue, r: FloatValue) => Values.floatValue(l.value() / r.value())
-      case (l: IntValue, r: IntValue) => Values.longValue(l.longValue() / r.longValue())
+      case (l: IntValue, r: IntValue) => Values.intValue(l.value() / r.value())
       case (l: IntValue, r: LongValue) => Values.longValue(l.value() /  r.value())
       case (l: IntValue, r: ShortValue) => Values.intValue(l.value() / r.value())
 

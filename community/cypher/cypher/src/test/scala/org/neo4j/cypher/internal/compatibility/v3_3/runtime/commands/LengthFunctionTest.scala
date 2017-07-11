@@ -26,12 +26,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelp
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values.intValue
 
 class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
     //given
-    val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
     val m = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
@@ -39,7 +40,7 @@ class LengthFunctionTest extends CypherFunSuite {
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)
 
     //then
-    result should equal(1)
+    result should equal(intValue(1))
   }
   test("length can still be used on collections") {
     //given
@@ -51,7 +52,7 @@ class LengthFunctionTest extends CypherFunSuite {
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)
 
     //then
-    result should equal(3)
+    result should equal(intValue(3))
   }
 
   test("length can still be used on strings") {
@@ -64,6 +65,6 @@ class LengthFunctionTest extends CypherFunSuite {
     val result = lengthFunction.apply(m)(QueryStateHelper.empty)
 
     //then
-    result should equal(10)
+    result should equal(intValue(10))
   }
 }

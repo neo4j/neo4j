@@ -30,7 +30,7 @@ case class CoalesceFunction(arguments: Expression*) extends Expression {
     arguments.
       view.
       map(expression => expression(ctx)).
-      find(value => value != null) match {
+      find(value => value != Values.NO_VALUE) match {
         case None    => Values.NO_VALUE
         case Some(x) => x
       }

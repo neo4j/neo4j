@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
-import org.neo4j.graphdb.Node
-import org.neo4j.values.AnyValues
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{NodeValue, VirtualValues}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
                                  types: LazyTypes, predicate: Predicate)
@@ -40,10 +41,11 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
       row =>
         val fromNode = getFromNode(row)
         fromNode match {
-          case n: Node =>
-            val relationships = state.query.getRelationshipsForIds(n.getId, dir, types.types(state.query))
-            val matchIterator = relationships.map {
-              case r => row.newWith2(relName, AnyValues.asEdgeValue(r), toName, AnyValues.asNodeValue(r.getOtherNode(n)))
+          case n: NodeValue =>
+            val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+            val matchIterator = relationships.map { r =>
+                val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
+                row.newWith2(relName, AnyValues.asEdgeValue(r), toName, VirtualValues.fromNodeProxy(other))
             }.filter(ctx => predicate.isTrue(ctx))
 
             if (matchIterator.isEmpty) {
@@ -52,7 +54,7 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
               matchIterator
             }
 
-          case value if value == null =>
+          case value if value == Values.NO_VALUE =>
             Iterator(withNulls(row))
 
           case value =>
@@ -62,8 +64,8 @@ case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String
   }
 
   private def withNulls(row: ExecutionContext) =
-    row.newWith2(relName, null, toName, null)
+    row.newWith2(relName, Values.NO_VALUE, toName, Values.NO_VALUE)
 
-  def getFromNode(row: ExecutionContext): Any =
+  def getFromNode(row: ExecutionContext): AnyValue =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 }

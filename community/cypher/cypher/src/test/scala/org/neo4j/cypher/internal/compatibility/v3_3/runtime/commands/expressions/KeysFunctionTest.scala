@@ -21,26 +21,25 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.graphdb.Node
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
+
+import scala.collection.JavaConverters._
 
 class KeysFunctionTest extends CypherFunSuite {
 
   test("test Property Keys") {
     // GIVEN
+
     val node = mock[Node]
+    when(node.getAllProperties).thenReturn(Map("theProp1" -> "foo", "OtherProp" -> "bar", "MoreProp" -> "baz").asJava
+                                             .asInstanceOf[java.util.Map[String, AnyRef]])
     val queryContext = mock[QueryContext]
-
-    val ops = mock[Operations[Node]]
-    when(queryContext.nodeOps).thenReturn(ops)
-    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator(11, 12, 13))
-
-    when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
-    when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
-    when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
@@ -49,7 +48,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val result = KeysFunction(Variable("n"))(ctx)(state)
 
     // THEN
-    result should equal(Seq("theProp1","OtherProp","MoreProp"))
+    result should equal(list(stringValue("MoreProp"), stringValue("theProp1"), stringValue("OtherProp")))
   }
 
   test("test without Property Keys ") {
@@ -68,7 +67,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val result = KeysFunction(Variable("n"))(ctx)(state)
 
     // THEN
-    result should equal(Seq.empty)
+    result should equal(EMPTY_LIST)
   }
 
   test("test using a literal map") {
@@ -78,8 +77,9 @@ class KeysFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext.empty
 
     // WHEN
-    val result = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(state)
+    val result = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(
+      state)
 
-    result should equal(Seq("foo", "bar", "baz"))
+    result should equal(list(stringValue("foo"), stringValue("bar"), stringValue("baz")))
   }
 }

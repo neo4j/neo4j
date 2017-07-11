@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Equals, Predicate}
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
 class GenericCaseTest extends CypherFunSuite {
 
@@ -36,7 +37,7 @@ class GenericCaseTest extends CypherFunSuite {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    result should equal("one")
+    result should equal(stringValue("one"))
   }
 
   test("case_with_two_alternatives_picks_the_second") {
@@ -50,7 +51,7 @@ class GenericCaseTest extends CypherFunSuite {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    result should equal("two")
+    result should equal(stringValue("two"))
   }
 
   test("case_with_no_match_returns_null") {
@@ -64,7 +65,7 @@ class GenericCaseTest extends CypherFunSuite {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    result should equal(null.asInstanceOf[Any])
+    result should equal(NO_VALUE)
   }
 
   test("case_with_no_match_returns_default") {
@@ -78,7 +79,7 @@ class GenericCaseTest extends CypherFunSuite {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    result should equal("other")
+    result should equal(stringValue("other"))
   }
 
   test("case_with_a_single_null_value_uses_the_default") {
@@ -89,7 +90,7 @@ class GenericCaseTest extends CypherFunSuite {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    assert(result === "defaults")
+    assert(result === stringValue("defaults"))
   }
 
   private def case_(alternatives: ((Any, Any), Any)*): GenericCase = {

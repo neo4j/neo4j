@@ -30,7 +30,7 @@ class CountFunction(value: Expression) extends AggregationFunction {
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {
-      case null =>
+      case Values.NO_VALUE =>
       case _    => count += 1
     }
   }

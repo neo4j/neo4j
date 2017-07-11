@@ -23,12 +23,15 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues.asListOfEdges
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class ProjectEndpointsPipeTest extends CypherFunSuite {
 
@@ -57,7 +60,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
+    result should beEquivalentTo(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
   }
 
   test("projects endpoints of a directed, simple relationship with start in scope which doesn't match") {
@@ -121,7 +124,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(Map("r" -> rel1, "a" -> node1, "b" -> node2)))
+    result should beEquivalentTo(List(Map("r" -> rel1, "a" -> node1, "b" -> node2)))
   }
 
   test("projects endpoints of a directed, simple relationship with start in scope") {
@@ -142,7 +145,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
+    result should beEquivalentTo(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
   }
 
   test("projects endpoints of a directed, simple relationship with end in scope") {
@@ -163,7 +166,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
+    result should beEquivalentTo(List(Map("r" -> rel, "a" -> node1, "b" -> node2)))
   }
 
   test("projects endpoints of an undirected, simple relationship") {
@@ -183,7 +186,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rel, "a" -> node1, "b" -> node2),
       Map("r" -> rel, "a" -> node2, "b" -> node1)
     ))
@@ -207,7 +210,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rel, "a" -> node1, "b" -> node2),
       Map("r" -> rel, "a" -> node2, "b" -> node1)
     ))
@@ -234,7 +237,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rel2, "a" -> node3, "b" -> node4),
       Map("r" -> rel2, "a" -> node4, "b" -> node3)
     ))
@@ -266,7 +269,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     // then
     result should equal(List(
-      Map("r" -> rels, "a" -> node1, "b" -> node4)
+      Map("r" -> asListOfEdges(rels.toArray), "a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node4))
     ))
   }
 
@@ -295,7 +298,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rels, "a" -> node1, "b" -> node4)
     ))
   }
@@ -325,7 +328,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rels, "a" -> node1, "b" -> node4)
     ))
   }
@@ -385,7 +388,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rels, "a" -> node1, "b" -> node4),
       Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
     ))
@@ -449,7 +452,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> rels, "a" -> node1, "b" -> node4),
       Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
     ))

@@ -30,7 +30,7 @@ trait MinMax extends AggregationFunction {
   def keep(comparisonResult: Int): Boolean
   def name: String
 
-  private var biggestSeen: AnyValue = null
+  private var biggestSeen: AnyValue = Values.NO_VALUE
 
   def result(implicit state: QueryState): AnyValue = biggestSeen
 
@@ -42,7 +42,7 @@ trait MinMax extends AggregationFunction {
   }
 
   private def checkIfLargest(value: AnyValue)(implicit qtx: QueryState) {
-    if (biggestSeen == null) {
+    if (biggestSeen == Values.NO_VALUE) {
       biggestSeen = value
     } else if (keep(AnyValues.COMPARATOR.compare(biggestSeen, value))) {
       biggestSeen = value
