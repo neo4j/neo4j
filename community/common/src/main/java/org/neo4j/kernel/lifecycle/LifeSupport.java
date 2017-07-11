@@ -415,7 +415,10 @@ public class LifeSupport
                     }
                     catch ( Throwable se )
                     {
-                        e.addSuppressed( se );
+                        LifecycleException lifecycleException = new LifecycleException( "Exception during graceful " +
+                                "attempt to shutdown partially initialized component. Please use non suppressed" +
+                                " exception to see original component failure.", se );
+                        e.addSuppressed( lifecycleException );
                     }
                     if ( e instanceof LifecycleException )
                     {
@@ -451,7 +454,10 @@ public class LifeSupport
                     }
                     catch ( Throwable se )
                     {
-                        e.addSuppressed( se );
+                        LifecycleException lifecycleException = new LifecycleException( "Exception during graceful " +
+                                "attempt to stop partially started component. Please use non suppressed" +
+                                " exception to see original component failure.", se );
+                        e.addSuppressed( lifecycleException );
                     }
                     if ( e instanceof LifecycleException )
                     {

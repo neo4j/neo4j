@@ -21,9 +21,12 @@ package org.neo4j.kernel.lifecycle;
 
 import org.junit.Test;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -464,6 +467,7 @@ public class LifeSupportTest
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle component = mock( Lifecycle.class );
         doThrow( new RuntimeException( "Start exceptions" ) ).when( component ).start();
+        doThrow( new RuntimeException( "Stop exceptions" ) ).when( component ).stop();
         lifeSupport.add( component );
 
         try
@@ -472,7 +476,10 @@ public class LifeSupportTest
         }
         catch ( Exception e )
         {
-            // expected start failure
+            String message = getExceptionStackTrace( e );
+            assertThat( message, containsString(
+                    "Exception during graceful attempt to stop partially started component. " +
+                            "Please use non suppressed exception to see original component failure." ) );
         }
 
         assertEquals( LifecycleStatus.STOPPED, lifeSupport.getStatus() );
@@ -480,11 +487,12 @@ public class LifeSupportTest
     }
 
     @Test
-    public void tryToShutdownComponentOnStartFailure() throws Throwable
+    public void tryToShutdownComponentOnInitFailure() throws Throwable
     {
         LifeSupport lifeSupport = newLifeSupport();
         Lifecycle component = mock( Lifecycle.class );
         doThrow( new RuntimeException( "Init exceptions" ) ).when( component ).init();
+        doThrow( new RuntimeException( "Shutdown exceptions" ) ).when( component ).shutdown();
         lifeSupport.add( component );
 
         try
@@ -493,7 +501,10 @@ public class LifeSupportTest
         }
         catch ( Exception e )
         {
-            // expected start failure
+            String message = getExceptionStackTrace( e );
+            assertThat( message, containsString(
+                    "Exception during graceful attempt to shutdown partially initialized component. " +
+                            "Please use non suppressed exception to see original component failure." ) );
         }
 
         assertEquals( LifecycleStatus.SHUTDOWN, lifeSupport.getStatus() );
@@ -502,6 +513,7 @@ public class LifeSupportTest
 
     public class LifecycleMock implements Lifecycle
     {
+
         Throwable initThrowable;
         Throwable startThrowable;
         Throwable stopThrowable;
@@ -574,5 +586,12 @@ public class LifeSupportTest
     private LifeSupport newLifeSupport()
     {
         return new LifeSupport();
+    }
+
+    private String getExceptionStackTrace( Exception e )
+    {
+        StringWriter stringWriter = new StringWriter();
+        e.printStackTrace( new PrintWriter( stringWriter ) );
+        return stringWriter.toString();
     }
 }
