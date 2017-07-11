@@ -35,7 +35,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("noReturnColumns") {
     expectError(
       "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, GRAPH, DISTINCT, '*' or an expression (line 1, column 33 (offset: 32))"
+      "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 33 (offset: 32))"
     )
   }
 
@@ -127,8 +127,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
-        "a relationship pattern, ',', USING, WHERE, LOAD CSV, FROM, INTO, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
-        "CALL, RETURN GRAPH, RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
+      "a relationship pattern, ',', USING, WHERE, LOAD CSV, FROM, INTO, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
+      "CALL, RETURN GRAPH, RETURN, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
       33
     )
   }
