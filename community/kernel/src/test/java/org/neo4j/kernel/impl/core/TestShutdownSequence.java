@@ -22,16 +22,18 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.getStorePath;
 
 public class TestShutdownSequence
 {
@@ -51,8 +53,7 @@ public class TestShutdownSequence
     }
 
     @Test
-    public
-    void eventHandlersAreOnlyInvokedOnceDuringShutdown()
+    public void eventHandlersAreOnlyInvokedOnceDuringShutdown()
     {
         final AtomicInteger counter = new AtomicInteger();
         graphDb.registerKernelEventHandler( new KernelEventHandler()
@@ -87,17 +88,17 @@ public class TestShutdownSequence
     }
 
     @Test
-    public
-    void canRemoveFilesAndReinvokeShutdown()
+    public void canRemoveFilesAndReinvokeShutdown() throws IOException
     {
+        GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
+        FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
         graphDb.shutdown();
-        AbstractNeo4jTestCase.deleteFileOrDirectory( getStorePath( "shutdown" ) );
+        fileSystemAbstraction.deleteRecursively( new File( databaseAPI.getStoreDir() ) );
         graphDb.shutdown();
     }
 
     @Test
-    public
-    void canInvokeShutdownFromShutdownHandler()
+    public void canInvokeShutdownFromShutdownHandler()
     {
         graphDb.registerKernelEventHandler( new KernelEventHandler()
         {
@@ -126,5 +127,10 @@ public class TestShutdownSequence
             }
         } );
         graphDb.shutdown();
+    }
+
+    private FileSystemAbstraction getDatabaseFileSystem( GraphDatabaseAPI databaseAPI )
+    {
+        return databaseAPI.getDependencyResolver().resolveDependency( FileSystemAbstraction.class );
     }
 }

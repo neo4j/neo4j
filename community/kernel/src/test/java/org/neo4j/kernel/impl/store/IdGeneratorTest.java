@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,7 +45,6 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.NodeRecordFormat;
@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.is;
@@ -72,17 +73,18 @@ public class IdGeneratorTest
 {
     @ClassRule
     public static final PageCacheRule pageCacheRule = new PageCacheRule();
+    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    private TestDirectory testDirectory = TestDirectory.testDirectory(fsRule.get());
+
     @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
+    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory );
+
     private EphemeralFileSystemAbstraction fs;
-    private File storeDir;
 
     @Before
     public void doBefore()
     {
         fs = fsRule.get();
-        storeDir = AbstractNeo4jTestCase.getStorePath( "xatest" );
-        fs.mkdirs( storeDir );
     }
 
     private void deleteIdGeneratorFile()
@@ -90,14 +92,9 @@ public class IdGeneratorTest
         fs.deleteFile( idGeneratorFile() );
     }
 
-    private File file( String name )
-    {
-        return new File( storeDir, name );
-    }
-
     private File idGeneratorFile()
     {
-        return file( "testIdGenerator.id" );
+        return testDirectory.file( "testIdGenerator.id" );
     }
 
     @Test( expected = IllegalArgumentException.class )
