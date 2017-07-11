@@ -62,6 +62,7 @@ import org.neo4j.procedure.UserFunction;
 
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.helpers.collection.Iterators.asRawIterator;
 
 /**
@@ -266,9 +267,7 @@ class ReflectiveProcedureCompiler
             }
             catch ( ComponentInjectionException e )
             {
-                description = Optional.of( procName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
-                log.warn( description.get() );
+                description = describeAndLogLoadFailure( procName );
                 ProcedureSignature signature =
                         new ProcedureSignature( procName, inputSignature, outputMapper.signature(), Mode.DEFAULT,
                                 Optional.empty(), new String[0], description, warning );
@@ -280,6 +279,17 @@ class ReflectiveProcedureCompiler
                 new ProcedureSignature( procName, inputSignature, outputMapper.signature(), mode, deprecated,
                         config.rolesFor( procName.toString() ), description, warning );
         return new ReflectiveProcedure( signature, constructor, procedureMethod, outputMapper, setters );
+    }
+
+    private Optional<String> describeAndLogLoadFailure( QualifiedName name )
+    {
+        String nameStr = name.toString();
+        Optional<String> description = Optional.of(
+                nameStr + " is unavailable because it is sandboxed and has dependencies outside of the sandbox. " +
+                "Sandboxing is controlled by the " + procedure_unrestricted.name() + " setting. " +
+                "Only unrestrict procedures you can trust with access to database internals." );
+        log.warn( description.get() );
+        return description;
     }
 
     private CallableUserFunction compileFunction( Class<?> procDefinition, MethodHandle constructor, Method method,
@@ -312,9 +322,7 @@ class ReflectiveProcedureCompiler
             }
             catch ( ComponentInjectionException e )
             {
-                description = Optional.of( procName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
-                log.warn( description.get() );
+                description = describeAndLogLoadFailure( procName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( procName, inputSignature, valueConverter.type(), deprecated,
                                 config.rolesFor( procName.toString() ), description );
@@ -426,9 +434,7 @@ class ReflectiveProcedureCompiler
             }
             catch ( ComponentInjectionException e )
             {
-                description = Optional.of( funcName.toString() +
-                        " is not available due to having restricted access rights, check configuration." );
-                log.warn( description.get() );
+                description = describeAndLogLoadFailure( funcName );
                 UserFunctionSignature signature =
                         new UserFunctionSignature( funcName, inputSignature, valueConverter.type(), deprecated,
                                 config.rolesFor( funcName.toString() ), description );

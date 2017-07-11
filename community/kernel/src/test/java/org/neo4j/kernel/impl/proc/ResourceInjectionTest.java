@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.proc;
 
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -46,8 +47,10 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.allOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -60,6 +63,16 @@ public class ResourceInjectionTest
     private ReflectiveProcedureCompiler compiler;
 
     private Log log = mock(Log.class);
+
+    public static String notAvailableMessage( String procName )
+    {
+        return argThat( notAvailableMessageMatcher( procName ) );
+    }
+
+    private static Matcher<String> notAvailableMessageMatcher( String procName )
+    {
+        return allOf( containsString( procName ), containsString( "unavailable" ) );
+    }
 
     @Before
     public void setUp()
@@ -125,9 +138,7 @@ public class ResourceInjectionTest
         //When
         List<CallableProcedure> procList =
                 compiler.compileProcedure( ProcedureWithUnsafeAPI.class, Optional.empty(), false );
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                        "available due to having restricted access rights, check configuration." );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         assertThat( procList.size(), equalTo( 1 ) );
         try
@@ -137,9 +148,7 @@ public class ResourceInjectionTest
         }
         catch ( ProcedureException e )
         {
-            assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                            "available due to having restricted access rights, check configuration." ) );
+            assertThat( e.getMessage(), notAvailableMessageMatcher( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
         }
     }
 
@@ -176,9 +185,7 @@ public class ResourceInjectionTest
         //When
         List<CallableUserFunction> procList =
                 compiler.compileFunction( FunctionWithUnsafeAPI.class);
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                        "available due to having restricted access rights, check configuration." );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         assertThat( procList.size(), equalTo( 1 ) );
         try
@@ -188,9 +195,7 @@ public class ResourceInjectionTest
         }
         catch ( ProcedureException e )
         {
-            assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                            "available due to having restricted access rights, check configuration." ) );
+            assertThat( e.getMessage(), notAvailableMessageMatcher( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
         }
     }
 
@@ -227,9 +232,7 @@ public class ResourceInjectionTest
         //When
         List<CallableUserAggregationFunction> procList =
                 compiler.compileAggregationFunction( AggregationFunctionWithUnsafeAPI.class);
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                        "available due to having restricted access rights, check configuration." );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         assertThat( procList.size(), equalTo( 1 ) );
         try
@@ -240,9 +243,7 @@ public class ResourceInjectionTest
         }
         catch ( ProcedureException e )
         {
-            assertThat( e.getMessage(), containsString(
-                    "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                            "available due to having restricted access rights, check configuration." ) );
+            assertThat( e.getMessage(), notAvailableMessageMatcher( "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
         }
     }
 
@@ -255,15 +256,10 @@ public class ResourceInjectionTest
         compiler.compileAggregationFunction( FunctionsAndProcedureUnsafe.class );
         // Then
 
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.safeUserFunctionInUnsafeAPIClass is not " +
-                        "available due to having restricted access rights, check configuration." );
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.listCoolPeopleProcedure is not " +
-                        "available due to having restricted access rights, check configuration." );
-        verify( log )
-                .warn( "org.neo4j.kernel.impl.proc.listCoolPeople is not " +
-                        "available due to having restricted access rights, check configuration." );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.safeUserFunctionInUnsafeAPIClass" ) );
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeopleProcedure" ) );
+        // With extra ' ' space at the end to distinguish from procedure form:
+        verify( log ).warn( notAvailableMessage( "org.neo4j.kernel.impl.proc.listCoolPeople " ) );
     }
 
     public static class MyOutputRecord
