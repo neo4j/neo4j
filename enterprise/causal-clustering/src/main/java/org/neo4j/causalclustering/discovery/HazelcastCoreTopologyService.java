@@ -57,6 +57,7 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SE
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.disable_middleware_logging;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extractCatchupAddressesMap;
@@ -226,6 +227,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         c.setProperty( MERGE_FIRST_RUN_DELAY_SECONDS.getName(), String.valueOf( baseHazelcastTimeoutSeconds ) );
         c.setProperty( INITIAL_MIN_CLUSTER_SIZE.getName(),
                 String.valueOf( minimumClusterSizeThatCanTolerateOneFaultForExpectedClusterSize() ) );
+
+        if ( config.get( disable_middleware_logging ) )
+        {
+            c.setProperty( LOGGING_TYPE.getName(), "none" );
+        }
 
         if ( hazelcastAddress.isIPv6() )
         {
