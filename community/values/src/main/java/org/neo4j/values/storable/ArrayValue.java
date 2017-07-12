@@ -49,19 +49,4 @@ abstract class ArrayValue extends Value implements SequenceValue
     {
         return true;
     }
-
-    @Override
-    public final boolean equals( Object other )
-    {
-        if ( other == null )
-        {
-            return false;
-        }
-
-        if ( other instanceof SequenceValue  )
-        {
-            return this.equals( (SequenceValue) other );
-        }
-        return other instanceof Value && equals( (Value) other );
-    }
 }
