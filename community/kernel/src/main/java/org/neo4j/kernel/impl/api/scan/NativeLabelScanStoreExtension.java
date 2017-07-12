@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -65,14 +66,21 @@ public class NativeLabelScanStoreExtension extends
         Monitors monitors = dependencies.monitors();
         monitors.addMonitorListener( new LoggingMonitor( log ), NativeLabelScanStore.NATIVE_LABEL_INDEX_TAG );
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupExecutor();
+        Boolean readOnly = isReadOnly( context, dependencies );
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore(
                 dependencies.pageCache(),
                 context.storeDir(),
                 new FullLabelStream( dependencies.indexStoreView() ),
-                dependencies.getConfig().get( GraphDatabaseSettings.read_only ),
+                readOnly,
                 monitors,
                 recoveryCleanupWorkCollector );
 
         return new LabelScanStoreProvider( NativeLabelScanStore.NATIVE_LABEL_INDEX_TAG, labelScanStore );
+    }
+
+    private Boolean isReadOnly( KernelContext context, Dependencies dependencies )
+    {
+        OperationalMode operationalMode = context.databaseInfo().operationalMode;
+        return dependencies.getConfig().get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
     }
 }

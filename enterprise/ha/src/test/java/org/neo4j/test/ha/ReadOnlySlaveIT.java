@@ -33,7 +33,9 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 
 import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.helpers.collection.Iterators.count;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_factor;
 
 /**
@@ -158,6 +160,31 @@ public class ReadOnlySlaveIT
         catch ( WriteOperationsNotAllowedException ex )
         {
             // Ok!
+        }
+    }
+
+    @Test
+    public void givenClusterWithReadOnlySlaveWhenCreatingNodeOnMasterThenSlaveShouldBeAbleToPullUpdates() throws Exception
+    {
+        ManagedCluster cluster = clusterRule.startCluster();
+        HighlyAvailableGraphDatabase master = cluster.getMaster();
+        Label label = Label.label( "label" );
+
+        try ( Transaction tx = master.beginTx() )
+        {
+            master.createNode( label );
+            tx.success();
+        }
+
+        Iterable<HighlyAvailableGraphDatabase> allMembers = cluster.getAllMembers();
+        for ( HighlyAvailableGraphDatabase member : allMembers )
+        {
+            try ( Transaction tx = member.beginTx() )
+            {
+                long count = count( member.findNodes( label ) );
+                tx.success();
+                assertEquals( 1, count );
+            }
         }
     }
 }
