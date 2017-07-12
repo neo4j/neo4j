@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -112,16 +113,19 @@ public class ClusterIT
     public void testInstancesWithConflictingClusterPorts() throws Throwable
     {
         HighlyAvailableGraphDatabase first = null;
+
+        int clusterPort = PortAuthority.allocatePort();
+
         try
         {
             File masterStoreDir =
                     testDirectory.directory( "testConflictingClusterPortsMaster" );
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( masterStoreDir )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .newGraphDatabase();
 
             try
@@ -130,10 +134,10 @@ public class ClusterIT
                         testDirectory.directory( "testConflictingClusterPortsSlave" );
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newEmbeddedDatabaseBuilder( slaveStoreDir )
-                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort )
+                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                         .setConfig( ClusterSettings.server_id, "2" )
-                        .setConfig( HaSettings.ha_server, "127.0.0.1:6667" )
+                        .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                         .newGraphDatabase();
                 failed.shutdown();
                 fail("Should not start when ports conflict");
@@ -156,26 +160,31 @@ public class ClusterIT
     public void testInstancesWithConflictingHaPorts() throws Throwable
     {
         HighlyAvailableGraphDatabase first = null;
+
+        int haPort = PortAuthority.allocatePort();
+
         try
         {
             File storeDir =
                     testDirectory.directory( "testConflictingHaPorts" );
-             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
+            int clusterPort1 = PortAuthority.allocatePort();
+            first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                      newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5001" )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort1 )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort1)
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
                     .newGraphDatabase();
 
             try
             {
+                int clusterPort2 = PortAuthority.allocatePort();
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
-                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" )
+                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort2 )
+                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort2 )
                         .setConfig( ClusterSettings.server_id, "2" )
-                        .setConfig( HaSettings.ha_server, "127.0.0.1:6666" )
+                        .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
                         .newGraphDatabase();
                 failed.shutdown();
                 fail( "Should not start when ports conflict" );
