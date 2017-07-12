@@ -58,7 +58,7 @@ public class TxPullRequestHandlerTest
     private final ChannelHandlerContext context = mock( ChannelHandlerContext.class );
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
-    private StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private StoreId storeId = new StoreId( 1, 2 );
     private LogicalTransactionStore logicalTransactionStore = mock( LogicalTransactionStore.class );
     private TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
 
@@ -117,8 +117,8 @@ public class TxPullRequestHandlerTest
     public void shouldNotStreamTxEntriesIfStoreIdMismatches() throws Exception
     {
         // given
-        StoreId serverStoreId = new StoreId( 1, 2, 3, 4 );
-        StoreId clientStoreId = new StoreId( 5, 6, 7, 8 );
+        StoreId serverStoreId = new StoreId( 1, 2 );
+        StoreId clientStoreId = new StoreId( 5, 6 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 15L );

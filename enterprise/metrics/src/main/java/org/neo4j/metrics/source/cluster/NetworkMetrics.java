@@ -23,7 +23,7 @@ import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
 
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.impl.annotations.Documented;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -64,7 +64,7 @@ public class NetworkMetrics extends LifecycleAdapter
         monitors.addMonitorListener( masterNetworkTransactionWrites, MasterServer.class.getName() );
         monitors.addMonitorListener( masterNetworkStoreWrites, ToNetworkStoreWriter.class.getName(),
                 ToNetworkStoreWriter.STORE_COPIER_MONITOR_TAG );
-        monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient320.class.getName() );
+        monitors.addMonitorListener( slaveNetworkTransactionWrites, MasterClient323.class.getName() );
 
         registry.register( MASTER_NETWORK_TX_WRITES, (Gauge<Long>) masterNetworkTransactionWrites::getBytesWritten );
         registry.register( MASTER_NETWORK_STORE_WRITES, (Gauge<Long>) masterNetworkStoreWrites::getBytesWritten );

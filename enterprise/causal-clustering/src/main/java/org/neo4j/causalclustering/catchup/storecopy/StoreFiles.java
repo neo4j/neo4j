@@ -139,7 +139,6 @@ public class StoreFiles
     {
         File neoStoreFile = new File( storeDir, MetaDataStore.DEFAULT_NAME );
         org.neo4j.kernel.impl.store.StoreId kernelStoreId = MetaDataStore.getStoreId( pageCache, neoStoreFile );
-        return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId(),
-                kernelStoreId.getUpgradeTime(), kernelStoreId.getUpgradeId() );
+        return new StoreId( kernelStoreId.getCreationTime(), kernelStoreId.getRandomId() );
     }
 }

@@ -29,15 +29,13 @@ import java.util.Random;
 public final class StoreId implements Externalizable
 {
 
-    public static final StoreId DEFAULT = new StoreId( -1, -1, -1, -1, -1 );
+    public static final StoreId DEFAULT = new StoreId( -1, -1, -1);
 
     private static final Random r = new SecureRandom();
 
     private long creationTime;
     private long randomId;
     private long storeVersion;
-    private long upgradeTime;
-    private long upgradeId;
 
     private StoreId()
     {
@@ -46,23 +44,18 @@ public final class StoreId implements Externalizable
 
     public StoreId( long storeVersion )
     {
-        // If creationTime == upgradeTime && randomNumber == upgradeId then store has never been upgraded
         long currentTimeMillis = System.currentTimeMillis();
         long randomLong = r.nextLong();
         this.storeVersion = storeVersion;
         this.creationTime = currentTimeMillis;
         this.randomId = randomLong;
-        this.upgradeTime = currentTimeMillis;
-        this.upgradeId = randomLong;
     }
 
-    public StoreId( long creationTime, long randomId, long storeVersion, long upgradeTime, long upgradeId )
+    public StoreId( long creationTime, long randomId, long storeVersion )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
         this.storeVersion = storeVersion;
-        this.upgradeTime = upgradeTime;
-        this.upgradeId = upgradeId;
     }
 
     public static StoreId from( ObjectInput in ) throws IOException, ClassNotFoundException
@@ -82,16 +75,6 @@ public final class StoreId implements Externalizable
         return randomId;
     }
 
-    public long getUpgradeTime()
-    {
-        return upgradeTime;
-    }
-
-    public long getUpgradeId()
-    {
-        return upgradeId;
-    }
-
     public long getStoreVersion()
     {
         return storeVersion;
@@ -103,8 +86,6 @@ public final class StoreId implements Externalizable
         out.writeLong( creationTime );
         out.writeLong( randomId );
         out.writeLong( storeVersion );
-        out.writeLong( upgradeTime );
-        out.writeLong( upgradeId );
     }
 
     @Override
@@ -113,13 +94,6 @@ public final class StoreId implements Externalizable
         creationTime = in.readLong();
         randomId = in.readLong();
         storeVersion = in.readLong();
-        upgradeTime = in.readLong();
-        upgradeId = in.readLong();
-    }
-
-    public boolean equalsByUpgradeId( StoreId other )
-    {
-        return equal( upgradeTime, other.upgradeTime ) && equal( upgradeId, other.upgradeId );
     }
 
     @Override
@@ -150,8 +124,6 @@ public final class StoreId implements Externalizable
                 "creationTime=" + creationTime +
                 ", randomId=" + randomId +
                 ", storeVersion=" + storeVersion +
-                ", upgradeTime=" + upgradeTime +
-                ", upgradeId=" + upgradeId +
                 '}';
     }
 

@@ -34,8 +34,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.RANDOM_NUMBER;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.TIME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TIME;
-import static org.neo4j.kernel.impl.store.MetaDataStore.Position.UPGRADE_TRANSACTION_ID;
 
 public class TestStoreId
 {
@@ -59,9 +57,6 @@ public class TestStoreId
 
         long creationTime = MetaDataStore.getRecord( pageCache, metadataStore, TIME );
         long randomNumber = MetaDataStore.getRecord( pageCache, metadataStore, RANDOM_NUMBER );
-        long upgradeTime = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TIME );
-        long upgradeId = MetaDataStore.getRecord( pageCache, metadataStore, UPGRADE_TRANSACTION_ID );
-
-        return new StoreId( creationTime, randomNumber, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomNumber );
     }
 }

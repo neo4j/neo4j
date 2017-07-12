@@ -170,7 +170,7 @@ public class TransactionLogCatchUpWriterTest
 
     private StoreId toCasualStoreId( org.neo4j.kernel.impl.store.StoreId storeId )
     {
-        return new StoreId( storeId.getCreationTime(), storeId.getRandomId(), storeId.getUpgradeTime(), storeId.getUpgradeId() );
+        return new StoreId( storeId.getCreationTime(), storeId.getRandomId() );
     }
 
     private static CommittedTransactionRepresentation tx( int id )

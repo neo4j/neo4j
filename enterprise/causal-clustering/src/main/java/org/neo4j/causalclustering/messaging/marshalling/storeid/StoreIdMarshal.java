@@ -45,8 +45,6 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
         channel.put( (byte) 1 );
         channel.putLong( storeId.getCreationTime() );
         channel.putLong( storeId.getRandomId() );
-        channel.putLong( storeId.getUpgradeTime() );
-        channel.putLong( storeId.getUpgradeId() );
     }
 
     protected StoreId unmarshal0( ReadableChannel channel ) throws IOException
@@ -63,8 +61,6 @@ public final class StoreIdMarshal extends SafeChannelMarshal<StoreId>
 
         long creationTime = channel.getLong();
         long randomId = channel.getLong();
-        long upgradeTime = channel.getLong();
-        long upgradeId = channel.getLong();
-        return new StoreId( creationTime, randomId, upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomId );
     }
 }

@@ -27,14 +27,14 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 
 public interface MasterClient extends Master
 {
-    ProtocolVersion CURRENT = MasterClient320.PROTOCOL_VERSION;
+    ProtocolVersion CURRENT = MasterClient323.PROTOCOL_VERSION;
 
     @Override
     Response<Integer> createRelationshipType( RequestContext context, String name );

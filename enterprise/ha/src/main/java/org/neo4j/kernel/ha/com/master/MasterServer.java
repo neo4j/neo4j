@@ -26,7 +26,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.kernel.ha.HaRequestType210;
-import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
@@ -53,7 +53,7 @@ public class MasterServer extends Server<Master, Void>
         super( requestTarget, config, logProvider, FRAME_LENGTH, CURRENT, txVerifier,
                 Clocks.systemClock(), byteCounterMonitor, requestMonitor );
         this.conversationManager = conversationManager;
-        this.requestTypes = new HaRequestType210( entryReader, MasterClient320.LOCK_RESULT_OBJECT_SERIALIZER );
+        this.requestTypes = new HaRequestType210( entryReader, MasterClient323.LOCK_RESULT_OBJECT_SERIALIZER );
     }
 
     @Override

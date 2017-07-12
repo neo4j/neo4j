@@ -315,7 +315,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion(), getUpgradeTime(), upgradeTxIdField );
+        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
     }
 
     public static StoreId getStoreId( PageCache pageCache, File neoStore ) throws IOException
@@ -323,10 +323,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         return new StoreId(
                 getRecord( pageCache, neoStore, Position.TIME ),
                 getRecord( pageCache, neoStore, Position.RANDOM_NUMBER ),
-                getRecord( pageCache, neoStore, Position.STORE_VERSION ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TIME ),
-                getRecord( pageCache, neoStore, Position.UPGRADE_TRANSACTION_ID )
-        );
+                getRecord( pageCache, neoStore, Position.STORE_VERSION ) );
     }
 
     public long getUpgradeTime()

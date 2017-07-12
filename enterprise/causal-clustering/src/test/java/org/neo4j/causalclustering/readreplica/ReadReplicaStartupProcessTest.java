@@ -23,10 +23,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.io.IOException;
 import java.util.UUID;
 import java.util.stream.Stream;
 
@@ -67,8 +67,8 @@ public class ReadReplicaStartupProcessTest
     private Lifecycle txPulling = mock( Lifecycle.class );
 
     private MemberId memberId = new MemberId( UUID.randomUUID() );
-    private StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
-    private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
+    private StoreId localStoreId = new StoreId( 1, 2 );
+    private StoreId otherStoreId = new StoreId( 5, 6 );
     private File storeDir = new File( "store-dir" );
 
     @Before

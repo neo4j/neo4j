@@ -187,7 +187,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
 
     protected Protocol createProtocol( int chunkSize, byte applicationProtocolVersion )
     {
-        return new Protocol320( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
+        return new Protocol323( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
     }
 
     public abstract ProtocolVersion getProtocolVersion();

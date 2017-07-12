@@ -315,22 +315,16 @@ public class StoreFilesTest
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         long time = rng.nextLong();
         long randomNumber = rng.nextLong();
-        long upgradeTime = rng.nextLong();
-        long upgradeTransactionId = rng.nextLong();
 
         createOnPageCache( neostore );
 
         MetaDataStore.setRecord( pageCache, neostore, Position.TIME, time );
         MetaDataStore.setRecord( pageCache, neostore, Position.RANDOM_NUMBER, randomNumber );
         MetaDataStore.setRecord( pageCache, neostore, Position.STORE_VERSION, rng.nextLong() );
-        MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TIME, upgradeTime );
-        MetaDataStore.setRecord( pageCache, neostore, Position.UPGRADE_TRANSACTION_ID, upgradeTransactionId );
 
         StoreId storeId = storeFiles.readStoreId( dir );
 
         assertThat( storeId.getCreationTime(), is( time ) );
         assertThat( storeId.getRandomId(), is( randomNumber ) );
-        assertThat( storeId.getUpgradeTime(), is( upgradeTime ) );
-        assertThat( storeId.getUpgradeId(), is( upgradeTransactionId ) );
     }
 }

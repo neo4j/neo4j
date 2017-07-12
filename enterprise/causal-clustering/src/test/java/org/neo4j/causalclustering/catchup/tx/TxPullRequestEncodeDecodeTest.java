@@ -35,7 +35,7 @@ public class TxPullRequestEncodeDecodeTest
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullRequestEncoder(), new TxPullRequestDecoder() );
         final long arbitraryId = 23;
-        TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2, 3, 4 ) );
+        TxPullRequest sent = new TxPullRequest( arbitraryId, new StoreId( 1, 2 ) );
 
         // when
         channel.writeOutbound( sent );
