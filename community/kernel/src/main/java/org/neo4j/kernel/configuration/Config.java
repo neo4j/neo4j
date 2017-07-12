@@ -250,8 +250,7 @@ public class Config implements DiagnosticsProvider, Configuration
         @Nonnull
         public Builder withHome( final File homeDir )
         {
-            String home = Optional.ofNullable( homeDir ).map( File::getAbsolutePath ).orElse( System.getProperty( "user.dir" ) );
-            initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), home );
+            initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
             return this;
         }
 
@@ -289,6 +288,10 @@ public class Config implements DiagnosticsProvider, Configuration
             Config config;
             if ( configFile != null )
             {
+                if ( !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
+                {
+                    initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+                }
                 config =  new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
             }
             else
@@ -388,6 +391,8 @@ public class Config implements DiagnosticsProvider, Configuration
         this( settingsClasses, additionalValidators );
         this.configFile = null;
 
+        overriddenDefaults.forEach( initialSettings::putIfAbsent );
+
         Map<String,String> validSettings = migrateAndValidateSettings( initialSettings, false );
 
         overriddenDefaults.forEach( validSettings::putIfAbsent );
@@ -407,12 +412,11 @@ public class Config implements DiagnosticsProvider, Configuration
         // Read file and override with provided settings
         Map<String,String> settings = readConfigFile();
         settings.putAll( overriddenSettings );
+        overriddenDefaults.forEach( settings::putIfAbsent );
 
         Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
 
         warnAboutDeprecations( validSettings );
-
-        overriddenDefaults.forEach( validSettings::putIfAbsent );
 
         replaceSettings( validSettings );
     }

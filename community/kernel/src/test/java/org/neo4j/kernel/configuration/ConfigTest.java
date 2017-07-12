@@ -222,11 +222,11 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
 
-        Config config =
-                Config.fromFile( confFile )
+        Config config = Config.fromFile( confFile )
                 .withSetting( MySettingsWithDefaults.oldHello, "baah" )
                 .withSetting( MySettingsWithDefaults.oldSetting, "booh" )
-                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
+                .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings, new GraphDatabaseSettings() ) )
+                .build();
 
         // When
         config.setLogger( log );

@@ -77,7 +77,7 @@ public class CommunityServerBuilder
         System.setProperty( "sun.net.http.allowRestrictedHeaders", "true" );
     }
 
-    private static LifecycleManagingDatabase.GraphFactory  IN_MEMORY_DB = ( config, dependencies ) ->
+    private static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = ( config, dependencies ) ->
     {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
         return new ImpermanentGraphDatabase( storeDir, config.augment(

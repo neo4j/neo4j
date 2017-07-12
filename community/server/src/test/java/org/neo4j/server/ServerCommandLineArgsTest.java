@@ -24,13 +24,12 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Optional;
 
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerCommandLineArgsTest
 {
@@ -82,8 +81,8 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet( Pair.of( "myoption", "myvalue" ) ),
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "myoption", "myvalue" ),
+                parsed.configOverrides() );
     }
 
     @Test
@@ -96,8 +95,8 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet( Pair.of( "myoptionenabled", Boolean.TRUE.toString() ) ),
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "myoptionenabled", Boolean.TRUE.toString() ),
+                parsed.configOverrides()  );
     }
 
     @Test
@@ -113,12 +112,10 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet(
-                        Pair.of( "my_first_option", "first" ),
-                        Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
-                        Pair.of( "my_second_option", "second" ) ),
-
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "my_first_option", "first" ,
+                        "myoptionenabled", Boolean.TRUE.toString(),
+                       "my_second_option", "second" ),
+                parsed.configOverrides() );
     }
 
     private ServerCommandLineArgs parse( String... args )

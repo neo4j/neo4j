@@ -70,12 +70,19 @@ public class DiscoveryService
         if ( boltAddress.isPresent() )
         {
             AdvertisedSocketAddress advertisedSocketAddress = boltAddress.get();
+
+            // If port is 0 it's been assigned a random port from the OS, list this instead
+            if ( advertisedSocketAddress.getPort() == 0 )
+            {
+                int boltPort = connectorPortRegister.getLocalAddress( "bolt" ).getPort();
+                advertisedSocketAddress = new AdvertisedSocketAddress( advertisedSocketAddress.getHostname(), boltPort );
+            }
+
             if ( advertisedSocketAddress.getHostname().equals( "localhost" ) )
             {
                 // Use the port specified in the config, but not the host
-                int boltPort = connectorPortRegister.getLocalAddress( "bolt" ).getPort();
                 return outputFormat.ok( new DiscoveryRepresentation( managementUri, dataUri,
-                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), boltPort ) ) );
+                        new AdvertisedSocketAddress( uriInfo.getBaseUri().getHost(), advertisedSocketAddress.getPort() ) ) );
             }
             else
             {
