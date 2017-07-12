@@ -27,11 +27,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -110,24 +107,19 @@ public class NativeLabelScanStoreHaIT
     @Before
     public void setUp()
     {
-        KernelExtensionFactory<?> testExtension = labelScanStoreExtension();
         TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
         Monitors monitors = new Monitors();
         monitors.addMonitorListener( monitor );
         factory.setMonitors( monitors );
         factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
-        factory.addKernelExtension( testExtension );
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
                 .withDbFactory( factory )
-                .withSharedSetting( GraphDatabaseSettings.label_index, labelIndexSettingName() )
                 .withStoreDirInitializer( ( serverId, storeDir ) ->
                 {
                     if ( serverId == 1 )
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                                .addKernelExtension( testExtension )
                                 .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
-                                .setConfig( GraphDatabaseSettings.label_index, labelIndexSettingName() )
                                 .newGraphDatabase();
                         try
                         {
@@ -199,15 +191,5 @@ public class NativeLabelScanStoreHaIT
                 timesRebuiltWithData++;
             }
         }
-    }
-
-    private String labelIndexSettingName()
-    {
-        return GraphDatabaseSettings.LabelIndex.NATIVE.name();
-    }
-
-    private KernelExtensionFactory<?> labelScanStoreExtension()
-    {
-        return new NativeLabelScanStoreExtension();
     }
 }

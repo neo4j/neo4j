@@ -29,8 +29,6 @@ import org.junit.rules.TestName;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.rule.DatabaseRule;
@@ -41,21 +39,13 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
 
 public class NativeLabelScanStoreUpdateIT
 {
     @ClassRule
-    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
-        }
-    };
+    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
     @Rule
     public final TestName testName = new TestName();
 
@@ -267,7 +257,7 @@ public class NativeLabelScanStoreUpdateIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction ignored = db().beginTx() )
         {
             return asSet( db().findNodes( label ) );
         }

@@ -68,7 +68,6 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -267,7 +266,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private Dependencies dependencies;
     private LifeSupport life;
     private SchemaIndexProvider schemaIndexProvider;
-    private LabelScanStoreProvider labelScanStoreProvider;
     private File storeDir;
     private boolean readOnly;
     private final IdController idController;
@@ -407,8 +405,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         schemaIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 HighestSelectionStrategy.getInstance() );
         dependencies.satisfyDependency( schemaIndexProvider );
-
-        labelScanStoreProvider = dependencyResolver.resolveDependency( LabelScanStoreProvider.class );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );
         dependencies.satisfyDependency( lockService );
@@ -558,7 +554,6 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 config,
                 logService,
                 schemaIndexProvider,
-                labelScanStoreProvider,
                 indexProviders,
                 pageCache,
                 format ).migrate( storeDir );
@@ -574,8 +569,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new RecordStorageEngine( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
-                        labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
-                        legacyIndexTransactionOrdering, idGeneratorFactory, idController );
+                        legacyIndexProviderLookup, indexConfigStore,
+                        legacyIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

@@ -25,20 +25,17 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.NoSuchFileException;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -99,7 +96,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Native label index tag, to distinguish native label index from other label indexes
      */
-    public static final String NATIVE_LABEL_INDEX_TAG = GraphDatabaseSettings.LabelIndex.NATIVE.name();
+    private static final String NATIVE_LABEL_INDEX_TAG = "native";
 
     /**
      * Whether or not this label scan store is read-only.

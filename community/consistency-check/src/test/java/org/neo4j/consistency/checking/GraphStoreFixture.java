@@ -50,17 +50,13 @@ import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.logging.SimpleLogService;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -78,9 +74,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -95,9 +89,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.helpers.Service.load;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -187,29 +178,18 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                     new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
 
-            Dependencies dependencies = new Dependencies();
-            dependencies.satisfyDependencies( Config.defaults(), fileSystem,
-                    new SimpleLogService( logProvider, logProvider ), indexStoreView, pageCache, new Monitors(),
-                    recoveryCleanupWorkCollector );
-            KernelContext kernelContext = new SimpleKernelContext( directory, UNKNOWN, dependencies );
-            LabelScanStore labelScanStore = startLabelScanStore( config, dependencies, kernelContext );
+            LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView );
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
                     config, operationalMode ) );
         }
         return directStoreAccess;
     }
 
-    private LabelScanStore startLabelScanStore( Config config, Dependencies dependencies, KernelContext kernelContext )
+    private LabelScanStore startLabelScanStore( PageCache pageCache, IndexStoreView indexStoreView )
     {
-        // Load correct LSS from kernel extensions
-        LifeSupport life = new LifeSupport();
-        KernelExtensions extensions = life.add( new KernelExtensions(
-                kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
-        life.start();
-        LabelScanStore labelScanStore = extensions.resolveDependency( LabelScanStoreProvider.class ).getLabelScanStore();
-        life.shutdown();
-
-        // Start the selected LSS
+        NativeLabelScanStore labelScanStore =
+                new NativeLabelScanStore( pageCache, directory, new FullLabelStream( indexStoreView ), false, new Monitors(),
+                        RecoveryCleanupWorkCollector.IMMEDIATE );
         try
         {
             labelScanStore.init();

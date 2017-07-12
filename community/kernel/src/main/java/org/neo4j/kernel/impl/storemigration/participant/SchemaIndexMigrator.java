@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.index.labelscan.LuceneLabelScanDirectory;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -40,7 +40,7 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes;
-    private File labelIndexDirectory;
+    private File luceneLabelIndexDirectory;
     private File schemaIndexDirectory;
     private final SchemaIndexProvider schemaIndexProvider;
 
@@ -60,7 +60,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         if ( !from.hasSameCapabilities( to, CapabilityType.INDEX ) )
         {
             schemaIndexDirectory = schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir );
-            labelIndexDirectory = LabelScanStoreProvider.getLuceneStoreDirectory( storeDir );
             deleteObsoleteIndexes = true;
         }
     }
@@ -72,8 +71,8 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         if ( deleteObsoleteIndexes )
         {
             deleteIndexes( schemaIndexDirectory );
-            deleteIndexes( labelIndexDirectory );
         }
+        deleteIndexes( LuceneLabelScanDirectory.getLuceneStoreDirectory( storeDir ) );
     }
 
     private void deleteIndexes( File indexRootDirectory ) throws IOException

@@ -42,7 +42,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -86,7 +85,6 @@ public class UniqueIndexRecoveryTest
     {
         List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
         extensionFactories.add( kernelExtensionFactory );
-        extensionFactories.add( new NativeLabelScanStoreExtension() );
         factory.setKernelExtensions( extensionFactories );
         db = newDb();
     }

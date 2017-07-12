@@ -27,8 +27,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Set;
 
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.test.rule.DatabaseRule;
@@ -36,7 +34,6 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 /**
@@ -45,14 +42,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class NativeLabelScanStoreChaosIT
 {
-    private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            addSpecificConfig( builder );
-        }
-    };
+    private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     private final RandomRule randomRule = new RandomRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );
@@ -88,11 +78,6 @@ public class NativeLabelScanStoreChaosIT
         return new File( directory, NativeLabelScanStore.FILE_NAME );
     }
 
-    private void addSpecificConfig( GraphDatabaseBuilder builder )
-    {
-        builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
-    }
-
     private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
         return ( fs, directory ) -> scrambleFile( storeFile( directory ) );
@@ -115,7 +100,7 @@ public class NativeLabelScanStoreChaosIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = dbRule.getGraphDatabaseAPI().beginTx() )
+        try ( Transaction ignored = dbRule.getGraphDatabaseAPI().beginTx() )
         {
             return asSet( dbRule.getGraphDatabaseAPI().findNodes( label ) );
         }

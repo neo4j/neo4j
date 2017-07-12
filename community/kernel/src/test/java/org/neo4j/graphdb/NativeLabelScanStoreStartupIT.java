@@ -24,9 +24,8 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -42,21 +41,13 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_index;
 
 public class NativeLabelScanStoreStartupIT
 {
     private static final Label LABEL = Label.label( "testLabel" );
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() )
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            addSpecificConfig( builder );
-        }
-    };
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
     @Rule
     public final RandomRule random = new RandomRule();
 
@@ -131,11 +122,6 @@ public class NativeLabelScanStoreStartupIT
     private static File storeFile( File directory )
     {
         return new File( directory, NativeLabelScanStore.FILE_NAME );
-    }
-
-    private void addSpecificConfig( GraphDatabaseBuilder builder )
-    {
-        builder.setConfig( label_index, GraphDatabaseSettings.LabelIndex.NATIVE.name() );
     }
 
     private void corruptLabelScanStoreFiles( File storeDirectory ) throws IOException

@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.api.scan;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -37,13 +36,13 @@ import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
  */
 public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabelUpdate,IOException>
 {
-    private final Supplier<IndexStoreView> lazyIndexStoreView;
+    private final IndexStoreView indexStoreView;
     private LabelScanWriter writer;
     private long count;
 
-    public FullLabelStream( Supplier<IndexStoreView> lazyIndexStoreView )
+    public FullLabelStream( IndexStoreView indexStoreView )
     {
-        this.lazyIndexStoreView = lazyIndexStoreView;
+        this.indexStoreView = indexStoreView;
     }
 
     @Override
@@ -51,8 +50,7 @@ public class FullLabelStream implements FullStoreChangeStream, Visitor<NodeLabel
     {
         // Keep the write for using it in visit
         this.writer = writer;
-        IndexStoreView view = lazyIndexStoreView.get();
-        StoreScan<IOException> scan = view.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this, true );
+        StoreScan<IOException> scan = indexStoreView.visitNodes( ArrayUtils.EMPTY_INT_ARRAY, ALWAYS_TRUE_INT, null, this, true );
         scan.run();
         return count;
     }

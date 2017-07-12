@@ -40,7 +40,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -53,10 +52,8 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -82,7 +79,6 @@ public class StoreUpgraderInterruptionTestIT
     @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private LabelScanStoreProvider labelScanStoreProvider;
     private static final Config CONFIG = Config.defaults().augment(
             stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
 
@@ -103,8 +99,6 @@ public class StoreUpgraderInterruptionTestIT
     {
         workingDirectory = directory.directory( "working" );
         prepareDirectory = directory.directory( "prepare" );
-        labelScanStoreProvider = NeoStoreDataSourceRule.nativeLabelScanStoreProvider( workingDirectory, fs,
-                pageCacheRule.getPageCache( fs ), new Monitors() );
     }
 
     @Test

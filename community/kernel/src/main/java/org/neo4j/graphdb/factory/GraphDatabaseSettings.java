@@ -45,7 +45,6 @@ import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
-import static org.neo4j.helpers.collection.Iterables.enumNames;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -544,23 +543,11 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
-    public enum LabelIndex
-    {
-        /**
-         * Native label index. Generally the best option.
-         */
-        NATIVE,
-
-        /**
-         * Selects which ever label index is present in a store, or the default (NATIVE) if no label index present.
-         */
-        AUTO
-    }
-
+    // todo Can we simply remove this setting or do we need to depricate it?
+    @Deprecated
     @Description( "Backend to use for label --> nodes index" )
     @Internal
-    public static final Setting<String> label_index = setting( "dbms.label_index",
-            options( enumNames( LabelIndex.class ), true ), LabelIndex.NATIVE.name() );
+    public static final Setting<String> label_index = setting( "dbms.label_index", STRING, "native" );
 
     // Security settings
 

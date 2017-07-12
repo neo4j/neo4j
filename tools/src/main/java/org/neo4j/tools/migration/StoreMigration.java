@@ -37,7 +37,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -125,10 +124,9 @@ public class StoreMigration
 
             SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
                     HighestSelectionStrategy.getInstance() );
-            LabelScanStoreProvider labelScanStoreProvider = kernelExtensions.resolveDependency( LabelScanStoreProvider.class );
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
-                    schemaIndexProvider, labelScanStoreProvider, legacyIndexProvider.getIndexProviders(),
+                    schemaIndexProvider, legacyIndexProvider.getIndexProviders(),
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ) );
             migrator.migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;

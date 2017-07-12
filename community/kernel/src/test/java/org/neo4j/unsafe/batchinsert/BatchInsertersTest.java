@@ -31,7 +31,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
@@ -70,7 +69,7 @@ public class BatchInsertersTest
 
     private Iterable<KernelExtensionFactory<?>> getKernelExtensions()
     {
-        return Iterables.asIterable( new InMemoryIndexProviderFactory(), new NativeLabelScanStoreExtension() );
+        return Iterables.asIterable( new InMemoryIndexProviderFactory() );
     }
 
     private Map<String,String> getConfig()

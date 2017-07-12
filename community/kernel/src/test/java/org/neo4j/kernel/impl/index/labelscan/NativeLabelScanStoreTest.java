@@ -97,4 +97,9 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
         assertTrue( monitor.rebuiltCalled );
         life.shutdown();
     }
+
+    @Test
+    public void shouldWorkIf() throws Exception
+    {
+    }
 }
