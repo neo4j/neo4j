@@ -76,6 +76,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -269,6 +270,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private File storeDir;
     private boolean readOnly;
     private final IdController idController;
+    private final OperationalMode operationalMode;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final AccessCapability accessCapability;
 
@@ -317,7 +319,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             AccessCapability accessCapability,
             StoreCopyCheckPointMutex storeCopyCheckPointMutex,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            IdController idController )
+            IdController idController,
+            OperationalMode operationalMode )
     {
         this.storeDir = storeDir;
         this.config = config;
@@ -355,6 +358,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         readOnly = config.get( Configuration.read_only );
         this.idController = idController;
+        this.operationalMode = operationalMode;
         msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.legacyIndexProviderLookup = new LegacyIndexProviderLookup()
@@ -430,7 +434,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, databaseSchemaState, legacyIndexTransactionOrdering );
+                    indexConfigStore, databaseSchemaState, legacyIndexTransactionOrdering, operationalMode );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
@@ -563,14 +567,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokens,
             RelationshipTypeTokenHolder relationshipTypeTokens,
             LegacyIndexProviderLookup legacyIndexProviderLookup, IndexConfigStore indexConfigStore,
-            SchemaState schemaState, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering )
+            SchemaState schemaState, SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering, OperationalMode operationalMode )
     {
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder,
                         labelTokens, relationshipTypeTokens, schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, schemaIndexProvider, indexingServiceMonitor, databaseHealth,
                         legacyIndexProviderLookup, indexConfigStore,
-                        legacyIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector );
+                        legacyIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector,
+                        operationalMode );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which

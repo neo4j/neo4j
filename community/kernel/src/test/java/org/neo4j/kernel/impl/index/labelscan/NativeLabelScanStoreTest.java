@@ -101,5 +101,6 @@ public class NativeLabelScanStoreTest extends LabelScanStoreTest
     @Test
     public void shouldWorkIf() throws Exception
     {
+
     }
 }

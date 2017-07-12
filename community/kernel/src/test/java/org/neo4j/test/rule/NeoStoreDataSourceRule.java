@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -137,7 +138,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 RecoveryCleanupWorkCollector.IMMEDIATE,
                 new BufferedIdController(
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
-                        idConfigurationProvider ), jobScheduler ) );
+                        idConfigurationProvider ), jobScheduler ),
+                OperationalMode.single );
         return dataSource;
     }
 

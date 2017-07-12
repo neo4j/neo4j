@@ -69,6 +69,7 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -189,7 +190,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             Monitors monitors,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            OperationalMode operationalMode )
     {
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokens;
@@ -213,8 +215,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
+            Boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
             labelScanStore = new NativeLabelScanStore( pageCache, storeDir, new FullLabelStream( neoStoreIndexStoreView ),
-                    config.get( GraphDatabaseSettings.read_only ), monitors, recoveryCleanupWorkCollector );
+                    readOnly, monitors, recoveryCleanupWorkCollector );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
             schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );

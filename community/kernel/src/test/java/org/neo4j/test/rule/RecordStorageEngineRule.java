@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -118,7 +119,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 legacyIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                RecoveryCleanupWorkCollector.IMMEDIATE ) );
+                RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
     }
 
     @Override
@@ -202,13 +203,13 @@ public class RecordStorageEngineRule extends ExternalResource
                 IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
             super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
                     lockService, indexProvider, indexingServiceMonitor, databaseHealth,
                     legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering, idGeneratorFactory,
-                    idController, monitors, recoveryCleanupWorkCollector );
+                    idController, monitors, recoveryCleanupWorkCollector, operationalMode );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 
