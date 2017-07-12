@@ -21,6 +21,18 @@ package org.neo4j.causalclustering.discovery;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -29,20 +41,19 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.logging.NullLogProvider;
 
-import java.util.*;
-import java.util.concurrent.*;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class SharedDiscoveryServiceIT
 {
     private static final long TIMEOUT_MS = 15_000;
-    private static final long RUN_TIME_MS = 1000;;
+    private static final long RUN_TIME_MS = 1000;
 
     private NullLogProvider logProvider = NullLogProvider.getInstance();
     private NullLogProvider userLogProvider = NullLogProvider.getInstance();
@@ -78,21 +89,23 @@ public class SharedDiscoveryServiceIT
         }
     }
 
-    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
+    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
+            Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
         ResolutionResolver resolutionResolver = new NoOpResolutionResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), null, member,
-                jobScheduler, logProvider, userLogProvider, resolutionResolver);
+        CoreTopologyService topologyService = disoveryServiceFactory
+                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider,
+                        resolutionResolver );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
     private Config config()
     {
         return Config.embeddedDefaults( stringMap(
-                CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
+         CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
                 new BoltConnector( "bolt" ).enabled.name(), "true",
                 new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );

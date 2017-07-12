@@ -19,11 +19,13 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collection;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-
-public interface ResolutionResolver
+public class DomainNameResolverImpl implements DomainNameResolver
 {
-    Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses );
+    public InetAddress[] resolveDomainName(String hostname) throws UnknownHostException
+    {
+        return InetAddress.getAllByName( hostname );
+    }
 }

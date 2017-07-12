@@ -41,8 +41,8 @@ import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 
 import static java.lang.Thread.sleep;
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.chooseResolver;
 import static org.neo4j.causalclustering.core.server.CoreServerModule.CLUSTER_ID_NAME;
+import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 
 public class ClusteringModule
 {
@@ -58,7 +58,7 @@ public class ClusteringModule
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        ResolutionResolver resolutionResolver = chooseResolver( config );
+        ResolutionResolver resolutionResolver = chooseResolver( config, logProvider, userLogProvider );
 
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
@@ -73,8 +73,7 @@ public class ClusteringModule
                         logProvider );
 
         CoreBootstrapper coreBootstrapper =
-                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config,
-                        logProvider );
+                new CoreBootstrapper( platformModule.storeDir, platformModule.pageCache, fileSystem, config, logProvider );
 
         clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );

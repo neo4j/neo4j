@@ -55,10 +55,12 @@ public class HazelcastClientConnector implements HazelcastConnector
 
         ClientNetworkConfig networkConfig = clientConfig.getNetworkConfig();
 
-        for ( AdvertisedSocketAddress address : resolutionResolver
-                .resolve( config.get( CausalClusteringSettings.initial_discovery_members ) ) )
+        for ( AdvertisedSocketAddress address : config.get( CausalClusteringSettings.initial_discovery_members ) )
         {
-            networkConfig.addAddress( address.toString() );
+            for ( AdvertisedSocketAddress advertisedSocketAddress : resolutionResolver.resolve( address ) )
+            {
+                networkConfig.addAddress( advertisedSocketAddress.toString() );
+            }
         }
 
         configureSsl( networkConfig, sslPolicy, logProvider );

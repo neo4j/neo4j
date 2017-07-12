@@ -100,8 +100,8 @@ public class EnterpriseNeoServer extends CommunityNeoServer
         case HA:
             return lifecycleManagingDatabase( HA_FACTORY );
         case ARBITER:
-            // Should never reach here because this discovery_type is handled separately by the scripts.
-            throw new IllegalArgumentException( "The server cannot be started in ARBITER discovery_type." );
+            // Should never reach here because this mode is handled separately by the scripts.
+            throw new IllegalArgumentException( "The server cannot be started in ARBITER mode." );
         case CORE:
             return lifecycleManagingDatabase( CORE_FACTORY );
         case READ_REPLICA:

@@ -340,12 +340,12 @@ public class RaftLogShipperTest
 
         startLogShipper();
         logShipper.onMatch( 0, new LeaderContext( 0, 0 ) );
-        // we are now in PIPELINE discoveryType, because we matched and the entire last batch was sent out
+        // we are now in PIPELINE mode, because we matched and the entire last batch was sent out
 
         logShipper.onTimeout();
-        // and now we should be in CATCHUP discoveryType, awaiting a late response
+        // and now we should be in CATCHUP mode, awaiting a late response
 
-        // the response to the batch never came, so on timeout we enter MISMATCH discoveryType and send a single entry based on the latest we knowingly sent (entry3)
+        // the response to the batch never came, so on timeout we enter MISMATCH mode and send a single entry based on the latest we knowingly sent (entry3)
         logShipper.onTimeout();
         outbound.clear();
 

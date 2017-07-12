@@ -23,11 +23,13 @@ import java.util.Collection;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
 
+import static java.util.Collections.singleton;
+
 public class NoOpResolutionResolver implements ResolutionResolver
 {
     @Override
-    public Collection<AdvertisedSocketAddress> resolve( Collection<AdvertisedSocketAddress> advertisedSocketAddresses )
+    public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses )
     {
-        return advertisedSocketAddresses;
+        return singleton(advertisedSocketAddresses);
     }
 }

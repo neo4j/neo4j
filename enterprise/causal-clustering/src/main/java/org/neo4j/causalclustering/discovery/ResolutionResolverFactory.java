@@ -19,11 +19,23 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collection;
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.logging.LogProvider;
 
-import org.neo4j.helpers.AdvertisedSocketAddress;
-
-public interface ResolutionResolver
+public class ResolutionResolverFactory
 {
-    Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses );
+    public static ResolutionResolver chooseResolver( Config config, LogProvider logProvider,
+            LogProvider userLogProvider )
+    {
+        CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
+        if ( discoveryType == CausalClusteringSettings.DiscoveryType.DNS )
+        {
+            return new DnsResolutionResolver( logProvider, userLogProvider, new DomainNameResolverImpl() );
+        }
+        else
+        {
+            return new NoOpResolutionResolver();
+        }
+    }
 }

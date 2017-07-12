@@ -19,13 +19,6 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.ClusterId;
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.JobScheduler;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +27,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.neo4j.causalclustering.identity.ClusterId;
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.JobScheduler;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.ssl.SslPolicy;
 
 import static java.util.Collections.unmodifiableMap;
 
@@ -49,7 +49,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, ResolutionResolver resolutionResolver)
+            LogProvider logProvider, LogProvider userLogProvider, ResolutionResolver resolutionResolver )
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient =
                 new SharedDiscoveryCoreClient( this, myself, logProvider, config );
@@ -59,7 +59,8 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
     }
 
     @Override
-    public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider, JobScheduler jobScheduler, MemberId myself )
+    public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
+            JobScheduler jobScheduler, MemberId myself, ResolutionResolver resolutionResolver )
     {
         return new SharedDiscoveryReadReplicaClient( this, config, myself, logProvider );
     }

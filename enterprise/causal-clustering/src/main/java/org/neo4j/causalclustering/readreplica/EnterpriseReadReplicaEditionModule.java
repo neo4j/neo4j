@@ -105,7 +105,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
-import static org.neo4j.causalclustering.core.CausalClusteringSettings.chooseResolver;
+import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -133,8 +133,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         this.accessCapability = new ReadOnly();
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging, platformModule.jobScheduler,
-                fileWatcherFileNameFilter() );
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
+                platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
@@ -180,25 +180,23 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         commitProcessFactory = readOnly();
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
+        LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
-        SslPolicyLoader sslPolicyFactory =
-                dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
+        SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
         SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
-        ResolutionResolver resolutionResolver = chooseResolver( config );
+        ResolutionResolver resolutionResolver = chooseResolver( config, logProvider, userLogProvider );
 
-        TopologyService topologyService = discoveryServiceFactory
-                .topologyService( config, clusterSslPolicy, logProvider, platformModule.jobScheduler, myself,
-                        resolutionResolver );
+        TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
+                logProvider, platformModule.jobScheduler, myself, resolutionResolver );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
-        long inactivityTimeoutMillis =
-                config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
+        long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis,
-                        monitors, clusterSslPolicy ) );
+                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
+                        inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -219,7 +217,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         LocalDatabase localDatabase =
                 new LocalDatabase( platformModule.storeDir, storeFiles, platformModule.dataSourceManager,
-                        databaseHealthSupplier, watcherService, platformModule.availabilityGuard, logProvider );
+                        databaseHealthSupplier, watcherService, platformModule.availabilityGuard,
+                        logProvider );
 
         RemoteStore remoteStore =
                 new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
@@ -314,7 +313,8 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
     static Predicate<String> fileWatcherFileNameFilter()
     {
-        return Predicates.any( fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
+        return Predicates.any(
+                fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
                 filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );

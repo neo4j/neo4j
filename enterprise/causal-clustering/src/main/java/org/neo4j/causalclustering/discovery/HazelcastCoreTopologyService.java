@@ -19,8 +19,23 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import com.hazelcast.config.*;
-import com.hazelcast.core.*;
+import com.hazelcast.config.InterfacesConfig;
+import com.hazelcast.config.JoinConfig;
+import com.hazelcast.config.MemberAttributeConfig;
+import com.hazelcast.config.NetworkConfig;
+import com.hazelcast.config.TcpIpConfig;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastException;
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.MemberAttributeEvent;
+import com.hazelcast.core.MembershipEvent;
+import com.hazelcast.core.MembershipListener;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -49,15 +64,6 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.extr
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getCoreTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.getReadReplicaTopology;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.refreshGroups;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-
-import static com.hazelcast.spi.properties.GroupProperty.*;
-import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.*;
 import static org.neo4j.causalclustering.discovery.HazelcastSslConfiguration.configureSsl;
 
 class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopologyService
@@ -135,10 +141,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
             {
                 return;
             }
-            membershipRegistrationId =
-                    hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
-            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod,
-                    HazelcastCoreTopologyService.this::refreshTopology );
+            membershipRegistrationId = hazelcastInstance.getCluster().addMembershipListener( new OurMembershipListener() );
+            refreshJob = scheduler.scheduleRecurring( "TopologyRefresh", refreshPeriod, HazelcastCoreTopologyService.this::refreshTopology );
             log.info( "Cluster discovery service started" );
         } );
         startingThread.setDaemon( true );
@@ -186,9 +190,12 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         tcpIpConfig.setEnabled( true );
 
         List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
-        for ( AdvertisedSocketAddress advertisedAddress : resolutionResolver.resolve( initialMembers ) )
+        for ( AdvertisedSocketAddress address : initialMembers )
         {
-            tcpIpConfig.addMember( advertisedAddress.toString() );
+            for ( AdvertisedSocketAddress advertisedSocketAddress : resolutionResolver.resolve( address ) )
+            {
+                tcpIpConfig.addMember( advertisedSocketAddress.toString() );
+            }
         }
 
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
@@ -238,8 +245,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         c.setNetworkConfig( networkConfig );
 
-        MemberAttributeConfig memberAttributeConfig =
-                HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
+        MemberAttributeConfig memberAttributeConfig = HazelcastClusterTopology.buildMemberAttributesForCore( myself, config );
 
         c.setMemberAttributeConfig( memberAttributeConfig );
         logConnectionInfo( initialMembers );

@@ -152,7 +152,7 @@ public class Neo4jMetricsBuilder
             else
             {
                 logService.getUserLog( getClass() )
-                        .warn( "Cluster metrics was enabled but the graph database is not in HA discovery_type." );
+                        .warn( "Cluster metrics was enabled but the graph database is not in HA mode." );
             }
         }
 
@@ -211,7 +211,7 @@ public class Neo4jMetricsBuilder
             {
                 logService.getUserLog( getClass() )
                         .warn( "Causal Clustering metrics was enabled but the graph database is not in Causal " +
-                                "Clustering discovery_type." );
+                                "Clustering mode." );
             }
         }
 
