@@ -49,10 +49,8 @@ import static org.junit.Assert.fail;
 import static org.junit.runners.Suite.SuiteClasses;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .NodePropertyExistenceExistenceConstrainVerificationIT;
-import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT
-        .RelationshipPropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.NodePropertyExistenceExistenceConstrainVerificationIT;
+import static org.neo4j.kernel.impl.api.integrationtest.PropertyExistenceConstraintVerificationIT.RelationshipPropertyExistenceExistenceConstrainVerificationIT;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 @RunWith( Suite.class )
@@ -62,6 +60,8 @@ import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 } )
 public class PropertyExistenceConstraintVerificationIT
 {
+    private static final int WAIT_TIMEOUT_SECONDS = 10;
+
     public static class NodePropertyExistenceExistenceConstrainVerificationIT
             extends AbstractPropertyExistenceConstraintVerificationIT
     {
@@ -182,7 +182,8 @@ public class PropertyExistenceConstraintVerificationIT
                     createConstraint( db, KEY, PROPERTY );
 
                     nodeCreation = thread.executeAndAwait( createOffender(), null,
-                            waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ), 5, SECONDS );
+                            waitingWhileIn( OperationsFacade.class, offenderCreationMethodName() ),
+                            WAIT_TIMEOUT_SECONDS, SECONDS );
 
                     tx.success();
                 }
@@ -216,7 +217,8 @@ public class PropertyExistenceConstraintVerificationIT
                     createOffender( db, KEY );
 
                     constraintCreation = thread.executeAndAwait( createConstraint(), null,
-                            waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ), 5, SECONDS );
+                            waitingWhileIn( OperationsFacade.class, constraintCreationMethodName() ),
+                            WAIT_TIMEOUT_SECONDS, SECONDS );
 
                     tx.success();
                 }
