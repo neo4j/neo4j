@@ -22,10 +22,12 @@ package org.neo4j.kernel.ha;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,6 +47,9 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 public class FailoverWithAdditionalSlaveFailuresIT
 {
     @Rule
+    public TestName name = new TestName();
+
+    @Rule
     public LoggerRule logger = new LoggerRule();
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory();
@@ -53,7 +58,7 @@ public class FailoverWithAdditionalSlaveFailuresIT
     private int clusterSize;
     private int[] slavesToFail;
 
-    @Parameters( name = "{index} clusterSize:{0}" )
+    @Parameters
     public static Collection<Object[]> data()
     {
         return Arrays.asList(new Object[][] {
@@ -100,7 +105,8 @@ public class FailoverWithAdditionalSlaveFailuresIT
 
     private void testFailoverWithAdditionalSlave( int clusterSize, int[] slaveIndexes ) throws Throwable
     {
-        ClusterManager manager = new ClusterManager.Builder().withRootDirectory( dir.cleanDirectory( "testcluster" ) ).
+        File root = dir.cleanDirectory( "testcluster_" + name.getMethodName() );
+        ClusterManager manager = new ClusterManager.Builder().withRootDirectory( root ).
                 withCluster( ClusterManager.clusterOfSize( clusterSize ) )
                 .build();
 
