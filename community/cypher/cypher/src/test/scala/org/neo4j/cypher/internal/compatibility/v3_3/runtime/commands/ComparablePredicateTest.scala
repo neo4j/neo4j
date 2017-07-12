@@ -46,10 +46,12 @@ class ComparablePredicateTest extends CypherFunSuite {
     Long.MaxValue,
     Double.MaxValue,
     Double.PositiveInfinity,
-    Double.NaN
-//    null TODO
+    Double.NaN,
+    null
   ).flatMap {
-    case v: Number => if (v == null) Seq(v) else Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
+    case v if (v == null) => Seq(v)
+    case v if v.isInstanceOf[Double] && v.asInstanceOf[Double].isNaN => Seq(v.doubleValue(), v.floatValue(), v)
+    case v => Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
 
   val textualValues = Seq(
@@ -60,77 +62,86 @@ class ComparablePredicateTest extends CypherFunSuite {
     "Hallo!",
     "Hello",
     "Hullo",
-//    null, TODO
+    null,
     "\uD801\uDC37"
   ).flatMap {
-    case v: String => if (v == null) Seq(v) else Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
+    case v if (v == null) => Seq(v)
+    case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 
-  test("should compare numerical values using <") {
-    for (left <- numericalValues)
-      for (right <- numericalValues)
-        actualLessThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) < 0)
+  val allValues = numericalValues ++ textualValues
+
+  test("should compare values using <") {
+    for (left <- allValues)
+      for (right <- allValues)
+        LessThan(Literal(left), Literal(right)) should compareUsingLessThan(left, right)
   }
 
-  test("should compare numerical values using <=") {
-    for (left <- numericalValues)
-      for (right <- numericalValues)
-        actualLessThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) <= 0)
+  test("should compare values using <=") {
+    for (left <- allValues)
+      for (right <- allValues)
+        LessThanOrEqual(Literal(left), Literal(right)) should compareUsingLessThanOrEqual(left, right)
   }
 
-  test("should compare numerical values using >") {
-    for (left <- numericalValues)
-      for (right <- numericalValues)
-        actualGreaterThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) > 0)
+  test("should compare values using >") {
+    for (left <- allValues)
+      for (right <- allValues)
+        GreaterThan(Literal(left), Literal(right)) should compareUsingGreaterThan(left, right)
   }
 
-  test("should compare numerical values using >=") {
-    for (left <- numericalValues)
-      for (right <- numericalValues)
-        actualGreaterThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) >= 0)
+  test("should compare values using >=") {
+    for (left <- allValues)
+      for (right <- allValues)
+        GreaterThanOrEqual(Literal(left), Literal(right)) should compareUsingGreaterThanOrEqual(left, right)
   }
-
-  test("should compare textual values using <") {
-    for (left <- textualValues)
-      for (right <- textualValues)
-        actualLessThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) < 0)
-  }
-
-  test("should compare textual values using <=") {
-    for (left <- textualValues)
-      for (right <- textualValues)
-        actualLessThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) <= 0)
-  }
-
-  test("should compare textual values using >") {
-    for (left <- textualValues)
-      for (right <- textualValues)
-        actualGreaterThan(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) > 0)
-  }
-
-  test("should compare textual values using >=") {
-    for (left <- textualValues)
-      for (right <- textualValues)
-        actualGreaterThanOrEqual(left, right) should equal(CypherOrdering.DEFAULT.compare(left, right) >= 0)
-  }
-
-  private def actualLessThan(left: Any, right: Any) =
-    LessThan(Literal(left), Literal(right)).isTrue(ExecutionContext.empty)(QueryStateHelper.empty)
-
-  private def actualLessThanOrEqual(left: Any, right: Any) =
-    LessThanOrEqual(Literal(left), Literal(right)).isTrue(ExecutionContext.empty)(QueryStateHelper.empty)
-
-  private def actualEqual(left: Any, right: Any) =
-    Equals(Literal(left), Literal(right)).isTrue(ExecutionContext.empty)(QueryStateHelper.empty)
-
-  private def actualGreaterThan(left: Any, right: Any) =
-    GreaterThan(Literal(left), Literal(right)).isTrue(ExecutionContext.empty)(QueryStateHelper.empty)
-
-  private def actualGreaterThanOrEqual(left: Any, right: Any) =
-    GreaterThanOrEqual(Literal(left), Literal(right)).isTrue(ExecutionContext.empty)(QueryStateHelper.empty)
 
   private def reverse(s: String) = new StringBuilder(s).reverse.toString()
+
+  case class compareUsingLessThan(left: Any, right: Any) extends compareUsing(left, right, "<")
+
+  case class compareUsingLessThanOrEqual(left: Any, right: Any) extends compareUsing(left, right, "<=")
+
+  case class compareUsingGreaterThanOrEqual(left: Any, right: Any) extends compareUsing(left, right, ">=")
+
+  case class compareUsingGreaterThan(left: Any, right: Any) extends compareUsing(left, right, ">")
+
+  class compareUsing(left: Any, right: Any, operator: String) extends Matcher[ComparablePredicate] {
+    def apply(predicate: ComparablePredicate): MatchResult = {
+      val actual = predicate.isMatch(ExecutionContext.empty)(QueryStateHelper.empty)
+
+      if (isIncomparable(left, right))
+        buildResult(!actual.isDefined, "null", actual)
+      else {
+        assert(actual.isDefined, s"$left $operator $right")
+        val expected = CypherOrdering.DEFAULT.compare(left, right)
+        val result = operator match {
+          case "<" => (expected < 0) == actual.get
+          case "<=" => (expected <= 0) == actual.get
+          case ">=" => (expected >= 0) == actual.get
+          case ">" => (expected > 0) == actual.get
+        }
+        buildResult(result, expected, actual)
+      }
+    }
+
+    def isIncomparable(left: Any, right: Any): Boolean = {
+      left == null || (left.isInstanceOf[Double] && left.asInstanceOf[Double].isNaN) ||
+        right == null || (right.isInstanceOf[Double] && right.asInstanceOf[Double].isNaN) ||
+        left.isInstanceOf[Number] && right.isInstanceOf[String] ||
+        left.isInstanceOf[String] && right.isInstanceOf[Number]
+    }
+
+    def buildResult(result: Boolean, expected: Any, actual: Any) = {
+      MatchResult(
+        result,
+        s"Expected ${left} $operator ${right} to compare as $expected but it was $actual",
+        s"Expected ${left} $operator ${right} to not compare as $expected but it was $actual"
+      )
+    }
+  }
+
 }
+
 
 
 
