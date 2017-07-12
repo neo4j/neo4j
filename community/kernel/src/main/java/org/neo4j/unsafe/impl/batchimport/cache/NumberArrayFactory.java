@@ -315,7 +315,8 @@ public interface NumberArrayFactory
 
         private long fractionOf( long length )
         {
-            return min( length / 10, Integer.MAX_VALUE );
+            int maxArraySize = Integer.MAX_VALUE - Short.MAX_VALUE;
+            return min( length / 10, maxArraySize );
         }
 
         @Override
