@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.bolt.v1.packstream.PackOutputClosedException;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
@@ -32,21 +33,6 @@ import org.neo4j.logging.Log;
 class MessageProcessingHandler implements BoltResponseHandler
 {
     protected final Map<String,Object> metadata = new HashMap<>();
-
-    // TODO: move this somewhere more sane (when modules are unified)
-    static void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error )
-            throws IOException
-    {
-        if ( error.isFatal() )
-        {
-            out.onFatal( error.status(), error.message() );
-        }
-        else
-        {
-            out.onFailure( error.status(), error.message() );
-        }
-
-    }
 
     protected final Log log;
     protected final BoltWorker worker;
@@ -128,10 +114,39 @@ class MessageProcessingHandler implements BoltResponseHandler
         return metadata;
     }
 
-    void clearState()
+    private void clearState()
     {
         error = null;
         ignored = false;
         metadata.clear();
+    }
+
+    private void publishError( BoltResponseMessageHandler<IOException> out, Neo4jError error ) throws IOException
+    {
+        try
+        {
+            if ( error.isFatal() )
+            {
+                out.onFatal( error.status(), error.message() );
+            }
+            else
+            {
+                out.onFailure( error.status(), error.message() );
+            }
+        }
+        catch ( PackOutputClosedException e )
+        {
+            // we tried to write error back to the client and realized that the underlying channel is closed
+            // log a warning, client driver might have just been stopped and closed all socket connections
+            log.warn( "Unable to send error back to the client. " +
+                      "Communication channel is closed. Client has probably been stopped.", error.cause() );
+        }
+        catch ( Throwable t )
+        {
+            // some unexpected error happened while writing exception back to the client
+            // log it together with the original error being suppressed
+            t.addSuppressed( error.cause() );
+            log.error( "Unable to send error back to the client", t );
+        }
     }
 }

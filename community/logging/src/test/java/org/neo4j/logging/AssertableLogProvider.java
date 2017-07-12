@@ -28,12 +28,12 @@ import org.junit.runners.model.Statement;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.IllegalFormatException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.annotation.Nonnull;
@@ -52,7 +52,7 @@ import static org.junit.Assert.fail;
 public class AssertableLogProvider extends AbstractLogProvider<Log> implements TestRule
 {
     private final boolean debugEnabled;
-    private final List<LogCall> logCalls = Collections.synchronizedList( new ArrayList<LogCall>() );
+    private final List<LogCall> logCalls = new CopyOnWriteArrayList<>();
 
     public AssertableLogProvider()
     {
