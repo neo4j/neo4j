@@ -702,7 +702,7 @@ return p""")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n) RETURN n.x > 0 AS gt, n.x < 0 AS lt, n.x >= 0 AS ge, n.x <= 0 AS le")
 
     // Then
-    result.toList should equal(List(Map("gt" -> false, "lt" -> false, "le" -> false, "ge" -> false)))
+    result.toList should equal(List(Map("gt" -> null, "lt" -> null, "le" -> null, "ge" -> null)))
   }
 
   test("should handle NaN comparisons with string correctly") {
@@ -724,7 +724,7 @@ return p""")
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly("PROFILE MATCH (n) RETURN n.x > n.x AS gt, n.x < n.x AS lt, n.x <= n.x AS le, n.x >= n.x AS ge")
 
     // Then
-    result.toList should equal(List(Map("gt" -> false, "lt" -> false, "le" -> false, "ge" -> false)))
+    result.toList should equal(List(Map("gt" -> null, "lt" -> null, "le" -> null, "ge" -> null)))
   }
 
   test("should handle NaN null checks correctly") {
