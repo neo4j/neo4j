@@ -29,10 +29,16 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -44,6 +50,7 @@ import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.StreamConsumer;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -65,48 +72,101 @@ import static org.junit.Assert.assertTrue;
  */
 public class PullUpdatesAppliedIT
 {
-    private final HighlyAvailableGraphDatabase[] dbs = new HighlyAvailableGraphDatabase[3];
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
+
+    private SortedMap<Integer, Configuration> configurations;
+    private Map<Integer, HighlyAvailableGraphDatabase> databases;
+
+    private class Configuration
+    {
+        final int serverId;
+        final int clusterPort;
+        final int haPort;
+        final File directory;
+
+        Configuration( int serverId, int clusterPort, int haPort, File directory )
+        {
+            this.serverId = serverId;
+            this.clusterPort = clusterPort;
+            this.haPort = haPort;
+            this.directory = directory;
+        }
+    }
 
     @Before
     public void doBefore() throws Exception
     {
-        for ( int i = 0; i < dbs.length; i++ )
+        configurations = createConfigurations();
+
+        databases = startDatabases();
+    }
+
+    private SortedMap<Integer, Configuration> createConfigurations()
+    {
+        SortedMap<Integer, Configuration> configurations = new TreeMap<>();
+
+        IntStream.range( 0, 3 )
+                .forEach( serverId ->
+                {
+                    int clusterPort = 5001 + serverId;
+                    int haPort = 6666 + serverId;
+                    File directory = testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile();
+
+                    configurations.put( serverId, new Configuration( serverId, clusterPort, haPort, directory ) );
+                } );
+
+        return configurations;
+    }
+
+    private Map<Integer, HighlyAvailableGraphDatabase> startDatabases()
+    {
+        Map<Integer, HighlyAvailableGraphDatabase> databases = new HashMap<>();
+
+        for ( Configuration configuration : configurations.values() )
         {
-            dbs[i] = newDb( i );
+            int serverId = configuration.serverId;
+            int clusterPort = configuration.clusterPort;
+            int haPort = configuration.haPort;
+            File directory = configuration.directory;
+
+            int[] initialHostPorts = getInitialHostPorts( configurations );
+
+            HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, directory, initialHostPorts );
+
+            databases.put( serverId, hagdb);
         }
 
-        // Wait for all db's to become available
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        for ( HighlyAvailableGraphDatabase database : databases.values() )
         {
-            db.isAvailable( 5000 );
+            database.isAvailable( 5000 );
         }
+
+        return databases;
     }
 
     @After
     public void doAfter() throws Exception
     {
-        for ( HighlyAvailableGraphDatabase db : dbs )
+        if ( databases != null )
         {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
+            databases.values().stream()
+                    .filter( Objects::nonNull )
+                    .forEach( GraphDatabaseFacade::shutdown );
         }
     }
 
     @Test
     public void testUpdatesAreWrittenToLogBeforeBeingAppliedToStore() throws Exception
     {
-        int master = getCurrentMaster();
-        addNode( master );
-        int toKill = (master + 1) % dbs.length;
-        HighlyAvailableGraphDatabase dbToKill = dbs[toKill];
+        int serverIdOfMaster = getCurrentMaster();
+        addNode( serverIdOfMaster );
+        int serverIdOfDatabaseToKill = findSomeoneNotMaster( serverIdOfMaster );
+        HighlyAvailableGraphDatabase databaseToKill = findDatabase( serverIdOfDatabaseToKill );
 
         final CountDownLatch latch1 = new CountDownLatch( 1 );
 
-        final HighlyAvailableGraphDatabase masterDb = dbs[master];
+        final HighlyAvailableGraphDatabase masterDb = findDatabase( serverIdOfMaster );
         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener(
                 new ClusterListener.Adapter()
                 {
@@ -119,13 +179,17 @@ public class PullUpdatesAppliedIT
                     }
                 } );
 
-        dbToKill.shutdown();
+        databaseToKill.shutdown();
 
         assertTrue( "Timeout waiting for instance to leave cluster", latch1.await( 60, TimeUnit.SECONDS ) );
 
-        addNode( master ); // this will be pulled by tne next start up, applied
-        // but not written to log.
-        File targetDirectory = testDirectory.directory( "" + toKill );
+        addNode( serverIdOfMaster ); // this will be pulled by tne next start up, applied but not written to log.
+
+        Configuration configuration = configurations.get( serverIdOfDatabaseToKill );
+
+        int clusterPort = configuration.clusterPort;
+        int haPort = configuration.haPort;
+        File directory = configuration.directory;
 
         // Setup to detect shutdown of separate JVM, required since we don't exit cleanly. That is also why we go
         // through the heartbeat and not through the cluster change as above.
@@ -143,7 +207,7 @@ public class PullUpdatesAppliedIT
                     }
                 } );
 
-        runInOtherJvmToGetExitCode( targetDirectory.getAbsolutePath(), "" + toKill, "" + 5001 );
+        runInOtherJvm( directory, serverIdOfDatabaseToKill, clusterPort, haPort, getInitialHostPorts() );
 
         assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
 
@@ -151,46 +215,58 @@ public class PullUpdatesAppliedIT
         // TODO This is to demonstrate shortcomings in our design. Fix this, you ugly, ugly hacker
         Thread.sleep( 15000 );
 
-        restart( toKill ); // recovery and branching.
-        boolean hasBranchedData = new File( targetDirectory, "branched" ).listFiles().length > 0;
+        restart( serverIdOfDatabaseToKill ); // recovery and branching.
+        boolean hasBranchedData = new File( directory, "branched" ).listFiles().length > 0;
         assertFalse( hasBranchedData );
     }
 
-    // For executing in a different process than the one running the test case.
-    public static void main( String[] args ) throws Exception
+    private HighlyAvailableGraphDatabase findDatabase( int serverId )
     {
-        File storePath = new File( args[0] );
-        int serverId = Integer.parseInt( args[1] );
-        int[] initialHostPorts = new int[args.length - 2];
-
-        for ( int i = 2; i < args.length; i++ )
-        {
-            initialHostPorts[i] = Integer.parseInt( args[i] );
-        }
-
-        database( serverId, storePath, initialHostPorts ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-        // this is the bug trigger
-        // no shutdown, emulates a crash.
+        return databases.get( serverId );
     }
 
-    private HighlyAvailableGraphDatabase newDb( int serverId )
+    private int findSomeoneNotMaster( int serverIdOfMaster )
     {
-        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile(), 5001 );
+        return databases.keySet().stream()
+                .filter( serverId -> serverId != serverIdOfMaster )
+                .findAny().orElseThrow( IllegalStateException::new );
+    }
+
+    private int[] getInitialHostPorts()
+    {
+        return getInitialHostPorts( configurations );
+    }
+
+    private int[] getInitialHostPorts( Map<Integer, Configuration> configurations )
+    {
+        return configurations.values().stream().mapToInt( configuration -> configuration.clusterPort ).toArray();
     }
 
     private void restart( int serverId )
     {
-        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile(), 5001 );
+        Configuration configuration = configurations.get( serverId );
+
+        int clusterPort = configuration.clusterPort;
+        int haPort = configuration.haPort;
+        File directory = configuration.directory;
+
+        HighlyAvailableGraphDatabase highlyAvailableGraphDatabase =
+                database( serverId, clusterPort, haPort, directory, getInitialHostPorts() );
+
+        databases.put( serverId, highlyAvailableGraphDatabase );
     }
 
-    private static HighlyAvailableGraphDatabase database( int serverId, File path, int... initialHostPorts )
+    private static HighlyAvailableGraphDatabase database( int serverId, int clusterPort, int haPort, File path, int... initialHostPorts )
     {
         String initialHosts = buildInitialHosts( initialHostPorts );
 
         return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( ClusterSettings.initial_hosts, initialHosts )
+                // because we run single threaded: if we specified all 3x cluster members,
+                // first database would block, wait, and time out because it would be the only member
+                // this makes the test less robust, because it _could_ happen that first instance didn't become or remain master
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + initialHostPorts[0] )
                 .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + serverId) )
                 .setConfig( HaSettings.pull_interval, "0ms" )
@@ -214,12 +290,21 @@ public class PullUpdatesAppliedIT
         return initialHosts.toString();
     }
 
-    private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
+    private void runInOtherJvm( File directory, int serverIdOfDatabaseToKill,
+                                       int clusterPort, int haPort, int... initialHostPorts ) throws Exception
     {
-        List<String> allArgs = new ArrayList<String>( Arrays.asList( "java", "-Djava.awt.headless=true", "-cp",
-                System.getProperty( "java.class.path" ), PullUpdatesAppliedIT.class.getName() ) );
-        allArgs.addAll( Arrays.asList( args ) );
-        Process p = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
+        List<String> commandLine = new ArrayList<>( Arrays.asList(
+                "java",
+                "-Djava.awt.headless=true",
+                "-cp", System.getProperty( "java.class.path" ),
+                PullUpdatesAppliedIT.class.getName() ) );
+        commandLine.add( directory.toString() );
+        commandLine.add( String.valueOf( serverIdOfDatabaseToKill ) );
+        commandLine.add( String.valueOf( clusterPort ) );
+        commandLine.add( String.valueOf( haPort ) );
+        IntStream.of( initialHostPorts ).mapToObj( String::valueOf ).forEach( commandLine::add );
+
+        Process p = Runtime.getRuntime().exec( commandLine.toArray( new String[commandLine.size()] ) );
         List<Thread> threads = new LinkedList<>();
         launchStreamConsumers( threads, p );
         /*
@@ -227,13 +312,34 @@ public class PullUpdatesAppliedIT
          * threads running after main() completes, so we need to kill it. When? 10 seconds
          * is good enough.
          */
-        Thread.sleep( 10000 );
+        // a generous timeout; individual tests' latencies do not matter when running tests in parallel
+        Thread.sleep( 30000 );
         p.destroy();
         for ( Thread t : threads )
         {
             t.join();
         }
-        return 0;
+    }
+
+    // For executing in a different process than the one running the test case.
+    public static void main( String[] args ) throws Exception
+    {
+        File storePath = new File( args[0] );
+        int serverId = Integer.parseInt( args[1] );
+        int clusterPort = Integer.parseInt( args[2] );
+        int haPort = Integer.parseInt( args[3] );
+        int[] initialHostPorts = new int[args.length - 4];
+
+        for ( int i = 0; i < args.length - 4; i++ )
+        {
+            initialHostPorts[i] = Integer.parseInt( args[i + 4] );
+        }
+
+        HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, storePath, initialHostPorts );
+
+        hagdb.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        // this is the bug trigger
+        // no shutdown, emulates a crash.
     }
 
     private static void launchStreamConsumers( List<Thread> join, Process p )
@@ -248,28 +354,22 @@ public class PullUpdatesAppliedIT
         err.start();
     }
 
-    private long addNode( int dbId )
+    private void addNode( int serverId )
     {
-        HighlyAvailableGraphDatabase db = dbs[dbId];
-        long result = -1;
+        HighlyAvailableGraphDatabase db = findDatabase( serverId );
+
         try ( Transaction tx = db.beginTx() )
         {
-            result = db.createNode().getId();
+            db.createNode().getId();
             tx.success();
         }
-        return result;
     }
 
     private int getCurrentMaster() throws Exception
     {
-        for ( int i = 0; i < dbs.length; i++ )
-        {
-            HighlyAvailableGraphDatabase db = dbs[i];
-            if ( db.isMaster() )
-            {
-                return i;
-            }
-        }
-        return -1;
+        return databases.entrySet().stream()
+                .filter( entry -> entry.getValue().isMaster() )
+                .findFirst().orElseThrow( () -> new IllegalStateException( "no master" ) )
+                .getKey();
     }
 }
