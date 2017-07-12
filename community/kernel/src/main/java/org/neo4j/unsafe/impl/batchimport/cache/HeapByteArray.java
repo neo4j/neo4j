@@ -32,7 +32,7 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     private final byte[] defaultValue;
     private final boolean defaultValueIsUniform;
 
-    public HeapByteArray( int length, byte[] defaultValue, int base )
+    public HeapByteArray( int length, byte[] defaultValue, long base )
     {
         super( defaultValue.length, base );
         this.length = length;

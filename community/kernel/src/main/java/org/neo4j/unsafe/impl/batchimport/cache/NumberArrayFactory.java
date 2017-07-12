@@ -144,19 +144,19 @@ public interface NumberArrayFactory
         @Override
         public IntArray newIntArray( long length, int defaultValue, long base )
         {
-            return new HeapIntArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
+            return new HeapIntArray( safeCastLongToInt( length ), defaultValue, base );
         }
 
         @Override
         public LongArray newLongArray( long length, long defaultValue, long base )
         {
-            return new HeapLongArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
+            return new HeapLongArray( safeCastLongToInt( length ), defaultValue, base );
         }
 
         @Override
         public ByteArray newByteArray( long length, byte[] defaultValue, long base )
         {
-            return new HeapByteArray( safeCastLongToInt( length ), defaultValue, toIntExact( base ) );
+            return new HeapByteArray( safeCastLongToInt( length ), defaultValue, base );
         }
 
         @Override
