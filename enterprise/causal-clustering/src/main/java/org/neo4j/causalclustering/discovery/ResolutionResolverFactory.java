@@ -25,17 +25,17 @@ import org.neo4j.logging.LogProvider;
 
 public class ResolutionResolverFactory
 {
-    public static ResolutionResolver chooseResolver( Config config, LogProvider logProvider,
+    public static HostnameResolver chooseResolver( Config config, LogProvider logProvider,
             LogProvider userLogProvider )
     {
         CausalClusteringSettings.DiscoveryType discoveryType = config.get( CausalClusteringSettings.discovery_type );
         if ( discoveryType == CausalClusteringSettings.DiscoveryType.DNS )
         {
-            return new DnsResolutionResolver( logProvider, userLogProvider, new DomainNameResolverImpl() );
+            return new DnsHostnameResolver( logProvider, userLogProvider, new DomainNameResolverImpl() );
         }
         else
         {
-            return new NoOpResolutionResolver();
+            return new NoOpHostnameResolver();
         }
     }
 }

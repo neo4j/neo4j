@@ -19,11 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.util.Collection;
-
-import org.neo4j.helpers.AdvertisedSocketAddress;
-
-public interface ResolutionResolver
+public class UnknownHostException extends RuntimeException
 {
-    Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses );
+    public UnknownHostException(java.net.UnknownHostException unknownHostException)
+    {
+        super(unknownHostException);
+    }
 }

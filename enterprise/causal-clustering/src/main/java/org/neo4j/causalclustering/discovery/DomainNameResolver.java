@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public interface DomainNameResolver
 {

@@ -19,19 +19,17 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import java.net.InetAddress;
+import java.util.Collection;
 
-public class DomainNameResolverImpl implements DomainNameResolver
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+import static java.util.Collections.singleton;
+
+public class NoOpHostnameResolver implements HostnameResolver
 {
-    public InetAddress[] resolveDomainName(String hostname) throws UnknownHostException
+    @Override
+    public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress advertisedSocketAddresses )
     {
-        try
-        {
-            return InetAddress.getAllByName( hostname );
-        }
-        catch ( java.net.UnknownHostException e )
-        {
-            throw new UnknownHostException( e );
-        }
+        return singleton(advertisedSocketAddresses);
     }
 }

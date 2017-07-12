@@ -94,11 +94,10 @@ public class SharedDiscoveryServiceIT
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
-        ResolutionResolver resolutionResolver = new NoOpResolutionResolver();
+        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
         CoreTopologyService topologyService = disoveryServiceFactory
-                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider,
-                        resolutionResolver );
+                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 

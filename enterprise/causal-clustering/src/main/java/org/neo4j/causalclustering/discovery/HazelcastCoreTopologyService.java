@@ -78,7 +78,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
     private final LogProvider logProvider;
-    private final ResolutionResolver resolutionResolver;
+    private final HostnameResolver hostnameResolver;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -92,7 +92,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private volatile boolean stopped;
 
     HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, ResolutionResolver resolutionResolver )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
     {
         this.config = config;
         this.sslPolicy = sslPolicy;
@@ -103,7 +103,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
-        this.resolutionResolver = resolutionResolver;
+        this.hostnameResolver = hostnameResolver;
     }
 
     @Override
@@ -192,7 +192,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
-            for ( AdvertisedSocketAddress advertisedSocketAddress : resolutionResolver.resolve( address ) )
+            for ( AdvertisedSocketAddress advertisedSocketAddress : hostnameResolver.resolve( address ) )
             {
                 tcpIpConfig.addMember( advertisedSocketAddress.toString() );
             }

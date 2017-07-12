@@ -128,7 +128,7 @@ public class CausalClusteringSettings implements LoadableConfig
         LIST
     }
 
-    @Description( "Configure the discovery type" )
+    @Description( "Configure the discovery type used for cluster name resolution" )
     public static final Setting<DiscoveryType> discovery_type =
             setting( "causal_clustering.discovery_type", options( DiscoveryType.class ), DiscoveryType.LIST.name() );
 

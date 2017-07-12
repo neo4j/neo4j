@@ -43,7 +43,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.ResolutionResolver;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
@@ -186,10 +186,10 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
         SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
-        ResolutionResolver resolutionResolver = chooseResolver( config, logProvider, userLogProvider );
+        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
-                logProvider, platformModule.jobScheduler, myself, resolutionResolver );
+                logProvider, platformModule.jobScheduler, myself, hostnameResolver );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 

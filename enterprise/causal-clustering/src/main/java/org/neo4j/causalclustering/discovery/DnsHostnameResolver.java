@@ -20,7 +20,6 @@
 package org.neo4j.causalclustering.discovery;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
@@ -31,13 +30,13 @@ import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
 
-public class DnsResolutionResolver implements ResolutionResolver
+public class DnsHostnameResolver implements HostnameResolver
 {
     private final Log userLog;
     private final Log log;
     private final DomainNameResolver domainNameResolver;
 
-    public DnsResolutionResolver( LogProvider logProvider, LogProvider userLogProvider,
+    public DnsHostnameResolver( LogProvider logProvider, LogProvider userLogProvider,
             DomainNameResolver domainNameResolver )
     {
         log = logProvider.getLog( getClass() );
@@ -49,24 +48,22 @@ public class DnsResolutionResolver implements ResolutionResolver
     public Collection<AdvertisedSocketAddress> resolve( AdvertisedSocketAddress initialAddress )
     {
         Set<AdvertisedSocketAddress> addresses = new HashSet<>();
+        InetAddress[] ipAddresses = new InetAddress[0];
         try
         {
-            InetAddress[] ipAddresses = domainNameResolver.resolveDomainName( initialAddress.getHostname() );
-
-            for ( InetAddress ipAddress : ipAddresses )
-            {
-                addresses.add( new AdvertisedSocketAddress( ipAddress.getHostAddress(), initialAddress.getPort() ) );
-            }
-
-            userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
-            return addresses;
+            ipAddresses = domainNameResolver.resolveDomainName( initialAddress.getHostname() );
         }
         catch ( UnknownHostException e )
         {
-            log.error( format( "Failed to resolve host `%s` to IPs due to error: %s", initialAddress, e.getMessage() ), e );
-
-            addresses.add( initialAddress );
-            return addresses;
+            log.error( format("Failed to resolve host '%s'", initialAddress.getHostname()), e);
         }
+
+        for ( InetAddress ipAddress : ipAddresses )
+        {
+            addresses.add( new AdvertisedSocketAddress( ipAddress.getHostAddress(), initialAddress.getPort() ) );
+        }
+
+        userLog.info( "Resolved initial host '%s' to %s", initialAddress, addresses );
+        return addresses;
     }
 }

@@ -37,15 +37,15 @@ public class HazelcastClientConnector implements HazelcastConnector
     private final Config config;
     private final LogProvider logProvider;
     private final SslPolicy sslPolicy;
-    private final ResolutionResolver resolutionResolver;
+    private final HostnameResolver hostnameResolver;
 
     HazelcastClientConnector( Config config, LogProvider logProvider, SslPolicy sslPolicy,
-            ResolutionResolver resolutionResolver )
+            HostnameResolver hostnameResolver )
     {
         this.config = config;
         this.logProvider = logProvider;
         this.sslPolicy = sslPolicy;
-        this.resolutionResolver = resolutionResolver;
+        this.hostnameResolver = hostnameResolver;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class HazelcastClientConnector implements HazelcastConnector
 
         for ( AdvertisedSocketAddress address : config.get( CausalClusteringSettings.initial_discovery_members ) )
         {
-            for ( AdvertisedSocketAddress advertisedSocketAddress : resolutionResolver.resolve( address ) )
+            for ( AdvertisedSocketAddress advertisedSocketAddress : hostnameResolver.resolve( address ) )
             {
                 networkConfig.addAddress( advertisedSocketAddress.toString() );
             }

@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
-import org.neo4j.causalclustering.discovery.ResolutionResolver;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -58,11 +58,11 @@ public class ClusteringModule
         LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
         Dependencies dependencies = platformModule.dependencies;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
-        ResolutionResolver resolutionResolver = chooseResolver( config, logProvider, userLogProvider );
+        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
-                        userLogProvider, resolutionResolver );
+                        userLogProvider, hostnameResolver );
 
         life.add( topologyService );
 

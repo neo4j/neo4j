@@ -33,14 +33,14 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class DnsResolutionResolverTest
+public class DnsHostnameResolverTest
 {
     MapDomainNameResolver mockDomainNameResolver = new MapDomainNameResolver( new HashMap<>() );
     AssertableLogProvider logProvider = new AssertableLogProvider();
     AssertableLogProvider userLogProvider = new AssertableLogProvider();
 
-    private DnsResolutionResolver resolver =
-            new DnsResolutionResolver( logProvider, userLogProvider, mockDomainNameResolver );
+    private DnsHostnameResolver resolver =
+            new DnsHostnameResolver( logProvider, userLogProvider, mockDomainNameResolver );
 
     @Test
     public void hostnamesAreResolvedByTheResolver()
@@ -94,7 +94,6 @@ public class DnsResolutionResolverTest
         resolver.resolve( new AdvertisedSocketAddress( "google.com", 1234 ) );
 
         // then
-        logProvider.assertContainsMessageContaining(
-                "Failed to resolve host `google.com:1234` to IPs due to error: google.com" );
+        logProvider.assertContainsMessageContaining( "Failed to resolve host 'google.com'" );
     }
 }
