@@ -40,7 +40,7 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.neo4j.causalclustering.PortAuthority;
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
