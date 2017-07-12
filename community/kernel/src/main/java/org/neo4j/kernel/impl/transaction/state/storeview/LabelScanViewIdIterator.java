@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
@@ -34,20 +32,13 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
  */
 class LabelScanViewIdIterator implements PrimitiveLongResourceIterator
 {
-    private LabelScanViewNodeStoreScan labelScanViewNodeStoreScan;
     private LabelScanReader labelScanReader;
     private PrimitiveLongIterator idIterator;
-    private LabelScanStore labelScanStore;
-    private int[] labelIds;
-    private long currentId = -1;
 
-    LabelScanViewIdIterator( LabelScanViewNodeStoreScan labelScanViewNodeStoreScan,
-            LabelScanStore labelScanStore, int[] labelIds )
+    LabelScanViewIdIterator( LabelScanReader labelScanReader, int[] labelIds )
     {
-        this.labelScanViewNodeStoreScan = labelScanViewNodeStoreScan;
-        this.labelScanStore = labelScanStore;
-        this.labelIds = labelIds;
-        idIterator = openIdIterator( labelScanStore, labelIds );
+        this.labelScanReader = labelScanReader;
+        this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
     }
 
     @Override
@@ -59,47 +50,12 @@ class LabelScanViewIdIterator implements PrimitiveLongResourceIterator
     @Override
     public boolean hasNext()
     {
-        checkNodeIdIterator();
         return idIterator.hasNext();
     }
 
     @Override
     public long next()
     {
-        currentId = idIterator.next();
-        return currentId;
-    }
-
-    private void checkNodeIdIterator()
-    {
-        if ( labelScanViewNodeStoreScan.isOutdated() )
-        {
-            close();
-            idIterator = openIdIterator( labelScanStore, labelIds );
-            labelScanViewNodeStoreScan.clearOutdatedFlag();
-        }
-    }
-
-    private PrimitiveLongIterator openIdIterator( LabelScanStore labelScanStore, int[] labelIds )
-    {
-        labelScanReader = labelScanStore.newReader();
-        return new LabeledNodesIdIterator( labelScanReader.nodesWithAnyOfLabels( labelIds ), currentId );
-    }
-
-    private class LabeledNodesIdIterator extends PrimitiveLongCollections.PrimitiveLongFilteringIterator
-    {
-        private long observedId;
-
-        LabeledNodesIdIterator( PrimitiveLongIterator source, long observedId )
-        {
-            super( source );
-            this.observedId = observedId;
-        }
-
-        @Override
-        public boolean test( long testId )
-        {
-            return this.observedId < testId;
-        }
+        return idIterator.next();
     }
 }

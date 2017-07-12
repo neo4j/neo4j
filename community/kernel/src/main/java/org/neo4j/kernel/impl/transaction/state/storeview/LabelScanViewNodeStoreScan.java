@@ -24,11 +24,10 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
+import org.neo4j.kernel.impl.api.index.NodeUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -41,8 +40,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends StoreViewNodeStoreScan<FAILURE>
 {
     private final LabelScanStore labelScanStore;
-    // flag that indicated presence of concurrent updates that are not visible to current label index scan
-    private boolean outdated;
 
     public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
             PropertyStore propertyStore,
@@ -58,7 +55,7 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     @Override
     public PrimitiveLongResourceIterator getNodeIdIterator()
     {
-        return new LabelScanViewIdIterator( this, labelScanStore, labelIds );
+        return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
     }
 
     @Override
@@ -66,31 +63,4 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     {
         populations.forEach( population -> population.populator.configureSampling( false ) );
     }
-
-    @Override
-    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate update,
-            long currentlyIndexedNodeId )
-    {
-        super.acceptUpdate( updater, update, currentlyIndexedNodeId );
-        if ( update.getEntityId() > currentlyIndexedNodeId )
-        {
-            markOutdated();
-        }
-    }
-
-    boolean isOutdated()
-    {
-        return outdated;
-    }
-
-    void clearOutdatedFlag()
-    {
-        outdated = false;
-    }
-
-    private void markOutdated()
-    {
-        outdated = true;
-    }
-
 }
