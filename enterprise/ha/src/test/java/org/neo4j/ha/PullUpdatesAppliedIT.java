@@ -143,7 +143,7 @@ public class PullUpdatesAppliedIT
                     }
                 } );
 
-        runInOtherJvmToGetExitCode( targetDirectory.getAbsolutePath(), "" + toKill );
+        runInOtherJvmToGetExitCode( targetDirectory.getAbsolutePath(), "" + toKill, "" + 5001 );
 
         assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
 
@@ -161,32 +161,57 @@ public class PullUpdatesAppliedIT
     {
         File storePath = new File( args[0] );
         int serverId = Integer.parseInt( args[1] );
+        int[] initialHostPorts = new int[args.length - 2];
 
-        database( serverId, storePath ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        for ( int i = 2; i < args.length; i++ )
+        {
+            initialHostPorts[i] = Integer.parseInt( args[i] );
+        }
+
+        database( serverId, storePath, initialHostPorts ).getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         // this is the bug trigger
         // no shutdown, emulates a crash.
     }
 
     private HighlyAvailableGraphDatabase newDb( int serverId )
     {
-        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile() );
+        return database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile(), 5001 );
     }
 
     private void restart( int serverId )
     {
-        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile() );
+        dbs[serverId] = database( serverId, testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile(), 5001 );
     }
 
-    private static HighlyAvailableGraphDatabase database( int serverId, File path )
+    private static HighlyAvailableGraphDatabase database( int serverId, File path, int... initialHostPorts )
     {
+        String initialHosts = buildInitialHosts( initialHostPorts );
+
         return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path )
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" )
+                .setConfig( ClusterSettings.initial_hosts, initialHosts )
                 .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
                 .setConfig( HaSettings.ha_server, "localhost:" + (6666 + serverId) )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .newGraphDatabase();
+    }
+
+    private static String buildInitialHosts( int[] initialHostPorts )
+    {
+        StringBuilder initialHosts = new StringBuilder();
+
+        for ( int i = 0; i < initialHostPorts.length; i++ )
+        {
+            if ( i > 0 )
+            {
+                initialHosts.append( ',' );
+            }
+
+            initialHosts.append( "127.0.0.1:" ).append( initialHostPorts[i] );
+        }
+
+        return initialHosts.toString();
     }
 
     private static int runInOtherJvmToGetExitCode( String... args ) throws Exception
