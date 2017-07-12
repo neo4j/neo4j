@@ -37,20 +37,11 @@ public abstract class VirtualValue extends AnyValue
             return false;
         }
 
-        // suppose that we will only ever call equals with Objects of AnyValue but just in case
-        try
+        if ( other instanceof SequenceValue && this.isSequenceValue() )
         {
-            if ( ((AnyValue) other).isSequenceValue() && this.isSequenceValue() )
-            {
-                return ((SequenceValue) this).equals( (SequenceValue) other );
-            }
-            return other instanceof VirtualValue && equals( (VirtualValue) other );
-
+            return ((SequenceValue) this).equals( (SequenceValue) other );
         }
-        catch ( ClassCastException e )
-        {
-            return false;
-        }
+        return other instanceof VirtualValue && equals( (VirtualValue) other );
     }
 
     @Override

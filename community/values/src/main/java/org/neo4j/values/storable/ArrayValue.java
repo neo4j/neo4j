@@ -19,7 +19,6 @@
  */
 package org.neo4j.values.storable;
 
-import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 
 /**
@@ -59,19 +58,10 @@ abstract class ArrayValue extends Value implements SequenceValue
             return false;
         }
 
-        // suppose that we will only ever call equals with Objects of AnyValue but just in case
-        try
+        if ( other instanceof SequenceValue  )
         {
-            if ( ((AnyValue) other).isSequenceValue() )
-            {
-                return ( this).equals( (SequenceValue) other );
-            }
-            return other instanceof Value && equals( (Value) other );
-
+            return this.equals( (SequenceValue) other );
         }
-        catch ( ClassCastException e )
-        {
-            return false;
-        }
+        return other instanceof Value && equals( (Value) other );
     }
 }
