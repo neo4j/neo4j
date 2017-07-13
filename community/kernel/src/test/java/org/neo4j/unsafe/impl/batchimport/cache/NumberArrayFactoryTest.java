@@ -21,7 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -140,5 +142,30 @@ public class NumberArrayFactoryTest
         verify( throwingMemoryFactory, times( 1 ) ).newByteArray( eq( KILO ), any( byte[].class ), eq( 0L ) );
         assertTrue( array instanceof HeapByteArray );
         assertEquals( 12345, array.getInt( KILO - 10, 0 ) );
+    }
+
+    @Test
+    public void heapArrayShouldAllowVeryLargeBases() throws Exception
+    {
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.HEAP );
+        verifyVeryLargeBaseSupport( factory );
+    }
+
+    @Test
+    public void offHeapArrayShouldAllowVeryLargeBases() throws Exception
+    {
+        NumberArrayFactory factory = new NumberArrayFactory.Auto( NumberArrayFactory.OFF_HEAP );
+        verifyVeryLargeBaseSupport( factory );
+    }
+
+    private void verifyVeryLargeBaseSupport( NumberArrayFactory factory )
+    {
+        long base = Integer.MAX_VALUE * 1337L;
+        byte[] into = new byte[1];
+        into[0] = 1;
+        factory.newByteArray( 10, new byte[1], base ).get( base + 1, into );
+        assertThat( into[0], is( (byte) 0 ) );
+        assertThat( factory.newIntArray( 10, 1, base ).get( base + 1 ), is( 1 ) );
+        assertThat( factory.newLongArray( 10, 1, base ).get( base + 1 ), is( 1L ) );
     }
 }
