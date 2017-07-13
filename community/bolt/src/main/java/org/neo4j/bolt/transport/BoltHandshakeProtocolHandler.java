@@ -20,12 +20,14 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.channel.Channel;
+import org.neo4j.bolt.BoltChannel;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
+
+import static java.lang.String.format;
 
 /**
  * Manages the state for choosing the protocol version to use.
@@ -36,75 +38,82 @@ import java.util.function.BiFunction;
  * <p>
  * This class is stateful, one instance is expected per channel.
  */
-public class ProtocolChooser
+public class BoltHandshakeProtocolHandler
 {
     public static final int BOLT_MAGIC_PREAMBLE = 0x6060B017;
 
-    private final Map<Long,BiFunction<Channel,Boolean,BoltProtocol>> availableVersions;
+    private final Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers;
     private final boolean encryptionRequired;
     private final boolean isEncrypted;
-    private final ByteBuffer handShake = ByteBuffer.allocate( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
+    private final ByteBuffer handshakeBuffer = ByteBuffer.allocate( 5 * 4 ).order( ByteOrder.BIG_ENDIAN );
 
-    private BoltProtocol protocol;
+    private BoltMessagingProtocolHandler protocol;
 
     /**
-     * @param availableVersions version -> protocol mapping
+     * @param protocolHandlers version -> protocol mapping
      * @param encryptionRequired whether or not the server allows only encrypted connections
      * @param isEncrypted whether of not this connection is encrypted
      */
-    public ProtocolChooser( Map<Long,BiFunction<Channel,Boolean,BoltProtocol>> availableVersions,
-            boolean encryptionRequired, boolean isEncrypted )
+    public BoltHandshakeProtocolHandler( Map<Long,Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers,
+                                         boolean encryptionRequired, boolean isEncrypted )
     {
-        this.availableVersions = availableVersions;
+        this.protocolHandlers = protocolHandlers;
         this.encryptionRequired = encryptionRequired;
         this.isEncrypted = isEncrypted;
     }
 
-    public HandshakeOutcome handleVersionHandshakeChunk( ByteBuf buffer, Channel ch )
+    public HandshakeOutcome perform( BoltChannel boltChannel, ByteBuf buffer )
     {
         if ( encryptionRequired && !isEncrypted )
         {
+            boltChannel.log().serverError( "HANDSHAKE", "Insecure handshake" );
             return HandshakeOutcome.INSECURE_HANDSHAKE;
         }
-        else if ( handShake.remaining() > buffer.readableBytes() )
+        else if ( handshakeBuffer.remaining() > buffer.readableBytes() )
         {
-            handShake.limit( handShake.position() + buffer.readableBytes() );
-            buffer.readBytes( handShake );
-            handShake.limit( handShake.capacity() );
+            handshakeBuffer.limit( handshakeBuffer.position() + buffer.readableBytes() );
+            buffer.readBytes( handshakeBuffer );
+            handshakeBuffer.limit( handshakeBuffer.capacity() );
         }
         else
         {
-            buffer.readBytes( handShake );
+            buffer.readBytes(handshakeBuffer);
         }
 
-        if ( handShake.remaining() == 0 )
+        if ( handshakeBuffer.remaining() == 0 )
         {
-            handShake.flip();
+            handshakeBuffer.flip();
             // Verify that the handshake starts with a Bolt-shaped preamble.
-            if ( handShake.getInt() != BOLT_MAGIC_PREAMBLE )
+            if ( handshakeBuffer.getInt() != BOLT_MAGIC_PREAMBLE )
             {
+                boltChannel.log().clientError( "HANDSHAKE", format( "0x%08X", handshakeBuffer.getInt() ),
+                                               "Invalid Bolt signature" );
                 return HandshakeOutcome.INVALID_HANDSHAKE;
             }
             else
             {
+                boltChannel.log().clientEvent( "HANDSHAKE", format( "0x%08X", BOLT_MAGIC_PREAMBLE ) );
                 for ( int i = 0; i < 4; i++ )
                 {
-                    long suggestion = handShake.getInt() & 0xFFFFFFFFL;
-                    if ( availableVersions.containsKey( suggestion ) )
+                    long suggestion = handshakeBuffer.getInt() & 0xFFFFFFFFL;
+                    if ( protocolHandlers.containsKey( suggestion ) )
                     {
-                        protocol = availableVersions.get( suggestion ).apply( ch, isEncrypted );
+                        protocol = protocolHandlers.get( suggestion ).apply( boltChannel );
+                        boltChannel.log().serverEvent( "HANDSHAKE", format( "0x%02X", protocol.version() ) );
                         return HandshakeOutcome.PROTOCOL_CHOSEN;
                     }
                 }
             }
 
             // None of the suggested protocol versions are available.
+            boltChannel.log().serverError( "HANDSHAKE", "No applicable protocol" );
             return HandshakeOutcome.NO_APPLICABLE_PROTOCOL;
         }
+        boltChannel.log().serverError( "HANDSHAKE", "Partial handshake" );
         return HandshakeOutcome.PARTIAL_HANDSHAKE;
     }
 
-    public BoltProtocol chosenProtocol()
+    public BoltMessagingProtocolHandler chosenProtocol()
     {
         return protocol;
     }

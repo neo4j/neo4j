@@ -19,21 +19,17 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.BoltChannel;
+
 /**
  * Creates {@link BoltWorker}s. Implementations of this interface can decorate queues and their jobs
  * to monitor activity and enforce constraints.
  */
 public interface WorkerFactory
 {
-    default BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor )
-    {
-        return newWorker( connectionDescriptor, null );
-    }
-
     /**
-     * @param connectionDescriptor describes the underlying medium (TCP, HTTP, ...)
-     * @param onClose              callback for closing the underlying connection in case of protocol violation.
+     * @param boltChannel channel over which Bolt messages can be exchanged
      * @return a new job queue
      */
-    BoltWorker newWorker( BoltConnectionDescriptor connectionDescriptor, Runnable onClose );
+    BoltWorker newWorker( BoltChannel boltChannel );
 }

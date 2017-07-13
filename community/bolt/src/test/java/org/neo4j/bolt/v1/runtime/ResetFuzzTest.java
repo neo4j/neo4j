@@ -23,7 +23,6 @@ import org.junit.After;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.time.Clock;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,6 +30,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltConnectionDescriptor;
+import org.neo4j.bolt.BoltMessageLog;
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -53,6 +56,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.messaging.message.DiscardAllMessage.discardAll;
@@ -62,9 +66,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class ResetFuzzTest
 {
-    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
-            new InetSocketAddress( "<testClient>", 56789 ),
-            new InetSocketAddress( "<testServer>", 7468 ) );
     // Because RESET has a "call ahead" mechanism where it will interrupt
     // the session before RESET arrives in order to purge any statements
     // ahead in the message queue, we use this test to convince ourselves
@@ -80,8 +81,9 @@ public class ResetFuzzTest
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, clock );
-    private final ThreadedWorkerFactory sessions =
-            new ThreadedWorkerFactory( ( enc, closer, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
+    private final ThreadedWorkerFactory workerFactory =
+            new ThreadedWorkerFactory( ( boltChannel, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
+    private final BoltChannel boltChannel = mock( BoltChannel.class );
 
     private final List<List<RequestMessage>> sequences = asList(
             asList( run( "test", map() ), discardAll() ),
@@ -96,11 +98,12 @@ public class ResetFuzzTest
     {
         // given
         life.start();
-        BoltWorker boltWorker = sessions.newWorker( CONNECTION_DESCRIPTOR );
+        BoltWorker boltWorker = workerFactory.newWorker( boltChannel );
         boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
 
+        BoltMessageLogger messageLogger = new BoltMessageLogger( BoltMessageLog.getInstance(), null );
         BoltMessageRouter router = new BoltMessageRouter(
-                NullLog.getInstance(), boltWorker, new BoltResponseMessageHandler<IOException>()
+                NullLog.getInstance(), messageLogger, boltWorker, new BoltResponseMessageHandler<IOException>()
         {
             @Override
             public void onRecord( QueryResult.Record item ) throws IOException
@@ -182,7 +185,7 @@ public class ResetFuzzTest
         @Override
         public BoltConnectionDescriptor connectionDescriptor()
         {
-            return CONNECTION_DESCRIPTOR;
+            return boltChannel;
         }
 
         @Override

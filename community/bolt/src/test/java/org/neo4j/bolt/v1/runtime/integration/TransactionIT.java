@@ -34,8 +34,9 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
-import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
+import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.concurrent.BinaryLatch;
@@ -52,6 +53,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
@@ -64,9 +66,7 @@ public class TransactionIT
 {
     private static final String USER_AGENT = "TransactionIT/0.0";
     private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "neo4j:bookmark:v1:tx[0-9]+" );
-    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
-            new InetSocketAddress( "<testClient>", 56789 ),
-            new InetSocketAddress( "<testServer>", 7468 ) );
+    private static final BoltChannel boltChannel = mock( BoltChannel.class );
     @Rule
     public SessionRule env = new SessionRule();
     @Rule
@@ -77,7 +77,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -101,7 +101,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -126,7 +126,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -143,7 +143,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -170,7 +170,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
 
         // When
@@ -210,9 +210,7 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine machine = env.newMachine( new BoltConnectionDescriptor(
-                        new InetSocketAddress( "<testClient>", 56789 ),
-                        new InetSocketAddress( "<writeServer>", 7468 ) ) ) )
+                try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
                 {
                     machine.init( USER_AGENT, emptyMap(), null );
                     latch.await();
@@ -228,9 +226,7 @@ public class TransactionIT
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
-        try ( BoltStateMachine machine = env.newMachine( new BoltConnectionDescriptor(
-                new InetSocketAddress( "<testClient>", 56789 ),
-                new InetSocketAddress( "<readServer>", 7468 ) ) ) )
+        try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
             machine.init( USER_AGENT, emptyMap(), null );
@@ -278,9 +274,7 @@ public class TransactionIT
             @Override
             public void run()
             {
-                try ( BoltStateMachine stateMachine = env.newMachine( new BoltConnectionDescriptor(
-                        new InetSocketAddress( "<testClient>", 56789 ),
-                        new InetSocketAddress( "<writeServer>", 7468 ) ) ) )
+                try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
                 {
                     machine[0] = stateMachine;
                     stateMachine.init( USER_AGENT, emptyMap(), null );
@@ -334,7 +328,7 @@ public class TransactionIT
     public void shouldInterpretEmptyStatementAsReuseLastStatementInAutocommitTransaction() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        final BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -353,7 +347,7 @@ public class TransactionIT
     public void shouldInterpretEmptyStatementAsReuseLastStatementInExplicitTransaction() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        final BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -376,7 +370,7 @@ public class TransactionIT
     public void beginShouldNotOverwriteLastStatement() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
+        final BoltStateMachine machine = env.newMachine( boltChannel );
         machine.init( USER_AGENT, emptyMap(), null );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 

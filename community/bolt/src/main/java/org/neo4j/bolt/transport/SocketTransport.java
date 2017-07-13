@@ -20,16 +20,17 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltMessageLog;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.LogProvider;
 
 import java.util.Map;
-import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
@@ -39,16 +40,19 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final ListenSocketAddress address;
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
-    private LogProvider logging;
-    private final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions;
+    private final LogProvider logging;
+    private final BoltMessageLog messageLog;
+    private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
 
-    public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired, LogProvider logging,
-                            Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> protocolVersions )
+    public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
+                            LogProvider logging, BoltMessageLog messageLog,
+                            Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions )
     {
         this.address = address;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.logging = logging;
+        this.messageLog = messageLog;
         this.protocolVersions = protocolVersions;
     }
 
@@ -62,7 +66,8 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
             {
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
                 ch.pipeline().addLast(
-                        new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions ) );
+                        new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions,
+                                                       messageLog ) );
             }
         };
     }

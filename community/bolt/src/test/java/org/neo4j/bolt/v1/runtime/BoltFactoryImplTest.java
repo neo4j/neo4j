@@ -21,9 +21,9 @@ package org.neo4j.bolt.v1.runtime;
 
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
 import java.time.Clock;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -45,9 +45,7 @@ import static org.mockito.Mockito.when;
 public class BoltFactoryImplTest
 {
     private static final Clock CLOCK = Clock.systemUTC();
-    private static final BoltConnectionDescriptor CONNECTION_DESCRIPTOR = new BoltConnectionDescriptor(
-            new InetSocketAddress( "client", 7474 ),
-            new InetSocketAddress( "server", 7475 ) );
+    private static final BoltChannel boltChannel = mock( BoltChannel.class );
 
     @Test
     public void newMachineThrowsWhenNotStarted()
@@ -56,7 +54,7 @@ public class BoltFactoryImplTest
 
         try
         {
-            boltFactory.newMachine( CONNECTION_DESCRIPTOR, mock( Runnable.class ), CLOCK );
+            boltFactory.newMachine( boltChannel, CLOCK );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -72,7 +70,7 @@ public class BoltFactoryImplTest
 
         boltFactory.start();
 
-        BoltStateMachine stateMachine = boltFactory.newMachine( CONNECTION_DESCRIPTOR, mock( Runnable.class ), CLOCK );
+        BoltStateMachine stateMachine = boltFactory.newMachine( boltChannel, CLOCK );
 
         assertNotNull( stateMachine );
 
@@ -80,7 +78,7 @@ public class BoltFactoryImplTest
 
         try
         {
-            boltFactory.newMachine( CONNECTION_DESCRIPTOR, mock( Runnable.class ), CLOCK );
+            boltFactory.newMachine( boltChannel, CLOCK );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -105,13 +103,13 @@ public class BoltFactoryImplTest
 
         boltFactory.start();
 
-        BoltStateMachine stateMachine1 = boltFactory.newMachine( CONNECTION_DESCRIPTOR, mock( Runnable.class ), CLOCK );
+        BoltStateMachine stateMachine1 = boltFactory.newMachine( boltChannel, CLOCK );
         assertEquals( 42, stateMachine1.spi.transactionSpi().newestEncounteredTxId() );
 
         boltFactory.stop();
         boltFactory.start();
 
-        BoltStateMachine stateMachine2 = boltFactory.newMachine( CONNECTION_DESCRIPTOR, mock( Runnable.class ), CLOCK );
+        BoltStateMachine stateMachine2 = boltFactory.newMachine( boltChannel, CLOCK );
         assertEquals( 4242, stateMachine2.spi.transactionSpi().newestEncounteredTxId() );
     }
 

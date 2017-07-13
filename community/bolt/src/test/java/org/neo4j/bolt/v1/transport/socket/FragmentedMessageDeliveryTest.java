@@ -28,6 +28,9 @@ import org.junit.Test;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltMessageLog;
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
@@ -37,7 +40,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.kernel.impl.util.HexPrinter;
 
@@ -116,7 +119,13 @@ public class FragmentedMessageDeliveryTest
         ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
         when(ctx.channel()).thenReturn( ch );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ), ch, NullLogService.getInstance() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.channelHandlerContext() ).thenReturn( ctx );
+        when( boltChannel.rawChannel() ).thenReturn( ch );
+        when( boltChannel.log() ).thenReturn( mock( BoltMessageLogger.class ) );
+
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
+                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
 
         // When data arrives split up according to the current permutation
         for ( ByteBuf fragment : fragments )

@@ -29,6 +29,8 @@ import org.mockito.stubbing.Answer;
 import java.io.IOException;
 import java.util.Objects;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
@@ -48,17 +50,19 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class BoltProtocolV1Test
+public class BoltMessagingProtocolV1HandlerTest
 {
     @Test
     public void shouldNotTalkToChannelDirectlyOnFatalError() throws Throwable
     {
         // Given
         Channel outputChannel = newChannelMock();
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.rawChannel() ).thenReturn( outputChannel );
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
-        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ),
-                outputChannel, NullLogService.getInstance() );
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
+                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
         verify( outputChannel ).alloc();
 
         // And given inbound data that'll explode when the protocol tries to interpret it
@@ -87,8 +91,11 @@ public class BoltProtocolV1Test
 
         BoltStateMachine machine = mock( BoltStateMachine.class );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( new SynchronousBoltWorker( machine ),
-                outputChannel, NullLogService.getInstance() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.rawChannel() ).thenReturn( outputChannel );
+
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
+                boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );
         protocol.close();
 
         verify( machine ).close();
@@ -104,12 +111,17 @@ public class BoltProtocolV1Test
         AssertableLogProvider assertableLogProvider = new AssertableLogProvider();
         SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), assertableLogProvider );
 
-        BoltProtocolV1 protocol = new BoltProtocolV1( mock( BoltWorker.class ), newChannelMock(), logService );
+        Channel outputChannel = newChannelMock();
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        when( boltChannel.rawChannel() ).thenReturn( outputChannel );
+
+        BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
+                boltChannel, mock( BoltWorker.class ), logService );
 
         protocol.handle( mock( ChannelHandlerContext.class ), data );
 
         assertableLogProvider.assertExactly(
-                inLog( BoltProtocolV1.class ).error(
+                inLog( BoltMessagingProtocolV1Handler.class ).error(
                         equalTo( "Failed to handle incoming Bolt message. Connection will be closed." ),
                         equalTo( error ) ) );
     }

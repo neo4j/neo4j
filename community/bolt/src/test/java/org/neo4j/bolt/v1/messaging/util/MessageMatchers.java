@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageReader;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageRecorder;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
@@ -65,6 +66,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 
 public class MessageMatchers
@@ -315,7 +317,7 @@ public class MessageMatchers
     {
         final RecordingByteChannel rawData = new RecordingByteChannel();
         final BoltResponseMessageWriter packer = new BoltResponseMessageWriter( new Neo4jPack.Packer( new
-                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK );
+                BufferedChannelOutput( rawData ) ), NO_BOUNDARY_HOOK, mock( BoltMessageLogger.class ) );
 
         for ( ResponseMessage message : messages )
         {

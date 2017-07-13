@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.time.Duration;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -49,7 +50,6 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     private QueryExecutionEngine queryExecutionEngine;
     private GraphDatabaseQueryService queryService;
     private AvailabilityGuard availabilityGuard;
-    private DependencyResolver dependencyResolver;
 
     public BoltFactoryImpl( GraphDatabaseAPI gds, UsageData usageData, LogService logging,
             ThreadToStatementContextBridge txBridge, Authentication authentication,
@@ -67,7 +67,7 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     @Override
     public void start() throws Throwable
     {
-        dependencyResolver = gds.getDependencyResolver();
+        DependencyResolver dependencyResolver = gds.getDependencyResolver();
         queryExecutionEngine = dependencyResolver.resolveDependency( QueryExecutionEngine.class );
         queryService = dependencyResolver.resolveDependency( GraphDatabaseQueryService.class );
         availabilityGuard = dependencyResolver.resolveDependency( AvailabilityGuard.class );
@@ -82,12 +82,12 @@ public class BoltFactoryImpl extends LifecycleAdapter implements BoltFactory
     }
 
     @Override
-    public BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Runnable onClose, Clock clock )
+    public BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock )
     {
         TransactionStateMachine.SPI transactionSPI = createTxSpi( clock );
-        BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( connectionDescriptor, usageData,
+        BoltStateMachine.SPI boltSPI = new BoltStateMachineSPI( boltChannel, usageData,
                 logging, authentication, connectionTracker, transactionSPI );
-        return new BoltStateMachine( boltSPI, onClose, clock );
+        return new BoltStateMachine( boltSPI, boltChannel::close, clock );
     }
 
     private TransactionStateMachine.SPI createTxSpi( Clock clock )

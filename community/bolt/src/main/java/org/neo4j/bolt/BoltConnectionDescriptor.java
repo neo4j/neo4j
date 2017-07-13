@@ -17,25 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.transport;
+package org.neo4j.bolt;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
+import java.net.SocketAddress;
 
-import java.io.IOException;
-
-/**
- * Implementations define a versioned implementation of the Bolt Protocol. Incoming messages from clients are
- * forwarded to the {@link #handle(io.netty.channel.ChannelHandlerContext, io.netty.buffer.ByteBuf)} method.
- */
-public interface BoltProtocol
+public interface BoltConnectionDescriptor
 {
-    /** Handle an incoming message, and reply if desired via the {@code ctx} argument */
-    void handle( ChannelHandlerContext ctx, ByteBuf data ) throws IOException;
+    SocketAddress clientAddress();
 
-    /** Used for version negotiation */
-    int version();
-
-    /** Close this instance of the protocol, disposing of any held resources */
-    void close();
+    SocketAddress serverAddress();
 }

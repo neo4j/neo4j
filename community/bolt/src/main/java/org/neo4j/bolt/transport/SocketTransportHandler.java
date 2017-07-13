@@ -23,6 +23,9 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.BoltMessageLog;
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -36,15 +39,18 @@ import static io.netty.buffer.Unpooled.wrappedBuffer;
  */
 public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 {
-    private final ProtocolChooser protocolChooser;
+    private final BoltHandshakeProtocolHandler handshake;
     private final Log log;
+    private final BoltMessageLog messageLog;
 
-    private BoltProtocol protocol;
+    private BoltMessagingProtocolHandler protocol;
 
-    public SocketTransportHandler( ProtocolChooser protocolChooser, LogProvider logging )
+    public SocketTransportHandler( BoltHandshakeProtocolHandler handshake,
+                                   LogProvider logging, BoltMessageLog messageLog )
     {
-        this.protocolChooser = protocolChooser;
+        this.handshake = handshake;
         this.log = logging.getLog( getClass() );
+        this.messageLog = messageLog;
     }
 
     @Override
@@ -55,7 +61,9 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             ByteBuf buffer = (ByteBuf) msg;
             if ( protocol == null )
             {
-                chooseProtocolVersion( ctx, buffer );
+                BoltMessageLogger messageLogger = new BoltMessageLogger( messageLog, ctx.channel() );
+                messageLogger.clientEvent( "OPEN" );
+                performHandshake( BoltChannel.open( ctx, messageLogger ), buffer );
             }
             else
             {
@@ -104,16 +112,17 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
         }
     }
 
-    private void chooseProtocolVersion( ChannelHandlerContext ctx, ByteBuf buffer ) throws Exception
+    private void performHandshake( BoltChannel boltChannel, ByteBuf buffer ) throws Exception
     {
-        HandshakeOutcome outcome = protocolChooser.handleVersionHandshakeChunk( buffer, ctx.channel() );
+        ChannelHandlerContext ctx = boltChannel.channelHandlerContext();
+        HandshakeOutcome outcome = handshake.perform( boltChannel, buffer );
         switch ( outcome )
         {
         case PROTOCOL_CHOSEN:
             // A protocol version has been successfully agreed upon, therefore we can
             // reply positively with four bytes reflecting this selection and leave
             // the connection open for INIT etc...
-            protocol = protocolChooser.chosenProtocol();
+            protocol = handshake.chosenProtocol();
             ctx.writeAndFlush( ctx.alloc().buffer( 4 ).writeInt( protocol.version() ) );
 
             // If there is more data pending, the client optimistically sent this in its initial payload. It really

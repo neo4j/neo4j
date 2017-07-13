@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import org.neo4j.bolt.BoltChannel;
+
 import java.time.Clock;
 
 /**
@@ -29,10 +31,9 @@ public interface BoltFactory
     /**
      * Generate a new state machine.
      *
-     * @param connectionDescriptor description of the connection (for logging purposes)
-     * @param onClose callback to call on shutdown of the state machine
+     * @param boltChannel channel over which Bolt massages can be exchanged
      * @param clock used to keep track of execution times
      * @return new {@link BoltStateMachine} instance
      */
-    BoltStateMachine newMachine( BoltConnectionDescriptor connectionDescriptor, Runnable onClose, Clock clock );
+    BoltStateMachine newMachine( BoltChannel boltChannel, Clock clock );
 }

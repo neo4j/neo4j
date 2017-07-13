@@ -26,6 +26,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -46,6 +47,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ONE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_TWO;
@@ -229,7 +231,8 @@ public class BoltResponseMessageTest
         BoltResponseMessageReader reader = new BoltResponseMessageReader(
                 new Neo4jPack.Unpacker( new BufferedChannelInput( 16 ).reset( channel ) ) );
         BoltResponseMessageWriter writer = new BoltResponseMessageWriter(
-                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK );
+                new Neo4jPack.Packer( new BufferedChannelOutput( channel ) ), NO_BOUNDARY_HOOK,
+                mock( BoltMessageLogger.class ) );
 
         msg.dispatch( writer );
         writer.flush();

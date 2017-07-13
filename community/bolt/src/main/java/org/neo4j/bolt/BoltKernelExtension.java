@@ -19,32 +19,28 @@
  */
 package org.neo4j.bolt;
 
-import io.netty.channel.Channel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.util.internal.logging.InternalLoggerFactory;
 
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
-import org.neo4j.bolt.transport.BoltProtocol;
+import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.Netty4LoggerFactory;
 import org.neo4j.bolt.transport.NettyServer;
 import org.neo4j.bolt.transport.NettyServer.ProtocolInitializer;
 import org.neo4j.bolt.transport.SocketTransport;
-import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.BoltFactoryImpl;
-import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
-import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -182,9 +178,10 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                         break;
                     }
 
-                    final Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> versions =
-                            newVersions( logService, workerFactory );
-                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(), versions );
+                    final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers =
+                            getProtocolHandlers( logService, workerFactory );
+                    return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
+                            BoltMessageLog.getInstance(), protocolHandlers );
                 } ) );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )
@@ -225,21 +222,16 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         }
     }
 
-    private Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> newVersions(
+    private Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> getProtocolHandlers(
             LogService logging, WorkerFactory workerFactory )
     {
-        Map<Long, BiFunction<Channel, Boolean, BoltProtocol>> availableVersions = new HashMap<>();
-        availableVersions.put(
-                (long) BoltProtocolV1.VERSION,
-                ( channel, isEncrypted ) ->
-                {
-                    BoltConnectionDescriptor descriptor = new BoltConnectionDescriptor(
-                            channel.remoteAddress(), channel.localAddress() );
-                    BoltWorker worker = workerFactory.newWorker( descriptor, channel::close );
-                    return new BoltProtocolV1( worker, channel, logging );
-                }
+        Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
+        protocolHandlers.put(
+                (long) BoltMessagingProtocolV1Handler.VERSION,
+                ( boltChannel ) ->
+                        new BoltMessagingProtocolV1Handler( boltChannel, workerFactory.newWorker( boltChannel ), logging )
         );
-        return availableVersions;
+        return protocolHandlers;
     }
 
     private Authentication authentication( AuthManager authManager, UserManagerSupplier userManagerSupplier )
