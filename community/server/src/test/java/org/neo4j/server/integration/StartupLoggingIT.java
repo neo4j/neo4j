@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -73,6 +74,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
         Pair[] propertyPairs = getPropertyPairs();
 
         boot.start( homeDir.directory(), Optional.of( new File( "nonexistent-file.conf" ) ), propertyPairs );
+        URI uri = boot.getServer().baseUri();
         boot.stop();
 
         List<String> captured = suppressOutput.getOutputVoice().lines();
@@ -81,7 +83,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
                 info( NEO4J_IS_STARTING_MESSAGE ),
                 info( "Starting..." ),
                 info( "Started." ),
-                info( "Remote interface available at http://.+:7474/" ),
+                info( "Remote interface available at " + uri.toString() ),
                 info( "Stopping..." ),
                 info( "Stopped." )
         ) );
@@ -99,23 +101,24 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         pairs.add( Pair.of( http.type.name(), "HTTP" ) );
-        pairs.add( Pair.of( http.advertised_address.name(), "localhost:0" ) );
+        pairs.add( Pair.of( http.listen_address.name(), "localhost:0" ) );
         pairs.add( Pair.of( http.enabled.name(), Settings.TRUE ) );
 
         HttpConnector https = new HttpConnector( "https", Encryption.TLS );
         pairs.add( Pair.of( https.type.name(), "HTTP" ) );
-        pairs.add( Pair.of( https.advertised_address.name(), "localhost:0" ) );
+        pairs.add( Pair.of( https.listen_address.name(), "localhost:0" ) );
         pairs.add( Pair.of( https.enabled.name(), Settings.TRUE ) );
 
         BoltConnector bolt = new BoltConnector( DEFAULT_CONNECTOR_KEY );
         pairs.add( Pair.of( bolt.type.name(), "BOLT" ) );
         pairs.add( Pair.of( bolt.enabled.name(), "true" ) );
-        pairs.add( Pair.of( bolt.advertised_address.name(), "localhost:0" ) );
+        pairs.add( Pair.of( bolt.listen_address.name(), "localhost:0" ) );
 
         return pairs.toArray( new Pair[pairs.size()] );
     }
 
-    public static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String> ... expectedLinePatterns )
+    @SafeVarargs
+    private static Matcher<List<String>> containsAtLeastTheseLines( final Matcher<String>... expectedLinePatterns )
     {
         return new TypeSafeMatcher<List<String>>()
         {
@@ -130,8 +133,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
                 for ( int i = 0, e = 0; i < lines.size(); i++ )
                 {
                     String line = lines.get( i );
-                    boolean matches;
-                    while ( (matches = expectedLinePatterns[e].matches( line )) == false )
+                    while ( !expectedLinePatterns[e].matches( line ) )
                     {
                         if ( ++i >= lines.size() )
                         {
@@ -141,10 +143,6 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
                     }
                     e++;
 
-                    if ( !matches )
-                    {
-                        return false;
-                    }
                 }
                 return true;
             }
