@@ -23,6 +23,23 @@ import org.neo4j.cypher._
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("optional match and set") {
+    val n1 = createLabeledNode("L1")
+    val n2 = createLabeledNode("L2")
+    relate(n1, n2, "R1")
+
+    // only fails when returning distinct...
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+      """
+        |MATCH (n1:L1)-[:R1]->(n2:L2)
+        |OPTIONAL MATCH (n3)<-[r:R2]-(n2)
+        |SET n3.prop = false
+        |RETURN distinct n2
+      """.stripMargin)
+
+    result.toList should be(List(Map("n2" -> n2)))
+  }
+
   test("should be able to set property to collection") {
     // given
     val node = createNode()
