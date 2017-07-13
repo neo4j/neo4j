@@ -29,6 +29,7 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
       case runtimeAst.NodeFromRegister(offset) => Some(runtimeExpression.NodeFromRegister(offset))
+      case runtimeAst.NodeProperty(offset, token) => Some(runtimeExpression.NodeProperty(offset, token))
 
       case _ =>
         None

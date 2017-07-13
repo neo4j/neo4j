@@ -51,7 +51,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     }
   }
 
-
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
     val pipelineInformation = pipelines(plan)

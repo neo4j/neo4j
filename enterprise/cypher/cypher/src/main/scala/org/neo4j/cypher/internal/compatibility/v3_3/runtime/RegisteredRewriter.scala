@@ -19,39 +19,67 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.NodeProperty
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{plans => logical}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, ast => parserAst}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
+import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp, topDown}
 
-class RegisteredRewriter(pipelineInformation: Map[LogicalPlan, PipelineInformation]) extends Rewriter {
+import scala.collection.mutable
 
-  override def apply(v1: AnyRef): AnyRef = instance.apply(v1)
+/*
+This class takes a logical plan and pipeline information, and rewrites it so it uses register expressions instead of
+using Variable. It will also rewrite the pipeline information so that the new plans can be found in there.
+ */
+class RegisteredRewriter(tokenContext: TokenContext) {
 
-  private val instance: Rewriter = {
-    val stateChange: AnyRef => Option[PipelineInformation] = {
-      case lp: LogicalPlan => Some(pipelineInformation(lp))
-      case _ => None
+  def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
+    val logicalPlans = in.findByAllClass[LogicalPlan]
+    val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
+    var rewrites = Map[LogicalPlan, LogicalPlan]()
+    val rewritePlanWithRegisters = topDown(Rewriter.lift {
+      case oldPlan: LogicalPlan =>
+        val information = pipelineInformation(oldPlan)
+        val rewriter = rewriteCreator(information, oldPlan)
+        val newPlan = oldPlan.endoRewrite(rewriter)
+        newPipelineInfo += (newPlan -> information)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
+    })
+
+    // Rewrite plan and note which logical plans are rewritten to something else
+    val resultPlan = in.endoRewrite(rewritePlanWithRegisters)
+
+    // re-apply the rewrites to the keys of the pipeline information
+    val rewriter = createRewriterFrom(rewrites)
+    val massagesPipelineinfo = newPipelineInfo.toMap map {
+      case (plan: LogicalPlan, v: PipelineInformation) =>
+        plan.endoRewrite(rewriter) -> v
     }
 
-    val rewriteCreator: PipelineInformation => Rewriter = { (pipelineInformation: PipelineInformation) =>
-      val rewriter: Rewriter = Rewriter.lift {
-        case x => x
-//        case logical.ProduceResult(columns, src) =>
-//          val newColumns: Seq[(String, parserAst.Expression)] = columns map { c =>
-//            pipelineInformation(c) match {
-//              case LongSlot(offset, false, CTNode) =>
-//                c -> runtimeAst.NodeFromRegister(offset)
-//            }
-//
-//          }
-//          physical.ProduceResult(newColumns, src)
-      }
-
-      rewriter
-    }
-
-    TopDownWithState(rewriteCreator, stateChange)
+    (resultPlan, massagesPipelineinfo)
   }
 
+  private def createRewriterFrom(rewrites: Map[LogicalPlan, LogicalPlan]) = topDown(Rewriter.lift {
+    case x: LogicalPlan if rewrites.contains(x) =>
+      rewrites(x)
+  })
+
+  private def rewriteCreator(pipelineInformation: PipelineInformation, thisPlan: LogicalPlan): Rewriter = {
+    val innerRewriter = Rewriter.lift {
+      case Property(Variable(key), PropertyKeyName(prop)) =>
+        val token: Int = tokenContext.getOptPropertyKeyId(prop).get
+
+        val slot = pipelineInformation(key)
+        slot match {
+          case LongSlot(offset, nullable, typ) if typ == CTNode =>
+            NodeProperty(offset, token)
+        }
+    }
+    bottomUp(rewriter = innerRewriter, stopper = lp => lp.isInstanceOf[LogicalPlan] && lp != thisPlan)
+  }
 }

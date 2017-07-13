@@ -54,9 +54,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def createRegisteredRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
-    val beforeRewrite = from.logicalPlan
-    val pipelines = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val logicalPlan = beforeRewrite.endoRewrite(new RegisteredRewriter(pipelines))
+    val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
@@ -72,6 +70,13 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     val indexes = logicalPlan.indexUsage
     val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommig, planner, indexes, func, pipe, context.config)
     new CompilationState(from, Some(execPlan))
+  }
+
+  private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
+    val beforePipelines = RegisterAllocation.allocateRegisters(beforeRewrite)
+    val registeredRewriter = new RegisteredRewriter(context.planContext)
+    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    (logicalPlan, pipelines)
   }
 
   case class RegisteredExecutionPlan(fingerprint: PlanFingerprintReference,
