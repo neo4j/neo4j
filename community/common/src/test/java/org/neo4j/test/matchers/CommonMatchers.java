@@ -23,9 +23,14 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.neo4j.helpers.Exceptions;
+
+import static java.util.stream.Collectors.joining;
 
 public final class CommonMatchers
 {
@@ -41,6 +46,45 @@ public final class CommonMatchers
     public static <T> Matcher<? super Iterable<T>> matchesOneToOneInAnyOrder( Matcher<? super T>... expectedMatchers )
     {
         return new MatchesOneToOneInAnyOrder<>( expectedMatchers );
+    }
+
+    /**
+     * Checks that exception has expected array or suppressed exceptions.
+     *
+     * @param expectedSuppressedErrors expected suppressed exceptions.
+     * @return new matcher.
+     */
+    public static Matcher<Throwable> hasSuppressed( Throwable... expectedSuppressedErrors )
+    {
+        return new TypeSafeMatcher<Throwable>()
+        {
+            @Override
+            protected boolean matchesSafely( Throwable item )
+            {
+                return Arrays.equals( item.getSuppressed(), expectedSuppressedErrors );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "a throwable with suppressed:\n" );
+
+                if ( expectedSuppressedErrors.length == 0 )
+                {
+                    description.appendText( "a throwable without suppressed" );
+                }
+                else
+                {
+                    description.appendText( "a throwable with suppressed:\n" );
+
+                    String expectedSuppressedAsString = Arrays.stream( expectedSuppressedErrors )
+                            .map( Exceptions::stringify )
+                            .collect( joining( "\n", "[\n", "]" ) );
+
+                    description.appendText( expectedSuppressedAsString );
+                }
+            }
+        };
     }
 
     private static class MatchesOneToOneInAnyOrder<T> extends TypeSafeMatcher<Iterable<T>>

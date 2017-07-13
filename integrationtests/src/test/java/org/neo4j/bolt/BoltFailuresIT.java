@@ -24,26 +24,40 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.time.Clock;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.Transaction;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.logging.LogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
+import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.util.concurrent.CompletableFuture.runAsync;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
@@ -51,10 +65,14 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
+import static org.neo4j.helpers.collection.Iterators.count;
+import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class BoltFailuresIT
 {
@@ -110,7 +128,7 @@ public class BoltFailuresIT
         sessionMonitor.throwInSessionStarted();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
+        db = startDbWithBolt( newDbFactory().setMonitors( monitors ) );
         driver = createDriver();
         // creating a session does not force driver to open a new connection, it opens connections
         // lazily either when transaction is started or when query is executed via #run()
@@ -162,6 +180,42 @@ public class BoltFailuresIT
     public void throwsWhenRunMessageProcessingFailsToComplete()
     {
         throwsWhenRunMessageFails( ThrowingSessionMonitor::throwInProcessingDone );
+    }
+
+    @Test
+    public void boltServerLogsRealErrorWhenDriverIsClosedWithRunningTransactions() throws Exception
+    {
+        AssertableLogProvider internalLogProvider = new AssertableLogProvider();
+        db = startTestDb( internalLogProvider );
+
+        // create a dummy node
+        db.execute( "CREATE (:Node)" ).close();
+
+        // lock that dummy node to make all subsequent writes wait on an exclusive lock
+        org.neo4j.graphdb.Transaction tx = db.beginTx();
+        Node node = single( db.findNodes( label( "Node" ) ) );
+        tx.acquireWriteLock( node );
+
+        Driver driver = createDriver();
+
+        // try to execute write query for the same node through the driver
+        Future<?> writeThroughDriverFuture = updateAllNodesAsync( driver );
+        // make sure this query is executing and visible in query listing
+        awaitNumberOfActiveQueriesToBe( 1 );
+
+        // close driver while it has ongoing transaction, it should get terminated
+        driver.close();
+
+        // driver transaction should fail
+        expectFailure( writeThroughDriverFuture );
+
+        // make sure there are no active queries
+        awaitNumberOfActiveQueriesToBe( 0 );
+
+        // verify that closing of the driver resulted in transaction termination on the server and correct log message
+        internalLogProvider.assertAtLeastOnce( inLog( BoltProtocolV1.class ).warn(
+                startsWith( "Unable to send error back to the client" ),
+                instanceOf( TransactionTerminatedException.class ) ) );
     }
 
     private void throwsWhenInitMessageFails( Consumer<ThrowingSessionMonitor> monitorSetup,
@@ -223,7 +277,12 @@ public class BoltFailuresIT
 
     private GraphDatabaseService startTestDb( Monitors monitors )
     {
-        return startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
+        return startDbWithBolt( newDbFactory().setMonitors( monitors ) );
+    }
+
+    private GraphDatabaseService startTestDb( LogProvider internalLogProvider )
+    {
+        return startDbWithBolt( newDbFactory().setInternalLogProvider( internalLogProvider ) );
     }
 
     private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory )
@@ -233,6 +292,44 @@ public class BoltFailuresIT
                 .setConfig( boltConnector( "0" ).enabled, TRUE )
                 .setConfig( GraphDatabaseSettings.auth_enabled, FALSE )
                 .newGraphDatabase();
+    }
+
+    private void awaitNumberOfActiveQueriesToBe( int value ) throws TimeoutException
+    {
+        Predicates.await( () ->
+        {
+            Result listQueriesResult = db.execute( "CALL dbms.listQueries()" );
+            return count( listQueriesResult ) == value + 1; // procedure call itself is also listed
+        }, 1, MINUTES );
+    }
+
+    private Future<?> updateAllNodesAsync( Driver driver )
+    {
+        return runAsync( () ->
+        {
+            try ( Session session = driver.session() )
+            {
+                session.run( "MATCH (n) SET n.prop = 42" ).consume();
+            }
+        } );
+    }
+
+    private static void expectFailure( Future<?> future ) throws TimeoutException, InterruptedException
+    {
+        try
+        {
+            future.get( 1, MINUTES );
+            fail( "Exception expected" );
+        }
+        catch ( ExecutionException e )
+        {
+            // expected
+        }
+    }
+
+    private static TestEnterpriseGraphDatabaseFactory newDbFactory()
+    {
+        return new TestEnterpriseGraphDatabaseFactory();
     }
 
     private static Driver createDriver()
