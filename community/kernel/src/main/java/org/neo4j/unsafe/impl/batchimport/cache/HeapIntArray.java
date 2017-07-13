@@ -29,7 +29,7 @@ public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
     private final int[] array;
     private final int defaultValue;
 
-    public HeapIntArray( int length, int defaultValue, int base )
+    public HeapIntArray( int length, int defaultValue, long base )
     {
         super( 4, base );
         this.defaultValue = defaultValue;
