@@ -39,7 +39,12 @@ public interface AuthProviderOperations
      * Returns the path to the Neo4j configuration file if one exists.
      *
      * @return the path to the Neo4j configuration file if one exists
+     *
+     * @deprecated
+     * Settings are recommended to be stored in a separate file. You can use {@link AuthProviderOperations#neo4jHome()}
+     * to resolve your configuration file, e.g. <code>neo4jHome().resolve("conf/myPlugin.conf" );</code>.
      */
+    @Deprecated
     Optional<Path> neo4jConfigFile();
 
     /**
