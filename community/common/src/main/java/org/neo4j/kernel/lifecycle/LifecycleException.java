@@ -27,8 +27,18 @@ public class LifecycleException
     extends RuntimeException
 {
 
-    private static String humanReadableMessage(
-            Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
+    public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
+    {
+        super( humanReadableMessage( instance, from, to, cause ), cause );
+    }
+
+    public LifecycleException( String message, Throwable cause )
+    {
+        super( message, cause );
+    }
+
+    private static String humanReadableMessage( Object instance, LifecycleStatus from,
+            LifecycleStatus to, Throwable cause )
     {
         String instanceStr = String.valueOf( instance );
         StringBuilder message = new StringBuilder();
@@ -85,10 +95,5 @@ public class LifecycleException
             cause = cause.getCause();
         }
         return cause;
-    }
-
-    public LifecycleException( Object instance, LifecycleStatus from, LifecycleStatus to, Throwable cause )
-    {
-        super( humanReadableMessage( instance, from, to, cause ), cause );
     }
 }
