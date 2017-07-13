@@ -98,7 +98,6 @@ public class PullUpdatesAppliedIT
     public void doBefore() throws Exception
     {
         configurations = createConfigurations();
-
         databases = startDatabases();
     }
 
@@ -130,9 +129,9 @@ public class PullUpdatesAppliedIT
             int haPort = configuration.haPort;
             File directory = configuration.directory;
 
-            int[] initialHostPorts = getInitialHostPorts( configurations );
+            int initialHostPort = configurations.values().iterator().next().clusterPort;
 
-            HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, directory, initialHostPorts );
+            HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, directory, initialHostPort );
 
             databases.put( serverId, hagdb);
         }
@@ -207,7 +206,7 @@ public class PullUpdatesAppliedIT
                     }
                 } );
 
-        runInOtherJvm( directory, serverIdOfDatabaseToKill, clusterPort, haPort, getInitialHostPorts() );
+        runInOtherJvm( directory, serverIdOfDatabaseToKill, clusterPort, haPort, configurations.get( serverIdOfMaster ).clusterPort );
 
         assertTrue( "Timeout waiting for instance to fail", latch2.await( 60, TimeUnit.SECONDS ) );
 
@@ -232,16 +231,6 @@ public class PullUpdatesAppliedIT
                 .findAny().orElseThrow( IllegalStateException::new );
     }
 
-    private int[] getInitialHostPorts()
-    {
-        return getInitialHostPorts( configurations );
-    }
-
-    private int[] getInitialHostPorts( Map<Integer, Configuration> configurations )
-    {
-        return configurations.values().stream().mapToInt( configuration -> configuration.clusterPort ).toArray();
-    }
-
     private void restart( int serverId )
     {
         Configuration configuration = configurations.get( serverId );
@@ -251,47 +240,27 @@ public class PullUpdatesAppliedIT
         File directory = configuration.directory;
 
         HighlyAvailableGraphDatabase highlyAvailableGraphDatabase =
-                database( serverId, clusterPort, haPort, directory, getInitialHostPorts() );
+                database( serverId, clusterPort, haPort, directory, configurations.values().iterator().next().clusterPort );
 
         databases.put( serverId, highlyAvailableGraphDatabase );
     }
 
-    private static HighlyAvailableGraphDatabase database( int serverId, int clusterPort, int haPort, File path, int... initialHostPorts )
+    private static HighlyAvailableGraphDatabase database( int serverId, int clusterPort, int haPort, File path, int initialHostPort )
     {
-        String initialHosts = buildInitialHosts( initialHostPorts );
-
         return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( path )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + serverId) )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 // because we run single threaded: if we specified all 3x cluster members,
                 // first database would block, wait, and time out because it would be the only member
                 // this makes the test less robust, because it _could_ happen that first instance didn't become or remain master
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + initialHostPorts[0] )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + initialHostPort )
                 .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
-                .setConfig( HaSettings.ha_server, "localhost:" + (6666 + serverId) )
+                .setConfig( HaSettings.ha_server, "localhost:" + haPort )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .newGraphDatabase();
     }
 
-    private static String buildInitialHosts( int[] initialHostPorts )
-    {
-        StringBuilder initialHosts = new StringBuilder();
-
-        for ( int i = 0; i < initialHostPorts.length; i++ )
-        {
-            if ( i > 0 )
-            {
-                initialHosts.append( ',' );
-            }
-
-            initialHosts.append( "127.0.0.1:" ).append( initialHostPorts[i] );
-        }
-
-        return initialHosts.toString();
-    }
-
-    private void runInOtherJvm( File directory, int serverIdOfDatabaseToKill,
-                                       int clusterPort, int haPort, int... initialHostPorts ) throws Exception
+    private void runInOtherJvm( File directory, int serverIdOfDatabaseToKill, int clusterPort, int haPort, int initialHostPort ) throws Exception
     {
         List<String> commandLine = new ArrayList<>( Arrays.asList(
                 "java",
@@ -302,7 +271,7 @@ public class PullUpdatesAppliedIT
         commandLine.add( String.valueOf( serverIdOfDatabaseToKill ) );
         commandLine.add( String.valueOf( clusterPort ) );
         commandLine.add( String.valueOf( haPort ) );
-        IntStream.of( initialHostPorts ).mapToObj( String::valueOf ).forEach( commandLine::add );
+        commandLine.add( String.valueOf( initialHostPort ) );
 
         Process p = Runtime.getRuntime().exec( commandLine.toArray( new String[commandLine.size()] ) );
         List<Thread> threads = new LinkedList<>();
@@ -328,14 +297,9 @@ public class PullUpdatesAppliedIT
         int serverId = Integer.parseInt( args[1] );
         int clusterPort = Integer.parseInt( args[2] );
         int haPort = Integer.parseInt( args[3] );
-        int[] initialHostPorts = new int[args.length - 4];
+        int initialHostPort = Integer.parseInt( args[4] );
 
-        for ( int i = 0; i < args.length - 4; i++ )
-        {
-            initialHostPorts[i] = Integer.parseInt( args[i + 4] );
-        }
-
-        HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, storePath, initialHostPorts );
+        HighlyAvailableGraphDatabase hagdb = database( serverId, clusterPort, haPort, storePath, initialHostPort );
 
         hagdb.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         // this is the bug trigger
