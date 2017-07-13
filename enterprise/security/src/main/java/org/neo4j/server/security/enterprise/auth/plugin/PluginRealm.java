@@ -438,7 +438,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
         @Override
         public Optional<Path> neo4jConfigFile()
         {
-            return config.getConfigFile();
+            return Optional.empty();
         }
 
         @Override
