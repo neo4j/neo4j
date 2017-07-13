@@ -116,7 +116,7 @@ public class DeferringLockClientTest
             expected.add( lockUnit );
         }
         actualClient.assertRegisteredLocks( Collections.emptySet() );
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         actualClient.assertRegisteredLocks( expected );
@@ -286,7 +286,7 @@ public class DeferringLockClientTest
         client.releaseExclusive( ResourceTypes.NODE, 1 );
 
         // WHEN
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, true ) ) );
@@ -305,7 +305,7 @@ public class DeferringLockClientTest
         client.releaseShared( ResourceTypes.NODE, 1 );
 
         // WHEN
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, false ) ) );
@@ -324,7 +324,7 @@ public class DeferringLockClientTest
         client.releaseShared( ResourceTypes.NODE, 1 );
 
         // WHEN
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, true ) ) );
@@ -347,7 +347,7 @@ public class DeferringLockClientTest
         client.acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 42 );
 
         // WHEN
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         Set<LockUnit> expectedLocks = new LinkedHashSet<>(
@@ -376,7 +376,7 @@ public class DeferringLockClientTest
         client.releaseExclusive( ResourceTypes.NODE, 1 );
 
         // WHEN
-        client.acquireDeferredLocks();
+        client.acquireDeferredLocks( LockTracer.NONE );
 
         // THEN
         actualClient.assertRegisteredLocks( Collections.singleton( new LockUnit( ResourceTypes.NODE, 1, false ) ) );

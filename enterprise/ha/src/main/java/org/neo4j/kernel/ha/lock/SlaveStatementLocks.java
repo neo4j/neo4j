@@ -17,64 +17,68 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.kernel.ha.lock;
 
 import java.util.stream.Stream;
 
-/**
- * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
- * locks using {@link DeferringLockClient}.
- */
-public class DeferringStatementLocks implements StatementLocks
-{
-    private final Locks.Client explicit;
-    private final DeferringLockClient implicit;
+import org.neo4j.kernel.impl.locking.ActiveLock;
+import org.neo4j.kernel.impl.locking.LockTracer;
+import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 
-    public DeferringStatementLocks( Locks.Client explicit )
+/**
+ * Slave specific statement locks that in addition to standard functionality provided by configured delegate
+ * will grab selected shared locks on master during prepareForCommit phase.
+ */
+public class SlaveStatementLocks implements StatementLocks
+{
+    private final StatementLocks delegate;
+
+    SlaveStatementLocks( StatementLocks delegate )
     {
-        this.explicit = explicit;
-        this.implicit = new DeferringLockClient( this.explicit );
+        this.delegate = delegate;
     }
 
     @Override
     public Locks.Client pessimistic()
     {
-        return explicit;
+        return delegate.pessimistic();
     }
 
     @Override
     public Locks.Client optimistic()
     {
-        return implicit;
+        return delegate.optimistic();
     }
 
     @Override
     public void prepareForCommit( LockTracer lockTracer )
     {
-        implicit.acquireDeferredLocks( lockTracer );
+        delegate.prepareForCommit( lockTracer );
+        ((SlaveLocksClient) optimistic()).acquireDeferredSharedLocks( lockTracer );
     }
 
     @Override
     public void stop()
     {
-        implicit.stop();
+        delegate.stop();
     }
 
     @Override
     public void close()
     {
-        implicit.close();
+        delegate.close();
     }
 
     @Override
     public Stream<? extends ActiveLock> activeLocks()
     {
-        return Stream.concat( explicit.activeLocks(), implicit.activeLocks() );
+        return delegate.activeLocks();
     }
 
     @Override
     public long activeLockCount()
     {
-        return explicit.activeLockCount() + implicit.activeLockCount();
+        return delegate.activeLockCount();
     }
 }

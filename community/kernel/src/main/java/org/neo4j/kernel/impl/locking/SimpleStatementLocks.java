@@ -47,7 +47,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public void prepareForCommit()
+    public void prepareForCommit( LockTracer lockTracer )
     {
         // Locks where grabbed eagerly by client so no need to prepare
     }

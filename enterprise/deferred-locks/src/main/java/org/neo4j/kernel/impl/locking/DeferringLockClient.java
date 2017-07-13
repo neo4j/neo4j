@@ -108,7 +108,7 @@ public class DeferringLockClient implements Locks.Client
         }
     }
 
-    void acquireDeferredLocks()
+    void acquireDeferredLocks( LockTracer lockTracer )
     {
         assertNotStopped();
 
@@ -123,7 +123,7 @@ public class DeferringLockClient implements Locks.Client
                   currentExclusive != lockUnit.isExclusive()) )
             {
                 // New type, i.e. flush the current array down to delegate in one call
-                flushLocks( current, cursor, currentType, currentExclusive );
+                flushLocks( lockTracer, current, cursor, currentType, currentExclusive );
 
                 cursor = 0;
                 currentType = lockUnit.resourceType();
@@ -137,21 +137,22 @@ public class DeferringLockClient implements Locks.Client
             }
             current[cursor++] = lockUnit.resourceId();
         }
-        flushLocks( current, cursor, currentType, currentExclusive );
+        flushLocks( lockTracer, current, cursor, currentType, currentExclusive );
     }
 
-    private void flushLocks( long[] current, int cursor, ResourceType currentType, boolean exclusive )
+    private void flushLocks( LockTracer lockTracer, long[] current, int cursor, ResourceType currentType, boolean
+            exclusive )
     {
         if ( cursor > 0 )
         {
             long[] resourceIds = Arrays.copyOf( current, cursor );
             if ( exclusive )
             {
-                clientDelegate.acquireExclusive( LockTracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireExclusive( lockTracer, currentType, resourceIds );
             }
             else
             {
-                clientDelegate.acquireShared( LockTracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireShared( lockTracer, currentType, resourceIds );
             }
         }
     }

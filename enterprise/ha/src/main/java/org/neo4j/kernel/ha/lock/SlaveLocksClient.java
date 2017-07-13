@@ -20,6 +20,8 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -43,6 +45,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
@@ -86,9 +91,9 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = firstTimeSharedLocks( resourceType, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( false, resourceType, newResourceIds ) )
+            try
             {
-                acquireSharedOnMaster( resourceType, newResourceIds );
+                acquireSharedOnMasterFiltered( tracer, resourceType, newResourceIds );
             }
             catch ( Throwable failure )
             {
@@ -223,6 +228,32 @@ class SlaveLocksClient implements Locks.Client
         return client.activeLockCount();
     }
 
+    void acquireDeferredSharedLocks( LockTracer tracer )
+    {
+        assertNotStopped();
+        Map<ResourceType,List<Long>> deferredLocksMap =
+                client.activeLocks().filter( activeLock -> ActiveLock.SHARED_MODE.equals( activeLock.mode() ) )
+                        .filter( this::isLabelOrRelationshipType )
+                        .collect( groupingBy( ActiveLock::resourceType, mapping( ActiveLock::resourceId, toList() ) ) );
+
+        deferredLocksMap.forEach( ( type, ids ) -> lockResourcesOnMaster( tracer, type, ids ) );
+    }
+
+    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, List<Long> ids )
+    {
+        long[] resourceIds = PrimitiveLongCollections.asArray( ids.iterator() );
+        try ( LockWaitEvent event = tracer.waitForLock( false, type, resourceIds ) )
+        {
+            acquireSharedOnMaster( type, resourceIds );
+        }
+    }
+
+    private boolean isLabelOrRelationshipType( ActiveLock activeLock )
+    {
+        return (activeLock.resourceType() == ResourceTypes.LABEL) ||
+                (activeLock.resourceType() == ResourceTypes.RELATIONSHIP_TYPE);
+    }
+
     private void stopLockSessionOnMaster()
     {
         try
@@ -318,14 +349,23 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private void acquireSharedOnMaster( ResourceType resourceType, long... resourceIds )
+    private void acquireSharedOnMasterFiltered( LockTracer lockTracer, ResourceType resourceType, long... resourceIds )
     {
-        if ( resourceType == ResourceTypes.INDEX_ENTRY )
+        if ( (resourceType == ResourceTypes.INDEX_ENTRY) ||
+             (resourceType == ResourceTypes.LABEL) ||
+             (resourceType == ResourceTypes.RELATIONSHIP_TYPE) )
         {
             return;
         }
-        makeSureTxHasBeenInitialized();
+        try ( LockWaitEvent event = lockTracer.waitForLock( false, resourceType, resourceIds ) )
+        {
+            acquireSharedOnMaster( resourceType, resourceIds );
+        }
+    }
 
+    private void acquireSharedOnMaster( ResourceType resourceType, long[] resourceIds )
+    {
+        makeSureTxHasBeenInitialized();
         RequestContext requestContext = newRequestContextFor( this );
         try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
         {
