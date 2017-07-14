@@ -42,7 +42,7 @@ import static org.mockito.Mockito.mock;
 
 public class RWLockTest
 {
-    private static final long TEST_TIMEOUT_MILLIS = 5_000;
+    private static final long TEST_TIMEOUT_MILLIS = 10_000;
 
     private static ExecutorService executor;
 
