@@ -73,6 +73,6 @@ public class HighlyAvailableGraphDatabase extends GraphDatabaseFacade
 
     public File getStoreDirectory()
     {
-        return new File( getStoreDir() );
+        return getStoreDir();
     }
 }

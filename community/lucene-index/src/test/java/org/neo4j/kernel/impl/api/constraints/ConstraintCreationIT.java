@@ -82,7 +82,7 @@ public class ConstraintCreationIT
 
         SchemaIndexProvider schemaIndexProvider =
                 db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class );
-        File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( new File( db.getStoreDir() ) );
+        File schemaStoreDir = schemaIndexProvider.getSchemaIndexStoreDirectory( db.getStoreDir() );
 
         assertFalse( new IndexFolderLayout( schemaStoreDir, INDEX_IDENTIFIER ).getIndexFolder().exists() );
     }

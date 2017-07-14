@@ -122,7 +122,7 @@ public class BranchedDataIT
 
         // WHEN
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        File storeDir = new File( slave.getStoreDir() );
+        File storeDir = slave.getStoreDir();
         RepairKit starter = cluster.shutdown( slave );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         createNode( master, "B1" );

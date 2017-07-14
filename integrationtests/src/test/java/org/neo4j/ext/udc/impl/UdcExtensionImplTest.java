@@ -529,7 +529,7 @@ public class UdcExtensionImplTest extends LocalServerTestBase
         {
             GraphDatabaseAPI db = (GraphDatabaseAPI) gdb;
             gdb.shutdown();
-            FileUtils.deleteDirectory( new File( db.getStoreDir() ) );
+            FileUtils.deleteDirectory( db.getStoreDir() );
         }
     }
 

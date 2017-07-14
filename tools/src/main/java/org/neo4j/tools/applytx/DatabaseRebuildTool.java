@@ -172,7 +172,7 @@ public class DatabaseRebuildTool
             this.db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
             this.access = new StoreAccess( db.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores() ).initialize();
-            this.storeDir = new File( db.getStoreDir() );
+            this.storeDir = db.getStoreDir();
         }
 
         public void shutdown()

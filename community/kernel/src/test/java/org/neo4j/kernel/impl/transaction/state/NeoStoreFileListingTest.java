@@ -114,7 +114,7 @@ public class NeoStoreFileListingTest
 
     private void createIndexDbFile() throws IOException
     {
-        File storeDir = new File( db.getStoreDir() );
+        File storeDir = db.getStoreDir();
         final File indexFile = new File( storeDir, "index.db" );
         if ( !indexFile.exists() )
         {
