@@ -94,16 +94,17 @@ public class SharedDiscoveryServiceIT
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
+        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), null, member,
-                jobScheduler, logProvider, userLogProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory
+                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
     private Config config()
     {
         return Config.embeddedDefaults( stringMap(
-                CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
+         CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
                 new BoltConnector( "bolt" ).enabled.name(), "true",
                 new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );

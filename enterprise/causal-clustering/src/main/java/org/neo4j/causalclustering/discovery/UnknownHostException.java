@@ -19,18 +19,10 @@
  */
 package org.neo4j.causalclustering.discovery;
 
-import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
-
-public interface DiscoveryServiceFactory
+public class UnknownHostException extends RuntimeException
 {
-    CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself,
-            JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            HostnameResolver hostnameResolver );
-
-    TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver );
+    public UnknownHostException(java.net.UnknownHostException unknownHostException)
+    {
+        super(unknownHostException);
+    }
 }

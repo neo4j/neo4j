@@ -49,7 +49,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     @Override
     public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
     {
         SharedDiscoveryCoreClient sharedDiscoveryCoreClient =
                 new SharedDiscoveryCoreClient( this, myself, logProvider, config );
@@ -60,7 +60,7 @@ public class SharedDiscoveryService implements DiscoveryServiceFactory
 
     @Override
     public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself )
+            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver )
     {
         return new SharedDiscoveryReadReplicaClient( this, config, myself, logProvider );
     }

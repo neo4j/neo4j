@@ -78,6 +78,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final RobustJobSchedulerWrapper scheduler;
     private final long refreshPeriod;
     private final LogProvider logProvider;
+    private final HostnameResolver hostnameResolver;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -90,8 +91,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private Thread startingThread;
     private volatile boolean stopped;
 
-    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler, LogProvider logProvider,
-            LogProvider userLogProvider )
+    HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
     {
         this.config = config;
         this.sslPolicy = sslPolicy;
@@ -102,6 +103,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.scheduler = new RobustJobSchedulerWrapper( jobScheduler, log );
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        this.hostnameResolver = hostnameResolver;
     }
 
     @Override
@@ -191,7 +193,10 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         List<AdvertisedSocketAddress> initialMembers = config.get( initial_discovery_members );
         for ( AdvertisedSocketAddress address : initialMembers )
         {
-            tcpIpConfig.addMember( address.toString() );
+            for ( AdvertisedSocketAddress advertisedSocketAddress : hostnameResolver.resolve( address ) )
+            {
+                tcpIpConfig.addMember( advertisedSocketAddress.toString() );
+            }
         }
 
         ListenSocketAddress hazelcastAddress = config.get( discovery_listen_address );
@@ -248,8 +253,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
         JobScheduler.JobHandle logJob = scheduler.schedule( "HazelcastHealth", HAZELCAST_IS_HEALTHY_TIMEOUT_MS,
                 () -> log.warn( "The server has not been able to connect in a timely fashion to the " +
-                                "cluster. Please consult the logs for more details. Rebooting the server may " +
-                                "solve the problem." ) );
+                        "cluster. Please consult the logs for more details. Rebooting the server may " +
+                        "solve the problem." ) );
 
         try
         {
@@ -273,13 +278,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     private void logConnectionInfo( List<AdvertisedSocketAddress> initialMembers )
     {
-        userLog.info( "My connection info: " +
-                      "[\n\tDiscovery:   listen=%s, advertised=%s," +
-                      "\n\tTransaction: listen=%s, advertised=%s, " +
-                      "\n\tRaft:        listen=%s, advertised=%s, " +
-                      "\n\tClient Connector Addresses: %s" +
-                      "\n]",
-                config.get( discovery_listen_address ),
+        userLog.info( "My connection info: " + "[\n\tDiscovery:   listen=%s, advertised=%s," +
+                        "\n\tTransaction: listen=%s, advertised=%s, " + "\n\tRaft:        listen=%s, advertised=%s, " +
+                        "\n\tClient Connector Addresses: %s" + "\n]", config.get( discovery_listen_address ),
                 config.get( CausalClusteringSettings.discovery_advertised_address ),
                 config.get( CausalClusteringSettings.transaction_listen_address ),
                 config.get( CausalClusteringSettings.transaction_advertised_address ),
