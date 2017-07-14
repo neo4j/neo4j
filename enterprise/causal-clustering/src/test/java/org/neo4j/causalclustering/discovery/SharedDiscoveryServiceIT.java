@@ -53,7 +53,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 public class SharedDiscoveryServiceIT
 {
     private static final long TIMEOUT_MS = 15_000;
-    private static final long RUN_TIME_MS = 1000;;
+    private static final long RUN_TIME_MS = 1000;
 
     private NullLogProvider logProvider = NullLogProvider.getInstance();
     private NullLogProvider userLogProvider = NullLogProvider.getInstance();
@@ -89,20 +89,22 @@ public class SharedDiscoveryServiceIT
         }
     }
 
-    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory, Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
+    private Callable<Void> createDiscoveryJob( MemberId member, DiscoveryServiceFactory disoveryServiceFactory,
+            Set<MemberId> expectedTargetSet ) throws ExecutionException, InterruptedException
     {
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
         jobScheduler.init();
+        HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
-        CoreTopologyService topologyService = disoveryServiceFactory.coreTopologyService( config(), null, member,
-                jobScheduler, logProvider, userLogProvider );
+        CoreTopologyService topologyService = disoveryServiceFactory
+                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 
     private Config config()
     {
         return Config.embeddedDefaults( stringMap(
-                CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
+         CausalClusteringSettings.raft_advertised_address.name(), "127.0.0.1:7000",
                 CausalClusteringSettings.transaction_advertised_address.name(), "127.0.0.1:7001",
                 new BoltConnector( "bolt" ).enabled.name(), "true",
                 new BoltConnector( "bolt" ).advertised_address.name(), "127.0.0.1:7002" ) );

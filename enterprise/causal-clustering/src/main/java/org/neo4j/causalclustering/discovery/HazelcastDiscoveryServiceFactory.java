@@ -32,18 +32,18 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
     public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider );
+        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver );
     }
 
     @Override
     public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-                                            JobScheduler jobScheduler, MemberId myself )
+                                            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver )
     {
         configureHazelcast( config );
-        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy ), jobScheduler, logProvider, config, myself );
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy, hostnameResolver ), jobScheduler, logProvider, config, myself );
     }
 
     private static void configureHazelcast( Config config )

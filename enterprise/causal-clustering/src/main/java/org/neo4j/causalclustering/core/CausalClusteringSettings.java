@@ -51,6 +51,7 @@ import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.min;
+import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 @Description( "Settings for Causal Clustering" )
@@ -120,6 +121,16 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<List<AdvertisedSocketAddress>> initial_discovery_members =
             setting( "causal_clustering.initial_discovery_members", list( ",", ADVERTISED_SOCKET_ADDRESS ),
                     NO_DEFAULT );
+
+    public enum DiscoveryType
+    {
+        DNS,
+        LIST
+    }
+
+    @Description( "Configure the discovery type used for cluster name resolution" )
+    public static final Setting<DiscoveryType> discovery_type =
+            setting( "causal_clustering.discovery_type", options( DiscoveryType.class ), DiscoveryType.LIST.name() );
 
     @Description( "Prevents the network middleware from dumping its own logs. Defaults to true." )
     public static final Setting<Boolean> disable_middleware_logging =
@@ -192,7 +203,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Enable or disable the dump of all network messages pertaining to the RAFT protocol" )
     public static final Setting<Boolean> raft_messages_log_enable =
-            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE);
+            setting( "causal_clustering.raft_messages_log_enable", BOOLEAN, FALSE );
 
     @Description( "Interval of pulling updates from cores." )
     public static final Setting<Duration> pull_interval = setting( "causal_clustering.pull_interval", DURATION, "1s" );

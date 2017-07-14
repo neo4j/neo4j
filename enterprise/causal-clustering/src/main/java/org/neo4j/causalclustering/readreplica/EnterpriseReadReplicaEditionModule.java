@@ -43,6 +43,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeoutService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
@@ -104,6 +105,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
 
+import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.chooseResolver;
 import static org.neo4j.kernel.impl.factory.CommunityEditionModule.createLockManager;
 
 /**
@@ -178,14 +180,16 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         commitProcessFactory = readOnly();
 
         LogProvider logProvider = platformModule.logging.getInternalLogProvider();
+        LogProvider userLogProvider = platformModule.logging.getUserLogProvider();
 
         logProvider.getLog( getClass() ).info( String.format( "Generated new id: %s", myself ) );
 
         SslPolicyLoader sslPolicyFactory = dependencies.satisfyDependency( SslPolicyLoader.create( config, logProvider ) );
         SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
+        HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
-                logProvider, platformModule.jobScheduler, myself );
+                logProvider, platformModule.jobScheduler, myself, hostnameResolver );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
@@ -313,8 +317,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 fileName -> fileName.startsWith( PhysicalLogFile.DEFAULT_NAME ),
                 fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME ),
                 filename -> filename.startsWith( StoreUtil.BRANCH_SUBDIRECTORY ),
-                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME )
-        );
+                filename -> filename.startsWith( StoreUtil.TEMP_COPY_DIRECTORY_NAME ) );
     }
 
     @Override
