@@ -21,8 +21,8 @@ package org.neo4j.causalclustering.discovery;
 
 public class UnknownHostException extends RuntimeException
 {
-    public UnknownHostException(java.net.UnknownHostException unknownHostException)
+    UnknownHostException( java.net.UnknownHostException unknownHostException )
     {
-        super(unknownHostException);
+        super( unknownHostException );
     }
 }

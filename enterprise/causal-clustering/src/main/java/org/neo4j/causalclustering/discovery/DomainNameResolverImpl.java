@@ -23,7 +23,7 @@ import java.net.InetAddress;
 
 public class DomainNameResolverImpl implements DomainNameResolver
 {
-    public InetAddress[] resolveDomainName(String hostname) throws UnknownHostException
+    public InetAddress[] resolveDomainName( String hostname ) throws UnknownHostException
     {
         try
         {

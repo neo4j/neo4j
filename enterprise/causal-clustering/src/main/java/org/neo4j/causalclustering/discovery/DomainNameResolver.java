@@ -23,5 +23,5 @@ import java.net.InetAddress;
 
 public interface DomainNameResolver
 {
-    InetAddress[] resolveDomainName(String hostname) throws UnknownHostException;
+    InetAddress[] resolveDomainName( String hostname ) throws UnknownHostException;
 }
