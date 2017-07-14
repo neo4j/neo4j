@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -108,8 +109,8 @@ public class PullUpdatesAppliedIT
         IntStream.range( 0, 3 )
                 .forEach( serverId ->
                 {
-                    int clusterPort = 5001 + serverId;
-                    int haPort = 6666 + serverId;
+                    int clusterPort = PortAuthority.allocatePort();
+                    int haPort = PortAuthority.allocatePort();
                     File directory = testDirectory.directory( Integer.toString( serverId ) ).getAbsoluteFile();
 
                     configurations.put( serverId, new Configuration( serverId, clusterPort, haPort, directory ) );
