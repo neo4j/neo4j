@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
@@ -245,7 +246,7 @@ public class ListQueriesProcedureTest
                     {
                         assertEquals( "activeLockCount", lockCount, activeLockCount );
                     }
-                    if ( "SCHEMA".equals( resourceType ) )
+                    if ( ResourceTypes.LABEL.name().equals( resourceType ) )
                     {
                         assertEquals( "SHARED", row.get( "mode" ) );
                         assertEquals( 0L, row.get( "resourceId" ) );

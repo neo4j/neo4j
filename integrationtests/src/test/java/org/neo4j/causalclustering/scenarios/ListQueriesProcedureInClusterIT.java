@@ -19,20 +19,22 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.CountDownLatch;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.function.ThrowingFunction;
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
@@ -42,12 +44,10 @@ import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureInClusterIT
@@ -72,7 +72,9 @@ public class ListQueriesProcedureInClusterIT
     public void listQueriesWillNotIncludeQueriesFromOtherServersInCluster() throws Exception
     {
         // given
-        String CORE_QUERY = "MATCH (n) SET n.number = n.number - 1";
+        Label testLabel = Label.label( "testLabel" );
+        String propertyName = "number";
+        String CORE_QUERY = "MATCH (n:" + testLabel.name() + ") WHERE n.number = 10 SET n.number = n.number - 1";
         CountDownLatch resourceLocked = new CountDownLatch( 1 );
         CountDownLatch listQueriesLatchOnCore = new CountDownLatch( 1 );
         CountDownLatch executedCoreQueryLatch = new CountDownLatch( 1 );
@@ -83,10 +85,13 @@ public class ListQueriesProcedureInClusterIT
         //Given
         CoreClusterMember leader = cluster.coreTx( ( CoreGraphDatabase leaderDb, Transaction tx ) ->
         {
-            node[0] = leaderDb.createNode();
+            node[0] = leaderDb.createNode( testLabel );
+            node[0].setProperty( propertyName, 10 );
             tx.success();
             tx.close();
         } );
+
+        createTestIndex( testLabel, propertyName );
 
         CoreGraphDatabase leaderDb = leader.database();
         Result matchAllResult = leaderDb.execute( "MATCH (n) RETURN n" );
@@ -118,6 +123,21 @@ public class ListQueriesProcedureInClusterIT
         executedCoreQueryLatch.await();
 
         assertFalse( getQueryListing( CORE_QUERY, leaderDb ).isPresent() );
+    }
+
+    private void createTestIndex( Label testLabel, String propertyName ) throws Exception
+    {
+        cluster.coreTx( ( CoreGraphDatabase leaderDb, Transaction tx ) ->
+        {
+            leaderDb.schema().indexFor( testLabel ).on( propertyName ).create();
+            tx.success();
+        } );
+
+        cluster.coreTx( ( CoreGraphDatabase leaderDb, Transaction tx ) ->
+        {
+            leaderDb.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        } );
     }
 
     private ThrowingFunction<Void, Void, Exception> executeQueryOnLeader( String CORE_QUERY, CountDownLatch executedCoreQueryLatch )

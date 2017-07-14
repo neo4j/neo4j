@@ -59,6 +59,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -78,6 +79,8 @@ public class BoltCausalClusteringIT
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private Cluster cluster;
 
