@@ -53,6 +53,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
+import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.function.ThrowingFunction.catchThrown;
@@ -65,6 +66,8 @@ import static org.neo4j.procedure.Mode.DBMS;
 @SuppressWarnings( "unused" )
 public class EnterpriseBuiltInDbmsProcedures
 {
+    private static final int HARD_CHAR_LIMIT = 2048;
+
     @Context
     public DependencyResolver resolver;
 
@@ -80,6 +83,17 @@ public class EnterpriseBuiltInDbmsProcedures
     public void setTXMetaData( @Name( value = "data" ) Map<String,Object> data )
     {
         securityContext.assertCredentialsNotExpired();
+        int totalCharSize = data.entrySet().stream()
+                .mapToInt( e -> e.getKey().length() + e.getValue().toString().length() )
+                .sum();
+
+        if ( totalCharSize >= HARD_CHAR_LIMIT )
+        {
+            throw new IllegalArgumentException(
+                    format( "Invalid transaction meta-data, expected the total number of chars for " +
+                            "keys and values to be less than %d, got %d", HARD_CHAR_LIMIT, totalCharSize ) );
+        }
+
         try ( Statement statement = getCurrentTx().acquireStatement() )
         {
             statement.queryRegistration().setMetaData( data );

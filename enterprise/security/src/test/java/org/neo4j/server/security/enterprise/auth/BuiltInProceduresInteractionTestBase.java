@@ -647,7 +647,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             String testValue = "testValue";
             String testKey = "test";
-            localGraph.execute( "CALL dbms.setTXMetaData", map( "data", map( testKey, testValue ) ) );
+            localGraph.execute( "CALL dbms.setTXMetaData({" + testKey + ":'" + testValue + "'})" );
             Map<String,Object> metadata =
                     (Map<String,Object>) localGraph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
             assertEquals( testValue, metadata.get( testKey ) );
