@@ -43,9 +43,9 @@ abstract class AbstractTracker<ARRAY extends NumberArray> implements Tracker
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex, int count )
+    public void swap( long fromIndex, long toIndex )
     {
-        array.swap( fromIndex, toIndex, count );
+        array.swap( fromIndex, toIndex );
     }
 
     @Override

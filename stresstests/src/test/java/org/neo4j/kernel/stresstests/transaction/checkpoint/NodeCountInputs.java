@@ -21,6 +21,7 @@ package org.neo4j.kernel.stresstests.transaction.checkpoint;
 
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -103,7 +104,7 @@ public class NodeCountInputs implements Input
     }
 
     @Override
-    public IdMapper idMapper()
+    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
         return IdMappers.actual();
     }

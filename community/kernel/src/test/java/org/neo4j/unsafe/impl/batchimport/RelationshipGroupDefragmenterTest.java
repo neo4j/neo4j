@@ -59,6 +59,7 @@ import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 @RunWith( Parameterized.class )
 public class RelationshipGroupDefragmenterTest
@@ -192,7 +193,7 @@ public class RelationshipGroupDefragmenterTest
     {
         Monitor monitor = mock( Monitor.class );
         RelationshipGroupDefragmenter defragmenter = new RelationshipGroupDefragmenter( CONFIG,
-                ExecutionMonitors.invisible(), monitor );
+                ExecutionMonitors.invisible(), monitor, AUTO );
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want

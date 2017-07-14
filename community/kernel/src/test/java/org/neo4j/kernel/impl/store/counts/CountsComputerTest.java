@@ -55,6 +55,7 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
@@ -327,7 +328,8 @@ public class CountsComputerTest
             int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
-                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
+                    lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
+                    NumberArrayFactory.AUTO );
             CountsTracker countsTracker = createCountsTracker();
             life.add( countsTracker.setInitializer( countsComputer ) );
         }

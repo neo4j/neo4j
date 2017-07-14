@@ -21,13 +21,12 @@ package org.neo4j.unsafe.impl.batchimport.input.csv;
 
 import org.neo4j.csv.reader.Extractor;
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
-
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * Defines different types that input ids can come in. Enum names in here are user facing.
@@ -49,9 +48,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper()
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
-            return IdMappers.strings( AUTO );
+            return IdMappers.strings( numberArrayFactory );
         }
 
         @Override
@@ -74,9 +73,9 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper()
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
-            return IdMappers.longs( AUTO );
+            return IdMappers.longs( numberArrayFactory );
         }
 
         @Override
@@ -99,7 +98,7 @@ public enum IdType
         }
 
         @Override
-        public IdMapper idMapper()
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
             return IdMappers.actual();
         }
@@ -118,7 +117,7 @@ public enum IdType
         this.idsAreExternal = idsAreExternal;
     }
 
-    public abstract IdMapper idMapper();
+    public abstract IdMapper idMapper( NumberArrayFactory numberArrayFactory );
 
     public abstract IdGenerator idGenerator();
 

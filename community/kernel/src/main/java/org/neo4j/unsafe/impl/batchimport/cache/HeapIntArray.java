@@ -60,15 +60,4 @@ public class HeapIntArray extends HeapNumberArray<IntArray> implements IntArray
     {
         Arrays.fill( array, defaultValue );
     }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            int fromValue = get( fromIndex + i );
-            set( fromIndex + i, get( toIndex + i ) );
-            set( toIndex + i, fromValue );
-        }
-    }
 }

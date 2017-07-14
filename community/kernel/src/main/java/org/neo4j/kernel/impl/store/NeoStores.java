@@ -151,6 +151,11 @@ public class NeoStores implements AutoCloseable
         return storeDir;
     }
 
+    public PageCache getPageCache()
+    {
+        return pageCache;
+    }
+
     private File getStoreFile( String substoreName )
     {
         return new File( neoStoreFileName.getPath() + substoreName );

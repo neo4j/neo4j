@@ -24,6 +24,7 @@ import org.neo4j.csv.reader.Extractors;
 import org.neo4j.unsafe.impl.batchimport.IdRangeInput.Range;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -122,9 +123,9 @@ public class DataGeneratorInput implements Input
     }
 
     @Override
-    public IdMapper idMapper()
+    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
-        return idType.idMapper();
+        return idType.idMapper( numberArrayFactory );
     }
 
     @Override

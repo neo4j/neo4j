@@ -102,6 +102,7 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
@@ -421,7 +422,8 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                 int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
                 int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer(
-                        lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId );
+                        lastTxId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
+                        NumberArrayFactory.autoWithPageCacheFallback( pageCache, storeDir ) );
                 life.add( new CountsTracker(
                         logService.getInternalLogProvider(), fileSystem, pageCache, config, storeFileBase )
                         .setInitializer( initializer ) );

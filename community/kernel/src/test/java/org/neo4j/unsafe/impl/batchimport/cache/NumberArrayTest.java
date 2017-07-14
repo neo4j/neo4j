@@ -20,6 +20,7 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -27,24 +28,29 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.autoWithPageCacheFallback;
 
 @RunWith( Parameterized.class )
-public class NumberArrayTest
+public class NumberArrayTest extends NumberArrayPageCacheTestSupport
 {
+    private static Fixture fixture;
+
     @FunctionalInterface
     interface Writer<N extends NumberArray<N>>
     {
@@ -59,40 +65,58 @@ public class NumberArrayTest
 
     private static final int INDEXES = 50_000;
 
-    @Parameters
-    public static Collection<Object[]> arrays()
+    @Parameters( name = "{0}" )
+    public static Collection<Object[]> arrays() throws IOException
     {
+        fixture = prepareDirectoryAndPageCache( NumberArrayTest.class );
+        PageCache pageCache = fixture.pageCache;
+        File dir = fixture.directory;
         Collection<Object[]> list = new ArrayList<>();
-        for ( NumberArrayFactory factory : array( HEAP, OFF_HEAP, AUTO, CHUNKED_FIXED_SIZE ) )
+        Map<String,NumberArrayFactory> factories = new HashMap<>();
+        factories.put( "HEAP", HEAP );
+        factories.put( "OFF_HEAP", OFF_HEAP );
+        factories.put( "AUTO", AUTO );
+        factories.put( "CHUNKED_FIXED_SIZE", CHUNKED_FIXED_SIZE );
+        factories.put( "autoWithPageCacheFallback", autoWithPageCacheFallback( pageCache, dir ) );
+        factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir ) );
+        for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
+            String name = entry.getKey() + " => ";
+            NumberArrayFactory factory = entry.getValue();
             list.add( line(
+                    name + "IntArray",
                     factory.newIntArray( INDEXES, -1 ),
                     (random) -> random.nextInt( 1_000_000_000 ),
                     (array, index, value) -> array.set( index, (Integer) value ),
                     (array, index) -> array.get( index ) ) );
             list.add( line(
+                    name + "DynamicIntArray",
                     factory.newDynamicIntArray( INDEXES / 100, -1 ),
                     (random) -> random.nextInt( 1_000_000_000 ),
                     (array, index, value) -> array.set( index, (Integer) value ),
                     (array, index) -> array.get( index ) ) );
 
             list.add( line(
+                    name + "LongArray",
                     factory.newLongArray( INDEXES, -1 ),
                     (random) -> random.nextLong( 1_000_000_000 ),
                     (array, index, value) -> array.set( index, (Long) value ),
                     (array, index) -> array.get( index ) ) );
             list.add( line(
+                    name + "DynamicLongArray",
                     factory.newDynamicLongArray( INDEXES / 100, -1 ),
                     (random) -> random.nextLong( 1_000_000_000 ),
                     (array, index, value) -> array.set( index, (Long) value ),
                     (array, index) -> array.get( index ) ) );
 
             list.add( line(
+                    name + "ByteArray",
                     factory.newByteArray( INDEXES, new byte[] {-1, -1, -1, -1, -1} ),
                     (random) -> random.nextInt( 1_000_000_000 ),
                     (array, index, value) -> array.setInt( index, 1, (Integer) value ),
                     (array, index) -> array.getInt( index, 1 ) ) );
             list.add( line(
+                    name + "DynamicByteArray",
                     factory.newDynamicByteArray( INDEXES / 100, new byte[] {-1, -1, -1, -1, -1} ),
                     (random) -> random.nextInt( 1_000_000_000 ),
                     (array, index, value) -> array.setInt( index, 1, (Integer) value ),
@@ -101,24 +125,32 @@ public class NumberArrayTest
         return list;
     }
 
-    private static <N extends NumberArray<N>> Object[] line( N array, Function<RandomRule,Object> valueGenerator,
+    private static <N extends NumberArray<N>> Object[] line( String name, N array, Function<RandomRule,Object> valueGenerator,
             Writer<N> writer, Reader<N> reader )
     {
-        return new Object[] {array, valueGenerator, writer, reader};
+        return new Object[] {name, array, valueGenerator, writer, reader};
+    }
+
+    @AfterClass
+    public static void closeFixture() throws Exception
+    {
+        fixture.close();
     }
 
     @Rule
     public RandomRule random = new RandomRule();
 
     @Parameter( 0 )
-    public NumberArray<?> array;
+    public String name;
     @Parameter( 1 )
+    public NumberArray<?> array;
+    @Parameter( 2 )
     public Function<RandomRule,Object> valueGenerator;
     @SuppressWarnings( "rawtypes" )
-    @Parameter( 2 )
+    @Parameter( 3 )
     public Writer writer;
     @SuppressWarnings( "rawtypes" )
-    @Parameter( 3 )
+    @Parameter( 4 )
     public Reader reader;
 
     @SuppressWarnings( "unchecked" )
@@ -142,7 +174,7 @@ public class NumberArrayTest
         for ( int index = 0; index < INDEXES; index++ )
         {
             Object value = reader.read( index % 2 == 0 ? array : array.at( index ), index );
-            Object expectedValue = key.containsKey( index ) ? key.get( index ) : defaultValue;
+            Object expectedValue = key.getOrDefault( index, defaultValue );
             assertEquals( expectedValue, value );
         }
     }

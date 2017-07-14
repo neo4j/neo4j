@@ -23,81 +23,75 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import java.nio.file.StandardOpenOption;
+import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageSwapperFactory;
-import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import static java.lang.System.currentTimeMillis;
 
-import static org.neo4j.io.ByteUnit.mebiBytes;
-import static org.neo4j.unsafe.impl.batchimport.cache.PageCacheNumberArray.PAGE_SIZE;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
+import static org.junit.Assert.assertEquals;
 
 public class PageCacheLongArrayTest
 {
-    private static final int COUNT = 100_000_000;
+    private static final int COUNT = 1_000_000;
 
     private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory();
     private final RandomRule random = new RandomRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random );
+    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random ).around( pageCacheRule );
 
     @Test
-    public void shouldTest() throws Exception
+    public void verifyPageCacheLongArray() throws Exception
     {
-        PageSwapperFactory swapper = new SingleFilePageSwapperFactory();
-        swapper.setFileSystemAbstraction( fs );
-        int pageSize = (int) mebiBytes( 1 );
-        try ( PageCache pageCache = new MuninnPageCache( swapper, 1_000, pageSize, PageCacheTracer.NULL,
-                PageCursorTracerSupplier.NULL );
-              LongArray array = new PageCacheLongArray( pageCache.map( dir.file( "file" ), pageSize,
-                StandardOpenOption.CREATE, StandardOpenOption.WRITE, StandardOpenOption.READ,
-                StandardOpenOption.DELETE_ON_CLOSE ) ) )
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        PagedFile file = pageCache.map( dir.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
+        try ( LongArray array = new PageCacheLongArray( file, COUNT, 0, 0 ) )
         {
-            test( array );
+            verifyBehaviour( array );
         }
     }
 
     @Test
-    public void shouldSKjdks() throws Exception
+    public void verifyChunkingArrayWithPageCacheLongArray() throws Exception
     {
-        LongArray array = NumberArrayFactory.AUTO.newDynamicLongArray( PAGE_SIZE / Long.BYTES, 0 );
-        test( array );
+        PageCache pageCache = pageCacheRule.getPageCache( fs );
+        File directory = dir.directory();
+        NumberArrayFactory numberArrayFactory = NumberArrayFactory.autoWithPageCacheFallback( pageCache, directory );
+        try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
+        {
+            verifyBehaviour( array );
+        }
     }
 
-    private void test( LongArray array )
+    private void verifyBehaviour( LongArray array )
     {
-        long time = currentTimeMillis();
+        // insert
         for ( int i = 0; i < COUNT; i++ )
         {
             array.set( i, i );
         }
-        long insertTime = currentTimeMillis() - time;
-        time = currentTimeMillis();
+
+        // verify inserted data
         for ( int i = 0; i < COUNT; i++ )
         {
-            array.get( i );
+            assertEquals( i, array.get( i ) );
         }
-        long scanTime = currentTimeMillis() - time;
 
+        // verify inserted data with random access patterns
         int stride = 12_345_678;
         int next = random.nextInt( COUNT );
-        time = currentTimeMillis();
         for ( int i = 0; i < COUNT; i++ )
         {
-            array.get( next );
+            assertEquals( next, array.get( next ) );
             next = (next + stride) % COUNT;
         }
-        long randomTime = currentTimeMillis() - time;
-
-        System.out.println( "insert:" + insertTime + ", scan:" + scanTime + ", random:" + randomTime );
     }
 }

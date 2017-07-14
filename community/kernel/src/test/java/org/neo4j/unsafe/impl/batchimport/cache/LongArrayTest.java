@@ -20,21 +20,31 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
+import org.neo4j.io.pagecache.PageCache;
+
 import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.autoWithPageCacheFallback;
 
 @RunWith( Parameterized.class )
-public class LongArrayTest
+public class LongArrayTest extends NumberArrayPageCacheTestSupport
 {
+    private static Fixture fixture;
+
     @Test
     public void shouldHandleSomeRandomSetAndGet() throws Exception
     {
@@ -62,10 +72,9 @@ public class LongArrayTest
                 assertEquals( "Seed:" + seed, expected[index], array.get( index ) );
                 break;
             default: // swap
-                int items = Math.min( random.nextInt( 10 ) + 1, length - index );
-                int toIndex = (index + length / 2) % (length - items);
-                array.swap( index, toIndex, items );
-                swap( expected, index, toIndex, items );
+                int toIndex = random.nextInt( length );
+                array.swap( index, toIndex );
+                swap( expected, index, toIndex );
                 break;
             }
         }
@@ -75,7 +84,7 @@ public class LongArrayTest
     public void shouldHandleMultipleCallsToClose() throws Exception
     {
         // GIVEN
-        LongArray array = newArray( 10, -1 );
+        NumberArray<?> array = newArray( 10, -1 );
 
         // WHEN
         array.close();
@@ -84,20 +93,28 @@ public class LongArrayTest
         array.close();
     }
 
-    private void swap( long[] expected, int fromIndex, int toIndex, int items )
+    private void swap( long[] expected, int fromIndex, int toIndex )
     {
-        for ( int i = 0; i < items; i++ )
-        {
-            long fromValue = expected[fromIndex + i];
-            expected[fromIndex + i] = expected[toIndex + i];
-            expected[toIndex + i] = fromValue;
-        }
+        long fromValue = expected[fromIndex];
+        expected[fromIndex] = expected[toIndex];
+        expected[toIndex] = fromValue;
     }
 
     @Parameters
-    public static Collection<NumberArrayFactory> data()
+    public static Collection<NumberArrayFactory> data() throws IOException
     {
-        return Arrays.asList( NumberArrayFactory.HEAP, NumberArrayFactory.OFF_HEAP );
+        fixture = prepareDirectoryAndPageCache( LongArrayTest.class );
+        PageCache pageCache = fixture.pageCache;
+        File dir = fixture.directory;
+        NumberArrayFactory autoWithPageCacheFallback = autoWithPageCacheFallback( pageCache, dir );
+        NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
+        return Arrays.asList( HEAP, OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
+    }
+
+    @AfterClass
+    public static void closeFixture() throws Exception
+    {
+        fixture.close();
     }
 
     public LongArrayTest( NumberArrayFactory factory )

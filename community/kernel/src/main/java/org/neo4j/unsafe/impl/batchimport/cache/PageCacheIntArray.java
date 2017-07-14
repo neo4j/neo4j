@@ -20,65 +20,55 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-
-import static java.lang.Math.toIntExact;
 
 public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements IntArray
 {
-    private static final int ENTRY_SIZE = Integer.BYTES;
-    private static final int ENTRIES_PER_PAGE = PAGE_SIZE / ENTRY_SIZE;
-
-    public PageCacheIntArray( PagedFile pagedFile ) throws IOException
+    public PageCacheIntArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
     {
-        super( pagedFile, ENTRIES_PER_PAGE, ENTRY_SIZE );
+        super( pagedFile, Integer.BYTES, length, defaultValue, base );
     }
 
     @Override
     public int get( long index )
     {
-        long pageId = index / ENTRIES_PER_PAGE;
-        int offset = toIntExact( index % ENTRIES_PER_PAGE ) * ENTRY_SIZE;
-        if ( writeCursor.getCurrentPageId() == pageId )
-        {
-            // We have to read from the write cursor, since the write cursor is on it
-            return writeCursor.getInt( offset );
-        }
-
-        // Go ahead and read from the read cursor
+        long pageId = pageId( index );
+        int offset = offset( index );
         try
         {
-            goTo( readCursor, pageId );
+            PageCursor cursor = readCursor( pageId );
             int result;
             do
             {
-                result = readCursor.getInt( offset );
+                result = cursor.getInt( offset );
             }
-            while ( readCursor.shouldRetry() );
-            checkBounds( readCursor );
+            while ( cursor.shouldRetry() );
+            checkBounds( cursor );
             return result;
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
     @Override
     public void set( long index, int value )
     {
-        long pageId = index / ENTRIES_PER_PAGE;
-        int offset = toIntExact( index % ENTRIES_PER_PAGE ) * ENTRY_SIZE;
+        long pageId = pageId( index );
+        int offset = offset( index );
         try
         {
-            goTo( writeCursor, pageId );
-            writeCursor.putInt( offset, value );
-            checkBounds( writeCursor );
+            PageCursor cursor = writeCursor( pageId );
+            cursor.putInt( offset, value );
+            checkBounds( cursor );
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 }

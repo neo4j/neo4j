@@ -19,12 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
+import java.io.File;
 import java.util.Arrays;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.pagecache.PageCache;
 
-import static java.lang.Long.min;
-import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
@@ -276,76 +276,19 @@ public interface NumberArrayFactory
      * ({@link #newLongArray(long, long)} and {@link #newIntArray(long, int)} into smaller chunks where
      * some can live on heap and some off heap.
      */
-    NumberArrayFactory CHUNKED_FIXED_SIZE = new Adapter()
-    {
-        private final NumberArrayFactory delegate = new Auto( OFF_HEAP, HEAP );
-
-        @Override
-        public LongArray newLongArray( long length, long defaultValue, long base )
-        {
-            // Here we want to have the property of a dynamic array which makes some parts of the array
-            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-            // the array as a dynamic array and make it grow to the requested length.
-            LongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
-            array.at( length - 1 );
-            return array;
-        }
-
-        @Override
-        public IntArray newIntArray( long length, int defaultValue, long base )
-        {
-            // Here we want to have the property of a dynamic array which makes some parts of the array
-            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-            // the array as a dynamic array and make it grow to the requested length.
-            IntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
-            array.at( length - 1 );
-            return array;
-        }
-
-        @Override
-        public ByteArray newByteArray( long length, byte[] defaultValue, long base )
-        {
-            // Here we want to have the property of a dynamic array which makes some parts of the array
-            // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-            // the array as a dynamic array and make it grow to the requested length.
-            ByteArray array = newDynamicByteArray( fractionOf( length ), defaultValue );
-            array.at( length - 1 );
-            return array;
-        }
-
-        private long fractionOf( long length )
-        {
-            int maxArraySize = Integer.MAX_VALUE - Short.MAX_VALUE;
-            return min( length / 10, maxArraySize );
-        }
-
-        @Override
-        public IntArray newDynamicIntArray( long chunkSize, int defaultValue )
-        {
-            return new DynamicIntArray( delegate, chunkSize, defaultValue );
-        }
-
-        @Override
-        public LongArray newDynamicLongArray( long chunkSize, long defaultValue )
-        {
-            return new DynamicLongArray( delegate, chunkSize, defaultValue );
-        }
-
-        @Override
-        public ByteArray newDynamicByteArray( long chunkSize, byte[] defaultValue )
-        {
-            return new DynamicByteArray( delegate, chunkSize, defaultValue );
-        }
-
-        @Override
-        public String toString()
-        {
-            return "CHUNKED_FIXED_SIZE";
-        }
-    };
+    NumberArrayFactory CHUNKED_FIXED_SIZE = new ChunkedNumberArrayFactory();
 
     /**
      * {@link Auto} factory which uses JVM stats for gathering information about available memory.
      */
     NumberArrayFactory AUTO = new Auto( OFF_HEAP, HEAP, CHUNKED_FIXED_SIZE );
+
+    static NumberArrayFactory autoWithPageCacheFallback( PageCache pageCache, File dir )
+    {
+        PageCachedNumberArrayFactory pagedArrayFactory =
+                new PageCachedNumberArrayFactory( pageCache, dir );
+        ChunkedNumberArrayFactory chunkedArrayFactory =
+                new ChunkedNumberArrayFactory( OFF_HEAP, HEAP, pagedArrayFactory );
+        return new Auto( OFF_HEAP, HEAP, chunkedArrayFactory );
+    }
 }

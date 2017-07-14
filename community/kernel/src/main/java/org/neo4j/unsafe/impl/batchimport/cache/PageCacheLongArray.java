@@ -20,65 +20,55 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-
-import static java.lang.Math.toIntExact;
 
 public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implements LongArray
 {
-    private static final int ENTRY_SIZE = Long.BYTES;
-    private static final int ENTRIES_PER_PAGE = PAGE_SIZE / ENTRY_SIZE;
-
-    public PageCacheLongArray( PagedFile pagedFile ) throws IOException
+    public PageCacheLongArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
     {
-        super( pagedFile, ENTRIES_PER_PAGE, ENTRY_SIZE );
+        super( pagedFile, Long.BYTES, length, defaultValue, base );
     }
 
     @Override
     public long get( long index )
     {
-        long pageId = index / ENTRIES_PER_PAGE;
-        int offset = toIntExact( index % ENTRIES_PER_PAGE ) * ENTRY_SIZE;
-        if ( writeCursor.getCurrentPageId() == pageId )
-        {
-            // We have to read from the write cursor, since the write cursor is on it
-            return writeCursor.getLong( offset );
-        }
-
-        // Go ahead and read from the read cursor
+        long pageId = pageId( index );
+        int offset = offset( index );
         try
         {
-            goTo( readCursor, pageId );
+            PageCursor cursor = readCursor( pageId );
             long result;
             do
             {
-                result = readCursor.getLong( offset );
+                result = cursor.getLong( offset );
             }
-            while ( readCursor.shouldRetry() );
-            checkBounds( readCursor );
+            while ( cursor.shouldRetry() );
+            checkBounds( cursor );
             return result;
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 
     @Override
     public void set( long index, long value )
     {
-        long pageId = index / ENTRIES_PER_PAGE;
-        int offset = toIntExact( index % ENTRIES_PER_PAGE ) * ENTRY_SIZE;
+        long pageId = pageId( index );
+        int offset = offset( index );
         try
         {
-            goTo( writeCursor, pageId );
-            writeCursor.putLong( offset, value );
-            checkBounds( writeCursor );
+            PageCursor cursor = writeCursor( pageId );
+            cursor.putLong( offset, value );
+            checkBounds( cursor );
         }
         catch ( IOException e )
         {
-            throw new RuntimeException( e );
+            throw new UncheckedIOException( e );
         }
     }
 }

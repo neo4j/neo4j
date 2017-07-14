@@ -33,13 +33,12 @@ public class OffHeapByteArray extends OffHeapNumberArray<ByteArray> implements B
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
+    public void swap( long fromIndex, long toIndex )
     {
-        int size = numberOfEntries * itemSize;
-        long intermediary = UnsafeUtil.allocateMemory( size );
-        UnsafeUtil.copyMemory( address( fromIndex, 0 ), intermediary, size );
-        UnsafeUtil.copyMemory( address( toIndex, 0 ), address( fromIndex, 0 ), size );
-        UnsafeUtil.copyMemory( intermediary, address( toIndex, 0 ), size );
+        long intermediary = UnsafeUtil.allocateMemory( itemSize );
+        UnsafeUtil.copyMemory( address( fromIndex, 0 ), intermediary, itemSize );
+        UnsafeUtil.copyMemory( address( toIndex, 0 ), address( fromIndex, 0 ), itemSize );
+        UnsafeUtil.copyMemory( intermediary, address( toIndex, 0 ), itemSize );
         UnsafeUtil.free( intermediary );
     }
 

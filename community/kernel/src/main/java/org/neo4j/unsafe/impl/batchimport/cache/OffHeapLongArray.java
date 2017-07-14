@@ -63,18 +63,4 @@ public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> imple
             }
         }
     }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        long fromAddress = addressOf( fromIndex );
-        long toAddress = addressOf( toIndex );
-
-        for ( int i = 0; i < numberOfEntries; i++, fromAddress += itemSize, toAddress += itemSize )
-        {
-            long fromValue = UnsafeUtil.getLong( fromAddress );
-            UnsafeUtil.putLong( fromAddress, UnsafeUtil.getLong( toAddress ) );
-            UnsafeUtil.putLong( toAddress, fromValue );
-        }
-    }
 }

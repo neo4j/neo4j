@@ -48,6 +48,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeType;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -66,11 +67,9 @@ import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
@@ -169,12 +168,14 @@ public class ParallelBatchImporter implements BatchImporter
                     neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
+            NumberArrayFactory numberArrayFactory =
+                    NumberArrayFactory.autoWithPageCacheFallback( neoStore.getPageCache(), storeDir );
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
             IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
-            IdMapper idMapper = input.idMapper();
+            IdMapper idMapper = input.idMapper( numberArrayFactory );
             IdGenerator idGenerator = input.idGenerator();
-            nodeRelationshipCache = new NodeRelationshipCache( AUTO, config.denseNodeThreshold() );
+            nodeRelationshipCache = new NodeRelationshipCache( numberArrayFactory, config.denseNodeThreshold() );
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
             InputIterable<InputNode> nodes = input.nodes();
             InputIterable<InputRelationship> relationships = input.relationships();
@@ -225,18 +226,19 @@ public class ParallelBatchImporter implements BatchImporter
             nodeRelationshipCache = null;
 
             // Defragment relationships groups for better performance
-            new RelationshipGroupDefragmenter( config, executionMonitor ).run( max( maxMemory, peakMemoryUsage ),
-                    neoStore, highNodeId );
+            RelationshipGroupDefragmenter groupDefragmenter =
+                    new RelationshipGroupDefragmenter( config, executionMonitor, numberArrayFactory );
+            groupDefragmenter.run( max( maxMemory, peakMemoryUsage ), neoStore, highNodeId );
 
             // Count nodes per label and labels per node
-            nodeLabelsCache = new NodeLabelsCache( AUTO, neoStore.getLabelRepository().getHighId() );
+            nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
             memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
             executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
                     neoStore.getLabelRepository().getHighId(), countsUpdater, memoryUsageStats ) );
             // Count label-[type]->label
             executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
                     neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, AUTO ) );
+                    neoStore.getRelationshipTypeRepository().getHighId(), countsUpdater, numberArrayFactory ) );
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;

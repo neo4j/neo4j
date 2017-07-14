@@ -28,9 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static java.lang.Long.max;
-
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 
 /**
  * Holds information vital for making {@link RelationshipGroupDefragmenter} work the way it does.
@@ -54,7 +52,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
     private final ByteArray groupCountCache;
     private final ByteArray cache;
     private final long highNodeId;
-    private final LongArray offsets = AUTO.newDynamicLongArray( 100_000, 0 );
+    private final LongArray offsets;
     private final byte[] scratch = new byte[GROUP_ENTRY_SIZE];
     private long fromNodeId;
     private long toNodeId;
@@ -63,6 +61,7 @@ public class RelationshipGroupCache implements Iterable<RelationshipGroupRecord>
 
     public RelationshipGroupCache( NumberArrayFactory arrayFactory, long maxMemory, long highNodeId )
     {
+        this.offsets = arrayFactory.newDynamicLongArray( 100_000, 0 );
         this.groupCountCache = arrayFactory.newByteArray( highNodeId, new byte[2] );
         this.highNodeId = highNodeId;
 

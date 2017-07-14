@@ -23,12 +23,12 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.ByteArray;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
 import static org.neo4j.unsafe.impl.batchimport.Configuration.withBatchSize;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 
 /**
@@ -43,6 +43,9 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
  */
 public class RelationshipGroupDefragmenter
 {
+
+    private final NumberArrayFactory numberArrayFactory;
+
     public interface Monitor
     {
         /**
@@ -65,22 +68,25 @@ public class RelationshipGroupDefragmenter
     private final ExecutionMonitor executionMonitor;
     private final Monitor monitor;
 
-    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor )
+    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor,
+                                          NumberArrayFactory numberArrayFactory )
     {
-        this( config, executionMonitor, Monitor.EMPTY );
+        this( config, executionMonitor, Monitor.EMPTY, numberArrayFactory );
     }
 
-    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor )
+    public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor, Monitor monitor,
+                                          NumberArrayFactory numberArrayFactory )
     {
         this.config = config;
         this.executionMonitor = executionMonitor;
         this.monitor = monitor;
+        this.numberArrayFactory = numberArrayFactory;
     }
 
     public void run( long memoryWeCanHoldForCertain, BatchingNeoStores neoStore, long highNodeId )
     {
         try ( RelationshipGroupCache groupCache =
-                new RelationshipGroupCache( AUTO, memoryWeCanHoldForCertain, highNodeId ) )
+                new RelationshipGroupCache( numberArrayFactory, memoryWeCanHoldForCertain, highNodeId ) )
         {
             // Read from the temporary relationship group store...
             RecordStore<RelationshipGroupRecord> fromStore = neoStore.getTemporaryRelationshipGroupStore();

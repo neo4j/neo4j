@@ -63,18 +63,4 @@ public class OffHeapIntArray extends OffHeapRegularNumberArray<IntArray> impleme
             }
         }
     }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        long fromAddress = addressOf( fromIndex );
-        long toAddress = addressOf( toIndex );
-
-        for ( int i = 0; i < numberOfEntries; i++, fromAddress += itemSize, toAddress += itemSize )
-        {
-            int fromValue = UnsafeUtil.getInt( fromAddress );
-            UnsafeUtil.putInt( fromAddress, UnsafeUtil.getInt( toAddress ) );
-            UnsafeUtil.putInt( toAddress, fromValue );
-        }
-    }
 }

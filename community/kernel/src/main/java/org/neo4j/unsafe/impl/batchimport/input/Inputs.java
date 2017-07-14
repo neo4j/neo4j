@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 import java.io.File;
 
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
@@ -58,7 +59,7 @@ public class Inputs
             }
 
             @Override
-            public IdMapper idMapper()
+            public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
             {
                 return idMapper;
             }

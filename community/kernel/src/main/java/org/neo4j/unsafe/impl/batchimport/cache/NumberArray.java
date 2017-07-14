@@ -34,12 +34,10 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
     /**
      * Swaps {@code numberOfEntries} items from {@code fromIndex} to {@code toIndex}, such that
      * {@code fromIndex} and {@code toIndex}, {@code fromIndex+1} and {@code toIndex} a.s.o swaps places.
-     *
-     * @param fromIndex where to start swapping from.
+     *  @param fromIndex where to start swapping from.
      * @param toIndex where to start swapping to.
-     * @param numberOfEntries number of entries to swap, starting from the given from/to indexes.
      */
-    void swap( long fromIndex, long toIndex, int numberOfEntries );
+    void swap( long fromIndex, long toIndex );
 
     /**
      * Sets all values to a default value.
