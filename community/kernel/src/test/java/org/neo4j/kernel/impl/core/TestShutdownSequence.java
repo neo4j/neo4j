@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -93,7 +92,7 @@ public class TestShutdownSequence
         GraphDatabaseAPI databaseAPI = (GraphDatabaseAPI) this.graphDb;
         FileSystemAbstraction fileSystemAbstraction = getDatabaseFileSystem( databaseAPI );
         graphDb.shutdown();
-        fileSystemAbstraction.deleteRecursively( new File( databaseAPI.getStoreDir() ) );
+        fileSystemAbstraction.deleteRecursively( databaseAPI.getStoreDir() );
         graphDb.shutdown();
     }
 
