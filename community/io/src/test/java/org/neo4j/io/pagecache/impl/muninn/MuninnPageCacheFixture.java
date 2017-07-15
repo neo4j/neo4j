@@ -32,8 +32,8 @@ public class MuninnPageCacheFixture extends PageCacheTestSupport.Fixture<MuninnP
     CountDownLatch backgroundFlushLatch;
 
     @Override
-    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages, int pageSize,
-            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
+    public MuninnPageCache createPageCache( PageSwapperFactory swapperFactory, int maxPages,
+                                            PageCacheTracer tracer, PageCursorTracerSupplier cursorTracerSupplier )
     {
         return new MuninnPageCache( swapperFactory, maxPages, tracer, cursorTracerSupplier );
     }

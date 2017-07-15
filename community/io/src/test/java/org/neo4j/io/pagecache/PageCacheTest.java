@@ -57,7 +57,6 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -121,13 +120,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void mustHaveAtLeastTwoPages() throws Exception
     {
         expectedException.expect( IllegalArgumentException.class );
-        getPageCache( fs, 1, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, 1, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
     @Test
     public void mustAcceptTwoPagesAsMinimumConfiguration() throws Exception
     {
-        getPageCache( fs, 2, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
     }
 
     @Test
@@ -142,7 +141,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 closed.set( true );
             }
         };
-        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         Exception exception = null;
         try
@@ -191,7 +190,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 throw new RuntimeException( "boo" );
             }
         };
-        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         try
         {
@@ -296,7 +295,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void pageCacheFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
     {
         int pagesToDirty = 10_000;
-        PageCache cache = getPageCache( fs, nextPowerOf2( 2 * pagesToDirty ), pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = getPageCache( fs, nextPowerOf2( 2 * pagesToDirty ), PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         PagedFile pfA = cache.map( existingFile( "a" ), filePageSize );
         PagedFile pfB = cache.map( existingFile( "b" ), filePageSize );
@@ -322,7 +321,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     public void pagedFileFlushAndForceMustQueryTheGivenIOPSLimiter() throws Exception
     {
         int pagesToDirty = 10_000;
-        PageCache cache = getPageCache( fs, nextPowerOf2( pagesToDirty ), pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = getPageCache( fs, nextPowerOf2( pagesToDirty ), PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         PagedFile pf = cache.map( file( "a" ), filePageSize );
 
@@ -356,7 +355,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test( timeout = LONG_TIMEOUT_MILLIS )
     public void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction() throws IOException
     {
-        PageCache cache = getPageCache( fs, 20, pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = getPageCache( fs, 20, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
 
         long startPageId = 0;
@@ -458,7 +457,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final AtomicInteger forceCounter = new AtomicInteger();
         FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize ) )
         {
@@ -484,7 +483,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         final AtomicInteger forceCounter = new AtomicInteger();
         FileSystemAbstraction fs = writeAndForceCountingFs( writeCounter, forceCounter );
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
         try ( PagedFile pagedFileA = pageCache.map( existingFile( "a" ), filePageSize );
               PagedFile pagedFileB = pageCache.map( existingFile( "b" ), filePageSize ) )
@@ -749,7 +748,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
             }
         };
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         PrintStream oldSystemErr = System.err;
 
         try ( PagedFile pf = pageCache.map( file( "a" ), filePageSize );
@@ -1997,7 +1996,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 };
             }
         };
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
@@ -2104,7 +2103,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, cursorTracerSupplier );
+        getPageCache( fs, maxPages, tracer, cursorTracerSupplier );
 
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
@@ -2165,7 +2164,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         long pagesToGenerate = 142;
         DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
         DefaultPageCursorTracerSupplier tracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, tracerSupplier );
+        getPageCache( fs, maxPages, tracer, tracerSupplier );
 
         try ( PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
               PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -2236,7 +2235,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         };
         ConfigurablePageCursorTracerSupplier<DefaultPageCursorTracer> cursorTracerSupplier =
                 new ConfigurablePageCursorTracerSupplier<>( pageCursorTracer );
-        getPageCache( fs, maxPages, pageCachePageSize, tracer, cursorTracerSupplier );
+        getPageCache( fs, maxPages, tracer, cursorTracerSupplier );
 
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
 
@@ -2835,7 +2834,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     public void pageCursorCloseShouldNotReturnAlreadyClosedLinkedCursorToPool() throws Exception
     {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
@@ -2854,7 +2853,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     public void pageCursorCloseShouldNotReturnSameObjectToCursorPoolTwice() throws Exception
     {
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
@@ -2875,7 +2874,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -2901,7 +2900,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     {
         File file = file( "a" );
         generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, DefaultPageCursorTracerSupplier.INSTANCE );
         try ( PagedFile pf = pageCache.map( file, filePageSize ) )
         {
             PageCursor a = pf.io( 0, PF_SHARED_WRITE_LOCK );
@@ -3238,7 +3237,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fs.create( file( "a" ) ).close();
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -3282,7 +3281,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
         };
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         generateFileWithRecords( file( "a" ), recordCount, recordSize );
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
 
@@ -3343,7 +3342,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fs.create( file( "a" ) ).close();
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -3402,7 +3401,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
 
         fs.create( file( "a" ) ).close();
 
-        getPageCache( fs, maxPages, pageCachePageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, maxPages, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
         PagedFile pagedFile = pageCache.map( file( "a" ), filePageSize );
 
         try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
@@ -3678,14 +3677,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     public void mustSupportUnalignedWordAccesses() throws Exception
     {
-        // 8 MB pages, 10 of them for 80 MB.
-        // This way we are sure to write across OS page boundaries. The default
-        // size of Huge Pages on Linux is 2 MB, but it can be configured to be
-        // as large as 1 GB - at least I have not heard of anyone trying to
-        // configure it to be more than that.
-        int pageSize = (int) ByteUnit.kibiBytes( 8 );
-        // todo what's going on here?
-        getPageCache( fs, 5, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, 5, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        int pageSize = pageCache.pageSize();
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
 
@@ -3762,9 +3755,8 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             channel.close();
         }
 
-        // todo figure out what to do about this test, now that we don't accept a configured page size
-        int pageSize = nextPowerOf2( recordFormat.getRecordSize() * (files.length + 1) );
-        getPageCache( fs, 2, pageSize, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        getPageCache( fs, 2, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
+        int pageSize = pageCache.pageSize();
 
         int fileId = files.length;
         while ( fileId-- > 0 )
@@ -3842,7 +3834,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 0,      // at `p1.flushAndForce` no `syncDevice` has happened before the force
                 1, 2 ); // closing+forcing the files one by one, we get 2 more `syncDevice`
         PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
-        try ( PageCache cache = createPageCache( factory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
               PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
               PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
@@ -3871,7 +3863,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 0, 0,   // `cache.flushAndForce` forces the individual files, no `syncDevice` yet
                 1, 2 ); // after test, files are closed+forced one by one
         PageSwapperFactory factory = factoryCountingSyncDevice( syncDeviceCounter, expectedCountsInForce );
-        try ( PageCache cache = createPageCache( factory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        try ( PageCache cache = createPageCache( factory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
               PagedFile p1 = cache.map( existingFile( "a" ), filePageSize );
               PagedFile p2 = cache.map( existingFile( "b" ), filePageSize ) )
@@ -4035,7 +4027,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
-        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
         try ( PagedFile pf = cache.map( file, filePageSize, DELETE_ON_CLOSE );
@@ -4052,7 +4044,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         AtomicInteger flushCounter = new AtomicInteger();
         PageSwapperFactory swapperFactory = flushCountingPageSwapperFactory( flushCounter );
         swapperFactory.open( fs, Configuration.EMPTY );
-        PageCache cache = createPageCache( swapperFactory, maxPages, pageCachePageSize, PageCacheTracer.NULL,
+        PageCache cache = createPageCache( swapperFactory, maxPages, PageCacheTracer.NULL,
                 PageCursorTracerSupplier.NULL );
         File file = file( "a" );
         try ( PagedFile pf = cache.map( file, filePageSize );
