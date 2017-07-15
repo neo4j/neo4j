@@ -105,6 +105,9 @@ public class MuninnPageCache implements PageCache
     public static final byte ZERO_BYTE =
             (byte) (flag( MuninnPageCache.class, "brandedZeroByte", false ) ? 0x0f : 0);
 
+    // The amount of memory we need for every page, both its buffer and its meta-data.
+    private static final int MEMORY_USE_PER_PAGE = PAGE_SIZE + PageList.META_DATA_BYTES_PER_PAGE;
+
     // Keep this many pages free and ready for use in faulting.
     // This will be truncated to be no more than half of the number of pages
     // in the cache.
@@ -203,7 +206,12 @@ public class MuninnPageCache implements PageCache
             PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier )
     {
-        this( swapperFactory, maxPages, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier );
+        this( swapperFactory,
+                // Cast to long prevents overflow:
+                MemoryAllocator.createAllocator( ((long) maxPages) * MEMORY_USE_PER_PAGE ),
+                PAGE_SIZE,
+                pageCacheTracer,
+                pageCursorTracerSupplier );
     }
 
     /**
@@ -214,14 +222,14 @@ public class MuninnPageCache implements PageCache
     @Deprecated
     public MuninnPageCache(
             PageSwapperFactory swapperFactory,
-            int maxPages,
+            MemoryAllocator memoryAllocator,
             int cachePageSize,
             PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier )
     {
         verifyHacks();
         verifyCachePageSizeIsPowerOfTwo( cachePageSize );
-        verifyMinimumPageCount( maxPages, cachePageSize );
+        int maxPages = calculatePageCount( memoryAllocator, cachePageSize );
 
         this.pageCacheId = pageCacheIdCounter.incrementAndGet();
         this.swapperFactory = swapperFactory;
@@ -230,12 +238,8 @@ public class MuninnPageCache implements PageCache
         this.pageCacheTracer = pageCacheTracer;
         this.pageCursorTracerSupplier = pageCursorTracerSupplier;
         this.printExceptionsOnClose = true;
-
         long alignment = swapperFactory.getRequiredBufferAlignment();
-        long expectedMaxMemory = ((long) maxPages) * cachePageSize; // cast to long prevents overflow
-        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( expectedMaxMemory );
         this.victimPage = VictimPageReference.getVictimPage( cachePageSize );
-
         this.pages = new PageList( maxPages, cachePageSize, memoryAllocator, new SwapperSet(), victimPage, alignment );
 
         setFreelistHead( new AtomicInteger() );
@@ -257,15 +261,22 @@ public class MuninnPageCache implements PageCache
         }
     }
 
-    private static void verifyMinimumPageCount( int maxPages, int cachePageSize )
+    private static int calculatePageCount( MemoryAllocator memoryAllocator, int cachePageSize )
     {
+        long memoryPerPage = cachePageSize + PageList.META_DATA_BYTES_PER_PAGE;
+        long maxPages = memoryAllocator.availableMemory() / memoryPerPage;
         int minimumPageCount = 2;
         if ( maxPages < minimumPageCount )
         {
             throw new IllegalArgumentException( String.format(
                     "Page cache must have at least %s pages (%s bytes of memory), but was given %s pages.",
-                    minimumPageCount, minimumPageCount * cachePageSize, maxPages ) );
+                    minimumPageCount, minimumPageCount * memoryPerPage, maxPages ) );
         }
+        if ( maxPages > Integer.MAX_VALUE )
+        {
+            return Integer.MAX_VALUE;
+        }
+        return Math.toIntExact( maxPages );
     }
 
     @Override

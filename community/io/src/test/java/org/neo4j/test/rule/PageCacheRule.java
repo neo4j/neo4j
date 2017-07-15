@@ -29,6 +29,7 @@ import org.neo4j.adversaries.pagecache.AdversarialPageCache;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.checking.AccessCheckingPageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
@@ -185,7 +186,8 @@ public class PageCacheRule extends ExternalResource
         int pageCount = (int) (pageCacheMemory / PageCache.PAGE_SIZE);
         if ( pageSize != null )
         {
-            pageCache = new MuninnPageCache( factory, pageCount, pageSize, cacheTracer, cursorTracerSupplier );
+            MemoryAllocator mman = MemoryAllocator.createAllocator( pageCacheMemory );
+            pageCache = new MuninnPageCache( factory, mman, pageSize, cacheTracer, cursorTracerSupplier );
         }
         else
         {

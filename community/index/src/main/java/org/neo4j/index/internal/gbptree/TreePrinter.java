@@ -38,7 +38,6 @@ import static java.lang.String.format;
 import static org.neo4j.graphdb.config.Configuration.EMPTY;
 import static org.neo4j.index.internal.gbptree.ConsistencyChecker.assertOnTreeNode;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
-import static org.neo4j.io.pagecache.PageCache.PAGE_SIZE;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 /**
@@ -75,7 +74,7 @@ public class TreePrinter<KEY, VALUE>
         SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
         swapper.open( fs, EMPTY );
         PageCursorTracerSupplier cursorTracerSupplier = PageCursorTracerSupplier.NULL;
-        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, PAGE_SIZE, NULL, cursorTracerSupplier ) )
+        try ( PageCache pageCache = new MuninnPageCache( swapper, 100, NULL, cursorTracerSupplier ) )
         {
             printHeader( pageCache, file, out );
         }
