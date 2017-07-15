@@ -193,7 +193,7 @@ public class MuninnPageCache implements PageCache
     private boolean printExceptionsOnClose;
 
     /**
-     * Create page cache
+     * Create page cache.
      * @param swapperFactory page cache swapper factory
      * @param maxPages maximum number of pages
      * @param pageCacheTracer global page cache tracer
@@ -212,6 +212,23 @@ public class MuninnPageCache implements PageCache
                 PAGE_SIZE,
                 pageCacheTracer,
                 pageCursorTracerSupplier );
+    }
+
+    /**
+     * Create page cache.
+     * @param swapperFactory page cache swapper factory
+     * @param memoryAllocator the source of native memory the page cache should use
+     * @param pageCacheTracer global page cache tracer
+     * @param pageCursorTracerSupplier supplier of thread local (transaction local) page cursor tracer that will provide
+     * thread local page cache statistics
+     */
+    public MuninnPageCache(
+            PageSwapperFactory swapperFactory,
+            MemoryAllocator memoryAllocator,
+            PageCacheTracer pageCacheTracer,
+            PageCursorTracerSupplier pageCursorTracerSupplier )
+    {
+        this( swapperFactory, memoryAllocator, PAGE_SIZE, pageCacheTracer, pageCursorTracerSupplier );
     }
 
     /**

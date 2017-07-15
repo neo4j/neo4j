@@ -83,7 +83,7 @@ public class ConfiguringPageCacheFactory
         return new MuninnPageCache( swapperFactory, maxPages, pageCacheTracer, pageCursorTracerSupplier );
     }
 
-    public int calculateMaxPages( Config config )
+    private int calculateMaxPages( Config config )
     {
         Long pageCacheMemorySetting = config.get( pagecache_memory );
         long pageCacheMemory = interpretMemorySetting( pageCacheMemorySetting );

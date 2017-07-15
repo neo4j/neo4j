@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.impl.muninn;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.mem.MemoryAllocator;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -45,10 +46,9 @@ public final class StandalonePageCacheFactory
         SingleFilePageSwapperFactory factory = new SingleFilePageSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
 
-        long pageCacheMemory = ByteUnit.mebiBytes( 8 );
-        int pageCount = (int) (pageCacheMemory / PageCache.PAGE_SIZE);
         PageCacheTracer cacheTracer = PageCacheTracer.NULL;
         DefaultPageCursorTracerSupplier cursorTracerSupplier = DefaultPageCursorTracerSupplier.INSTANCE;
-        return new MuninnPageCache( factory, pageCount, cacheTracer, cursorTracerSupplier );
+        MemoryAllocator memoryAllocator = MemoryAllocator.createAllocator( ByteUnit.mebiBytes( 8 ) );
+        return new MuninnPageCache( factory, memoryAllocator, cacheTracer, cursorTracerSupplier );
     }
 }
