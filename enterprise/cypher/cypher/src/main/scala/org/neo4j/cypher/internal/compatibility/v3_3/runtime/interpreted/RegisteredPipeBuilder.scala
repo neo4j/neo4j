@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ProduceResultRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ProduceResultRegisterPipe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeMonitor}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pipe, PipeMonitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{AllNodesScan, LogicalPlan, ProduceResult}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.ir.v3_3.IdName
@@ -35,7 +36,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
                             expressionConverter: ExpressionConverters,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
-                            pipelines: Map[LogicalPlan, PipelineInformation]) extends PipeBuilder {
+                            pipelines: Map[LogicalPlan, PipelineInformation])
+                           (implicit context: PipeExecutionBuilderContext) extends PipeBuilder {
 
   implicit private val monitor = monitors.newMonitor[PipeMonitor]()
 
@@ -52,6 +54,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
   }
 
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
+    implicit val table: SemanticTable = context.semanticTable
+
     val id = idMap.getOrElse(plan, new Id)
     val pipelineInformation = pipelines(plan)
 
@@ -59,6 +63,12 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case p@ProduceResult(columns, _) =>
         val runtimeColumns = createProjectionsForResult(columns, pipelineInformation)
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
+
+      case e@Expand(s, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+        val fromOffset = pipelineInformation.getLongOffsetFor(from)
+        val relOffset = pipelineInformation.getLongOffsetFor(relName)
+        val toOffset = pipelineInformation.getLongOffsetFor(to)
+        ExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipelineInformation)(id)
 
       case _ => fallback.build(plan, source)
     }

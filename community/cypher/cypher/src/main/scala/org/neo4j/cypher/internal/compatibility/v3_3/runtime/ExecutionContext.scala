@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.MutableMaps
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.collection.{Iterator, immutable}
@@ -36,6 +37,13 @@ object ExecutionContext {
 
 case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: Int)
   extends MutableMap[String, Any] {
+
+  def copyFrom(input: ExecutionContext): Unit = {
+    if (input.numberOfLongs > numberOfLongs)
+      throw new InternalException("Tried to copy more data into less.")
+
+    System.arraycopy(input.longs, 0, longs, 0, input.numberOfLongs)
+  }
 
   private val longs = new Array[Long](numberOfLongs)
 

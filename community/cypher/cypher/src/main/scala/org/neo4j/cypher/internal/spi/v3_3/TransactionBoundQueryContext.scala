@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values
@@ -127,7 +128,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
     val relationships = types match {
       case None =>
         transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
@@ -136,6 +137,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
     new BeansAPIRelationshipIterator(relationships, entityAccessor)
   }
+
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+    types match {
+      case None =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
+      case Some(typeIds) =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds.toArray)
+    }
 
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {
     indexSearchMonitor.indexSeek(index, values)

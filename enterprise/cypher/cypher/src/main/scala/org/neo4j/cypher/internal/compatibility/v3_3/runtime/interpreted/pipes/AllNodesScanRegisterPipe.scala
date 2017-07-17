@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongIterator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeMonitor, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -41,12 +41,4 @@ case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: Pipeline
   }
 
   override def monitor: PipeMonitor = pipeMonitor
-}
-
-object PrimitiveLongHelper {
-  def map[T](in: PrimitiveLongIterator, f: Long => T): Iterator[T] = new Iterator[T] {
-    override def hasNext: Boolean = in.hasNext
-
-    override def next(): T = f(in.next())
-  }
 }

@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
@@ -139,9 +141,19 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     }
   }
 
+  override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = {
+    increment()
+    PrimitiveLongHelper.mapPrimitive(value, { x =>
+      increment()
+      x
+    })
+  }
+
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
+
+    override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = self.manyDbHits(value)
   }
 
   override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)

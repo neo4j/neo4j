@@ -73,9 +73,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
-    val beforePipelines = RegisterAllocation.allocateRegisters(beforeRewrite)
+    val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
     val registeredRewriter = new RegisteredRewriter(context.planContext)
     val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    println(logicalPlan)
     (logicalPlan, pipelines)
   }
 

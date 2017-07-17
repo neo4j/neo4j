@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{KernelStatisticProvider, QualifiedName}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 import scala.collection.Iterator
@@ -36,6 +37,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
+  protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
+  protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits(count: Int): Int = count
 
   type EntityAccessor = inner.EntityAccessor
@@ -69,6 +72,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+  manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def nodeOps = inner.nodeOps
 

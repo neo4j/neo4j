@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -76,6 +77,8 @@ trait QueryContextAdaptation {
   override def indexSeek(index: IndexDescriptor, value: Seq[Any]): scala.Iterator[Node] = ???
 
   override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): scala.Iterator[Relationship] = ???
+
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator = ???
 
   override def relationshipStartNode(rel: Relationship): Node = ???
 
