@@ -33,6 +33,7 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.kernel.api.exceptions.Status.statusCodeOf;
 
 public class UnavailableIT
 {
@@ -89,20 +90,5 @@ public class UnavailableIT
         {
             assertEquals( Status.General.DatabaseUnavailable, statusCodeOf( e ) );
         }
-    }
-
-    private Status statusCodeOf( Throwable e )
-    {
-        do
-        {
-            if ( e instanceof Status.HasStatus )
-            {
-                return ((Status.HasStatus) e).status();
-            }
-            e = e.getCause();
-        }
-        while ( e != null );
-
-        return null;
     }
 }
