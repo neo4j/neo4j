@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.api.txtracking;
 
-import java.time.Clock;
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.AvailabilityGuard;
@@ -29,7 +28,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
-import static org.neo4j.function.Predicates.tryAwaitEx;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 /**
@@ -38,19 +36,13 @@ import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_I
  */
 public class TransactionIdTracker
 {
-    private static final int POLL_INTERVAL = 25;
-    private static final TimeUnit POLL_UNIT = TimeUnit.MILLISECONDS;
-
     private final Supplier<TransactionIdStore> transactionIdStoreSupplier;
     private final AvailabilityGuard availabilityGuard;
-    private final Clock clock;
 
-    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard availabilityGuard,
-                                 Clock clock )
+    public TransactionIdTracker( Supplier<TransactionIdStore> transactionIdStoreSupplier, AvailabilityGuard availabilityGuard )
     {
         this.availabilityGuard = availabilityGuard;
         this.transactionIdStoreSupplier = transactionIdStoreSupplier;
-        this.clock = clock;
     }
 
     /**
@@ -82,23 +74,26 @@ public class TransactionIdTracker
             return;
         }
 
-        if ( !tryAwaitEx( () -> isReady( oldestAcceptableTxId ), timeout.toMillis(), TimeUnit.MILLISECONDS,
-                POLL_INTERVAL, POLL_UNIT, clock ) )
+        if ( !availabilityGuard.isAvailable() )
         {
-            throw new TransactionFailureException( Status.Transaction.InstanceStateChanged,
+            throw new TransactionFailureException( Status.General.DatabaseUnavailable, "Database unavailable" );
+        }
+
+        try
+        {
+            transactionIdStore().awaitClosedTransactionId( oldestAcceptableTxId, timeout.toMillis() );
+        }
+        catch ( InterruptedException | TimeoutException e )
+        {
+            if ( e instanceof InterruptedException )
+            {
+                Thread.currentThread().interrupt();
+            }
+
+            throw new TransactionFailureException( Status.Transaction.InstanceStateChanged, e,
                     "Database not up to the requested version: %d. Latest database version is %d", oldestAcceptableTxId,
                     transactionIdStore().getLastClosedTransactionId() );
         }
-    }
-
-    private boolean isReady( long oldestAcceptableTxId ) throws TransactionFailureException
-    {
-        if ( !availabilityGuard.isAvailable() )
-        {
-            throw new TransactionFailureException( Status.General.DatabaseUnavailable,
-                    "Database had become unavailable while waiting for requested version %d.", oldestAcceptableTxId );
-        }
-        return oldestAcceptableTxId <= transactionIdStore().getLastClosedTransactionId();
     }
 
     private TransactionIdStore transactionIdStore()

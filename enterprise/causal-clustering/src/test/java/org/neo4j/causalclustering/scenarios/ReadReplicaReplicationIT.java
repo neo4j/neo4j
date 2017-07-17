@@ -26,7 +26,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Clock;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
@@ -467,7 +466,7 @@ public class ReadReplicaReplicationIT
                 database.getDependencyResolver().provideDependency( TransactionIdStore.class );
         AvailabilityGuard availabilityGuard =
                 database.getDependencyResolver().resolveDependency( AvailabilityGuard.class );
-        return new TransactionIdTracker( transactionIdStore, availabilityGuard, Clock.systemUTC() );
+        return new TransactionIdTracker( transactionIdStore, availabilityGuard );
     }
 
     private PhysicalLogFiles physicalLogFiles( ClusterMember clusterMember )
