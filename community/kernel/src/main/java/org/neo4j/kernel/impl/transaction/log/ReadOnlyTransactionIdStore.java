@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -92,6 +93,12 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore
     public long getLastClosedTransactionId()
     {
         return transactionId;
+    }
+
+    @Override
+    public void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException
+    {
+        throw new UnsupportedOperationException( "Not implemented" );
     }
 
     @Override

@@ -22,6 +22,9 @@ package org.neo4j.kernel.impl.store;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -30,10 +33,13 @@ import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 
 import static java.lang.Thread.sleep;
 import static java.lang.Thread.yield;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class ArrayQueueOutOfOrderSequenceTest
 {
@@ -184,6 +190,73 @@ public class ArrayQueueOutOfOrderSequenceTest
 
         sequence.offer( 42L, EMPTY_META );
         assertEquals( 42L, sequence.highestEverSeen() );
+    }
+
+    @Test
+    public void shouldBeAbleToTimeoutWaitingForNumber() throws Exception
+    {
+        // given
+        long TIMEOUT = 10;
+        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
+
+        long startTime = System.currentTimeMillis();
+        try
+        {
+            // when
+            sequence.await( 4, TIMEOUT );
+            fail();
+        }
+        catch ( TimeoutException e )
+        {
+            // expected
+        }
+
+        long endTime = System.currentTimeMillis();
+        assertThat( endTime - startTime, greaterThanOrEqualTo( TIMEOUT ) );
+    }
+
+    @Test
+    public void shouldBeAbleToReturnImmediatelyWhenNumberAvailable() throws Exception
+    {
+        // given
+        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 4, 5, EMPTY_META );
+
+        // when
+        sequence.await( 4, 0 );
+
+        // then: should return without exceptions
+    }
+
+    @Test
+    public void shouldBeNotifiedWhenNumberAvailable() throws Exception
+    {
+        // given
+        final Semaphore done = new Semaphore( 0 );
+        final OutOfOrderSequence sequence = new ArrayQueueOutOfOrderSequence( 3, 5, EMPTY_META );
+
+        Thread numberWaiter = new Thread( () ->
+        {
+            try
+            {
+                sequence.await( 5, 60_000 );
+            }
+            catch ( TimeoutException | InterruptedException e )
+            {
+                fail( "Should not have thrown" );
+            }
+
+            done.release();
+        } );
+
+        numberWaiter.start();
+
+        assertFalse( done.tryAcquire( 10, TimeUnit.MILLISECONDS ) );
+        sequence.offer( 4, EMPTY_META );
+        assertFalse( done.tryAcquire( 10, TimeUnit.MILLISECONDS ) );
+        sequence.offer( 5, EMPTY_META );
+        assertTrue( done.tryAcquire( 60_000, TimeUnit.MILLISECONDS ) );
+
+        numberWaiter.join();
     }
 
     private boolean offer( OutOfOrderSequence sequence, long number, long[] meta )

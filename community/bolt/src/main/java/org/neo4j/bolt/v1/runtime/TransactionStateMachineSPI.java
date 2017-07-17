@@ -75,7 +75,7 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
         this.queryExecutionEngine = queryExecutionEngine;
 
         Supplier<TransactionIdStore> transactionIdStoreSupplier = db.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard, clock );
+        this.transactionIdTracker = new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
 
         this.contextFactory = Neo4jTransactionalContextFactory.create( queryService, locker );
         this.queryService = queryService;

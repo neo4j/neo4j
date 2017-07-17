@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -98,6 +99,12 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     public long getLastClosedTransactionId()
     {
         return closedTransactionId.getHighestGapFreeNumber();
+    }
+
+    @Override
+    public void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException
+    {
+        throw new UnsupportedOperationException( "Not implemented" );
     }
 
     @Override
