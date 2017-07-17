@@ -36,6 +36,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 import org.neo4j.adversaries.Adversary;
@@ -75,6 +76,9 @@ import static org.neo4j.test.ThreadTestUtils.fork;
 
 public class BatchingTransactionAppenderConcurrencyTest
 {
+
+    private static final long MILLISECONDS_TO_WAIT = TimeUnit.SECONDS.toMillis( 10 );
+
     private enum ChannelCommand
     {
         emptyBufferIntoChannelAndClearIt,
@@ -197,7 +201,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         forceSemaphore.acquire();
 
         Thread otherThread = fork( runnable );
-        awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
+        awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
 
         assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );
         assertThat( channelCommandQueue.take(), is( ChannelCommand.emptyBufferIntoChannelAndClearIt ) );
@@ -232,7 +236,7 @@ public class BatchingTransactionAppenderConcurrencyTest
         }
         for ( Thread otherThread : otherThreads )
         {
-            awaitThreadState( otherThread, 5000, Thread.State.TIMED_WAITING );
+            awaitThreadState( otherThread, MILLISECONDS_TO_WAIT, Thread.State.TIMED_WAITING );
         }
 
         assertThat( channelCommandQueue.take(), is( ChannelCommand.dummy ) );

@@ -68,7 +68,7 @@ public class ForkedProcessorStepTest
         assertEquals( batches, downstream.received.get() );
     }
 
-    @Test( timeout = 1000 )
+    @Test( timeout = 10_000 )
     public void shouldProcessAllBatchesOnSingleCoreSystems() throws Exception
     {
         // GIVEN
