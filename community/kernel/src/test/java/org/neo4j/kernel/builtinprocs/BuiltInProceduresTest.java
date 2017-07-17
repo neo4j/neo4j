@@ -187,6 +187,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
             record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
+            record( "db.awaitIndexes", "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID", "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." ),
             record( "db.constraints", "db.constraints() :: (description :: STRING?)", "List all constraints in the database." ),
             record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)", "List all indexes in the database." ),
             record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database." ),
