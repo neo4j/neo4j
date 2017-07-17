@@ -228,6 +228,17 @@ class SlaveLocksClient implements Locks.Client
         return client.activeLockCount();
     }
 
+    /**
+     * In order to prevent various indexes collisions on master during transaction commit that originate on one of the
+     * slaves we need to grab same locks on {@link ResourceTypes#LABEL} and {@link ResourceTypes#RELATIONSHIP_TYPE}
+     * that
+     * where obtained on origin. To be able to do that and also prevent shared locks to be propagates to master in cases
+     * of
+     * read only transactions we need to postpone obtaining them till we know that we participating in a
+     * transaction that performs modifications.
+     *
+     * @param tracer lock tracer
+     */
     void acquireDeferredSharedLocks( LockTracer tracer )
     {
         assertNotStopped();
