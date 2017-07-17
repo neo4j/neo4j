@@ -25,6 +25,10 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+
 public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements IntArray
 {
     public PageCacheIntArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
@@ -37,9 +41,9 @@ public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             int result;
             do
             {
@@ -60,9 +64,9 @@ public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putInt( offset, value );
             checkBounds( cursor );
         }

@@ -25,6 +25,10 @@ import java.io.UncheckedIOException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
+
 public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implements ByteArray
 {
     private final byte[] defaultValue;
@@ -34,7 +38,7 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
         // '0' default value means we skip filling it out in super
         super( pagedFile, defaultValue.length, length, 0, base );
         this.defaultValue = defaultValue;
-        setDefaultValue( writeCursor( 0 ), -1 );
+        setDefaultValue( -1 );
     }
 
     @Override
@@ -62,9 +66,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             do
             {
                 for ( int i = 0; i < into.length; i++ )
@@ -86,9 +90,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             byte result;
             do
             {
@@ -109,9 +113,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             short result;
             do
             {
@@ -132,9 +136,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             int result;
             do
             {
@@ -155,9 +159,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             long result;
             do
             {
@@ -180,9 +184,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             long result;
             do
             {
@@ -204,9 +208,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
         assert value.length == entrySize;
         long pageId = pageId( index );
         int offset = offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             for ( int i = 0; i < value.length; i++ )
             {
                 cursor.putByte( offset + i, value[i] );
@@ -224,9 +228,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putByte( offset, value );
             checkBounds( cursor );
         }
@@ -241,9 +245,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putShort( offset, value );
             checkBounds( cursor );
         }
@@ -258,9 +262,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putInt( offset, value );
             checkBounds( cursor );
         }
@@ -275,9 +279,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putInt( offset, (int) value );
             cursor.putShort( offset + Integer.BYTES, (short) (value >>> 32) );
             checkBounds( cursor );
@@ -293,9 +297,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putLong( offset, value );
             checkBounds( cursor );
         }
@@ -311,9 +315,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
 
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_READ_LOCK ) )
         {
-            PageCursor cursor = readCursor( pageId );
+            cursor.next();
             int result;
             do
             {
@@ -336,9 +340,9 @@ public class PageCacheByteArray extends PageCacheNumberArray<ByteArray> implemen
     {
         long pageId = pageId( index );
         offset += offset( index );
-        try
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
         {
-            PageCursor cursor = writeCursor( pageId );
+            cursor.next();
             cursor.putShort( offset, (short) value );
             cursor.putByte( offset + Short.BYTES, (byte) (value >>> Short.SIZE) );
             checkBounds( cursor );

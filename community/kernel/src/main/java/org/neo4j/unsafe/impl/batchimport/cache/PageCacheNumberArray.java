@@ -27,30 +27,24 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
-// todo make safe for concurrent access
 public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {
     protected final PagedFile pagedFile;
     protected final int entriesPerPage;
     protected final int entrySize;
-    private final PageCursor readCursor;
-    private final PageCursor writeCursor;
     private final long length;
     private final long defaultValue;
     private final long base;
     private boolean closed;
 
-    public PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length,
+    protected PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length,
                                  long defaultValue, long base ) throws IOException
     {
         this.pagedFile = pagedFile;
         this.entrySize = entrySize;
         this.entriesPerPage = pagedFile.pageSize() / entrySize;
-        this.readCursor = pagedFile.io( 0, PF_SHARED_READ_LOCK );
-        this.writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW );
         this.length = length;
         this.defaultValue = defaultValue;
         this.base = base;
@@ -62,13 +56,16 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
         if ( defaultValue != 0 )
         {
-            setDefaultValue( writeCursor, defaultValue );
+            setDefaultValue( defaultValue );
         }
     }
 
     private void setLength( PageCursor cursor, long length ) throws IOException
     {
-        goTo( cursor, ( length - 1 ) / entriesPerPage );
+        if ( !cursor.next( (length - 1) / entriesPerPage ) )
+        {
+            throw new IllegalStateException();
+        }
     }
 
     protected long pageId( long index )
@@ -86,22 +83,25 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         return index - base;
     }
 
-    protected void setDefaultValue( PageCursor writeCursor, long defaultValue ) throws IOException
+    protected void setDefaultValue( long defaultValue ) throws IOException
     {
         if ( entrySize == Integer.BYTES )
         {
             defaultValue |= defaultValue << 32;
         }
-        goTo( writeCursor, 0 );
-        int pageSize = pagedFile.pageSize();
-        fillPageWithDefaultValue( writeCursor, defaultValue, pageSize );
-        if ( pageId( length - 1 ) > 0 )
+        try ( PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
         {
-            try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK ) )
+            writeCursor.next();
+            int pageSize = pagedFile.pageSize();
+            fillPageWithDefaultValue( writeCursor, defaultValue, pageSize );
+            if ( pageId( length - 1 ) > 0 )
             {
-                while ( cursor.next() )
+                try ( PageCursor cursor = pagedFile.io( 1, PF_NO_GROW | PF_SHARED_WRITE_LOCK ) )
                 {
-                    writeCursor.copyTo( 0, cursor, 0, pageSize );
+                    while ( cursor.next() )
+                    {
+                        writeCursor.copyTo( 0, cursor, 0, pageSize );
+                    }
                 }
             }
         }
@@ -127,7 +127,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     {
         try
         {
-            setDefaultValue( writeCursor, defaultValue );
+            setDefaultValue( defaultValue );
         }
         catch ( IOException e )
         {
@@ -144,8 +144,6 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         }
         try
         {
-            readCursor.close();
-            writeCursor.close();
             pagedFile.close();
         }
         catch ( IOException e )
@@ -176,28 +174,5 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         {
             throw new IllegalStateException();
         }
-    }
-
-    protected PageCursor goTo( PageCursor cursor, long pageId ) throws IOException
-    {
-        if ( !cursor.next( pageId ) )
-        {
-            throw new IllegalStateException();
-        }
-        return cursor;
-    }
-
-    protected PageCursor writeCursor( long pageId ) throws IOException
-    {
-        return goTo( writeCursor, pageId );
-    }
-
-    protected PageCursor readCursor( long pageId ) throws IOException
-    {
-        if ( writeCursor.getCurrentPageId() == pageId )
-        {
-            return writeCursor;
-        }
-        return goTo( readCursor, pageId );
     }
 }
