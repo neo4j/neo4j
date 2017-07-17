@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.api.txtracking;
 
-import java.util.function.Supplier;
-
+import org.junit.Before;
 import org.junit.Test;
+
+import java.time.Duration;
+import java.util.concurrent.TimeoutException;
 
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -32,97 +34,93 @@ import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TransactionIdTrackerTest
 {
-    private final Supplier<TransactionIdStore> transactionIdStoreSupplier = mock( Supplier.class );
+    private static final Duration DEFAULT_DURATION = ofSeconds( 10 );
+
+    private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
     private final AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
 
-    @Test( timeout = 500 )
-    public void shouldAlwaysReturnIfTheRequestVersionIsBaseTxIdOrLess() throws Exception
-    {
-        // given
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStoreSupplier.get() ).thenReturn( transactionIdStore );
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( -1L );
-        when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
+    private TransactionIdTracker transactionIdTracker;
 
+    @Before
+    public void setup()
+    {
+        when( availabilityGuard.isAvailable() ).thenReturn( true );
+        transactionIdTracker = new TransactionIdTracker( () -> transactionIdStore, availabilityGuard );
+    }
+
+    @Test
+    public void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
+    {
         // when
         transactionIdTracker.awaitUpToDate( BASE_TX_ID, ofSeconds( 5 ) );
 
-        // then all good!
+        // then
+        verify( transactionIdStore, never() ).awaitClosedTransactionId( anyLong(), anyLong() );
     }
 
-    @Test( timeout = 500 )
-    public void shouldReturnIfTheVersionIsUpToDate() throws Exception
+    @Test
+    public void shouldWaitForRequestedVersion() throws Exception
     {
         // given
         long version = 5L;
-        TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
-        when( transactionIdStoreSupplier.get() ).thenReturn( transactionIdStore );
-        when( transactionIdStore.getLastClosedTransactionId()).thenReturn( version );
-        when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
 
         // when
-        transactionIdTracker.awaitUpToDate( version, ofSeconds( 5 ) );
+        transactionIdTracker.awaitUpToDate( version, DEFAULT_DURATION );
 
-        // then all good!
+        // then
+        verify( transactionIdStore ).awaitClosedTransactionId( version, DEFAULT_DURATION.toMillis() );
     }
 
-    @Test( timeout = 500 )
-    public void shouldTimeoutIfTheVersionIsTooHigh() throws Exception
+    @Test
+    public void shouldPropagateTimeoutException() throws Exception
     {
         // given
         long version = 5L;
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStoreSupplier.get() ).thenReturn( transactionIdStore );
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
-        when( availabilityGuard.isAvailable() ).thenReturn( true );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
+        TimeoutException timeoutException = new TimeoutException();
+        doThrow( timeoutException ).when( transactionIdStore ).awaitClosedTransactionId( anyLong(), anyLong() );
 
-        // when
         try
         {
+            // when
             transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 50 ) );
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException ex )
         {
-            // then all good!
+            // then
             assertEquals( Status.Transaction.InstanceStateChanged, ex.status() );
+            assertEquals( timeoutException, ex.getCause() );
         }
     }
 
-    @Test( timeout = 500 )
-    public void shouldGiveUpWaitingIfTheDatabaseIsUnavailable() throws Exception
+    @Test
+    public void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
     {
         // given
-        long version = 5L;
-        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-        when( transactionIdStoreSupplier.get() ).thenReturn( transactionIdStore );
-        when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( version );
         when( availabilityGuard.isAvailable() ).thenReturn( false );
-        TransactionIdTracker transactionIdTracker =
-                new TransactionIdTracker( transactionIdStoreSupplier, availabilityGuard );
 
-        // when
         try
         {
-            transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 60_000 ) );
+            // when
+            transactionIdTracker.awaitUpToDate( 1000, ofMillis( 60_000 ) );
             fail( "should have thrown" );
         }
         catch ( TransactionFailureException ex )
         {
-            // then all good!
+            // then
             assertEquals( Status.General.DatabaseUnavailable, ex.status() );
         }
+
+        verify( transactionIdStore, never() ).awaitClosedTransactionId( anyLong(), anyLong() );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.concurrent.TimeoutException;
+
 /**
  * The thinking behind an out-of-order sequence is that, to the outside, there's one "last number"
  * which will never be decremented between times of looking at it. It can move in bigger strides
@@ -48,6 +50,14 @@ public interface OutOfOrderSequence
      * @return {@code long[]} with the highest offered gap-free number and its meta data.
      */
     long[] get();
+
+    /**
+     * Waits for the specified number (gap-free).
+     *
+     * @param awaitedNumber the awaited number.
+     * @param timeoutMillis the maximum time to wait in milliseconds.
+     */
+    void await( long awaitedNumber, long timeoutMillis ) throws TimeoutException, InterruptedException;
 
     /**
      * @return the highest gap-free number, without its meta data.

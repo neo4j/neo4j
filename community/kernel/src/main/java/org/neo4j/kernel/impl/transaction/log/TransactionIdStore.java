@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import java.util.concurrent.TimeoutException;
+
 import org.neo4j.kernel.impl.store.TransactionId;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -107,6 +109,16 @@ public interface TransactionIdStore
      * @return highest seen gap-free {@link #transactionClosed(long, long, long) closed transaction id}.
      */
     long getLastClosedTransactionId();
+
+    /**
+     * Awaits gap-free {@link #transactionClosed(long, long, long) closed transaction id}.
+     *
+     * @param txId the awaited transaction id.
+     * @param timeoutMillis the time to wait for it.
+     * @throws InterruptedException interrupted.
+     * @throws TimeoutException timed out.
+     */
+    void awaitClosedTransactionId( long txId, long timeoutMillis ) throws InterruptedException, TimeoutException;
 
     /**
      * Returns transaction information about the last committed transaction, i.e.

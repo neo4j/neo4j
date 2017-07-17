@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import java.util.concurrent.TimeoutException;
+
 import static java.lang.String.format;
 
 /**
@@ -29,7 +31,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     // odd means updating, even means no one is updating
     private volatile int version;
     // These don't need to be volatile, reading them is "guarded" by version access
-    private long highestGapFreeNumber;
+    private volatile long highestGapFreeNumber;
     private long[] highestGapFreeMeta;
     private final SequenceArray outOfOrderQueue;
     private long[] metaArray;
@@ -53,6 +55,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number, metaArray );
             highestGapFreeMeta = highestGapFreeNumber == number ? meta : metaArray;
             version++;
+            notifyAll();
             return true;
         }
 
@@ -94,6 +97,24 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         }
 
         return createResult( number, meta );
+    }
+
+    @Override
+    public synchronized void await( long awaitedNumber, long timeoutMillis ) throws TimeoutException, InterruptedException
+    {
+        long endTime = System.currentTimeMillis() + timeoutMillis;
+        while ( awaitedNumber > highestGapFreeNumber )
+        {
+            long timeLeft = endTime - System.currentTimeMillis();
+            if ( timeLeft > 0 )
+            {
+                wait( timeLeft );
+            }
+            else
+            {
+                throw new TimeoutException( "Awaited number was not reached" );
+            }
+        }
     }
 
     private long[] createResult( long number, long[] meta )
