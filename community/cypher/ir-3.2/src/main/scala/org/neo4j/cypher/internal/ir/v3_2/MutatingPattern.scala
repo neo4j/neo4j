@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_2.ast._
 
 sealed trait MutatingPattern {
   def coveredIds: Set[IdName]
-  def dependencies: Set[Variable] = Set.empty
+  def dependencies: Set[IdName] = Set.empty
 }
 
 sealed trait NoSymbols {
@@ -34,19 +34,33 @@ sealed trait NoSymbols {
 
 sealed trait SetMutatingPattern extends MutatingPattern with NoSymbols
 
-case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+case class SetPropertyPattern(entityExpression: Expression, propertyKeyName: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = (entityExpression.dependencies ++ expression.dependencies).map(IdName.fromVariable)
+}
 
-case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+case class SetRelationshipPropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = Set(idName) ++ expression.dependencies.map(IdName.fromVariable)
+}
 
-case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
+case class SetNodePropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = Set(idName) ++ expression.dependencies.map(IdName.fromVariable)
+}
 
-case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern
+case class SetRelationshipPropertiesFromMapPattern(idName: IdName, expression: Expression, removeOtherProps: Boolean) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = Set(idName) ++ expression.dependencies.map(IdName.fromVariable)
+}
 
-case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern
+case class SetNodePropertyPattern(idName: IdName, propertyKey: PropertyKeyName, expression: Expression) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = expression.dependencies.map(IdName.fromVariable) ++ Set(idName)
+}
 
-case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern
+case class SetLabelPattern(idName: IdName, labels: Seq[LabelName]) extends SetMutatingPattern {
+  override def dependencies: Set[IdName] = Set(idName)
+}
 
-case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols
+case class RemoveLabelPattern(idName: IdName, labels: Seq[LabelName]) extends MutatingPattern with NoSymbols {
+  override def dependencies: Set[IdName] = Set(idName)
+}
 
 case class CreateNodePattern(nodeName: IdName, labels: Seq[LabelName], properties: Option[Expression]) extends MutatingPattern {
   override def coveredIds = Set(nodeName)
@@ -65,7 +79,7 @@ case class CreateRelationshipPattern(relName: IdName, leftNode: IdName, relType:
 }
 
 case class DeleteExpression(expression: Expression, forced: Boolean) extends MutatingPattern with NoSymbols {
-  override def dependencies: Set[Variable] = expression.dependencies
+  override def dependencies: Set[IdName] = expression.dependencies.map(IdName.fromVariable)
 }
 
 sealed trait MergePattern {
