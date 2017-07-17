@@ -38,10 +38,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
+import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
@@ -640,16 +640,15 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @Test
-    public void readUpdatedMetadataValue() throws Exception
+    public void readUpdatedMetadataValue() throws Throwable
     {
-        GraphDatabaseFacade localGraph = neo.getLocalGraph();
-        try ( Transaction transaction = localGraph.beginTx() )
+        String testValue = "testValue";
+        String testKey = "test";
+        GraphDatabaseFacade graph = neo.getLocalGraph();
+        try ( InternalTransaction transaction = neo.beginLocalTransactionAsUser( writeSubject, KernelTransaction.Type.explicit ) )
         {
-            String testValue = "testValue";
-            String testKey = "test";
-            localGraph.execute( "CALL dbms.setTXMetaData({" + testKey + ":'" + testValue + "'})" );
-            Map<String,Object> metadata =
-                    (Map<String,Object>) localGraph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
+            graph.execute( "CALL dbms.setTXMetaData({" + testKey + ":'" + testValue + "'})" );
+            Map<String,Object> metadata = (Map<String,Object>) graph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
             assertEquals( testValue, metadata.get( testKey ) );
         }
     }
@@ -659,19 +658,14 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         String testValue = "testValue";
         String testKey = "test";
-        GraphDatabaseFacade localGraph = neo.getLocalGraph();
-        try ( Transaction transaction = localGraph.beginTx() )
-        {
-            localGraph.execute( "CALL dbms.setTXMetaData", map( "data", map( testKey, testValue ) ) );
-            transaction.success();
-        }
 
-        try ( Transaction ignored = localGraph.beginTx() )
+        assertEmpty( writeSubject, "CALL dbms.setTXMetaData({" + testKey + ":'" + testValue + "'})" );
+        assertSuccess( writeSubject, "CALL dbms.getTXMetaData", mapResourceIterator ->
         {
-            Map<String,Object> metadata =
-                    (Map<String,Object>) localGraph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
+            Map<String,Object> metadata = mapResourceIterator.next();
             assertNull( metadata.get( testKey ) );
-        }
+            mapResourceIterator.close();
+        } );
     }
 
     //---------- procedure guard -----------
