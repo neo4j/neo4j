@@ -30,7 +30,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
@@ -57,11 +56,11 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.NullLog;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
@@ -107,6 +106,7 @@ public class KernelTransactionsTest
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 
+    private static final long TEST_TIMEOUT = 10_000;
     private static final Clock clock = Clock.systemUTC();
     private static AvailabilityGuard availabilityGuard;
 
@@ -351,7 +351,7 @@ public class KernelTransactionsTest
         }
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void blockNewTransactions() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
@@ -364,10 +364,10 @@ public class KernelTransactionsTest
         assertNotDone( txOpener );
 
         kernelTransactions.unblockNewTransactions();
-        assertNotNull( txOpener.get( 2, TimeUnit.SECONDS ) );
+        assertNotNull( txOpener.get() );
     }
 
-    @Test
+    @Test( timeout = TEST_TIMEOUT )
     public void unblockNewTransactionsFromWrongThreadThrows() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
@@ -383,7 +383,7 @@ public class KernelTransactionsTest
 
         try
         {
-            wrongUnblocker.get( 2, TimeUnit.SECONDS );
+            wrongUnblocker.get();
         }
         catch ( Exception e )
         {
@@ -393,7 +393,7 @@ public class KernelTransactionsTest
         assertNotDone( txOpener );
 
         kernelTransactions.unblockNewTransactions();
-        assertNotNull( txOpener.get( 2, TimeUnit.SECONDS ) );
+        assertNotNull( txOpener.get() );
     }
 
     @Test

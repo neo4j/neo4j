@@ -19,14 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -36,7 +40,6 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.OnDemandJobScheduler;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -58,6 +61,21 @@ public class CheckPointSchedulerTest
     private final CheckPointer checkPointer = mock( CheckPointer.class );
     private final OnDemandJobScheduler jobScheduler = spy( new OnDemandJobScheduler() );
     private final DatabaseHealth health = mock( DatabaseHealth.class );
+
+    private static ExecutorService executor;
+
+    @BeforeClass
+    public static void setUpExecutor()
+    {
+        executor = Executors.newCachedThreadPool();
+    }
+
+    @AfterClass
+    public static void tearDownExecutor() throws InterruptedException
+    {
+        executor.shutdown();
+        executor.awaitTermination( 30, TimeUnit.SECONDS );
+    }
 
     @Test
     public void shouldScheduleTheCheckPointerJobOnStart() throws Throwable
@@ -141,7 +159,6 @@ public class CheckPointSchedulerTest
     public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
     {
         // given
-        final AtomicReference<Throwable> ex = new AtomicReference<>();
         final AtomicBoolean stoppedCompleted = new AtomicBoolean();
         final DoubleLatch checkPointerLatch = new DoubleLatch( 1 );
         CheckPointer checkPointer = new CheckPointer()
@@ -178,40 +195,16 @@ public class CheckPointSchedulerTest
         // when
         scheduler.start();
 
-        Thread runCheckPointer = new Thread( jobScheduler::runJob );
-        runCheckPointer.start();
-
+        Future<?> runCheckPointer = executor.submit( jobScheduler::runJob );
         checkPointerLatch.waitForAllToStart();
 
-        Thread stopper = new Thread( () ->
-        {
-            try
-            {
-                scheduler.stop();
-                stoppedCompleted.set( true );
-            }
-            catch ( Throwable throwable )
-            {
-                ex.set( throwable );
-            }
-        } );
-
-        stopper.start();
-
-        Thread.sleep( 10 );
-
-        // then
-        assertFalse( stoppedCompleted.get() );
+        Future<?> stopSchedulerFuture = executor.submit( () -> stopScheduler( stoppedCompleted, scheduler ) );
 
         checkPointerLatch.finish();
-        runCheckPointer.join();
+        runCheckPointer.get();
 
-        Thread.sleep( 150 );
-
+        stopSchedulerFuture.get();
         assertTrue( stoppedCompleted.get() );
-        stopper.join(); // just in case
-
-        assertNull( ex.get() );
     }
 
     @Test
@@ -246,12 +239,11 @@ public class CheckPointSchedulerTest
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 0L, health );
         scheduler.start();
 
-        Thread checkpointerStarter = new Thread( jobScheduler::runJob );
-        checkpointerStarter.start();
+        Future<?> checkpointerStarter = executor.submit( jobScheduler::runJob );
 
         checkPointerLatch.await();
         scheduler.stop();
-        checkpointerStarter.join();
+        checkpointerStarter.get();
 
         assertTrue( "Checkpointer should be created.", checkPointer.isCheckpointCreated() );
         assertTrue( "Limiter should be enabled in the end.", ioLimiter.isLimitEnabled() );
@@ -286,6 +278,19 @@ public class CheckPointSchedulerTest
             // THEN
             assertEquals( Iterators.asSet( failures ), Iterators.asSet( e.getSuppressed() ) );
             verify( health ).panic( e );
+        }
+    }
+
+    private void stopScheduler( AtomicBoolean stoppedCompleted, CheckPointScheduler scheduler )
+    {
+        try
+        {
+            scheduler.stop();
+            stoppedCompleted.set( true );
+        }
+        catch ( Throwable t )
+        {
+            throw new RuntimeException( t );
         }
     }
 
