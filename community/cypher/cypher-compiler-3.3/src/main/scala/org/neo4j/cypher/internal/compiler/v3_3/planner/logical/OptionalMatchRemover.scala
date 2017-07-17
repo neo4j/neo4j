@@ -46,7 +46,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
       val projectionDeps = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
       val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
-      val dependencies: Set[IdName] = (projectionDeps ++ updateDeps).map(IdName.fromVariable).toSet
+      val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
 
       val optionalMatches = graph.optionalMatches.flatMapWithTail {
         (original: QueryGraph, tail: Seq[QueryGraph]) =>

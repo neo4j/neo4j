@@ -182,6 +182,41 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       |RETURN DISTINCT a AS a""".stripMargin).
     is_not_rewritten()
 
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)-[r]->(b)
+      |SET b.foo = 1
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)-[r]->(b)
+      |SET a.foo = b.foo
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)-[r]->(b)
+      |SET r.foo = 1
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)-[r]->(b)
+      |SET b:FOO
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)-[r1]->(b)
+      |OPTIONAL MATCH (c)<-[r2]-(b)
+      |SET c.foo = 1
+      |RETURN DISTINCT b AS b""".stripMargin).
+    is_not_rewritten()
+
   case class RewriteTester(originalQuery: String) {
     def is_rewritten_to(newQuery: String): Unit =
       test(originalQuery) {
