@@ -19,10 +19,9 @@
  */
 package org.neo4j.metrics.source;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Test;
 
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.metrics.source.causalclustering.MessageQueueMonitorMetric;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -35,9 +34,9 @@ public class MessageQueueMonitorMetricTest
     {
         // given
         MessageQueueMonitorMetric metric = new MessageQueueMonitorMetric();
-        InetSocketAddress one = new InetSocketAddress( 1 );
-        InetSocketAddress three = new InetSocketAddress( 3 );
-        InetSocketAddress two = new InetSocketAddress( 2 );
+        AdvertisedSocketAddress one = new AdvertisedSocketAddress( "hostname", 1 );
+        AdvertisedSocketAddress three = new AdvertisedSocketAddress( "hostname", 3 );
+        AdvertisedSocketAddress two = new AdvertisedSocketAddress( "hostname", 2 );
 
         // when
         metric.register( one );
@@ -57,9 +56,9 @@ public class MessageQueueMonitorMetricTest
     {
         // given
         MessageQueueMonitorMetric metric = new MessageQueueMonitorMetric();
-        InetSocketAddress one = new InetSocketAddress( 1 );
-        InetSocketAddress two = new InetSocketAddress( 2 );
-        InetSocketAddress three = new InetSocketAddress( 3 );
+        AdvertisedSocketAddress one = new AdvertisedSocketAddress( "hostname", 1 );
+        AdvertisedSocketAddress two = new AdvertisedSocketAddress( "hostname", 2 );
+        AdvertisedSocketAddress three = new AdvertisedSocketAddress( "hostname", 3 );
 
         // when
         metric.register( one );
@@ -71,6 +70,6 @@ public class MessageQueueMonitorMetricTest
         metric.queueSize( three, 7 );
 
         // then
-        assertThat( metric.queueSizes(), equalTo(18L) );
+        assertThat( metric.queueSizes(), equalTo( 18L ) );
     }
 }
