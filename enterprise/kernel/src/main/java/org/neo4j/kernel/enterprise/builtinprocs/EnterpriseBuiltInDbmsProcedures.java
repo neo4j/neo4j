@@ -101,6 +101,17 @@ public class EnterpriseBuiltInDbmsProcedures
         }
     }
 
+    @Description( "Provides attached transaction metadata." )
+    @Procedure( name = "dbms.getTXMetaData", mode = DBMS )
+    public Stream<MetadataResult> getTXMetaData()
+    {
+        securityContext.assertCredentialsNotExpired();
+        try ( Statement statement = getCurrentTx().acquireStatement() )
+        {
+            return Stream.of( statement.queryRegistration().getMetaData() ).map( MetadataResult::new );
+        }
+    }
+
     private KernelTransaction getCurrentTx()
     {
         return graph.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
@@ -526,6 +537,16 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             this.username = username;
             this.connectionCount = connectionCount;
+        }
+    }
+
+    public static class MetadataResult
+    {
+        public final Map<String,Object> metadata;
+
+        MetadataResult( Map<String,Object> metadata )
+        {
+            this.metadata = metadata;
         }
     }
 }
