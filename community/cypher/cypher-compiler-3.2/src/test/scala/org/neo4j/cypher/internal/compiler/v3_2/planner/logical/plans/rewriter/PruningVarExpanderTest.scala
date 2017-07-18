@@ -260,6 +260,16 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(distinct)
   }
 
+  test("should handle insanely long logical plans without running out of stack") {
+    val leafPlan: LogicalPlan = Argument(Set(IdName("x")))(solved)()
+    var plan = leafPlan
+    (1 until 10000) foreach { i =>
+      plan = Selection(Seq(True()(pos)), plan)(solved)
+    }
+
+    rewrite(plan) // should not throw exception
+  }
+
   private def assertNotRewritten(p: LogicalPlan): Unit = {
     rewrite(p) should equal(p)
   }
