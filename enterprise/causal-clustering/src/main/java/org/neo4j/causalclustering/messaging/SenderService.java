@@ -93,7 +93,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
 
         if ( nonBlockingChannel == null )
         {
-            nonBlockingChannel = new NonBlockingChannel( bootstrap, to.socketAddress(), log, monitor, maxQueueSize ) ;
+            nonBlockingChannel = new NonBlockingChannel( bootstrap, to, log, monitor, maxQueueSize ) ;
             NonBlockingChannel existingNonBlockingChannel = nonBlockingChannels.putIfAbsent( to, nonBlockingChannel );
 
             if ( existingNonBlockingChannel != null )
@@ -107,7 +107,7 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
             }
         }
 
-        monitor.register( to.socketAddress() );
+        monitor.register( to );
         return nonBlockingChannel;
     }
 
