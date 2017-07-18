@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
@@ -27,6 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyExcepti
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
+import org.neo4j.kernel.impl.api.RelationshipVisitor
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 
 import scala.collection.mutable
@@ -139,9 +143,31 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     }
   }
 
+  override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = {
+    increment()
+    PrimitiveLongHelper.mapPrimitive(value, { x =>
+      increment()
+      x
+    })
+  }
+
+  override protected def manyDbHits[A](inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+      inner.relationshipVisit(relationshipId, visitor)
+
+    override def next(): Long = {
+      increment()
+      inner.next()
+    }
+
+    override def hasNext: Boolean = inner.hasNext
+  }
+
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
+
+    override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = self.manyDbHits(value)
   }
 
   override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)

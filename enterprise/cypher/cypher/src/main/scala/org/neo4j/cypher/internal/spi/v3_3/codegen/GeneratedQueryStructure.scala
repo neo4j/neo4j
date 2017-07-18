@@ -31,9 +31,9 @@ import org.neo4j.codegen.source.SourceCode.SOURCECODE
 import org.neo4j.codegen.source.{SourceCode, SourceVisitor}
 import org.neo4j.codegen.{CodeGenerator, Parameter, _}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult, MethodStructure}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}

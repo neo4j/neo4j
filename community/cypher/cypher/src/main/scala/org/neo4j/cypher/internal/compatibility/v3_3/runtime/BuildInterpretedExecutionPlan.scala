@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
@@ -45,7 +45,9 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors, expressionConverters = CommunityExpressionConverters)
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
+      expressionConverters = converters, pipeBuilderFactory = CommunityPipeBuilderFactory)
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
     val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
@@ -74,14 +76,14 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     new CompilationState(from, Some(execPlan))
   }
 
-  private def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {
+  def checkForNotifications(pipe: Pipe, planContext: PlanContext, config: CypherCompilerConfiguration): Seq[InternalNotification] = {
     val notificationCheckers = Seq(checkForEagerLoadCsv,
       CheckForLoadCsvAndMatchOnLargeLabel(planContext, config.nonIndexedLabelWarningThreshold))
 
     notificationCheckers.flatMap(_ (pipe))
   }
 
-  private def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
+  def getExecutionPlanFunction(periodicCommit: Option[PeriodicCommitInfo],
                                        queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory,

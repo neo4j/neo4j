@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverters, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{FakeIdMap, Id}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
@@ -84,7 +84,10 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
     }
   }
 
-  private val builder = new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory, expressionConverters = CommunityExpressionConverters)
+  private val builder = {
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
+    new PipeExecutionPlanBuilder(Clocks.fakeClock(), mock[Monitors], factory, expressionConverters = converters)
+  }
   private implicit val planContext = mock[PlanContext]
   private implicit val pipeContext = mock[PipeExecutionBuilderContext]
 

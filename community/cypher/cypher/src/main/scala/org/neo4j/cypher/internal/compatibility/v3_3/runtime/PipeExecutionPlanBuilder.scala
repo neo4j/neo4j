@@ -22,24 +22,20 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.time.Clock
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression => CommandExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PeriodicCommit, VarPatternLength}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
 import scala.collection.mutable
 
 class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
-                               pipeBuilderFactory: PipeBuilderFactory = PipeBuilderFactory(),
+                               pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
   def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
@@ -151,10 +147,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
   }
 }
 
-case class PipeBuilderFactory() {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder =
-    ActualPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
+object CommunityPipeBuilderFactory extends PipeBuilderFactory {
+  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext) =
+  CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
 }
 
 trait PipeBuilder {

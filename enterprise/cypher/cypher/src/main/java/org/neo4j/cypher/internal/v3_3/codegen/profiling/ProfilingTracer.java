@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.v3_3.codegen.profiling;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.QueryExecutionEvent;
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.QueryExecutionEvent;
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id;
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider;
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer;

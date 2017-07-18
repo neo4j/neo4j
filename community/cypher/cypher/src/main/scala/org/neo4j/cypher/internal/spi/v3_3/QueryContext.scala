@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 
 import scala.collection.Iterator
@@ -67,6 +69,8 @@ trait QueryContext extends TokenContext {
   def getOrCreateRelTypeId(relTypeName: String): Int
 
   def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
+
+  def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator
 
   def getOrCreateLabelId(labelName: String): Int
 
@@ -209,6 +213,7 @@ trait Operations[T <: PropertyContainer] {
   def isDeletedInThisTx(obj: T): Boolean
 
   def all: Iterator[T]
+  def allPrimitive: PrimitiveLongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
 

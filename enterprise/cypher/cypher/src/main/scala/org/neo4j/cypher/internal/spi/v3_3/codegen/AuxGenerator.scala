@@ -23,9 +23,9 @@ import org.neo4j.codegen.FieldReference.field
 import org.neo4j.codegen.Parameter.param
 import org.neo4j.codegen._
 import org.neo4j.cypher.internal.codegen.CompiledEquivalenceUtils
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.CodeGenContext
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
-import org.neo4j.cypher.internal.compatibility.v3_3.compiled_runtime.codegen.spi._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, CypherCodeGenType, ReferenceType, RepresentationType}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols

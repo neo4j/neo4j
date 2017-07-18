@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -28,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3._
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 import scala.collection.Iterator
 
@@ -194,6 +196,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]) =
     translateException(inner.getRelationshipsForIds(node, dir, types))
 
+  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
+    translateException(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+
   override def indexSeekByRange(index: IndexDescriptor, value: Any) =
     translateException(inner.indexSeekByRange(index, value))
 
@@ -269,6 +274,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
     override def all: Iterator[T] =
       translateException(inner.all)
+
+    override def allPrimitive: PrimitiveLongIterator =
+      translateException(inner.allPrimitive)
 
     override def isDeletedInThisTx(obj: T): Boolean =
       translateException(inner.isDeletedInThisTx(obj))

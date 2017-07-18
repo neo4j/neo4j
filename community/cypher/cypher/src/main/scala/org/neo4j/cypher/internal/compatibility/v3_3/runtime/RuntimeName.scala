@@ -28,6 +28,10 @@ case object InterpretedRuntimeName extends RuntimeName {
   override val name = "INTERPRETED"
 }
 
+case object EnterpriseInterpretedRuntimeName extends RuntimeName {
+  override val name = "INTERPRETED-ENTERPRISE"
+}
+
 case object CompiledRuntimeName extends RuntimeName {
   override val name = "COMPILED"
 }

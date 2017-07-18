@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalExecutionResult, ProcedureCallMode}
@@ -48,10 +48,12 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       argExprs: Seq[Expression],
                                       resultSymbols: Seq[(String, CypherType)],
-                                      resultIndices: Seq[(Int, String)], notifications: Set[InternalNotification])
+                                      resultIndices: Seq[(Int, String)],
+                                      notifications: Set[InternalNotification],
+                                      converter: ExpressionConverters)
   extends ExecutionPlan {
 
-    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(CommunityExpressionConverters.toCommandExpression) ++
+    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(converter.toCommandExpression) ++
       signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
     override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
@@ -114,7 +116,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     private def createSignatureArgument =
       Signature(signature.name, Seq.empty, resultSymbols)
 
-    override def notifications(planContext: PlanContext) = Seq.empty
+    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
     override def isPeriodicCommit: Boolean = false
     override def runtimeUsed = ProcedureRuntimeName
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
