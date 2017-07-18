@@ -42,6 +42,13 @@ public interface QueryRegistryOperations
     void setMetaData( Map<String,Object> data );
 
     /**
+     * Gets associated meta data.
+     *
+     * @return the meta data
+     */
+    Map<String,Object> getMetaData();
+
+    /**
      * List of all currently running stream in this transaction. An user can have multiple stream running
      * simultaneously on the same transaction.
      */
