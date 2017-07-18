@@ -27,11 +27,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.Enterpri
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Monitors, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.AnyValue
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
@@ -89,10 +89,10 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
                                      isPeriodicCommit: Boolean,
                                      plannerUsed: PlannerName,
                                      override val plannedIndexUsage: Seq[IndexUsage],
-                                     runFunction: (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult,
+                                     runFunction: (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult,
                                      pipe: Pipe,
                                      config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
-    override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
+    override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)

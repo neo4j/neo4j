@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 case class ProduceResultRegisterPipe(source: Pipe, columns: Seq[(String, Expression)])
                                     (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
