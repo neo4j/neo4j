@@ -185,47 +185,21 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     result.toList should equal(List(Map("dist" -> null)))
   }
 
-  test("distance function should return null with null in any kind of point on rhs") {
+  test("distance function should return null if a point is null") {
     var result = executeWithAllPlanners(
-      """return distance(point({latitude:3,longitude:7}),point({latitude:null,
-        |longitude:3})) as dist;""".stripMargin)
+      "RETURN distance(point({latitude:3,longitude:7}),point({latitude:null, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
     result = executeWithAllPlanners(
-      """return distance(point({latitude:3,longitude:7}),point({latitude:3,
-        |longitude:null})) as dist;""".stripMargin)
+      "RETURN distance(point({latitude:3,longitude:null}),point({latitude:7, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
     result = executeWithAllPlanners(
-      """return distance(point({x:3,y:7}),point({x:null,
-        |y:3})) as dist;""".stripMargin)
+      "RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
     result = executeWithAllPlanners(
-      """return distance(point({x:3,y:7}),point({x:3,
-        |y:null})) as dist;""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-  }
-
-  test("distance function should return null with null in any kind of point on lhs") {
-    var result = executeWithAllPlanners(
-      """return distance(point({latitude:null,longitude:7}),point({latitude:3,
-        |longitude:3})) as dist;""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWithAllPlanners(
-      """return distance(point({latitude:3,longitude:null}),point({latitude:3,
-        |longitude:3})) as dist;""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWithAllPlanners(
-      """return distance(point({x:null,y:7}),point({x:3,
-        |y:3})) as dist;""".stripMargin)
-    result.toList should equal(List(Map("dist" -> null)))
-
-    result = executeWithAllPlanners(
-      """return distance(point({x:3,y:null}),point({x:3,
-        |y:3})) as dist;""".stripMargin)
+      "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
   }
 
@@ -273,6 +247,24 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   test("point function should work with null input") {
     val result = executeWithAllPlanners("RETURN point(null) as p")
     result.toList should equal(List(Map("p" -> null)))
+  }
+
+  test("point function should return null if the map that backs it up contains a null") {
+    var result = executeWithAllPlanners(
+      "RETURN point({latitude:null, longitude:3}) as pt;")
+    result.toList should equal(List(Map("pt" -> null)))
+
+    result = executeWithAllPlanners(
+      "RETURN point({latitude:3, longitude:null}) as pt;")
+    result.toList should equal(List(Map("pt" -> null)))
+
+    result = executeWithAllPlanners(
+      "RETURN point({x:null, y:3}) as pt;")
+    result.toList should equal(List(Map("pt" -> null)))
+
+    result = executeWithAllPlanners(
+      "RETURN point({x:3, y:null}) as pt;")
+    result.toList should equal(List(Map("pt" -> null)))
   }
 
   test("point function should fail on wrong type") {

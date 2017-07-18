@@ -30,10 +30,11 @@ case class PointFunction(data: Expression) extends NullInNullOutExpression(data)
 
   override def compute(value: Any, ctx: ExecutionContext)(implicit state: QueryState): Any = value match {
     case IsMap(mapCreator) =>
-      if(mapCreator(state.query).exists(_._2==null)){
+      val map = mapCreator(state.query)
+      if (map.exists(_._2 == null)) {
         null
       } else {
-        Points.fromMap(mapCreator(state.query))
+        Points.fromMap(map)
       }
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
