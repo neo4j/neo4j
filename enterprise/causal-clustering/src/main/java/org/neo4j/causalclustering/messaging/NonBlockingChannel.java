@@ -25,12 +25,12 @@ import io.netty.channel.ChannelFuture;
 import io.netty.util.concurrent.FutureListener;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -46,14 +46,14 @@ class NonBlockingChannel
     private final Log log;
     private Channel nettyChannel;
     private Bootstrap bootstrap;
-    private InetSocketAddress destination;
+    private AdvertisedSocketAddress destination;
     private Queue<Object> messageQueue = new ConcurrentLinkedQueue<>();
     private volatile boolean stillRunning = true;
     private final MessageQueueMonitor monitor;
     private final int maxQueueSize;
     private FutureListener<Void> errorListener;
 
-    NonBlockingChannel( Bootstrap bootstrap, final InetSocketAddress destination,
+    NonBlockingChannel( Bootstrap bootstrap, final AdvertisedSocketAddress destination,
             final Log log, MessageQueueMonitor monitor, int maxQueueSize )
     {
         this.bootstrap = bootstrap;
@@ -105,7 +105,7 @@ class NonBlockingChannel
         {
             nettyChannel.close();
             messageQueue.clear();
-            monitor.queueSize(destination, messageQueue.size());
+            monitor.queueSize( destination, messageQueue.size() );
         }
     }
 
@@ -173,12 +173,13 @@ class NonBlockingChannel
     {
         if ( nettyChannel != null && !nettyChannel.isOpen() )
         {
+            log.warn( String.format( "Lost connection to: %s (%s)", destination, nettyChannel.remoteAddress() ) );
             nettyChannel = null;
         }
 
         while ( nettyChannel == null && stillRunning )
         {
-            ChannelFuture channelFuture = bootstrap.connect( destination );
+            ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
 
             Channel channel = channelFuture.awaitUninterruptibly().channel();
             if ( channelFuture.isSuccess() )

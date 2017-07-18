@@ -19,18 +19,18 @@
  */
 package org.neo4j.causalclustering.messaging.monitoring;
 
-import java.net.InetSocketAddress;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
 public interface MessageQueueMonitor
 {
     Long droppedMessages();
 
-    void droppedMessage( InetSocketAddress destination );
+    void droppedMessage( AdvertisedSocketAddress destination );
 
-    void queueSize( InetSocketAddress destination, long size );
+    void queueSize( AdvertisedSocketAddress destination, long size );
 
     Long queueSizes();
 
-    void register( InetSocketAddress to );
+    void register( AdvertisedSocketAddress to );
 }
 

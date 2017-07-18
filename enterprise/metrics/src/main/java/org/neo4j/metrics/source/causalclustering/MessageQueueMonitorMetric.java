@@ -19,13 +19,13 @@
  */
 package org.neo4j.metrics.source.causalclustering;
 
-import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 
 import org.neo4j.causalclustering.messaging.monitoring.MessageQueueMonitor;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
 public class MessageQueueMonitorMetric implements MessageQueueMonitor
 {
@@ -39,13 +39,13 @@ public class MessageQueueMonitorMetric implements MessageQueueMonitor
     }
 
     @Override
-    public void droppedMessage( InetSocketAddress destination )
+    public void droppedMessage( AdvertisedSocketAddress destination )
     {
         droppedMessages.get( destination.toString() ).increment();
     }
 
     @Override
-    public void queueSize( InetSocketAddress destination, long size )
+    public void queueSize( AdvertisedSocketAddress destination, long size )
     {
         queueSize.get( destination.toString() ).set( size );
     }
@@ -57,14 +57,14 @@ public class MessageQueueMonitorMetric implements MessageQueueMonitor
     }
 
     @Override
-    public void register( InetSocketAddress destination )
+    public void register( AdvertisedSocketAddress destination )
     {
         if ( !droppedMessages.containsKey( destination.toString() ) )
         {
             droppedMessages.put( destination.toString(), new LongAdder() );
         }
 
-        if ( !queueSize.containsKey( destination.getHostString() ) )
+        if ( !queueSize.containsKey( destination.toString() ) )
         {
             queueSize.put( destination.toString(), new AtomicLong() );
         }
