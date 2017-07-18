@@ -23,7 +23,6 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, PrimitiveEquals}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -58,28 +57,18 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     newLookup(result) should equal(pipeline)
   }
 
-  test("comparing two relationship ids") {
-    // match (a)-[r1]->b-[r2]->(c)
+  test("comparing two relationship ids simpler") {
+    // match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
+    // given
     val node1 = IdName("a")
     val node2 = IdName("b")
     val node3 = IdName("c")
     val rel1 = IdName("r1")
     val rel2 = IdName("r2")
-    val allNodes = AllNodesScan(node1, Set.empty)(solved)
-    val exp1 = Expand(allNodes, node1, OUTGOING, Seq.empty, node2, rel1, ExpandAll)(solved)
-    val exp2 = Expand(exp1, node2, OUTGOING, Seq.empty, node3, rel2, ExpandAll)(solved)
+    val argument = Argument(Set(node1,node2,node3,rel1,rel2))(solved)()
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
-    val selection = Selection(Seq(predicate), exp2)(solved)
-    val produceResult = ProduceResult(Seq("x"), selection)
-    val pipeline1 = PipelineInformation(Map(
-      "a" -> nodeAt(0)
-    ), numberOfLongs = 1, numberOfReferences = 0)
-    val pipeline2 = PipelineInformation(Map(
-      "a" -> nodeAt(0),
-      "b" -> nodeAt(1),
-      "r1" -> edgeAt(2)
-    ), numberOfLongs = 3, numberOfReferences = 0)
-    val pipeline3 = PipelineInformation(Map(
+    val selection = Selection(Seq(predicate), argument)(solved)
+    val pipelineInformation = PipelineInformation(Map(
       "a" -> nodeAt(0),
       "b" -> nodeAt(1),
       "r1" -> edgeAt(2),
@@ -88,19 +77,18 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     ), numberOfLongs = 5, numberOfReferences = 0)
 
     val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline1,
-      exp1 -> pipeline2,
-      exp2 -> pipeline3,
-      selection -> pipeline3,
-      produceResult -> pipeline3)
+      argument -> pipelineInformation,
+      selection -> pipelineInformation
+    )
     val tokenContext = mock[TokenContext]
     val rewriter = new RegisteredRewriter(tokenContext)
-    val (result, newLookup) = rewriter(produceResult, lookup)
 
-    val newPredicate = Not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))(pos)
+    // when
+    val (result, newLookup) = rewriter(selection, lookup)
 
-    result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), exp2)(solved)))
-    newLookup(result) should equal(pipeline3)
+    // then
+    result should equal(Selection(Seq(Not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))(pos)), argument)(solved))
+    newLookup(result) should equal(pipelineInformation)
   }
 
 }
