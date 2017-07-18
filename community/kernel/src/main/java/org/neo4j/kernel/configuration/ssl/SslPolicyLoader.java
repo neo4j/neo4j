@@ -160,7 +160,7 @@ public class SslPolicyLoader
         X509Certificate[] keyCertChain = loadCertificateChain( certficateFile );
 
         return new SslPolicy( privateKey, keyCertChain, null, null,
-                ClientAuth.OPTIONAL, InsecureTrustManagerFactory.INSTANCE );
+                ClientAuth.NONE, InsecureTrustManagerFactory.INSTANCE );
     }
 
     private void load( Config config, Log log )
