@@ -186,19 +186,19 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("distance function should return null if a point is null") {
-    var result = executeWithAllPlanners(
+    var result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN distance(point({latitude:3,longitude:7}),point({latitude:null, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN distance(point({latitude:3,longitude:null}),point({latitude:7, longitude:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN distance(point({x:3,y:7}),point({x:null, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN distance(point({x:3,y:null}),point({x:7, y:3})) as dist;")
     result.toList should equal(List(Map("dist" -> null)))
   }
@@ -250,19 +250,19 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   test("point function should return null if the map that backs it up contains a null") {
-    var result = executeWithAllPlanners(
+    var result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN point({latitude:null, longitude:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN point({latitude:3, longitude:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN point({x:null, y:3}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
 
-    result = executeWithAllPlanners(
+    result = executeWithCostPlannerAndInterpretedRuntimeOnly(
       "RETURN point({x:3, y:null}) as pt;")
     result.toList should equal(List(Map("pt" -> null)))
   }
