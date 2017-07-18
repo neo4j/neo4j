@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.NodeProperty
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, PrimitiveEquals}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, bottomUp, topDown}
 
 import scala.collection.mutable
 
@@ -36,7 +36,6 @@ using Variable. It will also rewrite the pipeline information so that the new pl
 class RegisteredRewriter(tokenContext: TokenContext) {
 
   def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
-    val logicalPlans = in.findByAllClass[LogicalPlan]
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithRegisters = topDown(Rewriter.lift {
@@ -53,6 +52,9 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
     // Rewrite plan and note which logical plans are rewritten to something else
     val resultPlan = in.endoRewrite(rewritePlanWithRegisters)
+
+    // TODO: This should probably only run when -ea is enabled
+    resultPlan.findByAllClass[Variable].foreach(v => throw new InternalException(s"Failed to rewrite away $v\n$resultPlan"))
 
     // re-apply the rewrites to the keys of the pipeline information
     val rewriter = createRewriterFrom(rewrites)
@@ -76,10 +78,22 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         val slot = pipelineInformation(key)
         slot match {
-          case LongSlot(offset, nullable, typ) if typ == CTNode =>
+          case LongSlot(offset, _, typ) if typ == CTNode =>
             NodeProperty(offset, token)
         }
+
+      case e@Equals(Variable(k1), Variable(k2)) =>
+        val slot1 = pipelineInformation(k1)
+        val slot2 = pipelineInformation(k2)
+        if (slot1.typ == slot2.typ)
+          PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
+        else
+          e
     }
-    bottomUp(rewriter = innerRewriter, stopper = lp => lp.isInstanceOf[LogicalPlan] && lp != thisPlan)
+    bottomUp(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
+  }
+
+  private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {
+    lp => lp.isInstanceOf[LogicalPlan] && lp != thisPlan
   }
 }

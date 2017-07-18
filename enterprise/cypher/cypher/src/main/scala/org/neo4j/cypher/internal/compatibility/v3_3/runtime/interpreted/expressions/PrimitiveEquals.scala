@@ -21,14 +21,19 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
-case class NodeProperty(offset: Int, token: Int) extends Expression {
+case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
+  override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    val value1 = a(m)
+    val value2 = b(m)
+    Some(value1 == value2)
+  }
+  override def containsIsNull: Boolean = false
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+  override def rewrite(f: (Expression) => Expression): Expression = f(PrimitiveEquals(a.rewrite(f), b.rewrite(f)))
 
   override def arguments: Seq[Expression] = Seq.empty
 

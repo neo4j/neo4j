@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
-case class NodeProperty(offset: Int, token: Int) extends Expression {
+case class IdFromSlot(offset: Int) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ctx.getLongAt(offset)
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 

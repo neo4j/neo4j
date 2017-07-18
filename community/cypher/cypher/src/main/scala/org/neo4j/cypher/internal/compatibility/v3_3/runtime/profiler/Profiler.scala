@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyExcepti
 import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.helpers.MathUtil
+import org.neo4j.kernel.impl.api.RelationshipVisitor
+import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 
 import scala.collection.mutable
@@ -147,6 +149,18 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
       increment()
       x
     })
+  }
+
+  override protected def manyDbHits[A](inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+      inner.relationshipVisit(relationshipId, visitor)
+
+    override def next(): Long = {
+      increment()
+      inner.next()
+    }
+
+    override def hasNext: Boolean = inner.hasNext
   }
 
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
