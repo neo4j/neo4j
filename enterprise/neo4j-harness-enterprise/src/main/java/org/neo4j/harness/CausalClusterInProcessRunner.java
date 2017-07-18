@@ -112,6 +112,7 @@ public class CausalClusterInProcessRunner
                 int raftPort = 57000 + coreId;
                 int boltPort = 58000 + coreId;
                 int httpPort = 59000 + coreId;
+                int httpsPort = 60000 + coreId;
 
                 String homeDir = "core-" + coreId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -130,7 +131,7 @@ public class CausalClusterInProcessRunner
 
                 builder.withConfig( CausalClusteringSettings.expected_core_cluster_size.name(), String.valueOf( nCores ) );
                 builder.withConfig( CausalClusteringSettings.server_groups.name(), "core," + "core" + coreId );
-                configureConnectors( boltPort, httpPort, builder );
+                configureConnectors( boltPort, httpPort, httpsPort, builder );
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
@@ -154,6 +155,7 @@ public class CausalClusterInProcessRunner
                 int txPort = 56500 + replicaId;
                 int boltPort = 58500 + replicaId;
                 int httpPort = 59500 + replicaId;
+                int httpsPort = 60500 + replicaId;
 
                 String homeDir = "replica-" + replicaId;
                 TestServerBuilder builder = new EnterpriseInProcessServerBuilder( clusterPath.toFile(), homeDir );
@@ -167,7 +169,7 @@ public class CausalClusterInProcessRunner
                 builder.withConfig( CausalClusteringSettings.transaction_listen_address.name(), specifyPortOnly( txPort ) );
 
                 builder.withConfig( CausalClusteringSettings.server_groups.name(), "replica," + "replica" + replicaId );
-                configureConnectors( boltPort, httpPort, builder );
+                configureConnectors( boltPort, httpPort, httpsPort, builder );
 
                 builder.withConfig( ServerSettings.jmx_module_enabled.name(), Settings.FALSE );
 
@@ -192,7 +194,7 @@ public class CausalClusterInProcessRunner
             return ":" + port;
         }
 
-        private static void configureConnectors( int boltPort, int httpPort, TestServerBuilder builder )
+        private static void configureConnectors( int boltPort, int httpPort, int httpsPort, TestServerBuilder builder )
         {
             builder.withConfig( new BoltConnector( "bolt" ).type.name(), "BOLT" );
             builder.withConfig( new BoltConnector( "bolt" ).enabled.name(), "true" );
@@ -203,6 +205,11 @@ public class CausalClusterInProcessRunner
             builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).enabled.name(), "true" );
             builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).listen_address.name(), specifyPortOnly( httpPort ) );
             builder.withConfig( new HttpConnector( "http", HttpConnector.Encryption.NONE ).advertised_address.name(), specifyPortOnly( httpPort ) );
+
+            builder.withConfig( new HttpConnector( "https", HttpConnector.Encryption.TLS ).type.name(), "HTTP" );
+            builder.withConfig( new HttpConnector( "https", HttpConnector.Encryption.TLS ).enabled.name(), "true" );
+            builder.withConfig( new HttpConnector( "https", HttpConnector.Encryption.TLS ).listen_address.name(), specifyPortOnly( httpsPort ) );
+            builder.withConfig( new HttpConnector( "https", HttpConnector.Encryption.TLS ).advertised_address.name(), specifyPortOnly( httpsPort ) );
         }
 
         void shutdown() throws InterruptedException
