@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_1.planner.logical
 
-import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v3_1.helpers.MapSupport._
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.{QueryGraphCardinalityModel, CardinalityModel, CostModel}
-import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{StrictnessMode, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.Metrics.{CardinalityModel, CostModel, QueryGraphCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.{IdName, LogicalPlan, StrictnessMode}
 import org.neo4j.cypher.internal.compiler.v3_1.planner.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v3_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_1.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_1.ast.LabelName
 
 import scala.language.implicitConversions
 
@@ -82,13 +82,14 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier): Cardinality = amount * that.coefficient
-  def *(that: Selectivity): Cardinality = amount * that.factor
+  def *(that: Selectivity): Cardinality = if ( that.factor == 0 ) Cardinality.EMPTY else amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
-  def *(that: Cardinality): Cardinality = amount * that.amount
+  def *(that: Cardinality): Cardinality = if( amount == 0 || that.amount == 0 ) Cardinality.EMPTY
+    else Cardinality.noInf(amount * that.amount)
   def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
   def *(that: Cost): Cost = amount * that.gummyBears
-  def ^(a: Int): Cardinality = Math.pow(amount, a)
+  def ^(a: Int): Cardinality = Cardinality.noInf(Math.pow(amount, a))
   def map(f: Double => Double): Cardinality = f(amount)
 
   def inverse = Multiplier(1.0d / amount)
@@ -103,6 +104,8 @@ object Cardinality {
   val SINGLE = Cardinality(1)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
+
+  private def noInf(value: Double) = if( value == Double.PositiveInfinity ) Double.MaxValue else value
 
   def min(l: Cardinality, r: Cardinality): Cardinality = Math.min(l.amount, r.amount)
 
