@@ -211,10 +211,39 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
     is_not_rewritten()
 
   assert_that(
-    """MATCH (a)-[r1]->(b)
-      |OPTIONAL MATCH (c)<-[r2]-(b)
-      |SET c.foo = 1
-      |RETURN DISTINCT b AS b""".stripMargin).
+    """MATCH (a)
+      |OPTIONAL MATCH (a)<-[r1]-(b)
+      |CREATE (c {id: b.prop})
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)<-[r1]-(b)
+      |CREATE (a)-[r:T]->(b)
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)<-[r1]-(b)
+      |MERGE (c:X {id: b.prop})
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)<-[r1]-(b)
+      |MERGE (a)-[r:T]->(b)
+      |RETURN DISTINCT a AS a""".stripMargin).
+    is_not_rewritten()
+
+  assert_that(
+    """MATCH (a)
+      |OPTIONAL MATCH (a)<-[r1]-(b)
+      |FOREACH( x in b.collectionProp |
+      |  CREATE (z) )
+      |RETURN DISTINCT a AS a""".stripMargin).
     is_not_rewritten()
 
   case class RewriteTester(originalQuery: String) {

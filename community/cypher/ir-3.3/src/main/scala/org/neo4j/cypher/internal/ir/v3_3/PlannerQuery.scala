@@ -30,6 +30,8 @@ sealed trait PlannerQuery {
   val horizon: QueryHorizon
   val tail: Option[PlannerQuery]
 
+  def dependencies: Set[IdName]
+
   def readOnly: Boolean = (queryGraph.readOnly && horizon.readOnly) && tail.forall(_.readOnly)
 
   def preferredStrictness: Option[StrictnessMode] =
@@ -184,6 +186,8 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
     RegularPlannerQuery(queryGraph, horizon, tail)
+
+  override def dependencies: Set[IdName] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }
 
 trait CardinalityEstimation {
