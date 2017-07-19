@@ -19,20 +19,28 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TokenWriteOperations;
+import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
@@ -42,6 +50,7 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,6 +71,7 @@ public class IndexIT extends KernelIntegrationTest
     private int propertyKeyId;
     private LabelSchemaDescriptor descriptor;
     private LabelSchemaDescriptor descriptor2;
+    private ExecutorService executorService;
 
     @Before
     public void createLabelAndProperty() throws Exception
@@ -72,6 +82,41 @@ public class IndexIT extends KernelIntegrationTest
         int propertyKeyId2 = tokenWrites.propertyKeyGetOrCreateForName( PROPERTY_KEY2 );
         descriptor = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId );
         descriptor2 = SchemaDescriptorFactory.forLabel( labelId, propertyKeyId2 );
+        commit();
+        executorService = Executors.newCachedThreadPool();
+    }
+
+    @After
+    public void tearDown() throws Exception
+    {
+        executorService.shutdown();
+    }
+
+    @Test
+    public void createIndexForAnotherLabelWhileHoldingSharedLockOnOtherLabel() throws KernelException
+    {
+        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+        int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
+
+        DataWriteOperations dataWriteOperations = dataWriteOperationsInNewTransaction();
+        long nodeId = dataWriteOperations.nodeCreate();
+        dataWriteOperations.nodeAddLabel( nodeId, label2 );
+
+        schemaWriteOperationsInNewTransaction().indexCreate( descriptor );
+        commit();
+    }
+
+    @Test( timeout = 10_000 )
+    public void createIndexesForDifferentLabelsConcurrently() throws Throwable
+    {
+        TokenWriteOperations tokenWriteOperations = tokenWriteOperationsInNewTransaction();
+        int label2 = tokenWriteOperations.labelGetOrCreateForName( "Label2" );
+
+        LabelSchemaDescriptor anotherLabelDescriptor = SchemaDescriptorFactory.forLabel( label2, propertyKeyId );
+        schemaWriteOperationsInNewTransaction().indexCreate( anotherLabelDescriptor );
+
+        Future<?> indexFuture = executorService.submit( createIndex( db, Label.label( LABEL ), PROPERTY_KEY ) );
+        indexFuture.get();
         commit();
     }
 
@@ -266,5 +311,23 @@ public class IndexIT extends KernelIntegrationTest
         ReadOperations readOperations = readOperationsInNewTransaction();
         List<IndexDescriptor> indexes = Iterators.asList( readOperations.indexesGetAll() );
         assertThat( indexes, containsInAnyOrder( index1, index2 ) );
+    }
+
+    private Runnable createIndex( GraphDatabaseAPI db, Label label, String propertyKey )
+    {
+        return () ->
+        {
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.schema().indexFor( label ).on( propertyKey ).create();
+                transaction.success();
+            }
+
+            try ( Transaction transaction = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+                transaction.success();
+            }
+        };
     }
 }
