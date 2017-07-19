@@ -190,6 +190,8 @@ public class BuiltInProceduresTest
                         "List the currently active config of Neo4j." ),
                 record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
+                record( "db.awaitIndexes", "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\"))." ),
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database." ),
                 record( "db.indexes", "db.indexes() :: (description :: STRING?, state :: STRING?, type :: STRING?)",
