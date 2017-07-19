@@ -49,9 +49,9 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public void prepareForCommit()
+    public void prepareForCommit( LockTracer lockTracer )
     {
-        implicit.acquireDeferredLocks();
+        implicit.acquireDeferredLocks( lockTracer );
     }
 
     @Override

@@ -79,14 +79,14 @@ trait Compatibility[C <: CompilerContext] {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, transactionalContext, preParsingNotifications ), extractedParameters)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, transactionalContext: TransactionalContextWrapperV3_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -121,8 +121,12 @@ trait Compatibility[C <: CompilerContext] {
     override def plannerInfo: PlannerInfo = {
       import scala.collection.JavaConverters._
       new PlannerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, inner.plannedIndexUsage.map {
-        case SchemaIndexSeekUsage(identifier, label, propertyKeys) => schemaIndexUsage(identifier, label, propertyKeys: _*)
-        case SchemaIndexScanUsage(identifier, label, propertyKey) => schemaIndexUsage(identifier, label, propertyKey)
+        case SchemaIndexSeekUsage(identifier, label, propertyKeys) =>
+          val labelId = transactionalContext.readOperations.labelGetForName(label)
+          schemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
+        case SchemaIndexScanUsage(identifier, label, propertyKey) =>
+          val labelId = transactionalContext.readOperations.labelGetForName(label)
+          schemaIndexUsage(identifier, labelId, label, propertyKey)
         case LegacyNodeIndexUsage(identifier, index) => legacyIndexUsage(identifier, "NODE", index)
         case LegacyRelationshipIndexUsage(identifier, index) => legacyIndexUsage(identifier, "RELATIONSHIP", index)
       }.asJava)

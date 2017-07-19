@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
@@ -397,7 +398,7 @@ public class RelationshipCountsTest
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
+            if ( KeyReadOperations.NO_SUCH_LABEL == (startId = read.labelGetForName( start.name() )) )
             {
                 return 0;
             }
@@ -409,7 +410,7 @@ public class RelationshipCountsTest
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
+            if ( KeyReadOperations.NO_SUCH_LABEL == (typeId = read.relationshipTypeGetForName( type.name() )) )
             {
                 return 0;
             }
@@ -421,7 +422,7 @@ public class RelationshipCountsTest
         }
         else
         {
-            if ( ReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
+            if ( KeyReadOperations.NO_SUCH_LABEL == (endId = read.labelGetForName( end.name() )) )
             {
                 return 0;
             }

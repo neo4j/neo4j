@@ -270,21 +270,21 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
         {
             PrimitiveLongObjectMap<LockResource> localLocks = localShared( resourceType );
-            LockResource resource = localLocks.get( resourceId );
-            if ( resource.releaseReference() != 0 )
+            for ( long resourceId : resourceIds )
             {
-                return;
+                LockResource resource = localLocks.get( resourceId );
+                if ( resource.releaseReference() == 0 )
+                {
+                    localLocks.remove( resourceId );
+                    manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                }
             }
-
-            localLocks.remove( resourceId );
-
-            manager.releaseReadLock( new LockResource( resourceType, resourceId ), lockTransaction );
         }
         finally
         {
@@ -293,20 +293,21 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
         stateHolder.incrementActiveClients( this );
         try
         {
             PrimitiveLongObjectMap<LockResource> localLocks = localExclusive( resourceType );
-            LockResource resource = localLocks.get( resourceId );
-            if ( resource.releaseReference() != 0 )
+            for ( long resourceId : resourceIds )
             {
-                return;
+                LockResource resource = localLocks.get( resourceId );
+                if ( resource.releaseReference() == 0 )
+                {
+                    localLocks.remove( resourceId );
+                    manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
+                }
             }
-            localLocks.remove( resourceId );
-
-            manager.releaseWriteLock( new LockResource( resourceType, resourceId ), lockTransaction );
         }
         finally
         {

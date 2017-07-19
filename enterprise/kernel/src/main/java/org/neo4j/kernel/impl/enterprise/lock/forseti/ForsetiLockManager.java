@@ -106,14 +106,6 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
  * traversing the graph like this until we either find ourselves amongst the owners - a deadlock - or we run out of
  * locks that are being waited upon - no deadlock.
  * <p/>
- * <h2>Future work</h2>
- * <p/>
- * We have at least one type of lock (SchemaLock) that can be held concurrently by several hundred transactions. It may
- * be worth investigating fat locks, or in any case optimize the current way SharedLock adds and removes clients from
- * its holder list.
- * <p/>
- * The maps used by Forseti should be replaced by faster concurrent maps, perhaps a striped hopscotch map or something
- * similar.
  */
 public class ForsetiLockManager implements Locks
 {

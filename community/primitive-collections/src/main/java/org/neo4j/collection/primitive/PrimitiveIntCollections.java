@@ -650,6 +650,18 @@ public class PrimitiveIntCollections
         return array;
     }
 
+    public static long[] asLongArray( PrimitiveIntCollection values )
+    {
+        long[] array = new long[values.size()];
+        PrimitiveIntIterator iterator = values.iterator();
+        int i = 0;
+        while ( iterator.hasNext() )
+        {
+            array[i++] = iterator.next();
+        }
+        return array;
+    }
+
     public static int[] asArray( Collection<Integer> values )
     {
         int[] array = new int[values.size()];

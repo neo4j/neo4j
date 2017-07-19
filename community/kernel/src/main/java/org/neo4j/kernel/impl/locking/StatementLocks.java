@@ -47,8 +47,9 @@ public interface StatementLocks extends AutoCloseable
     /**
      * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
      * previously been taken {@link #optimistic() optimistically}.
+     * @param lockTracer lock tracer
      */
-    void prepareForCommit();
+    void prepareForCommit( LockTracer lockTracer );
 
     /**
      * Stop the underlying {@link Locks.Client client}(s).

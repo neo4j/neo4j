@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.schema;
 import java.util.Arrays;
 
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class RelationTypeSchemaDescriptor implements SchemaDescriptor
 {
@@ -62,6 +64,18 @@ public class RelationTypeSchemaDescriptor implements SchemaDescriptor
     public int[] getPropertyIds()
     {
         return propertyIds;
+    }
+
+    @Override
+    public int keyId()
+    {
+        return getRelTypeId();
+    }
+
+    @Override
+    public ResourceType keyType()
+    {
+        return ResourceTypes.RELATIONSHIP_TYPE;
     }
 
     public int getPropertyId()

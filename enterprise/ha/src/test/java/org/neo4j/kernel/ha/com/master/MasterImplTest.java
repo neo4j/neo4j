@@ -306,12 +306,9 @@ public class MasterImplTest
         Config config = config();
         DefaultConversationSPI conversationSpi = mockedConversationSpi();
         ConversationManager conversationManager = new ConversationManager( conversationSpi, config );
-        Client locks = mock( Client.class );
-        when(locks.trySharedLock( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() ) ).thenReturn( true );
 
         when( spi.isAccessible() ).thenReturn( true );
         when( spi.getTransactionChecksum( anyLong() ) ).thenReturn( 1L );
-        when( conversationSpi.acquireClient()).thenReturn( locks );
         mockEmptyResponse( spi );
 
         MasterImpl master = new MasterImpl( spi, conversationManager, mock( MasterImpl.Monitor.class ), config );

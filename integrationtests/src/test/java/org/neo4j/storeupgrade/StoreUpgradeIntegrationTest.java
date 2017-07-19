@@ -416,7 +416,7 @@ public class StoreUpgradeIntegrationTest
         try ( KernelTransaction tx = kernel.newTransaction( KernelTransaction.Type.implicit, AnonymousContext.read() );
               Statement statement = tx.acquireStatement() )
         {
-            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( db ) );
+            Iterator<IndexDescriptor> indexes = IndexDescriptor.sortByType( getAllIndexes( statement ) );
             DoubleLongRegister register = Registers.newDoubleLongRegister();
             for ( int i = 0; indexes.hasNext(); i++ )
             {
@@ -435,15 +435,9 @@ public class StoreUpgradeIntegrationTest
         }
     }
 
-    private static Iterator<IndexDescriptor> getAllIndexes( GraphDatabaseAPI db )
+    private static Iterator<IndexDescriptor> getAllIndexes( Statement statement )
     {
-        try ( Transaction ignored = db.beginTx() )
-        {
-            ThreadToStatementContextBridge bridge = db.getDependencyResolver()
-                    .resolveDependency( ThreadToStatementContextBridge.class );
-            Statement statement = bridge.get();
-            return statement.readOperations().indexesGetAll();
-        }
+        return statement.readOperations().indexesGetAll();
     }
 
     private static void checkLabelCounts( GraphDatabaseAPI db )

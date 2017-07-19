@@ -24,7 +24,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.IntPredicate;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.containsString;
@@ -48,6 +47,17 @@ public class PrimitiveIntCollectionsTest
 
         // THEN
         assertItems( iterator, items );
+    }
+
+    @Test
+    public void convertCollectionToLongArray()
+    {
+        PrimitiveIntSet heapSet = PrimitiveIntCollections.asSet( new int[]{1, 2, 3} );
+        PrimitiveIntSet offHeapIntSet = Primitive.offHeapIntSet();
+        offHeapIntSet.add( 7 );
+        offHeapIntSet.add( 8 );
+        assertArrayEquals( new long[]{1, 2, 3}, PrimitiveIntCollections.asLongArray( heapSet ) );
+        assertArrayEquals( new long[]{7, 8}, PrimitiveIntCollections.asLongArray( offHeapIntSet ) );
     }
 
     @Test

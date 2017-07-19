@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.Iterator;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollection;
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -70,6 +71,7 @@ import org.neo4j.kernel.impl.api.store.NodeLoadingIterator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.PropertyItem;
@@ -145,6 +147,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
         try ( Cursor<NodeItem> cursor = nodeCursorById( state, nodeId ) )
         {
             NodeItem node = cursor.get();
+            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.LABEL,
+                    PrimitiveIntCollections.asLongArray( node.labels() ) );
             Iterator<ConstraintDescriptor> constraints =
                     getConstraintsInvolvingProperty( state, propertyKeyId );
             Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
@@ -153,7 +157,6 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             nodeSchemaMatcher.onMatchingSchema( state, uniquenessConstraints, node, propertyKeyId,
                     ( constraint, propertyIds ) ->
                     {
-
                         if ( propertyIds.contains( propertyKeyId ) )
                         {
                             Value previousValue = nodeGetProperty( state, node, propertyKeyId );

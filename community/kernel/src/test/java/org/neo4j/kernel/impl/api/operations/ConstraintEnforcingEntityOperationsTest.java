@@ -22,19 +22,25 @@ package org.neo4j.kernel.impl.api.operations;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.cursor.Cursor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.state.StubCursors;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
+import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.emptyIterator;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -58,12 +64,15 @@ public class ConstraintEnforcingEntityOperationsTest
     private KernelStatement state;
     private Locks.Client locks;
     private ConstraintEnforcingEntityOperations ops;
+    private SchemaReadOperations schemaReadOps;
+    private EntityWriteOperations entityWriteOperations;
 
     @Before
     public void given_ConstraintEnforcingEntityOperations_with_OnlineIndex() throws Exception
     {
         this.readOps = mock( EntityReadOperations.class );
-        SchemaReadOperations schemaReadOps = mock( SchemaReadOperations.class );
+        schemaReadOps = mock( SchemaReadOperations.class );
+        entityWriteOperations = mock( EntityWriteOperations.class );
         SchemaWriteOperations schemaWriteOps = mock( SchemaWriteOperations.class );
         this.state = mock( KernelStatement.class );
         when( schemaReadOps.indexGetState( state, index ) ).thenReturn( InternalIndexState.ONLINE );
@@ -71,7 +80,7 @@ public class ConstraintEnforcingEntityOperationsTest
         when( state.locks() ).thenReturn( new SimpleStatementLocks( locks ) );
         when( state.lockTracer() ).thenReturn( LockTracer.NONE );
 
-        this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), null, readOps,
+        this.ops = new ConstraintEnforcingEntityOperations( new StandardConstraintSemantics(), entityWriteOperations, readOps,
                 schemaWriteOps, schemaReadOps );
     }
 
@@ -91,6 +100,23 @@ public class ConstraintEnforcingEntityOperationsTest
                 LockTracer.NONE,
                 INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
+    }
+
+    @Test
+    public void acquireAllLabelsSharedLocksBeforeSettingPropertyOnNode() throws Exception
+    {
+        Cursor<NodeItem> nodeCursor =
+                StubCursors.asNodeCursor( 123, PrimitiveIntCollections.asSet( new int[]{1, 5, 7} ) );
+        nodeCursor.next();
+        when( readOps.nodeCursorById( state, 123 ) ).thenReturn( nodeCursor );
+        when( schemaReadOps.constraintsGetAll( state ) ).thenReturn( emptyIterator() );
+        int propertyKeyId = 8;
+        Value value = Values.of( 9 );
+
+        ops.nodeSetProperty( state, 123, propertyKeyId, value );
+
+        verify( locks ).acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 1, 5, 7 );
+        verify( entityWriteOperations ).nodeSetProperty( state, 123, propertyKeyId, value );
     }
 
     @Test

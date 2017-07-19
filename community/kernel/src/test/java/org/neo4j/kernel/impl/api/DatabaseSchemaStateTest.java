@@ -28,7 +28,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class KernelSchemaStateStoreTest
+public class DatabaseSchemaStateTest
 {
     @Test
     public void should_apply_updates_correctly()
@@ -58,16 +58,16 @@ public class KernelSchemaStateStoreTest
 
         // AND ALSO
         logProvider.assertExactly(
-                inLog( KernelSchemaStateStore.class ).debug( "Schema state store has been cleared." )
+                inLog( DatabaseSchemaState.class ).debug( "Schema state store has been cleared." )
         );
     }
 
-    private KernelSchemaStateStore stateStore;
+    private DatabaseSchemaState stateStore;
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Before
     public void before()
     {
-        this.stateStore = new KernelSchemaStateStore( logProvider );
+        this.stateStore = new DatabaseSchemaState( logProvider );
     }
 }

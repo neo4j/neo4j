@@ -19,8 +19,6 @@
  */
 package org.neo4j.causalclustering.scenarios;
 
-import org.hamcrest.CoreMatchers;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -57,15 +55,12 @@ import org.neo4j.driver.v1.exceptions.ClientException;
 import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.SessionExpiredException;
 import org.neo4j.driver.v1.summary.ServerInfo;
-import org.neo4j.function.ThrowingSupplier;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.SuppressOutput;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.startsWith;
@@ -76,7 +71,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.driver.v1.Values.parameters;
-import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
@@ -85,6 +79,8 @@ public class BoltCausalClusteringIT
     private static final long DEFAULT_TIMEOUT_MS = 15_000;
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() ).withNumberOfCoreMembers( 3 );
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private Cluster cluster;
 
@@ -658,9 +654,9 @@ public class BoltCausalClusteringIT
             } );
 
             // then
-            try ( Session session = driver.session( AccessMode.READ ) )
+            try ( Session session = driver.session( AccessMode.READ, bookmark ) )
             {
-                try ( Transaction tx = session.beginTransaction( bookmark ) )
+                try ( Transaction tx = session.beginTransaction() )
                 {
                     Record record = tx.run( "MATCH (n:Person) RETURN COUNT(*) AS count" ).next();
                     tx.success();
@@ -738,47 +734,6 @@ public class BoltCausalClusteringIT
         }
 
         assertEquals( numberOfRequests, happyCount );
-    }
-
-    static void checkDataHasReplicatedToReadReplicas( Cluster cluster, long numberOfNodes ) throws Exception
-    {
-        for ( final ReadReplica server : cluster.readReplicas() )
-        {
-            GraphDatabaseService readReplica = server.database();
-
-            ThrowingSupplier<Long, Exception> nodeCount = () ->
-            {
-                long count = -1;
-                try ( org.neo4j.graphdb.Transaction tx = readReplica.beginTx() )
-                {
-                    try
-                    {
-                        count = count( readReplica.getAllNodes() );
-                    }
-                    catch ( Exception e )
-                    {
-                        // ignore
-                    }
-                    return count;
-                }
-                catch ( Exception e )
-                {
-                    // ignore
-                }
-                return count;
-            };
-            assertEventually( "node to appear on read replica", nodeCount, is( numberOfNodes ), 1, MINUTES );
-
-            try ( org.neo4j.graphdb.Transaction tx = readReplica.beginTx() )
-            {
-                for ( Node node : readReplica.getAllNodes() )
-                {
-                    MatcherAssert.assertThat( node.getProperty( "name" ).toString(), CoreMatchers.startsWith( "Jim" ) );
-                }
-
-                tx.success();
-            }
-        }
     }
 
     private void executeReadQuery( String bookmark, Session session )

@@ -197,7 +197,7 @@ public class MultipleIndexPopulatorTest
     public void testFailByNonExistingPopulation() throws IOException
     {
         IndexPopulation nonExistingPopulation = mock( IndexPopulation.class );
-        when( nonExistingPopulation.schema() ).thenReturn( SchemaDescriptorFactory.forLabel( -1, -1 ) );
+        when( nonExistingPopulation.schema() ).thenReturn( SchemaDescriptorFactory.forLabel( 1, 1 ) );
 
         IndexPopulator populator = createIndexPopulator();
 

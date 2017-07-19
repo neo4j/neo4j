@@ -544,7 +544,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if ( hasChanges() )
             {
                 // grab all optimistic locks now, locks can't be deferred any further
-                statementLocks.prepareForCommit();
+                statementLocks.prepareForCommit( currentStatement.lockTracer() );
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
                 Locks.Client commitLocks = statementLocks.pessimistic();
 

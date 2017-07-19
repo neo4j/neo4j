@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 
 public class IdPrettyPrinter
 {
@@ -34,7 +35,7 @@ public class IdPrettyPrinter
 
     public static String propertyKey( int id )
     {
-        return id == ReadOperations.NO_SUCH_PROPERTY_KEY ? "" : (":propertyKey=" + id);
+        return id == KeyReadOperations.NO_SUCH_PROPERTY_KEY ? "" : (":propertyKey=" + id);
     }
 
     public static String relationshipType( int id )

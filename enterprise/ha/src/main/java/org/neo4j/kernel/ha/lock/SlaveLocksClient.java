@@ -20,9 +20,8 @@
 package org.neo4j.kernel.ha.lock;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
@@ -46,6 +45,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.mapping;
+import static java.util.stream.Collectors.toList;
 import static org.neo4j.kernel.impl.locking.LockType.READ;
 import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
@@ -59,10 +61,6 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class SlaveLocksClient implements Locks.Client
 {
-    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
-            EXCLUSIVE_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.EXCLUSIVE_LOCK );
-    private static final Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>>
-            SHARED_ACTIVE_LOCKS = activeLocks( ActiveLock.Factory.SHARED_LOCK );
     private final Master master;
     private final Locks.Client client;
     private final Locks localLockManager;
@@ -93,9 +91,9 @@ class SlaveLocksClient implements Locks.Client
         long[] newResourceIds = firstTimeSharedLocks( resourceType, resourceIds );
         if ( newResourceIds.length > 0 )
         {
-            try ( LockWaitEvent event = tracer.waitForLock( false, resourceType, newResourceIds ) )
+            try
             {
-                acquireSharedOnMaster( resourceType, newResourceIds );
+                acquireSharedOnMasterFiltered( tracer, resourceType, newResourceIds );
             }
             catch ( Throwable failure )
             {
@@ -173,19 +171,19 @@ class SlaveLocksClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
         assertNotStopped();
 
-        client.releaseShared( resourceType, resourceId );
+        client.releaseShared( resourceType, resourceIds );
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
         assertNotStopped();
 
-        client.releaseExclusive( resourceType, resourceId );
+        client.releaseExclusive( resourceType, resourceIds );
     }
 
     @Override
@@ -230,14 +228,41 @@ class SlaveLocksClient implements Locks.Client
         return client.activeLockCount();
     }
 
-    private static Function<Map.Entry<ResourceType,Map<Long,AtomicInteger>>,Stream<? extends ActiveLock>> activeLocks(
-            ActiveLock.Factory activeLock )
+    /**
+     * In order to prevent various indexes collisions on master during transaction commit that originate on one of the
+     * slaves we need to grab same locks on {@link ResourceTypes#LABEL} and {@link ResourceTypes#RELATIONSHIP_TYPE}
+     * that
+     * where obtained on origin. To be able to do that and also prevent shared locks to be propagates to master in cases
+     * of
+     * read only transactions we need to postpone obtaining them till we know that we participating in a
+     * transaction that performs modifications.
+     *
+     * @param tracer lock tracer
+     */
+    void acquireDeferredSharedLocks( LockTracer tracer )
     {
-        return entry -> entry.getValue().keySet().stream().map( resourceId ->
+        assertNotStopped();
+        Map<ResourceType,List<Long>> deferredLocksMap =
+                client.activeLocks().filter( activeLock -> ActiveLock.SHARED_MODE.equals( activeLock.mode() ) )
+                        .filter( this::isLabelOrRelationshipType )
+                        .collect( groupingBy( ActiveLock::resourceType, mapping( ActiveLock::resourceId, toList() ) ) );
+
+        deferredLocksMap.forEach( ( type, ids ) -> lockResourcesOnMaster( tracer, type, ids ) );
+    }
+
+    private void lockResourcesOnMaster( LockTracer tracer, ResourceType type, List<Long> ids )
+    {
+        long[] resourceIds = PrimitiveLongCollections.asArray( ids.iterator() );
+        try ( LockWaitEvent event = tracer.waitForLock( false, type, resourceIds ) )
         {
-            ResourceType resourceType = entry.getKey();
-            return activeLock.create( resourceType, resourceId );
-        } );
+            acquireSharedOnMaster( type, resourceIds );
+        }
+    }
+
+    private boolean isLabelOrRelationshipType( ActiveLock activeLock )
+    {
+        return (activeLock.resourceType() == ResourceTypes.LABEL) ||
+                (activeLock.resourceType() == ResourceTypes.RELATIONSHIP_TYPE);
     }
 
     private void stopLockSessionOnMaster()
@@ -335,24 +360,31 @@ class SlaveLocksClient implements Locks.Client
         }
     }
 
-    private void acquireSharedOnMaster( ResourceType resourceType, long... resourceIds )
+    private void acquireSharedOnMasterFiltered( LockTracer lockTracer, ResourceType resourceType, long... resourceIds )
     {
-        if ( resourceType == ResourceTypes.NODE
-                || resourceType == ResourceTypes.RELATIONSHIP
-                || resourceType == ResourceTypes.GRAPH_PROPS
-                || resourceType == ResourceTypes.LEGACY_INDEX )
+        if ( (resourceType == ResourceTypes.INDEX_ENTRY) ||
+             (resourceType == ResourceTypes.LABEL) ||
+             (resourceType == ResourceTypes.RELATIONSHIP_TYPE) )
         {
-            makeSureTxHasBeenInitialized();
+            return;
+        }
+        try ( LockWaitEvent event = lockTracer.waitForLock( false, resourceType, resourceIds ) )
+        {
+            acquireSharedOnMaster( resourceType, resourceIds );
+        }
+    }
 
-            RequestContext requestContext = newRequestContextFor( this );
-            try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
-            {
-                receiveLockResponse( response );
-            }
-            catch ( ComException e )
-            {
-                throw new DistributedLockFailureException( "Cannot get shared lock(s) on master", master, e );
-            }
+    private void acquireSharedOnMaster( ResourceType resourceType, long[] resourceIds )
+    {
+        makeSureTxHasBeenInitialized();
+        RequestContext requestContext = newRequestContextFor( this );
+        try ( Response<LockResult> response = master.acquireSharedLock( requestContext, resourceType, resourceIds ) )
+        {
+            receiveLockResponse( response );
+        }
+        catch ( ComException e )
+        {
+            throw new DistributedLockFailureException( "Cannot get shared lock(s) on master", master, e );
         }
     }
 

@@ -52,9 +52,9 @@ import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
+import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
-import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
@@ -68,7 +68,6 @@ import org.neo4j.kernel.impl.api.StatementOperationContainer;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -431,7 +430,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         StorageEngine storageEngine = null;
         try
         {
-            UpdateableSchemaState updateableSchemaState = new KernelSchemaStateStore( logProvider );
+            DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
 
             SynchronizedArrayIdOrderingQueue legacyIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
 
@@ -440,7 +439,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
             storageEngine = buildStorageEngine(
                     propertyKeyTokenHolder, labelTokens, relationshipTypeTokens, legacyIndexProviderLookup,
-                    indexConfigStore, updateableSchemaState, legacyIndexTransactionOrdering );
+                    indexConfigStore, databaseSchemaState, legacyIndexTransactionOrdering );
 
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader =
                     new VersionAwareLogEntryReader<>( storageEngine.commandReaderFactory(), STRICT );
@@ -469,7 +468,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                     transactionLogModule.transactionAppender(),
                     dependencies.resolveDependency( IndexingService.class ),
                     storageEngine.storeReadLayer(),
-                    updateableSchemaState,
+                    databaseSchemaState,
                     dependencies.resolveDependency( LabelScanStore.class ),
                     storageEngine,
                     indexConfigStore,
@@ -486,7 +485,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             this.kernelModule = kernelModule;
 
             dependencies.satisfyDependency( this );
-            dependencies.satisfyDependency( updateableSchemaState );
+            dependencies.satisfyDependency( databaseSchemaState );
             dependencies.satisfyDependency( storageEngine.storeReadLayer() );
             dependencies.satisfyDependency( logEntryReader );
             dependencies.satisfyDependency( storageEngine );
@@ -708,7 +707,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
     private NeoStoreKernelModule buildKernel( TransactionAppender appender,
                                       IndexingService indexingService,
                                       StoreReadLayer storeLayer,
-                                      UpdateableSchemaState updateableSchemaState, LabelScanStore labelScanStore,
+                                      DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
                                       StorageEngine storageEngine,
                                       IndexConfigStore indexConfigStore,
                                       TransactionIdStore transactionIdStore,
@@ -725,18 +724,15 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
          */
         Supplier<KernelAPI> kernelProvider = () -> kernelModule.kernelAPI();
 
-        boolean releaseSchemaLockWhenBuildingConstratinIndexes =
-                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint );
-        ConstraintIndexCreator constraintIndexCreator =
-                new ConstraintIndexCreator( kernelProvider, indexingService, propertyAccessor,
-                        releaseSchemaLockWhenBuildingConstratinIndexes );
+        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService,
+                propertyAccessor );
 
         LegacyIndexStore legacyIndexStore = new LegacyIndexStore( config,
                 indexConfigStore, kernelProvider, legacyIndexProviderLookup );
 
         StatementOperationContainer statementOperationContainer = dependencies.satisfyDependency(
                 buildStatementOperations( storeLayer, autoIndexing,
-                        constraintIndexCreator, updateableSchemaState, guard, legacyIndexStore ) );
+                        constraintIndexCreator, databaseSchemaState, guard, legacyIndexStore ) );
 
         TransactionHooks hooks = new TransactionHooks();
         KernelTransactions kernelTransactions = life.add( new KernelTransactions( statementLocksFactory,
@@ -851,7 +847,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
     private StatementOperationContainer buildStatementOperations(
             StoreReadLayer storeReadLayer, AutoIndexing autoIndexing,
-            ConstraintIndexCreator constraintIndexCreator, UpdateableSchemaState updateableSchemaState,
+            ConstraintIndexCreator constraintIndexCreator, DatabaseSchemaState databaseSchemaState,
             Guard guard, LegacyIndexStore legacyIndexStore )
     {
         // The passed in StoreReadLayer is the bottom most layer: Read-access to committed data.
@@ -866,7 +862,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( updateableSchemaState ), null, stateHandlingContext, stateHandlingContext,
+                new SchemaStateConcern( databaseSchemaState ), null, stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, queryRegistrationOperations );
         // + Constraints
         ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =

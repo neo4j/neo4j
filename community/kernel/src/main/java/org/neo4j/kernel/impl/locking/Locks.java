@@ -99,10 +99,10 @@ public interface Locks
         boolean reEnterExclusive( ResourceType resourceType, long resourceId );
 
         /** Release a set of shared locks */
-        void releaseShared( ResourceType resourceType, long resourceId );
+        void releaseShared( ResourceType resourceType, long... resourceIds );
 
         /** Release a set of exclusive locks */
-        void releaseExclusive( ResourceType resourceType, long resourceId );
+        void releaseExclusive( ResourceType resourceType, long... resourceIds );
 
         /**
          * Stop all active lock waiters and release them. All already held locks remains.

@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+
 import java.util.Arrays;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-
-import org.apache.commons.lang3.mutable.MutableInt;
 
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -88,22 +88,27 @@ public class DeferringLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseShared( ResourceType resourceType, long resourceId )
+    public void releaseShared( ResourceType resourceType, long... resourceIds )
     {
         assertNotStopped();
+        for ( long resourceId : resourceIds )
+        {
+            removeLock( resourceType, resourceId, false );
+        }
 
-        removeLock( resourceType, resourceId, false );
     }
 
     @Override
-    public void releaseExclusive( ResourceType resourceType, long resourceId )
+    public void releaseExclusive( ResourceType resourceType, long... resourceIds )
     {
         assertNotStopped();
-
-        removeLock( resourceType, resourceId, true );
+        for ( long resourceId : resourceIds )
+        {
+            removeLock( resourceType, resourceId, true );
+        }
     }
 
-    void acquireDeferredLocks()
+    void acquireDeferredLocks( LockTracer lockTracer )
     {
         assertNotStopped();
 
@@ -118,7 +123,7 @@ public class DeferringLockClient implements Locks.Client
                   currentExclusive != lockUnit.isExclusive()) )
             {
                 // New type, i.e. flush the current array down to delegate in one call
-                flushLocks( current, cursor, currentType, currentExclusive );
+                flushLocks( lockTracer, current, cursor, currentType, currentExclusive );
 
                 cursor = 0;
                 currentType = lockUnit.resourceType();
@@ -132,21 +137,22 @@ public class DeferringLockClient implements Locks.Client
             }
             current[cursor++] = lockUnit.resourceId();
         }
-        flushLocks( current, cursor, currentType, currentExclusive );
+        flushLocks( lockTracer, current, cursor, currentType, currentExclusive );
     }
 
-    private void flushLocks( long[] current, int cursor, ResourceType currentType, boolean exclusive )
+    private void flushLocks( LockTracer lockTracer, long[] current, int cursor, ResourceType currentType, boolean
+            exclusive )
     {
         if ( cursor > 0 )
         {
             long[] resourceIds = Arrays.copyOf( current, cursor );
             if ( exclusive )
             {
-                clientDelegate.acquireExclusive( LockTracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireExclusive( lockTracer, currentType, resourceIds );
             }
             else
             {
-                clientDelegate.acquireShared( LockTracer.NONE, currentType, resourceIds );
+                clientDelegate.acquireShared( lockTracer, currentType, resourceIds );
             }
         }
     }

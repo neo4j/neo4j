@@ -66,7 +66,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.com.ResourceReleaser.NO_OP;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 import static org.neo4j.kernel.impl.store.StoreId.DEFAULT;
@@ -572,6 +571,26 @@ public class SlaveLocksClientTest
             assertThat( e.getMessage(), containsString( lockResult.getMessage() ) );
             assertThat( e.getMessage(), containsString( lockResult.getStatus().name() ) );
         }
+    }
+
+    @Test
+    public void acquireDeferredSharedLocksForLabelsAndRelationshipTypes()
+    {
+        for ( ResourceTypes type : ResourceTypes.values() )
+        {
+            client.acquireShared( LockTracer.NONE, type, 1, 2 );
+        }
+        for ( ResourceTypes type : ResourceTypes.values() )
+        {
+            client.acquireShared( LockTracer.NONE, type, 2, 3 );
+        }
+        client.acquireShared( LockTracer.NONE, ResourceTypes.LABEL, 7 );
+        client.acquireShared( LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, 12 );
+
+        client.acquireDeferredSharedLocks( LockTracer.NONE );
+
+        verify( master ).acquireSharedLock( null, ResourceTypes.LABEL, 1, 2, 3, 7 );
+        verify( master ).acquireSharedLock( null, ResourceTypes.RELATIONSHIP_TYPE, 1, 2, 3, 12 );
     }
 
     private SlaveLocksClient newSlaveLocksClient( Locks lockManager )

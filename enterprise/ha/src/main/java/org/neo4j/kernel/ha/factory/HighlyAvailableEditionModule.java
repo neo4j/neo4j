@@ -106,6 +106,7 @@ import org.neo4j.kernel.ha.cluster.modeswitch.LabelTokenCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.LockManagerSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.PropertyKeyCreatorSwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.RelationshipTypeCreatorSwitcher;
+import org.neo4j.kernel.ha.cluster.modeswitch.StatementLocksFactorySwitcher;
 import org.neo4j.kernel.ha.cluster.modeswitch.UpdatePullerSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.ConversationManager;
@@ -150,6 +151,7 @@ import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.factory.StatementLocksFactorySelector;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -493,7 +495,7 @@ public class HighlyAvailableEditionModule
                 createLockManager( componentSwitcherContainer, config, masterDelegateInvocationHandler,
                         requestContextFactory, platformModule.availabilityGuard, platformModule.clock, logging ) );
 
-        statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+        statementLocksFactory = createStatementLocksFactory( componentSwitcherContainer, config, logging );
 
         propertyKeyTokenHolder = dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder(
                 createPropertyKeyCreator( config, componentSwitcherContainer,
@@ -549,6 +551,24 @@ public class HighlyAvailableEditionModule
     public void registerEditionSpecificProcedures( Procedures procedures ) throws KernelException
     {
         procedures.registerProcedure( EnterpriseBuiltInDbmsProcedures.class, true );
+    }
+
+    private StatementLocksFactory createStatementLocksFactory( ComponentSwitcherContainer componentSwitcherContainer,
+            Config config, LogService logging )
+    {
+        StatementLocksFactory configuredStatementLocks = new StatementLocksFactorySelector( lockManager, config, logging ).select();
+
+        DelegateInvocationHandler<StatementLocksFactory> locksFactoryDelegate =
+                new DelegateInvocationHandler<>( StatementLocksFactory.class );
+        StatementLocksFactory locksFactory =
+                (StatementLocksFactory) newProxyInstance( StatementLocksFactory.class.getClassLoader(),
+                        new Class[]{StatementLocksFactory.class}, locksFactoryDelegate );
+
+        StatementLocksFactorySwitcher
+                locksSwitcher = new StatementLocksFactorySwitcher( locksFactoryDelegate, configuredStatementLocks );
+        componentSwitcherContainer.add( locksSwitcher );
+
+        return locksFactory;
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
@@ -639,8 +659,7 @@ public class HighlyAvailableEditionModule
                 TransactionCommitProcess.class );
 
         CommitProcessSwitcher commitProcessSwitcher = new CommitProcessSwitcher( transactionPropagator,
-                master, commitProcessDelegate, requestContextFactory, lockManager, monitors, dependencies,
-                config.get( GraphDatabaseSettings.release_schema_lock_while_building_constraint ) );
+                master, commitProcessDelegate, requestContextFactory, monitors, dependencies );
         componentSwitcherContainer.add( commitProcessSwitcher );
 
         return new HighlyAvailableCommitProcessFactory( commitProcessDelegate );

@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.NodeItem;
@@ -66,14 +67,13 @@ public interface ReadOperations
 {
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
-    int NO_SUCH_LABEL = -1;
-    int NO_SUCH_PROPERTY_KEY = -1;
 
     //===========================================
     //== TOKEN OPERATIONS =======================
     //===========================================
 
-    /** Returns a label id for a label name. If the label doesn't exist, {@link #NO_SUCH_LABEL} will be returned. */
+    /** Returns a label id for a label name. If the label doesn't exist, {@link KeyReadOperations#NO_SUCH_LABEL}
+     * will be returned. */
     int labelGetForName( String labelName );
 
     /** Returns the label name for the given label id. */
@@ -276,17 +276,21 @@ public interface ReadOperations
 
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 
+    <K, V> V schemaStateGet( K key );
+
     void schemaStateFlush();
 
     //===========================================
     //== LOCKING OPERATIONS =====================
     //===========================================
 
-    void acquireExclusive( ResourceType type, long id );
-    void acquireShared(    ResourceType type, long id );
+    void acquireExclusive( ResourceType type, long... ids );
 
-    void releaseExclusive( ResourceType type, long id );
-    void releaseShared(    ResourceType type, long id );
+    void acquireShared( ResourceType type, long... ids );
+
+    void releaseExclusive( ResourceType type, long... ids );
+
+    void releaseShared( ResourceType type, long... ids );
 
     //===========================================
     //== LEGACY INDEX OPERATIONS ================

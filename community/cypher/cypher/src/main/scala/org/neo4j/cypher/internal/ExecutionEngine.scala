@@ -22,17 +22,19 @@ package org.neo4j.cypher.internal
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher._
+import org.neo4j.cypher.internal.compatibility.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
-import org.neo4j.cypher.internal.compatibility.v3_3.{CypherCacheMonitor, LFUCache, MonitoringCacheAccessor, QueryCache}
 import org.neo4j.cypher.internal.compiler.v3_3.prettifier.Prettifier
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.internal.tracing.{CompilationTracer, TimingCompilationTracer}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.api.query.SchemaIndexUsage
 import org.neo4j.kernel.api.security.AccessMode
 import org.neo4j.kernel.api.{KernelAPI, ReadOperations}
 import org.neo4j.kernel.configuration.Config
+import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.kernel.{GraphDatabaseQueryService, api}
@@ -162,12 +164,24 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           })
 
           def isStale(plan: ExecutionPlan, ignored: Map[String, Any]) = plan.isStale(lastCommittedTxId, tc)
+
           def producePlan() = {
             val parsedQuery = parsePreParsedQuery(preParsedQuery, phaseTracer)
             parsedQuery.plan(tc, phaseTracer)
           }
 
-          cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          val stateBefore = schemaState(tc)
+          var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
+          if (!touched) {
+            val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
+            lockPlanLabels(tc, labelIds)
+            val stateAfter = schemaState(tc)
+            if (stateBefore eq stateAfter) {
+              releasePlanLabels(tc, labelIds)
+              touched = false
+            }
+          }
+          (plan, touched)
         }
         catch {
           case (t: Throwable) =>
@@ -190,6 +204,40 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } finally phaseTracer.close()
 
     throw new IllegalStateException("Could not execute query due to insanely frequent schema changes")
+  }
+
+  private def releasePlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
+    tc.readOperations.releaseShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+  }
+
+  private def lockPlanLabels(tc: TransactionalContextWrapper, labelIds: Seq[Long]) = {
+    tc.readOperations.acquireShared(ResourceTypes.LABEL, labelIds.toArray[Long]:_*)
+  }
+
+  private def extractPlanLabels(plan: (ExecutionPlan, Map[String, Any]), version: CypherVersion, tc:
+  TransactionalContextWrapper): Seq[Long] = {
+    import scala.collection.JavaConverters._
+
+    def planLabels = {
+      plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
+    }
+
+    def allLabels: Seq[Long] = {
+      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
+    }
+
+    version match {
+      // old cypher versions plans do not contain information about indexes used in query
+      // and since we do not know what labels are actually used by the query we assume that all of them are
+      case CypherVersion.v2_3 => allLabels
+      case CypherVersion.v3_1 => allLabels
+      case _ => planLabels
+    }
+  }
+
+  private def schemaState(tc: TransactionalContextWrapper): QueryCache[MonitoringCacheAccessor[String,
+    (ExecutionPlan, Map[String, Any])], LFUCache[String, (ExecutionPlan, Map[String, Any])]] = {
+    tc.readOperations.schemaStateGet(this)
   }
 
   private def getOrCreateFromSchemaState[V](operations: ReadOperations, creator: => V) = {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
+
 public class SchemaDescriptorFactory
 {
     private SchemaDescriptorFactory()
@@ -27,11 +29,44 @@ public class SchemaDescriptorFactory
 
     public static LabelSchemaDescriptor forLabel( int labelId, int... propertyIds )
     {
+        validateLabelId( labelId );
+        validatePropertyIds( propertyIds );
         return new LabelSchemaDescriptor( labelId, propertyIds );
     }
 
     public static RelationTypeSchemaDescriptor forRelType( int relTypeId, int... propertyIds )
     {
+        validateRelationshipTypeLabelId( relTypeId );
+        validatePropertyIds( propertyIds );
         return new RelationTypeSchemaDescriptor( relTypeId, propertyIds );
+    }
+
+    private static void validatePropertyIds( int[] propertyIds )
+    {
+        for ( int propertyId : propertyIds )
+        {
+            if ( KeyReadOperations.NO_SUCH_PROPERTY_KEY == propertyId )
+            {
+                throw new IllegalArgumentException(
+                        "Index schema descriptor can't be created for non existent property." );
+            }
+        }
+    }
+
+    private static void validateRelationshipTypeLabelId( int relType )
+    {
+        if ( KeyReadOperations.NO_SUCH_RELATIONSHIP_TYPE == relType )
+        {
+            throw new IllegalArgumentException(
+                    "Index schema descriptor can't be created for non existent relationship type." );
+        }
+    }
+
+    private static void validateLabelId( int labelId )
+    {
+        if ( KeyReadOperations.NO_SUCH_LABEL == labelId )
+        {
+            throw new IllegalArgumentException( "Index schema descriptor can't be created for non existent label." );
+        }
     }
 }

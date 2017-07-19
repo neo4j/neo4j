@@ -39,9 +39,12 @@ public interface SchemaStateOperations
     <K, V> V schemaStateGetOrCreate( KernelStatement state, K key, Function<K, V> creator );
 
     /**
-     * Check if some key is in the schema state.
+     * Return schema state associated with provided key
+     * @param state statement
+     * @param key state key
+     * @return state associated with key
      */
-    <K> boolean schemaStateContains( KernelStatement state, K key );
+    <K, V> V schemaStateGet( KernelStatement state, K key );
 
     /**
      * Flush the schema state.

@@ -41,7 +41,6 @@ public class TestLockManagerBean
 
     @Rule
     public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
-    @SuppressWarnings( "deprecation" )
     private GraphDatabaseAPI graphDb;
 
     @Before
@@ -68,7 +67,7 @@ public class TestLockManagerBean
             node.setProperty( "key", "value" );
 
             List<LockInfo> locks = lockManager.getLocks();
-            assertEquals( "unexpected lock count", 2, locks.size() );
+            assertEquals( "unexpected lock count", 1, locks.size() );
             LockInfo lock = locks.get( 0 );
             assertNotNull( "null lock", lock );
 
@@ -87,12 +86,4 @@ public class TestLockManagerBean
         }
     }
 
-    private LockInfo getSingleLock()
-    {
-        List<LockInfo> locks = lockManager.getLocks();
-        assertEquals( "unexpected lock count", 1, locks.size() );
-        LockInfo lock = locks.get( 0 );
-        assertNotNull( "null lock", lock );
-        return lock;
-    }
 }

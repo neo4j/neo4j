@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.spi.v3_3
 
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor => CypherIndexDescriptor}
-
 import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
 import org.neo4j.kernel.api.schema.{LabelSchemaDescriptor, SchemaDescriptorFactory}
 
@@ -37,9 +36,9 @@ trait IndexDescriptorCompatibility {
   implicit def toLabelSchemaDescriptor(labelId: Int, propertyKeyIds: Seq[Int]): LabelSchemaDescriptor =
       SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds.toArray:_*)
 
-  implicit def toLabelSchemaDescriptor(tc: TransactionalContextWrapper, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
-    val labelId: Int = tc.statement.readOperations().labelGetForName(labelName)
-    val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.statement.readOperations().propertyKeyGetForName(_))
+  implicit def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext, labelName: String, propertyKeys: Seq[String]): LabelSchemaDescriptor = {
+    val labelId: Int = tc.getLabelId(labelName)
+    val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
     toLabelSchemaDescriptor(labelId, propertyKeyIds)
   }
 }
