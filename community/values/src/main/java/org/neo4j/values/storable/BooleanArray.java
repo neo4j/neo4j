@@ -21,6 +21,9 @@ package org.neo4j.values.storable;
 
 import java.util.Arrays;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
+
 import static java.lang.String.format;
 
 abstract class BooleanArray extends ArrayValue
@@ -36,12 +39,6 @@ abstract class BooleanArray extends ArrayValue
     public boolean booleanValue( int offset )
     {
         return value()[offset];
-    }
-
-    @Override
-    public boolean equals( Object other )
-    {
-        return other != null && other instanceof Value && equals( (Value) other );
     }
 
     @Override
@@ -150,6 +147,27 @@ abstract class BooleanArray extends ArrayValue
     public String prettyPrint()
     {
         return Arrays.toString( value() );
+    }
+
+    @Override
+    public final boolean equals( Object other )
+    {
+        if ( other == null )
+        {
+            return false;
+        }
+
+        if ( other instanceof SequenceValue )
+        {
+            return this.equals( (SequenceValue) other );
+        }
+        return other instanceof Value && equals( (Value) other );
+    }
+
+    @Override
+    public AnyValue value( int position )
+    {
+        return Values.booleanValue( booleanValue( position ) );
     }
 
     static final class Direct extends BooleanArray

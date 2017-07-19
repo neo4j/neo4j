@@ -19,13 +19,13 @@
  */
 package org.neo4j.values.storable;
 
+import org.neo4j.values.SequenceValue;
+
 /**
  * Array of one of the storable primitives
  */
-abstract class ArrayValue extends Value
+abstract class ArrayValue extends Value implements SequenceValue
 {
-    abstract int length();
-
     @Override
     public boolean equals( boolean x )
     {
@@ -42,5 +42,11 @@ abstract class ArrayValue extends Value
     public boolean equals( String x )
     {
         return false;
+    }
+
+    @Override
+    public boolean isSequenceValue()
+    {
+        return true;
     }
 }

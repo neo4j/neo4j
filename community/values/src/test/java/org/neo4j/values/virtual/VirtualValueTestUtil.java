@@ -22,9 +22,10 @@ package org.neo4j.values.virtual;
 import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -111,6 +112,18 @@ public class VirtualValueTestUtil
     {
         assertFalse( "should not equal", a.equals( b ) );
         assertFalse( "should not equal", b.equals( a ) );
+    }
+
+    public static void assertEqualValues( VirtualValue a, Value b )
+    {
+        assertTrue( "should be equal values", a.equals( b ) );
+        assertTrue( "should be equal values", b.equals( a ) );
+    }
+
+    public static void assertNotEqualValues( VirtualValue a, Value b )
+    {
+        assertFalse( "should not equal values", a.equals( b ) );
+        assertFalse( "should not equal values", b.equals( a ) );
     }
 
     public static NodeValue[] nodes( long... ids )

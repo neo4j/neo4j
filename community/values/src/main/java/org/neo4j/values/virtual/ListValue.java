@@ -24,11 +24,12 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.VirtualValue;
 
 import static org.neo4j.values.virtual.ArrayHelpers.hasNullOrNoValue;
 
-final class ListValue extends VirtualValue
+final class ListValue extends VirtualValue implements SequenceValue
 {
     private final AnyValue[] values;
 
@@ -36,20 +37,23 @@ final class ListValue extends VirtualValue
     {
         assert values != null;
         assert !hasNullOrNoValue( values );
-
         this.values = values;
+    }
+
+    @Override
+    public boolean isSequenceValue()
+    {
+        return true;
     }
 
     @Override
     public boolean equals( VirtualValue other )
     {
-        if ( other == null || other.getClass() != ListValue.class )
+        if ( other == null || !other.isSequenceValue() )
         {
             return false;
         }
-        ListValue that = (ListValue) other;
-        return size() == that.size() &&
-                Arrays.equals( values, that.values );
+        return equals( (SequenceValue) other );
     }
 
     @Override
@@ -83,11 +87,11 @@ final class ListValue extends VirtualValue
             throw new IllegalArgumentException( "Cannot compare different virtual values" );
         }
         ListValue otherList = (ListValue) other;
-        int x = Integer.compare( this.size(), otherList.size() );
+        int x = Integer.compare( this.length(), otherList.length() );
 
         if ( x == 0 )
         {
-            for ( int i = 0; i < size(); i++ )
+            for ( int i = 0; i < length(); i++ )
             {
                 x = comparator.compare( this.values[i], otherList.values[i] );
                 if ( x != 0 )
@@ -118,11 +122,13 @@ final class ListValue extends VirtualValue
         return sb.toString();
     }
 
-    public int size()
+    @Override
+    public int length()
     {
         return values.length;
     }
 
+    @Override
     public AnyValue value( int offset )
     {
         return values[offset];

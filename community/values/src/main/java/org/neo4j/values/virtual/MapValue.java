@@ -83,7 +83,6 @@ public final class MapValue extends VirtualValue
         int compare = Integer.compare( size(), otherMap.size() );
         if ( compare == 0 )
         {
-
             String[] thisKeys = map.keySet().toArray( new String[size] );
             Arrays.sort( thisKeys, String::compareTo );
             String[] thatKeys = otherMap.keySet().toArray( new String[size] );

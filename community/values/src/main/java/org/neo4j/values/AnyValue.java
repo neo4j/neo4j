@@ -28,4 +28,9 @@ public abstract class AnyValue
     public abstract int hashCode();
 
     public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
+
+    public boolean isSequenceValue()
+    {
+        return false; // per default Values are no SequenceValues
+    }
 }

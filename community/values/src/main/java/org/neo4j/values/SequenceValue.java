@@ -18,43 +18,38 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.values;
-
-import java.util.Comparator;
-
-import org.neo4j.values.virtual.VirtualValueGroup;
-
 /**
- * Value that can exist transiently during computations, but that cannot be stored as a property value. A Virtual
- * Value could be a NodeReference for example.
+ * Values that represent sequences of values (such as Lists or Arrays) need to implement this interface.
+ * Thus we can get an equality check that is based on the values (e.g. List.equals(ArrayValue) )
+ * Values that implement this interface also need to overwrite isSequence() to return true!
  */
-public abstract class VirtualValue extends AnyValue
+public interface SequenceValue
 {
-    @Override
-    public final boolean equals( Object other )
+    default boolean equals( SequenceValue other )
     {
         if ( other == null )
         {
             return false;
         }
 
-        if ( other instanceof SequenceValue && this.isSequenceValue() )
+        if ( this.length() != other.length() )
         {
-            return ((SequenceValue) this).equals( (SequenceValue) other );
+            return false;
         }
-        return other instanceof VirtualValue && equals( (VirtualValue) other );
+
+        for ( int i = 0; i < this.length(); i++ )
+        {
+            AnyValue myValue = this.value( i );
+            AnyValue otherValue = other.value( i );
+            if ( !myValue.equals( otherValue ) )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
-    @Override
-    public final int hashCode()
-    {
-        return hash();
-    }
+    AnyValue value( int offset );
 
-    public abstract int hash();
-
-    public abstract boolean equals( VirtualValue other );
-
-    public abstract VirtualValueGroup valueGroup();
-
-    public abstract int compareTo( VirtualValue other, Comparator<AnyValue> comparator );
+    int length();
 }
