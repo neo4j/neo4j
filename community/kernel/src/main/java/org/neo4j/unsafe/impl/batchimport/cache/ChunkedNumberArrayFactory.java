@@ -28,14 +28,18 @@ import static java.lang.Long.min;
  */
 public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
+    static final int MAGIC_CHUNK_COUNT = 10;
+    // This is a safe bet on the maximum number of items the JVM can store in an array. It is commonly slightly less
+    // than Integer.MAX_VALUE
+    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - Short.MAX_VALUE;
     private final NumberArrayFactory delegate;
 
-    public ChunkedNumberArrayFactory()
+    ChunkedNumberArrayFactory()
     {
         this( OFF_HEAP, HEAP );
     }
 
-    public ChunkedNumberArrayFactory( NumberArrayFactory... delegateList )
+    ChunkedNumberArrayFactory( NumberArrayFactory... delegateList )
     {
         delegate = new Auto( delegateList );
     }
@@ -43,45 +47,34 @@ public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
     @Override
     public LongArray newLongArray( long length, long defaultValue, long base )
     {
-        // Here we want to have the property of a dynamic array which makes some parts of the array
-        // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-        // the array as a dynamic array and make it grow to the requested length.
-        LongArray array = newDynamicLongArray( fractionOf( length ), defaultValue );
-        array.at( length - 1 );
-        return array;
+        // Here we want to have the property of a dynamic array so that some parts of the array
+        // can live on heap, some off.
+        return newDynamicLongArray( fractionOf( length ), defaultValue );
     }
 
     @Override
     public IntArray newIntArray( long length, int defaultValue, long base )
     {
-        // Here we want to have the property of a dynamic array which makes some parts of the array
-        // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-        // the array as a dynamic array and make it grow to the requested length.
-        IntArray array = newDynamicIntArray( fractionOf( length ), defaultValue );
-        array.at( length - 1 );
-        return array;
+        // Here we want to have the property of a dynamic array so that some parts of the array
+        // can live on heap, some off.
+        return newDynamicIntArray( fractionOf( length ), defaultValue );
     }
 
     @Override
     public ByteArray newByteArray( long length, byte[] defaultValue, long base )
     {
-        // Here we want to have the property of a dynamic array which makes some parts of the array
-        // live on heap, some off. At the same time we want a fixed size array. Therefore first create
-        // the array as a dynamic array and make it grow to the requested length.
-        ByteArray array = newDynamicByteArray( fractionOf( length ), defaultValue );
-        array.at( length - 1 );
-        return array;
+        // Here we want to have the property of a dynamic array so that some parts of the array
+        // can live on heap, some off.
+        return newDynamicByteArray( fractionOf( length ), defaultValue );
     }
 
     private long fractionOf( long length )
     {
-        int idealChunkCount = 10;
-        if ( length < idealChunkCount )
+        if ( length < MAGIC_CHUNK_COUNT )
         {
             return length;
         }
-        int maxArraySize = Integer.MAX_VALUE - Short.MAX_VALUE;
-        return min( length / idealChunkCount, maxArraySize );
+        return min( length / MAGIC_CHUNK_COUNT, MAX_ARRAY_SIZE );
     }
 
     @Override
@@ -105,6 +98,6 @@ public class ChunkedNumberArrayFactory extends NumberArrayFactory.Adapter
     @Override
     public String toString()
     {
-        return "CHUNKED_FIXED_SIZE";
+        return "ChunkedNumberArrayFactory with delegate " + delegate;
     }
 }

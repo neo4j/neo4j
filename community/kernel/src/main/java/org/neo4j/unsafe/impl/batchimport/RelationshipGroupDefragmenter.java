@@ -44,6 +44,9 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 public class RelationshipGroupDefragmenter
 {
 
+    private final Configuration config;
+    private final ExecutionMonitor executionMonitor;
+    private final Monitor monitor;
     private final NumberArrayFactory numberArrayFactory;
 
     public interface Monitor
@@ -58,15 +61,11 @@ public class RelationshipGroupDefragmenter
         default void defragmentingNodeRange( long fromNodeId, long toNodeId )
         {   // empty
         }
-
         Monitor EMPTY = new Monitor()
         {   // empty
         };
-    }
 
-    private final Configuration config;
-    private final ExecutionMonitor executionMonitor;
-    private final Monitor monitor;
+    }
 
     public RelationshipGroupDefragmenter( Configuration config, ExecutionMonitor executionMonitor,
                                           NumberArrayFactory numberArrayFactory )

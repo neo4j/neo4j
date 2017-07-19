@@ -39,10 +39,10 @@ import org.neo4j.io.pagecache.PageCache;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.autoWithPageCacheFallback;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 
 @RunWith( Parameterized.class )
 public class ByteArrayTest extends NumberArrayPageCacheTestSupport
@@ -57,16 +57,16 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = autoWithPageCacheFallback( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
-        int chunkSize = LENGTH / 10;
+        int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Arrays.asList(
                 () -> HEAP.newByteArray( LENGTH, DEFAULT ),
                 () -> HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
                 () -> OFF_HEAP.newByteArray( LENGTH, DEFAULT ),
                 () -> OFF_HEAP.newDynamicByteArray( chunkSize, DEFAULT ),
-                () -> AUTO.newByteArray( LENGTH, DEFAULT ),
-                () -> AUTO.newDynamicByteArray( chunkSize, DEFAULT ),
+                () -> AUTO_WITHOUT_PAGECACHE.newByteArray( LENGTH, DEFAULT ),
+                () -> AUTO_WITHOUT_PAGECACHE.newDynamicByteArray( chunkSize, DEFAULT ),
                 () -> autoWithPageCacheFallback.newByteArray( LENGTH, DEFAULT ),
                 () -> autoWithPageCacheFallback.newDynamicByteArray( chunkSize, DEFAULT ),
                 () -> pageCacheArrayFactory.newByteArray( LENGTH, DEFAULT ),

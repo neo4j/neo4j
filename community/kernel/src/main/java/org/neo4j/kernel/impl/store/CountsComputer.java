@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
@@ -35,13 +36,13 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 
     private final NumberArrayFactory numberArrayFactory;
 
-    public static void recomputeCounts( NeoStores stores )
+    public static void recomputeCounts( NeoStores stores, PageCache pageCache )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
         CountsTracker counts = stores.getCounts();
         try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
         {
-            new CountsComputer( stores ).initialize( updater );
+            new CountsComputer( stores, pageCache ).initialize( updater );
         }
     }
 
@@ -51,13 +52,13 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
 
-    public CountsComputer( NeoStores stores )
+    public CountsComputer( NeoStores stores, PageCache pageCache )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
                 stores.getNodeStore(), stores.getRelationshipStore(),
                 (int) stores.getLabelTokenStore().getHighId(),
                 (int) stores.getRelationshipTypeTokenStore().getHighId(),
-                NumberArrayFactory.autoWithPageCacheFallback( stores.getPageCache(), stores.getStoreDir() ) );
+                NumberArrayFactory.auto( pageCache, stores.getStoreDir() ) );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,

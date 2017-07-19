@@ -30,7 +30,7 @@ public class DynamicIntArrayTest
     {
         // GIVEN
         int defaultValue = 0;
-        IntArray array = NumberArrayFactory.AUTO.newDynamicIntArray( 10, defaultValue );
+        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, defaultValue );
         array.set( 4, 5 );
 
         // WHEN
@@ -44,7 +44,7 @@ public class DynamicIntArrayTest
     public void shouldChunksAsNeeded() throws Exception
     {
         // GIVEN
-        IntArray array = NumberArrayFactory.AUTO.newDynamicIntArray( 10, 0 );
+        IntArray array = NumberArrayFactory.AUTO_WITHOUT_PAGECACHE.newDynamicIntArray( 10, 0 );
 
         // WHEN
         long index = 243;

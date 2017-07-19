@@ -32,8 +32,9 @@ public interface NumberArray<N extends NumberArray<N>> extends MemoryStatsVisito
     long length();
 
     /**
-     * Swaps {@code numberOfEntries} items from {@code fromIndex} to {@code toIndex}, such that
+     * Swaps items from {@code fromIndex} to {@code toIndex}, such that
      * {@code fromIndex} and {@code toIndex}, {@code fromIndex+1} and {@code toIndex} a.s.o swaps places.
+     * The number of items swapped is equal to the length of the default value of the array.
      *  @param fromIndex where to start swapping from.
      * @param toIndex where to start swapping to.
      */

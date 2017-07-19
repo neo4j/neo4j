@@ -38,7 +38,7 @@ import static java.lang.System.currentTimeMillis;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.autoWithPageCacheFallback;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 
 @RunWith( Parameterized.class )
 public class IntArrayTest extends NumberArrayPageCacheTestSupport
@@ -106,7 +106,7 @@ public class IntArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( IntArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = autoWithPageCacheFallback( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
         return Arrays.asList( HEAP, OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }

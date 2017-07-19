@@ -31,7 +31,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 public class PageCacheLongArray extends PageCacheNumberArray<LongArray> implements LongArray
 {
-    public PageCacheLongArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
+    PageCacheLongArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
     {
         super( pagedFile, Long.BYTES, length, defaultValue, base );
     }

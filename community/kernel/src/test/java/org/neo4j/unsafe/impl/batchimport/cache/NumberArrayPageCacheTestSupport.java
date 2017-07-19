@@ -35,7 +35,6 @@ public class NumberArrayPageCacheTestSupport
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fileSystem );
         File dir = testDirectory.prepareDirectoryForTest( "test" );
-        fileSystem.mkdirs( dir );
         PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem );
         return new Fixture( pageCache, fileSystem, dir );
     }

@@ -53,6 +53,7 @@ public class PageCacheLongArrayTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         PagedFile file = pageCache.map( dir.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
+
         try ( LongArray array = new PageCacheLongArray( file, COUNT, 0, 0 ) )
         {
             verifyBehaviour( array );
@@ -64,7 +65,7 @@ public class PageCacheLongArrayTest
     {
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         File directory = dir.directory();
-        NumberArrayFactory numberArrayFactory = NumberArrayFactory.autoWithPageCacheFallback( pageCache, directory );
+        NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
         {
             verifyBehaviour( array );

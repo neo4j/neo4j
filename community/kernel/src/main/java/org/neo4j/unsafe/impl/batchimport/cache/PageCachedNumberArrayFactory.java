@@ -29,12 +29,16 @@ import org.neo4j.io.pagecache.PagedFile;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 
+/**
+ * Factory of page cache backed number arrays.
+ * @see NumberArrayFactory
+ */
 public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
 {
     private final PageCache pageCache;
     private final File storeDir;
 
-    public PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
+    PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
     {
         this.pageCache = pageCache;
         this.storeDir = storeDir;

@@ -29,6 +29,11 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
+/**
+ * Abstraction over page cache backed number arrays.
+ *
+ * @see PageCachedNumberArrayFactory
+ */
 public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements NumberArray<N>
 {
     protected final PagedFile pagedFile;
@@ -39,8 +44,13 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     private final long base;
     private boolean closed;
 
-    protected PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length,
-                                 long defaultValue, long base ) throws IOException
+    PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length, long base ) throws IOException
+    {
+        this( pagedFile, entrySize, length, 0, base );
+    }
+
+    PageCacheNumberArray( PagedFile pagedFile, int entrySize, long length, long defaultValue, long base )
+            throws IOException
     {
         this.pagedFile = pagedFile;
         this.entrySize = entrySize;
@@ -64,7 +74,8 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     {
         if ( !cursor.next( (length - 1) / entriesPerPage ) )
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException(
+                    String.format( "Unable to extend the backing file %s to desired size %d.", pagedFile, length ) );
         }
     }
 
@@ -75,7 +86,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected int offset( long index )
     {
-        return toIntExact( rebase( index ) % entriesPerPage ) * entrySize;
+        return toIntExact( rebase( index ) % entriesPerPage * entrySize );
     }
 
     private long rebase( long index )
@@ -85,10 +96,6 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
 
     protected void setDefaultValue( long defaultValue ) throws IOException
     {
-        if ( entrySize == Integer.BYTES )
-        {
-            defaultValue |= defaultValue << 32;
-        }
         try ( PageCursor writeCursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
         {
             writeCursor.next();
@@ -101,6 +108,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
                     while ( cursor.next() )
                     {
                         writeCursor.copyTo( 0, cursor, 0, pageSize );
+                        checkBounds( writeCursor );
                     }
                 }
             }
@@ -114,6 +122,7 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         {
             writeCursor.putLong( defaultValue );
         }
+        checkBounds( writeCursor );
     }
 
     @Override
@@ -172,7 +181,9 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
     {
         if ( cursor.checkAndClearBoundsFlag() )
         {
-            throw new IllegalStateException();
+            throw new IllegalStateException(
+                    String.format( "Cursor %s access out of bounds, page id %d, offset %d", cursor.toString(),
+                            cursor.getCurrentPageId(), cursor.getOffset() ) );
         }
     }
 }

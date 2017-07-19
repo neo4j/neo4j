@@ -329,7 +329,7 @@ public class CountsComputerTest
             int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
             CountsComputer countsComputer = new CountsComputer(
                     lastCommittedTransactionId, nodeStore, relationshipStore, highLabelId, highRelationshipTypeId,
-                    NumberArrayFactory.AUTO );
+                    NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
             CountsTracker countsTracker = createCountsTracker();
             life.add( countsTracker.setInitializer( countsComputer ) );
         }

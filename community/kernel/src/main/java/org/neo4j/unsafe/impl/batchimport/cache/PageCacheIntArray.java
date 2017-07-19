@@ -31,9 +31,9 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements IntArray
 {
-    public PageCacheIntArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
+    PageCacheIntArray( PagedFile pagedFile, long length, long defaultValue, long base ) throws IOException
     {
-        super( pagedFile, Integer.BYTES, length, defaultValue, base );
+        super( pagedFile, Integer.BYTES, length, defaultValue | defaultValue << Integer.SIZE, base );
     }
 
     @Override
@@ -64,7 +64,7 @@ public class PageCacheIntArray extends PageCacheNumberArray<IntArray> implements
     {
         long pageId = pageId( index );
         int offset = offset( index );
-        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ); )
+        try ( PageCursor cursor = pagedFile.io( pageId, PF_SHARED_WRITE_LOCK | PF_NO_GROW ) )
         {
             cursor.next();
             cursor.putInt( offset, value );

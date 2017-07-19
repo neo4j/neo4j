@@ -36,7 +36,7 @@ public class NodeLabelsCacheTest
     public void shouldCacheSmallSetOfLabelsPerNode() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 5, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
@@ -54,7 +54,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN
         int highLabelId = 1000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, CHUNK_SIZE );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
@@ -73,7 +73,7 @@ public class NodeLabelsCacheTest
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId, 1_000_000 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, 1_000_000 );
         NodeLabelsCache.Client client = cache.newClient();
         int numberOfNodes = 100_000;
         int[][] expectedLabels = new int[numberOfNodes][];
@@ -97,7 +97,7 @@ public class NodeLabelsCacheTest
     public void shouldEndTargetArrayWithMinusOne() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 10 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 10 );
         NodeLabelsCache.Client client = cache.newClient();
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
@@ -117,7 +117,7 @@ public class NodeLabelsCacheTest
     public void shouldReturnEmptyArrayForNodeWithNoLabelsAndNoLabelsWhatsoever() throws Exception
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, 0 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 0 );
         NodeLabelsCache.Client client = cache.newClient();
 
         // WHEN
@@ -134,7 +134,7 @@ public class NodeLabelsCacheTest
         // GIVEN
         int highLabelId = 10, numberOfNodes = 100;
         int[][] expectedLabels = new int[numberOfNodes][];
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId );
         for ( int i = 0; i < numberOfNodes; i++ )
         {
             cache.put( i, asLongArray( expectedLabels[i] = randomLabels( random.nextInt( 5 ), highLabelId ) ) );

@@ -283,11 +283,6 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return neoStores.getCounts();
     }
 
-    public PageCache getPageCache()
-    {
-        return pageCache;
-    }
-
     @Override
     public void close() throws IOException
     {

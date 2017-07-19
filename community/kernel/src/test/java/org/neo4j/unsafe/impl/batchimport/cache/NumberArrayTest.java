@@ -40,11 +40,11 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.CHUNKED_FIXED_SIZE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.HEAP;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.autoWithPageCacheFallback;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.auto;
 
 @RunWith( Parameterized.class )
 public class NumberArrayTest extends NumberArrayPageCacheTestSupport
@@ -75,9 +75,9 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
         Map<String,NumberArrayFactory> factories = new HashMap<>();
         factories.put( "HEAP", HEAP );
         factories.put( "OFF_HEAP", OFF_HEAP );
-        factories.put( "AUTO", AUTO );
+        factories.put( "AUTO_WITHOUT_PAGECACHE", AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", autoWithPageCacheFallback( pageCache, dir ) );
+        factories.put( "autoWithPageCacheFallback", auto( pageCache, dir ) );
         factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {
