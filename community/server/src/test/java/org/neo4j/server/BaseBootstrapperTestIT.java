@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -38,6 +39,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -79,7 +81,8 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", "dbms.connector.http.type=HTTP",
                 "-c", "dbms.connector.http.enabled=true",
-                "-c", "dbms.connector.http.advertised_address=localhost:0"
+                "-c", "dbms.connector.http.listen_address=localhost:0",
+                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:0"
         );
 
         // Then
@@ -97,7 +100,9 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
-        properties.put( "dbms.connector.http.advertised_address", "localhost:0" );
+        properties.put( "dbms.connector.http.listen_address", "localhost:0" );
+        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+
         store( properties, configFile );
 
         // When
@@ -119,7 +124,9 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
         properties.put( "dbms.connector.http.type", "HTTP" );
         properties.put( "dbms.connector.http.enabled", "true" );
-        properties.put( "dbms.connector.http.advertised_address", "localhost:0" );
+        properties.put( "dbms.connector.http.listen_address", "localhost:0" );
+        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+
         store( properties, configFile );
 
         // When
