@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.ConnectException;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -74,9 +75,19 @@ public class HaIPv6ConfigurationTest
             while ( inetAddresses.hasMoreElements() )
             {
                 inetAddress = inetAddresses.nextElement();
-                if ( inetAddress instanceof Inet6Address && inetAddress.isLinkLocalAddress() && inetAddress.isReachable( 1000 ) )
+                if ( inetAddress instanceof Inet6Address && inetAddress.isLinkLocalAddress() )
                 {
-                    testWithAddress( inetAddress );
+                    try
+                    {
+                        if ( inetAddress.isReachable( 1000 ) )
+                        {
+                            testWithAddress( inetAddress );
+                        }
+                    }
+                    catch ( ConnectException e )
+                    {
+                        // fine, just ignore
+                    }
                 }
             }
         }
