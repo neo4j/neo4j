@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_2.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_2.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.compiler.v3_2.planner.logical.plans.{Limit, _}
+import org.neo4j.cypher.internal.frontend.v3_2.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_2.ast._
 import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_2.{IdName, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_2.{Cardinality, IdName, SimplePatternLength}
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureLargeOptionalMatchStructure
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -148,5 +150,64 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       OptionalExpand(allNodesN, IdName("n"), SemanticDirection.BOTH, Seq.empty, IdName("m"), IdName("r"), ExpandAll,
         Seq(propEquality, labelCheck))(s)
     )
+  }
+
+  test(
+    "should plan for large number of optional matches without numerical overflow in estimatedRows") {
+
+    val lom: LogicalPlanningEnvironment[_] = new fromDbStructure(DbStructureLargeOptionalMatchStructure.INSTANCE)
+    val query =
+      """
+                  |MATCH (me:Label1)-[rmeState:REL1]->(meState:Label2 {deleted: 0})
+                  |USING INDEX meState:Label2(id)
+                  |WHERE meState.id IN [63241]
+                  |WITH *
+                  |OPTIONAL MATCH(n1:Label3 {deleted: 0})<-[:REL1]-(:Label4)<-[:REL2]-(meState)
+                  |OPTIONAL MATCH(n2:Label5 {deleted: 0})<-[:REL1]-(:Label6)<-[:REL2]-(meState)
+                  |OPTIONAL MATCH(n3:Label7 {deleted: 0})<-[:REL1]-(:Label8)<-[:REL2]-(meState)
+                  |OPTIONAL MATCH(n4:Label9 {deleted: 0})<-[:REL1]-(:Label10) <-[:REL2]-(meState)
+                  |OPTIONAL MATCH p1 = (:Label2 {deleted: 0})<-[:REL1|:REL3*]-(meState)
+                  |OPTIONAL MATCH(:Label11 {deleted: 0})<-[r1:REL1]-(:Label12) <-[:REL5]-(meState)
+                  |OPTIONAL MATCH(:Label13 {deleted: 0})<-[r2:REL1]-(:Label14) <-[:REL6]-(meState)
+                  |OPTIONAL MATCH(:Label15 {deleted: 0})<-[r3:REL1]-(:Label16) <-[:REL7]-(meState)
+                  |OPTIONAL MATCH(:Label17 {deleted: 0})<-[r4:REL1]-(:Label18)<-[:REL8]-(meState)
+                  |
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r5:REL1]-(:Label20) <-[:REL2]-(n1)
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r6:REL1]-(:Label20)<-[:REL2]-(n1)
+                  |
+                  |OPTIONAL MATCH(n5:Label21 {deleted: 0})<-[:REL1]-(:Label22)<-[:REL2]-(n2)
+                  |
+                  |OPTIONAL MATCH(n6:Label3 {deleted: 0})<-[:REL1]-(:Label4)<-[:REL2]-(n5)
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r7:REL1]-(:Label20)<-[:REL2]-(n5)
+                  |
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r8:REL1]-(:Label20)<-[:REL2]-(n6)
+                  |
+                  |OPTIONAL MATCH(n7:Label23 {deleted: 0})<-[:REL1]-(:Label24)<-[:REL2]-(n3)
+                  |
+                  |OPTIONAL MATCH(n8:Label3 {deleted: 0})<-[:REL1]-(:Label4)<-[:REL2]-(n7)
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r9:REL1]-(:Label20)<-[:REL2]-(n7)
+                  |
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r10:REL1]-(:Label20)<-[:REL2]-(n8)
+                  |
+                  |OPTIONAL MATCH(n9:Label25 {deleted: 0})<-[:REL1]-(:Label26)<-[:REL2]-(n4)
+                  |
+                  |OPTIONAL MATCH(n10:Label3 {deleted: 0})<-[:REL1]-(:Label4) <-[:REL2]-(n9)
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r11:REL1]-(:Label20) <-[:REL2]-(n9)
+                  |
+                  |OPTIONAL MATCH(:Label19 {deleted: 0})<-[r12:REL1]-(:Label20)<-[:REL2]-(n10)
+                  |OPTIONAL MATCH (me)-[:REL4]->(:Label2:Label27)
+                  |RETURN *
+                """.stripMargin
+
+   lom.getLogicalPlanFor(query)._2.treeExists {
+      case plan:LogicalPlan =>
+        plan.solved.estimatedCardinality match {
+          case Cardinality(amount) =>
+            withClue("We should not get a NaN cardinality.") {
+              amount.isNaN should not be true
+            }
+        }
+        false // this is a "trick" to use treeExists to iterate over the whole tree
+    }
   }
 }
