@@ -222,10 +222,16 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       plan._1.plannerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
     }
 
+    def allLabels: Seq[Long] = {
+      tc.statement.readOperations().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
+    }
+
     version match {
-      case CypherVersion.v3_3 => planLabels
-      case CypherVersion.v3_2 => planLabels
-      case _ => tc.statement.readOperations().labelsGetAllTokens().asScala.map( t => t.id().toLong ).toSeq
+      // old cypher versions plans do not contain information about indexes used in query
+      // and since we do not know what labels are actually used by the query we assume that all of them are
+      case CypherVersion.v2_3 => allLabels
+      case CypherVersion.v3_1 => allLabels
+      case _ => planLabels
     }
   }
 

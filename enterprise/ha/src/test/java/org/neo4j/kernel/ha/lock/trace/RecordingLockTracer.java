@@ -19,9 +19,8 @@
  */
 package org.neo4j.kernel.ha.lock.trace;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.LockWaitEvent;
@@ -29,7 +28,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 public class RecordingLockTracer implements LockTracer
 {
-    private List<LockRecord> requestedLocks = Collections.synchronizedList( new ArrayList<>() );
+    private List<LockRecord> requestedLocks = new CopyOnWriteArrayList<>();
 
     @Override
     public LockWaitEvent waitForLock( boolean exclusive, ResourceType resourceType, long... resourceIds )
