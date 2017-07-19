@@ -50,6 +50,12 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     }
   }
 
+  def dependencies: Set[IdName] =
+    optionalMatches.flatMap(_.dependencies).toSet ++
+      selections.predicates.flatMap(_.dependencies) ++
+      mutatingPatterns.flatMap(_.dependencies) ++
+      argumentIds
+
   private def findPathBetween(startFromL: IdName, startFromR: IdName): Set[IdName] = {
     var l = Seq(PathSoFar(startFromL, Set.empty))
     var r = Seq(PathSoFar(startFromR, Set.empty))
