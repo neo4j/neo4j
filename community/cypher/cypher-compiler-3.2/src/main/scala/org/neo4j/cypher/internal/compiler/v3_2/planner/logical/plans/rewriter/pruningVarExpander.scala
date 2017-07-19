@@ -28,12 +28,13 @@ import scala.collection.mutable
 case object pruningVarExpander extends Rewriter {
 
   private def findDistinctSet(plan: LogicalPlan): Set[LogicalPlan] = {
+    val distinctSet = mutable.Set[VarExpand]()
 
     def collectDistinctSet(plan: LogicalPlan,
-                           dependencies: Option[Set[String]],
-                           distinctSet: mutable.Set[VarExpand]): Unit = {
+                           dependencies: Option[Set[String]]): Option[Set[String]] = {
+
       val lowerDistinctLand: Option[Set[String]] = plan match {
-        case Aggregation(left, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
+        case Aggregation(_, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
 
           val variablesInTheDistinctSet = (groupExpr.values.flatMap(_.dependencies.map(_.name)) ++
             aggrExpr.values.flatMap(_.dependencies.map(_.name))).toSet
@@ -60,12 +61,21 @@ case object pruningVarExpander extends Rewriter {
           None
       }
 
-      plan.lhs.foreach(collectDistinctSet(_, lowerDistinctLand, distinctSet))
-      plan.rhs.foreach(collectDistinctSet(_, lowerDistinctLand, distinctSet))
+      lowerDistinctLand
     }
 
-    val distinctSet = mutable.Set[VarExpand]()
-    collectDistinctSet(plan, dependencies = None, distinctSet)
+    val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
+    planStack.push((plan, None))
+
+    while(planStack.nonEmpty) {
+      val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
+      val newDeps = collectDistinctSet(plan, deps)
+
+      plan.lhs.foreach(p => planStack.push((p, newDeps)))
+      plan.rhs.foreach(p => planStack.push((p, newDeps)))
+    }
+
+
     distinctSet.toSet
   }
 
@@ -86,7 +96,7 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, projectedDir, relTypes, toId, relId, length, _, predicates) if distinctSet(expand) =>
+          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, _, predicates) if distinctSet(expand) =>
             if (length.min >= 4 && length.max.get >= 5)
               // These constants were selected by benchmarking on randomized graphs, with different
               // degrees of interconnection.
