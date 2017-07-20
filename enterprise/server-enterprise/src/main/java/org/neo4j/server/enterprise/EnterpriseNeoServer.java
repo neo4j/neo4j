@@ -25,10 +25,13 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
+import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ClusterSettings.Mode;
@@ -77,13 +80,13 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     private static final GraphFactory CORE_FACTORY = ( config, dependencies ) ->
     {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new CoreGraphDatabase( storeDir, config, dependencies );
+        return new CoreGraphDatabase( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
     };
 
     private static final GraphFactory READ_REPLICA_FACTORY = ( config, dependencies ) ->
     {
         File storeDir = config.get( DatabaseManagementSystemSettings.database_path );
-        return new ReadReplicaGraphDatabase( storeDir, config, dependencies );
+        return new ReadReplicaGraphDatabase( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory(), new MemberId( UUID.randomUUID() ) );
     };
 
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
