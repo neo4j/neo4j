@@ -21,12 +21,16 @@ package org.neo4j.kernel.internal;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -36,7 +40,7 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 public class DatabaseHealthTest
 {
     @Test
-    public void shouldGenerateKernelPanicEvents() throws Exception
+    public void shouldGenerateDatabasePanicEvents() throws Exception
     {
         // GIVEN
         DatabasePanicEventGenerator generator = mock( DatabasePanicEventGenerator.class );
@@ -53,7 +57,7 @@ public class DatabaseHealthTest
     }
 
     @Test
-    public void shouldLogKernelPanicEvent() throws Exception
+    public void shouldLogDatabasePanicEvent() throws Exception
     {
         // GIVEN
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -73,5 +77,41 @@ public class DatabaseHealthTest
                         sameInstance( exception )
                 )
         );
+    }
+
+    @Test
+    public void healDatabaseWithoutCriticalErrors()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
+
+        assertTrue( databaseHealth.isHealthy() );
+
+        databaseHealth.panic( new IOException( "Space exception." ) );
+
+        assertFalse( databaseHealth.isHealthy() );
+        assertTrue( databaseHealth.healed() );
+        logProvider.assertContainsLogCallContaining( "Database health set to OK" );
+        logProvider.assertNoMessagesContaining( "Database encountered a critical error and can't be healed. Restart required." );
+    }
+
+    @Test
+    public void databaseWithCriticalErrorsCanNotBeHealed()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
+                logProvider.getLog( DatabaseHealth.class ) );
+
+        assertTrue( databaseHealth.isHealthy() );
+
+        IOException criticalException = new IOException( "Space exception.", new OutOfMemoryError( "Out of memory." ) );
+        databaseHealth.panic( criticalException );
+
+        assertFalse( databaseHealth.isHealthy() );
+        assertFalse( databaseHealth.healed() );
+        logProvider.assertNoMessagesContaining( "Database health set to OK" );
+        logProvider.assertContainsLogCallContaining(
+                "Database encountered a critical error and can't be healed. Restart required." );
     }
 }

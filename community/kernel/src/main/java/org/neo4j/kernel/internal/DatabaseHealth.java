@@ -20,6 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import org.neo4j.graphdb.event.ErrorState;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.logging.Log;
 
@@ -29,9 +30,9 @@ public class DatabaseHealth
 {
     private static final String panicMessage = "Database has encountered some problem, "
             + "please perform necessary action (tx recovery/restart)";
+    private static final Class<?>[] CRITICAL_EXCEPTIONS = new Class[]{OutOfMemoryError.class};
 
-    // Keep that cozy name for legacy purposes
-    private volatile boolean tmOk = true; // TODO rather skip volatile if possible here.
+    private volatile boolean healthy = true;
     private final DatabasePanicEventGenerator dbpe;
     private final Log log;
     private Throwable causeOfPanic;
@@ -51,7 +52,7 @@ public class DatabaseHealth
      */
     public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise ) throws EXCEPTION
     {
-        if ( !tmOk )
+        if ( !healthy )
         {
             EXCEPTION exception;
             try
@@ -78,7 +79,7 @@ public class DatabaseHealth
 
     public void panic( Throwable cause )
     {
-        if ( !tmOk )
+        if ( !healthy )
         {
             return;
         }
@@ -88,21 +89,35 @@ public class DatabaseHealth
             throw new IllegalArgumentException( "Must provide a cause for the database panic" );
         }
         this.causeOfPanic = cause;
-        this.tmOk = false;
+        this.healthy = false;
         log.error( "Database panic: " + panicMessage, cause );
         dbpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, causeOfPanic );
     }
 
     public boolean isHealthy()
     {
-        return tmOk;
+        return healthy;
     }
 
-    public void healed()
+    public boolean healed()
     {
-        tmOk = true;
-        causeOfPanic = null;
-        log.info( "Database health set to OK" );
+        if ( hasCriticalFailure() )
+        {
+            log.error( "Database encountered a critical error and can't be healed. Restart required." );
+            return false;
+        }
+        else
+        {
+            healthy = true;
+            causeOfPanic = null;
+            log.info( "Database health set to OK" );
+            return true;
+        }
+    }
+
+    private boolean hasCriticalFailure()
+    {
+        return !isHealthy() && Exceptions.contains( causeOfPanic, CRITICAL_EXCEPTIONS );
     }
 
     public Throwable cause()
