@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.IntegerLiteral
 import org.neo4j.cypher.internal.ir.v3_3._
+import org.neo4j.values.storable.NumberValue
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 
@@ -56,8 +57,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
         else {
           val evaluatedValue: Option[Any] = simpleExpressionEvaluator.evaluateExpression(limit)
 
-          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[Number])
-            Cardinality(evaluatedValue.get.asInstanceOf[Number].doubleValue())
+          if (evaluatedValue.isDefined && evaluatedValue.get.isInstanceOf[NumberValue])
+            Cardinality(evaluatedValue.get.asInstanceOf[NumberValue].doubleValue())
           else GraphStatistics.DEFAULT_LIMIT_CARDINALITY
         }
 

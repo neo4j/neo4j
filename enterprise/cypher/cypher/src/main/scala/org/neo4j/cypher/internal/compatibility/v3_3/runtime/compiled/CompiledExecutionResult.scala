@@ -41,7 +41,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
                               compiledCode: GeneratedQueryExecution,
                               description: Provider[InternalPlanDescription],
                               notifications: Iterable[Notification] = Iterable.empty)
-  extends StandardInternalExecutionResult(context, Some(taskCloser))
+  extends StandardInternalExecutionResult(context, CompiledRuntimeName, Some(taskCloser))
     with StandardInternalExecutionResult.IterateByAccepting {
 
   compiledCode.setCompletable(this)

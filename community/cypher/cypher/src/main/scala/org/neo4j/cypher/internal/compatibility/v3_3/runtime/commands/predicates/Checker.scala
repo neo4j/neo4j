@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import java.util
 
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.storable.{ArrayValue, Values}
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 import scala.collection.mutable
 
@@ -64,7 +64,11 @@ class BuildUp(list: ListValue) extends Checker {
         falseResult = None
       } else {
         cachedSet.add(nextValue)
-        foundMatch = nextValue == value
+        foundMatch = (nextValue, value) match {
+          case (a: ArrayValue, b: ListValue) => VirtualValues.fromArray(a).equals(b)
+          case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).equals(a)
+          case (a, b) => a.equals(b)
+        }
       }
     }
     if (cachedSet.isEmpty) {

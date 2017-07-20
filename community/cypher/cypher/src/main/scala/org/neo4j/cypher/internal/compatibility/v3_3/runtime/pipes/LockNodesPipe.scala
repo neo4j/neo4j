@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.NodeValue
 
 case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = new Id)
   extends PipeWithSource(src)  {
@@ -29,7 +29,7 @@ case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = n
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map { ctx =>
       val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
-        Option(ctx(varName).asInstanceOf[Node]).map(_.getId)
+        Option(ctx(varName).asInstanceOf[NodeValue]).map(_.id)
       }
       state.query.lockNodes(nodesToLock.toSeq: _*)
       ctx

@@ -96,6 +96,11 @@ public final class CharValue extends TextValue
         return 1;
     }
 
+    public char value()
+    {
+        return value;
+    }
+
     @Override
     public int compareTo( TextValue other )
     {

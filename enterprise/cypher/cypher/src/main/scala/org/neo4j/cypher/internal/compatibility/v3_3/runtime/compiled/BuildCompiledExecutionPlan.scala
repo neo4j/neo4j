@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
-import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
@@ -79,7 +80,8 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
           ExplainExecutionResult(compiled.columns.toList,
             compiled.planDescription, READ_ONLY, context.notificationLogger.notifications.map(InternalWrapping.asKernelNotification))
         } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
+          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
+                                          immutableMapValues(params, queryContext.asObject), taskCloser)
       } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)

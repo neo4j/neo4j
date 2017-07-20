@@ -23,7 +23,8 @@ import org.neo4j.collection.primitive.{Primitive, PrimitiveLongSet}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.graphdb.Node
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable.ListBuffer
 import scala.collection.{AbstractIterator, Iterator}
@@ -39,8 +40,8 @@ extends PipeWithSource(left) {
       override def getKey(row: ExecutionContext) = row(source)
 
       override def getValue(row: ExecutionContext) = row(seen) match {
-        case n: Node => Some(n.getId)
-        case null => None
+        case n: NodeValue => Some(n.id())
+        case Values.NO_VALUE => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
@@ -56,7 +57,7 @@ extends PipeWithSource(left) {
     // 3. Probe
     }.filter { ctx =>
       ctx(target) match {
-        case n: Node => if(positivePredicate) triadicState.contains(n.getId) else !triadicState.contains(n.getId)
+        case n: NodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
         case _ => false
       }
     }

@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Matchers._
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{doubleArray, intArray}
+import org.neo4j.values.storable.Values.{doubleArray, intArray, intValue}
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -48,7 +49,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result.toList should beEquivalentTo(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle nulls") {
@@ -65,7 +66,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result.toList should beEquivalentTo(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle multiples on both sides") {
@@ -96,10 +97,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
     // then
     result.toSet should equal(Set(
-      Map("a" -> 1, "b" -> 1, "a2" -> 1, "b2" -> 1),
-      Map("a" -> 1, "b" -> 1, "a2" -> 2, "b2" -> 1),
-      Map("a" -> 2, "b" -> 2, "a2" -> 3, "b2" -> 2),
-      Map("a" -> 2, "b" -> 2, "a2" -> 3, "b2" -> 3)
+      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(1), "b2" -> intValue(1)),
+      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(2), "b2" -> intValue(1)),
+      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(2)),
+      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(3))
     ))
   }
 

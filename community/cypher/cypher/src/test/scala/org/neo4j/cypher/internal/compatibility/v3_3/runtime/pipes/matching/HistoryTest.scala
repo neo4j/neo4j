@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Relationship, RelationshipType}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{stringArray, stringValue}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, edgeValue, nodeValue}
 
 class HistoryTest extends CypherFunSuite {
 
@@ -34,14 +35,14 @@ class HistoryTest extends CypherFunSuite {
     val b = new PatternNode("b")
     val pr: PatternRelationship = a.relateTo("r", b, Seq(), SemanticDirection.BOTH)
     val r: Relationship = mock[Relationship]
-    val mp = new MatchingPair(pr, r)
+    val mp = MatchingPair(pr, r)
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
 
     history.removeSeen(Set[PatternRelationship](pr)) shouldBe empty
   }
 
   test("should_known_that_it_has_seen_a_relationship") {
-    val r = mock[Relationship]
+    val r = edgeValue(11L, nodeValue(11L, stringArray("f"), EMPTY_MAP), nodeValue(12L, stringArray("f"), EMPTY_MAP), stringValue("T"), EMPTY_MAP)
     val history = new InitialHistory(ExecutionContext.empty, Seq(r))
     history.hasSeen(r) should equal(true)
   }

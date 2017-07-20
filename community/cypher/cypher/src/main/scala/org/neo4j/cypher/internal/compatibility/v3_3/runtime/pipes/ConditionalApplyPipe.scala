@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.storable.Values
 
 case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
                                (val id: Id = new Id)
@@ -38,7 +39,7 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
     }
 
   private def condition(context: ExecutionContext) = {
-    val cond = items.exists { context.get(_).get != null}
+    val cond = items.exists { context.get(_).get != Values.NO_VALUE}
       if (negated) !cond else cond
   }
 

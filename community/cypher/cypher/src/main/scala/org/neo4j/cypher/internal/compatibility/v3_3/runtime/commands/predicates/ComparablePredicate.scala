@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValues
-import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.{ArrayValue, FloatingPointValue, Values}
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -34,7 +35,11 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val r = right(m)
 
     if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
-    else Some(compare(AnyValues.COMPARATOR.compare(l, r)))
+    else (l, r) match {
+      case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
+      case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
+      case (_, _) => Some(compare(AnyValues.COMPARATOR.compare(l, r)))
+    }
   }
 
   def sign: String
@@ -69,6 +74,8 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
     (a1, b1) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None
+      case (x: ArrayValue, y: ListValue) => Some(VirtualValues.fromArray(x).equals(y))
+      case (x: ListValue, y: ArrayValue) => Some(VirtualValues.fromArray(y).equals(x))
       case _ => Some(a1.equals(b1))
     }
   }

@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphEleme
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
 
 abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
   extends PipeWithSource(src) with GraphElementPropertyFunctions {
@@ -42,7 +42,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
     val node = state.query.createNode()
     setProperties(context, state, node.getId)
     setLabels(context, state, node.getId)
-    context += key -> AnyValues.asNodeValue(node)
+    context += key -> VirtualValues.fromNodeProxy(node)
   }
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {

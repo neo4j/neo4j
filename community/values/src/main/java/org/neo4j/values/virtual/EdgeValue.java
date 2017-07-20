@@ -19,10 +19,11 @@
  */
 package org.neo4j.values.virtual;
 
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -171,7 +172,14 @@ public abstract class EdgeValue extends VirtualEdgeValue
                     t = type;
                     if ( t == null )
                     {
-                        t = type = Values.stringValue( relationship.getType().name() );
+                        try
+                        {
+                            t = type = Values.stringValue( relationship.getType().name() );
+                        }
+                        catch ( NotFoundException e )
+                        {
+                            t = type = Values.EMPTY_STRING;
+                        }
                     }
                 }
             }
@@ -189,7 +197,14 @@ public abstract class EdgeValue extends VirtualEdgeValue
                     m = properties;
                     if ( m == null )
                     {
-                        m = properties = AnyValues.asMapValue( relationship.getAllProperties() );
+                        try
+                        {
+                            m = properties = AnyValues.asMapValue( relationship.getAllProperties() );
+                        }
+                        catch ( NotFoundException e )
+                        {
+                            m = VirtualValues.EMPTY_MAP;
+                        }
                     }
                 }
             }

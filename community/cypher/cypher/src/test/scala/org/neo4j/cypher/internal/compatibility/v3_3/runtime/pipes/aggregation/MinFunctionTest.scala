@@ -21,56 +21,57 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{doubleValue, intValue, stringValue}
+import org.neo4j.values.storable.{IntValue, Values}
 
 class MinFunctionTest extends CypherFunSuite with AggregateTest {
   test("singleValueReturnsThatNumber") {
-    val result = aggregateOn(1)
+    val result = aggregateOn(intValue(1))
 
-    result should equal(1)
-    result shouldBe a [java.lang.Integer]
+    result should equal(intValue(1))
+    result shouldBe an [IntValue]
   }
 
   test("singleValueOfDecimalReturnsDecimal") {
-    val result = aggregateOn(1.0d)
+    val result = aggregateOn(doubleValue(1.0d))
 
-    result should equal(1.0)
+    result should equal(doubleValue(1.0))
   }
 
   test("mixesOfTypesIsOK") {
-    val result = aggregateOn(1, 2.0d)
+    val result = aggregateOn(intValue(1), doubleValue(2.0d))
 
-    result should equal(1)
+    result should equal(intValue(1))
   }
 
   test("longListOfMixedStuff") {
-    val result = aggregateOn(100, 230.0d, 56, 237, 23)
+    val result = aggregateOn(intValue(100), doubleValue(230.0d), intValue(56), intValue(237), intValue(23))
 
-    result should equal(23)
+    result should equal(intValue(23))
   }
 
   test("nullDoesNotChangeTheSum") {
-    val result = aggregateOn(1, null, 10)
+    val result = aggregateOn(intValue(1), Values.NO_VALUE, intValue(10))
 
-    result should equal(1)
+    result should equal(intValue(1))
   }
 
   test("mixed numbers and strings works fine") {
-    val result = aggregateOn(1, "wut")
+    val result = aggregateOn(intValue(1), stringValue("wut"))
 
-    result shouldBe "wut"
+    result shouldBe stringValue("wut")
   }
 
   test("aggregating strings work") {
-    val result = aggregateOn("abc", "a", "b", "B", "abc1")
+    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), stringValue("B"), stringValue("abc1"))
 
-    result should equal("B")
+    result should equal(stringValue("B"))
   }
 
   test("nulls are simply skipped") {
-    val result = aggregateOn("abc", "a", "b", null, "abc1")
+    val result = aggregateOn(stringValue("abc"), stringValue("a"), stringValue("b"), Values.NO_VALUE, stringValue("abc1"))
 
-    result should equal("a")
+    result should equal(stringValue("a"))
   }
 
   def createAggregator(inner: Expression) = new MinFunction(inner)

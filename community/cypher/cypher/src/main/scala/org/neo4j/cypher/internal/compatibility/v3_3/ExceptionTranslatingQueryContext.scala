@@ -255,15 +255,15 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOptRelTypeId(relType: String) =
     translateException(inner.getOptRelTypeId(relType))
 
-  override def detachDeleteNode(node: Node): Int =
+  override def detachDeleteNode(node: Long): Int =
     translateException(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
     extends DelegatingOperations[T](inner) {
-    override def delete(obj: T) =
-      translateException(inner.delete(obj))
+    override def delete(id: Long) =
+      translateException(inner.delete(id))
 
     override def setProperty(id: Long, propertyKey: Int, value: Value) =
       translateException(inner.setProperty(id, propertyKey, value))
@@ -295,8 +295,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def allPrimitive: PrimitiveLongIterator =
       translateException(inner.allPrimitive)
 
-    override def isDeletedInThisTx(obj: T): Boolean =
-      translateException(inner.isDeletedInThisTx(obj))
+    override def isDeletedInThisTx(id: Long): Boolean =
+      translateException(inner.isDeletedInThisTx(id))
   }
 
   class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext) extends DelegatingQueryTransactionalContext(inner) {

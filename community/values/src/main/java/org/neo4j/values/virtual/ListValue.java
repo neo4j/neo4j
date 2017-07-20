@@ -52,6 +52,16 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
         return size() != 0;
     }
 
+    public boolean storable()
+    {
+        return false;
+    }
+
+    public ArrayValue toStorableArray()
+    {
+        throw new UnsupportedOperationException( "List cannot be turned into a storable array" );
+    }
+
     @Override
     public boolean isSequenceValue()
     {
@@ -132,6 +142,18 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
                 array.value( i ).writeTo( writer );
             }
             writer.endList();
+        }
+
+        @Override
+        public boolean storable()
+        {
+            return true;
+        }
+
+        @Override
+        public ArrayValue toStorableArray()
+        {
+            return array;
         }
 
         @Override
@@ -309,7 +331,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
         public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
         {
             writer.beginList( size() );
-            for ( int i = inner.size() - 1; i >= 0; i++ )
+            for ( int i = inner.size() - 1; i >= 0; i-- )
             {
                 inner.value( i ).writeTo( writer );
             }
@@ -429,7 +451,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( !filter.apply( value ) )
+                if ( filter.apply( value ) )
                 {
                     value.writeTo( writer );
                 }
@@ -446,7 +468,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
                 int s = 0;
                 for ( int i = 0; i < inner.size(); i++ )
                 {
-                    if ( !filter.apply( inner.value( i ) ) )
+                    if ( filter.apply( inner.value( i ) ) )
                     {
                         s++;
                     }
@@ -465,7 +487,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
             for ( int i = 0; i < size; i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( !filter.apply( value ) )
+                if ( filter.apply( value ) )
                 {
                     if ( actualOffset == offset )
                     {
@@ -487,7 +509,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( !filter.apply( value ) )
+                if ( filter.apply( value ) )
                 {
                     anyValues[index++] = value;
                 }
@@ -502,7 +524,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
             for ( int i = 0; i < inner.size(); i++ )
             {
                 AnyValue value = inner.value( i );
-                if ( !filter.apply( value ) )
+                if ( filter.apply( value ) )
                 {
                     hashCode = 31 * hashCode + value.hashCode();
                 }
@@ -593,7 +615,7 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
                             return;
                         }
                         AnyValue candidate = inner.value( index++ );
-                        if ( !filter.apply( candidate ) )
+                        if ( filter.apply( candidate ) )
                         {
                             next = candidate;
                             return;

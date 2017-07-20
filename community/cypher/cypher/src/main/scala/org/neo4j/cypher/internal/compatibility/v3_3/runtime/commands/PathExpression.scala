@@ -32,7 +32,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-
 /*
 This class does pattern matching inside an Expression. It's used as a fallback when the
 expression cannot be unnested from inside an expression. It is used for pattern expressions

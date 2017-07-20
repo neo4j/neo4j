@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.HasLabel
@@ -30,10 +32,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.Patte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
 class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
-  val symbols = new SymbolTable(Map("a" -> CTNode))
+  val symbols = SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, SemanticDirection.OUTGOING)
   val rightNode = patternRelationship.right
   val label = UnresolvedLabel("Person")
@@ -67,7 +68,7 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
     }
 
     // Then
-    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
+    result should beEquivalentTo(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 
   test("should_handle_a_mandatory_labeled_node_with_no_matches") {
@@ -101,6 +102,6 @@ class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuild
     }
 
     // Then
-    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
+    result should beEquivalentTo(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 }

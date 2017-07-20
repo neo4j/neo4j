@@ -110,8 +110,8 @@ case class Atan2Function(y: Expression, x: Expression) extends Expression with N
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val yValue = y(ctx)
     val xValue = x(ctx)
-    if (null == yValue || null == xValue)
-      null
+    if (Values.NO_VALUE == yValue || Values.NO_VALUE == xValue)
+      Values.NO_VALUE
     else
       Values.doubleValue(math.atan2(asDouble(yValue).doubleValue(), asDouble(xValue).doubleValue()))
   }

@@ -277,7 +277,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     updateWithBothPlannersAndCompatibilityMode("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
-      graph.getAllNodes.asScala shouldBe empty
+      graph.getAllNodes().asScala shouldBe empty
     }
   }
 

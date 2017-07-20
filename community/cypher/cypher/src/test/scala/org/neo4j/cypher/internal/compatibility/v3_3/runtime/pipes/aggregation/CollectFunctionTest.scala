@@ -21,21 +21,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
+import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
 
 class CollectFunctionTest extends CypherFunSuite with AggregateTest {
 
   def createAggregator(inner: Expression) = new CollectFunction(inner)
 
   test("singleOne") {
-    aggregateOn(1) should equal(Seq(1))
+    aggregateOn(intValue(1)) should equal(list(intValue(1)))
   }
 
   test("empty_returns_empty_seq") {
-    aggregateOn() should equal(Seq())
+    aggregateOn() should equal(EMPTY_LIST)
   }
 
   test("doesnt_collect_null_values") {
-    aggregateOn(null) should equal(Seq())
+    aggregateOn(NO_VALUE) should equal(EMPTY_LIST)
   }
 }

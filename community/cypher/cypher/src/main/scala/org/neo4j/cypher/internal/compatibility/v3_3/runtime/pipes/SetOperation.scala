@@ -99,7 +99,7 @@ abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: Stri
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val item = executionContext.get(itemName).get
-    if (item != null) {
+    if (item != Values.NO_VALUE) {
       val itemId = id(item)
       val ops = operations(state.query)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
@@ -144,10 +144,10 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext)(state)
-    if (resolvedEntity != null) {
+    if (resolvedEntity != Values.NO_VALUE) {
       val (entityId, ops) = resolvedEntity match {
-        case node: Node => (node.getId, state.query.nodeOps)
-        case rel: Relationship => (rel.getId, state.query.relationshipOps)
+        case node: NodeValue => (node.id(), state.query.nodeOps)
+        case rel: EdgeValue => (rel.id(), state.query.relationshipOps)
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
       }
@@ -168,7 +168,7 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val item = executionContext.get(itemName).get
-    if (item != null) {
+    if (item != Values.NO_VALUE) {
       val ops = operations(state.query)
       val itemId = id(item)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
@@ -190,7 +190,7 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
 
     /*Set all map values on the property container*/
     for ((k, v) <- map) {
-      if (v == null)
+      if (v == Values.NO_VALUE)
         ops.removeProperty(itemId, k)
       else
         ops.setProperty(itemId, k, makeValueNeoSafe(v))

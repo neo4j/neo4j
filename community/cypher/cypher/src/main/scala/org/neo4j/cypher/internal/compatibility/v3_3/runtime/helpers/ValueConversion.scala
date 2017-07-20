@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.graphdb.spatial.{Geometry, Point}
 import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.byteArray
 import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.virtual.VirtualValues.fromArray
 import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
@@ -37,6 +39,7 @@ object ValueConversion {
     case symbols.CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
     case symbols.CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
     case symbols.CTInteger => l => Values.longValue(l.asInstanceOf[Long])
+    case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
     case symbols.CTPath => p => AnyValues.asPathValue(p.asInstanceOf[Path])
     case symbols.CTMap => m => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
     case symbols.ListType(_)  => l => AnyValues.asListValue(l.asInstanceOf[java.util.Collection[_]])
@@ -49,6 +52,7 @@ object ValueConversion {
   def asValue(value: Any): AnyValue = value match {
     case null => Values.NO_VALUE
     case s: String => Values.stringValue(s)
+    case c: Char => Values.charValue(c)
     case d: Double => Values.doubleValue(d)
     case f: Float => Values.doubleValue(f)
     case n: Number => Values.longValue(n.longValue())
@@ -62,6 +66,20 @@ object ValueConversion {
     case m: java.util.Map[_, _] => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])
     case a: TraversableOnce[_] => VirtualValues.list(a.map(asValue).toArray:_*)
     case c: java.util.Collection[_] => AnyValues.asListValue(c)
-    case a: Array[_] => VirtualValues.list(a.map(asValue):_*)
+    case a: Array[_] =>
+      a.getClass.getComponentType.getName match {
+      case "byte" => fromArray(byteArray(a.asInstanceOf[Array[Byte]]))
+      case "short" => fromArray(Values.shortArray(a.asInstanceOf[Array[Short]]))
+      case "char" => fromArray(Values.charArray(a.asInstanceOf[Array[Char]]))
+      case "int" => fromArray(Values.intArray(a.asInstanceOf[Array[Int]]))
+      case "long" => fromArray(Values.longArray(a.asInstanceOf[Array[Long]]))
+      case "float" => fromArray(Values.floatArray(a.asInstanceOf[Array[Float]]))
+      case "double" => fromArray(Values.doubleArray(a.asInstanceOf[Array[Double]]))
+      case "boolean" => fromArray(Values.booleanArray(a.asInstanceOf[Array[Boolean]]))
+      case "java.lang.String" => fromArray(Values.stringArray(a.asInstanceOf[Array[String]]:_*))
+      case _ => VirtualValues.list(a.map(asValue):_*)
+    }
+
+
   }
 }

@@ -74,21 +74,21 @@ object indexQuery extends GraphElementPropertyFunctions {
     case RangeQueryExpression(rangeWrapper) =>
       val range = rangeWrapper match {
         case s: PrefixSeekRangeExpression =>
-          s.range.map(expression => makeValueNeoSafe(expression(m)(state)))
+          s.range.map(expression => makeValueNeoSafe(expression(m)(state)).asObject())
 
         case InequalitySeekRangeExpression(innerRange) =>
-          innerRange.mapBounds(expression => makeValueNeoSafe(expression(m)(state)))
+          innerRange.mapBounds(expression => makeValueNeoSafe(expression(m)(state)).asObject())
       }
       index(Seq(range)).toIterator
   }
 
-  private def lookupNodes(values: Seq[AnyValue], index: Seq[AnyValue] => GenTraversableOnce[Node]): Iterator[Node] = {
+  private def lookupNodes(values: Seq[AnyValue], index: Seq[Any] => GenTraversableOnce[Node]): Iterator[Node] = {
     // If any of the values we are searching for is null, the whole expression that this index seek represents
     // collapses into a null value, which will not match any nodes.
     if (values.contains(Values.NO_VALUE))
       Iterator.empty
     else {
-      val neoValues = values.map(makeValueNeoSafe)
+      val neoValues = values.map(makeValueNeoSafe).map(_.asObject())
       index(neoValues).toIterator
     }
   }

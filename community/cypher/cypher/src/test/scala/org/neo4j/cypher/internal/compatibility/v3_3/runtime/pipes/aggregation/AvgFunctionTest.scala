@@ -21,62 +21,62 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue, intValue, longValue}
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)
 
   test("singleOne") {
-    val result = aggregateOn(1)
+    val result = aggregateOn(intValue(1))
 
-    result should equal(1.0)
+    result should equal(doubleValue(1.0))
   }
 
   test("allOnesAvgIsOne") {
-    val result = aggregateOn(1, 1)
+    val result = aggregateOn(intValue(1), intValue(1))
 
-    result should equal(1.0)
+    result should equal(doubleValue(1.0))
   }
 
   test("twoAndEightAvgIs10") {
-    val result = aggregateOn(2, 8)
+    val result = aggregateOn(intValue(2), intValue(8))
 
-    result should equal(5.0)
+    result should equal(doubleValue(5.0))
   }
 
   test("negativeOneIsStillOk") {
-    val result = aggregateOn(-1)
+    val result = aggregateOn(intValue(-1))
 
-    result should equal(-1.0)
+    result should equal(doubleValue(-1.0))
   }
 
   test("ZeroIsAnOKAvg") {
-    val result = aggregateOn(-10, 10)
+    val result = aggregateOn(intValue(-10), intValue(10))
 
-    result should equal(0.0)
+    result should equal(doubleValue(0.0))
   }
 
   test("ADoubleInTheListTurnsTheAvgToDouble") {
-    val result = aggregateOn(1, 1.0, 1)
+    val result = aggregateOn(intValue(1), doubleValue(1.0), intValue(1))
 
-    result should equal(1.0)
+    result should equal(doubleValue(1.0))
   }
 
   test("nullDoesntChangeThings") {
-    val result = aggregateOn(3, null, 6)
+    val result = aggregateOn(intValue(3), NO_VALUE, intValue(6))
 
-    result should equal(4.5)
+    result should equal(doubleValue(4.5))
   }
 
   test("noOverflowOnLongListOfLargeNumbers") {
-    val result = aggregateOn(Long.MaxValue / 2, Long.MaxValue / 2, Long.MaxValue / 2)
+    val result = aggregateOn(longValue(Long.MaxValue / 2),longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
 
-    result should equal(Long.MaxValue / 2)
+    result should equal(doubleValue(Long.MaxValue / 2))
   }
 
   test("onEmpty") {
     val result = aggregateOn()
 
-    Option(result) should be (None)
+    result should equal(NO_VALUE)
   }
 }

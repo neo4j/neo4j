@@ -111,7 +111,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
     val result = inner.createUniqueConstraint(descriptor)
-    if ( result ) uniqueConstraintsAdded.increase();
+    if ( result ) uniqueConstraintsAdded.increase()
     result
   }
 
@@ -144,7 +144,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = super.nodeGetDegree(node, dir)
 
-  override def detachDeleteNode(node: Node): Int = {
+  override def detachDeleteNode(node: Long): Int = {
     nodesDeleted.increase()
     val count = inner.detachDeleteNode(node)
     relationshipsDeleted.increase(count)
@@ -164,9 +164,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private class CountingOps[T <: PropertyContainer](inner: Operations[T], deletes: Counter)
     extends DelegatingOperations[T](inner) {
 
-    override def delete(obj: T) {
+    override def delete(id: Long) {
       deletes.increase()
-      inner.delete(obj)
+      inner.delete(id)
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {

@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.Path
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.Values.{FALSE, TRUE}
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
@@ -45,7 +47,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
       right = SingleNode("c"),
       relTypes = Seq(),
       dir = SemanticDirection.OUTGOING,
-      false,
+      allowZeroLength = false,
       maxDepth = None,
       single = true,
       relIterator = None)
@@ -55,12 +57,12 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     val m = ExecutionContext.from("a" -> a, "c" -> c)
 
     val result = withQueryState { state =>
-      expression(m)(state).asInstanceOf[Path]
+      expression(m)(state).asInstanceOf[PathValue]
     }
 
-    result.startNode() should equal(a)
-    result.endNode() should equal(c)
-    result should have length 2
+    result.startNode() should equal(fromNodeProxy(a))
+    result.endNode() should equal(fromNodeProxy(c))
+    result should have size 2
   }
 
   test("should handle expressions with labels") {
@@ -80,7 +82,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     }
 
     // THEN
-    result should equal(true)
+    result should equal(TRUE)
   }
 
   test("should return false if labels are missing") {
@@ -100,6 +102,6 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
     }
 
     // THEN
-    result should equal(false)
+    result should equal(FALSE)
   }
 }

@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, Sho
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.graphdb.{Node, Path}
+import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 import scala.collection.mutable
 
@@ -34,10 +36,11 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
-    val pipe = new ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(),
-      SemanticDirection.BOTH, allowZeroLength = false, Some(15), single = false, relIterator = None))()
+    val pipe = ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(),
+                                                     SemanticDirection.BOTH, allowZeroLength = false, Some(15),
+                                                     single = false, relIterator = None))()
     graph.withTx { tx =>
-      pipe.createResults(queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[Path])
+      pipe.createResults(queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[PathValue])
     }
   }
 
@@ -49,11 +52,11 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
     resultPaths should have size 2
 
     resultPaths.foreach(resultPath => {
-      val number_of_relationships_in_path = resultPath.length()
+      val number_of_relationships_in_path = resultPath.size()
 
       number_of_relationships_in_path should equal(2)
-      resultPath.startNode() should equal(a)
-      resultPath.endNode() should equal(d)
+      resultPath.startNode() should equal(fromNodeProxy(a))
+      resultPath.endNode() should equal(fromNodeProxy(d))
     })
   }
 }

@@ -198,14 +198,14 @@ trait QueryContext extends TokenContext {
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
 
-  def detachDeleteNode(node: Node): Int
+  def detachDeleteNode(id: Long): Int
 
   def assertSchemaWritesAllowed(): Unit
 
 }
 
 trait Operations[T <: PropertyContainer] {
-  def delete(obj: T)
+  def delete(id: Long)
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value)
 
@@ -223,7 +223,7 @@ trait Operations[T <: PropertyContainer] {
 
   def indexQuery(name: String, query: Any): Iterator[T]
 
-  def isDeletedInThisTx(obj: T): Boolean
+  def isDeletedInThisTx(id: Long): Boolean
 
   def all: Iterator[T]
 

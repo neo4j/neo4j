@@ -31,11 +31,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{NotFoundException, Notification, QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
 
 import scala.collection.{Map, mutable}
 
-abstract class StandardInternalExecutionResult(context: QueryContext,
+abstract class StandardInternalExecutionResult(context: QueryContext, runtime: RuntimeName,
                                                taskCloser: Option[TaskCloser] = None)
   extends InternalExecutionResult
     with Completable {
@@ -97,7 +97,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
    * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
    * where you can call both toList and dumpToString
    */
-  def toEagerResultForTestingOnly(planner: PlannerName, runtime: RuntimeName): InternalExecutionResult = {
+  def toEagerResultForTestingOnly(planner: PlannerName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
     val result = new util.ArrayList[util.Map[String, Any]]()
     if (isOpen)
@@ -106,7 +106,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
         populateDumpToStringResults(dumpToStringBuilder)(row)
       }
 
-    new StandardInternalExecutionResult(context, taskCloser)
+    new StandardInternalExecutionResult(context, runtime, taskCloser)
       with StandardInternalExecutionResult.AcceptByIterating {
 
       override protected def createInner: util.Iterator[util.Map[String, Any]] = result.iterator()

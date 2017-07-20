@@ -23,6 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue, stringValue}
 
 class ProduceResultsPipeTest extends CypherFunSuite {
 
@@ -43,8 +44,8 @@ class ProduceResultsPipeTest extends CypherFunSuite {
 
     result should equal(
       List(
-        Map("a" -> "foo", "b" -> 10, "c" -> true),
-        Map("a" -> "bar", "b" -> 20, "c" -> false)
+        Map("a" -> stringValue("foo"), "b" -> intValue(10), "c" -> TRUE),
+        Map("a" -> stringValue("bar"), "b" -> intValue(20), "c" -> FALSE)
       ))
   }
 

@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 
 class SumFunction(val value: Expression)
   extends AggregationFunction
@@ -34,7 +33,7 @@ class SumFunction(val value: Expression)
   def name = "SUM"
 
   private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
-  def result(implicit state: QueryState): AnyValue = Values.longValue(sum.value.asInstanceOf[Long])
+  def result(implicit state: QueryState): AnyValue = asNumberValue(sum.value)
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     actOnNumber(value(data), (number) => {

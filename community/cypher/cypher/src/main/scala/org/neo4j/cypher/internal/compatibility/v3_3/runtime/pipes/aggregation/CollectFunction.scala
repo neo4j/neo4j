@@ -23,16 +23,17 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.ArrayBuffer
 
 class CollectFunction(value:Expression) extends AggregationFunction {
-  val collection = new ListBuffer[AnyValue]()
+  val collection = new ArrayBuffer[AnyValue]()
 
   def apply(data: ExecutionContext)(implicit state:QueryState) {
     value(data) match {
-      case null =>
+      case Values.NO_VALUE =>
       case v    => collection += v
     }
   }

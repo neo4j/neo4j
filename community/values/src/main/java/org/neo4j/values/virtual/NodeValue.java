@@ -24,6 +24,7 @@ import java.util.ArrayList;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.storable.TextArray;
@@ -110,12 +111,19 @@ public abstract class NodeValue extends VirtualNodeValue
                     l = labels;
                     if ( l == null )
                     {
-                        ArrayList<String> ls = new ArrayList<>();
-                        for ( Label label : node.getLabels() )
+                        try
                         {
-                           ls.add( label.name() );
+                            ArrayList<String> ls = new ArrayList<>();
+                            for ( Label label : node.getLabels() )
+                            {
+                                ls.add( label.name() );
+                            }
+                            l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
                         }
-                        l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+                        catch ( NotFoundException e )
+                        {
+                           l = Values.stringArray(  );
+                        }
                     }
                 }
             }
@@ -133,7 +141,14 @@ public abstract class NodeValue extends VirtualNodeValue
                     m = properties;
                     if ( m == null )
                     {
-                        m = properties = AnyValues.asMapValue( node.getAllProperties() );
+                        try
+                        {
+                            m = properties = AnyValues.asMapValue( node.getAllProperties() );
+                        }
+                        catch ( NotFoundException e )
+                        {
+                            m = VirtualValues.EMPTY_MAP;
+                        }
                     }
                 }
             }

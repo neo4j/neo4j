@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.storable.Values
 
 case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
                        (val id: Id = new Id)
@@ -28,7 +29,7 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
     val context = initialContext.getOrElse(ExecutionContext.empty)
-    nullableVariables.foreach(v => context += v -> null)
+    nullableVariables.foreach(v => context += v -> Values.NO_VALUE)
     context
   }
 

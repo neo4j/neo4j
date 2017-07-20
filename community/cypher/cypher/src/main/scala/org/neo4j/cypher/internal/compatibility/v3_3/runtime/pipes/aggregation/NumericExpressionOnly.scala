@@ -31,7 +31,7 @@ trait NumericExpressionOnly {
 
   def actOnNumber[U](obj: AnyValue, f: NumberValue => U) {
     obj match {
-      case x if x == Values.NO_VALUE =>
+      case Values.NO_VALUE =>
       case number: NumberValue => f(number)
       case _ =>
         throw new CypherTypeException("%s(%s) can only handle numerical values, or null.".format(name, value))

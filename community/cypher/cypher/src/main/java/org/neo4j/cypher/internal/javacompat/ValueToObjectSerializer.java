@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import java.lang.reflect.Array;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.graphalgo.impl.util.PathImpl;
-import org.neo4j.graphdb.spatial.CRS;
-import org.neo4j.graphdb.spatial.Coordinate;
-import org.neo4j.graphdb.spatial.Point;
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CartesianPoint;
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.GeographicPoint;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.helpers.collection.ReverseArrayIterator;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.TextArray;
@@ -38,6 +43,8 @@ import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+
+import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
 {
@@ -117,13 +124,135 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
     @Override
     public void writePath( NodeValue[] nodes, EdgeValue[] edges ) throws RuntimeException
     {
-        PathImpl.Builder builder = new PathImpl.Builder( nodeManager.newNodeProxyById( nodes[0].id() ) );
-        for ( EdgeValue edge : edges )
+        assert nodes != null;
+        assert nodes.length > 0;
+        Node[] nodeProxies = new Node[nodes.length];
+        for ( int i = 0; i < nodes.length; i++ )
         {
-            builder.push( nodeManager.newRelationshipProxyById( edge.id() ) );
+            nodeProxies[i] = nodeManager.newNodeProxyById( nodes[i].id() );
         }
+        Relationship[] relationship = new Relationship[edges.length];
+        for ( int i = 0; i < edges.length; i++ )
+        {
+            relationship[i] = nodeManager.newRelationshipProxyById( edges[i].id() );
+        }
+        writeValue( new Path()
+        {
+            @Override
+            public Node startNode()
+            {
+                return nodeProxies[0];
+            }
 
-        writeValue( builder.build() );
+            @Override
+            public Node endNode()
+            {
+                return nodeProxies[nodeProxies.length - 1];
+            }
+
+            @Override
+            public Relationship lastRelationship()
+            {
+                return relationship[relationship.length - 1];
+            }
+
+            @Override
+            public Iterable<Relationship> relationships()
+            {
+                return Arrays.asList( relationship );
+            }
+
+            @Override
+            public Iterable<Relationship> reverseRelationships()
+            {
+                return () -> new ReverseArrayIterator<>( relationship );
+            }
+
+            @Override
+            public Iterable<Node> nodes()
+            {
+                return Arrays.asList( nodeProxies );
+            }
+
+            @Override
+            public Iterable<Node> reverseNodes()
+            {
+                return () -> new ReverseArrayIterator<>( nodeProxies );
+            }
+
+            @Override
+            public int length()
+            {
+                return relationship.length;
+            }
+
+            @Override
+            public int hashCode()
+            {
+                if ( relationship.length == 0 )
+                {
+                    return startNode().hashCode();
+                }
+                else
+                {
+                    return Arrays.hashCode( relationship );
+                }
+            }
+
+            @Override
+            public boolean equals( Object obj )
+            {
+                if ( this == obj )
+                {
+                    return true;
+                }
+                else if ( obj instanceof Path )
+                {
+                    Path other = (Path) obj;
+                    return startNode().equals( other.startNode() ) &&
+                           iteratorsEqual( this.relationships().iterator(), other.relationships().iterator() );
+
+                }
+                else
+                {
+                    return false;
+                }
+            }
+
+            @Override
+            public Iterator<PropertyContainer> iterator()
+            {
+                return new Iterator<PropertyContainer>()
+                {
+                    Iterator<? extends PropertyContainer> current = nodes().iterator();
+                    Iterator<? extends PropertyContainer> next = relationships().iterator();
+
+                    public boolean hasNext()
+                    {
+                        return current.hasNext();
+                    }
+
+                    public PropertyContainer next()
+                    {
+                        try
+                        {
+                            return current.next();
+                        }
+                        finally
+                        {
+                            Iterator<? extends PropertyContainer> temp = current;
+                            current = next;
+                            next = temp;
+                        }
+                    }
+
+                    public void remove()
+                    {
+                        next.remove();
+                    }
+                };
+            }
+        } );
     }
 
     @Override
@@ -226,7 +355,7 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
     @Override
     public void beginArray( int size, ArrayType arrayType ) throws RuntimeException
     {
-        stack.push( new ArrayWriter( size ) );
+        stack.push( new ArrayWriter( size, arrayType ) );
     }
 
     @Override
@@ -301,18 +430,49 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
 
     class ArrayWriter implements Writer
     {
-        protected final Object[] array;
+        protected final Object array;
         private int index;
 
-        ArrayWriter( int size )
+        ArrayWriter( int size, ArrayType arrayType )
         {
-            this.array = new Object[size];
+            switch ( arrayType )
+            {
+            case SHORT:
+                this.array = Array.newInstance( short.class, size );
+                break;
+            case INT:
+                this.array = Array.newInstance( int.class, size );
+                break;
+            case BYTE:
+                this.array = Array.newInstance( byte.class, size );
+                break;
+            case LONG:
+                this.array = Array.newInstance( long.class, size );
+                break;
+            case FLOAT:
+                this.array = Array.newInstance( float.class, size );
+                break;
+            case DOUBLE:
+                this.array = Array.newInstance( double.class, size );
+                break;
+            case BOOLEAN:
+                this.array = Array.newInstance( boolean.class, size );
+                break;
+            case STRING:
+                this.array = Array.newInstance( String.class, size );
+                break;
+            case CHAR:
+                this.array = Array.newInstance( char.class, size );
+                break;
+            default:
+                this.array = new Object[size];
+            }
         }
 
         @Override
         public void write( Object value )
         {
-            array[index++] = value;
+            Array.set( array, index++, value );
         }
 
         @Override
@@ -322,17 +482,25 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
         }
     }
 
-    class ListWriter extends ArrayWriter
+    class ListWriter implements Writer
     {
+        private final List<Object> list;
+
         ListWriter( int size )
         {
-            super( size );
+            this.list = new ArrayList<>( size );
+        }
+
+        @Override
+        public void write( Object value )
+        {
+            list.add( value );
         }
 
         @Override
         public Object value()
         {
-            return Arrays.asList( array );
+            return list;
         }
     }
 
@@ -357,45 +525,20 @@ public class ValueToObjectSerializer implements AnyValueWriter<RuntimeException>
         @Override
         public Object value()
         {
-            return new Point()
+            if ( crs.code() == CoordinateReferenceSystem.WGS84.code() )
             {
-                @Override
-                public String getGeometryType()
-                {
-                    return "Point";
-                }
-
-                @Override
-                public List<Coordinate> getCoordinates()
-                {
-                    return Collections.singletonList( new Coordinate( coordinates ) );
-                }
-
-                @Override
-                public CRS getCRS()
-                {
-                    return new CRS()
-                    {
-                        @Override
-                        public int getCode()
-                        {
-                            return crs.code();
-                        }
-
-                        @Override
-                        public String getType()
-                        {
-                            return crs.type();
-                        }
-
-                        @Override
-                        public String getHref()
-                        {
-                            return crs.href();
-                        }
-                    };
-                }
-            };
+                return new GeographicPoint( coordinates[0], coordinates[1], new org.neo4j.cypher.internal
+                        .compatibility.v3_3.runtime.CRS( crs.name, crs.code, crs.href ) );
+            }
+            else if ( crs.code() == CoordinateReferenceSystem.Cartesian.code() )
+            {
+                return new CartesianPoint( coordinates[0], coordinates[1], new org.neo4j.cypher.internal
+                        .compatibility.v3_3.runtime.CRS( crs.name, crs.code, crs.href ) );
+            }
+            else
+            {
+                throw new IllegalArgumentException( crs + " is not a supported coordinate reference system" );
+            }
         }
     }
 }

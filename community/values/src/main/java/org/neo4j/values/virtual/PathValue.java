@@ -51,6 +51,12 @@ public final class PathValue extends VirtualValue
         return nodes[nodes.length - 1];
     }
 
+    public EdgeValue lastEdge()
+    {
+        assert edges.length > 0;
+        return edges[edges.length - 1];
+    }
+
     @Override
     public boolean equals( VirtualValue other )
     {
@@ -138,11 +144,11 @@ public final class PathValue extends VirtualValue
         {
             if ( i % 2 == 0 )
             {
-                anyValues[i] = nodes[i];
+                anyValues[i] = nodes[i / 2];
             }
             else
             {
-                anyValues[i] = edges[i];
+                anyValues[i] = edges[i / 2];
             }
         }
         return VirtualValues.list( anyValues );

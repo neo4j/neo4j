@@ -53,7 +53,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq(stringValue("hello")) -> Iterator(node))
+      query = indexFor(Seq("hello") -> Iterator(node))
     )
 
     // when
@@ -68,8 +68,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node),
-        Seq(stringValue("world")) -> Iterator(node2)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node2)
       )
     )
 
@@ -85,8 +85,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node),
-        Seq(stringValue("world")) -> Iterator(node2)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node2)
       )
     )
 
@@ -102,7 +102,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -121,7 +121,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -140,7 +140,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -156,7 +156,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node)
+        Seq("hello") -> Iterator(node)
       )
     )
 
@@ -175,8 +175,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
-        Seq(stringValue("hello")) -> Iterator(node),
-        Seq(stringValue("world")) -> Iterator(node)
+        Seq("hello") -> Iterator(node),
+        Seq("world") -> Iterator(node)
       )
     )
 
@@ -195,8 +195,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     // given
     val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
       query = indexFor(
-        Seq(stringValue("hello"), stringValue("world")) -> Iterator(node),
-        Seq(stringValue("hello")) -> Iterator(node, node2)
+        Seq("hello", "world") -> Iterator(node),
+        Seq("hello") -> Iterator(node, node2)
       )
     )
 
@@ -226,7 +226,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq(stringValue("hello")) -> Iterator(node)))
+    val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Iterator(node)))
 
     // when
     val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
@@ -239,7 +239,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
   test("should use existing values from arguments when available") {
     //  GIVEN "hello" as x MATCH a WHERE a.prop = x
     val queryState: QueryState = QueryStateHelper.emptyWith(
-      query = indexFor(Seq(stringValue("hello")) -> Iterator(node)),
+      query = indexFor(Seq("hello") -> Iterator(node)),
       initialContext = Some(ExecutionContext.from("x" -> stringValue("hello")))
     )
 

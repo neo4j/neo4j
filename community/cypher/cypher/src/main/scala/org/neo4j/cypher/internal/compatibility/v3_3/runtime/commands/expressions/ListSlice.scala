@@ -42,8 +42,8 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
     val maybeFromValue = asInt(from, ctx, state)
     val maybeToValue = asInt(to, ctx, state)
     (maybeFromValue, maybeToValue) match {
-      case (None, _) => null
-      case (_, None) => null
+      case (None, _) => Values.NO_VALUE
+      case (_, None) => Values.NO_VALUE
       case (Some(fromValue), Some(toValue)) =>
         val size = collectionValue.size
         if (fromValue >= 0 && toValue >= 0)
@@ -77,7 +77,7 @@ case class ListSlice(collection: Expression, from: Option[Expression], to: Optio
   private def toSlice(from: Expression)(collectionValue: ListValue, ctx: ExecutionContext, state: QueryState) = {
     val toValue = asInt(from, ctx, state)
     toValue match {
-      case None => null
+      case None => Values.NO_VALUE
       case Some(value) if value >= 0 =>
        VirtualValues.take(collectionValue, value)
       case Some(value) =>

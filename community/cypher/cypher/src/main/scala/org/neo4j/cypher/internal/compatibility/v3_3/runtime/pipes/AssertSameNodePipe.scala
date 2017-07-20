@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.MergeConstraintConflictException
-import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.NodeValue
 
 case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
                              (val id: Id = new Id)
@@ -37,10 +37,10 @@ case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)
     }
 
     lhsResult.map { leftRow =>
-      val lhsNode = CastSupport.castOrFail[Node](leftRow.get(node).get)
+      val lhsNode = CastSupport.castOrFail[NodeValue](leftRow.get(node).get)
       rhsResults.foreach { rightRow =>
-        val rhsNode = CastSupport.castOrFail[Node](rightRow.get(node).get)
-        if (lhsNode.getId != rhsNode.getId) {
+        val rhsNode = CastSupport.castOrFail[NodeValue](rightRow.get(node).get)
+        if (lhsNode.id != rhsNode.id) {
           throw new MergeConstraintConflictException(
             s"Merge did not find a matching node $node and can not create a new node due to conflicts with existing unique nodes")
         }

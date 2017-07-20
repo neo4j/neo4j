@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.IndexHintException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryContextAdaptation}
 import org.neo4j.graphdb.Node
-import org.neo4j.values.storable.Values
 
 class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null
@@ -59,7 +58,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val label: String = "label"
     val prop: String = "prop"
     val index: IndexDescriptor = IndexDescriptor(123, 456)
-    val value = Values.intValue(42)
+    val value = 42
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.indexGet(label, Seq(prop))).thenReturn(Some(index))
     val indexResult = Iterator(null)
@@ -67,7 +66,8 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("id", label, Seq(prop), AnyIndex, Some(SingleQueryExpression(Literal(value.value()))), Seq.empty))
+    val func = factory.nodeByIndexHint(readOnly = true)(planContext -> SchemaIndex("id", label, Seq(prop),
+                                                                                   AnyIndex, Some(SingleQueryExpression(Literal(value))), Seq.empty))
     func(context, state) should equal(indexResult)
   }
 
@@ -95,6 +95,6 @@ class EntityProducerFactoryTest extends CypherFunSuite {
     producer.apply(context, state)
 
     //THEN
-    seenValues.head should equal(Values.longArray(Array(1L,2L,3L)))
+    seenValues.head should equal(Array(1L,2L,3L))
   }
 }

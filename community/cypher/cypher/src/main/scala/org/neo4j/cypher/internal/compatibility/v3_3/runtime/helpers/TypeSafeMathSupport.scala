@@ -19,11 +19,20 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ArithmeticException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 
 trait TypeSafeMathSupport {
+
+  def asNumberValue(a: Any): NumberValue = a match {
+    case i: Int => Values.intValue(i)
+    case l: Long => Values.longValue(l)
+    case n: Number => Values.doubleValue(n.doubleValue())
+    case _ => throw new InternalException(s"$a is not a number")
+  }
+
   def plus(left: NumberValue, right: NumberValue): AnyValue = {
 
     try {
@@ -252,20 +261,20 @@ trait TypeSafeMathSupport {
      * @return      current value of the sum variable
      * @note        sticks to integral type for as long as possible
      */
-    def add(next: Any): OverflowAwareSum[_]
+    def add(next: AnyValue): OverflowAwareSum[_]
   }
 
   case class DoubleSum(private val doubleValue: Double) extends OverflowAwareSum[Double] {
     sum = doubleValue
-    def add(next: Any) = {
+    def add(next: AnyValue) = {
       next match {
-        case (x: Byte)    => sum += x
-        case (x: Short)   => sum += x
-        case (x: Char)    => sum += x
-        case (x: Int)     => sum += x
-        case (x: Long)    => sum += x
-        case (x: Float)   => sum += x
-        case (x: Double)  => sum += x
+        case (x: ByteValue)    => sum += x.value()
+        case (x: ShortValue)   => sum += x.value()
+        case (x: CharValue)    => sum += x.value()
+        case (x: IntValue)     => sum += x.value()
+        case (x: LongValue)    => sum += x.value()
+        case (x: FloatValue)   => sum += x.value()
+        case (x: DoubleValue)  => sum += x.value()
         case _ =>
       }
       this
@@ -283,14 +292,14 @@ trait TypeSafeMathSupport {
         this
     }
 
-    override def add(next: Any): OverflowAwareSum[_] = next match {
-      case (x: Byte)    => addLong(x)
-      case (x: Short)   => addLong(x)
-      case (x: Char)    => addLong(x)
-      case (x: Int)     => addLong(x)
-      case (x: Long)    => addLong(x)
-      case (x: Float)   => DoubleSum(sum).add(next)
-      case (x: Double)  => DoubleSum(sum).add(next)
+    override def add(next: AnyValue): OverflowAwareSum[_] = next match {
+      case (x: ByteValue)    => addLong(x.longValue())
+      case (x: ShortValue)   => addLong(x.longValue())
+      case (x: CharValue)    => addLong(x.value())
+      case (x: IntValue)     => addLong(x.longValue())
+      case (x: LongValue)    => addLong(x.longValue())
+      case (_: FloatValue)   => DoubleSum(sum).add(next)
+      case (_: DoubleValue)  => DoubleSum(sum).add(next)
       case _ => this
     }
   }
@@ -307,14 +316,14 @@ trait TypeSafeMathSupport {
         this
     }
 
-    override def add(next: Any): OverflowAwareSum[_] = next match {
-      case (x: Byte)    => addInt(x)
-      case (x: Short)   => addInt(x)
-      case (x: Char)    => addInt(x)
-      case (x: Int)     => addInt(x)
-      case (x: Long)    => LongSum(sum).add(x)
-      case (x: Float)   => DoubleSum(sum).add(x)
-      case (x: Double)  => DoubleSum(sum).add(x)
+    override def add(next: AnyValue): OverflowAwareSum[_] = next match {
+      case (x: ByteValue)    => addInt(x.value())
+      case (x: ShortValue)   => addInt(x.value())
+      case (x: CharValue)    => addInt(x.value())
+      case (x: IntValue)     => addInt(x.value())
+      case (x: LongValue)    => LongSum(sum).add(x)
+      case (x: FloatValue)   => DoubleSum(sum).add(x)
+      case (x: DoubleValue)  => DoubleSum(sum).add(x)
       case _ => this
     }
   }

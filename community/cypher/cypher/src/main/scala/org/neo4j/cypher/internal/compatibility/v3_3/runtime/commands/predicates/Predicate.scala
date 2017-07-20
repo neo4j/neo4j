@@ -141,7 +141,7 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
 case class IsNull(expression: Expression) extends Predicate {
 
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = expression(m) match {
-    case null => Some(true)
+    case Values.NO_VALUE => Some(true)
     case _ => Some(false)
   }
 

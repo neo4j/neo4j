@@ -21,15 +21,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.Values.{NO_VALUE, intValue, stringValue}
 
 class CountTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new CountFunction(inner)
 
   test("testCounts") {
-    val result = aggregateOn(1, null, "foo")
+    val result = aggregateOn(intValue(1), NO_VALUE, stringValue("foo"))
 
-    result should equal(2L)
-    result shouldBe a [java.lang.Long]
+    result should equal(intValue(2))
+    result shouldBe a [LongValue]
   }
 }

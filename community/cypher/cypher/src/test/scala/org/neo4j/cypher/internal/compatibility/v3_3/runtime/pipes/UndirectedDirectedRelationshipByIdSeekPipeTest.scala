@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -49,7 +51,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       .createResults(queryState)
 
     // then
-    result.toList should equal(List(
+    result.toList should beEquivalentTo(List(
       Map("a" -> rel, "to" -> endNode, "from" -> startNode),
       Map("a" -> rel, "to" -> startNode, "from" -> endNode)))
   }
@@ -78,10 +80,10 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // then
     result.toSet should equal(Set(
-      Map(relName -> r1, to -> e1, from -> s1),
-      Map(relName -> r2, to -> e2, from -> s2),
-      Map(relName -> r1, to -> s1, from -> e1),
-      Map(relName -> r2, to -> s2, from -> e2)
+      Map(relName -> fromRelationshipProxy(r1), to -> fromNodeProxy(e1), from -> fromNodeProxy(s1)),
+      Map(relName -> fromRelationshipProxy(r2), to -> fromNodeProxy(e2), from -> fromNodeProxy(s2)),
+      Map(relName -> fromRelationshipProxy(r1), to -> fromNodeProxy(s1), from -> fromNodeProxy(e1)),
+      Map(relName -> fromRelationshipProxy(r2), to -> fromNodeProxy(s2), from -> fromNodeProxy(e2))
     ))
   }
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, NumericHelper, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.doubleValue
 import org.neo4j.values.{AnyValue, AnyValues}
 
 trait PercentileTest {
@@ -44,78 +45,78 @@ class PercentileDiscTest extends CypherFunSuite with PercentileTest {
 
   test("singleOne") {
     val values = List(1.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.50, values) should equal(1.0)
-    getPercentile(0.99, values) should equal(1.0)
-    getPercentile(1.00, values) should equal(1.0)
+    getPercentile(0.0, values) should equal(doubleValue(1.0))
+    getPercentile(0.50, values) should equal(doubleValue(1.0))
+    getPercentile(0.99, values) should equal(doubleValue(1.0))
+    getPercentile(1.00, values) should equal(doubleValue(1.0))
   }
 
   test("manyOnes") {
     val values = List(1.0, 1.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.50, values) should equal(1.0)
-    getPercentile(0.99, values) should equal(1.0)
-    getPercentile(1.00, values) should equal(1.0)
+    getPercentile(0.0, values) should equal(doubleValue(1.0))
+    getPercentile(0.50, values) should equal(doubleValue(1.0))
+    getPercentile(0.99, values) should equal(doubleValue(1.0))
+    getPercentile(1.00, values) should equal(doubleValue(1.0))
   }
 
   test("oneTwoThree") {
     val values = List(1.0, 2.0, 3.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.25, values) should equal(1.0)
-    getPercentile(0.33, values) should equal(1.0)
-    getPercentile(0.50, values) should equal(2.0)
-    getPercentile(0.66, values) should equal(2.0)
-    getPercentile(0.75, values) should equal(3.0)
-    getPercentile(0.99, values) should equal(3.0)
-    getPercentile(1.00, values) should equal(3.0)
+    getPercentile(0.00, values) should equal(doubleValue(1.0))
+    getPercentile(0.25, values) should equal(doubleValue(1.0))
+    getPercentile(0.33, values) should equal(doubleValue(1.0))
+    getPercentile(0.50, values) should equal(doubleValue(2.0))
+    getPercentile(0.66, values) should equal(doubleValue(2.0))
+    getPercentile(0.75, values) should equal(doubleValue(3.0))
+    getPercentile(0.99, values) should equal(doubleValue(3.0))
+    getPercentile(1.00, values) should equal(doubleValue(3.0))
   }
 
   test("oneTwoThreeFour") {
     val values = List(1.0, 2.0, 3.0, 4.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.25, values) should equal(1.0)
-    getPercentile(0.33, values) should equal(2.0)
-    getPercentile(0.50, values) should equal(2.0)
-    getPercentile(0.66, values) should equal(3.0)
-    getPercentile(0.75, values) should equal(3.0)
-    getPercentile(0.99, values) should equal(4.0)
-    getPercentile(1.00, values) should equal(4.0)
+    getPercentile(0.00, values) should equal(doubleValue(1.0))
+    getPercentile(0.25, values) should equal(doubleValue(1.0))
+    getPercentile(0.33, values) should equal(doubleValue(2.0))
+    getPercentile(0.50, values) should equal(doubleValue(2.0))
+    getPercentile(0.66, values) should equal(doubleValue(3.0))
+    getPercentile(0.75, values) should equal(doubleValue(3.0))
+    getPercentile(0.99, values) should equal(doubleValue(4.0))
+    getPercentile(1.00, values) should equal(doubleValue(4.0))
   }
 
   test("oneTwoThreeFourFive") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.25, values) should equal(2.0)
-    getPercentile(0.33, values) should equal(2.0)
-    getPercentile(0.50, values) should equal(3.0)
-    getPercentile(0.66, values) should equal(4.0)
-    getPercentile(0.75, values) should equal(4.0)
-    getPercentile(0.99, values) should equal(5.0)
-    getPercentile(1.00, values) should equal(5.0)
+    getPercentile(0.00, values) should equal(doubleValue(1.0))
+    getPercentile(0.25, values) should equal(doubleValue(2.0))
+    getPercentile(0.33, values) should equal(doubleValue(2.0))
+    getPercentile(0.50, values) should equal(doubleValue(3.0))
+    getPercentile(0.66, values) should equal(doubleValue(4.0))
+    getPercentile(0.75, values) should equal(doubleValue(4.0))
+    getPercentile(0.99, values) should equal(doubleValue(5.0))
+    getPercentile(1.00, values) should equal(doubleValue(5.0))
   }
 
   test("oneTwoThreeFourFiveSix") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.25, values) should equal(2.0)
-    getPercentile(0.33, values) should equal(2.0)
-    getPercentile(0.50, values) should equal(3.0)
-    getPercentile(0.66, values) should equal(4.0)
-    getPercentile(0.75, values) should equal(5.0)
-    getPercentile(0.99, values) should equal(6.0)
-    getPercentile(1.00, values) should equal(6.0)
+    getPercentile(0.00, values) should equal(doubleValue(1.0))
+    getPercentile(0.25, values) should equal(doubleValue(2.0))
+    getPercentile(0.33, values) should equal(doubleValue(2.0))
+    getPercentile(0.50, values) should equal(doubleValue(3.0))
+    getPercentile(0.66, values) should equal(doubleValue(4.0))
+    getPercentile(0.75, values) should equal(doubleValue(5.0))
+    getPercentile(0.99, values) should equal(doubleValue(6.0))
+    getPercentile(1.00, values) should equal(doubleValue(6.0))
   }
 
   test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
-    getPercentile(0.0, values) should equal(1.0)
-    getPercentile(0.25, values) should equal(2.0)
-    getPercentile(0.33, values) should equal(3.0)
-    getPercentile(0.50, values) should equal(4.0)
-    getPercentile(0.66, values) should equal(5.0)
-    getPercentile(0.75, values) should equal(6.0)
-    getPercentile(0.99, values) should equal(7.0)
-    getPercentile(1.00, values) should equal(7.0)
+    getPercentile(0.00, values) should equal(doubleValue(1.0))
+    getPercentile(0.25, values) should equal(doubleValue(2.0))
+    getPercentile(0.33, values) should equal(doubleValue(3.0))
+    getPercentile(0.50, values) should equal(doubleValue(4.0))
+    getPercentile(0.66, values) should equal(doubleValue(5.0))
+    getPercentile(0.75, values) should equal(doubleValue(6.0))
+    getPercentile(0.99, values) should equal(doubleValue(7.0))
+    getPercentile(1.00, values) should equal(doubleValue(7.0))
   }
 }
 

@@ -856,9 +856,9 @@ order by a.COL1""")
 
   test("should iterate all node id sets from start during matching") {
     // given
-    val nodes: List[Node] =
+    val nodes: Vector[Node] =
       executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
-        .columnAs[List[Node]]("nodes").next().sortBy(_.getId)
+        .columnAs[Vector[Node]]("nodes").next().sortBy(_.getId)
 
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"
 

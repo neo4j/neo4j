@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.compatibility.v3_2.{ExecutionResultWrapper => E
 import org.neo4j.cypher.internal.compatibility.v3_3.exceptionHandler
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
@@ -39,7 +38,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.{SemanticDirection => SemanticDir
 import org.neo4j.cypher.internal.frontend.v3_1.{SemanticDirection => SemanticDirection3_1, notification => notification_3_1, symbols => symbols3_1}
 import org.neo4j.cypher.internal.frontend.v3_2.{SemanticDirection => SemanticDirection3_2, notification => notification_3_2, symbols => symbols3_2}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, notification, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
@@ -55,7 +54,7 @@ object RewindableExecutionResult {
         }
       case other: StandardInternalExecutionResult =>
         exceptionHandler.runSafely {
-          other.toEagerResultForTestingOnly(CostBasedPlannerName.default, CompiledRuntimeName)
+          other.toEagerResultForTestingOnly(CostBasedPlannerName.default)
         }
 
       case _ =>

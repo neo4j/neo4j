@@ -188,7 +188,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
         execute(query)
       }
     }
-
+    println(execute("MATCH (n) RETURN count(*)").toList)
     Map(
       "non-triadic1" -> Map(
         "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",

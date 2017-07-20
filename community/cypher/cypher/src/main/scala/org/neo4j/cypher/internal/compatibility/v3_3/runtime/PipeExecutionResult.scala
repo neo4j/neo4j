@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJava
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl, Version}
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
@@ -63,7 +63,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(result.next(), query.asObject).asJava.asInstanceOf[T]
+    def next() = query.asObject(result.next().getOrElse(column, columnNotFoundException(column, columns))).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -72,14 +72,15 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = Eagerly.immutableMapValues(result.next(), query.asObject).asJava
+    def next() = immutableMapValues(result.next(), query.asObject).asJava
   }
 
-  override def toList: List[Predef.Map[String, Any]] = result.toList.map(Eagerly.immutableMapValues(_, query.asObject))
+  override def toList: List[Predef.Map[String, Any]] = result.toList.map(immutableMapValues(_, query.asObject))
+    .map(immutableMapValues(_, scalaValues.asDeepScalaValue))
 
   def hasNext = result.hasNext
 
-  def next() = Eagerly.immutableMapValues(Eagerly.immutableMapValues(result.next(), query.asObject), scalaValues.asDeepScalaValue)
+  def next() = immutableMapValues(immutableMapValues(result.next(), query.asObject), scalaValues.asDeepScalaValue)
 
   def queryStatistics() = state.getStatistics
 

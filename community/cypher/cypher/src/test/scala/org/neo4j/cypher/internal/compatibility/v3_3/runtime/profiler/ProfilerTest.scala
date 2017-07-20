@@ -19,16 +19,18 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler
 
+import org.mockito.Matchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.values.storable.Values.NO_VALUE
 
 class ProfilerTest extends CypherFunSuite {
 
@@ -143,10 +145,10 @@ class ProfilerTest extends CypherFunSuite {
     assertRecorded(decoratedResult, "rhs", expectedRows = 10 * 20, expectedDbHits = 10 * 30)
   }
 
-
   test("count dbhits for NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
+    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
     val start1 = SingleRowPipe()()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = DB_HITS)
@@ -174,6 +176,7 @@ class ProfilerTest extends CypherFunSuite {
   test("count page cache hits for NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
+    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
     val start1 = SingleRowPipe()()
     val statisticProvider = new ConfiguredKernelStatisticProvider()
     val testPipe = ProfilerTestPipe(start1, "nested pipe", rows = 10, dbAccess = 2, statisticProvider, hits = 3, misses = 4 )
@@ -201,6 +204,7 @@ class ProfilerTest extends CypherFunSuite {
   test("count dbhits for deeply nested NestedPipes") {
     // GIVEN
     val projectedPath = mock[ProjectedPath]
+    when(projectedPath.apply(any())(any())).thenReturn(NO_VALUE)
     val DB_HITS = 100
     val start1 = SingleRowPipe()()
     val start2 = SingleRowPipe()()

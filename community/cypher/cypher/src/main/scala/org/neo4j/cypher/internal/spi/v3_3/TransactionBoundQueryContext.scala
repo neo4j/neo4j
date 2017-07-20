@@ -60,7 +60,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.storable.Value
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -330,9 +330,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   class NodeOperations extends BaseOperations[Node] {
-    override def delete(obj: Node) {
+    override def delete(id: Long) {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
+        transactionalContext.statement.dataWriteOperations().nodeDelete(id)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
@@ -394,9 +394,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def indexQuery(name: String, query: Any): Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
-    override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
-
-    def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
+    override def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -410,9 +408,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   class RelationshipOperations extends BaseOperations[Relationship] {
 
-    override def delete(obj: Relationship) {
+    override def delete(id: Long) {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
+        transactionalContext.statement.dataWriteOperations().relationshipDelete(id)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
@@ -450,7 +448,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
+        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, value)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -475,10 +473,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
-    override def isDeletedInThisTx(r: Relationship): Boolean =
-      isDeletedInThisTx(r.getId)
-
-    def isDeletedInThisTx(id: Long): Boolean =
+    override def isDeletedInThisTx(id: Long): Boolean =
       transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
@@ -783,9 +778,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def detachDeleteNode(node: Node): Int = {
+  override def detachDeleteNode(node: Long): Int = {
     try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
     } catch {
       case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }

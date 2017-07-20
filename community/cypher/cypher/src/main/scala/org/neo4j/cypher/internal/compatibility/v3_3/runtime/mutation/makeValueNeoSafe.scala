@@ -40,7 +40,9 @@ object makeValueNeoSafe extends (AnyValue => Value) with ListSupport {
   can be coerced to according to Cypher coercion rules
    */
   private def transformTraversableToArray(a: ListValue): ArrayValue = {
-    if (a.isEmpty) {
+    if (a.storable()) {
+      a.toStorableArray
+    } else if (a.isEmpty) {
       Values.stringArray(Array.empty[String]:_*)
     } else {
       val typeValue = a.iterator().asScala.reduce(CastSupport.merge)

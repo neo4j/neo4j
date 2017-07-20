@@ -20,9 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
@@ -260,15 +260,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
     rewindableResult(innerResult)
   }
 
-  private def rewindableResult(result: Result): InternalExecutionResult = {
-    result match {
-      case e: ClosingExecutionResult => e.inner.asInstanceOf[ExecutionResult].internalExecutionResult() match {
-        case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: InternalExecutionResult => RewindableExecutionResult(e)
-      }
-    }
-  }
+
+  private def rewindableResult(result: Result): InternalExecutionResult = RewindableExecutionResult(result)
 
   object Configs {
     def CompiledSource: TestConfiguration = Scenarios.CompiledSource3_3

@@ -230,7 +230,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)
 
-  override def detachDeleteNode(node: Node): Int = manyDbHits(inner.detachDeleteNode(node))
+  override def detachDeleteNode(node: Long): Int = manyDbHits(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
@@ -243,7 +243,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
   protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
 
-  override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
+  override def delete(id: Long): Unit = singleDbHit(inner.delete(id))
 
   override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
@@ -266,7 +266,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   override def allPrimitive: PrimitiveLongIterator = manyDbHits(inner.allPrimitive)
 
-  override def isDeletedInThisTx(obj: T): Boolean = inner.isDeletedInThisTx(obj)
+  override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 

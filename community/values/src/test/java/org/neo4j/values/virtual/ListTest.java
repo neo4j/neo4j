@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
@@ -34,9 +35,6 @@ import static org.neo4j.values.storable.Values.intArray;
 import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.shortArray;
 import static org.neo4j.values.storable.Values.stringArray;
-
-import static java.lang.String.format;
-import static org.junit.Assert.assertArrayEquals;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;

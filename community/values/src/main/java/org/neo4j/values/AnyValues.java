@@ -24,6 +24,8 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.Node;
@@ -93,6 +95,10 @@ public final class AnyValues
             else if ( object instanceof Collection<?> )
             {
                 return asListValue( (Collection<?>) object );
+            }
+            else if ( object instanceof Stream<?> )
+            {
+                return asListValue( ((Stream<Object>) object).collect( Collectors.toList() ) );
             }
             else if ( object instanceof Point )
             {

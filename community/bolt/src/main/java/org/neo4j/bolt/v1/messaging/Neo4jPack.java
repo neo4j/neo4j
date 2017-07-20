@@ -137,7 +137,7 @@ public class Neo4jPack
             packListHeader( labels.length() );
             for ( int i = 0; i < labels.length(); i++ )
             {
-                labels.valueAt( i ).writeTo( this );
+                labels.value( i ).writeTo( this );
             }
             properties.writeTo( this );
         }

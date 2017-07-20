@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import java.util
 
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result.ResultVisitor
 
@@ -52,7 +53,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
-  extends StandardInternalExecutionResult(context, Some(taskCloser)) {
+  extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
 
   override def columns: List[String] = indexResultNameMappings.map(_._2).toList
 
@@ -106,6 +107,8 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   override def executionPlanDescription(): InternalPlanDescription = executionMode match {
     case ProfileMode if executionResults.hasNext => throw new ProfilerStatisticsNotReadyException()
     case _ => executionPlanDescriptionGenerator()
+      .addArgument(Runtime(ProcedureRuntimeName.toTextOutput))
+      .addArgument(RuntimeImpl(ProcedureRuntimeName.toTextOutput))
   }
 
   override def withNotifications(notification: Notification*): InternalExecutionResult = this

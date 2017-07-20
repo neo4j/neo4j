@@ -24,10 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 case class Property(mapExpr: Expression, propertyKey: KeyToken)
   extends Expression with Product with Serializable
@@ -39,10 +38,10 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case None => Values.NO_VALUE
         case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId)
       }
-    case r: Relationship =>
+    case r: EdgeValue =>
       propertyKey.getOptId(state.query) match {
-        case None => null
-        case Some(propId) => state.query.relationshipOps.getProperty(r.getId, propId)
+        case None => Values.NO_VALUE
+        case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
       }
     case IsMap(mapFunc) => mapFunc.get(propertyKey.name)
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")

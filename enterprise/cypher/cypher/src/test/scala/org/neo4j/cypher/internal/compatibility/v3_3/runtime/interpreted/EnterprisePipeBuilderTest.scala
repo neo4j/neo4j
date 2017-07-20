@@ -31,10 +31,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseR
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanIdentificationBuilder, plans}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._

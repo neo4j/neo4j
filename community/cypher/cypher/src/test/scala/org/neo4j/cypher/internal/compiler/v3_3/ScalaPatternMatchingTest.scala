@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.PatternGraphBuilder
@@ -28,7 +30,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.Patte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.values.AnyValue
 
 class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
@@ -65,7 +66,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     }
 
     // Then
-    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
+    result should beEquivalentTo(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 
   test("should_only_return_matches_that_fulfill_the_uniqueness_constraint") {
@@ -133,7 +134,7 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     }
 
     // Then
-    result should equal(List(Map("a" -> n0, "b" -> n1, "c" -> n0, "r1" -> rel, "r2" -> rel)))
+    result should beEquivalentTo(List(Map("a" -> n0, "b" -> n1, "c" -> n0, "r1" -> rel, "r2" -> rel)))
   }
 
   test("should_handle_a_single_relationship_with_node_with_properties_no_matches") {
@@ -217,6 +218,6 @@ class ScalaPatternMatchingTest extends ExecutionEngineFunSuite with PatternGraph
     }
 
     // Then
-    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> rel)))
+    result should beEquivalentTo(List(Map("a" -> aNode, "b" -> bNode, "r" -> rel)))
   }
 }
