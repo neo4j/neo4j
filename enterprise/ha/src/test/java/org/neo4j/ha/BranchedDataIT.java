@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -93,10 +94,13 @@ public class BranchedDataIT
         }
 
         File dir = directory.directory();
+        int clusterPort = PortAuthority.allocatePort();
         new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( dir )
                 .setConfig( ClusterSettings.server_id, "1" )
-                .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
+                .setConfig( ClusterSettings.initial_hosts, "localhost:" + clusterPort )
+                .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )
