@@ -37,6 +37,10 @@ case object cleanUpEager extends Rewriter {
     // E LCSV => LCSV E
     case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
       loadCSV.copy(source = eager.copy(inner = source)(eager.solved))(eager.solved)
+
+    // E LIMIT => LIMIT E
+    case eager@Eager(limit@Limit(source, _, _)) =>
+      limit.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
   })
 
   override def apply(input: AnyRef) = instance.apply(input)
