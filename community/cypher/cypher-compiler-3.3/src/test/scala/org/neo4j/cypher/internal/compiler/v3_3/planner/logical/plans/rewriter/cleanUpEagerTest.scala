@@ -85,6 +85,18 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(topPlan) should equal(Projection(LoadCSV(Eager(leaf)(solved), url, IdName("a"), NoHeaders, None, false)(solved), Map.empty)(solved))
   }
 
+  test("should move eager on top of limit to below it") {
+    val leaf = newMockedLogicalPlan()
+    val limit = Limit(leaf, literalInt(12), DoNotIncludeTies)(solved)
+    val eager = Eager(limit)(solved)
+    val topPlan = Projection(eager, Map.empty)(solved)
+
+    rewrite(topPlan) should equal(
+      Projection(
+        Limit(
+          Eager(leaf)(solved), literalInt(12), DoNotIncludeTies)(solved), Map.empty)(solved))
+  }
+
   test("should not rewrite plan with eager below load csv") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)(solved)
