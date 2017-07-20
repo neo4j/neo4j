@@ -59,6 +59,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -100,6 +101,7 @@ public class LuceneDataSource extends LifecycleAdapter
     private final File storeDir;
     private final Config config;
     private final FileSystemAbstraction fileSystemAbstraction;
+    private final OperationalMode operationalMode;
     private IndexClockCache indexSearchers;
     private File baseStorePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
@@ -113,13 +115,15 @@ public class LuceneDataSource extends LifecycleAdapter
     /**
      * Constructs this data source.
      */
-    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
+    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore, FileSystemAbstraction
+            fileSystemAbstraction, OperationalMode operationalMode )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.operationalMode = operationalMode;
     }
 
     @Override
@@ -127,7 +131,7 @@ public class LuceneDataSource extends LifecycleAdapter
     {
         this.filesystemFacade = config.get( Configuration.ephemeral ) ? LuceneFilesystemFacade.MEMORY
                 : LuceneFilesystemFacade.FS;
-        readOnly = config.get( GraphDatabaseSettings.read_only );
+        readOnly = isReadOnly( config, operationalMode );
         indexSearchers = new IndexClockCache( config.get( Configuration.lucene_searcher_cache_size ) );
         this.baseStorePath = this.filesystemFacade.ensureDirectoryExists( fileSystemAbstraction,
                 getLuceneIndexStoreDirectory( storeDir ) );
@@ -471,6 +475,11 @@ public class LuceneDataSource extends LifecycleAdapter
                 getIndexSearcher( identifier ).close();
             }
         }
+    }
+
+    private boolean isReadOnly( Config config, OperationalMode operationalMode )
+    {
+        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
     }
 
     enum LuceneFilesystemFacade

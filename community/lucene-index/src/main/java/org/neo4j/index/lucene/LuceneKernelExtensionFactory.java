@@ -51,6 +51,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
                 dependencies.getConfig(),
                 dependencies::getIndexStore,
                 context.fileSystem(),
-                dependencies.getIndexProviders() );
+                dependencies.getIndexProviders(),
+                context.databaseInfo().operationalMode );
     }
 }
