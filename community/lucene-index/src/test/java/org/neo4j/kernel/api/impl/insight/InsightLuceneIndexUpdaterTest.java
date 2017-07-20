@@ -60,7 +60,7 @@ public class InsightLuceneIndexUpdaterTest
             for ( int i = 0; i < 1; i++ )
             {
                 Node node = db.createNode( LABEL );
-                node.setProperty( "prop", "hej" );
+                node.setProperty( "prop", "Hello. Hello again." );
             }
 
             tx.success();
@@ -68,7 +68,7 @@ public class InsightLuceneIndexUpdaterTest
 
         InsightIndexReader reader = insightIndex.getReader();
 
-        assertEquals( 0, reader.query( "hej" ).next() );
+        assertEquals( 0, reader.query( "hello" ).next() );
 
     }
 }
