@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.insight;
 
-import org.apache.lucene.document.DoubleField;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.search.Query;
 
-import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -157,7 +155,11 @@ enum InsightFieldEncoding
                 @Override
                 Field encodeField( String name, Value value )
                 {
-                    return new TextField( name, ((TextValue) value).stringValue(), Store.YES );
+                    java.lang.String stringValue = ((TextValue) value).stringValue();
+
+                    TokenStream tokenStream = new EnglishAnalyzer().tokenStream( name, stringValue );
+                    TextField field = new TextField( name, tokenStream );
+                    return field;
                 }
 
 //                @Override
