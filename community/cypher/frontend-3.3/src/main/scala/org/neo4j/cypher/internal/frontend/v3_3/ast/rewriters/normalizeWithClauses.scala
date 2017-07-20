@@ -51,12 +51,12 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ With(_, ri, _, None, _, _, None) =>
+    case clause @ With(_, ri: ReturnItems, _, None, _, _, None) =>
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
-    case clause @ With(distinct, ri, gri, orderBy, skip, limit, where) =>
+    case clause @ With(distinct, ri: ReturnItems, gri, orderBy, skip, limit, where) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
       val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems

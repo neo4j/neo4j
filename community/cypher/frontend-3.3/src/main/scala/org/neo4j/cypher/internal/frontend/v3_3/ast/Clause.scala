@@ -413,7 +413,7 @@ sealed trait HorizonClause extends Clause with SemanticChecking {
 
 sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   def distinct: Boolean
-  def returnItems: ReturnItems
+  def returnItems: ReturnItemsDef
   def graphItems: Option[GraphReturnItems]
   def orderBy: Option[OrderBy]
   def skip: Option[Skip]
@@ -422,7 +422,15 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   override def semanticCheck: SemanticCheck =
     super.semanticCheck chain
       returnItems.semanticCheck chain
-      graphItems.semanticCheck
+      graphItems.semanticCheck chain
+      ensureOneIsNonEmpty
+
+  def ensureOneIsNonEmpty: SemanticCheck = (s: SemanticState) => {
+    if (returnItems.checkUserEmpty && graphItems.isEmpty)
+      error(s, FeatureError("At least one element must be specified for the projection", position))
+    else
+      success(s)
+  }
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
     val specialReturnItems = createSpecialReturnItems(previousScope, s)
@@ -433,18 +441,19 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     // We still need to declare the return items, and register the use of variables in the ORDER BY clause. But we
     // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
     val orderByResult = (returnItems.declareVariables(previousScope) chain ignoreErrors(orderBy.semanticCheck))(s)
-    val fixedOrderByResult =
-      if (specialReturnItems.includeExisting) {
+    val fixedOrderByResult = specialReturnItems match {
+      case ReturnItems(star, items) if star =>
         val shuffleScope = shuffleResult.state.currentScope.scope
-        val definedHere = specialReturnItems.items.map(_.name).toSet
+        val definedHere = items.map(_.name).toSet
         orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
-      } else
+      case _ =>
         orderByResult
+    }
 
     SemanticCheckResult(fixedOrderByResult.state, fixedOrderByResult.errors ++ shuffleErrors)
   }
 
-  private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItems = {
+  private def createSpecialReturnItems(previousScope: Scope, s: SemanticState): ReturnItemsDef = {
     // ORDER BY lives in this special scope that has access to things in scope before the RETURN/WITH clause,
     // but also to the variables introduced by RETURN/WITH. This is most easily done by turning
     // RETURN a, b, c => RETURN *, a, b, c
@@ -452,7 +461,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
     // projecting clause
     val includePreviousScope = !(returnItems.containsAggregate || distinct)
-    val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
+    val specialReturnItems = returnItems.withExisting(includePreviousScope)
     specialReturnItems
   }
 
@@ -467,23 +476,16 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     s => SemanticCheckResult.success(inner.apply(s).state)
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
-    val aggregationInProjection = returnItems.items.map(_.expression).exists(containsAggregate)
+    val aggregationInProjection = returnItems.containsAggregate
     val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
     if (!aggregationInProjection && aggregationInOrderBy)
       fail(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
   }
 }
-//
-//object With {
-//  def apply(distinct: Boolean, returnItems: Option[ReturnItems], graphItems: Option[GraphReturnItems],
-//            orderBy: Option[OrderBy], skip: Option[Skip], limit: Option[Limit],
-//            where: Option[Where])(position: InputPosition): With =
-//    With(distinct, returnItems.getOrElse(ReturnItems.empty(position)), graphItems, orderBy, skip, limit, where)(position)
-//}
 
 case class With(
                  distinct: Boolean,
-                 returnItems: ReturnItems,
+                 returnItems: ReturnItemsDef,
                  graphItems: Option[GraphReturnItems],
                  orderBy: Option[OrderBy],
                  skip: Option[Skip],
@@ -505,19 +507,9 @@ case class With(
     case _                     => Seq()
   }
 }
-//
-//object Return {
-//  def apply(distinct: Boolean,
-//            returnItems: Option[ReturnItems],
-//            graphItems: Option[GraphReturnItems],
-//            orderBy: Option[OrderBy],
-//            skip: Option[Skip],
-//            limit: Option[Limit])(position: InputPosition): Return =
-//    Return(distinct, returnItems.getOrElse(ReturnItems.empty(position)), graphItems, orderBy, skip, limit)(position)
-//}
 
 case class Return(distinct: Boolean,
-                  returnItems: ReturnItems,
+                  returnItems: ReturnItemsDef,
                   graphItems: Option[GraphReturnItems],
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
@@ -531,10 +523,12 @@ case class Return(distinct: Boolean,
   override def semanticCheck: SemanticCheck = super.semanticCheck chain checkVariableScope
 
   private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
-    if (returnItems.includeExisting && s.currentScope.isEmpty)
-      Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
-    else
-      Seq()
+    returnItems match {
+      case ReturnItems(star, _) if star && s.currentScope.isEmpty =>
+        Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
+      case _ =>
+        Seq.empty
+    }
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {

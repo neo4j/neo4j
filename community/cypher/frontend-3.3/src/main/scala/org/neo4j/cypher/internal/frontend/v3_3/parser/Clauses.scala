@@ -162,7 +162,7 @@ trait Clauses extends Parser
       optional(Limit)
   }
 
-  private def ReturnItems: Rule1[ast.ReturnItems] = rule("'*', an expression")(
+  private def ReturnItems: Rule1[ast.ReturnItemsDef] = rule("'*', an expression")(
     str("-") ~~~> ast.ReturnItems.empty
       | "*" ~ zeroOrMore(CommaSep ~ ReturnItem) ~~>> (ast.ReturnItems(includeExisting = true, _))
       | oneOrMore(ReturnItem, separator = CommaSep) ~~>> (ast.ReturnItems(includeExisting = false, _))

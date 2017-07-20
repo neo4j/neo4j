@@ -16,7 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Clause, Expression, SingleQuery, With}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
 
 /**
@@ -38,7 +38,7 @@ case object projectFreshSortExpressions extends Rewriter {
     case clause@With(_, _, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause@With(_, ri, _, orderBy, skip, limit, where) =>
+    case clause@With(_, ri: ReturnItems, _, orderBy, skip, limit, where) =>
       val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
       val evaluatedAliases = allAliases -- passedThroughAliases

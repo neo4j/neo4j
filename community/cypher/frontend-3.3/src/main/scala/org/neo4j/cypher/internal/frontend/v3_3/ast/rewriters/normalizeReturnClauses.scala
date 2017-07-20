@@ -40,8 +40,8 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause @ Return(_, ri, _, None, _, _, _) =>
-      val aliasedItems = ri.items.map({
+    case clause @ Return(_, ri@ReturnItems(_, items), _, None, _, _, _) =>
+      val aliasedItems = items.map({
         case i: AliasedReturnItem =>
           i
         case i =>
@@ -52,7 +52,7 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
         clause.copy(returnItems = ri.copy(items = aliasedItems)(ri.position))(clause.position)
       )
 
-    case clause @ Return(distinct, ri, gri, orderBy, skip, limit, _) =>
+    case clause @ Return(distinct, ri: ReturnItems, gri, orderBy, skip, limit, _) =>
       clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
       var rewrites = Map[Expression, Variable]()
 

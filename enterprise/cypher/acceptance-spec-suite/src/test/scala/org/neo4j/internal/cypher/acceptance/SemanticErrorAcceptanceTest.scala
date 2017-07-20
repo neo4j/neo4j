@@ -73,7 +73,14 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("empty return") {
     executeAndEnsureError(
       "WITH $param AS foo MATCH (a) RETURN -",
-      "At least one element must be specified for the projection (line 1, column 37 (offset: 36))"
+      "At least one element must be specified for the projection (line 1, column 30 (offset: 29))"
+    )
+  }
+
+  test("empty with") {
+    executeAndEnsureError(
+      "WITH - MATCH (a) RETURN a.name",
+      "At least one element must be specified for the projection (line 1, column 1 (offset: 0))"
     )
   }
 

@@ -20,18 +20,39 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult.{error, succe
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 object ReturnItems {
-  def empty(pos: InputPosition): ReturnItems = ReturnItems(includeExisting = false, Seq.empty)(pos)
+  def empty(pos: InputPosition): ReturnItemsDef = EmptyReturnItems(fromRewriting = false)(pos)
 }
 
-case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
-  def semanticCheck =
-    ensureNonEmpty chain
-    items.semanticCheck chain
-    ensureProjectedToUniqueIds
+sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+  /**
+    * Users must specify return items for the projection, either all variables (*), no variables (-), or explicit expressions.
+    * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
+    * This field is true if the dash (-) was used by a user.
+    */
+  def checkUserEmpty: Boolean
+  def declareVariables(previousScope: Scope): SemanticCheck
+  def containsAggregate: Boolean
+  def withExisting(includeExisting: Boolean): ReturnItemsDef
+  def items: Seq[ReturnItem]
+}
 
-  private def ensureNonEmpty: SemanticCheck = (s: SemanticState) =>
-    if (!includeExisting && items.isEmpty) error(s, FeatureError("At least one element must be specified for the projection", position))
-    else success(s)
+final case class EmptyReturnItems(fromRewriting: Boolean)(val position: InputPosition) extends ReturnItemsDef {
+  override def semanticCheck: SemanticCheck = _success
+  override val checkUserEmpty = !fromRewriting
+  override val items = Seq.empty
+  override def declareVariables(previousScope: Scope) = _success
+  override def containsAggregate = false
+  override def withExisting(includeExisting: Boolean) = this
+  private def _success(s: SemanticState) = success(s)
+}
+
+final case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItemsDef {
+  override val checkUserEmpty = !includeExisting && items.isEmpty
+
+  override def withExisting(includeExisting: Boolean): ReturnItemsDef =
+    copy(includeExisting = includeExisting)(position)
+
+  override def semanticCheck = items.semanticCheck chain ensureProjectedToUniqueIds
 
   def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
@@ -41,7 +62,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
 
   def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
 
-  def declareVariables(previousScope: Scope) =
+  override def declareVariables(previousScope: Scope) =
     when (includeExisting) {
       s => success(s.importScope(previousScope))
     } chain items.foldSemanticCheck(item => item.alias match {
@@ -61,7 +82,7 @@ case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val pos
     }
   }
 
-  def containsAggregate = items.exists(_.expression.containsAggregate)
+  override def containsAggregate = items.exists(_.expression.containsAggregate)
 }
 
 sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {

@@ -24,15 +24,15 @@ case class expandStar(state: SemanticState) extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case clause@With(_, ri, _, _, _, _, _) if ri.includeExisting =>
-      clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
+    case clause@With(_, ReturnItems(star, items), _, _, _, _, _) if star =>
+      clause.copy(returnItems = returnItems(clause, items))(clause.position)
 
     case clause: PragmaWithout =>
       With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
         graphItems = None, orderBy = None, skip = None, limit = None, where = None)(clause.position)
 
-    case clause@Return(_, ri, _, _, _, _, excludedNames) if ri.includeExisting =>
-      clause.copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
+    case clause@Return(_, ReturnItems(star, items), _, _, _, _, excludedNames) if star =>
+      clause.copy(returnItems = returnItems(clause, items, excludedNames), excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode
@@ -40,7 +40,7 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
+  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItemsDef = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }
@@ -54,6 +54,10 @@ case class expandStar(state: SemanticState) extends Rewriter {
       AliasedReturnItem(expr, alias)(clausePos)
     }
 
-    ReturnItems(includeExisting = false, expandedItems ++ listedItems)(clausePos)
+    val newItems = expandedItems ++ listedItems
+    if (newItems.isEmpty)
+      EmptyReturnItems(fromRewriting = true)(clausePos)
+    else
+      ReturnItems(includeExisting = false, newItems)(clausePos)
   }
 }
