@@ -53,6 +53,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     plan match {
       case AllNodesScan(IdName(column), _) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
+      case p@NodeIndexScan(IdName(column), label, propertyKeys, _ /*TODO*/) =>
+        NodeIndexScanRegisterPipe(column, label, propertyKeys, pipelineInformation)(id)
 
       case NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
