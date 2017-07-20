@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -63,14 +64,18 @@ public class InstanceJoinIT
         File slaveDir = testDirectory.directory( "slave" );
         try
         {
+            int masterClusterPort = PortAuthority.allocatePort();
+            int masterHaPort = PortAuthority.allocatePort();
             master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
-                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:" + masterClusterPort ), masterClusterPort, masterHaPort );
             createNode( master, "something", "unimportant" );
             checkPoint( master );
             // Need to start and shutdown the slave so when we start it up later it verifies instead of copying
+            int slaveClusterPort = PortAuthority.allocatePort();
+            int slaveHaPort = PortAuthority.allocatePort();
             slave = start( slaveDir, 1,
-                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
+                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:" + masterClusterPort ), slaveClusterPort, slaveHaPort );
             slave.shutdown();
 
             createNode( master, key, value );
@@ -88,7 +93,7 @@ public class InstanceJoinIT
             master.shutdown();
             master = start( masterDir, 0,
                     stringMap( keep_logical_logs.name(), "1 txs",
-                               ClusterSettings.initial_hosts.name(), "127.0.0.1:5001" ) );
+                               ClusterSettings.initial_hosts.name(), "127.0.0.1:" + masterClusterPort ), masterClusterPort, masterHaPort );
 
             /**
              * The new log on master needs to have at least one transaction, so here we go.
@@ -104,7 +109,7 @@ public class InstanceJoinIT
             checkPoint( master );
 
             slave = start( slaveDir, 1,
-                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:5001,127.0.0.1:5002" ) );
+                    stringMap( ClusterSettings.initial_hosts.name(), "127.0.0.1:" + masterClusterPort ), slaveClusterPort, slaveHaPort );
             slave.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
 
             try ( Transaction ignore = slave.beginTx() )
@@ -167,13 +172,13 @@ public class InstanceJoinIT
         }
     }
 
-    private static HighlyAvailableGraphDatabase start( File storeDir, int i, Map<String, String> additionalConfig )
+    private static HighlyAvailableGraphDatabase start( File storeDir, int i, Map<String, String> additionalConfig, int clusterPort, int haPort )
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + i) )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 .setConfig( ClusterSettings.server_id, i + "" )
-                .setConfig( HaSettings.ha_server, "127.0.0.1:" + (6666 + i) )
+                .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
                 .setConfig( HaSettings.pull_interval, "0ms" )
                 .setConfig( additionalConfig )
                 .newGraphDatabase();
