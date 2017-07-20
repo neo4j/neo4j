@@ -56,8 +56,6 @@ class PartitionedInsightIndexWriter
     {
         IndexWriter indexWriter = getIndexWriter( 1 );
         indexWriter.addDocument( doc );
-        indexWriter.prepareCommit();
-        indexWriter.commit();
     }
 
     public void addDocuments( int numDocs, Iterable<Document> documents ) throws IOException
