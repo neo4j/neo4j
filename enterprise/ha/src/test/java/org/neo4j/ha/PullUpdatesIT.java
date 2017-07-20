@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -197,10 +198,13 @@ public class PullUpdatesIT
         {
             File testRootDir = clusterRule.cleanDirectory( "shouldPullUpdatesOnStartupNoMatterWhat" );
             File masterDir = new File( testRootDir, "master" );
+            int masterClusterPort = PortAuthority.allocatePort();
             master = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( masterDir )
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + masterClusterPort )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
@@ -208,7 +212,9 @@ public class PullUpdatesIT
             slave =  (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( slaveDir )
                     .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .newGraphDatabase();
 
             // Required to block until the slave has left for sure
@@ -246,7 +252,9 @@ public class PullUpdatesIT
             slave = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( slaveDir )
                     .setConfig( ClusterSettings.server_id, "2" )
-                    .setConfig( ClusterSettings.initial_hosts, "localhost:5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
                     .newGraphDatabase();
 
