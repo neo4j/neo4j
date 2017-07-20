@@ -24,7 +24,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 
 class KeyTokenResolver {
-  def resolveExpressions(expr: Expression, ctx: TokenContext) = expr match {
+  @deprecated
+  def resolveExpressions(expr: Expression, ctx: TokenContext): Expression = expr match {
+    case (keyToken: KeyToken) => keyToken.resolve(ctx)
+    case _                    => expr
+  }
+}
+
+object KeyTokenResolver {
+  /*this is what you should use!*/
+  def resolveExpressions(expr: Expression, ctx: TokenContext): Expression = expr match {
     case (keyToken: KeyToken) => keyToken.resolve(ctx)
     case _                    => expr
   }

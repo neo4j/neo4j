@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
@@ -44,8 +43,16 @@ import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
  * When adding new Pipes and LogicalPlans, this is where you should be looking.
  */
 case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean,
-                                idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
+                                idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters,
+                                rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                                (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
+
+
+  private val buildExpression =
+    rewriteAstExpression andThen
+    expressionConverters.toCommandExpression andThen
+    (KeyTokenResolver.resolveExpressions(_, planContext))
+
 
   def build(plan: LogicalPlan): Pipe = {
     val id = idMap.getOrElse(plan, new Id)
@@ -380,27 +387,10 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
   private val resolver = new KeyTokenResolver
   implicit val table: SemanticTable = context.semanticTable
 
-  private object buildPipeExpressions extends Rewriter {
-    private val instance = bottomUp(Rewriter.lift {
-      case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>
-        val pipe = recurse(patternPlan)
-        val result = NestedPipeExpression(pipe, expression)(expr.position)
-        result
-    })
-
-    override def apply(that: AnyRef): AnyRef = instance.apply(that)
-  }
-
-  private def buildExpression(expr: frontEndAst.Expression)(implicit planContext: PlanContext): CommandExpression = {
-    val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
-
-    expressionConverters.toCommandExpression(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext))
-  }
-
   private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
-    val rewrittenExpr: Expression = expr.endoRewrite(buildPipeExpressions)
+    val rewrittenExpr: Expression = rewriteAstExpression(expr)
 
-    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(resolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
   private def translateSortDescription(s: logical.SortDescription): pipes.SortDescription = s match {

@@ -148,8 +148,13 @@ class PipeExecutionPlanBuilder(clock: Clock,
 }
 
 object CommunityPipeBuilderFactory extends PipeBuilderFactory {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext) =
-  CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
+  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe,
+            readOnly: Boolean, idMap: Map[LogicalPlan, Id],
+            expressionConverters: ExpressionConverters)
+           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
+    CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, recursePipes(recurse, planContext))
+  }
+
 }
 
 trait PipeBuilder {

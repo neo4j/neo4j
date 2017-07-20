@@ -20,11 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NestedPipeExpression, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_3.{ast => compilerAst}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
+import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
 
 trait PipeBuilderFactory {
 
@@ -34,4 +36,22 @@ trait PipeBuilderFactory {
             idMap: Map[LogicalPlan, Id],
             expressionConverters: ExpressionConverters)
            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder
+
+  protected def recursePipes(recurse: LogicalPlan => Pipe, planContext: PlanContext)
+                            (in: frontEndAst.Expression): frontEndAst.Expression = {
+
+    val buildPipeExpressions = new Rewriter {
+      private val instance = bottomUp(Rewriter.lift {
+        case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>
+          val pipe = recurse(patternPlan)
+          val result = NestedPipeExpression(pipe, expression)(expr.position)
+          result
+      })
+
+      override def apply(that: AnyRef): AnyRef = instance.apply(that)
+    }
+    in.endoRewrite(buildPipeExpressions)
+
+  }
+
 }

@@ -42,4 +42,4 @@ case class ProduceResultRegisterPipe(source: Pipe, columns: Seq[(String, Express
   }
 }
 
-trait RegisterPipe
+trait RegisterPipe extends Pipe
