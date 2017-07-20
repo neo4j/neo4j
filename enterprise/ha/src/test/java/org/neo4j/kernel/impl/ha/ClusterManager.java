@@ -1257,7 +1257,7 @@ public class ClusterManager
          */
         public void await( Predicate<ManagedCluster> predicate )
         {
-            await( predicate, 60 );
+            await( predicate, 240 );
         }
 
         /**
