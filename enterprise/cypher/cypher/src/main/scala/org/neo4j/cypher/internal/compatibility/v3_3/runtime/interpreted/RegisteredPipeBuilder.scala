@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ProduceResultRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodesByLabelScanRegisterPipe, ProduceResultRegisterPipe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pipe, PipeMonitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe, PipeMonitor}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
@@ -42,12 +42,17 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
   implicit private val monitor = monitors.newMonitor[PipeMonitor]()
 
   override def build(plan: LogicalPlan): Pipe = {
+    implicit val table: SemanticTable = context.semanticTable
+
     val id = idMap.getOrElse(plan, new Id)
     val pipelineInformation = pipelines(plan)
 
     plan match {
       case p@AllNodesScan(IdName(column), _ /*TODO*/) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
+
+      case p@NodeByLabelScan(IdName(column), label, _ /*TODO*/) =>
+        NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case _ => fallback.build(plan)
     }

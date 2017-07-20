@@ -104,6 +104,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getNodesByLabel(id: Int): Iterator[Node] =
     translateException(inner.getNodesByLabel(id))
 
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
+    translateException(inner.getNodesByLabelPrimitive(id))
+
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     translateException(inner.nodeGetDegree(node, dir))
 

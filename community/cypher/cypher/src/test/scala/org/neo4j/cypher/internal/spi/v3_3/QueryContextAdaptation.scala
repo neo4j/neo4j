@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.net.URL
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -126,6 +127,8 @@ trait QueryContextAdaptation {
   override def relationshipOps: Operations[Relationship] = ???
 
   override def getNodesByLabel(id: Int): scala.Iterator[Node] = ???
+
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator = ???
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node] = ???
 

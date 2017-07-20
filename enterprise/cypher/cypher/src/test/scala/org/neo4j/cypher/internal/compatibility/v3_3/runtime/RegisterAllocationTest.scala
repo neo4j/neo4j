@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
   test("only single allnodes scan") {
     // given
     val plan = AllNodesScan(IdName("x"), Set.empty)(solved)

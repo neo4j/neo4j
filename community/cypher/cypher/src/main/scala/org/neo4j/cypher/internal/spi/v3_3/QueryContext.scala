@@ -106,6 +106,8 @@ trait QueryContext extends TokenContext {
 
   def getNodesByLabel(id: Int): Iterator[Node]
 
+  def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator
+
   def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
@@ -213,6 +215,7 @@ trait Operations[T <: PropertyContainer] {
   def isDeletedInThisTx(obj: T): Boolean
 
   def all: Iterator[T]
+
   def allPrimitive: PrimitiveLongIterator
 
   def acquireExclusiveLock(obj: Long): Unit
