@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Property, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
@@ -44,12 +45,13 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  implicit val pipeMonitor = mock[PipeMonitor]
-  implicit val table = SemanticTable()
+  implicit private val pipeMonitor = mock[PipeMonitor]
+  implicit private val table = SemanticTable()
 
   private def build(beforeRewrite: LogicalPlan): Pipe = {
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
+    when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
     val context: EnterpriseRuntimeContext = CompiledRuntimeContextHelper.create(planContext = planContext)
     val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
     val registeredRewriter = new RegisteredRewriter(context.planContext)
@@ -239,14 +241,12 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  //TODO fix: it fails on build()
   test("optional travels through aggregation used for distinct") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
     val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional,
       groupingExpressions = Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")),
-      //TODO the error has something to do with this empty map
       aggregationExpression = Map.empty)(solved)
 
     // when
@@ -254,16 +254,16 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
     // then
     pipe should equal(DistinctPipe(
-      OptionalPipe(Set.empty,
-        NodesByLabelScanRegisterPipe("x", LazyLabel("labe"),
+      OptionalPipe(Set("x"),
+        NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
           PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0)
         )())(),
-      Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), PropertyKey("propertyKey")))
+      Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
     )())
   }
 
   test("optional travels through aggregation") {
-    // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
+    // given OPTIONAL MATCH (x) RETURN x, x.propertyKey, count(*)
     val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional,
@@ -284,7 +284,6 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  //TODO fix: fails on build()
   test("labelscan with projection") {
     // given
     val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
@@ -297,7 +296,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(ProjectionPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
         PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map("x" -> LongSlot(0, nullable = false, CTNode), "x.propertyKey" -> RefSlot(0, nullable = true, CTAny))))(),
-      expressions = Map("x" -> commands.expressions.Variable("x"))
+      Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
     )())
   }
 
