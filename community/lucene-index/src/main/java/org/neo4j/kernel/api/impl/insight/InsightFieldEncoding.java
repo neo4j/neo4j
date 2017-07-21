@@ -148,7 +148,6 @@ enum InsightFieldEncoding
                 @Override
                 boolean canEncode( Value value )
                 {
-                    // Any other type can be safely serialised as a string
                     return Values.isTextValue( value );
                 }
 
@@ -157,7 +156,7 @@ enum InsightFieldEncoding
                 {
                     java.lang.String stringValue = ((TextValue) value).stringValue();
 
-                    TokenStream tokenStream = new EnglishAnalyzer().tokenStream( name, stringValue );
+                    TokenStream tokenStream = englishAnalyzer.tokenStream( name, stringValue );
                     TextField field = new TextField( name, tokenStream );
                     return field;
                 }
@@ -176,34 +175,15 @@ enum InsightFieldEncoding
 //                }
             };
 
+    private static EnglishAnalyzer englishAnalyzer = new EnglishAnalyzer();
     private static final InsightFieldEncoding[] AllEncodings = values();
 
     abstract String key();
-
-    String key( int propertyNumber )
-    {
-        if ( propertyNumber == 0 )
-        {
-            return key();
-        }
-        return propertyNumber + key();
-    }
 
     abstract boolean canEncode( Value value );
 
     abstract Field encodeField( String name, Value value );
 
-//    public static InsightFieldEncoding forKey( String key )
-//    {
-//        for ( InsightFieldEncoding encoding : AllEncodings )
-//        {
-//            if ( key.endsWith( encoding.key() ) )
-//            {
-//                return encoding;
-//            }
-//        }
-//        throw new IllegalArgumentException( "Unknown key: " + key );
-//    }
 
     public static InsightFieldEncoding forValue( Value value )
     {
@@ -215,10 +195,5 @@ enum InsightFieldEncoding
             }
         }
         throw new IllegalStateException( "Unable to encode the value " + value );
-    }
-
-    private static Field stringField( String identifier, String value )
-    {
-        return new StringField( identifier, value, NO );
     }
 }

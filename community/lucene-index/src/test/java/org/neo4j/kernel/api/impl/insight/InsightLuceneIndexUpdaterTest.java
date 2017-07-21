@@ -56,11 +56,12 @@ public class InsightLuceneIndexUpdaterTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            for ( int i = 0; i < 1; i++ )
-            {
-                Node node = db.createNode( LABEL );
-                node.setProperty( "prop", "Hello. Hello again." );
-            }
+            Node node = db.createNode( LABEL );
+            node.setProperty( "prop", "Hello. Hello again." );
+            Node node2 = db.createNode( LABEL );
+            node2.setProperty( "prop",
+                    "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                    "between a zebra and any other equine: essentially, a zebra hybrid." );
 
             tx.success();
         }
@@ -68,6 +69,9 @@ public class InsightLuceneIndexUpdaterTest
         InsightIndexReader reader = insightIndex.getReader();
 
         assertEquals( 0, reader.query( "hello" ).next() );
+        assertEquals( 1, reader.query( "zebra" ).next() );
+        assertEquals( 1, reader.query( "zedonk" ).next() );
+        assertEquals( 1, reader.query( "cross" ).next() );
 
     }
 }
