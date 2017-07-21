@@ -19,9 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 
-class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class AggregationAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
 
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
@@ -40,8 +40,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     val params = "param" -> 3
 
-    val result1 = executeWithAllPlannersAndCompatibilityMode(query1, params).toList
-    val result2 = executeWithAllPlannersAndCompatibilityMode(query2, params).toList
+    val result1 = testWith(Configs.Interpreted, query1, params).toList
+    val result2 = testWith(Configs.Interpreted, query2, params).toList
 
     result1.size should equal(result2.size)
   }
@@ -51,7 +51,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node2 = createNode()
     relate(node1, node2)
     relate(node2, node1)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)--() RETURN DISTINCT a")
+    val result = testWith(Configs.All, "MATCH (a)--() RETURN DISTINCT a")
     result.toList should equal(List(Map("a" -> node1), Map("a" -> node2)))
   }
 
@@ -59,7 +59,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(1337))
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN DISTINCT a.prop")
+    val result = testWith(Configs.All, "MATCH (a) RETURN DISTINCT a.prop")
     result.toComparableResult should equal(List(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
 
@@ -67,7 +67,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person) WITH count(a) as c RETURN c")
+    val result = testWith(Configs.All, "MATCH (a:Person) WITH count(a) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -75,7 +75,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node1 = createLabeledNode("Person")
     val node2 = createLabeledNode("Person")
     val node3 = createNode()
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
+    val result = testWith(Configs.All, "MATCH (a:Person) WITH a as b WITH count(b) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -85,7 +85,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node3 = createNode()
     val r1 = relate(node1, node2)
     val r2 = relate(node1, node3)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
+    val result = testWith(Configs.All, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 
@@ -93,28 +93,28 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node1 = createNode(Map("prop" -> 1))
     val node2 = createNode(Map("prop" -> 2))
     val r1 = relate(node1, node2)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
+    val result = testWith(Configs.All, "MATCH (a)--(b) RETURN a.prop, count(a) ORDER BY a.prop")
     result.toList should equal(List(Map("a.prop" -> 1, "count(a)" -> 1), Map("a.prop" -> 2, "count(a)" -> 1)))
   }
 
   test("combine simple aggregation on projection with sorting") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
+    val result = testWith(Configs.All, "MATCH (a) WITH a as b RETURN count(b) ORDER BY count(b)")
     result.toList should equal(List(Map("count(b)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (cannot use count store)") {
     val node1 = createNode(Map("prop" -> 1))
     val node2 = createNode(Map("prop" -> 2))
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
+    val result = testWith(Configs.All, "MATCH (a) RETURN count(a.prop) ORDER BY count(a.prop)")
     result.toList should equal(List(Map("count(a.prop)" -> 2)))
   }
 
   test("combine simple aggregation with sorting (can use node count store)") {
     val node1 = createNode()
     val node2 = createNode()
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a) RETURN count(a) ORDER BY count(a)")
+    val result = testWith(Configs.All, "MATCH (a) RETURN count(a) ORDER BY count(a)")
     result.toList should equal(List(Map("count(a)" -> 2)))
   }
 
@@ -122,7 +122,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     val node1 = createNode()
     val node2 = createNode()
     val r1 = relate(node1, node2)
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
+    val result = testWith(Configs.All, "MATCH (a)-[r]-(b) RETURN count(r) ORDER BY count(r)")
     result.toList should equal(List(Map("count(r)" -> 2)))
   }
 }

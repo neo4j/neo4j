@@ -49,9 +49,9 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport 
   test("deprecated functions still work") {
     val r = relate(createNode(), createNode())
 
-    testWith(Configs.AllInterpreted, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
-    testWith(Configs.AllInterpreted, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
-    testWith(Configs.AllInterpreted, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
-    testWith(Configs.AllInterpreted, "MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
+    testWith(Configs.Interpreted, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+    testWith(Configs.Interpreted, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
+    testWith(Configs.Interpreted, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
+    testWith(Configs.Interpreted, "MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
   }
 }

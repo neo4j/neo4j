@@ -38,16 +38,41 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
   import LernaeanTestSupport._
 
-  private def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
-    withClue(errorMsg) {
-      if (queryText.toLowerCase contains "order by") {
-        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
-      } else {
-        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs result2.toComparableResultWithOptions(replaceNaNs)
-      }
-    }
+  /**
+    * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
+    */
+  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
   }
 
+  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
+
+    import scala.collection.JavaConverters._
+
+    object NanReplacement
+
+    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
+      def convert(v: Any): Any = v match {
+        case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case a: Array[_] => a.toList.map(convert)
+        case m: Map[_, _] =>
+          Eagerly.immutableMapValues(m, convert)
+        case m: java.util.Map[_, _] =>
+          Eagerly.immutableMapValues(m.asScala, convert)
+        case l: java.util.List[_] => l.asScala.map(convert)
+        case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => NanReplacement
+        case m => m
+      }
+
+
+      res.map((map: Map[String, Any]) => map.map {
+        case (k, v) => k -> convert(v)
+      })
+    }
+  }
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
@@ -106,20 +131,19 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Compiled: TestConfig = CompiledByteCode + CompiledSource
 
-    def Interpreted: TestConfig = TestConfig(Set(Scenarios.CommunityInterpreted))
+    def Interpreted: TestConfig = All - Compiled
 
-    def Compatability2_3: TestConfig = Scenarios.Compatibility2_3Rule + Scenarios.Compatibility2_3Cost
+    def Compatibility2_3: TestConfig = Scenarios.Compatibility2_3Rule + Scenarios.Compatibility2_3Cost
 
-    def Compatability3_1: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility3_1Cost
+    def Compatibility3_1: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility3_1Cost
 
     def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
-    def Compatability: TestConfig = Compatability2_3 + Compatability3_1
+    def Compatibility: TestConfig = Compatibility2_3 + Compatibility3_1
 
-    def CurrentVersion: TestConfig = Cost + Interpreted + Scenarios.RulePlannerOnLatestVersion
+    def CurrentVersion: TestConfig = Cost + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion
 
-    def All: TestConfig = CurrentVersion + Compatability
-    def AllInterpreted: TestConfig = All - Compiled
+    def All: TestConfig = CurrentVersion + Compatibility
   }
 
   object Scenarios {
@@ -284,42 +308,6 @@ trait LernaeanTestSupport extends CypherTestSupport {
   * succeeding where they weren't earlier.
   */
 object LernaeanTestSupport {
-
-  /**
-    * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
-    */
-  implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
-
-    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
-  }
-
-  implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
-
-    import scala.collection.JavaConverters._
-
-    object NanReplacement
-
-    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
-      def convert(v: Any): Any = v match {
-        case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
-        case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
-        case a: Array[_] => a.toList.map(convert)
-        case m: Map[_, _] =>
-          Eagerly.immutableMapValues(m, convert)
-        case m: java.util.Map[_, _] =>
-          Eagerly.immutableMapValues(m.asScala, convert)
-        case l: java.util.List[_] => l.asScala.map(convert)
-        case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => NanReplacement
-        case m => m
-      }
-
-
-      res.map((map: Map[String, Any]) => map.map {
-        case (k, v) => k -> convert(v)
-      })
-    }
-  }
 
   trait TestScenario extends Assertions {
     def name: String
