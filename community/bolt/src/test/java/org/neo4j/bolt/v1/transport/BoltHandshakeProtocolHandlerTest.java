@@ -29,11 +29,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
+import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.HandshakeOutcome;
-import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
 
 import static io.netty.buffer.Unpooled.wrappedBuffer;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -53,8 +53,7 @@ public class BoltHandshakeProtocolHandlerTest
     private final Function factory = mock( Function.class );
     private final BoltMessagingProtocolHandler protocol = mock( BoltMessagingProtocolHandler.class );
     private final ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
-    private final BoltMessageLog messageLog = BoltMessageLog.getInstance();
-    private final BoltMessageLogger messageLogger = new BoltMessageLogger( messageLog, ctx.channel() );
+    private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     @Test
     public void shouldChooseFirstAvailableProtocol() throws Throwable

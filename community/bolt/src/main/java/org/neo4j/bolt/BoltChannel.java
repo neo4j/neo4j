@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 
 import java.net.SocketAddress;
 
+import org.neo4j.bolt.logging.BoltMessageLogger;
+
 /**
  * A channel through which Bolt messaging can occur.
  */
@@ -65,14 +67,19 @@ public class BoltChannel implements AutoCloseable, BoltConnectionDescriptor
     @Override
     public void close()
     {
-        messageLogger.serverEvent( "CLOSE" );
-        try
+        Channel rawChannel = rawChannel();
+        if ( rawChannel.isOpen() )
         {
-            rawChannel().close();
-        }
-        catch ( Exception e )
-        {
-            //
+            messageLogger.serverEvent( "CLOSE" );
+            try
+            {
+                // closing of channel is asynchronous, wait for it to complete
+                rawChannel.close().sync();
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

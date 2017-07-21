@@ -30,16 +30,16 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.bolt.BoltMessageLogger;
-import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
+import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.transport.BoltHandshakeProtocolHandler;
+import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
 import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltMessagingProtocolV1Handler;
 import org.neo4j.kernel.impl.logging.NullLogService;
 import org.neo4j.logging.AssertableLogProvider;
+import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -52,6 +52,9 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class SocketTransportHandlerTest
 {
+    private static final LogProvider LOG_PROVIDER = NullLogProvider.getInstance();
+    private static final BoltMessageLogging BOLT_LOGGING = BoltMessageLogging.none();
+
     @Test
     public void shouldCloseProtocolOnChannelInactive() throws Throwable
     {
@@ -126,7 +129,8 @@ public class SocketTransportHandlerTest
         ChannelHandlerContext ctx = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
 
-        SocketTransportHandler handler = new SocketTransportHandler( protocolChooser( machine ), logging, BoltMessageLog.getInstance() );
+        BoltHandshakeProtocolHandler protocolChooser = protocolChooser( machine );
+        SocketTransportHandler handler = new SocketTransportHandler( protocolChooser, logging, BOLT_LOGGING );
 
         // And Given a session has been established
         handler.channelRead( ctx, handshake() );
@@ -147,7 +151,8 @@ public class SocketTransportHandlerTest
         // Given
         ChannelHandlerContext context = mock( ChannelHandlerContext.class );
         AssertableLogProvider logging = new AssertableLogProvider();
-        SocketTransportHandler handler = new SocketTransportHandler( mock( BoltHandshakeProtocolHandler.class ), logging, BoltMessageLog.getInstance() );
+        SocketTransportHandler handler = new SocketTransportHandler( mock( BoltHandshakeProtocolHandler.class ),
+                logging, BOLT_LOGGING );
 
         // When
         Throwable cause = new Throwable( "Oh no!" );
@@ -167,7 +172,7 @@ public class SocketTransportHandlerTest
         BoltHandshakeProtocolHandler chooser = protocolChooser( machine );
         ChannelHandlerContext context = channelHandlerContextMock();
 
-        SocketTransportHandler handler = new SocketTransportHandler( chooser, NullLogProvider.getInstance(), BoltMessageLog.getInstance() );
+        SocketTransportHandler handler = new SocketTransportHandler( chooser, LOG_PROVIDER, BOLT_LOGGING );
 
         handler.channelRead( context, handshake() );
         BoltMessagingProtocolHandler protocol1 = chooser.chosenProtocol();
@@ -178,10 +183,9 @@ public class SocketTransportHandlerTest
         assertSame( protocol1, protocol2 );
     }
 
-    private static SocketTransportHandler newSocketTransportHandler( BoltHandshakeProtocolHandler boltHandshakeProtocolHandler )
+    private static SocketTransportHandler newSocketTransportHandler( BoltHandshakeProtocolHandler handler )
     {
-        return new SocketTransportHandler( boltHandshakeProtocolHandler, NullLogProvider.getInstance(),
-                                           BoltMessageLog.getInstance() );
+        return new SocketTransportHandler( handler, LOG_PROVIDER, BOLT_LOGGING );
     }
 
     private static ChannelHandlerContext channelHandlerContextMock()

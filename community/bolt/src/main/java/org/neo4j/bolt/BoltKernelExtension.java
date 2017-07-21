@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.security.auth.Authentication;
 import org.neo4j.bolt.security.auth.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltMessagingProtocolHandler;
@@ -48,6 +49,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.Service;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.api.security.UserManagerSupplier;
@@ -112,6 +114,8 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         UserManagerSupplier userManagerSupplier();
 
         SslPolicyLoader sslPolicyFactory();
+
+        FileSystemAbstraction fileSystem();
     }
 
     public BoltKernelExtension()
@@ -135,6 +139,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
         JobScheduler scheduler = dependencies.scheduler();
 
         InternalLoggerFactory.setDefaultFactory( new Netty4LoggerFactory( logService.getInternalLogProvider() ) );
+        BoltMessageLogging boltLogging = BoltMessageLogging.create( dependencies.fileSystem(), scheduler, config, log );
 
         Authentication authentication = authentication( dependencies.authManager(), dependencies.userManagerSupplier() );
 
@@ -181,7 +186,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
                     final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers =
                             getProtocolHandlers( logService, workerFactory );
                     return new SocketTransport( listenAddress, sslCtx, requireEncryption, logService.getInternalLogProvider(),
-                            BoltMessageLog.getInstance(), protocolHandlers );
+                            boltLogging, protocolHandlers );
                 } ) );
 
         if ( connectors.size() > 0 && !config.get( GraphDatabaseSettings.disconnected ) )

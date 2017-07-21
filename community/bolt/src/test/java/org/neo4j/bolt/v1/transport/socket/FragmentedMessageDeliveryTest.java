@@ -29,8 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.v1.messaging.BoltRequestMessageWriter;
 import org.neo4j.bolt.v1.messaging.Neo4jPack;
 import org.neo4j.bolt.v1.messaging.RecordingByteChannel;
@@ -122,7 +121,7 @@ public class FragmentedMessageDeliveryTest
         BoltChannel boltChannel = mock( BoltChannel.class );
         when( boltChannel.channelHandlerContext() ).thenReturn( ctx );
         when( boltChannel.rawChannel() ).thenReturn( ch );
-        when( boltChannel.log() ).thenReturn( mock( BoltMessageLogger.class ) );
+        when( boltChannel.log() ).thenReturn( NullBoltMessageLogger.getInstance() );
 
         BoltMessagingProtocolV1Handler protocol = new BoltMessagingProtocolV1Handler(
                 boltChannel, new SynchronousBoltWorker( machine ), NullLogService.getInstance() );

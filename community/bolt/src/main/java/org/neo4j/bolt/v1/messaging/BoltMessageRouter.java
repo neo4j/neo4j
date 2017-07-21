@@ -22,7 +22,7 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
@@ -95,7 +95,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
     @Override
     public void onExternalError( Neo4jError error )
     {
-        messageLogger.clientEvent("ERROR", error.message());
+        messageLogger.clientEvent( "ERROR", error::message );
         worker.enqueue( session -> session.externalError( error, defaultHandler ) );
     }
 

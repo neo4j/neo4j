@@ -32,8 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.BoltConnectionDescriptor;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.NullBoltMessageLogger;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
@@ -80,7 +79,7 @@ public class ResetFuzzTest
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Neo4jJobScheduler scheduler = life.add(new Neo4jJobScheduler());
     private final Clock clock = Clock.systemUTC();
-    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), null, clock );
+    private final BoltStateMachine machine = new BoltStateMachine( new FuzzStubSPI(), mock( BoltChannel.class ), clock );
     private final ThreadedWorkerFactory workerFactory =
             new ThreadedWorkerFactory( ( boltChannel, clock ) -> machine, scheduler, NullLogService.getInstance(), clock );
     private final BoltChannel boltChannel = mock( BoltChannel.class );
@@ -101,9 +100,9 @@ public class ResetFuzzTest
         BoltWorker boltWorker = workerFactory.newWorker( boltChannel );
         boltWorker.enqueue( session -> session.init( "ResetFuzzTest/0.0", map(), nullResponseHandler() ) );
 
-        BoltMessageLogger messageLogger = new BoltMessageLogger( BoltMessageLog.getInstance(), null );
+        NullBoltMessageLogger boltLogger = NullBoltMessageLogger.getInstance();
         BoltMessageRouter router = new BoltMessageRouter(
-                NullLog.getInstance(), messageLogger, boltWorker, new BoltResponseMessageHandler<IOException>()
+                NullLog.getInstance(), boltLogger, boltWorker, new BoltResponseMessageHandler<IOException>()
         {
             @Override
             public void onRecord( QueryResult.Record item ) throws IOException

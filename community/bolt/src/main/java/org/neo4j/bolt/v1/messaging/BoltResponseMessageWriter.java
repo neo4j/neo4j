@@ -21,7 +21,7 @@ package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
 
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.BoltMessageLogger;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
@@ -97,7 +97,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onFailure( Status status, String message ) throws IOException
     {
-        messageLogger.failure( status.code().serialize(), message );
+        messageLogger.failure( status, message );
         packer.packStructHeader( 1, FAILURE.signature() );
         packer.packMapHeader( 2 );
 
@@ -113,7 +113,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     @Override
     public void onFatal( Status status, String message ) throws IOException
     {
-        messageLogger.serverError( "FATAL", status.code().serialize(), message );
+        messageLogger.serverError( "FATAL", status, message );
         onFailure( status, message );
         flush();
     }

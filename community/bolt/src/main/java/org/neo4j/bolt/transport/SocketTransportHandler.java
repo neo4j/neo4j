@@ -24,8 +24,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.bolt.BoltMessageLogger;
+import org.neo4j.bolt.logging.BoltMessageLogger;
+import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -41,16 +41,16 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
 {
     private final BoltHandshakeProtocolHandler handshake;
     private final Log log;
-    private final BoltMessageLog messageLog;
+    private final BoltMessageLogging boltLogging;
 
     private BoltMessagingProtocolHandler protocol;
 
     public SocketTransportHandler( BoltHandshakeProtocolHandler handshake,
-                                   LogProvider logging, BoltMessageLog messageLog )
+            LogProvider logging, BoltMessageLogging boltLogging )
     {
         this.handshake = handshake;
         this.log = logging.getLog( getClass() );
-        this.messageLog = messageLog;
+        this.boltLogging = boltLogging;
     }
 
     @Override
@@ -61,9 +61,9 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
             ByteBuf buffer = (ByteBuf) msg;
             if ( protocol == null )
             {
-                BoltMessageLogger messageLogger = new BoltMessageLogger( messageLog, ctx.channel() );
-                messageLogger.clientEvent( "OPEN" );
-                performHandshake( BoltChannel.open( ctx, messageLogger ), buffer );
+                BoltMessageLogger boltLogger = boltLogging.newLogger( ctx.channel() );
+                boltLogger.clientEvent( "OPEN" );
+                performHandshake( BoltChannel.open( ctx, boltLogger ), buffer );
             }
             else
             {

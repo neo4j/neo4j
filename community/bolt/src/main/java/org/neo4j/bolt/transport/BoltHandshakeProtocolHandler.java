@@ -20,12 +20,13 @@
 package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBuf;
-import org.neo4j.bolt.BoltChannel;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Map;
 import java.util.function.Function;
+
+import org.neo4j.bolt.BoltChannel;
 
 import static java.lang.String.format;
 
@@ -86,20 +87,20 @@ public class BoltHandshakeProtocolHandler
             // Verify that the handshake starts with a Bolt-shaped preamble.
             if ( handshakeBuffer.getInt() != BOLT_MAGIC_PREAMBLE )
             {
-                boltChannel.log().clientError( "HANDSHAKE", format( "0x%08X", handshakeBuffer.getInt() ),
-                                               "Invalid Bolt signature" );
+                boltChannel.log().clientError( "HANDSHAKE", "Invalid Bolt signature",
+                        () -> format( "0x%08X", handshakeBuffer.getInt() ) );
                 return HandshakeOutcome.INVALID_HANDSHAKE;
             }
             else
             {
-                boltChannel.log().clientEvent( "HANDSHAKE", format( "0x%08X", BOLT_MAGIC_PREAMBLE ) );
+                boltChannel.log().clientEvent( "HANDSHAKE", () -> format( "0x%08X", BOLT_MAGIC_PREAMBLE ) );
                 for ( int i = 0; i < 4; i++ )
                 {
                     long suggestion = handshakeBuffer.getInt() & 0xFFFFFFFFL;
                     if ( protocolHandlers.containsKey( suggestion ) )
                     {
                         protocol = protocolHandlers.get( suggestion ).apply( boltChannel );
-                        boltChannel.log().serverEvent( "HANDSHAKE", format( "0x%02X", protocol.version() ) );
+                        boltChannel.log().serverEvent( "HANDSHAKE", () -> format( "0x%02X", protocol.version() ) );
                         return HandshakeOutcome.PROTOCOL_CHOSEN;
                     }
                 }

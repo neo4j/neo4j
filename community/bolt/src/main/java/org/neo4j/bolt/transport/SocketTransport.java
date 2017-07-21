@@ -24,13 +24,13 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.ssl.SslContext;
 
-import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLog;
-import org.neo4j.helpers.ListenSocketAddress;
-import org.neo4j.logging.LogProvider;
-
 import java.util.Map;
 import java.util.function.Function;
+
+import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.helpers.ListenSocketAddress;
+import org.neo4j.logging.LogProvider;
 
 /**
  * Implements a transport for the Neo4j Messaging Protocol that uses good old regular sockets.
@@ -41,18 +41,18 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
     private final SslContext sslCtx;
     private final boolean encryptionRequired;
     private final LogProvider logging;
-    private final BoltMessageLog messageLog;
+    private final BoltMessageLogging boltLogging;
     private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
 
     public SocketTransport( ListenSocketAddress address, SslContext sslCtx, boolean encryptionRequired,
-                            LogProvider logging, BoltMessageLog messageLog,
+                            LogProvider logging, BoltMessageLogging boltLogging,
                             Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions )
     {
         this.address = address;
         this.sslCtx = sslCtx;
         this.encryptionRequired = encryptionRequired;
         this.logging = logging;
-        this.messageLog = messageLog;
+        this.boltLogging = boltLogging;
         this.protocolVersions = protocolVersions;
     }
 
@@ -67,7 +67,7 @@ public class SocketTransport implements NettyServer.ProtocolInitializer
                 ch.config().setAllocator( PooledByteBufAllocator.DEFAULT );
                 ch.pipeline().addLast(
                         new TransportSelectionHandler( sslCtx, encryptionRequired, false, logging, protocolVersions,
-                                                       messageLog ) );
+                                boltLogging ) );
             }
         };
     }

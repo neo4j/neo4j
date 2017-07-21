@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltMessageLogger;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;

@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.util.Map;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 
@@ -48,7 +49,8 @@ public class MachineRoom
 
     public static BoltStateMachine newMachine()
     {
-        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), null, Clock.systemUTC() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        return new BoltStateMachine( mock( BoltStateMachineSPI.class, RETURNS_MOCKS ), boltChannel, Clock.systemUTC() );
     }
 
     public static BoltStateMachine newMachine( BoltStateMachine.State state ) throws AuthenticationException, BoltConnectionFatality
@@ -75,7 +77,8 @@ public class MachineRoom
         BoltStateMachine.SPI spi = mock( BoltStateMachine.SPI.class, RETURNS_MOCKS );
         when( spi.transactionSpi() ).thenReturn( transactionSPI );
 
-        BoltStateMachine machine = new BoltStateMachine( spi, null, Clock.systemUTC() );
+        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltStateMachine machine = new BoltStateMachine( spi, boltChannel, Clock.systemUTC() );
         init( machine );
         return machine;
     }
