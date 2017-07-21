@@ -42,14 +42,14 @@ class PartitionedInsightIndexReader implements InsightIndexReader
 
     private final List<InsightIndexReader> indexReaders;
 
-    public PartitionedInsightIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties )
+    PartitionedInsightIndexReader( List<PartitionSearcher> partitionSearchers, String[] properties )
     {
         this( partitionSearchers.stream().map( partitionSearcher -> new SimpleInsightIndexReader( partitionSearcher,
                 properties ) )
                 .collect( Collectors.toList() ) );
     }
 
-    PartitionedInsightIndexReader( List<InsightIndexReader> readers )
+    private PartitionedInsightIndexReader( List<InsightIndexReader> readers )
     {
         this.indexReaders = readers;
     }

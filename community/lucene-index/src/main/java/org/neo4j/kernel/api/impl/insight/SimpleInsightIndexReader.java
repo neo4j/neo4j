@@ -48,7 +48,7 @@ class SimpleInsightIndexReader implements InsightIndexReader
     private String[] properties;
     private final MultiFieldQueryParser multiFieldQueryParser;
 
-    public SimpleInsightIndexReader( PartitionSearcher partitionSearcher, String[] properties )
+    SimpleInsightIndexReader( PartitionSearcher partitionSearcher, String[] properties )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;
