@@ -42,7 +42,7 @@ class InsightLuceneIndex extends AbstractLuceneIndex
 
     private String[] properties;
 
-    public InsightLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
+    InsightLuceneIndex( PartitionedIndexStorage indexStorage, IndexPartitionFactory partitionFactory,
             String[] properties )
     {
         super( indexStorage, partitionFactory );
@@ -126,13 +126,11 @@ class InsightLuceneIndex extends AbstractLuceneIndex
         indexStorage.storeIndexFailure( failure );
     }
 
-
     private SimpleInsightIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         return new SimpleInsightIndexReader( singlePartition.acquireSearcher(), properties );
     }
-
 
     private PartitionedInsightIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions )
             throws IOException

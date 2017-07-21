@@ -29,7 +29,7 @@ class WritableDatabaseInsightIndex extends WritableAbstractDatabaseIndex<Insight
 {
     private InsightLuceneIndex insightLuceneIndex;
 
-    public WritableDatabaseInsightIndex( InsightLuceneIndex insightLuceneIndex )
+    WritableDatabaseInsightIndex( InsightLuceneIndex insightLuceneIndex )
     {
         super( insightLuceneIndex );
         this.insightLuceneIndex = insightLuceneIndex;
@@ -45,17 +45,11 @@ class WritableDatabaseInsightIndex extends WritableAbstractDatabaseIndex<Insight
         return luceneIndex.getIndexReader();
     }
 
-      /**
-     * {@inheritDoc}
-     */
     public boolean isOnline() throws IOException
     {
         return luceneIndex.isOnline();
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public void markAsOnline() throws IOException
     {
         commitCloseLock.lock();
@@ -69,9 +63,6 @@ class WritableDatabaseInsightIndex extends WritableAbstractDatabaseIndex<Insight
         }
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public void markAsFailed( String failure ) throws IOException
     {
         luceneIndex.markAsFailed( failure );

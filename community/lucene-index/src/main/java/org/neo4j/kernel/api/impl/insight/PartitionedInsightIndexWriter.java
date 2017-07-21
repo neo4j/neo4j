@@ -47,7 +47,7 @@ class PartitionedInsightIndexWriter
     private final Integer MAXIMUM_PARTITION_SIZE = Integer.getInteger( "luceneSchemaIndex.maxPartitionSize",
             IndexWriter.MAX_DOCS - (IndexWriter.MAX_DOCS / 10) );
 
-    public PartitionedInsightIndexWriter( WritableDatabaseInsightIndex index ) throws IOException
+    PartitionedInsightIndexWriter( WritableDatabaseInsightIndex index ) throws IOException
     {
         this.index = index;
     }

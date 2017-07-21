@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -44,7 +43,7 @@ public class InsightLuceneIndexUpdaterTest
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule(testDirectory.graphDbDir());
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule( testDirectory.graphDbDir() );
 
     private static final Label LABEL = Label.label( "label1" );
 
