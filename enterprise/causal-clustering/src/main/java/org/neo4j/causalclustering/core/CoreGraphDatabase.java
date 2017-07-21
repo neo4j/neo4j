@@ -25,6 +25,7 @@ import java.util.function.Function;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -34,6 +35,12 @@ import org.neo4j.kernel.impl.factory.PlatformModule;
 
 public class CoreGraphDatabase extends GraphDatabaseFacade
 {
+    public CoreGraphDatabase( File storeDir, Config config,
+            GraphDatabaseFacadeFactory.Dependencies dependencies )
+    {
+        this( storeDir, config, dependencies, new HazelcastDiscoveryServiceFactory() );
+    }
+
     public CoreGraphDatabase( File storeDir, Config config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, DiscoveryServiceFactory discoveryServiceFactory )
     {
