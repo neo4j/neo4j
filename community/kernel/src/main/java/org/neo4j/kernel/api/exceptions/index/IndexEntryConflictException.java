@@ -38,7 +38,7 @@ public class IndexEntryConflictException extends Exception
     private final long addedNodeId;
     private final long existingNodeId;
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Object... propertyValue )
     {
         this( existingNodeId, addedNodeId, OrderedPropertyValues.ofUndefined( propertyValue ) );
     }

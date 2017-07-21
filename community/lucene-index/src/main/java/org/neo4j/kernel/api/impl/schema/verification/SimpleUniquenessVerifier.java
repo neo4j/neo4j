@@ -25,7 +25,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
@@ -79,7 +78,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                     {
                         if ( terms.docFreq() > 1 )
                         {
-                            collector.reset();
+                            collector.init( terms.docFreq() );
                             searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
                         }
                     }
@@ -106,7 +105,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
             DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             for ( Object propertyValue : updatedPropertyValues )
             {
-                collector.reset();
+                collector.init();
                 Query query = LuceneDocumentStructure.newSeekQuery( propertyValue );
                 indexSearcher().search( query, collector );
             }
