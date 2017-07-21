@@ -50,8 +50,8 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
   private val buildExpression =
     rewriteAstExpression andThen
-    expressionConverters.toCommandExpression andThen
-    (KeyTokenResolver.resolveExpressions(_, planContext))
+      expressionConverters.toCommandExpression andThen
+      (expression => expression.rewrite(KeyTokenResolver.resolveExpressions(_, planContext)))
 
 
   def build(plan: LogicalPlan): Pipe = {
