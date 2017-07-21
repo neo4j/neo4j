@@ -23,20 +23,16 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxE
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
-  test("load graph") {
-    val query = "LOAD GRAPH 'test' RETURN 1"
+  test("from graph") {
+    val query = "FROM GRAPH test AT 'graph://url' MATCH (a)-->() RETURN a"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) doesNotSupport "FROM"
   }
 
-  test("emit graph") {
-    val query = "MATCH ()--() EMIT GRAPH 'test' RETURN *"
+  test("into graph") {
+    val query = "MATCH (a)--() INTO GRAPH test AT 'graph://url' CREATE (a)-->(b:B) RETURN b"
 
-    a[SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
+    expect(query) doesNotSupport "INTO"
   }
 
   test("return named graph") {
@@ -55,19 +51,15 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
   }
 
-  test("matching single graphlet") {
-    val query = "MATCH g := (:A)-->(:B) RETURN g"
+  private final case class expect(query: String) {
+    import scala.util.{Failure, Success, Try}
 
-    a [SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
-    }
-  }
-
-  test("matching multi-pattern graphlet") {
-    val query = "MATCH g := (:A)-->(:B), (:C)-[:T]-(:D) RETURN g"
-
-    a [SyntaxException] shouldBe thrownBy {
-      executeWithAllPlanners(query)
+    def doesNotSupport(clause: String) = {
+      Try(executeWithCostPlannerAndInterpretedRuntimeOnly(query)) match {
+        case _: Success[_] => fail(s"Expected $clause to be unsupported")
+        case Failure(exception) =>
+          exception.getMessage should include(s"$clause is not supported")
+      }
     }
   }
 }

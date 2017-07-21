@@ -16,13 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
-object GraphletType {
-  val instance = new GraphletType() {
-    val parentType = CTAny
-    override val toString = "Graphlet"
-    override val toNeoTypeString = "GRAPHLET?"
-
+object GraphRefType {
+  val instance = new GraphRefType() {
+    override val parentType = CTAny
+    override val toString = "GraphRef"
+    override val toNeoTypeString = "GRAPHREF?"
   }
 }
 
-sealed abstract class GraphletType extends CypherType
+sealed abstract class GraphRefType extends CypherType

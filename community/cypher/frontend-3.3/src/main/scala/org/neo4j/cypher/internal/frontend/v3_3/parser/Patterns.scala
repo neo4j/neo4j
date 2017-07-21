@@ -34,7 +34,7 @@ trait Patterns extends Parser
   with Base {
 
   def Pattern: Rule1[ast.Pattern] = rule("a pattern") {
-    optional(Variable ~~ operator(":=")) ~~ oneOrMore(PatternPart, separator = CommaSep) ~~>> (ast.Pattern(_, _))
+    oneOrMore(PatternPart, separator = CommaSep) ~~>> (ast.Pattern(_))
   }
 
   def PatternPart: Rule1[ast.PatternPart] = rule("a pattern") (
