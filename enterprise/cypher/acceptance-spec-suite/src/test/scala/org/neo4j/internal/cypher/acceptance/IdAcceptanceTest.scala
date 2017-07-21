@@ -22,18 +22,17 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher._
 import org.neo4j.graphdb.Relationship
 
-class IdAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class IdAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
 
   test("id on a node should work in both runtimes")  {
     // GIVEN
     val expected = createNode().getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n) RETURN id(n)")
+    val result = testWith(Configs.All, "MATCH (n) RETURN id(n)")
 
     // THEN
     result.toList should equal(List(Map("id(n)" -> expected)))
-
   }
 
   test("id on a rel should work in both runtimes")  {
@@ -41,7 +40,7 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppor
     val expected = relate(createNode(), createNode()).getId
 
     // WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH ()-[r]->() RETURN id(r)")
+    val result = testWith(Configs.All, "MATCH ()-[r]->() RETURN id(r)")
 
     // THEN
     result.toList should equal(List(Map("id(r)" -> expected)))
@@ -50,10 +49,9 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSuppor
   test("deprecated functions still work") {
     val r = relate(createNode(), createNode())
 
-    executeWithAllPlannersAndCompatibilityMode("RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
-    executeWithAllPlannersAndCompatibilityMode("RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
-    executeWithAllPlannersAndCompatibilityMode("RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
-    executeWithAllPlannersAndCompatibilityMode("MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
+    testWith(Configs.AllInterpreted, "RETURN toInt('1') AS one").columnAs[Long]("one").next should equal(1L)
+    testWith(Configs.AllInterpreted, "RETURN upper('abc') AS a").columnAs[String]("a").next should equal("ABC")
+    testWith(Configs.AllInterpreted, "RETURN lower('ABC') AS a").columnAs[String]("a").next should equal("abc")
+    testWith(Configs.AllInterpreted, "MATCH p = ()-->() RETURN rels(p) AS r").columnAs[List[Relationship]]("r").next should equal(List(r))
   }
-
 }
