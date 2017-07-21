@@ -180,15 +180,15 @@ public class TransportSessionIT
                 .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk(
                         init( "TestClient/1.1", emptyMap() ),
-                        run( "INVALID" ),
+                        run( "QINVALID" ),
                         pullAll() ) );
 
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgFailure( Status.Statement.SyntaxError,
-                        String.format( "Invalid input 'I': expected <init> (line 1, column 1 (offset: 0))%n" +
-                                       "\"INVALID\"%n" +
+                        String.format( "Invalid input 'Q': expected <init> (line 1, column 1 (offset: 0))%n" +
+                                       "\"QINVALID\"%n" +
                                        " ^" ) ), msgIgnored() ) );
 
         // When
