@@ -21,6 +21,7 @@
 package org.neo4j.bolt.v1.transport;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
@@ -50,9 +51,9 @@ import static org.neo4j.bolt.transport.HandshakeOutcome.PROTOCOL_CHOSEN;
 public class BoltHandshakeProtocolHandlerTest
 {
     private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolHandlers = new HashMap<>();
-    private final Function factory = mock( Function.class );
+    private final Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
     private final BoltMessagingProtocolHandler protocol = mock( BoltMessagingProtocolHandler.class );
-    private final ChannelHandlerContext ctx = mock( ChannelHandlerContext.class );
+    private final ChannelHandlerContext ctx = newChannelHandlerContextMock();
     private final BoltMessageLogger messageLogger = NullBoltMessageLogger.getInstance();
 
     @Test
@@ -177,9 +178,9 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
+            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
 
-            protocolHandlers.put( 1L, mock( Function.class ) );
+            protocolHandlers.put( 1L, factory );
 
             BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
 
@@ -203,9 +204,9 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
+            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
 
-            protocolHandlers.put( 1L, mock( Function.class ) );
+            protocolHandlers.put( 1L, factory );
 
             BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, false, true );
 
@@ -229,9 +230,9 @@ public class BoltHandshakeProtocolHandlerTest
         try ( BoltChannel boltChannel = BoltChannel.open( ctx, messageLogger ) )
         {
             // Given
-            when( factory.apply( boltChannel ) ).thenReturn( protocol );
+            Function<BoltChannel,BoltMessagingProtocolHandler> factory = newChannelToProtocolFunctionMock();
 
-            protocolHandlers.put( 1L, mock( Function.class ) );
+            protocolHandlers.put( 1L, factory );
 
             BoltHandshakeProtocolHandler handshake = new BoltHandshakeProtocolHandler( protocolHandlers, true, false );
 
@@ -247,5 +248,19 @@ public class BoltHandshakeProtocolHandlerTest
             assertThat( outcome, equalTo( INSECURE_HANDSHAKE ) );
             assertThat( handshake.chosenProtocol(), nullValue() );
         }
+    }
+
+    @SuppressWarnings( "unchecked" )
+    private static Function<BoltChannel,BoltMessagingProtocolHandler> newChannelToProtocolFunctionMock()
+    {
+        return mock( Function.class );
+    }
+
+    private static ChannelHandlerContext newChannelHandlerContextMock()
+    {
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        Channel channel = mock( Channel.class );
+        when( context.channel() ).thenReturn( channel );
+        return context;
     }
 }
