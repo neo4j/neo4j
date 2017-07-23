@@ -60,7 +60,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTes
     createNode("prop"-> Array(42))
     createNode("prop"-> Array(1337))
     val result = testWith(Configs.All, "MATCH (a) RETURN DISTINCT a.prop")
-    result.toComparableResult should equal(List(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
+    result.toComparableResult.toSet should equal(Set(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
 
   test("Node count from count store plan should work with labeled nodes") {

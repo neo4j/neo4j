@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
   * If you only want to verify that plans using indexes are actually planned, please use
   * [[org.neo4j.cypher.internal.compiler.v3_2.planner.logical.LeafPlanningIntegrationTest]]
   */
-class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
 
   test("should succeed in creating and deleting composite index") {
     // When
@@ -43,7 +43,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    executeWithCostPlannerAndInterpretedRuntimeOnly("DROP INDEX ON :Person(firstname , lastname)")
+    testWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -58,11 +58,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should use("NodeIndexSeek")
-    result should evaluateTo(List(Map("n" -> n1)))
+    result.toComparableResult should equal(List(Map("n" -> n1)))
   }
 
   test("should not use composite index when not all predicates are present") {
@@ -77,11 +77,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result = testWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
-    result should evaluateTo(List(Map("n" -> n3)))
+    result.toComparableResult should equal(List(Map("n" -> n3)))
   }
 
   test("should use composite index when all predicates are present even in competition with other single property indexes with similar cardinality") {
@@ -98,13 +98,13 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should useIndex(":User(firstname,lastname)")
     result should not(useIndex(":User(firstname)"))
     result should not(useIndex(":User(lastname)"))
-    result should evaluateTo(List(Map("n" -> n1)))
+    result.toComparableResult should equal(List(Map("n" -> n1)))
   }
 
   test("should not use composite index when index hint for alternative index is present") {
@@ -121,9 +121,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = testWith(Configs.All,
       """
-        |CYPHER runtime=interpreted
         |MATCH (n:User)
         |USING INDEX n:User(lastname)
         |WHERE n.lastname = 'Soap' AND n.firstname = 'Joe'
@@ -134,7 +133,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     result should not(useIndex(":User(firstname,lastname)"))
     result should not(useIndex(":User(firstname)"))
     result should useIndex(":User(lastname)")
-    result should evaluateTo(List(Map("n" -> n1)))
+    result.toComparableResult should equal(List(Map("n" -> n1)))
   }
 
   test("should use composite index with combined equality and existence predicates") {
@@ -151,31 +150,30 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
     result should not(useIndex(":User(firstname)"))
     result should not(useIndex(":User(lastname)"))
-    result should evaluateTo(List(Map("n" -> n3)))
+    result.toComparableResult should equal(List(Map("n" -> n3)))
   }
 
   test("should be able to update composite index when only one property has changed") {
     graph.createIndex("Person", "firstname", "lastname")
-    val n = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      "CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").toList.head.asInstanceOf[Node]
-    executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val n = graph.execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").next().asInstanceOf[Node]
+    graph.execute("MATCH (n:Person) SET n.lastname = 'Bloggs'")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
-    result should evaluateTo(List(Map("n" -> n)))
+    result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
   test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
-    executeWithCostPlannerAndInterpretedRuntimeOnly("WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
+    testWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
+    testWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
     result should useIndex(":Person(firstname,lastname)")
   }
 
@@ -190,7 +188,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = testWith(Configs.Interpreted,
       """MATCH (n:Foo)
         |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
@@ -199,7 +197,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
     // Then
     result should useIndex(":Foo(bar,baz)")
-    result should evaluateTo((0 to 99).map(i => Map("x" -> i)).toList)
+    result.toComparableResult should equal((0 to 99).map(i => Map("x" -> i)).toList)
   }
 
   test("should use composite index correctly with a single exact together with a List of seeks") {
@@ -211,7 +209,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = testWith(Configs.Interpreted,
       """MATCH (n:Foo)
         |WHERE n.bar = 1
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
@@ -220,7 +218,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
     // Then
     result should useIndex(":Foo(bar,baz)")
-    result should evaluateTo((0 to 9).map(i => Map("x" -> i)).toList)
+    result.toComparableResult should equal((0 to 9).map(i => Map("x" -> i)).toList)
   }
 
   test("should use composite index correctly with a single exact together with a List of seeks, with the exact seek not being first") {
@@ -232,7 +230,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
+    val result = testWith(Configs.Interpreted,
       """MATCH (n:Foo)
         |WHERE n.baz = 1
         |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
@@ -241,7 +239,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
     // Then
     result should useIndex(":Foo(bar,baz)")
-    result should evaluateTo(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
+    result.toComparableResult should equal(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
   }
 
   test("should handle missing properties when populating index") {
@@ -254,8 +252,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = executeWithAllPlanners("MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
-    result should evaluateTo(Seq(Map("count(n)" -> 1)))
+    val result = testWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz")
   }
 
@@ -269,15 +267,15 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = executeWithAllPlanners("MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
-    result should evaluateTo(Seq(Map("count(n)" -> 1)))
+    val result = testWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz)")
   }
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
-    executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE INDEX ON :Person(firstname, lastname)")
+    testWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
+    testWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
   }
 
   test("should not use range queries against a composite index") {
@@ -286,10 +284,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     val n = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // When
-    val result = executeWithAllPlanners("match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
+    val result = testWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
 
     // Then
-    result should evaluateTo(Seq(Map("n" -> n)))
+    result.toComparableResult should equal(Seq(Map("n" -> n)))
     result shouldNot useIndex(":X(p1,p2)")
   }
 
@@ -314,11 +312,11 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
       // When
       val query = s"MATCH (n:User) WHERE ${predicates} RETURN n"
-      val result = executeWithAllPlanners(query)
+      val result = testWith(Configs.Interpreted, query)
       try {
 
         // Then
-        result should evaluateTo(Seq(Map("n" -> n)))
+        result.toComparableResult should equal(Seq(Map("n" -> n)))
         if (valid)
           result should useIndex(":User(name,surname,age,active)")
         else
@@ -340,10 +338,12 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
     }
     val a = createNode("p1" -> 1, "p2" -> 1)
     val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
-    val result = executeWithAllPlanners("match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
+
+    // 2.3 excluded because the params syntax was not supported in that version
+    val result = testWith(Configs.Interpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
       "id" -> a.getId)
 
-    result should evaluateTo(Seq(Map("b" -> b)))
+    result.toComparableResult should equal(Seq(Map("b" -> b)))
     result should useIndex(":X(p1,p2)")
   }
 
