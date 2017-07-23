@@ -19,16 +19,15 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -45,9 +44,11 @@ public class GBPTreeLockTest
     // State LU - locked   | unlocked
     // State LL - locked   | locked
 
-    private GBPTreeLock lock = new GBPTreeLock();
+    private final GBPTreeLock lock = new GBPTreeLock();
     private GBPTreeLock copy;
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
+
+    @Rule
+    public final OtherThreadRule<Void> executor = new OtherThreadRule<>();
 
     @Test
     public void test_UU_UL_UU() throws Exception
@@ -238,25 +239,16 @@ public class GBPTreeLockTest
         }
     }
 
-    private void assertBlock( Runnable runLock, Runnable runUnlock ) throws ExecutionException, InterruptedException
+    private void assertBlock( Runnable runLock, Runnable runUnlock ) throws Exception
     {
-        Future<?> future = executor.submit( runLock );
-        shouldWait( future );
+        Future<Object> future = executor.execute( state ->
+        {
+            runLock.run();
+            return null;
+        } );
+        executor.get().waitUntilWaiting( details -> details.isAt( GBPTreeLock.class, "doLock" ) );
         runUnlock.run();
         future.get();
-    }
-
-    private void shouldWait( Future<?> future )throws InterruptedException, ExecutionException
-    {
-        try
-        {
-            future.get( 200, TimeUnit.MILLISECONDS );
-            fail( "Expected timeout" );
-        }
-        catch ( TimeoutException e )
-        {
-            // good
-        }
     }
 
     private void assertUU()
@@ -266,7 +258,7 @@ public class GBPTreeLockTest
         assertThrow( lock::writerAndCleanerUnlock );
     }
 
-    private void assertUL() throws ExecutionException, InterruptedException
+    private void assertUL() throws Exception
     {
         assertThrow( lock::writerUnlock );
         assertThrow( lock::writerAndCleanerUnlock );
@@ -276,7 +268,7 @@ public class GBPTreeLockTest
         assertBlock( copy::writerAndCleanerLock, copy::cleanerUnlock );
     }
 
-    private void assertLU() throws ExecutionException, InterruptedException
+    private void assertLU() throws Exception
     {
         assertThrow( lock::cleanerUnlock );
         assertThrow( lock::writerAndCleanerUnlock );
@@ -284,7 +276,7 @@ public class GBPTreeLockTest
         assertBlock( copy::writerLock, copy::writerUnlock );
     }
 
-    private void assertLL() throws ExecutionException, InterruptedException
+    private void assertLL() throws Exception
     {
         copy = lock.copy();
         assertBlock( copy::writerLock, copy::writerUnlock );

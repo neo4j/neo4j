@@ -34,8 +34,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Predicate;
 
-import org.neo4j.logging.Logger;
-
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.util.Arrays.asList;
@@ -48,7 +46,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * tests which handles two simultaneous transactions and interleave them,
  * f.ex for testing locking and data visibility.
  *
- * @param <T>
+ * @param <T> type of state
  * @author Mattias Persson
  */
 public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
@@ -59,7 +57,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
     private volatile ExecutionState executionState;
     private final String name;
     private final long timeout;
-    private Exception lastExecutionTrigger;
 
     private static final class AnyThreadState implements Predicate<Thread>
     {
@@ -130,7 +127,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
 
     public <R> Future<R> executeDontWait( final WorkerCommand<T, R> cmd )
     {
-        lastExecutionTrigger = new Exception();
         executionState = ExecutionState.REQUESTED_EXECUTION;
         return commandExecutor.submit( () ->
         {
@@ -357,34 +353,6 @@ public class OtherThreadExecutor<T> implements ThreadFactory, Closeable
         if ( ! commandExecutor.isTerminated() )
         {
             commandExecutor.shutdownNow();
-        }
-    }
-
-    public void dump( Logger logger )
-    {
-        logger.log( getClass().getName() + ", " + this + " state:" + state + " thread:" + thread +
-                " execution:" + executionState );
-        if ( thread != null )
-        {
-            logger.log( "Thread state:" + thread.getState() );
-            logger.log( "" );
-            for ( StackTraceElement element : thread.getStackTrace() )
-            {
-                logger.log( element.toString() );
-            }
-        }
-        else
-        {
-            logger.log( "No operations performed yet, so no thread" );
-        }
-        if ( lastExecutionTrigger != null )
-        {
-            logger.log( "" );
-            logger.log( "Last execution triggered from:" );
-            for ( StackTraceElement element : lastExecutionTrigger.getStackTrace() )
-            {
-                logger.log( element.toString() );
-            }
         }
     }
 

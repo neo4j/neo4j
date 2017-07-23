@@ -51,7 +51,6 @@ public class LockWorkFailureDump
             {
                 // - what each is doing and have up to now
                 log.info( "Worker %s", worker );
-                worker.dump( log.infoLogger() );
             }
             return file;
         }
