@@ -26,5 +26,4 @@ case object testRandomizer extends Random {
   // We print the seed used for the Random object so that test failures can easily be reproduced when encountered
   val seed = System.currentTimeMillis()
   setSeed(seed)
-  println("seed: " + seed)
 }

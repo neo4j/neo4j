@@ -29,6 +29,30 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
 
+  test("Do not count null elements in nodes without labels") {
+
+    createNode("name" -> "a")
+    createNode("name" -> "b")
+    createNode("name" -> "c")
+    createNode()
+    createNode()
+
+    val count = executeScalar[Long]("MATCH (n) RETURN count(n.name)")
+    count should equal(3)
+  }
+
+  test("Do not count null elements in nodes with labels") {
+
+    createLabeledNode(Map("name" -> "a"), "Person")
+    createLabeledNode(Map("name" -> "b"), "Person")
+    createLabeledNode(Map("name" -> "c"), "Person")
+    createLabeledNode("Person")
+    createLabeledNode("Person")
+
+    val count = executeScalar[Long]("MATCH (n:Person) RETURN count(n.name)")
+   count should equal(3)
+  }
+
   test("Should not use both pruning var expand and projections that need path info") {
 
     val n1 = createLabeledNode("Neo")

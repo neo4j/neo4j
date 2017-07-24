@@ -54,17 +54,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   }
 
   def indexExistsForLabel(labelName: String): Boolean = {
-    indexExistsForLabelMaybe(labelName).getOrElse(false)
-  }
+    try {
+      val labelId = getLabelId(labelName)
 
-  private def indexExistsForLabelMaybe(labelName: String): Option[Boolean] = evalOrNone {
-    val labelId = getLabelId(labelName)
+      val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+        .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
+        .flatMap(getOnlineIndex)
 
-    val onlineIndexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
-      .filter(_.`type`() == KernelIndexDescriptor.Type.GENERAL)
-      .flatMap(getOnlineIndex)
-
-    Some(onlineIndexDescriptors.nonEmpty)
+      onlineIndexDescriptors.nonEmpty
+    } catch {
+      case _: KernelException => false
+    }
   }
 
   def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
@@ -92,14 +92,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
-    constraintGet(labelName, propertyKey).isDefined
-  }
+    try {
+      val labelId = getLabelId(labelName)
+      val propertyKeyId = getPropertyKeyId(propertyKey)
 
-  private def constraintGet(labelName: String, propertyKey: String): Option[Boolean] = evalOrNone {
-    val labelId = getLabelId(labelName)
-    val propertyKeyId = getPropertyKeyId(propertyKey)
-
-    Some(tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext)
+      tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
+    } catch {
+      case _: KernelException => false
+    }
   }
 
   def checkNodeIndex(idxName: String) {
