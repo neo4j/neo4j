@@ -24,12 +24,7 @@ import cucumber.api.junit.Cucumber;
 import org.junit.runner.RunWith;
 import org.opencypher.tools.tck.TCKCucumberTemplate;
 
-import static cypher.SpecSuiteConstants.BLACKLIST_PLUGIN;
-import static cypher.SpecSuiteConstants.CYPHER_OPTION_PLUGIN;
-import static cypher.SpecSuiteConstants.DB_CONFIG;
-import static cypher.SpecSuiteConstants.GLUE_PATH;
-import static cypher.SpecSuiteConstants.HTML_REPORT;
-import static cypher.SpecSuiteConstants.JSON_REPORT;
+import static cypher.SpecSuiteConstants.*;
 
 @RunWith( CompatibilitySpecSuiteResources.class )
 public class CompatibilitySpecSuiteTest
@@ -95,6 +90,24 @@ public class CompatibilitySpecSuiteTest
             strict = true
     )
     public static class CostCompiledSourceCode
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
+                    DB_CONFIG + "cost-interpreted-enterprise.json",
+                    HTML_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
+                    JSON_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
+                    BLACKLIST_PLUGIN + "cost-interpreted-enterprise.txt",
+                    CYPHER_OPTION_PLUGIN + "cost-interpreted-enterprise.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class CostInterpretedEnterprise
     {
     }
 
