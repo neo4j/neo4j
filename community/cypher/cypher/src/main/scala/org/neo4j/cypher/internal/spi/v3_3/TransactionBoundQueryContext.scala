@@ -296,6 +296,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getNodesByLabel(id: Int): Iterator[Node] =
     JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
 
+  override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
+    transactionalContext.statement.readOperations().nodesGetForLabel(id)
+
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int =
     transactionalContext.statement.readOperations().nodeGetDegree(node, toGraphDb(dir))
 
