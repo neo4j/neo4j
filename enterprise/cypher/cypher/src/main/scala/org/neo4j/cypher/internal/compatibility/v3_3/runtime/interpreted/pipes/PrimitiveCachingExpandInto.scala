@@ -99,27 +99,30 @@ trait PrimitiveCachingExpandInto {
 
     new PrimitiveLongIterator {
       var nextRelId: Long = -1
+      // used to ensure consecutive calls to hasNext(), without interleaved next(),
+      // return same result & don't consume additional inner iterator elements
+      var consumed: Boolean = true
 
       override def next: Long = {
-        val tempNext = nextRelId
-        nextRelId = -1
-        tempNext
+        consumed = true
+        nextRelId
       }
 
-      override def hasNext: Boolean = {
-        if (nextRelId != -1) {
-          true
-        } else {
-          connected = false
-          while (relationships.hasNext && !connected) {
-            nextRelId = relationships.next()
-            relationships.relationshipVisit(nextRelId, relVisitor)
-          }
-          if (!relationships.hasNext) {
-            relCache.put(fromNode, toNode, connectedRelationships.result(), dir)
-          }
-          connected
+      override def hasNext: Boolean = !consumed || computeNext
+
+      private def computeNext = {
+        connected = false
+        while (relationships.hasNext && !connected) {
+          nextRelId = relationships.next()
+          relationships.relationshipVisit(nextRelId, relVisitor)
         }
+        if (!relationships.hasNext) {
+          relCache.put(fromNode, toNode, connectedRelationships.result(), dir)
+        }
+        // if connected is true, the following next() invocation has something to return
+        // if connected is false, we have exhausted the iterator and nothing more needs to be returned
+        consumed = !connected
+        connected
       }
     }
   }
