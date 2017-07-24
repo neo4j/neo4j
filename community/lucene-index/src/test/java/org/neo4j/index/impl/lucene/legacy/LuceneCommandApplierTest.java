@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -60,7 +61,7 @@ public class LuceneCommandApplierTest
         configStore.set( Node.class, indexName, EXACT_CONFIG );
         LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, Config.embeddedDefaults( stringMap(
                 LuceneDataSource.Configuration.ephemeral.name(), Settings.TRUE ) ),
-                configStore, fs.get() ) ) );
+                configStore, fs.get(), OperationalMode.single ) ) );
 
         try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
         {

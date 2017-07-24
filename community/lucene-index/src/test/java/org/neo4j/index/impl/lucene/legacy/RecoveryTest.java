@@ -36,6 +36,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -166,7 +167,7 @@ public class RecoveryTest
 
         Config config = Config.embeddedDefaults();
         IndexConfigStore indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
-        LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get() );
+        LuceneDataSource ds = new LuceneDataSource( storeDir, config, indexStore, fileSystemRule.get(), OperationalMode.single );
         ds.start();
         ds.stop();
     }
