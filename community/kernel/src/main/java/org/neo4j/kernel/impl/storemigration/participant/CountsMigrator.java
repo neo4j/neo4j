@@ -26,7 +26,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
@@ -114,6 +113,9 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
     public void moveMigratedFiles( File migrationDir, File storeDir, String versionToUpgradeFrom,
             String versionToUpgradeTo ) throws IOException
     {
+        // Delete any current count files in the store directory.
+        StoreFile.fileOperation( DELETE, fileSystem, storeDir, null, COUNTS_STORE_FILES, true, null,
+                StoreFileType.values() );
         // Move the migrated ones into the store directory
         StoreFile.fileOperation( MOVE, fileSystem, migrationDir, storeDir, COUNTS_STORE_FILES, true,
                 // allow to skip non existent source files
