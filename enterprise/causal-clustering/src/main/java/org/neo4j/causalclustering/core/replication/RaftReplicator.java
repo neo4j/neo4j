@@ -27,7 +27,7 @@ import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.replication.session.OperationContext;
-import org.neo4j.causalclustering.helper.RetryStrategy;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Outbound;
 import org.neo4j.graphdb.DatabaseShutdownException;
@@ -46,21 +46,21 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
     private final Outbound<MemberId,RaftMessages.RaftMessage> outbound;
     private final ProgressTracker progressTracker;
     private final LocalSessionPool sessionPool;
-    private final RetryStrategy retryStrategy;
+    private final TimeoutStrategy timeoutStrategy;
     private final AvailabilityGuard availabilityGuard;
     private final LeaderLocator leaderLocator;
     private final Log log;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me,
             Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
-            ProgressTracker progressTracker, RetryStrategy retryStrategy, AvailabilityGuard availabilityGuard,
+            ProgressTracker progressTracker, TimeoutStrategy timeoutStrategy, AvailabilityGuard availabilityGuard,
             LogProvider logProvider )
     {
         this.me = me;
         this.outbound = outbound;
         this.progressTracker = progressTracker;
         this.sessionPool = sessionPool;
-        this.retryStrategy = retryStrategy;
+        this.timeoutStrategy = timeoutStrategy;
         this.availabilityGuard = availabilityGuard;
 
         this.leaderLocator = leaderLocator;
@@ -76,7 +76,7 @@ public class RaftReplicator extends LifecycleAdapter implements Replicator, List
         DistributedOperation operation = new DistributedOperation( command, session.globalSession(), session.localOperationId() );
         Progress progress = progressTracker.start( operation );
 
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
         do
         {
             assertDatabaseNotShutdown();

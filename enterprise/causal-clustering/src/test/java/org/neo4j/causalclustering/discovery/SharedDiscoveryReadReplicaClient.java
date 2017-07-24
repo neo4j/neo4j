@@ -80,7 +80,11 @@ class SharedDiscoveryReadReplicaClient extends LifecycleAdapter implements Topol
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return sharedDiscoveryService.coreTopology( null ).find( upstream ).map( info -> Optional.of( info.getCatchupServer() ) )
-                .orElseGet( () -> sharedDiscoveryService.readReplicaTopology().find( upstream ).map( ReadReplicaInfo::getCatchupServer ) );
+        return sharedDiscoveryService.coreTopology( null )
+                .find( upstream )
+                .map( info -> Optional.of( info.getCatchupServer() ) )
+                .orElseGet( () -> sharedDiscoveryService.readReplicaTopology()
+                        .find( upstream )
+                        .map( ReadReplicaInfo::getCatchupServer ) );
     }
 }

@@ -23,15 +23,14 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseListener;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -64,7 +63,7 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
-        MemberId localhost = new MemberId( UUID.randomUUID() );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
         remoteStore.copy( localhost, storeId, new File( "destination" ) );
 
         // then
@@ -78,7 +77,7 @@ public class RemoteStoreTest
         // given
         long lastFlushedTxId = 12;
         StoreId wantedStoreId = new StoreId( 1, 2, 3, 4 );
-        MemberId localhost = new MemberId( UUID.randomUUID() );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         when( storeCopyClient.copyStoreFiles( eq( localhost ), eq( wantedStoreId ), any( StoreFileStreams.class ) ) )
@@ -115,7 +114,7 @@ public class RemoteStoreTest
                 storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
-                .pullTransactions( any( MemberId.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
+                .pullTransactions( any( AdvertisedSocketAddress.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
 
         // when
         try

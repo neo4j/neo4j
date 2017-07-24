@@ -99,6 +99,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class HazelcastClientTest
 {
     private MemberId myself = new MemberId( UUID.randomUUID() );
+    private TopologyServiceRetryStrategy topologyServiceRetryStrategy = new TopologyServiceNoRetriesStrategy();
 
     private Config config()
     {
@@ -123,7 +124,8 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -155,7 +157,8 @@ public class HazelcastClientTest
         HazelcastConnector connector = mock( HazelcastConnector.class );
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         HazelcastInstance hazelcastInstance = mock( HazelcastInstance.class );
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
@@ -203,7 +206,7 @@ public class HazelcastClientTest
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config(), myself );
+        HazelcastClient client = new HazelcastClient( connector, jobScheduler, logProvider, config(), myself, topologyServiceRetryStrategy );
 
         com.hazelcast.core.Cluster cluster = mock( Cluster.class );
         when( hazelcastInstance.getCluster() ).thenReturn( cluster );
@@ -253,7 +256,8 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         // when
         hazelcastClient.start();
@@ -296,7 +300,8 @@ public class HazelcastClientTest
         when( connector.connectToHazelcast() ).thenReturn( hazelcastInstance );
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         hazelcastClient.start();
 
@@ -327,7 +332,8 @@ public class HazelcastClientTest
 
         OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
 
-        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself );
+        HazelcastClient hazelcastClient = new HazelcastClient( connector, jobScheduler, NullLogProvider.getInstance(), config(), myself,
+                topologyServiceRetryStrategy );
 
         hazelcastClient.start();
 
