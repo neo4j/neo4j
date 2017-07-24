@@ -38,6 +38,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -166,7 +167,7 @@ public class RecoveryTest
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Config config = new Config( MapUtil.stringMap(), GraphDatabaseSettings.class );
         LuceneDataSource ds = new LuceneDataSource( storeDir, config, new IndexConfigStore( storeDir, fileSystem ),
-                fileSystem );
+                fileSystem, OperationalMode.single );
         ds.start();
         ds.stop();
     }

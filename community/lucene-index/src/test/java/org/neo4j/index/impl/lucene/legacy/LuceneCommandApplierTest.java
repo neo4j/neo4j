@@ -26,9 +26,10 @@ import java.io.File;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
@@ -39,7 +40,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 
@@ -61,7 +61,7 @@ public class LuceneCommandApplierTest
         configStore.set( Node.class, indexName, EXACT_CONFIG );
         LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, new Config( stringMap(
                 LuceneDataSource.Configuration.ephemeral.name(), Settings.TRUE ) ),
-                configStore, fs.get() ) ) );
+                configStore, fs.get(), OperationalMode.single ) ) );
 
         try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
         {
