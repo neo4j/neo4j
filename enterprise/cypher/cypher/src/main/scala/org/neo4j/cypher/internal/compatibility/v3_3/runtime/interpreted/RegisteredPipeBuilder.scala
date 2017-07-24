@@ -89,7 +89,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
       k =>
         pipelineInformation1(k) match {
-          case LongSlot(offset, false, CTNode) =>
+          case LongSlot(offset, false, CTNode, _) =>
             k -> runtimeExpressions.NodeFromRegister(offset)
         }
     }

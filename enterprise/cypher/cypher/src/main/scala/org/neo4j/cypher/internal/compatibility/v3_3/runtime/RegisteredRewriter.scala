@@ -78,7 +78,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         val slot = pipelineInformation(key)
         slot match {
-          case LongSlot(offset, _, typ) if typ == CTNode =>
+          case LongSlot(offset, _, typ, _) if typ == CTNode =>
             NodeProperty(offset, token)
         }
 
