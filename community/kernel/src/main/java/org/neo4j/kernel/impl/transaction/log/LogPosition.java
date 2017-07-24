@@ -106,9 +106,8 @@ public class LogPosition implements Comparable<LogPosition>
     {
         if ( logVersion != o.logVersion )
         {
-            return (int) (logVersion - o.logVersion);
+            return Long.compare( logVersion, o.logVersion );
         }
-
-        return (int) (byteOffset - o.byteOffset);
+        return Long.compare( byteOffset, o.byteOffset );
     }
 }
