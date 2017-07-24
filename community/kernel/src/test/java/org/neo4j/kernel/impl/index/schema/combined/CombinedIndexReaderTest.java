@@ -22,18 +22,34 @@ package org.neo4j.kernel.impl.index.schema.combined;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.StringContainsPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class CombinedIndexReaderTest
 {
     private IndexReader boostReader;
     private IndexReader fallbackReader;
     private CombinedIndexReader combinedIndexReader;
+    private static final int PROP_KEY = 1;
 
     @Before
     public void setup()
@@ -94,5 +110,117 @@ public class CombinedIndexReaderTest
     }
 
     /* query */
-    // todo ...
+
+    @Test
+    public void mustSelectFallbackForCompositePredicate() throws Exception
+    {
+        // then
+        verifyQueryWithCorrectReader( fallbackReader, boostReader, any( IndexQuery.class ), any( IndexQuery.class ) );
+    }
+
+    @Test
+    public void mustSelectBoostForExactPredicateWithNumberValue() throws Exception
+    {
+        // given
+        for ( Object numberValue : CombinedIndexTestHelp.valuesSupportedByBoost() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, numberValue );
+
+            // then
+            verifyQueryWithCorrectReader( boostReader, fallbackReader, indexQuery );
+        }
+    }
+
+    @Test
+    public void mustSelectFallbackForExactPredicateWithNonNumberValue() throws Exception
+    {
+        // given
+        for ( Object nonNumberValue : CombinedIndexTestHelp.valuesNotSupportedByBoost() )
+        {
+            IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, nonNumberValue );
+
+            // then
+            verifyQueryWithCorrectReader( fallbackReader, boostReader, indexQuery );
+        }
+    }
+
+    @Test
+    public void mustSelectFallbackForRangeStringPredicate() throws Exception
+    {
+        // given
+        StringRangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
+
+        // then
+        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringRange );
+    }
+
+    @Test
+    public void mustSelectBoostForRangeNumericPredicate() throws Exception
+    {
+        // given
+        NumberRangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
+
+        // then
+        verifyQueryWithCorrectReader( boostReader, fallbackReader, numberRange );
+    }
+
+    @Test
+    public void mustSelectFallbackForStringPrefixPredicate() throws Exception
+    {
+        // given
+        StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, "abc" );
+
+        // then
+        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringPrefix );
+    }
+
+    @Test
+    public void mustSelectFallbackForStringSuffixPredicate() throws Exception
+    {
+        // given
+        StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, "abc" );
+
+        // then
+        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringPrefix );
+    }
+
+    @Test
+    public void mustSelectFallbackForStringContainsPredicate() throws Exception
+    {
+        // given
+        StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, "abc" );
+
+        // then
+        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringContains );
+    }
+
+    @Test
+    public void mustCombineResultFromExistsPredicate() throws Exception
+    {
+        // given
+        IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
+        when( boostReader.query( exists ) ).thenReturn( Primitive.iterator( 0L, 1L, 3L, 4L, 7L ) );
+        when( fallbackReader.query( exists ) ).thenReturn( Primitive.iterator( 2L, 5L, 6L ) );
+
+        // when
+        PrimitiveLongIterator result = combinedIndexReader.query( exists );
+
+        // then
+        PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
+        for ( long i = 0L; i < 8L; i++ )
+        {
+            assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+        }
+    }
+
+    private void verifyQueryWithCorrectReader( IndexReader expectedReader, IndexReader unexpectedReader, IndexQuery... indexQuery )
+            throws IndexNotApplicableKernelException
+    {
+        // when
+        combinedIndexReader.query( indexQuery );
+
+        // then
+        verify( expectedReader, times( 1 ) ).query( indexQuery );
+        verifyNoMoreInteractions( unexpectedReader );
+    }
 }

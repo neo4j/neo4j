@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.combined;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.exceptions.index.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.schema.IndexQuery;
+import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.ExistsPredicate;
+import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
@@ -55,7 +59,7 @@ class CombinedIndexReader implements IndexReader
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return select( propertyValues, boostReader, fallbackReader ).countIndexedNodes( nodeId, propertyValues );
+        return select( boostReader, fallbackReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
@@ -67,7 +71,31 @@ class CombinedIndexReader implements IndexReader
     @Override
     public PrimitiveLongIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
-        throw new UnsupportedOperationException( "Tricky stuff, not implemented yet" );
+        if ( predicates.length > 1 )
+        {
+            return fallbackReader.query( predicates );
+        }
+
+        if ( predicates[0] instanceof ExactPredicate )
+        {
+            ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
+            return select( boostReader, fallbackReader, exactPredicate.value() ).query( predicates );
+        }
+
+        if ( predicates[0] instanceof NumberRangePredicate )
+        {
+            return boostReader.query( predicates[0] );
+        }
+
+        // todo: There will be no ordering of the node ids here. Is this a problem?
+        if ( predicates[0] instanceof ExistsPredicate )
+        {
+            PrimitiveLongIterator boostResult = boostReader.query( predicates[0] );
+            PrimitiveLongIterator fallbackResult = fallbackReader.query( predicates[0] );
+            return PrimitiveLongCollections.concat( boostResult, fallbackResult );
+        }
+
+        return fallbackReader.query( predicates );
     }
 
     @Override

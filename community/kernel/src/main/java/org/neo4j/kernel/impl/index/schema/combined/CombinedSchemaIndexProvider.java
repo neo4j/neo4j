@@ -108,7 +108,7 @@ public class CombinedSchemaIndexProvider extends SchemaIndexProvider
         return null;
     }
 
-    static <T> T select( Value[] values, T boost, T fallback )
+    static <T> T select( T boost, T fallback, Value... values )
     {
         if ( values.length > 1 )
         {

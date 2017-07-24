@@ -106,7 +106,7 @@ public class CombinedSchemaIndexProviderTest
         for ( Value numberValue : numberValues )
         {
             // when
-            SchemaIndexProvider selected = select( asArray( numberValue ), boostProvider, fallbackProvider );
+            SchemaIndexProvider selected = select( boostProvider, fallbackProvider, numberValue );
 
             // then
             assertSame( boostProvider, selected );
@@ -116,7 +116,7 @@ public class CombinedSchemaIndexProviderTest
         for ( Value otherValue : otherValues )
         {
             // when
-            SchemaIndexProvider selected = select( asArray( otherValue ), boostProvider, fallbackProvider );
+            SchemaIndexProvider selected = select( boostProvider, fallbackProvider, otherValue );
 
             // then
             assertSame( fallbackProvider, selected );
@@ -128,17 +128,12 @@ public class CombinedSchemaIndexProviderTest
             for ( Value secondValue : allValues )
             {
                 // when
-                SchemaIndexProvider selected = select( asArray( firstValue, secondValue ), boostProvider, fallbackProvider );
+                SchemaIndexProvider selected = select( boostProvider, fallbackProvider, firstValue, secondValue );
 
                 // then
                 assertSame( fallbackProvider, selected );
             }
         }
-    }
-
-    private Value[] asArray( Value... items )
-    {
-        return items;
     }
 
     @Test

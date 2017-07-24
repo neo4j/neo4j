@@ -75,7 +75,7 @@ class CombinedIndexPopulator implements IndexPopulator
     @Override
     public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
     {
-        select( update.values(), boostPopulator, fallbackPopulator ).add( update );
+        select( boostPopulator, fallbackPopulator, update.values() ).add( update );
     }
 
     @Override

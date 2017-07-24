@@ -52,14 +52,14 @@ class CombinedIndexUpdater implements IndexUpdater
         switch ( update.updateMode() )
         {
         case ADDED:
-            select( update.values(), boostUpdater, fallbackUpdater ).process( update );
+            select( boostUpdater, fallbackUpdater, update.values() ).process( update );
             break;
         case CHANGED:
             // Hmm, here's a little conundrum. What if we change from a value that goes into boost
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = select( update.beforeValues(), boostUpdater, fallbackUpdater );
-            IndexUpdater to = select( update.values(), boostUpdater, fallbackUpdater );
+            IndexUpdater from = select( boostUpdater, fallbackUpdater, update.beforeValues() );
+            IndexUpdater to = select( boostUpdater, fallbackUpdater, update.values() );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -76,7 +76,7 @@ class CombinedIndexUpdater implements IndexUpdater
             }
             break;
         case REMOVED:
-            select( update.values(), boostUpdater, fallbackUpdater ).process( update );
+            select( boostUpdater, fallbackUpdater, update.values() ).process( update );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
