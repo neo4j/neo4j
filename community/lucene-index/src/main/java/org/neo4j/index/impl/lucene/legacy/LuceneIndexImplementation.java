@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionApplier;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.spi.legacyindex.IndexCommandFactory;
@@ -60,20 +61,22 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     private final Config config;
     private final Supplier<IndexConfigStore> indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
+    private final OperationalMode operationalMode;
 
     public LuceneIndexImplementation( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
-            FileSystemAbstraction fileSystemAbstraction )
+            FileSystemAbstraction fileSystemAbstraction, OperationalMode operationalMode )
     {
         this.storeDir = storeDir;
         this.config = config;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
+        this.operationalMode = operationalMode;
     }
 
     @Override
     public void init() throws Throwable
     {
-        this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction );
+        this.dataSource = new LuceneDataSource( storeDir, config, indexStore.get(), fileSystemAbstraction, operationalMode );
         this.dataSource.init();
     }
 

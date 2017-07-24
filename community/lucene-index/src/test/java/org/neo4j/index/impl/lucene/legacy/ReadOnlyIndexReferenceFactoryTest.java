@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.test.rule.CleanupRule;
@@ -90,7 +91,7 @@ public class ReadOnlyIndexReferenceFactoryTest
         indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         indexStore.set( Node.class, INDEX_NAME, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
         LuceneDataSource luceneDataSource = new LuceneDataSource( storeDir, Config.embeddedDefaults( MapUtil.stringMap() ),
-                indexStore, fileSystemRule.get() );
+                indexStore, fileSystemRule.get(), OperationalMode.single );
         try
         {
             luceneDataSource.init();
