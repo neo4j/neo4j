@@ -56,11 +56,11 @@ case class ExpandIntoRegisterPipe(source: Pipe,
       inputRow =>
         val fromNode = inputRow.getLongAt(fromSlot.offset)
         if (isNull(fromNode))
-          resultForNullable(fromSlot)
+          resultForNull(fromSlot)
         else {
           val toNode = inputRow.getLongAt(toSlot.offset)
           if (isNull(toNode))
-            resultForNullable(toSlot)
+            resultForNull(toSlot)
           else {
             val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
               .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
@@ -82,11 +82,9 @@ case class ExpandIntoRegisterPipe(source: Pipe,
 
   private def isNull(nodeId: Long) = -1 == nodeId
 
-  private def resultForNullable(slot: Slot) =
-    if (slot.nullable) Iterator.empty else unexpectedNullError(fromSlot)
-
-  private def unexpectedNullError(slot: Slot) = {
-    val slotName = pipelineInformation.getNameFor(slot).getOrElse(new InternalException(s"No name found for $slot"))
-    throw new InternalException(s"Expected to find a node at $slotName but found nothing")
-  }
+  private def resultForNull(slot: Slot) =
+    if (slot.nullable)
+      Iterator.empty
+    else
+      throw new InternalException(s"Expected to find a node at ${slot.name} but found nothing")
 }

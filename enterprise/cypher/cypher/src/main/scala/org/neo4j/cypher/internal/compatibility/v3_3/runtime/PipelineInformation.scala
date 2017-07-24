@@ -37,12 +37,9 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
 
   def get(key: String): Option[Slot] = slots.get(key)
 
-  def getNameFor(slot: Slot): Option[String] =
-    slots.filter { case (_, aSlot) => aSlot.equals(slot) }.keys.headOption
-
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
-    case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
-    case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)
+    case LongSlot(_, nullable, typ, key) => newLong(key, nullable, typ)
+    case RefSlot(_, nullable, typ, key) => newReference(key, nullable, typ)
   }
 
   def deepClone(): PipelineInformation = {
@@ -51,14 +48,14 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
 
   def newLong(name: String, nullable: Boolean, typ: CypherType): Unit = {
     checkNotAlreadyTaken(name)
-    val slot = LongSlot(numberOfLongs, nullable, typ)
+    val slot = LongSlot(numberOfLongs, nullable, typ, name)
     slots = slots + (name -> slot)
     numberOfLongs = numberOfLongs + 1
   }
 
   def newReference(name: String, nullable: Boolean, typ: CypherType): Unit = {
     checkNotAlreadyTaken(name)
-    val slot = RefSlot(numberOfReferences, nullable, typ)
+    val slot = RefSlot(numberOfReferences, nullable, typ, name)
     slots = slots + (name -> slot)
     numberOfReferences = numberOfReferences + 1
   }
