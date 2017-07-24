@@ -115,8 +115,8 @@ public class LuceneDataSource extends LifecycleAdapter
     /**
      * Constructs this data source.
      */
-    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore, FileSystemAbstraction
-            fileSystemAbstraction, OperationalMode operationalMode )
+    public LuceneDataSource( File storeDir, Config config, IndexConfigStore indexStore,
+            FileSystemAbstraction fileSystemAbstraction, OperationalMode operationalMode )
     {
         this.storeDir = storeDir;
         this.config = config;
