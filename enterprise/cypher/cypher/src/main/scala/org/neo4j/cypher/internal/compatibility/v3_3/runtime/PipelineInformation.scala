@@ -37,6 +37,9 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
 
   def get(key: String): Option[Slot] = slots.get(key)
 
+  def getNameFor(slot: Slot): Option[String] =
+    slots.filter { case (_, aSlot) => aSlot.equals(slot) }.keys.headOption
+
   def add(key: String, slotInformation: Slot): Unit = slotInformation match {
     case LongSlot(_, nullable, typ) => newLong(key, nullable, typ)
     case RefSlot(_, nullable, typ) => newReference(key, nullable, typ)

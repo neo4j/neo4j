@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodesByLabelScanRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
@@ -137,9 +137,11 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
-    pipe should equal(ExpandIntoPipe(
+    val nodeSlot = LongSlot(0, nullable = false, CTNode)
+    val relSlot = LongSlot(1, nullable = false, CTRelationship)
+    pipe should equal(ExpandIntoRegisterPipe(
       AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
-      "x", "r", "x", SemanticDirection.INCOMING, LazyTypes.empty
+      nodeSlot, relSlot, nodeSlot, SemanticDirection.INCOMING, LazyTypes.empty, PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
     )())
   }
 
