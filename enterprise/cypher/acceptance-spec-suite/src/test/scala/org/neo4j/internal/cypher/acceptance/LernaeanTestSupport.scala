@@ -20,13 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1, v3_2}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
+import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1, v3_2, v3_3}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_2.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
-import org.neo4j.cypher.internal.compiler.v3_2.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_2.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
+import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
 import org.scalatest.Assertions
@@ -57,6 +58,8 @@ trait LernaeanTestSupport extends CypherTestSupport {
       def convert(v: Any): Any = v match {
         case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
         case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case p: GeographicPointv3_2 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
+        case p: CartesianPointv3_2 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
         case a: Array[_] => a.toList.map(convert)
         case m: Map[_, _] =>
           Eagerly.immutableMapValues(m, convert)
@@ -79,7 +82,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
     self.kernelMonitors.addMonitorListener(newRuntimeMonitor)
   }
 
-  val newPlannerMonitor = new NewPlannerMonitor
+  val newPlannerMonitor = NewPlannerMonitor
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
@@ -125,6 +128,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
   private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
     result match {
       case e: ClosingExecutionResult => e.inner match {
+        case _: v3_3.ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v3_2.ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
         case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
@@ -133,11 +137,17 @@ trait LernaeanTestSupport extends CypherTestSupport {
   }
 
   object Configs {
-    def CompiledSource: TestConfig = TestConfig.from(Scenarios.CompiledSource3_2)
+    def CompiledSource: TestConfig = TestConfig.from(Scenarios.CompiledSource3_3)
 
-    def CompiledByteCode: TestConfig = TestConfig.from(Scenarios.CompiledByteCode)
+    def CompiledByteCode: TestConfig = TestConfig.from(Scenarios.CompiledByteCode3_3)
 
     def Compiled: TestConfig = CompiledByteCode + CompiledSource
+
+    def CompiledSource3_2: TestConfig = TestConfig.from(Scenarios.CompiledSource3_2)
+
+    def CompiledByteCode3_2: TestConfig = TestConfig.from(Scenarios.CompiledByteCode3_2)
+
+    def Compiled3_2: TestConfig = CompiledSource3_2 + CompiledByteCode3_2
 
     def Interpreted: TestConfig = AbsolutelyAll - Compiled - Procs
 
@@ -147,7 +157,9 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Version3_1: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility3_1Cost
 
-    def Version3_2: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion
+    def Version3_2: TestConfig = Compiled3_2 + Scenarios.Compatibility3_2
+
+    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion
 
     def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
@@ -161,7 +173,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
      */
     def All: TestConfig = AbsolutelyAll - Procs
 
-    def AbsolutelyAll: TestConfig = Version3_2 + BackwardsCompatibility + Procs
+    def AbsolutelyAll: TestConfig = Version3_3 + BackwardsCompatibility + Procs
   }
 
   object Scenarios {
@@ -215,7 +227,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
       }
     }
 
-    abstract class Compiled extends RuntimeScenario {
+    abstract class CompiledScenario extends RuntimeScenario {
       override protected def argumentName: String = "COMPILED"
 
       override def checkStateForSuccess(query: String): Unit = newRuntimeMonitor.trace.collect {
@@ -235,7 +247,25 @@ trait LernaeanTestSupport extends CypherTestSupport {
       }
     }
 
-    object CompiledSource3_2 extends Compiled {
+    object CompiledSource3_2 extends CompiledScenario {
+      override def prepare(): Unit = newRuntimeMonitor.clear()
+
+
+      override def preparserOptions: String = "cypher=3.2 planner=cost runtime=compiled debug=generate_java_source"
+
+      override def name: String = "compiled runtime through source code"
+
+    }
+
+    object CompiledByteCode3_2 extends CompiledScenario {
+      override def prepare(): Unit = newRuntimeMonitor.clear()
+
+      override def preparserOptions: String = "cypher=3.2 planner=cost runtime=compiled"
+
+      override def name: String = "compiled runtime straight to bytecode"
+    }
+
+    object CompiledSource3_3 extends CompiledScenario {
       override def prepare(): Unit = newRuntimeMonitor.clear()
 
 
@@ -245,7 +275,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     }
 
-    object CompiledByteCode extends Compiled {
+    object CompiledByteCode3_3 extends CompiledScenario {
       override def prepare(): Unit = newRuntimeMonitor.clear()
 
       override def preparserOptions: String = "planner=cost runtime=compiled"
@@ -298,14 +328,13 @@ trait LernaeanTestSupport extends CypherTestSupport {
     object Compatibility2_3Rule extends TestScenario {
       override def name: String = "compatibility 2.3 rule"
 
-
-      override def preparserOptions: String = "2.3 planner=rule "
+      override def preparserOptions: String = "2.3 planner=rule"
     }
 
     object Compatibility2_3Cost extends PlannerScenario {
       override def name: String = "compatibility 2.3 cost"
 
-      override def preparserOptions: String = "2.3 planner=cost "
+      override def preparserOptions: String = "2.3 planner=cost"
 
       override protected def argumentName: String = "IDP"
     }
@@ -313,13 +342,21 @@ trait LernaeanTestSupport extends CypherTestSupport {
     object Compatibility3_1Rule extends TestScenario {
       override def name: String = "compatibility 3.1 rule"
 
-      override def preparserOptions: String = "3.1 planner=rule "
+      override def preparserOptions: String = "3.1 planner=rule"
     }
 
     object Compatibility3_1Cost extends PlannerScenario {
       override def name: String = "compatibility 3.1 cost"
 
-      override def preparserOptions: String = "3.1 planner=cost "
+      override def preparserOptions: String = "3.1 planner=cost"
+
+      override protected def argumentName: String = "IDP"
+    }
+
+    object Compatibility3_2 extends PlannerScenario {
+      override def name: String = "compatibility 3.2"
+
+      override def preparserOptions: String = "3.2"
 
       override protected def argumentName: String = "IDP"
     }
