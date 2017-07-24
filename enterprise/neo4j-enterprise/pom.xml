@@ -309,7 +309,7 @@
                 </group>
                 <group>
                   <title>Backup</title>
-                  <packages>org.neo4j.backup:org.neo4j.backup.*</packages>
+                  <packages>org.neo4j.backup:org.neo4j.nextgenbackup.*</packages>
                 </group>
                 <group>
                   <title>Query language</title>

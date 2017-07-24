@@ -30,6 +30,7 @@ Apache Software License, Version 2.0
   Apache Shiro :: Core
   Caffeine cache
   Commons BeanUtils
+  hazelcast-all
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
