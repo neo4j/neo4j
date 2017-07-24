@@ -93,7 +93,7 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        return Iterables.asIterable( findSinglePath( start, end ) );
+        return findPaths( start, end, true );
     }
 
     @Override
