@@ -61,7 +61,7 @@ public enum NotificationCode
     RULE_PLANNER_UNAVAILABLE_FALLBACK(
         SeverityLevel.WARNING,
         Status.Statement.PlannerUnavailableWarning,
-        "Using RULE planner is unsupported for current CYPHER version, the query has been execute by an older CYPHER " +
+        "Using RULE planner is unsupported for current CYPHER version, the query has been executed by an older CYPHER " +
         "version"
     ),
     RUNTIME_UNSUPPORTED(
@@ -178,12 +178,12 @@ public enum NotificationCode
     CREATE_UNIQUE_UNAVAILABLE_FALLBACK(
             SeverityLevel.WARNING,
             Status.Statement.PlannerUnavailableWarning,
-        "CREATE UNIQUE is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
+        "CREATE UNIQUE is unsupported for current CYPHER version, the query has been executed by an older CYPHER version"
     ),
     START_UNAVAILABLE_FALLBACK(
             SeverityLevel.WARNING,
             Status.Statement.PlannerUnavailableWarning,
-            "START is unsupported for current CYPHER version, the query has been execute by an older CYPHER version"
+            "START is unsupported for current CYPHER version, the query has been executed by an older CYPHER version"
     );
 
     private final Status status;
