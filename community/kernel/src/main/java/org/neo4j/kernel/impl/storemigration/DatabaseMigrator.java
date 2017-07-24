@@ -83,8 +83,7 @@ public class DatabaseMigrator
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 
-        StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache
-        );
+        StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );

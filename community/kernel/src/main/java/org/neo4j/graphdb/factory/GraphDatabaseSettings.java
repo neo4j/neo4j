@@ -69,8 +69,10 @@ import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
+import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore.NATIVE_LABEL_INDEX_TAG;
 
 /**
  * Settings for Neo4j.
@@ -543,13 +545,36 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
-    // todo Can we simply remove this setting or do we need to depricate it?
+    /**
+     * @deprecated - lucene label index has been removed.
+     */
+    @Deprecated
+    public enum LabelIndex
+    {
+        /**
+         * Native label index. Generally the best option.
+         */
+        NATIVE,
+
+        /**
+         * Label index backed by Lucene.
+         */
+        LUCENE,
+
+        /**
+         * Selects which ever label index is present in a store, or the default (NATIVE) if no label index present.
+         */
+        AUTO
+    }
+
+    /**
+     * @deprecated - lucene label index has been removed, thus 'native' is only viable option and this setting is not needed.
+     */
     @Deprecated
     @Description( "Backend to use for label --> nodes index" )
     @Internal
-    public static final Setting<String> label_index = setting( "dbms.label_index", STRING, "native" );
-
-    // Security settings
+    public static final Setting<String> label_index =
+            setting( "dbms.label_index", optionsIgnoreCase( NATIVE_LABEL_INDEX_TAG ), NATIVE_LABEL_INDEX_TAG );
 
     @Description( "Enable auth requirement to access Neo4j." )
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );

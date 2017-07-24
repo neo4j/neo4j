@@ -44,25 +44,19 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.DuplicatingLog;
@@ -70,12 +64,9 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.Service.load;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
-import static org.neo4j.kernel.impl.factory.DatabaseInfo.UNKNOWN;
 
 public class ConsistencyCheckService
 {
@@ -215,6 +206,7 @@ public class ConsistencyCheckService
         Log log = logProvider.getLog( getClass() );
         config = config.with( stringMap(
                 GraphDatabaseSettings.read_only.name(), TRUE ) );
+        OperationalMode operationalMode = OperationalMode.single;
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider );
 
@@ -236,14 +228,9 @@ public class ConsistencyCheckService
         LifeSupport life = new LifeSupport();
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
-            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
-            Dependencies dependencies = new Dependencies();
-            KernelContext kernelContext = new SimpleKernelContext( storeDir, UNKNOWN, dependencies );
-            KernelExtensions extensions = life.add( new KernelExtensions(
-                    kernelContext, (Iterable) load( KernelExtensionFactory.class ), dependencies, ignore() ) );
             life.start();
-            SchemaIndexProvider indexes = life.add( extensions.resolveDependency( SchemaIndexProvider.class,
-                    HighestSelectionStrategy.getInstance() ) );
+            SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
+                    storeDir, logProvider, config, operationalMode );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),

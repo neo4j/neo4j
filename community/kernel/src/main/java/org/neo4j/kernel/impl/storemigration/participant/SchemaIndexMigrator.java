@@ -40,7 +40,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private boolean deleteObsoleteIndexes;
-    private File luceneLabelIndexDirectory;
     private File schemaIndexDirectory;
     private final SchemaIndexProvider schemaIndexProvider;
 
