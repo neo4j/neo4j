@@ -40,6 +40,12 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final OperationalMode operationalMode;
 
     public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
+            FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
+    {
+        this( storeDir, config, indexStore, fileSystemAbstraction, indexProviders, OperationalMode.single );
+    }
+
+    public LuceneKernelExtension( File storeDir, Config config, Supplier<IndexConfigStore> indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders, OperationalMode operationalMode )
     {
         this.storeDir = storeDir;
