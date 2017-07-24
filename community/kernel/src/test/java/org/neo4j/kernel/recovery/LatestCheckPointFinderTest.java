@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -34,6 +35,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
@@ -43,7 +45,9 @@ import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -227,6 +231,22 @@ public class LatestCheckPointFinderTest
 
         // then
         assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+    }
+
+    @Test
+    public void bigFileLatestCheckpointFindsStartAfter() throws Throwable
+    {
+        long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
+
+        LatestCheckPointFinder checkPointFinder = new FirstTxIdConfigurableCheckpointFinder( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader);
+        LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
+                new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
+        CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
+        LatestCheckPoint latestCheckPoint = checkPointFinder.latestCheckPoint( endLogVersion, endLogVersion, startEntry,
+                endLogVersion, checkPoint );
+
+        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion,
+            latestCheckPoint );
     }
 
     @Test
@@ -521,5 +541,34 @@ public class LatestCheckPointFinderTest
             assertEquals( firstTxIdAfterLastCheckPoint, latestCheckPoint.firstTxIdAfterLastCheckPoint );
         }
         assertEquals( logVersion, latestCheckPoint.oldestLogVersionFound );
+    }
+
+    private static class FirstTxIdConfigurableCheckpointFinder extends LatestCheckPointFinder
+    {
+
+        private final long txId;
+
+        FirstTxIdConfigurableCheckpointFinder( long txId, PhysicalLogFiles logFiles, FileSystemAbstraction fileSystem,
+                LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader )
+        {
+            super( logFiles, fileSystem, logEntryReader );
+            this.txId = txId;
+        }
+
+        @Override
+        public LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version,
+                LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint )
+                throws IOException
+        {
+            return super.latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
+                    latestCheckPoint );
+        }
+
+        @Override
+        protected long extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion )
+                throws IOException
+        {
+            return txId;
+        }
     }
 }
