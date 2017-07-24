@@ -1,0 +1,2 @@
+// Compiled runtime should generate source code
+CYPHER debug=sleipnir
