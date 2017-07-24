@@ -50,7 +50,7 @@ trait QueryPlanTestSupport {
       val plan: InternalPlanDescription = result.executionPlanDescription()
       MatchResult(
         matches = operators.forall(plan.find(_).nonEmpty),
-        rawFailureMessage = s"Plan should use ${operators.mkString(",")}:\n$plan",
+        rawFailureMessage = s"Metadata: ${plan.arguments}\nPlan should use ${operators.mkString(",")}:\n$plan",
         rawNegatedFailureMessage = s"Plan should not use ${operators.mkString(",")}:\n$plan")
     }
   }
