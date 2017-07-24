@@ -209,7 +209,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.availabilityGuard, logProvider );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider ), new TxPullClient( catchUpClient, platformModule.monitors ),
+                new StoreCopyClient( catchUpClient, logProvider, topologyService ), new TxPullClient( catchUpClient, platformModule.monitors, topologyService ),
                 new TransactionLogCatchUpFactory(), platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
@@ -264,7 +264,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         CatchupPollingProcess catchupProcess =
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient, upstreamDatabaseStrategySelector,
                         catchupTimeoutService, config.get( CausalClusteringSettings.pull_interval ).toMillis(), batchingTxApplier, platformModule.monitors,
-                        storeCopyProcess, databaseHealthSupplier );
+                        storeCopyProcess, databaseHealthSupplier, topologyService );
         dependencies.satisfyDependencies( catchupProcess );
 
         txPulling.add( batchingTxApplier );

@@ -56,6 +56,7 @@ import org.neo4j.causalclustering.core.state.machines.CoreStateMachinesModule;
 import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloader;
 import org.neo4j.causalclustering.core.state.storage.DurableStateStorage;
 import org.neo4j.causalclustering.core.state.storage.StateStorage;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
@@ -95,6 +96,7 @@ public class CoreServerModule
         final LifeSupport life = platformModule.life;
         final Monitors monitors = platformModule.monitors;
         final JobScheduler jobScheduler = platformModule.jobScheduler;
+        final TopologyService topologyService = clusteringModule.topologyService();
 
         LogProvider logProvider = logging.getInternalLogProvider();
         LogProvider userLogProvider = logging.getUserLogProvider();
@@ -112,11 +114,13 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( clusteringModule.topologyService(), logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy ) );
+        CatchUpClient catchUpClient =
+                life.add( new CatchUpClient( topologyService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy ) );
 
-        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
-                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), platformModule.monitors );
+        RemoteStore remoteStore =
+                new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider, topologyService ),
+                        new TxPullClient( catchUpClient, platformModule.monitors, topologyService ), new TransactionLogCatchUpFactory(),
+                        platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
@@ -163,7 +167,7 @@ public class CoreServerModule
 
         CoreStateDownloader downloader =
                 new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider, storeCopyProcess,
-                        coreStateMachinesModule.coreStateMachines, snapshotService, commandApplicationProcess );
+                        coreStateMachinesModule.coreStateMachines, snapshotService, commandApplicationProcess, topologyService );
 
         RaftMessageHandler messageHandler =
                 new RaftMessageHandler( localDatabase, logProvider, consensusModule.raftMachine(), downloader, commandApplicationProcess );
