@@ -238,7 +238,8 @@ public class LatestCheckPointFinderTest
     {
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
-        LatestCheckPointFinder checkPointFinder = new FirstTxIdConfigurableCheckpointFinder( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader);
+        LatestCheckPointFinder checkPointFinder =
+                new FirstTxIdConfigurableCheckpointFinder( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
