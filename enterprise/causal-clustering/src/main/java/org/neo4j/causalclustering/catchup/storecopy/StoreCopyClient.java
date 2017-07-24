@@ -25,8 +25,11 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -34,18 +37,21 @@ public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
     private final Log log;
+    private final TopologyService topologyService;
 
-    public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider )
+    public StoreCopyClient( CatchUpClient catchUpClient, LogProvider logProvider, TopologyService topologyService )
     {
         this.catchUpClient = catchUpClient;
         log = logProvider.getLog( getClass() );
+        this.topologyService = topologyService;
     }
 
     long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
+            return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
             {
                 private String destination;
                 private int requiredAlignment;
@@ -72,7 +78,7 @@ public class StoreCopyClient
                 }
             } );
         }
-        catch ( CatchUpClientException e )
+        catch ( CoreStateDownloaderException | CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }
@@ -90,9 +96,10 @@ public class StoreCopyClient
                     signal.complete( response.storeId() );
                 }
             };
-            return catchUpClient.makeBlockingRequest( from, new GetStoreIdRequest(), responseHandler );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
+            return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreIdRequest(), responseHandler );
         }
-        catch ( CatchUpClientException e )
+        catch ( CoreStateDownloaderException | CatchUpClientException e )
         {
             throw new StoreIdDownloadFailedException( e );
         }

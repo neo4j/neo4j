@@ -42,6 +42,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
@@ -70,17 +71,12 @@ public class CatchUpClient extends LifecycleAdapter
         this.sslPolicy = sslPolicy;
     }
 
-    public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
+    public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
+            throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
-        Optional<AdvertisedSocketAddress> catchUpAddress = topologyService.findCatchupAddress( upstream );
 
-        if ( !catchUpAddress.isPresent() )
-        {
-            throw new CatchUpClientException( "Cannot find the target member socket address" );
-        }
-
-        CatchUpChannel channel = pool.acquire( catchUpAddress.get() );
+        CatchUpChannel channel = pool.acquire( upstream );
 
         future.whenComplete( ( result, e ) ->
         {
@@ -97,7 +93,7 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        String operation = String.format( "Timed out executing operation %s on %s (%s)", request, upstream, catchUpAddress.get() );
+        String operation = format( "Timed out executing operation %s on %s", request, upstream );
 
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }

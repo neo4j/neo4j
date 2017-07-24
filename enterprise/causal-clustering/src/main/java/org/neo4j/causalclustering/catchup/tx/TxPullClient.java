@@ -25,26 +25,32 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class TxPullClient
 {
     private final CatchUpClient catchUpClient;
     private PullRequestMonitor pullRequestMonitor;
+    private final TopologyService topologyService;
 
-    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors )
+    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors, TopologyService topologyService )
     {
         this.catchUpClient = catchUpClient;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
+        this.topologyService = topologyService;
     }
 
     public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long previousTxId, TxPullResponseListener txPullResponseListener )
-            throws CatchUpClientException
+            throws CatchUpClientException, CoreStateDownloaderException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
-        return catchUpClient.makeBlockingRequest( from, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
+        return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
             private long lastTxIdReceived = previousTxId;
 

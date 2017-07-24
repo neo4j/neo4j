@@ -31,8 +31,10 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -53,10 +55,13 @@ public class CoreStateDownloader
     private final CoreStateMachines coreStateMachines;
     private final CoreSnapshotService snapshotService;
     private final CommandApplicationProcess applicationProcess;
+    private final TopologyService topologyService;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, RemoteStore remoteStore, CatchUpClient catchUpClient,
-            LogProvider logProvider, StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines, CoreSnapshotService snapshotService,
-            CommandApplicationProcess applicationProcess )
+    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
+            RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
+            StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
+            CoreSnapshotService snapshotService, CommandApplicationProcess applicationProcess,
+            TopologyService topologyService )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -67,6 +72,7 @@ public class CoreStateDownloader
         this.coreStateMachines = coreStateMachines;
         this.snapshotService = snapshotService;
         this.applicationProcess = applicationProcess;
+        this.topologyService = topologyService;
     }
 
     public void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
@@ -102,14 +108,17 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(), new CatchUpResponseAdaptor<CoreSnapshot>()
-            {
-                @Override
-                public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
-                {
-                    signal.complete( response );
-                }
-            } );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source )
+                    .orElseThrow( () -> new CoreStateDownloaderException( source ) );
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( fromAddress, new CoreSnapshotRequest(),
+                    new CatchUpResponseAdaptor<CoreSnapshot>()
+                    {
+                        @Override
+                        public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
+                        {
+                            signal.complete( response );
+                        }
+                    } );
 
             if ( isEmptyStore )
             {

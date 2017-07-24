@@ -28,6 +28,7 @@ import org.neo4j.causalclustering.catchup.TxPullRequestResult;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpFactory;
 import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
+import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -174,7 +175,7 @@ public class RemoteStore
 
             return lastStatus;
         }
-        catch ( CatchUpClientException e )
+        catch ( CoreStateDownloaderException | CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }
