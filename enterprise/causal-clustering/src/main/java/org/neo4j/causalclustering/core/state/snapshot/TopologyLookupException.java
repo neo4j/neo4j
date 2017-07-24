@@ -17,21 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.core.state.snapshot;
 
 import org.neo4j.causalclustering.identity.MemberId;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.logging.LogProvider;
-import org.neo4j.ssl.SslPolicy;
 
-public interface DiscoveryServiceFactory
+import static java.lang.String.format;
+
+public class TopologyLookupException extends RuntimeException
 {
-    CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself,
-            JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    public TopologyLookupException( Throwable cause )
+    {
+        super( cause );
+    }
 
-    TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
-            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
+    public TopologyLookupException( MemberId memberId )
+    {
+        super( format( "Cannot find the target member %s socket address", memberId ) );
+    }
+
+    public TopologyLookupException( String message )
+    {
+        super( message );
+    }
 }

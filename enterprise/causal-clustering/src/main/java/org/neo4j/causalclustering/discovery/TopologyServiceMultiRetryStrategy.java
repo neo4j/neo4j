@@ -17,15 +17,17 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.helper;
+package org.neo4j.causalclustering.discovery;
 
-public interface RetryStrategy
+import java.util.Optional;
+
+import org.neo4j.causalclustering.identity.MemberId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
+
+public class TopologyServiceMultiRetryStrategy extends MultiRetryStrategy<MemberId,Optional<AdvertisedSocketAddress>> implements TopologyServiceRetryStrategy
 {
-    Timeout newTimeout();
-
-    interface Timeout
+    public TopologyServiceMultiRetryStrategy( long delayInMillis, long retries )
     {
-        long getMillis();
-        void increment();
+        super( delayInMillis, retries );
     }
 }

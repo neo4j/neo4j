@@ -31,12 +31,15 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+import static java.lang.String.format;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
@@ -53,10 +56,13 @@ public class CoreStateDownloader
     private final CoreStateMachines coreStateMachines;
     private final CoreSnapshotService snapshotService;
     private final CommandApplicationProcess applicationProcess;
+    private final TopologyService topologyService;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, RemoteStore remoteStore, CatchUpClient catchUpClient,
-            LogProvider logProvider, StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines, CoreSnapshotService snapshotService,
-            CommandApplicationProcess applicationProcess )
+    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
+            RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
+            StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
+            CoreSnapshotService snapshotService, CommandApplicationProcess applicationProcess,
+            TopologyService topologyService )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -67,6 +73,7 @@ public class CoreStateDownloader
         this.coreStateMachines = coreStateMachines;
         this.snapshotService = snapshotService;
         this.applicationProcess = applicationProcess;
+        this.topologyService = topologyService;
     }
 
     public void downloadSnapshot( MemberId source ) throws StoreCopyFailedException
@@ -84,7 +91,8 @@ public class CoreStateDownloader
                 localDatabase.stop();
             }
 
-            StoreId remoteStoreId = remoteStore.getStoreId( source );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ));
+            StoreId remoteStoreId = remoteStore.getStoreId( fromAddress );
             if ( !isEmptyStore && !remoteStoreId.equals( localDatabase.storeId() ) )
             {
                 throw new StoreCopyFailedException( "StoreId mismatch and not empty" );
@@ -102,30 +110,31 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(), new CatchUpResponseAdaptor<CoreSnapshot>()
-            {
-                @Override
-                public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
-                {
-                    signal.complete( response );
-                }
-            } );
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( fromAddress, new CoreSnapshotRequest(),
+                    new CatchUpResponseAdaptor<CoreSnapshot>()
+                    {
+                        @Override
+                        public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
+                        {
+                            signal.complete( response );
+                        }
+                    } );
 
             if ( isEmptyStore )
             {
-                storeCopyProcess.replaceWithStoreFrom( source, remoteStoreId );
+                storeCopyProcess.replaceWithStoreFrom( fromAddress, remoteStoreId );
             }
             else
             {
                 StoreId localStoreId = localDatabase.storeId();
-                CatchupResult catchupResult = remoteStore.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
+                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase.storeDir() );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
+                    log.info( format( "Failed to pull transactions from %s (%s). They may have been pruned away", source, fromAddress ) );
                     localDatabase.delete();
 
-                    storeCopyProcess.replaceWithStoreFrom( source, localStoreId );
+                    storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {
