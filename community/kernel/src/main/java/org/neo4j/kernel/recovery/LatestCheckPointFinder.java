@@ -128,7 +128,8 @@ public class LatestCheckPointFinder
         return new LatestCheckPoint( null, commitsAfterCheckPoint, firstTxAfterPosition, oldestVersionFound );
     }
 
-    private LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version, LogEntryStart latestStartEntry,
+    protected LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version, LogEntryStart
+            latestStartEntry,
             long oldestVersionFound, CheckPoint latestCheckPoint ) throws IOException
     {
         // Is the latest start entry in this log file version later than what the latest check point targets?
@@ -166,7 +167,7 @@ public class LatestCheckPointFinder
      * if not found.
      * @throws IOException on I/O error.
      */
-    private long extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion ) throws IOException
+    protected long extractFirstTxIdAfterPosition( LogPosition initialPosition, long maxLogVersion ) throws IOException
     {
         LogPosition currentPosition = initialPosition;
         while ( currentPosition.getLogVersion() <= maxLogVersion )
