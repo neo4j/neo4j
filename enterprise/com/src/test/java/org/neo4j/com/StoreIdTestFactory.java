@@ -38,10 +38,8 @@ public class StoreIdTestFactory
         return new StoreId( currentStoreVersionAsLong() );
     }
 
-    public static StoreId newStoreIdForCurrentVersion( long creationTime, long randomId, long upgradeTime, long
-            upgradeId )
+    public static StoreId newStoreIdForCurrentVersion( long creationTime, long randomId )
     {
-        return new StoreId( creationTime, randomId, MetaDataStore.versionStringToLong( format.storeVersion() ),
-                upgradeTime, upgradeId );
+        return new StoreId( creationTime, randomId, MetaDataStore.versionStringToLong( format.storeVersion() ) );
     }
 }

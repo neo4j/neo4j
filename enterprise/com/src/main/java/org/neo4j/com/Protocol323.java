@@ -25,9 +25,9 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.store.StoreId;
 
-public class Protocol214 extends Protocol
+public class Protocol323 extends Protocol310
 {
-    public Protocol214( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
+    public Protocol323( int chunkSize, byte applicationProtocolVersion, byte internalProtocolVersion )
     {
         super( chunkSize, applicationProtocolVersion, internalProtocolVersion );
     }
@@ -36,16 +36,14 @@ public class Protocol214 extends Protocol
     protected StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 + 8 + 8 ); // creation time, random id, store version, upgrade time, upgrade id
+        // creation time, random id, store version
+        byteBuffer.limit( Long.BYTES + Long.BYTES + Long.BYTES );
         source.readBytes( byteBuffer );
         byteBuffer.flip();
-        // read order matters - see Server.writeStoreId() for version 2.1.4
+        // read order matters - see Server.writeStoreId
         long creationTime = byteBuffer.getLong();
         long randomId = byteBuffer.getLong();
         long storeVersion = byteBuffer.getLong();
-        // ignored upgrade time and upgrade id
-        byteBuffer.getLong();
-        byteBuffer.getLong();
         return new StoreId( creationTime, randomId, storeVersion );
     }
 }

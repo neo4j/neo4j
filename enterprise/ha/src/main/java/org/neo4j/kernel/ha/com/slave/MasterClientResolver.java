@@ -32,6 +32,7 @@ import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.ha.com.master.InvalidEpochException;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -84,6 +85,9 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
                 channels, chunkSize ) );
         protocolToFactoryMapping.put( MasterClient320.PROTOCOL_VERSION, new F320( logProvider, readTimeoutMillis, lockReadTimeout,
                 channels, chunkSize ) );
+        protocolToFactoryMapping.put( MasterClient323.PROTOCOL_VERSION, new F323( logProvider, readTimeoutMillis,
+                lockReadTimeout,
+                channels, chunkSize ) );
     }
 
     @Override
@@ -123,7 +127,7 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
 
     private MasterClientFactory assignDefaultFactory()
     {
-        return getFor( MasterClient320.PROTOCOL_VERSION );
+        return getFor( MasterClient323.PROTOCOL_VERSION );
     }
 
     private abstract static class StaticMasterClientFactory implements MasterClientFactory
@@ -199,6 +203,25 @@ public class MasterClientResolver implements MasterClientFactory, ComExceptionHa
                     logProvider, storeId, readTimeoutMillis, lockReadTimeout, maxConcurrentChannels, chunkSize,
                     responseUnpacker, monitors.newMonitor( ByteCounterMonitor.class, MasterClient320.class ),
                     monitors.newMonitor( RequestMonitor.class, MasterClient320.class ), logEntryReader.get() ) );
+        }
+    }
+
+    private final class F323 extends StaticMasterClientFactory
+    {
+        private F323( LogProvider logProvider, int readTimeoutMillis, int lockReadTimeout, int maxConcurrentChannels,
+                int chunkSize )
+        {
+            super( logProvider, readTimeoutMillis, lockReadTimeout, maxConcurrentChannels, chunkSize );
+        }
+
+        @Override
+        public MasterClient instantiate( String destinationHostNameOrIp, int destinationPort, String originHostNameOrIp,
+                Monitors monitors, StoreId storeId, LifeSupport life )
+        {
+            return life.add( new MasterClient323(  destinationHostNameOrIp, destinationPort, originHostNameOrIp,
+                    logProvider, storeId, readTimeoutMillis, lockReadTimeout, maxConcurrentChannels, chunkSize,
+                    responseUnpacker, monitors.newMonitor( ByteCounterMonitor.class, MasterClient323.class ),
+                    monitors.newMonitor( RequestMonitor.class, MasterClient323.class ), logEntryReader.get() ) );
         }
     }
 }

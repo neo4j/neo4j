@@ -109,7 +109,7 @@ public class SwitchToSlaveCopyThenBranchTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-    private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42, 42, 42 );
+    private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42 );
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -170,7 +170,7 @@ public class SwitchToSlaveCopyThenBranchTest
         when( response.response() ).thenReturn( new HandshakeResult( 1, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
 
-        StoreId storeId = newStoreIdForCurrentVersion( 1, 2, 3, 4 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 2 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );

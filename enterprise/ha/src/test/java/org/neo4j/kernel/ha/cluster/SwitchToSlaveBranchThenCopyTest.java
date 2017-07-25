@@ -48,7 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.ha.PullerFactory;
 import org.neo4j.kernel.ha.SlaveUpdatePuller;
 import org.neo4j.kernel.ha.UpdatePuller;
@@ -105,7 +105,7 @@ public class SwitchToSlaveBranchThenCopyTest
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final MasterClient masterClient = mock( MasterClient.class );
     private final RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-    private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42, 42, 42 );
+    private final StoreId storeId = newStoreIdForCurrentVersion( 42, 42 );
 
     @Test
     public void shouldRestartServicesIfCopyStoreFails() throws Throwable
@@ -166,7 +166,7 @@ public class SwitchToSlaveBranchThenCopyTest
         when( response.response() ).thenReturn( new HandshakeResult( 1, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
 
-        StoreId storeId = newStoreIdForCurrentVersion( 1, 2, 3, 4 );
+        StoreId storeId = newStoreIdForCurrentVersion( 1, 2 );
 
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.getLastCommittedTransaction() ).thenReturn( new TransactionId( 42, 42, 42 ) );
@@ -314,7 +314,7 @@ public class SwitchToSlaveBranchThenCopyTest
         Response<HandshakeResult> response = mock( Response.class );
         when( response.response() ).thenReturn( new HandshakeResult( 42, 2 ) );
         when( masterClient.handshake( anyLong(), any( StoreId.class ) ) ).thenReturn( response );
-        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient320.PROTOCOL_VERSION );
+        when( masterClient.getProtocolVersion() ).thenReturn( MasterClient323.PROTOCOL_VERSION );
 
         TransactionIdStore transactionIdStoreMock = mock( TransactionIdStore.class );
         // note that the checksum (the second member of the array) is the same as the one in the handshake mock above

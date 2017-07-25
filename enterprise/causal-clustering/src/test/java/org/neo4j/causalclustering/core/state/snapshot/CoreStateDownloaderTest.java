@@ -63,7 +63,7 @@ public class CoreStateDownloaderTest
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
 
     private final MemberId remoteMember = new MemberId( UUID.randomUUID() );
-    private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private final StoreId storeId = new StoreId( 1, 2 );
     private final File storeDir = new File( "graph.db" );
 
     private final CoreStateDownloader downloader =
@@ -81,7 +81,7 @@ public class CoreStateDownloaderTest
     public void shouldDownloadCompleteStoreWhenEmpty() throws Throwable
     {
         // given
-        StoreId remoteStoreId = new StoreId( 5, 6, 7, 8 );
+        StoreId remoteStoreId = new StoreId( 5, 6 );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( remoteStoreId );
         when( localDatabase.isEmpty() ).thenReturn( true );
 
@@ -114,7 +114,7 @@ public class CoreStateDownloaderTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
-        StoreId remoteStoreId = new StoreId( 5, 6, 7, 8 );
+        StoreId remoteStoreId = new StoreId( 5, 6 );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( remoteStoreId );
 
         // when

@@ -68,7 +68,7 @@ public class CatchupPollingProcessTest
 
     private final long txPullIntervalMillis = 100;
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
-    private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
+    private final StoreId storeId = new StoreId( 1, 2 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
 
     {

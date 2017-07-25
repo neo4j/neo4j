@@ -54,7 +54,7 @@ public class RemoteStoreTest
     public void shouldCopyStoreFilesAndPullTransactions() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        StoreId storeId = new StoreId( 1, 2 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
         when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) ).thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13) );
@@ -77,7 +77,7 @@ public class RemoteStoreTest
     {
         // given
         long lastFlushedTxId = 12;
-        StoreId wantedStoreId = new StoreId( 1, 2, 3, 4 );
+        StoreId wantedStoreId = new StoreId( 1, 2 );
         MemberId localhost = new MemberId( UUID.randomUUID() );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
@@ -105,7 +105,7 @@ public class RemoteStoreTest
     public void shouldCloseDownTxLogWriterIfTxStreamingFails() throws Exception
     {
         // given
-        StoreId storeId = new StoreId( 1, 2, 3, 4 );
+        StoreId storeId = new StoreId( 1, 2 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );

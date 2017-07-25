@@ -27,6 +27,7 @@ import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.ha.MasterClient214;
 import org.neo4j.kernel.ha.MasterClient310;
 import org.neo4j.kernel.ha.MasterClient320;
+import org.neo4j.kernel.ha.MasterClient323;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -56,7 +57,7 @@ public class MasterClientResolverTest
             life.start();
             MasterClient masterClient1 =
                     resolver.instantiate( "cluster://localhost", 44, null, new Monitors(), StoreId.DEFAULT, life );
-            assertThat( masterClient1, instanceOf( MasterClient320.class ) );
+            assertThat( masterClient1, instanceOf( MasterClient323.class ) );
         }
         finally
         {
@@ -64,8 +65,8 @@ public class MasterClientResolverTest
         }
 
         IllegalProtocolVersionException illegalProtocolVersionException = new IllegalProtocolVersionException(
-                MasterClient214.PROTOCOL_VERSION.getApplicationProtocol(),
                 MasterClient310.PROTOCOL_VERSION.getApplicationProtocol(),
+                MasterClient320.PROTOCOL_VERSION.getApplicationProtocol(),
                 "Protocol is too modern" );
 
         // When

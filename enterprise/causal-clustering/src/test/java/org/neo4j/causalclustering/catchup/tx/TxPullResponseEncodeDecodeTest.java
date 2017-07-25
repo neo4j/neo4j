@@ -43,7 +43,7 @@ public class TxPullResponseEncodeDecodeTest
     {
         // given
         EmbeddedChannel channel = new EmbeddedChannel( new TxPullResponseEncoder(), new TxPullResponseDecoder() );
-        TxPullResponse sent = new TxPullResponse( new StoreId( 1, 2, 3, 4 ), newCommittedTransactionRepresentation() );
+        TxPullResponse sent = new TxPullResponse( new StoreId( 1, 2 ), newCommittedTransactionRepresentation() );
 
         // when
         channel.writeOutbound( sent );

@@ -270,11 +270,6 @@ public abstract class SwitchToSlave
         {
             throw new MismatchingStoreIdException( myStoreId, master.getStoreId() );
         }
-        else if ( !myStoreId.equalsByUpgradeId( master.getStoreId() ) )
-        {
-            throw new BranchedDataException( "My store with " + myStoreId + " was updated independently from " +
-                    "master's store " + masterStoreId );
-        }
     }
 
     private URI startHaCommunication( LifeSupport haCommunicationLife, NeoStoreDataSource neoDataSource,
