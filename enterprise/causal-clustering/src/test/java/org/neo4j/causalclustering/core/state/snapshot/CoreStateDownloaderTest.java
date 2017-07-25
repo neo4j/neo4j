@@ -67,8 +67,8 @@ public class CoreStateDownloaderTest
     private final File storeDir = new File( "graph.db" );
 
     private final CoreStateDownloader downloader =
-            new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider,
-                    storeCopyProcess, coreStateMachines, snaptshotService, applicationProcess );
+            new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,
+                    snaptshotService, applicationProcess );
 
     @Before
     public void commonMocking() throws IOException

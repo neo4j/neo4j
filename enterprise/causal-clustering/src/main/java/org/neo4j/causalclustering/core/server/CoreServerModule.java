@@ -84,11 +84,9 @@ public class CoreServerModule
 
     public final MembershipWaiterLifecycle membershipWaiterLifecycle;
 
-    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule,
-            ConsensusModule consensusModule, CoreStateMachinesModule coreStateMachinesModule,
-            ReplicationModule replicationModule, File clusterStateDirectory, ClusteringModule clusteringModule,
-            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger,
-            Supplier<DatabaseHealth> dbHealthSupplier, SslPolicy sslPolicy )
+    public CoreServerModule( IdentityModule identityModule, final PlatformModule platformModule, ConsensusModule consensusModule,
+            CoreStateMachinesModule coreStateMachinesModule, ReplicationModule replicationModule, File clusterStateDirectory, ClusteringModule clusteringModule,
+            LocalDatabase localDatabase, MessageLogger<MemberId> messageLogger, Supplier<DatabaseHealth> dbHealthSupplier, SslPolicy sslPolicy )
     {
         final Dependencies dependencies = platformModule.dependencies;
         final Config config = platformModule.config;
@@ -103,35 +101,28 @@ public class CoreServerModule
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
-        StateStorage<Long> lastFlushedStorage = life
-                .add( new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME,
-                        new LongIndexMarshal(), config.get( CausalClusteringSettings.last_flushed_state_size ),
-                        logProvider ) );
+        StateStorage<Long> lastFlushedStorage = life.add(
+                new DurableStateStorage<>( fileSystem, clusterStateDirectory, LAST_FLUSHED_NAME, new LongIndexMarshal(),
+                        config.get( CausalClusteringSettings.last_flushed_state_size ), logProvider ) );
 
         consensusModule.raftMembershipManager().setRecoverFromIndexSupplier( lastFlushedStorage::getInitialState );
 
-        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), sslPolicy, config, logProvider,
-                userLogProvider, monitors );
+        RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), sslPolicy, config, logProvider, userLogProvider, monitors );
 
-        LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
-                messageLogger, identityModule.myself() );
+        LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life
-                .add( new CatchUpClient( clusteringModule.topologyService(), logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors, sslPolicy ) );
+        CatchUpClient catchUpClient = life.add(
+                new CatchUpClient( clusteringModule.topologyService(), logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy ) );
 
-        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider ),
-                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
-                platformModule.monitors );
+        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
+                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(), platformModule.monitors );
 
-        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config,
-                platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
+        CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
 
-        StoreCopyProcess storeCopyProcess = new StoreCopyProcess( fileSystem, platformModule.pageCache, localDatabase,
-                copiedStoreRecovery, remoteStore, logProvider );
+        StoreCopyProcess storeCopyProcess =
+                new StoreCopyProcess( fileSystem, platformModule.pageCache, localDatabase, copiedStoreRecovery, remoteStore, logProvider );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
 
@@ -158,59 +149,51 @@ public class CoreServerModule
             } );
         }
 
-        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines,
-                replicationModule.getSessionTracker(), lastFlushedStorage );
+        CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines, replicationModule.getSessionTracker(), lastFlushedStorage );
 
-        CommandApplicationProcess commandApplicationProcess = new CommandApplicationProcess(
-                consensusModule.raftLog(),
-                config.get( CausalClusteringSettings.state_machine_apply_max_batch_size ),
-                config.get( CausalClusteringSettings.state_machine_flush_window_size ), databaseHealthSupplier,
-                logProvider, replicationModule.getProgressTracker(),
-                replicationModule.getSessionTracker(), coreState, consensusModule.inFlightMap(),
-                platformModule.monitors );
+        CommandApplicationProcess commandApplicationProcess =
+                new CommandApplicationProcess( consensusModule.raftLog(), config.get( CausalClusteringSettings.state_machine_apply_max_batch_size ),
+                        config.get( CausalClusteringSettings.state_machine_flush_window_size ), databaseHealthSupplier, logProvider,
+                        replicationModule.getProgressTracker(), replicationModule.getSessionTracker(), coreState, consensusModule.inFlightMap(),
+                        platformModule.monitors );
         dependencies.satisfyDependency( commandApplicationProcess ); // lastApplied() for CC-robustness
 
-        CoreSnapshotService snapshotService = new CoreSnapshotService( commandApplicationProcess,
-                coreState, consensusModule.raftLog(), consensusModule.raftMachine() );
+        CoreSnapshotService snapshotService =
+                new CoreSnapshotService( commandApplicationProcess, coreState, consensusModule.raftLog(), consensusModule.raftMachine() );
 
-        CoreStateDownloader downloader = new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy,
-                remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachinesModule.coreStateMachines,
-                snapshotService, commandApplicationProcess );
+        CoreStateDownloader downloader =
+                new CoreStateDownloader( localDatabase, servicesToStopOnStoreCopy, remoteStore, catchUpClient, logProvider, storeCopyProcess,
+                        coreStateMachinesModule.coreStateMachines, snapshotService, commandApplicationProcess );
 
-        RaftMessageHandler messageHandler = new RaftMessageHandler( localDatabase, logProvider,
-                consensusModule.raftMachine(), downloader, commandApplicationProcess );
+        RaftMessageHandler messageHandler =
+                new RaftMessageHandler( localDatabase, logProvider, consensusModule.raftMachine(), downloader, commandApplicationProcess );
 
-        CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase,
-                clusteringModule.clusterBinder(), commandApplicationProcess,
+        CoreLife coreLife = new CoreLife( consensusModule.raftMachine(), localDatabase, clusteringModule.clusterBinder(), commandApplicationProcess,
                 coreStateMachinesModule.coreStateMachines, messageHandler, snapshotService );
 
         RaftLogPruner raftLogPruner = new RaftLogPruner( consensusModule.raftMachine(), commandApplicationProcess );
         dependencies.satisfyDependency( raftLogPruner );
 
-        life.add( new PruningScheduler( raftLogPruner, jobScheduler,
-                config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(), logProvider ) );
+        life.add( new PruningScheduler( raftLogPruner, jobScheduler, config.get( CausalClusteringSettings.raft_log_pruning_frequency ).toMillis(),
+                logProvider ) );
 
         int queueSize = config.get( CausalClusteringSettings.raft_in_queue_size );
         int maxBatch = config.get( CausalClusteringSettings.raft_in_queue_max_batch );
 
-        BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch,
-                logProvider );
+        BatchingMessageHandler batchingMessageHandler = new BatchingMessageHandler( messageHandler, queueSize, maxBatch, logProvider );
 
         long electionTimeout = config.get( CausalClusteringSettings.leader_election_timeout ).toMillis();
 
-        MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler,
-                dbHealthSupplier, electionTimeout * 4, logProvider );
+        MembershipWaiter membershipWaiter = new MembershipWaiter( identityModule.myself(), jobScheduler, dbHealthSupplier, electionTimeout * 4, logProvider );
         long joinCatchupTimeout = config.get( CausalClusteringSettings.join_catch_up_timeout ).toMillis();
-        membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout,
-                consensusModule.raftMachine(), logProvider );
+        membershipWaiterLifecycle = new MembershipWaiterLifecycle( membershipWaiter, joinCatchupTimeout, consensusModule.raftMachine(), logProvider );
 
         loggingRaftInbound.registerHandler( batchingMessageHandler );
 
         CatchupServer catchupServer = new CatchupServer( logProvider, userLogProvider, localDatabase::storeId,
                 platformModule.dependencies.provideDependency( TransactionIdStore.class ),
-                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ),
-                localDatabase::dataSource, localDatabase::isAvailable, snapshotService, config, platformModule.monitors,
-                new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
+                platformModule.dependencies.provideDependency( LogicalTransactionStore.class ), localDatabase::dataSource, localDatabase::isAvailable,
+                snapshotService, config, platformModule.monitors, new CheckpointerSupplier( platformModule.dependencies ), fileSystem, platformModule.pageCache,
                 platformModule.storeCopyCheckPointMutex, sslPolicy );
 
         // Exposes this so that tests can start/stop the catchup server

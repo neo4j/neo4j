@@ -58,8 +58,8 @@ public class CatchUpClient extends LifecycleAdapter
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock,
-            long inactivityTimeoutMillis, Monitors monitors, SslPolicy sslPolicy )
+    public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
+            SslPolicy sslPolicy )
     {
         this.logProvider = logProvider;
         this.topologyService = topologyService;
@@ -70,8 +70,7 @@ public class CatchUpClient extends LifecycleAdapter
         this.sslPolicy = sslPolicy;
     }
 
-    public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request,
-            CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
+    public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
         Optional<AdvertisedSocketAddress> catchUpAddress = topologyService.findCatchupAddress( upstream );
@@ -98,8 +97,7 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        String operation = String.format( "Timed out executing operation %s on %s (%s)",
-                request, upstream, catchUpAddress.get() );
+        String operation = String.format( "Timed out executing operation %s on %s (%s)", request, upstream, catchUpAddress.get() );
 
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }
@@ -114,24 +112,20 @@ public class CatchUpClient extends LifecycleAdapter
         {
             this.destination = destination;
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
-            Bootstrap bootstrap = new Bootstrap()
-                    .group( eventLoopGroup )
-                    .channel( NioSocketChannel.class )
-                    .handler( new ChannelInitializer<SocketChannel>()
-                    {
-                        @Override
-                        protected void initChannel( SocketChannel ch ) throws Exception
-                        {
-                            CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, sslPolicy );
-                        }
-                    } );
+            Bootstrap bootstrap = new Bootstrap().group( eventLoopGroup ).channel( NioSocketChannel.class ).handler( new ChannelInitializer<SocketChannel>()
+            {
+                @Override
+                protected void initChannel( SocketChannel ch ) throws Exception
+                {
+                    CatchUpClientChannelPipeline.initChannel( ch, handler, logProvider, monitors, sslPolicy );
+                }
+            } );
 
             ChannelFuture channelFuture = bootstrap.connect( destination.socketAddress() );
             nettyChannel = channelFuture.awaitUninterruptibly().channel();
         }
 
-        void setResponseHandler( CatchUpResponseCallback responseHandler,
-                                 CompletableFuture<?> requestOutcomeSignal )
+        void setResponseHandler( CatchUpResponseCallback responseHandler, CompletableFuture<?> requestOutcomeSignal )
         {
             handler.setResponseHandler( responseHandler, requestOutcomeSignal );
         }

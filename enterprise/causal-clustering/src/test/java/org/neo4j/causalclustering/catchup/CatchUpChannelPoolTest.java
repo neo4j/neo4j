@@ -19,7 +19,6 @@
  */
 package org.neo4j.causalclustering.catchup;
 
-
 import org.junit.Test;
 
 import org.neo4j.helpers.AdvertisedSocketAddress;
