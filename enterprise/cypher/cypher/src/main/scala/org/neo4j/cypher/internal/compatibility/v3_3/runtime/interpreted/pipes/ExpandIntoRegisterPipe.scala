@@ -43,8 +43,7 @@ case class ExpandIntoRegisterPipe(source: Pipe,
                                   lazyTypes: LazyTypes,
                                   pipelineInformation: PipelineInformation)
                                  (val id: Id = new Id)
-                                 (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with PrimitiveCachingExpandInto {
+  extends PipeWithSource(source) with PrimitiveCachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
 
