@@ -47,7 +47,7 @@ public class NativeLabelScanStoreStartupIT
     private static final Label LABEL = Label.label( "testLabel" );
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public final DatabaseRule dbRule = new EmbeddedDatabaseRule();
     @Rule
     public final RandomRule random = new RandomRule();
 

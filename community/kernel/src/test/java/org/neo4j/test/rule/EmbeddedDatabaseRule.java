@@ -19,15 +19,13 @@
  */
 package org.neo4j.test.rule;
 
-import org.junit.rules.TemporaryFolder;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 
@@ -39,88 +37,11 @@ import org.neo4j.test.TestGraphDatabaseFactory;
  */
 public class EmbeddedDatabaseRule extends DatabaseRule
 {
-    private final TempDirectory temp;
+    private final TestDirectory testDirectory;
 
     public EmbeddedDatabaseRule()
     {
-        this.temp = new TempDirectory()
-        {
-            private final TemporaryFolder folder = new TemporaryFolder();
-
-            @Override
-            public File root()
-            {
-                return folder.getRoot();
-            }
-
-            @Override
-            public void delete()
-            {
-                folder.delete();
-            }
-
-            @Override
-            public void create() throws IOException
-            {
-                folder.create();
-            }
-        };
-    }
-
-    public EmbeddedDatabaseRule( final Class<?> testClass )
-    {
-        this.temp = new TempDirectory()
-        {
-            private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-            private final TestDirectory testDirectory = TestDirectory.testDirectory( testClass, fs );
-            private File dbDir;
-
-            @Override
-            public File root()
-            {
-                return dbDir;
-            }
-
-            @Override
-            public void delete() throws IOException
-            {
-                testDirectory.cleanup();
-                fs.close();
-            }
-
-            @Override
-            public void create() throws IOException
-            {
-                dbDir = testDirectory.makeGraphDbDir();
-            }
-        };
-    }
-
-    public EmbeddedDatabaseRule( final File storeDir )
-    {
-        this.temp = new TempDirectory()
-        {
-            @Override
-            public File root()
-            {
-                return storeDir;
-            }
-
-            @Override
-            public void delete() throws IOException
-            {
-                FileUtils.deleteRecursively( storeDir );
-            }
-
-            @Override
-            public void create() throws IOException
-            {
-                if ( !storeDir.isDirectory() && !storeDir.mkdirs() )
-                {
-                    throw new IOException( "Failed to create test directory: " + storeDir );
-                }
-            }
-        };
+        this.testDirectory = TestDirectory.testDirectory();
     }
 
     @Override
@@ -132,13 +53,13 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     public File getStoreDir()
     {
-        return temp.root();
+        return testDirectory.graphDbDir();
     }
 
     @Override
     public String getStoreDirAbsolutePath()
     {
-        return temp.root().getAbsolutePath();
+        return testDirectory.graphDbDir().getAbsolutePath();
     }
 
     @Override
@@ -150,34 +71,12 @@ public class EmbeddedDatabaseRule extends DatabaseRule
     @Override
     protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )
     {
-        return factory.newEmbeddedDatabaseBuilder( temp.root().getAbsoluteFile() );
+        return factory.newEmbeddedDatabaseBuilder( testDirectory.graphDbDir() );
     }
 
     @Override
-    protected void createResources() throws IOException
+    public Statement apply( Statement base, Description description )
     {
-        temp.create();
-    }
-
-    @Override
-    protected void deleteResources()
-    {
-        try
-        {
-            temp.delete();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    private interface TempDirectory
-    {
-        File root();
-
-        void create() throws IOException;
-
-        void delete() throws IOException;
+        return testDirectory.apply( super.apply( base, description ), description );
     }
 }

@@ -70,7 +70,7 @@ public class BigStoreIT implements RelationshipType
         }
     };
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BigStoreIT.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     @Before
     public void doBefore()

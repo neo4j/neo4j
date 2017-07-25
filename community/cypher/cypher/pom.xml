@@ -380,6 +380,10 @@
       <artifactId>jetty-servlet</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+    </dependency>
 
   </dependencies>
 

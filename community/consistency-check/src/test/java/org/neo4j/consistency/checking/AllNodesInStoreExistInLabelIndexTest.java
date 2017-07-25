@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking;
 
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -47,7 +46,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -58,11 +56,8 @@ import static org.neo4j.test.TestLabels.LABEL_TWO;
 
 public class AllNodesInStoreExistInLabelIndexTest
 {
-    @ClassRule
-    public static final TestDirectory dir = TestDirectory.testDirectory();
-
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule( dir.absolutePath() );
+    public final DatabaseRule db = new EmbeddedDatabaseRule();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -74,7 +69,6 @@ public class AllNodesInStoreExistInLabelIndexTest
     private static final double UPDATE_RATIO = 0.2;
     private static final int NODE_COUNT_BASELINE = 10;
 
-    //    @RandomRule.Seed( 1497348748034L )
     @Test
     public void mustReportSuccessfulForConsistentLabelScanStore() throws Exception
     {
@@ -245,16 +239,18 @@ public class AllNodesInStoreExistInLabelIndexTest
     {
         db.restartDatabase( ( fs, directory ) ->
         {
-            fs.deleteFile( dir.file( NativeLabelScanStore.FILE_NAME ) );
-            fs.copyFile( labelIndexFileCopy, dir.file( NativeLabelScanStore.FILE_NAME ) );
+            File storeDir = db.getStoreDir();
+            fs.deleteFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+            fs.copyFile( labelIndexFileCopy, new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
         } );
     }
 
     private File copyLabelIndexFile() throws IOException
     {
-        File labelIndexFileCopy = dir.file( "label_index_copy" );
+        File storeDir = db.getStoreDir();
+        File labelIndexFileCopy = new File( storeDir, "label_index_copy" );
         db.restartDatabase( ( fs, directory ) ->
-                fs.copyFile( dir.file( NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
+                fs.copyFile( new File( storeDir, NativeLabelScanStore.FILE_NAME ), labelIndexFileCopy ) );
         return labelIndexFileCopy;
     }
 
@@ -349,7 +345,7 @@ public class AllNodesInStoreExistInLabelIndexTest
         {
             ConsistencyCheckService service = new ConsistencyCheckService();
             Config config = Config.defaults();
-            return service.runFullConsistencyCheck( dir.absolutePath(), config, NONE, log, fsa, true,
+            return service.runFullConsistencyCheck( db.getStoreDir(), config, NONE, log, fsa, true,
                     new CheckConsistencyConfig( config ) );
         }
     }
