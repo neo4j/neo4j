@@ -174,11 +174,15 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           var (plan: (ExecutionPlan, Map[String, Any]), touched: Boolean) = cache.getOrElseUpdate(cacheKey, queryText, (isStale _).tupled, producePlan())
           if (!touched) {
             val labelIds: Seq[Long] = extractPlanLabels(plan, preParsedQuery.version, tc)
-            lockPlanLabels(tc, labelIds)
-            val stateAfter = schemaState(tc)
-            if (stateBefore eq stateAfter) {
-              releasePlanLabels(tc, labelIds)
-              touched = false
+            if (labelIds.nonEmpty) {
+              lockPlanLabels(tc, labelIds)
+              val stateAfter = schemaState(tc)
+              // check if schema state was cleared while we where trying to take all locks and if it was we will force
+              // another query re-plan
+              if (stateBefore ne stateAfter) {
+                releasePlanLabels(tc, labelIds)
+                touched = true
+              }
             }
           }
           (plan, touched)
