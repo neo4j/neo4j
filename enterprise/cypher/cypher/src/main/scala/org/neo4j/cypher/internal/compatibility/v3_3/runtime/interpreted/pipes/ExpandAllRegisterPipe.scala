@@ -34,7 +34,7 @@ case class ExpandAllRegisterPipe(source: Pipe,
                                  dir: SemanticDirection,
                                  types: LazyTypes,
                                  pipelineInformation: PipelineInformation)
-                                (val id: Id = new Id) extends PipeWithSource(source) with RegisterPipe {
+                                (val id: Id = new Id) extends PipeWithSource(source) with Pipe {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {

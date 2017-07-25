@@ -28,19 +28,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
 
-
 case class NodeIndexSeekRegisterPipe(ident: String,
                                      label: LabelToken,
                                      propertyKeys: Seq[PropertyKeyToken],
                                      valueExpr: QueryExpression[Expression],
                                      indexMode: IndexSeekMode = IndexSeek,
                                      pipelineInformation: PipelineInformation)
-                                    (val id: Id = new Id)
-  extends RegisterPipe {
-
+                                    (val id: Id = new Id) extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
-
 
   private val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
