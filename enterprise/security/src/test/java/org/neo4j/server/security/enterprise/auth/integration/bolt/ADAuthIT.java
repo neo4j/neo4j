@@ -98,7 +98,7 @@ public class ADAuthIT extends EnterpriseAuthenticationTestBase
             settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
             settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
-            settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=users,dc=example,dc=com" );
+            settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=local,ou=users,dc=example,dc=com" );
             settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
             settings.put( SecuritySettings.ldap_authorization_system_username, "uid=admin,ou=system" );
             settings.put( SecuritySettings.ldap_authorization_system_password, "secret" );
@@ -121,9 +121,15 @@ public class ADAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldLoginWithSamAccountName() throws Throwable
     {
+        // dn: cn=n.neo4j,ou=local,ou=users,dc=example,dc=com
         assertAuth( "neo4j", "abc123" );
         reconnect();
         assertAuth( "neo4j", "abc123" );
+        reconnect();
+        // dn: cn=n.neo,ou=remote,ou=users,dc=example,dc=com
+        assertAuth( "neo", "abc123" );
+        reconnect();
+        assertAuth( "neo", "abc123" );
     }
 
     @Test
