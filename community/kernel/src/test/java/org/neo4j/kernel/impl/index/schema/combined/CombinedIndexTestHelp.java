@@ -154,7 +154,7 @@ class CombinedIndexTestHelp
         verify( successfulCloseable, Mockito.times( 1 ) ).close();
     }
 
-    static void verifyFailOnSingleCloseFailure( AutoCloseable failingCloseable, AutoCloseable combinedCloseable )
+    static void verifyCombinedCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable combinedCloseable )
             throws Exception
     {
         IOException expectedFailure = new IOException( "fail" );
@@ -170,7 +170,7 @@ class CombinedIndexTestHelp
         }
     }
 
-    static void verifyCombinedThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable,
+    static void verifyCombinedCloseThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable,
             AutoCloseable combinedCloseable ) throws Exception
     {
         // given

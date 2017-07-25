@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.index.schema.combined;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -93,7 +95,38 @@ class CombinedIndexAccessor implements IndexAccessor
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        return null;
+        BoundedIterable<Long> boostAllEntries = boostAccessor.newAllEntriesReader();
+        BoundedIterable<Long> fallbackAllEntries = fallbackAccessor.newAllEntriesReader();
+        return new BoundedIterable<Long>()
+        {
+            @Override
+            public long maxCount()
+            {
+                long boostMaxCount = boostAllEntries.maxCount();
+                long fallbackMaxCount = fallbackAllEntries.maxCount();
+                return boostMaxCount == UNKNOWN_MAX_COUNT || fallbackMaxCount == UNKNOWN_MAX_COUNT ?
+                       UNKNOWN_MAX_COUNT : boostMaxCount + fallbackMaxCount;
+            }
+
+            @Override
+            public void close() throws Exception
+            {
+                try
+                {
+                    boostAllEntries.close();
+                }
+                finally
+                {
+                    fallbackAllEntries.close();
+                }
+            }
+
+            @Override
+            public Iterator<Long> iterator()
+            {
+                return Iterables.concat( boostAllEntries, fallbackAllEntries ).iterator();
+            }
+        };
     }
 
     @Override

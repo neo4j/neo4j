@@ -23,20 +23,27 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Set;
 
+import org.neo4j.helpers.collection.BoundedIterable;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.index.IndexAccessor;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.AnyOf.anyOf;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.mockito.internal.verification.VerificationModeFactory.times;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyCombinedThrowIfBothThrow;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyFailOnSingleCloseFailure;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyCombinedCloseThrowIfBothThrow;
+import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow;
 import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.verifyOtherIsClosedOnSingleThrow;
 
 public class CombinedIndexAccessorTest
@@ -135,13 +142,13 @@ public class CombinedIndexAccessorTest
     @Test
     public void closeMustThrowIfFallbackThrow() throws Exception
     {
-        verifyFailOnSingleCloseFailure( fallbackAccessor, combinedIndexAccessor );
+        verifyCombinedCloseThrowOnSingleCloseThrow( fallbackAccessor, combinedIndexAccessor );
     }
 
     @Test
     public void closeMustThrowIfBoostThrow() throws Exception
     {
-        verifyFailOnSingleCloseFailure( boostAccessor, combinedIndexAccessor );
+        verifyCombinedCloseThrowOnSingleCloseThrow( boostAccessor, combinedIndexAccessor );
     }
 
     @Test
@@ -159,6 +166,218 @@ public class CombinedIndexAccessorTest
     @Test
     public void closeMustThrowIfBothFail() throws Exception
     {
-        verifyCombinedThrowIfBothThrow( boostAccessor, fallbackAccessor, combinedIndexAccessor );
+        verifyCombinedCloseThrowIfBothThrow( boostAccessor, fallbackAccessor, combinedIndexAccessor );
+    }
+
+    // newAllEntriesReader
+
+    @Test
+    public void allEntriesReaderMustCombineResultFromBoostAndFallback() throws Exception
+    {
+        // given
+        long[] boostEntries = {0, 1, 2, 5, 6};
+        long[] fallbackEntries = {3, 4, 7, 8};
+        mockAllEntriesReaders( boostEntries, fallbackEntries );
+
+        // when
+        Set<Long> result = Iterables.asSet( combinedIndexAccessor.newAllEntriesReader() );
+
+        // then
+        assertResultContainsAll( result, boostEntries );
+        assertResultContainsAll( result, fallbackEntries );
+    }
+
+    @Test
+    public void allEntriesReaderMustCombineResultFromBoostAndFallbackWithEmptyBoost() throws Exception
+    {
+        // given
+        long[] boostEntries = new long[0];
+        long[] fallbackEntries = {3, 4, 7, 8};
+        mockAllEntriesReaders( boostEntries, fallbackEntries );
+
+        // when
+        Set<Long> result = Iterables.asSet( combinedIndexAccessor.newAllEntriesReader() );
+
+        // then
+        assertResultContainsAll( result, boostEntries );
+        assertResultContainsAll( result, fallbackEntries );
+    }
+
+    @Test
+    public void allEntriesReaderMustCombineResultFromBoostAndFallbackWithEmptyFallback() throws Exception
+    {
+        // given
+        long[] boostEntries = {0, 1, 2, 5, 6};
+        long[] fallbackEntries = new long[0];
+        mockAllEntriesReaders( boostEntries, fallbackEntries );
+
+        // when
+        Set<Long> result = Iterables.asSet( combinedIndexAccessor.newAllEntriesReader() );
+
+        // then
+        assertResultContainsAll( result, boostEntries );
+        assertResultContainsAll( result, fallbackEntries );
+    }
+
+    @Test
+    public void allEntriesReaderMustCombineResultFromBoostAndFallbackBothEmpty() throws Exception
+    {
+        // given
+        long[] boostEntries = new long[0];
+        long[] fallbackEntries = new long[0];
+        mockAllEntriesReaders( boostEntries, fallbackEntries );
+
+        // when
+        Set<Long> result = Iterables.asSet( combinedIndexAccessor.newAllEntriesReader() );
+
+        // then
+        assertResultContainsAll( result, boostEntries );
+        assertResultContainsAll( result, fallbackEntries );
+        assertTrue( result.isEmpty() );
+    }
+
+    @Test
+    public void allEntriesReaderMustCloseBothBoostAndFallback() throws Exception
+    {
+        // given
+        BoundedIterable<Long> boostAllEntriesReader = mockSingleAllEntriesReader( boostAccessor, new long[0] );
+        BoundedIterable<Long> fallbackAllEntriesReader = mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // when
+        combinedIndexAccessor.newAllEntriesReader().close();
+
+        // then
+        verify( boostAllEntriesReader, times( 1 ) ).close();
+        verify( fallbackAllEntriesReader, times( 1 ) ).close();
+    }
+
+    @Test
+    public void allEntriesReaderMustCloseBoostIfFallbackThrow() throws Exception
+    {
+        // given
+        BoundedIterable<Long> boostAllEntriesReader = mockSingleAllEntriesReader( boostAccessor, new long[0] );
+        BoundedIterable<Long> fallbackAllEntriesReader = mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        verifyOtherIsClosedOnSingleThrow( fallbackAllEntriesReader, boostAllEntriesReader, combinedAllEntriesReader );
+    }
+
+    @Test
+    public void allEntriesReaderMustCloseFallbackIfBoostThrow() throws Exception
+    {
+        // given
+        BoundedIterable<Long> boostAllEntriesReader = mockSingleAllEntriesReader( boostAccessor, new long[0] );
+        BoundedIterable<Long> fallbackAllEntriesReader = mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        verifyOtherIsClosedOnSingleThrow( boostAllEntriesReader, fallbackAllEntriesReader, combinedAllEntriesReader );
+    }
+
+    @Test
+    public void allEntriesReaderMustThrowIfFallbackThrow() throws Exception
+    {
+        // given
+        mockSingleAllEntriesReader( boostAccessor, new long[0] );
+        BoundedIterable<Long> fallbackAllEntriesReader = mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( fallbackAllEntriesReader, combinedAllEntriesReader );
+    }
+
+    @Test
+    public void allEntriesReaderMustThrowIfBoostThrow() throws Exception
+    {
+        // given
+        BoundedIterable<Long> boostAllEntriesReader = mockSingleAllEntriesReader( boostAccessor, new long[0] );
+        mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( boostAllEntriesReader, combinedAllEntriesReader );
+
+    }
+
+    @Test
+    public void allEntriesReaderMustReportUnknownMaxCountIfBoostReportUnknownMaxCount() throws Exception
+    {
+        // given
+        mockSingleAllEntriesReaderWithUnknownMaxCount( boostAccessor, new long[0] );
+        mockSingleAllEntriesReader( fallbackAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        assertThat( combinedAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
+    }
+
+    @Test
+    public void allEntriesReaderMustReportUnknownMaxCountIfFallbackReportUnknownMaxCount() throws Exception
+    {
+        // given
+        mockSingleAllEntriesReaderWithUnknownMaxCount( fallbackAccessor, new long[0] );
+        mockSingleAllEntriesReader( boostAccessor, new long[0] );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        assertThat( combinedAllEntriesReader.maxCount(), is( BoundedIterable.UNKNOWN_MAX_COUNT ) );
+    }
+
+    @Test
+    public void allEntriesReaderMustReportCombinedMaxCountOfBoostAndFallback() throws Exception
+    {
+        mockSingleAllEntriesReader( boostAccessor, new long[]{1, 2} );
+        mockSingleAllEntriesReader( fallbackAccessor, new long[]{3, 4} );
+
+        // then
+        BoundedIterable<Long> combinedAllEntriesReader = combinedIndexAccessor.newAllEntriesReader();
+        assertThat( combinedAllEntriesReader.maxCount(), is( 4L ) );
+    }
+
+    private void assertResultContainsAll( Set<Long> result, long[] boostEntries )
+    {
+        for ( long boostEntry : boostEntries )
+        {
+            assertTrue( "Expected to contain " + boostEntry + ", but was " + result, result.contains( boostEntry ) );
+        }
+    }
+
+    private void mockAllEntriesReaders( long[] boostEntries, long[] fallbackEntries )
+    {
+        mockSingleAllEntriesReader( boostAccessor, boostEntries );
+        mockSingleAllEntriesReader( fallbackAccessor, fallbackEntries );
+    }
+
+    private BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, long[] entries )
+    {
+        BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
+        when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
+        return allEntriesReader;
+    }
+
+    private BoundedIterable<Long> mockedAllEntriesReader( long... entries )
+    {
+        return mockedAllEntriesReader( true, entries );
+    }
+
+    private BoundedIterable<Long> mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, long[] entries )
+    {
+        BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
+        when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
+        return allEntriesReader;
+    }
+
+    private BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( long... entries )
+    {
+        return mockedAllEntriesReader( false, entries );
+    }
+
+    private BoundedIterable<Long> mockedAllEntriesReader( boolean knownMaxCount, long... entries )
+    {
+        BoundedIterable<Long> mockedAllEntriesReader = mock( BoundedIterable.class );
+        when( mockedAllEntriesReader.maxCount() ).thenReturn( knownMaxCount ? entries.length : BoundedIterable.UNKNOWN_MAX_COUNT );
+        when( mockedAllEntriesReader.iterator() ).thenReturn( Iterators.asIterator(entries ) );
+        return mockedAllEntriesReader;
     }
 }

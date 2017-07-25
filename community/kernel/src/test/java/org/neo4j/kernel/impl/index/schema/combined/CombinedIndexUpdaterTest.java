@@ -272,13 +272,13 @@ public class CombinedIndexUpdaterTest
     @Test
     public void closeMustThrowIfFallbackThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyFailOnSingleCloseFailure( fallbackUpdater, combinedIndexUpdater );
+        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( fallbackUpdater, combinedIndexUpdater );
     }
 
     @Test
     public void closeMustThrowIfBoostThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyFailOnSingleCloseFailure( boostUpdater, combinedIndexUpdater );
+        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( boostUpdater, combinedIndexUpdater );
     }
 
     @Test
@@ -296,6 +296,6 @@ public class CombinedIndexUpdaterTest
     @Test
     public void closeMustThrowIfBothThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyCombinedThrowIfBothThrow( boostUpdater, fallbackUpdater, combinedIndexUpdater );
+        CombinedIndexTestHelp.verifyCombinedCloseThrowIfBothThrow( boostUpdater, fallbackUpdater, combinedIndexUpdater );
     }
 }

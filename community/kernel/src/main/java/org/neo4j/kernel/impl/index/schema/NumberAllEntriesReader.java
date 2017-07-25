@@ -30,7 +30,7 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 
-class NumberAllEntriesReader<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue> implements BoundedIterable<Long>
+public class NumberAllEntriesReader<KEY extends SchemaNumberKey,VALUE extends SchemaNumberValue> implements BoundedIterable<Long>
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;
@@ -93,6 +93,6 @@ class NumberAllEntriesReader<KEY extends SchemaNumberKey,VALUE extends SchemaNum
     @Override
     public long maxCount()
     {
-        return -1;
+        return UNKNOWN_MAX_COUNT;
     }
 }
