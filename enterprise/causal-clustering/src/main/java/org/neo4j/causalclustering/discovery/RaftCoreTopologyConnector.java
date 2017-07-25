@@ -47,9 +47,9 @@ public class RaftCoreTopologyConnector extends LifecycleAdapter implements CoreT
     }
 
     @Override
-    public synchronized void onCoreTopologyChange( CoreTopology coreTopology )
+    public synchronized void onCoreTopologyChange( CoreTopology oldCoreTopology, CoreTopology newCoreTopology )
     {
-        Set<MemberId> targetMembers = coreTopology.members().keySet();
+        Set<MemberId> targetMembers = oldCoreTopology.members().keySet();
         raftMachine.setTargetMembershipSet( targetMembers );
     }
 }

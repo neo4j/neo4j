@@ -29,9 +29,6 @@ import org.neo4j.causalclustering.identity.MemberId;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toSet;
 
-import static org.neo4j.causalclustering.discovery.Difference.asDifference;
-
-
 public class ReadReplicaTopology
 {
     static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
@@ -76,17 +73,17 @@ public class ReadReplicaTopology
         }
     }
 
-    TopologyDifference difference( ReadReplicaTopology other )
+    TopologyDifference<Difference<ReadReplicaInfo>> difference( ReadReplicaTopology other )
     {
         Set<MemberId> members = readReplicaMembers.keySet();
         Set<MemberId> otherMembers = other.readReplicaMembers.keySet();
 
-        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
-                .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
+        Set<Difference<ReadReplicaInfo>> added = otherMembers.stream().filter( m -> !members.contains( m ) )
+                .map( memberId -> Difference.asDifference( other, memberId ) ).collect( toSet() );
 
-        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
-                .map( memberId -> asDifference( ReadReplicaTopology.this, memberId ) ).collect( toSet() );
+        Set<Difference<ReadReplicaInfo>> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
+                .map( memberId -> Difference.asDifference( ReadReplicaTopology.this, memberId ) ).collect( toSet() );
 
-        return new TopologyDifference( added, removed );
+        return new TopologyDifference<>( added, removed );
     }
 }

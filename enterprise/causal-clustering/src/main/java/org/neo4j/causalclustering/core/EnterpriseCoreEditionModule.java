@@ -209,6 +209,10 @@ public class EnterpriseCoreEditionModule extends EditionModule
                 logProvider, platformModule.monitors, maxQueueSize );
         life.add( raftSender );
 
+        ChannelExpiryService channelExpiryService = new ChannelExpiryService();
+        channelExpiryService.addChannelExpiryListener( raftSender );
+        topologyService.addCoreTopologyListener( channelExpiryService );
+
         final MessageLogger<MemberId> messageLogger = createMessageLogger( config, life, identityModule.myself() );
 
         RaftOutbound raftOutbound = new RaftOutbound( topologyService, raftSender, clusteringModule.clusterIdentity(),
@@ -382,4 +386,5 @@ public class EnterpriseCoreEditionModule extends EditionModule
     {
         EnterpriseEditionModule.setupEnterpriseSecurityModule( platformModule, procedures );
     }
+
 }

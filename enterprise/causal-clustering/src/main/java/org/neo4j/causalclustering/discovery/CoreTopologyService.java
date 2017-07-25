@@ -41,6 +41,6 @@ public interface CoreTopologyService extends TopologyService
 
     interface Listener
     {
-        void onCoreTopologyChange( CoreTopology coreTopology );
+        void onCoreTopologyChange( CoreTopology oldCoreTopology, CoreTopology newCoreTopology );
     }
 }

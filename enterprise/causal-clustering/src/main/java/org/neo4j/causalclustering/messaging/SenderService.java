@@ -40,7 +40,7 @@ import org.neo4j.logging.LogProvider;
 
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 
-public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>
+public class SenderService extends LifecycleAdapter implements Outbound<AdvertisedSocketAddress,Message>, ChannelExpiryListener
 {
     private NonBlockingChannels nonBlockingChannels;
 
@@ -83,6 +83,19 @@ public class SenderService extends LifecycleAdapter implements Outbound<Advertis
         finally
         {
             serviceLock.readLock().unlock();
+        }
+    }
+
+    @Override
+    public void onChannelExpiry( AdvertisedSocketAddress advertisedSocketAddress )
+    {
+        NonBlockingChannel channel = nonBlockingChannels.get( advertisedSocketAddress );
+
+        if ( channel != null )
+        {
+            channel.dispose();
+            nonBlockingChannels.remove( advertisedSocketAddress );
+            log.info( "Disposing of channel to: [%s] ", advertisedSocketAddress );
         }
     }
 
