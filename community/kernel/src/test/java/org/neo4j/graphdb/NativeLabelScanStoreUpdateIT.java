@@ -176,7 +176,7 @@ public class NativeLabelScanStoreUpdateIT
     public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
     {
         // Given
-        GraphDatabaseService db = db();
+        GraphDatabaseService db = dbRule;
         int labelsToAdd = 80;
         int labelsToRemove = 40;
 
@@ -214,16 +214,11 @@ public class NativeLabelScanStoreUpdateIT
         }
     }
 
-    protected GraphDatabaseService db()
-    {
-        return dbRule;
-    }
-
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {
-        try ( Transaction ignored = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            ResourceIterator<Node> nodes = db().findNodes( label );
+            ResourceIterator<Node> nodes = dbRule.findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
             assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
             int index = 0;
@@ -236,7 +231,7 @@ public class NativeLabelScanStoreUpdateIT
 
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             for ( Label label : labels )
             {
@@ -248,7 +243,7 @@ public class NativeLabelScanStoreUpdateIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             node.delete();
             tx.success();
@@ -257,17 +252,17 @@ public class NativeLabelScanStoreUpdateIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction ignored = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            return asSet( db().findNodes( label ) );
+            return asSet( dbRule.findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            Node node = db().createNode( labels );
+            Node node = dbRule.createNode( labels );
             tx.success();
             return node;
         }
@@ -275,7 +270,7 @@ public class NativeLabelScanStoreUpdateIT
 
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             for ( Label label : labels )
             {
@@ -287,9 +282,9 @@ public class NativeLabelScanStoreUpdateIT
 
     private Node getNodeById( long id )
     {
-        try ( Transaction ignored = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            return db().getNodeById( id );
+            return dbRule.getNodeById( id );
         }
     }
 

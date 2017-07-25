@@ -102,6 +102,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -236,7 +237,7 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), Arrays.asList( provider ) );
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
@@ -653,7 +654,7 @@ public class BatchInsertTest
         BatchInserter inserter = globalInserter;
 
         setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
-        setAndGet( inserter, intArray( 20 ) );
+        setAndGet( inserter, intArray() );
     }
 
     @Test
@@ -1035,32 +1036,6 @@ public class BatchInsertTest
         labelScanStore.shutdown();
     }
 
-    private LabelScanStore getLabelScanStore()
-    {
-        return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
-                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
-    }
-
-    private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
-    {
-        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
-        {
-            List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
-            List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
-            assertEquals( expectedNodeIds, actualNodeIds );
-        }
-    }
-
-    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongIterator primitiveLongIterator )
-    {
-        List<Long> actualNodeIds = new ArrayList<>();
-        while ( primitiveLongIterator.hasNext() )
-        {
-            actualNodeIds.add( primitiveLongIterator.next() );
-        }
-        return actualNodeIds;
-    }
-
     @Test
     public void propertiesCanBeReSetUsingBatchInserter() throws Exception
     {
@@ -1092,7 +1067,6 @@ public class BatchInsertTest
      * During first update email property will be migrated to dynamic property and last property record will become
      * empty. That record should be deleted form property chain or otherwise on next node load user will get an
      * property record not in use exception.
-     * @throws Exception
      */
     @Test
     public void testCleanupEmptyPropertyRecords() throws Exception
@@ -1192,8 +1166,8 @@ public class BatchInsertTest
         // GIVEN
         BatchInserter inserter = globalInserter;
         long node = inserter.createNode( null );
-        createRelationships( inserter, node, RelTypes.REL_TYPE1, 3, 2, 1 );
-        createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
+        createRelationships( inserter, node, RelTypes.REL_TYPE1, 3 );
+        createRelationships( inserter, node, RelTypes.REL_TYPE2, 4 );
 
         // WHEN
         Set<Long> gottenRelationships = Iterables.asSet( inserter.getRelationshipIds( node ) );
@@ -1412,7 +1386,7 @@ public class BatchInsertTest
     {
         // given
         BatchInserter inserter = globalInserter;
-        long id = inserter.createNode( Collections.<String,Object>emptyMap() );
+        long id = inserter.createNode( Collections.emptyMap() );
 
         // when
         inserter.removeNodeProperty( id, "non-existent" );
@@ -1425,7 +1399,7 @@ public class BatchInsertTest
     {
         // given
         BatchInserter inserter = globalInserter;
-        Map<String,Object> noProperties = Collections.<String,Object>emptyMap();
+        Map<String,Object> noProperties = Collections.emptyMap();
         long nodeId1 = inserter.createNode( noProperties );
         long nodeId2 = inserter.createNode( noProperties );
         long id = inserter.createRelationship( nodeId1, nodeId2, MyRelTypes.TEST, noProperties );
@@ -1436,8 +1410,33 @@ public class BatchInsertTest
         // then no exception should be thrown, this mimics GraphDatabaseService behaviour
     }
 
-    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
-            int out, int in, int loop )
+    private LabelScanStore getLabelScanStore()
+    {
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
+                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
+    }
+
+    private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
+    {
+        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+        {
+            List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
+            List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
+            assertEquals( expectedNodeIds, actualNodeIds );
+        }
+    }
+
+    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongIterator primitiveLongIterator )
+    {
+        List<Long> actualNodeIds = new ArrayList<>();
+        while ( primitiveLongIterator.hasNext() )
+        {
+            actualNodeIds.add( primitiveLongIterator.next() );
+        }
+        return actualNodeIds;
+    }
+
+    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )
     {
         for ( int i = 0; i < out; i++ )
         {
@@ -1478,8 +1477,9 @@ public class BatchInsertTest
         assertEquals( Values.of( value ), readValue );
     }
 
-    private int[] intArray( int length )
+    private int[] intArray()
     {
+        int length = 20;
         int[] array = new int[length];
         for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ )
         {

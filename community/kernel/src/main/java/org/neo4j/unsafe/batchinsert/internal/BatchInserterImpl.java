@@ -1134,12 +1134,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return neoStores;
     }
 
-    // test-access
-    LabelScanStore getLabelScanStore()
-    {
-        return labelScanStore;
-    }
-
     void forceFlushChanges()
     {
         flushStrategy.forceFlush();

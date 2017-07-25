@@ -25,10 +25,6 @@ import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
  * Node id iterator used during index population when we go over node ids indexed in label scan store.
- * Before each iteration check if data in current reader can be expired because of concurrent updates that came from
- * other transactions.
- * In that case will reopen corresponding lucene reader and will reposition itself into the same position of matched
- * node ids.
  */
 class LabelScanViewIdIterator implements PrimitiveLongResourceIterator
 {

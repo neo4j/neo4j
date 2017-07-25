@@ -229,8 +229,8 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             life.start();
-            SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
-                    storeDir, logProvider, config, operationalMode );
+            SchemaIndexProvider indexes = life.add( new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
+                    storeDir, logProvider, config, operationalMode ) );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),
