@@ -46,7 +46,6 @@
     <module>stresstests</module>
     <module>tools</module>
     <module>packaging</module>
-    <module>portauthority</module>
   </modules>
 
   <build>

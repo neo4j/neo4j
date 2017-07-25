@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
-import org.neo4j.build.portauthority.PortAuthority;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;

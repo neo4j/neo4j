@@ -17,40 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.build.portauthority;
-
-import static org.neo4j.build.portauthority.PortConstants.EphemeralPortMaximum;
+package org.neo4j.com.ports.allocation;
 
 /**
- * Port provider that relies on state in a single JVM. Not suitable for parallel test execution (as in, several JVM
- * processes executing tests). _Is_ suitable for multi-threaded execution.
+ * Port provider that relies on state on disk, so that it can coordinate with other {@link CoordinatingPortProvider}s in
+ * other JVMs. Suitable for parallel test execution.
  */
-public class SimplePortProvider implements PortProvider
+public class CoordinatingPortProvider implements PortProvider
 {
+    private final PortRepository portRepository;
     private final PortProbe portProbe;
 
-    private int currentPort;
-
-    public SimplePortProvider( PortProbe portProbe, int initialPort )
+    public CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
     {
+        this.portRepository = portRepository;
         this.portProbe = portProbe;
-
-        this.currentPort = initialPort;
     }
 
     @Override
-    public synchronized int getNextFreePort( String ignored )
+    public int getNextFreePort( String trace )
     {
-        while ( currentPort <= EphemeralPortMaximum )
-        {
-            if ( !portProbe.isOccupied( currentPort ) )
-            {
-                return currentPort++;
-            }
+        int port = portRepository.reserveNextPort( trace );
 
-            currentPort++;
+        while ( portProbe.isOccupied( port ) )
+        {
+            port = portRepository.reserveNextPort( trace );
         }
 
-        throw new IllegalStateException( "There are no more ports available" );
+        return port;
     }
 }

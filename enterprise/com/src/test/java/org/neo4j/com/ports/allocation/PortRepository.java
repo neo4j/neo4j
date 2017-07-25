@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.build.portauthority;
+package org.neo4j.com.ports.allocation;
 
-import static org.neo4j.build.portauthority.PortConstants.EphemeralPortMaximum;
+import static org.neo4j.com.ports.allocation.PortConstants.EphemeralPortMaximum;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

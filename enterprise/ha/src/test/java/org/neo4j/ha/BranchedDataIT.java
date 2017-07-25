@@ -31,8 +31,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;

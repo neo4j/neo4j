@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.build.portauthority;
+package org.neo4j.com.ports.allocation;
 
-public interface PortProvider
+public class PortConstants
 {
-    int getNextFreePort( String trace );
+    public static final int EphemeralPortMinimum = 49152;
+    public static final int EphemeralPortMaximum = 65535;
 }

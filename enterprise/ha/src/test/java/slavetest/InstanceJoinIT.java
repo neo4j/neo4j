@@ -26,8 +26,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.build.portauthority.PortAuthority;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
@@ -95,7 +95,7 @@ public class InstanceJoinIT
                     stringMap( keep_logical_logs.name(), "1 txs",
                                ClusterSettings.initial_hosts.name(), "127.0.0.1:" + masterClusterPort ), masterClusterPort, masterHaPort );
 
-            /**
+            /*
              * The new log on master needs to have at least one transaction, so here we go.
              */
             int importantNodeCount = 10;
@@ -161,14 +161,13 @@ public class InstanceJoinIT
         }
     }
 
-    private long createNode( HighlyAvailableGraphDatabase db, String key, String value )
+    private void createNode( HighlyAvailableGraphDatabase db, String key, String value )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( key, value );
             tx.success();
-            return node.getId();
         }
     }
 

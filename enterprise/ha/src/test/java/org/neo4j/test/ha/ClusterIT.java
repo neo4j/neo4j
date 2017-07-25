@@ -21,15 +21,18 @@ package org.neo4j.test.ha;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.DirectoryNotEmptyException;
 import java.util.logging.Level;
 
-import org.neo4j.build.portauthority.PortAuthority;
+import org.junit.rules.TestName;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -70,42 +73,55 @@ import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTIO
 public class ClusterIT
 {
     @Rule
-    public LoggerRule logging = new LoggerRule( Level.OFF );
+    public LoggerRule logging = new LoggerRule( Level.ALL );
     @Rule
     public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public TestName testName = new TestName();
 
     @Test
     public void testCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "testCluster" ) )
-                .withSharedConfig(
-                    MapUtil.stringMap(
-                            HaSettings.ha_server.name(), "localhost:6001-9999",
-                            HaSettings.tx_push_factor.name(), "2" ) )
-                .withCluster( clusterOfSize( 3 ) )
-                .build();
-        createClusterWithNode( clusterManager );
+        try
+        {
+            ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                    .withSharedConfig(
+                            stringMap(
+                                HaSettings.ha_server.name(), "localhost:6001-9999",
+                                HaSettings.tx_push_factor.name(), "2" ) )
+
+                    .build();
+            createClusterWithNode( clusterManager );
+        }
+        catch ( DirectoryNotEmptyException e )
+        {
+            e.printStackTrace();
+            throw new UnsupportedOperationException( "TODO", e );
+        }
     }
 
     @Test
     public void testClusterWithHostnames() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  "testCluster" ) )
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  testName.getMethodName() ) )
                 .withCluster( clusterOfSize( "localhost", 3 ) )
                 .withSharedConfig( stringMap(
                         HaSettings.ha_server.name(), "localhost:6001-9999",
-                        HaSettings.tx_push_factor.name(), "2" ) ).build();
+                        HaSettings.tx_push_factor.name(), "2" ) )
+                .build();
         createClusterWithNode( clusterManager );
     }
 
     @Test
     public void testClusterWithWildcardIP() throws Throwable
     {
-        ClusterManager clusterManager =
-                new ClusterManager.Builder( testDirectory.directory(  "testClusterWithWildcardIP" ) )
-                .withSharedConfig( stringMap(
-                        HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
-                        HaSettings.tx_push_factor.name(), "2" ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  testName.getMethodName() ) )
+                .withCluster( clusterOfSize( "0.0.0.0", 3 ) )
+                .withSharedConfig(
+                        stringMap(
+                                HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
+                                HaSettings.tx_push_factor.name(), "2" ) )
+                .build();
         createClusterWithNode( clusterManager );
     }
 
@@ -119,7 +135,7 @@ public class ClusterIT
         try
         {
             File masterStoreDir =
-                    testDirectory.directory( "testConflictingClusterPortsMaster" );
+                    testDirectory.directory( testName.getMethodName() + "Master" );
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( masterStoreDir )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort )
@@ -131,7 +147,7 @@ public class ClusterIT
             try
             {
                 File slaveStoreDir =
-                        testDirectory.directory( "testConflictingClusterPortsSlave" );
+                        testDirectory.directory( testName.getMethodName() + "Slave" );
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                         newEmbeddedDatabaseBuilder( slaveStoreDir )
                         .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort )
@@ -156,7 +172,16 @@ public class ClusterIT
         }
     }
 
+    /**
+     * This test has been green because second database failed to start over directory conflict,
+     * not port conflict.
+     *
+     * With the directory conflict out of the way we start up but presumably are in a bad state.
+     *
+     * However, detecting bad state seems impossible here.
+     */
     @Test
+    @Ignore( "The failure mode for HA port conflict is what?" )
     public void testInstancesWithConflictingHaPorts() throws Throwable
     {
         HighlyAvailableGraphDatabase first = null;
@@ -165,11 +190,10 @@ public class ClusterIT
 
         try
         {
-            File storeDir =
-                    testDirectory.directory( "testConflictingHaPorts" );
+            File storeDir1 = testDirectory.directory( testName.getMethodName() + 1 );
             int clusterPort1 = PortAuthority.allocatePort();
             first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                     newEmbeddedDatabaseBuilder( storeDir )
+                     newEmbeddedDatabaseBuilder( storeDir1 )
                     .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort1 )
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort1)
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -178,10 +202,11 @@ public class ClusterIT
 
             try
             {
+                File storeDir2 = testDirectory.directory( testName.getMethodName() + 2 );
                 int clusterPort2 = PortAuthority.allocatePort();
                 HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort2 )
+                        newEmbeddedDatabaseBuilder( storeDir2 )
+                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort1 )
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort2 )
                         .setConfig( ClusterSettings.server_id, "2" )
                         .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
@@ -206,8 +231,9 @@ public class ClusterIT
     @Test
     public void given4instanceClusterWhenMasterGoesDownThenElectNewMaster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "4instances" ) )
-                .withCluster( ClusterManager.clusterOfSize( 4 ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                .withCluster( ClusterManager.clusterOfSize( 4 ) )
+                .build();
         try
         {
             clusterManager.start();
@@ -241,14 +267,14 @@ public class ClusterIT
     public void givenEmptyHostListWhenClusterStartupThenFormClusterWithSingleInstance() throws Exception
     {
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( testDirectory.directory( "singleinstance" ) ).
+                newEmbeddedDatabaseBuilder( testDirectory.directory( testName.getMethodName() ) ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 setConfig( ClusterSettings.initial_hosts, "" ).
                 newGraphDatabase();
 
         try
         {
-            assertTrue( "Single instance cluster was not formed in time", db.isAvailable( 1_000 ) );
+            assertTrue( "Single instance cluster was not formed in time", db.isAvailable( 10_000 ) );
         }
         finally
         {
@@ -259,8 +285,9 @@ public class ClusterIT
     @Test
     public void givenClusterWhenMasterGoesDownAndTxIsRunningThenDontWaitToSwitch() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "waitfortx" ) )
-                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                .withCluster( ClusterManager.clusterOfSize( 3 ) )
+                .build();
         try
         {
             clusterManager.start();
@@ -305,8 +332,9 @@ public class ClusterIT
     @Test
     public void lastTxCommitTimestampShouldGetInitializedOnSlaveIfNotPresent() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
-                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                .withCluster( ClusterManager.clusterOfSize( 3 ) )
+                .build();
 
         try
         {
@@ -338,8 +366,9 @@ public class ClusterIT
     @Test
     public void lastTxCommitTimestampShouldBeUnknownAfterStartIfNoFiledOrLogsPresent() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "lastTxTimestamp" ) )
-                .withCluster( ClusterManager.clusterOfSize( 3 ) ).build();
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                .withCluster( ClusterManager.clusterOfSize( 3 ) )
+                .build();
 
         try
         {
