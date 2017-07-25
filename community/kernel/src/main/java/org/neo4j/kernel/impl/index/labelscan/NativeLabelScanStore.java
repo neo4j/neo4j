@@ -94,11 +94,6 @@ public class NativeLabelScanStore implements LabelScanStore
     private static final byte NEEDS_REBUILDING = (byte) 0x01;
 
     /**
-     * Native label index tag, to distinguish native label index from other label indexes
-     */
-    private static final String NATIVE_LABEL_INDEX_TAG = "native";
-
-    /**
      * Whether or not this label scan store is read-only.
      */
     private final boolean readOnly;
@@ -189,7 +184,7 @@ public class NativeLabelScanStore implements LabelScanStore
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
-        this.monitor = monitors.newMonitor( Monitor.class, NATIVE_LABEL_INDEX_TAG );
+        this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
     }
 
@@ -350,8 +345,8 @@ public class NativeLabelScanStore implements LabelScanStore
      */
     private boolean instantiateTree() throws IOException
     {
-        monitors.addMonitorListener( treeMonitor(), NATIVE_LABEL_INDEX_TAG );
-        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class, NATIVE_LABEL_INDEX_TAG );
+        monitors.addMonitorListener( treeMonitor() );
+        GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );
         MutableBoolean isRebuilding = new MutableBoolean();
         Header.Reader readRebuilding =
                 headerData -> isRebuilding.setValue( headerData.get() == NEEDS_REBUILDING );
