@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Exp
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes, Pipe}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -76,17 +76,17 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val pipelineInformation = pipelines(plan)
 
     plan match {
-      case p@ProduceResult(columns, _) =>
+      case ProduceResult(columns, _) =>
         val runtimeColumns = createProjectionsForResult(columns, pipelineInformation)
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
 
-      case e@Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-        val fromOffset = pipelineInformation.getLongOffsetFor(from)
-        val relOffset = pipelineInformation.getLongOffsetFor(relName)
-        val toOffset = pipelineInformation.getLongOffsetFor(to)
-        ExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipelineInformation)(id)
+      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+        val fromSlot = pipelineInformation(from)
+        val relSlot = pipelineInformation(relName)
+        val toSlot = pipelineInformation(to)
+        ExpandAllRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
 
-      case e@Expand(s, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
+      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
         val fromSlot = pipelineInformation.get(from).get
         val relSlot = pipelineInformation.get(relName).get
         val toSlot = pipelineInformation.get(to).get

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation, Slot}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -54,11 +55,11 @@ case class ExpandIntoRegisterPipe(source: Pipe,
     input.flatMap {
       inputRow =>
         val fromNode = inputRow.getLongAt(fromSlot.offset)
-        if (isNull(fromNode))
+        if (NullChecker.nodeIsNull(fromNode))
           resultForNull(fromSlot)
         else {
           val toNode = inputRow.getLongAt(toSlot.offset)
-          if (isNull(toNode))
+          if (NullChecker.nodeIsNull(toNode))
             resultForNull(toSlot)
           else {
             val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
@@ -78,8 +79,6 @@ case class ExpandIntoRegisterPipe(source: Pipe,
         }
     }
   }
-
-  private def isNull(nodeId: Long) = -1 == nodeId
 
   private def resultForNull(slot: Slot) =
     if (slot.nullable)
