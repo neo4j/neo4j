@@ -185,6 +185,11 @@ public class ServerSettings implements LoadableConfig
                   "commands with semi-colon." )
     public static final Setting<String> browser_postConnectCmd = setting( "browser.post_connect_cmd", STRING, "" );
 
+    @SuppressWarnings("unused") // accessed from the browser
+    @Description( "Whitelist of hosts for the Neo4j Browser to be allowed to fetch content from." )
+    public static final Setting<String> browser_remoteContentHostnameWhitelist = 
+            setting( "browser.remote_content_hostname_whitelist", STRING, "guides.neo4j.com,localhost");
+
     @Description( "SSL policy name." )
     public static final Setting<String> ssl_policy = setting( "https.ssl_policy", STRING, LEGACY_POLICY_NAME );
 
