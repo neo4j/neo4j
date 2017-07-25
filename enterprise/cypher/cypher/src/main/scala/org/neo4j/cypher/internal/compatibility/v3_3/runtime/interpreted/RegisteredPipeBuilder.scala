@@ -77,7 +77,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val runtimeColumns = createProjectionsForResult(columns, pipelineInformation)
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
 
-      case e@Expand(s, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+      case e@Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
         val fromOffset = pipelineInformation.getLongOffsetFor(from)
         val relOffset = pipelineInformation.getLongOffsetFor(relName)
         val toOffset = pipelineInformation.getLongOffsetFor(to)
@@ -89,6 +89,11 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val toSlot = pipelineInformation.get(to).get
         ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
 
+      case Optional(inner, symbols) =>
+        val nullableKeys = inner.availableSymbols -- symbols
+        val nullableOffsets = nullableKeys.map(k => pipelineInformation.getLongOffsetFor(k.name))
+        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipelineInformation)(id)
+
       case _ => fallback.build(plan, source)
     }
   }
@@ -99,6 +104,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         pipelineInformation1(k) match {
           case LongSlot(offset, false, CTNode, _) =>
             k -> runtimeExpressions.NodeFromRegister(offset)
+          case LongSlot(offset, true, CTNode, _) =>
+            k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.NodeFromRegister(offset))
         }
     }
     runtimeColumns

@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
@@ -153,9 +153,11 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(plan)
 
     // then
-    pipe should equal(OptionalPipe(
-      Set("x"),
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), 1, 0))()
+    val expectedPipeLineInfo = PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
+    pipe should equal(OptionalRegisteredPipe(
+      AllNodesScanRegisterPipe("x", expectedPipeLineInfo)(),
+      Seq(0),
+      expectedPipeLineInfo
     )())
   }
 
@@ -259,12 +261,13 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // when
     val pipe = build(distinct)
 
+    val pipelineInformation = PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
     // then
+    val labelScan = NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
+      pipelineInformation)()
+    val optionalPipe = OptionalRegisteredPipe(labelScan, Seq(0), pipelineInformation)()
     pipe should equal(DistinctPipe(
-      OptionalPipe(Set("x"),
-        NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
-        )())(),
+      optionalPipe,
       Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
     )())
   }
@@ -281,11 +284,10 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(distinct)
 
     // then
+    val pipelineInfo = PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
+    val nodeByLabelScan = NodesByLabelScanRegisterPipe("x", LazyLabel("label"), pipelineInfo)()
     pipe should equal(EagerAggregationPipe(
-      OptionalPipe(
-        Set("x"),
-        NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))())(),
+      OptionalRegisteredPipe(nodeByLabelScan, Seq(0), pipelineInfo)(),
       keyExpressions = Set("x", "x.propertyKey"),
       aggregations = Map("count" -> commands.expressions.CountStar())
     )())
