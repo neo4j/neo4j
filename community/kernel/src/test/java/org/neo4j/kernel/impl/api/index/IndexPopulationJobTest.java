@@ -160,7 +160,7 @@ public class IndexPopulationJobTest
         IndexEntryUpdate update = IndexEntryUpdate.add( nodeId, descriptor, Values.of( value ) );
 
         verify( populator ).create();
-        verify( populator ).configureSampling( true );
+        verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update );
         verify( populator ).add( any( IndexEntryUpdate.class) );
         verify( populator ).sampleResult();
@@ -208,7 +208,7 @@ public class IndexPopulationJobTest
         IndexEntryUpdate update2 = add( node4, descriptor, Values.of( value ) );
 
         verify( populator ).create();
-        verify( populator ).configureSampling( true );
+        verify( populator ).configureSampling( false );
         verify( populator ).includeSample( update1 );
         verify( populator ).includeSample( update2 );
         verify( populator, times( 2 ) ).add( any( IndexEntryUpdate.class ) );

@@ -74,28 +74,7 @@ public class DynamicIndexStoreViewTest
     }
 
     @Test
-    public void visitAllNodesWhenThresholdReached() throws Exception
-    {
-        when( nodeStore.getHighestPossibleIdInUse() ).thenReturn( 10L );
-        when( nodeStore.getHighId() ).thenReturn( 10L );
-
-        mockLabelNodeCount( countStore, 1 );
-        mockLabelNodeCount( countStore, 2 );
-        mockLabelNodeCount( countStore, 3 );
-
-        DynamicIndexStoreView storeView = dynamicIndexStoreView();
-
-        StoreScan<Exception> storeScan = storeView
-                .visitNodes( new int[]{1, 2, 3}, propertyKeyIdFilter, propertyUpdateVisitor, labelUpdateVisitor, false );
-
-        storeScan.run();
-
-        Mockito.verify( nodeStore, times( 10 ) )
-                .getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) );
-    }
-
-    @Test
-    public void visitOnlyLabeledNodesWhenThresholdNotReached() throws Exception
+    public void visitOnlyLabeledNodes() throws Exception
     {
         LabelScanReader labelScanReader = mock( LabelScanReader.class );
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );

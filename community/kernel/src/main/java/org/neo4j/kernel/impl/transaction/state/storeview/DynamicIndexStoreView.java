@@ -124,8 +124,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     {
         try
         {
-            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore() ||
-                    isNumberOfLabeledNodesExceedThreshold( labelIds );
+            return ArrayUtils.isEmpty( labelIds ) || isEmptyLabelScanStore();
         }
         catch ( Exception e )
         {
@@ -137,16 +136,6 @@ public class DynamicIndexStoreView implements IndexStoreView
     private boolean isEmptyLabelScanStore() throws Exception
     {
         return labelScanStore.isEmpty();
-    }
-
-    private boolean isNumberOfLabeledNodesExceedThreshold( int[] labelIds )
-    {
-        return getNumberOfLabeledNodes( labelIds ) > getVisitAllNodesThreshold();
-    }
-
-    private long getVisitAllNodesThreshold()
-    {
-        return (long) ((VISIT_ALL_NODES_THRESHOLD_PERCENTAGE / 100f) * nodeStore.getHighestPossibleIdInUse());
     }
 
     private long getNumberOfLabeledNodes( int[] labelIds )
