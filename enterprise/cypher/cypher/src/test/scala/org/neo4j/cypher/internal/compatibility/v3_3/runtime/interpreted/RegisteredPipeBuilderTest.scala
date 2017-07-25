@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodesByLabelScanRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
@@ -72,7 +72,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
     // then
     pipe should equal(
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))()
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))()
     )
   }
 
@@ -86,7 +86,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
     // then
     pipe should equal(
-      NodesByLabelScanRegisterPipe("x", LazyLabel(label), PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))()
+      NodesByLabelScanRegisterPipe("x", LazyLabel(label), PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))()
     )
   }
 
@@ -102,7 +102,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(
       FilterPipe(
-        NodesByLabelScanRegisterPipe("x", LazyLabel(label), PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))(),
+        NodesByLabelScanRegisterPipe("x", LazyLabel(label), PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))(),
         predicates.True()
       )()
     )
@@ -118,12 +118,12 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
     // then
     pipe should equal(ExpandAllRegisterPipe(
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty,
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "r" -> LongSlot(1, nullable = false, CTRelationship),
-        "z" -> LongSlot(2, nullable = false, CTNode)), numberOfLongs = 3, numberOfReferences = 0)
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = false, CTRelationship, "r"),
+        "z" -> LongSlot(2, nullable = false, CTNode, "z")), numberOfLongs = 3, numberOfReferences = 0)
     )())
   }
 
@@ -136,9 +136,11 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
-    pipe should equal(ExpandIntoPipe(
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
-      "x", "r", "x", SemanticDirection.INCOMING, LazyTypes.empty
+    val nodeSlot = LongSlot(0, nullable = false, CTNode, "x")
+    val relSlot = LongSlot(1, nullable = false, CTRelationship, "r")
+    pipe should equal(ExpandIntoRegisterPipe(
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> nodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
+      nodeSlot, relSlot, nodeSlot, SemanticDirection.INCOMING, LazyTypes.empty, PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
     )())
   }
 
@@ -153,7 +155,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(OptionalPipe(
       Set("x"),
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), 1, 0))()
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), 1, 0))()
     )())
   }
 
@@ -168,7 +170,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(OptionalExpandAllPipe(
       AllNodesScanRegisterPipe("x",
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       "x", "r", "z", SemanticDirection.INCOMING, LazyTypes.empty, predicates.True()
     )())
   }
@@ -184,7 +186,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(OptionalExpandIntoPipe(
       AllNodesScanRegisterPipe("x",
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       "x", "r", "x", SemanticDirection.INCOMING, LazyTypes.empty, predicates.True()
     )())
   }
@@ -200,7 +202,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(SkipPipe(
       AllNodesScanRegisterPipe("x",
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       commands.expressions.Literal(42)
     )())
   }
@@ -219,7 +221,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(ApplyPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       NodeIndexSeekPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek)()
     )())
   }
@@ -235,7 +237,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(DistinctPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))(),
+        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
       Map("x" -> commands.expressions.Variable("x"))
     )())
   }
@@ -255,7 +257,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     pipe should equal(DistinctPipe(
       OptionalPipe(Set("x"),
         NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0)
+          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0)
         )())(),
       Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
     )())
@@ -277,7 +279,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       OptionalPipe(
         Set("x"),
         NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))())(),
+          PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))())(),
       keyExpressions = Set("x", "x.propertyKey"),
       aggregations = Map("count" -> commands.expressions.CountStar())
     )())
@@ -294,7 +296,8 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(ProjectionPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map("x" -> LongSlot(0, nullable = false, CTNode), "x.propertyKey" -> RefSlot(0, nullable = true, CTAny))))(),
+        PipelineInformation(numberOfLongs = 1, numberOfReferences = 1,
+          slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"), "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey"))))(),
       Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
     )())
   }
@@ -311,9 +314,9 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(CartesianProductPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label1"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("x" -> LongSlot(0, nullable = false, CTNode))))(),
+        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"))))(),
       NodesByLabelScanRegisterPipe("y", LazyLabel("label2"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("y" -> LongSlot(0, nullable = false, CTNode))))()
+        PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map("y" -> LongSlot(0, nullable = false, CTNode, "y"))))()
     )())
   }
 }

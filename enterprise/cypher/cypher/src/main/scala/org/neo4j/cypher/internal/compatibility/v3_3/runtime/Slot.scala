@@ -25,7 +25,8 @@ sealed trait Slot {
   def offset: Int
   def nullable: Boolean
   def typ: CypherType
+  def name: String
 }
 
-case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
-case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType) extends Slot
+case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType, name: String) extends Slot
+case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType, name: String) extends Slot

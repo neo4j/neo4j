@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodesByLabelScanRegisterPipe, ProduceResultRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
@@ -73,6 +73,12 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val toOffset = pipelineInformation.getLongOffsetFor(to)
         ExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipelineInformation)(id)
 
+      case e@Expand(s, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
+        val fromSlot = pipelineInformation.get(from).get
+        val relSlot = pipelineInformation.get(relName).get
+        val toSlot = pipelineInformation.get(to).get
+        ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
+
       case _ => fallback.build(plan, source)
     }
   }
@@ -81,7 +87,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val runtimeColumns: Seq[(String, commandExpressions.Expression)] = columns map {
       k =>
         pipelineInformation1(k) match {
-          case LongSlot(offset, false, CTNode) =>
+          case LongSlot(offset, false, CTNode, _) =>
             k -> runtimeExpressions.NodeFromRegister(offset)
         }
     }

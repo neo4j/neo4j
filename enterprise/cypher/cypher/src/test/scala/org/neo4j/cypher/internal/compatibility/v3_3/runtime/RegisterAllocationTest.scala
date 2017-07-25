@@ -39,7 +39,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 1
-    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
   }
 
   test("single labelscan scan") {
@@ -51,7 +51,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 1
-    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
   }
 
   test("labelscan with filtering") {
@@ -64,7 +64,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 2
-    allocations(leaf) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), 1, 0))
+    allocations(leaf) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), 1, 0))
     allocations(filter) shouldBe theSameInstanceAs (allocations(leaf))
   }
 
@@ -80,14 +80,15 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "r" -> LongSlot(1, nullable = false, CTRelationship),
-        "z" -> LongSlot(2, nullable = false, CTNode)), numberOfLongs = 3, numberOfReferences = 0))
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = false, CTRelationship, "r"),
+        "z" -> LongSlot(2, nullable = false, CTNode, "z")), numberOfLongs = 3, numberOfReferences = 0))
   }
 
   test("single node with expand into") {
@@ -102,11 +103,13 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode), "r" -> LongSlot(1, nullable = false, CTRelationship)), numberOfLongs = 2, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x"), "r" -> LongSlot(1, nullable = false,
+        CTRelationship, "r")), numberOfLongs = 2, numberOfReferences = 0))
   }
 
   test("optional node") {
@@ -119,7 +122,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     // then
     allocations should have size 2
-    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), 1, 0))
+    allocations(plan) should equal(PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), 1, 0))
   }
 
   test("single node with optionalExpand ExpandAll") {
@@ -134,14 +137,15 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "r" -> LongSlot(1, nullable = true, CTRelationship),
-        "z" -> LongSlot(2, nullable = true, CTNode)
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = true, CTRelationship, "r"),
+        "z" -> LongSlot(2, nullable = true, CTNode, "z")
       ), numberOfLongs = 3, numberOfReferences = 0))
   }
 
@@ -157,13 +161,14 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "r" -> LongSlot(1, nullable = true, CTRelationship)
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = true, CTRelationship, "r")
       ), numberOfLongs = 2, numberOfReferences = 0))
   }
 
@@ -179,7 +184,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val expandAllocations = allocations(skip)
     expandAllocations shouldBe theSameInstanceAs(labelScanAllocations)
@@ -199,14 +205,15 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 3
     allocations(lhs) should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     val rhsPipeline = allocations(rhs)
 
     rhsPipeline should equal(
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode),
-        "z" -> LongSlot(1, nullable = false, CTNode)
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "z" -> LongSlot(1, nullable = false, CTNode, "z")
       ), numberOfLongs = 2, numberOfReferences = 0))
 
     allocations(apply) shouldBe theSameInstanceAs(rhsPipeline)
@@ -223,7 +230,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 2
     allocations(leaf) should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     allocations(leaf) should equal(allocations(distinct))
     allocations(leaf) shouldNot be theSameInstanceAs allocations(distinct)
@@ -241,12 +249,13 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 3
     allocations(leaf) should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     allocations(optional) should be theSameInstanceAs allocations(leaf)
     allocations(distinct) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map(
-      "x" -> LongSlot(0, nullable = true, CTNode),
-      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny)
+      "x" -> LongSlot(0, nullable = true, CTNode, "x"),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey")
     )))
   }
 
@@ -264,13 +273,14 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 3
     allocations(leaf) should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode)), numberOfLongs = 1, numberOfReferences = 0))
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = true, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
 
     allocations(optional) should be theSameInstanceAs allocations(leaf)
     allocations(distinct) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 2, slots = Map(
-      "x" -> LongSlot(0, nullable = true, CTNode),
-      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny),
-      "count" -> RefSlot(1, nullable = true, CTAny)
+      "x" -> LongSlot(0, nullable = true, CTNode, "x"),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey"),
+      "count" -> RefSlot(1, nullable = true, CTAny, "count")
     )))
   }
 
@@ -285,8 +295,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 2
     allocations(leaf) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 1, slots = Map(
-      "x" -> LongSlot(0, nullable = false, CTNode),
-      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny)
+      "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+      "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey")
     )))
     allocations(projection) shouldBe theSameInstanceAs (allocations(leaf))
   }
@@ -303,14 +313,14 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     // then
     allocations should have size 3
     allocations(lhs) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
-      "x" -> LongSlot(0, nullable = false, CTNode)
+      "x" -> LongSlot(0, nullable = false, CTNode, "x")
     )))
     allocations(rhs) should equal(PipelineInformation(numberOfLongs = 1, numberOfReferences = 0, slots = Map(
-      "y" -> LongSlot(0, nullable = false, CTNode)
+      "y" -> LongSlot(0, nullable = false, CTNode, "y")
     )))
     allocations(Xproduct) should equal(PipelineInformation(numberOfLongs = 2, numberOfReferences = 0, slots = Map(
-      "x" -> LongSlot(0, nullable = false, CTNode),
-      "y" -> LongSlot(1, nullable = false, CTNode)
+      "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+      "y" -> LongSlot(1, nullable = false, CTNode, "y")
     )))
   }
 }
