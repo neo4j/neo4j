@@ -37,10 +37,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanIdentificationBuilder, plans}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{CountStar, LabelName, LabelToken}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection, SemanticTable, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
@@ -426,6 +426,27 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       NodesByLabelScanRegisterPipe("x", LazyLabel(LABEL), lhsPipeline)(),
       ExpandAllRegisterPipe(
         ArgumentRegisterPipe(lhsPipeline)(), 0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsPipeline)())())
+  }
+
+  test("NodeIndexScan should yieid a NodeIndexScanRegisterPipe") {
+    // given
+    val leaf = NodeIndexScan(
+      "n",
+      LabelToken("Awesome", LabelId(0)),
+      PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+      Set.empty)(solved)
+
+    // when
+    val pipe = build(leaf)
+
+    // then
+
+    pipe should equal(
+      NodeIndexScanRegisterPipe(
+        "n",
+        LabelToken("Awesome",LabelId(0)),
+        PropertyKeyToken("prop",PropertyKeyId(0)),
+        PipelineInformation(Map("n" ->  LongSlot(0, nullable = false, CTNode, "n")),1, 0))())
   }
 
 }
