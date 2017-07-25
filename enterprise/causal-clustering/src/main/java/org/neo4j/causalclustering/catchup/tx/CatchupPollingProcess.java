@@ -281,7 +281,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             upToDateFuture.complete( true );
             return false;
         case E_TRANSACTION_PRUNED:
-            log.info( "Tx pull unable to get transactions starting from %d since transactions " + "have been pruned. Attempting a store copy.",
+            log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.",
                     lastQueuedTxId );
             state = STORE_COPYING;
             return false;
