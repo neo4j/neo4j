@@ -46,8 +46,8 @@ case class ProcedureCallPipe(source: Pipe,
                              resultSymbols: Seq[(String, CypherType)],
                              resultIndices: Seq[(Int, String)])
                             (val id: Id = new Id)
-                            (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) with ListSupport {
+
+  extends PipeWithSource(source) with ListSupport {
 
   argExprs.foreach(_.registerOwningPipe(this))
 

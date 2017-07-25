@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
                           (val id: Id = new Id)
-                          (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(lhs, pipeMonitor) {
+  extends PipeWithSource(lhs) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.map {

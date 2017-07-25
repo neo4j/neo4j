@@ -33,8 +33,6 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 class VarLengthExpandPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
-
   test("should support var length expand between two nodes") {
     // given
     val startNode = newMockedNode(1)

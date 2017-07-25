@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])
                    (val id: Id = new Id)
-                   (implicit monitor: PipeMonitor)
-  extends PipeWithSource(source, monitor) {
+  extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val array = input.toArray
     java.util.Arrays.sort(array, new InnerOrdering(orderBy)(state))

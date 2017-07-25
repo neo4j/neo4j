@@ -34,7 +34,7 @@ class LimitPipeTest extends CypherFunSuite {
     when(inputIterator.isEmpty).thenReturn(false)
 
     val src: Pipe = new DummyPipe(inputIterator)
-    val limitPipe = LimitPipe(src, Literal(0))()(mock[PipeMonitor])
+    val limitPipe = LimitPipe(src, Literal(0))()
 
     // When
     limitPipe.createResults(QueryStateHelper.empty)
@@ -45,8 +45,6 @@ class LimitPipeTest extends CypherFunSuite {
 }
 
 class DummyPipe(inputIterator: Iterator[ExecutionContext]) extends Pipe {
-  override def monitor: PipeMonitor = ???
-
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = ???
 
   override def id: Id = ???

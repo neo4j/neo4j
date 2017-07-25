@@ -27,8 +27,8 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
-                                (val id: Id = new Id)(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) {
+                                (val id: Id = new Id)
+  extends PipeWithSource(source) {
   val nullColumns: Map[String, Any] = nullableVariables.map(_ -> null).toMap
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

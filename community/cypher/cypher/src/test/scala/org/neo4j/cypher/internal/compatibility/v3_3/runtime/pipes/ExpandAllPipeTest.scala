@@ -32,7 +32,6 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
   val startNode = newMockedNode(1)
   val endNode1 = newMockedNode(2)
   val endNode2 = newMockedNode(3)

@@ -23,13 +23,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
-                               (val id: Id = new Id)
-                               (implicit pipeMonitor: PipeMonitor) extends Pipe {
+                               (val id: Id = new Id) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     for (outer <- lhs.createResults(state);
          inner <- rhs.createResults(state))
       yield outer ++ inner
   }
 
-  def monitor: PipeMonitor = pipeMonitor
 }

@@ -32,9 +32,7 @@ case class NodeIndexSeekPipe(ident: String,
                              propertyKeys: Seq[PropertyKeyToken],
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek)
-                            (val id: Id = new Id)
-                            (implicit pipeMonitor: PipeMonitor)
-  extends Pipe {
+                            (val id: Id = new Id) extends Pipe {
 
   private val propertyIds: Array[Int] = propertyKeys.map(_.nameId.id).toArray
 
@@ -51,5 +49,4 @@ case class NodeIndexSeekPipe(ident: String,
     resultNodes.map(node => baseContext.newWith1(ident, node))
   }
 
-  override def monitor = pipeMonitor
 }

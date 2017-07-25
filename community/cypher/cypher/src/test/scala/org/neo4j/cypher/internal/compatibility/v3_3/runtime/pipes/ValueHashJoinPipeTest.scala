@@ -29,8 +29,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
-
   import org.mockito.Mockito._
 
   test("should support simple hash join between two identifiers") {

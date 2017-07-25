@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
-                             (val id: Id = new Id)
-                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                             (val id: Id = new Id) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats

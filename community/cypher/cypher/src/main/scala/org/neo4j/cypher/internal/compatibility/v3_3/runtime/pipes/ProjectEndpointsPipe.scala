@@ -29,9 +29,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
                                 start: String, startInScope: Boolean,
                                 end: String, endInScope: Boolean,
                                 relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
-                               (val id: Id = new Id)
-                               (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor)
+                               (val id: Id = new Id) extends PipeWithSource(source)
   with ListSupport  {
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 

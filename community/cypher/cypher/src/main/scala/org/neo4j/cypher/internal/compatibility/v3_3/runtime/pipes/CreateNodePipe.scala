@@ -31,8 +31,8 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
 
-abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression], pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) with GraphElementPropertyFunctions with ListSupport {
+abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
+  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createNode(_, state))
@@ -79,8 +79,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
 }
 
 case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                         (val id: Id = new Id)
-                         (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
+                         (val id: Id = new Id) extends BaseCreateNodePipe(src, key, labels, properties) {
 
   override protected def handleNull(key: String) {
     // do nothing
@@ -88,8 +87,7 @@ case class CreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], proper
 }
 
 case class MergeCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel], properties: Option[Expression])
-                              (val id: Id = new Id)
-                         (implicit pipeMonitor: PipeMonitor) extends BaseCreateNodePipe(src, key, labels, properties, pipeMonitor) {
+                              (val id: Id = new Id) extends BaseCreateNodePipe(src, key, labels, properties) {
   override protected def handleNull(key: String) {
     //merge cannot use null properties, since in that case the match part will not find the result of the create
     throw new InvalidSemanticsException(s"Cannot merge node using null property value for $key")

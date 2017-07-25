@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.NameId
 
 case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option[LazyLabel],
                                                typeNames: LazyTypes, endLabel: Option[LazyLabel])
-                                              (val id: Id = new Id)
-                                              (implicit pipeMonitor: PipeMonitor) extends Pipe {
+                                              (val id: Id = new Id) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val maybeStartLabelId = getLabelId(startLabel, state)
@@ -57,6 +56,4 @@ case class RelationshipCountFromCountStorePipe(ident: String, startLabel: Option
         count + state.query.relationshipCountByCountStore(startLabelId, typeId, endLabelId)
       }
     }
-
-  override def monitor = pipeMonitor
 }

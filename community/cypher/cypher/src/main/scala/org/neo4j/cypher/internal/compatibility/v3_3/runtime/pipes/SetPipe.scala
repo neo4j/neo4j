@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class SetPipe(src: Pipe, setOperation: SetOperation)
-                  (val id: Id = new Id)
-                  (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor) {
+                  (val id: Id = new Id) extends PipeWithSource(src) {
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.map { row =>

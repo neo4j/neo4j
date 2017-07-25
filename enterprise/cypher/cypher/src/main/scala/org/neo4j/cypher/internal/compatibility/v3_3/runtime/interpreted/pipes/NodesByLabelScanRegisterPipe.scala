@@ -20,13 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeMonitor, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelineInformation: PipelineInformation)
-                                       (val id: Id = new Id)
-                                       (implicit pipeMonitor: PipeMonitor) extends Pipe {
+                                       (val id: Id = new Id) extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
@@ -44,6 +43,4 @@ case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelin
         Iterator.empty
     }
   }
-
-  override def monitor: PipeMonitor = pipeMonitor
 }

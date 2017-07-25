@@ -51,8 +51,7 @@ case class VarLengthExpandPipe(source: Pipe,
                                max: Option[Int],
                                nodeInScope: Boolean,
                                filteringStep: VarLengthPredicate= VarLengthPredicate.NONE)
-                              (val id: Id = new Id)
-                              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+                              (val id: Id = new Id) extends PipeWithSource(source) {
   private def varLengthExpand(node: Node, state: QueryState, maxDepth: Option[Int],
                               row: ExecutionContext): Iterator[(Node, Seq[Relationship])] = {
     val stack = new mutable.Stack[(Node, Seq[Relationship])]

@@ -20,15 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-
-trait PipeMonitor {
-  def startSetup(queryId: AnyRef, pipe: Pipe)
-  def stopSetup(queryId: AnyRef, pipe: Pipe)
-  def startStep(queryId: AnyRef, pipe: Pipe)
-  def stopStep(queryId: AnyRef, pipe: Pipe)
-}
 
 /**
   * Pipe is a central part of Cypher. Most pipes are decorators - they
@@ -44,23 +36,10 @@ trait PipeMonitor {
 trait Pipe {
   self: Pipe =>
 
-  def monitor: PipeMonitor
-
   def createResults(state: QueryState) : Iterator[ExecutionContext] = {
     val decoratedState = state.decorator.decorate(self, state)
-    monitor.startSetup(state.queryId, self)
     val innerResult = internalCreateResults(decoratedState)
-    val result = new Iterator[ExecutionContext] {
-      def hasNext = innerResult.hasNext
-      def next() = {
-        monitor.startStep(state.queryId, self)
-        val value = innerResult.next()
-        monitor.stopStep(state.queryId, self)
-        value
-      }
-    }
-    monitor.stopSetup(state.queryId, self)
-    state.decorator.decorate(self, result)
+    state.decorator.decorate(self, innerResult)
   }
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext]
@@ -69,13 +48,13 @@ trait Pipe {
   def id: Id
 }
 
-case class SingleRowPipe()(val id: Id = new Id)(implicit val monitor: PipeMonitor) extends Pipe {
+case class SingleRowPipe()(val id: Id = new Id) extends Pipe {
 
   def internalCreateResults(state: QueryState) =
     Iterator(state.createOrGetInitialContext())
 }
 
-abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {
+abstract class PipeWithSource(source: Pipe) extends Pipe {
   override def createResults(state: QueryState): Iterator[ExecutionContext] = {
     val sourceResult = source.createResults(state)
 

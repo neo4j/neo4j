@@ -32,7 +32,5 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  val monitor: PipeMonitor = mock[PipeMonitor]
-
   var id = new Id
 }

@@ -20,14 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
-                              (val id: Id = new Id)
-                              (implicit pipeMonitor: PipeMonitor)
-  extends Pipe
-  {
+                              (val id: Id = new Id) extends Pipe  {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 
@@ -41,5 +37,4 @@ case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
     }
   }
 
-  override def monitor = pipeMonitor
 }

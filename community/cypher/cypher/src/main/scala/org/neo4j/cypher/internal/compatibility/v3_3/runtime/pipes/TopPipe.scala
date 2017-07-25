@@ -31,8 +31,8 @@ import scala.math._
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
  * returning the matching top results, we only keep the top results in heap, which allows us to release memory earlier
  */
-abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])(implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with Comparer {
+abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])
+  extends PipeWithSource(source) with Comparer {
 
   val sortItems: Array[SortDescription] = sortDescription.toArray
   private val sortItemsCount: Int = sortItems.length
@@ -64,8 +64,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription])(imp
 }
 
 case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countExpression: Expression)
-                   (val id: Id = new Id)
-                   (implicit pipeMonitor: PipeMonitor) extends TopPipe(source, sortDescription)(pipeMonitor) {
+                   (val id: Id = new Id) extends TopPipe(source, sortDescription) {
 
   countExpression.registerOwningPipe(this)
 
@@ -125,8 +124,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
  */
 case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
                    (val id: Id = new Id)
-                   (implicit pipeMonitor: PipeMonitor)
-  extends TopPipe(source, sortDescription)(pipeMonitor) {
+  extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
@@ -159,8 +157,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])
  */
 case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription])
                            (val id: Id = new Id)
-                           (implicit pipeMonitor: PipeMonitor)
-  extends TopPipe(source, sortDescription)(pipeMonitor) {
+  extends TopPipe(source, sortDescription) {
 
   protected override def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

@@ -34,7 +34,6 @@ import org.neo4j.graphdb.Node
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  implicit val monitor = mock[PipeMonitor]
   implicit val windowsSafe = WindowsStringSafe
 
   val label = LabelToken(LabelName("LabelName") _, LabelId(11))

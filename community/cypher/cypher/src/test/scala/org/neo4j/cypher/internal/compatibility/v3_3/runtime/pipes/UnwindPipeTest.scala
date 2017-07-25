@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class UnwindPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
-
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
     val source = new FakePipe(data, "x" -> CTList(CTInteger))
     val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()

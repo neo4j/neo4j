@@ -29,8 +29,6 @@ import org.neo4j.kernel.impl.core.NodeProxy
 import scala.collection.{Map, mutable}
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
-  private implicit val monitor = mock[PipeMonitor]
-
   test("triadic from input with no cycles") {
     val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
     val target = createFakeArgumentPipeWith(Array("b", "c"),

@@ -28,7 +28,6 @@ import org.neo4j.graphdb.Node
 
 class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
-  implicit val monitor = mock[PipeMonitor]
   val node1 = newMockedNode(1)
   val node2 = newMockedNode(2)
   val node3 = newMockedNode(3)

@@ -26,7 +26,6 @@ import org.neo4j.graphdb.Node
 
 class AllNodesScanPipeTest extends CypherFunSuite {
 
-  private implicit val monitor = mock[PipeMonitor]
   import Mockito.when
 
   test("should scan all nodes") {

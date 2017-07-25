@@ -55,12 +55,6 @@ import scala.collection.mutable.ListBuffer
  */
 class ActualCostCalculationTest extends CypherFunSuite {
 
-  implicit val monitor = new PipeMonitor {
-    def stopStep(queryId: AnyRef, pipe: Pipe) {}
-    def stopSetup(queryId: AnyRef, pipe: Pipe) {}
-    def startSetup(queryId: AnyRef, pipe: Pipe) {}
-    def startStep(queryId: AnyRef, pipe: Pipe) {}
-  }
   private val N = 1000000
   private val STEPS = 100
   private val LABEL = Label.label("L")

@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.graphdb.Node
 
 case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = new Id)
-                        (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(src, pipeMonitor)  {
+  extends PipeWithSource(src)  {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map { ctx =>

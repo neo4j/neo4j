@@ -20,14 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs, toNode: String, fromNode: String)
-                                             (val id: Id = new Id)
-                                             (implicit pipeMonitor: PipeMonitor)
-  extends Pipe
-  with ListSupport {
+                                             (val id: Id = new Id) extends Pipe {
 
   relIdExpr.registerOwningPipe(this)
 
@@ -37,5 +33,4 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: SeekArgs
     new UndirectedRelationshipIdSeekIterator(ident, fromNode, toNode, ctx, state.query.relationshipOps, relIds.iterator)
   }
 
-  override def monitor = pipeMonitor
 }

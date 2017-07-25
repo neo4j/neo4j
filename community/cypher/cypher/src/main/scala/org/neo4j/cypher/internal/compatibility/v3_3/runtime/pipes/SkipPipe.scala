@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class SkipPipe(source: Pipe, exp: Expression)
                    (val id: Id = new Id)
-                   (implicit pipeMonitor: PipeMonitor)
-  extends PipeWithSource(source, pipeMonitor) with NumericHelper {
+  extends PipeWithSource(source) with NumericHelper {
 
   exp.registerOwningPipe(this)
 
