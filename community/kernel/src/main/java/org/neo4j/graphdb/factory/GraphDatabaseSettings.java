@@ -72,7 +72,6 @@ import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
-import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore.NATIVE_LABEL_INDEX_TAG;
 
 /**
  * Settings for Neo4j.
@@ -574,7 +573,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Backend to use for label --> nodes index" )
     @Internal
     public static final Setting<String> label_index =
-            setting( "dbms.label_index", optionsIgnoreCase( NATIVE_LABEL_INDEX_TAG ), NATIVE_LABEL_INDEX_TAG );
+            setting( "dbms.label_index", optionsIgnoreCase( LabelIndex.NATIVE.name(), LabelIndex.AUTO.name() ), LabelIndex.NATIVE.name() );
 
     @Description( "Enable auth requirement to access Neo4j." )
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );

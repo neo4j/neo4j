@@ -96,7 +96,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * Native label index tag, to distinguish native label index from other label indexes
      */
-    public static final String NATIVE_LABEL_INDEX_TAG = "native";
+    private static final String NATIVE_LABEL_INDEX_TAG = "native";
 
     /**
      * Whether or not this label scan store is read-only.
