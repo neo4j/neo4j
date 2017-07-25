@@ -26,7 +26,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.impl.index.labelscan.LuceneLabelScanDirectory;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -57,6 +56,6 @@ public class SchemaIndexMigratorTest
         migrator.moveMigratedFiles( migrationDir, storeDir, StandardV2_3.STORE_VERSION, StandardV3_0.STORE_VERSION );
 
         verify( fs ).deleteRecursively( schemaIndexProvider.getSchemaIndexStoreDirectory( storeDir ) );
-        verify( fs ).deleteRecursively( LuceneLabelScanDirectory.getLuceneStoreDirectory( storeDir ) );
+        verify( fs ).deleteRecursively( SchemaIndexMigrator.getLuceneStoreDirectory( storeDir ) );
     }
 }
