@@ -50,7 +50,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("Person")
 
     val count = executeScalar[Long]("MATCH (n:Person) RETURN count(n.name)")
-   count should equal(3)
+    count should equal(3)
   }
 
   test("Should not use both pruning var expand and projections that need path info") {

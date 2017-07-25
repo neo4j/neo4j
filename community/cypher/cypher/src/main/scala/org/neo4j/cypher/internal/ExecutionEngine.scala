@@ -177,7 +177,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
             if (labelIds.nonEmpty) {
               lockPlanLabels(tc, labelIds)
               val stateAfter = schemaState(tc)
-              // check if schema state was cleared why we where trying to take all locks and if it was we will force
+              // check if schema state was cleared while we where trying to take all locks and if it was we will force
               // another query re-plan
               if (stateBefore ne stateAfter) {
                 releasePlanLabels(tc, labelIds)

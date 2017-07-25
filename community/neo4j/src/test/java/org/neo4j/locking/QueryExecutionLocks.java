@@ -150,13 +150,13 @@ public class QueryExecutionLocks
     public void reTakeLabelLockForQueryWithIndexUsagesWhenSchemaStateWasUpdatedDuringLockOperations() throws Exception
     {
         String labelName = "Robot";
-        Label human = Label.label( labelName );
+        Label robot = Label.label( labelName );
         String propertyKey = "name";
-        createIndex( human, propertyKey );
+        createIndex( robot, propertyKey );
 
         try ( Transaction transaction = databaseRule.beginTx() )
         {
-            Node node = databaseRule.createNode( human );
+            Node node = databaseRule.createNode( robot );
             node.setProperty( propertyKey, RandomStringUtils.randomAscii( 10 ) );
             transaction.success();
         }
@@ -184,11 +184,11 @@ public class QueryExecutionLocks
         assertEquals( ResourceTypes.LABEL, operationRecord2.resourceType );
     }
 
-    private void createIndex( Label human, String propertyKey )
+    private void createIndex( Label label, String propertyKey )
     {
         try ( Transaction transaction = databaseRule.beginTx() )
         {
-            databaseRule.schema().indexFor( human ).on( propertyKey ).create();
+            databaseRule.schema().indexFor( label ).on( propertyKey ).create();
             transaction.success();
         }
         try ( Transaction ignored = databaseRule.beginTx() )
