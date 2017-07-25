@@ -51,7 +51,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val pipelineInformation = pipelines(plan)
 
     plan match {
-      case p@AllNodesScan(IdName(column), _ /*TODO*/) =>
+      case p@AllNodesScan(IdName(column), _) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
 
       case p@NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _ /*TODO*/) =>
@@ -59,7 +59,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
           valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
 
-      case p@NodeByLabelScan(IdName(column), label, _ /*TODO*/) =>
+      case Argument(_) =>
+        ArgumentRegisterPipe(pipelineInformation)(id)
+
+      case p@NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case _ => fallback.build(plan)
@@ -111,8 +114,15 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     runtimeColumns
   }
 
-  override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe =
+  override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
+    implicit val table: SemanticTable = context.semanticTable
+
+    val id = idMap.getOrElse(plan, new Id)
+    val pipelineInformation = pipelines(plan)
+
     plan match {
+      case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
       case _ => fallback.build(plan, lhs, rhs)
     }
+  }
 }

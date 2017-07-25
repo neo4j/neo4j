@@ -52,6 +52,11 @@ object RegisterAllocation {
         result += (lp -> newPipeline)
         newPipeline
 
+      case Argument(_) =>
+        val pipeline = argument.getOrElse(throw new InternalException("Found argument without Apply"))
+        result += (lp -> pipeline)
+        pipeline
+
       case Projection(source, expressions) =>
         val pipeline = allocate(source, nullable, argument)
         expressions foreach {

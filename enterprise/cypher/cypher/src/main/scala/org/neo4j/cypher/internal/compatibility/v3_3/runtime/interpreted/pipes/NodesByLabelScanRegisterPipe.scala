@@ -30,12 +30,11 @@ case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelin
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    // TODO         val baseContext = state.createOrGetInitialContext()
-
     label.getOptId(state.query) match {
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
           val context = ExecutionContext(pipelineInformation.numberOfLongs)
+          state.copyArgumentStateTo(context)
           context.setLongAt(offset, nodeId)
           context
         })

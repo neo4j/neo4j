@@ -82,7 +82,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case LongSlot(offset, true, typ, _) if typ == CTNode => NullCheck(offset, NodeProperty(offset, token))
         }
 
-      case e@Equals(Variable(k1), Variable(k2)) =>
+      case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
         if (slot1.typ == slot2.typ)

@@ -28,14 +28,18 @@ case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
                                  (val id: Id = new Id)
   extends PipeWithSource(source) with Pipe {
 
-  private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
-//    val context = initialContext.getOrElse(ExecutionContext.empty) // TODO
+  private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
     val context = ExecutionContext(pipelineInformation.numberOfLongs)
+    state.copyArgumentStateTo(context)
+    // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
     nullableOffsets.foreach(offset => context.setLongAt(offset, -1))
     context
   }
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    if (input.isEmpty) Iterator(notFoundExecutionContext(state.initialContext))
-    else input
+    if (input.isEmpty) {
+      Iterator(notFoundExecutionContext(state))
+    } else {
+      input
+    }
 }

@@ -30,9 +30,14 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
+  private val x = IdName("x")
+  private val y = IdName("y")
+  private val LABEL = LabelName("label")(pos)
+  private val r = IdName("r")
+
   test("only single allnodes scan") {
     // given
-    val plan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val plan = AllNodesScan(x, Set.empty)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(plan)
@@ -44,7 +49,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single labelscan scan") {
     // given
-    val plan = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val plan = NodeByLabelScan(x, LABEL, Set.empty)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(plan)
@@ -56,7 +61,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("labelscan with filtering") {
     // given
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val filter = Selection(Seq(True()(pos)), leaf)(solved)
 
     // when
@@ -70,8 +75,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single node with expand") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val expand = Expand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, IdName("z"), r, ExpandAll)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -93,8 +98,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single node with expand into") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val expand = Expand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -114,7 +119,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("optional node") {
     // given
-    val leaf = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val leaf = AllNodesScan(x, Set.empty)(solved)
     val plan = Optional(leaf)(solved)
 
     // when
@@ -127,8 +132,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single node with optionalExpand ExpandAll") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val expand = OptionalExpand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, IdName("z"), r, ExpandAll)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -151,8 +156,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("single node with optionalExpand ExpandInto") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val expand = OptionalExpand(allNodesScan, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -174,7 +179,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("let's skip this one") {
     // given
-    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
     val skip = logicalPlans.Skip(allNodesScan, literalInt(42))(solved)
 
     // when
@@ -193,10 +198,10 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("all we need is to apply ourselves") {
     // given
-    val lhs = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(IdName("z"), label, Seq.empty, seekExpression, Set(IdName("x")))(solved)
+    val rhs = NodeIndexSeek(IdName("z"), label, Seq.empty, seekExpression, Set(x))(solved)
     val apply = Apply(lhs, rhs)(solved)
 
     // when
@@ -221,7 +226,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("aggregation used for distinct") {
     // given
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val distinct = Aggregation(leaf, Map("x" -> varFor("x")), Map.empty)(solved)
 
     // when
@@ -239,7 +244,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("optional travels through aggregation used for distinct") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")), Map.empty)(solved)
 
@@ -261,7 +266,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("optional travels through aggregation") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional,
       groupingExpressions = Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")),
@@ -286,7 +291,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("labelscan with projection") {
     // given
-    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
 
     // when
@@ -303,8 +308,8 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("cartesian product") {
     // given
-    val lhs = NodeByLabelScan(IdName("x"), LabelName("label1")(pos), Set.empty)(solved)
-    val rhs = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
+    val lhs = NodeByLabelScan(x, LabelName("label1")(pos), Set.empty)(solved)
+    val rhs = NodeByLabelScan(y, LabelName("label2")(pos), Set.empty)(solved)
     val Xproduct = CartesianProduct(lhs, rhs)(solved)
 
     // when
@@ -322,5 +327,34 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
       "x" -> LongSlot(0, nullable = false, CTNode, "x"),
       "y" -> LongSlot(1, nullable = false, CTNode, "y")
     )))
+  }
+
+  test("that argument does not apply here") {
+    // given MATCH (x) MATCH (x)<-[r]-(y)
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val arg = Argument(Set(x))(solved)()
+    val rhs = Expand(arg, x, SemanticDirection.INCOMING, Seq.empty, y, r, ExpandAll)(solved)
+
+    val apply = Apply(lhs, rhs)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(apply)
+
+    // then
+    val lhsPipeline = PipelineInformation(Map(
+      "x" -> LongSlot(0, nullable = false, CTNode, "x")),
+      numberOfLongs = 1, numberOfReferences = 0)
+
+    val rhsPipeline = PipelineInformation(Map(
+      "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+      "y" -> LongSlot(2, nullable = false, CTNode, "y"),
+      "r" -> LongSlot(1, nullable = false, CTRelationship, "r")
+    ), numberOfLongs = 3, numberOfReferences = 0)
+
+    allocations should have size 4
+    allocations(arg) should equal(lhsPipeline)
+    allocations(lhs) should equal(lhsPipeline)
+    allocations(apply) should equal(rhsPipeline)
+    allocations(rhs) should equal(rhsPipeline)
   }
 }

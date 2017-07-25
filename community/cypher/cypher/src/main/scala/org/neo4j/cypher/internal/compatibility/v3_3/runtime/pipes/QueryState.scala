@@ -65,6 +65,12 @@ class QueryState(val query: QueryContext,
   def withInitialContext(initialContext: ExecutionContext) =
     new QueryState(query, resources, params, decorator, timeReader, Some(initialContext), queryId, triadicState, repeatableReads, cachedIn)
 
+  /**
+    * When running on the RHS of an Apply, this method will fill an execution context with argument data
+    * @param ctx ExecutionContext to fill with data
+    */
+  def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => ctx.copyFrom(initData))
+
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, decorator, timeReader, initialContext, queryId, triadicState, repeatableReads, cachedIn)
 }
