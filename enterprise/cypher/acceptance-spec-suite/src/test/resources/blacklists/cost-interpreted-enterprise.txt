@@ -147,12 +147,6 @@ Long chains of integer comparisons
 Long chains of floating point comparisons
 Long chains of string comparisons
 
-
-Should allow AND and OR with equality predicates
-Should allow AND and OR with inequality predicates
-Should allow AND and OR with STARTS WITH predicates
-Should allow AND and OR with regex predicates
-Should allow OR with regex predicates
 Should allow AND and OR with index and equality predicates
 Should allow AND and OR with index and inequality predicates
 Should allow AND and OR with index and STARTS WITH predicates
@@ -167,7 +161,6 @@ Accessing a list with null as lower bound should return null
 Accessing a list with null as upper bound should return null
 Accessing a list with null should return null
 Accessing a map with null should return null
-Add labels inside FOREACH' was blacklisted, but succeeded
 Flat type support in list literal
 Negative parameter for LIMIT should not generate errors
 Nested type support in list literal
