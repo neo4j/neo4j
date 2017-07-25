@@ -44,6 +44,61 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class NativeLabelScanStoreHaIT
 {
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final LifeSupport life = new LifeSupport();
+    private ManagedCluster cluster;
+    private final TestMonitor monitor = new TestMonitor();
+
+    private enum Labels implements Label
+    {
+        First,
+        Second
+    }
+
+    @Before
+    public void setUp()
+    {
+        TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
+        Monitors monitors = new Monitors();
+        monitors.addMonitorListener( monitor );
+        factory.setMonitors( monitors );
+        factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
+                .withDbFactory( factory )
+                .withStoreDirInitializer( ( serverId, storeDir ) ->
+                {
+                    if ( serverId == 1 )
+                    {
+                        GraphDatabaseService db = new TestGraphDatabaseFactory()
+                                .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                                .newGraphDatabase();
+                        try
+                        {
+                            createSomeLabeledNodes( db,
+                                    new Label[]{Labels.First},
+                                    new Label[]{Labels.First, Labels.Second},
+                                    new Label[]{Labels.Second} );
+                        }
+                        finally
+                        {
+                            db.shutdown();
+                        }
+                    }
+                } ).build();
+        life.add( clusterManager );
+        life.start();
+        cluster = clusterManager.getCluster();
+        cluster.await( allSeesAllAsAvailable() );
+        cluster.await( allAvailabilityGuardsReleased() );
+    }
+
+    @After
+    public void tearDown()
+    {
+        life.shutdown();
+    }
+
     @Test
     public void shouldCopyLabelScanStoreToNewSlaves() throws Exception
     {
@@ -51,7 +106,7 @@ public class NativeLabelScanStoreHaIT
         // It can be higher than 3 (number of cluster members) since some members may restart
         // some services to switch role.
         assertTrue( "Expected initial calls to init to be at least one per cluster member (>= 3), " +
-                "but was " + monitor.callsTo_init,
+                        "but was " + monitor.callsTo_init,
                 monitor.callsTo_init >= 3 );
 
         // GIVEN
@@ -90,61 +145,6 @@ public class NativeLabelScanStoreHaIT
             }
             tx.success();
         }
-    }
-
-    private enum Labels implements Label
-    {
-        First,
-        Second
-    }
-
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final LifeSupport life = new LifeSupport();
-    private ManagedCluster cluster;
-    private final TestMonitor monitor = new TestMonitor();
-
-    @Before
-    public void setUp()
-    {
-        TestHighlyAvailableGraphDatabaseFactory factory = new TestHighlyAvailableGraphDatabaseFactory();
-        Monitors monitors = new Monitors();
-        monitors.addMonitorListener( monitor );
-        factory.setMonitors( monitors );
-        factory.removeKernelExtensions( extension -> extension.getClass().getName().contains( "LabelScan" ) );
-        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( "root" ) )
-                .withDbFactory( factory )
-                .withStoreDirInitializer( ( serverId, storeDir ) ->
-                {
-                    if ( serverId == 1 )
-                    {
-                        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                                .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
-                                .newGraphDatabase();
-                        try
-                        {
-                            createSomeLabeledNodes( db,
-                                    new Label[] {Labels.First},
-                                    new Label[] {Labels.First, Labels.Second},
-                                    new Label[] {Labels.Second} );
-                        }
-                        finally
-                        {
-                            db.shutdown();
-                        }
-                    }
-                } ).build();
-        life.add( clusterManager );
-        life.start();
-        cluster = clusterManager.getCluster();
-        cluster.await( allSeesAllAsAvailable() );
-        cluster.await( allAvailabilityGuardsReleased() );
-    }
-
-    @After
-    public void tearDown()
-    {
-        life.shutdown();
     }
 
     private static class TestMonitor extends LabelScanStore.Monitor.Adaptor
