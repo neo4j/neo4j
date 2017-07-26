@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
@@ -221,8 +221,14 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(ApplyPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-        PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
-      NodeIndexSeekPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek)()
+        PipelineInformation(Map(
+          "x" -> LongSlot(0, nullable = false, CTNode, "x")),
+          numberOfLongs = 1, numberOfReferences = 0))(),
+      NodeIndexSeekRegisterPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), IndexSeek,
+        PipelineInformation(Map(
+          "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+          "z" -> LongSlot(1, nullable = false, CTNode, "z")
+        ), numberOfLongs = 2, numberOfReferences = 0))()
     )())
   }
 

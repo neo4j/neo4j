@@ -101,8 +101,13 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     extends PipeBuilderFactory {
     def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
              (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters)
-      new RegisteredPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation)
+
+      val expressionToExpression = recursePipes(recurse, planContext) _
+
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, expressionToExpression)
+
+      new RegisteredPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
+                                expressionToExpression)
     }
   }
 

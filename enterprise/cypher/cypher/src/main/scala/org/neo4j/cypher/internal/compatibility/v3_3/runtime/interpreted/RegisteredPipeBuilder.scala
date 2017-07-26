@@ -21,23 +21,28 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.cypher.internal.frontend.v3_3.{SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilder(fallback: PipeBuilder,
                             expressionConverter: ExpressionConverters,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
-                            pipelines: Map[LogicalPlan, PipelineInformation])
-                           (implicit context: PipeExecutionBuilderContext) extends PipeBuilder {
+                            pipelines: Map[LogicalPlan, PipelineInformation],
+                            readOnly : Boolean,
+                            buildExpression: (frontEndAst.Expression) => frontEndAst.Expression)
+                           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
+
+  private val convertExpressions = buildExpression andThen expressionConverter.toCommandExpression
 
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
@@ -48,6 +53,11 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     plan match {
       case p@AllNodesScan(IdName(column), _ /*TODO*/) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
+
+      case p@NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _ /*TODO*/) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
+        NodeIndexSeekRegisterPipe(column, label, propertyKeys,
+          valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
 
       case p@NodeByLabelScan(IdName(column), label, _ /*TODO*/) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
