@@ -17,15 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class ExecutionContextTest extends CypherFunSuite {
+class PrimitiveExecutionContextTest extends CypherFunSuite {
+
+  private def longSize(s: Int) = new PipelineInformation(Map.empty, s, 0)
+
   test("copy fills upp the first few elements") {
-    val input = ExecutionContext(2)
-    val result = ExecutionContext(4)
+    val input = PrimitiveExecutionContext(longSize(2))
+    val result = PrimitiveExecutionContext(longSize(4))
 
     input.setLongAt(0, 42)
     input.setLongAt(1, 666)
@@ -37,8 +41,8 @@ class ExecutionContextTest extends CypherFunSuite {
   }
 
   test("copy fails if copy from larger") {
-    val input = ExecutionContext(4)
-    val result = ExecutionContext(2)
+    val input = PrimitiveExecutionContext(longSize(4))
+    val result = PrimitiveExecutionContext(longSize(2))
 
     intercept[InternalException](result.copyFrom(input))
   }

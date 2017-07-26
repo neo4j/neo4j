@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -29,7 +30,7 @@ case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
   extends PipeWithSource(source) with Pipe {
 
   private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
-    val context = ExecutionContext(pipelineInformation.numberOfLongs)
+    val context = PrimitiveExecutionContext(pipelineInformation)
     state.copyArgumentStateTo(context)
     // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
     nullableOffsets.foreach(offset => context.setLongAt(offset, -1))

@@ -31,9 +31,6 @@ object ExecutionContext {
   def from(x: (String, Any)*): ExecutionContext = apply().newWith(x)
 
   def apply(m: MutableMap[String, Any] = MutableMaps.empty) = MapExecutionContext(m)
-
-  def apply(numberOfLongs: Int) = PrimitiveExecutionContext(numberOfLongs = numberOfLongs)
-
 }
 
 trait ExecutionContext extends MutableMap[String, Any] {
@@ -47,44 +44,6 @@ trait ExecutionContext extends MutableMap[String, Any] {
   def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext
   def mergeWith(other: ExecutionContext): ExecutionContext
   def createClone(): ExecutionContext
-}
-
-case class PrimitiveExecutionContext(numberOfLongs: Int) extends ExecutionContext {
-  def copyFrom(input: ExecutionContext): Unit = input match {
-    case PrimitiveExecutionContext(otherSize) if otherSize > numberOfLongs =>
-      throw new InternalException("Tried to copy more data into less.")
-
-    case other@PrimitiveExecutionContext(otherSize) =>
-      System.arraycopy(other.longs, 0, longs, 0, otherSize)
-  }
-
-  private val longs = new Array[Long](numberOfLongs)
-
-  def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
-
-  def getLongAt(offset: Int): Long = longs(offset)
-
-  override def +=(kv: (String, Any)) = fail()
-
-  override def -=(key: String) = fail()
-
-  override def get(key: String) = fail()
-
-  override def iterator = fail()
-
-  private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
-
-  override def newWith1(key1: String, value1: Any): ExecutionContext = fail()
-
-  override def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext = fail()
-
-  override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext = fail()
-
-  override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
-
-  override def createClone(): ExecutionContext = fail()
-
-  override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = fail()
 }
 
 case class MapExecutionContext(m: MutableMap[String, Any])
