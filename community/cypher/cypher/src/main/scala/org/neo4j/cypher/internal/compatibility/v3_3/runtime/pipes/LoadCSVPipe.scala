@@ -82,7 +82,7 @@ case class LoadCSVPipe(source: Pipe,
         internalMap.putValues(row)
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
-        context.newWith(variable -> internalMap.copy)
+        context.newWith1(variable, internalMap.copy)
       } else null
     }
   }
@@ -90,7 +90,7 @@ case class LoadCSVPipe(source: Pipe,
   private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[String]]) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.newWith(variable -> inner.next().toIndexedSeq)
+    override def next(): ExecutionContext = context.newWith1(variable, inner.next().toIndexedSeq)
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {

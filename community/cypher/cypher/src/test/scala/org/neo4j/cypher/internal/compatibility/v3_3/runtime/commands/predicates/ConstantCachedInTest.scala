@@ -42,9 +42,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith("x" -> 1)
-    val vNull = ExecutionContext.empty.newWith("x" -> null)
-    val v14 = ExecutionContext.empty.newWith("x" -> 14)
+    val v1 = ExecutionContext.empty.newWith1("x", 1)
+    val vNull = ExecutionContext.empty.newWith1("x", null)
+    val v14 = ExecutionContext.empty.newWith1("x", 14)
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -63,9 +63,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith("x" -> 1)
-    val vNull = ExecutionContext.empty.newWith("x" -> null)
-    val v14 = ExecutionContext.empty.newWith("x" -> 14)
+    val v1 = ExecutionContext.empty.newWith1("x", 1)
+    val vNull = ExecutionContext.empty.newWith1("x", null)
+    val v14 = ExecutionContext.empty.newWith1("x", 14)
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -84,9 +84,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith("x" -> 1)
-    val vNull = ExecutionContext.empty.newWith("x" -> null)
-    val v14 = ExecutionContext.empty.newWith("x" -> 14)
+    val v1 = ExecutionContext.empty.newWith1("x", 1)
+    val vNull = ExecutionContext.empty.newWith1("x", null)
+    val v14 = ExecutionContext.empty.newWith1("x", 14)
 
     // then when
     predicate.isMatch(v1) should equal(None)
@@ -108,9 +108,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1 = ExecutionContext.empty.newWith("x" -> Seq(1,2))
-    val vNull = ExecutionContext.empty.newWith("x" -> null)
-    val v14 = ExecutionContext.empty.newWith("x" -> 14)
+    val v1 = ExecutionContext.empty.newWith1("x", Seq(1,2))
+    val vNull = ExecutionContext.empty.newWith1("x", null)
+    val v14 = ExecutionContext.empty.newWith1("x", 14)
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))

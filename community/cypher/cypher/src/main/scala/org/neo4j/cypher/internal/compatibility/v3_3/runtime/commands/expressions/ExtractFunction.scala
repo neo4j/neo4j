@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 
@@ -31,7 +30,7 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
 
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).map {
     case iterValue =>
-      val innerMap = m.newWith(id -> iterValue)
+      val innerMap = m.newWith1(id, iterValue)
       expression(innerMap)
   }.toList
 

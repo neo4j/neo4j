@@ -50,9 +50,9 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
   def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
   def getLongAt(offset: Int): Long = longs(offset)
 
-  def get(key: String): Option[Any] = m.get(key)
+  override def get(key: String): Option[Any] = m.get(key)
 
-  def iterator: Iterator[(String, Any)] = m.iterator
+  override def iterator: Iterator[(String, Any)] = m.iterator
 
   override def size = m.size
 
@@ -62,13 +62,8 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
     m.foreach(f)
   }
 
-  def +=(kv: (String, Any)) = {
+  override def +=(kv: (String, Any)) = {
     m += kv
-    this
-  }
-
-  def -=(key: String) = {
-    m -= key
     this
   }
 
@@ -76,18 +71,6 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
 
   def newWith(newEntries: Seq[(String, Any)]) =
     createWithNewMap(m.clone() ++= newEntries)
-
-  def newWith(newEntries: scala.collection.Map[String, Any]) =
-    createWithNewMap(m.clone() ++= newEntries)
-
-  def newFrom(newEntries: Seq[(String, Any)]) =
-    createWithNewMap(MutableMaps.create(newEntries: _*))
-
-  def newFromMutableMap(newEntries: scala.collection.mutable.Map[String, Any]) =
-    createWithNewMap(newEntries)
-
-  def newWith(newEntry: (String, Any)) =
-    createWithNewMap(m.clone() += newEntry)
 
   // This may seem silly but it has measurable impact in tight loops
 
@@ -117,6 +100,8 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
   protected def createWithNewMap(newMap: MutableMap[String, Any]) = {
     copy(m = newMap)
   }
+
+  override def -=(key: String): ExecutionContext.this.type = throw new InternalException("Method not supported")
 
   override def toString(): String =
     if (m != null)
