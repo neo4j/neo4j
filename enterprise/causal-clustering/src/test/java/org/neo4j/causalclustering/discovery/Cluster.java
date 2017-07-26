@@ -40,7 +40,6 @@ import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import org.neo4j.causalclustering.PortAuthority;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.core.LeaderCanWrite;
 import org.neo4j.causalclustering.core.consensus.NoLeaderFoundException;
@@ -48,6 +47,7 @@ import org.neo4j.causalclustering.core.consensus.roles.Role;
 import org.neo4j.causalclustering.core.state.machines.id.IdGenerationException;
 import org.neo4j.causalclustering.core.state.machines.locks.LeaderOnlyLockManager;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.Transaction;

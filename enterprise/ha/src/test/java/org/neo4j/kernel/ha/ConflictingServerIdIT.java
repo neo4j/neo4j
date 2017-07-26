@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
@@ -47,30 +48,32 @@ public class ConflictingServerIdIT
         try
         {
 
+            int masterClusterPort = PortAuthority.allocatePort();
+
             GraphDatabaseBuilder masterBuilder = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path( 1 ) )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 1 ) )
+                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + masterClusterPort )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + masterClusterPort )
                 .setConfig( ClusterSettings.server_id, "" + 1 )
-                .setConfig( HaSettings.ha_server, ":" + ( 8001 + 1 ) )
+                .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
                 .setConfig( HaSettings.tx_push_factor, "0" );
             master = (HighlyAvailableGraphDatabase) masterBuilder.newGraphDatabase();
 
             GraphDatabaseBuilder db21Builder = new TestHighlyAvailableGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( path( 2 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002,127.0.0.1:5003" )
-                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + ( 5001 + 2 ) )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + masterClusterPort )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( ClusterSettings.server_id, "" + 2 )
-                    .setConfig( HaSettings.ha_server, ":" + ( 8001 + 2 ) )
+                    .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
                     .setConfig( HaSettings.tx_push_factor, "0" );
             dbWithId21 = (HighlyAvailableGraphDatabase) db21Builder.newGraphDatabase();
 
             GraphDatabaseBuilder db22Builder = new TestHighlyAvailableGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( path( 3 ) )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5002" )
-                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (5001 + 3) )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + masterClusterPort )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( ClusterSettings.server_id, "" + 2 ) // Conflicting with the above
-                    .setConfig( HaSettings.ha_server, ":" + ( 8001 + 3 ) )
+                    .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
                     .setConfig( HaSettings.tx_push_factor, "0" );
 
             try

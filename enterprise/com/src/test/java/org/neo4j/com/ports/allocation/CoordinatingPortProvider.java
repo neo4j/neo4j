@@ -17,23 +17,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering;
+package org.neo4j.com.ports.allocation;
 
-import java.io.IOException;
-import java.net.ServerSocket;
-
-public class DefaultPortProbe implements PortProbe
+/**
+ * Port provider that relies on state on disk, so that it can coordinate with other {@link CoordinatingPortProvider}s in
+ * other JVMs. Suitable for parallel test execution.
+ */
+public class CoordinatingPortProvider implements PortProvider
 {
-    @Override
-    public boolean isOccupied( int port )
+    private final PortRepository portRepository;
+    private final PortProbe portProbe;
+
+    public CoordinatingPortProvider( PortRepository portRepository, PortProbe portProbe )
     {
-        try ( ServerSocket ignored = new ServerSocket( port ) )
+        this.portRepository = portRepository;
+        this.portProbe = portProbe;
+    }
+
+    @Override
+    public int getNextFreePort( String trace )
+    {
+        int port = portRepository.reserveNextPort( trace );
+
+        while ( portProbe.isOccupied( port ) )
         {
-            return false;
+            port = portRepository.reserveNextPort( trace );
         }
-        catch ( IOException e )
-        {
-            return true;
-        }
+
+        return port;
     }
 }

@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -65,12 +66,13 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
+        int firstInstanceClusterPort = PortAuthority.allocatePort();
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.directory( "1" ) )
                 .setConfig( server_id, "1" )
-                .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6031" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
+                .setConfig( cluster_server, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
         File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
@@ -80,9 +82,9 @@ public class ForeignStoreIdIT
         foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6032" )
+                .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .newGraphDatabase();
         // -- and creates a node
         long foreignNode = createNode( foreignInstance, "foreigner" );
@@ -97,12 +99,13 @@ public class ForeignStoreIdIT
     {
         // GIVEN
         // -- one instance running
+        int firstInstanceClusterPort = PortAuthority.allocatePort();
         firstInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.directory( "1" ) )
                 .setConfig( server_id, "1" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5001" )
-                .setConfig( ha_server, "127.0.0.1:6041" )
+                .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( cluster_server, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
@@ -113,9 +116,9 @@ public class ForeignStoreIdIT
         foreignInstance = new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( foreignDbStoreDir )
                 .setConfig( server_id, "2" )
-                .setConfig( initial_hosts, "127.0.0.1:5001" )
-                .setConfig( cluster_server, "127.0.0.1:5002" )
-                .setConfig( ha_server, "127.0.0.1:6042" )
+                .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .setConfig( state_switch_timeout, "5s" )
                 .newGraphDatabase();
 

@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering;
+package org.neo4j.com.ports.allocation;
 
-import static org.neo4j.causalclustering.PortConstants.EphemeralPortMaximum;
+import static org.neo4j.com.ports.allocation.PortConstants.EphemeralPortMaximum;
 
 /**
  * Port provider that relies on state in a single JVM. Not suitable for parallel test execution (as in, several JVM

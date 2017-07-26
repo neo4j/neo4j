@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
-import org.neo4j.cluster.FreePorts;
+import java.util.function.Supplier;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -117,9 +117,9 @@ public class ClusterRule extends ExternalResource implements ClusterBuilder<Clus
     }
 
     @Override
-    public ClusterRule withCluster( Function<FreePorts.Session,Cluster> provider )
+    public ClusterRule withCluster( Supplier<Cluster> supplier )
     {
-        return set( clusterManagerBuilder.withCluster( provider ) );
+        return set( clusterManagerBuilder.withCluster( supplier ) );
     }
 
     @Override

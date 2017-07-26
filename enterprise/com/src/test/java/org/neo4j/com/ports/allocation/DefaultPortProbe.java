@@ -17,9 +17,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering;
+package org.neo4j.com.ports.allocation;
 
-public interface PortProbe
+import java.io.IOException;
+import java.net.ServerSocket;
+
+public class DefaultPortProbe implements PortProbe
 {
-    boolean isOccupied( int port );
+    @Override
+    public boolean isOccupied( int port )
+    {
+        try ( ServerSocket ignored = new ServerSocket( port ) )
+        {
+            return false;
+        }
+        catch ( IOException e )
+        {
+            return true;
+        }
+    }
 }
