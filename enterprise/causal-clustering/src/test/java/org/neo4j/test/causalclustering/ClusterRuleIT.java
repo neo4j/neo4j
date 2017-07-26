@@ -21,13 +21,10 @@ package org.neo4j.test.causalclustering;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
@@ -63,29 +60,6 @@ public class ClusterRuleIT
         assertThat( portsUsed.size(), is(
                 numberOfCoreMembers * NumberOfPortsUsedByCoreMember +
                         numberOfReadReplicas * NumberOfPortsUsedByReadReplica ) );
-    }
-
-    @Test
-    @Ignore( "ClusterRule is annoyingly singletony. the idea is to demonstrate how there is effectively a quarantine on" +
-            " ports, they are not handed out immediately again" )
-    public void shouldAssignNonConflictingPortsAutomatically() throws Exception
-    {
-        Cluster cluster1 = clusterRule.createCluster();
-
-        Set<Integer> portsUsedByFirstCluster = gatherPortsUsed( cluster1 );
-
-        Cluster cluster2 = clusterRule.createCluster();
-
-        Set<Integer> portsUsedBySecondCluster = gatherPortsUsed( cluster2 );
-
-        assertThat( Collections.disjoint( portsUsedByFirstCluster, portsUsedBySecondCluster ), is( true ) );
-    }
-
-    @Test
-    @Ignore( "Well, the above test starts a cluster, and by virtue of that being successful..." )
-    public void shouldAssignFreePorts() throws Exception
-    {
-        fail( "TODO" );
     }
 
     private Set<Integer> gatherPortsUsed( Cluster cluster )
