@@ -34,7 +34,6 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -50,7 +49,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.CANCELLED;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
@@ -249,11 +247,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
         log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream );
         TxStreamFinishedResponse response;
         try
         {
-            AdvertisedSocketAddress fromAddress =
-                    topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new CoreStateDownloaderException( upstream ) );
             response = catchUpClient.makeBlockingRequest( fromAddress, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
             {
                 @Override
@@ -270,7 +267,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
                 }
             } );
         }
-        catch ( CoreStateDownloaderException | CatchUpClientException e )
+        catch ( CatchUpClientException e )
         {
             log.warn( "Exception occurred while pulling transactions. Will retry shortly.", e );
             streamComplete();

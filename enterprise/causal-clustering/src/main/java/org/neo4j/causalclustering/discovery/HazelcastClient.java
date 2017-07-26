@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
@@ -93,9 +94,9 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     }
 
     @Override
-    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
+    public AdvertisedSocketAddress findCatchupAddress( MemberId memberId )
     {
-        return Optional.ofNullable( catchupAddressMap.get( memberId ) );
+        return Optional.ofNullable( catchupAddressMap.get( memberId ) ).orElseThrow( () -> new TopologyLookupException( memberId ) );
     }
 
     /**

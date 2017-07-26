@@ -32,7 +32,6 @@ import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -79,7 +78,7 @@ public class CatchupPollingProcessTest
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
-        when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( Optional.of( coreMemberAddress ) );
+        when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( coreMemberAddress );
     }
 
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );

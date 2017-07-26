@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;
@@ -113,9 +114,9 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
-            public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
+            public AdvertisedSocketAddress findCatchupAddress( MemberId upstream )
             {
-                return Optional.ofNullable( catchupAddresses.get( upstream ) );
+                return Optional.ofNullable( catchupAddresses.get( upstream ) ).orElseThrow( () -> new TopologyLookupException( upstream ) );
             }
 
             @Override

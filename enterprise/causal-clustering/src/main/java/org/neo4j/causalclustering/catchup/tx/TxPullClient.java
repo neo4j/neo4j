@@ -25,7 +25,6 @@ import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
 import org.neo4j.causalclustering.catchup.TxPullRequestResult;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -46,10 +45,10 @@ public class TxPullClient
     }
 
     public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long previousTxId, TxPullResponseListener txPullResponseListener )
-            throws CatchUpClientException, CoreStateDownloaderException
+            throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
         return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
             private long lastTxIdReceived = previousTxId;
