@@ -54,10 +54,9 @@ public class CoreStateDownloader
     private final CoreSnapshotService snapshotService;
     private final CommandApplicationProcess applicationProcess;
 
-    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy,
-            RemoteStore remoteStore, CatchUpClient catchUpClient, LogProvider logProvider,
-            StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines,
-            CoreSnapshotService snapshotService, CommandApplicationProcess applicationProcess )
+    public CoreStateDownloader( LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, RemoteStore remoteStore, CatchUpClient catchUpClient,
+            LogProvider logProvider, StoreCopyProcess storeCopyProcess, CoreStateMachines coreStateMachines, CoreSnapshotService snapshotService,
+            CommandApplicationProcess applicationProcess )
     {
         this.localDatabase = localDatabase;
         this.startStopOnStoreCopy = startStopOnStoreCopy;
@@ -103,15 +102,14 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(),
-                    new CatchUpResponseAdaptor<CoreSnapshot>()
-                    {
-                        @Override
-                        public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
-                        {
-                            signal.complete( response );
-                        }
-                    } );
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, new CoreSnapshotRequest(), new CatchUpResponseAdaptor<CoreSnapshot>()
+            {
+                @Override
+                public void onCoreSnapshot( CompletableFuture<CoreSnapshot> signal, CoreSnapshot response )
+                {
+                    signal.complete( response );
+                }
+            } );
 
             if ( isEmptyStore )
             {

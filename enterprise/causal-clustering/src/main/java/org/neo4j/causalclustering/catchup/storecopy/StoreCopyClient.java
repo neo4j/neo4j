@@ -41,40 +41,36 @@ public class StoreCopyClient
         log = logProvider.getLog( getClass() );
     }
 
-    long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams )
-            throws StoreCopyFailedException
+    long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ),
-                    new CatchUpResponseAdaptor<Long>()
-                    {
-                        private String destination;
-                        private int requiredAlignment;
+            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
+            {
+                private String destination;
+                private int requiredAlignment;
 
-                        @Override
-                        public void onFileHeader( CompletableFuture<Long> requestOutcomeSignal, FileHeader fileHeader )
-                        {
-                            this.destination = fileHeader.fileName();
-                            this.requiredAlignment = fileHeader.requiredAlignment();
-                        }
+                @Override
+                public void onFileHeader( CompletableFuture<Long> requestOutcomeSignal, FileHeader fileHeader )
+                {
+                    this.destination = fileHeader.fileName();
+                    this.requiredAlignment = fileHeader.requiredAlignment();
+                }
 
-                        @Override
-                        public boolean onFileContent( CompletableFuture<Long> signal, FileChunk fileChunk )
-                                throws IOException
-                        {
-                            storeFileStreams.write( destination, requiredAlignment, fileChunk.bytes() );
-                            return fileChunk.isLast();
-                        }
+                @Override
+                public boolean onFileContent( CompletableFuture<Long> signal, FileChunk fileChunk ) throws IOException
+                {
+                    storeFileStreams.write( destination, requiredAlignment, fileChunk.bytes() );
+                    return fileChunk.isLast();
+                }
 
-                        @Override
-                        public void onFileStreamingComplete( CompletableFuture<Long> signal,
-                                StoreCopyFinishedResponse response )
-                        {
-                            log.info( "Finished streaming %s", destination );
-                            signal.complete( response.lastCommittedTxBeforeStoreCopy() );
-                        }
-                    } );
+                @Override
+                public void onFileStreamingComplete( CompletableFuture<Long> signal, StoreCopyFinishedResponse response )
+                {
+                    log.info( "Finished streaming %s", destination );
+                    signal.complete( response.lastCommittedTxBeforeStoreCopy() );
+                }
+            } );
         }
         catch ( CatchUpClientException e )
         {
@@ -89,8 +85,7 @@ public class StoreCopyClient
             CatchUpResponseAdaptor<StoreId> responseHandler = new CatchUpResponseAdaptor<StoreId>()
             {
                 @Override
-                public void onGetStoreIdResponse( CompletableFuture<StoreId> signal,
-                                                  GetStoreIdResponse response )
+                public void onGetStoreIdResponse( CompletableFuture<StoreId> signal, GetStoreIdResponse response )
                 {
                     signal.complete( response.storeId() );
                 }

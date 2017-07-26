@@ -58,7 +58,7 @@ import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.Timeou
  * This class is responsible for pulling transactions from a core server and queuing
  * them to be applied with the {@link BatchingTxApplier}. Pull requests are issued on
  * a fixed interval.
- *
+ * <p>
  * If the necessary transactions are not remotely available then a fresh copy of the
  * entire store will be pulled down.
  */
@@ -95,11 +95,9 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private CompletableFuture<Boolean> upToDateFuture; // we are up-to-date when we are successfully pulling
     private volatile long latestTxIdOfUpStream;
 
-    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase,
-            Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
-            UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService,
-            long txPullIntervalMillis, BatchingTxApplier applier, Monitors monitors,
-            StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier )
+    public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
+            UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier,
+            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier )
 
     {
         this.localDatabase = localDatabase;
@@ -258,8 +256,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
                 }
 
                 @Override
-                public void onTxStreamFinishedResponse( CompletableFuture<TxStreamFinishedResponse> signal,
-                        TxStreamFinishedResponse response )
+                public void onTxStreamFinishedResponse( CompletableFuture<TxStreamFinishedResponse> signal, TxStreamFinishedResponse response )
                 {
                     streamComplete();
                     signal.complete( response );
@@ -277,20 +274,20 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         switch ( response.status() )
         {
-            case SUCCESS_END_OF_BATCH:
-                return true;
-            case SUCCESS_END_OF_STREAM:
-                log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId  );
-                upToDateFuture.complete( true );
-                return false;
-            case E_TRANSACTION_PRUNED:
-                log.info( "Tx pull unable to get transactions starting from %d since transactions " +
-                        "have been pruned. Attempting a store copy.", lastQueuedTxId ) ;
-                state = STORE_COPYING;
-                return false;
-            default:
-                log.info( "Tx pull request unable to get transactions > %d " + lastQueuedTxId );
-                return false;
+        case SUCCESS_END_OF_BATCH:
+            return true;
+        case SUCCESS_END_OF_STREAM:
+            log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId );
+            upToDateFuture.complete( true );
+            return false;
+        case E_TRANSACTION_PRUNED:
+            log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.",
+                    lastQueuedTxId );
+            state = STORE_COPYING;
+            return false;
+        default:
+            log.info( "Tx pull request unable to get transactions > %d " + lastQueuedTxId );
+            return false;
         }
     }
 

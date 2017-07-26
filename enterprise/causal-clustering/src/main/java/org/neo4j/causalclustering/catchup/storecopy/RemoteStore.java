@@ -61,11 +61,8 @@ public class RemoteStore
     private final TxPullClient txPullClient;
     private final TransactionLogCatchUpFactory transactionLogFactory;
 
-    public RemoteStore( LogProvider logProvider,
-            FileSystemAbstraction fs, PageCache pageCache,
-            StoreCopyClient storeCopyClient, TxPullClient txPullClient,
-            TransactionLogCatchUpFactory transactionLogFactory,
-            Monitors monitors )
+    public RemoteStore( LogProvider logProvider, FileSystemAbstraction fs, PageCache pageCache, StoreCopyClient storeCopyClient, TxPullClient txPullClient,
+            TransactionLogCatchUpFactory transactionLogFactory, Monitors monitors )
     {
         this.logProvider = logProvider;
         this.storeCopyClient = storeCopyClient;
@@ -80,11 +77,11 @@ public class RemoteStore
     /**
      * Later stages of the startup process require at least one transaction to
      * figure out the mapping between the transaction log and the consensus log.
-     *
+     * <p>
      * If there are no transaction logs then we can pull from and including
      * the index which the metadata store points to. This would be the case
      * for example with a backup taken during an idle period of the system.
-     *
+     * <p>
      * However, if there are transaction logs then we want to find out where
      * they end and pull from there, excluding the last one so that we do not
      * get duplicate entries.
@@ -103,8 +100,7 @@ public class RemoteStore
         ReadOnlyTransactionStore txStore = new ReadOnlyTransactionStore( pageCache, fs, storeDir, new Monitors() );
 
         long lastTxId = BASE_TX_ID;
-        try ( Lifespan ignored = new Lifespan( txStore );
-              TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
+        try ( Lifespan ignored = new Lifespan( txStore ); TransactionCursor cursor = txStore.getTransactions( lastCleanTxId ) )
         {
             while ( cursor.next() )
             {
@@ -133,8 +129,7 @@ public class RemoteStore
         return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
     }
 
-    public void copy( MemberId from, StoreId expectedStoreId, File destDir )
-            throws StoreCopyFailedException, StreamingTransactionsFailedException
+    public void copy( MemberId from, StoreId expectedStoreId, File destDir ) throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
         {
@@ -159,11 +154,10 @@ public class RemoteStore
         }
     }
 
-    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId,
-            boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
+    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy )
+            throws IOException, StoreCopyFailedException
     {
-        try ( TransactionLogCatchUpWriter writer = transactionLogFactory
-                .create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
+        try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
         {
             log.info( "Pulling transactions from: %d", fromTxId );
 
@@ -172,8 +166,7 @@ public class RemoteStore
             CatchupResult lastStatus;
             do
             {
-                TxPullRequestResult result =
-                        txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
+                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
                 lastStatus = result.catchupResult();
                 previousTxId = result.lastTxId();
             }
