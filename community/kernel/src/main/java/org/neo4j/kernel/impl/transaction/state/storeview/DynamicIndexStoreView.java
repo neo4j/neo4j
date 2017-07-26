@@ -45,8 +45,8 @@ import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 import org.neo4j.values.storable.Value;
 
 /**
- * Store view that will try to use label scan store {@link LabelScanStore} for cases when estimated number of nodes
- * is bellow certain threshold otherwise will fallback to whole store scan
+ * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless lable scan store is empty or
+ * explicitly told to use store in which cases it will fallback to whole store scan.
  */
 public class DynamicIndexStoreView implements IndexStoreView
 {
