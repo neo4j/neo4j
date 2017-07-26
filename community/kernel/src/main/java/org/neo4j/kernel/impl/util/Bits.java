@@ -177,11 +177,6 @@ public final class Bits implements Cloneable
         return builder.toString();
     }
 
-    public static String numberToString( long value, int numberOfBytes )
-    {
-        return numberToString( new StringBuilder(), value, numberOfBytes ).toString();
-    }
-
     public static StringBuilder numberToString( StringBuilder builder, long value, int numberOfBytes )
     {
         builder.append( "[" );

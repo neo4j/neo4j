@@ -25,9 +25,4 @@ public class TaskExecutionPanicException extends IllegalStateException
     {
         super( message, cause );
     }
-
-    public TaskExecutionPanicException( String message )
-    {
-        super( message );
-    }
 }

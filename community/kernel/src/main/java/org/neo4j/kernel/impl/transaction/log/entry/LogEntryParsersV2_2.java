@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosableChannel;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageCommand;
 
-// 2.2
 public enum LogEntryParsersV2_2 implements LogEntryParser<LogEntry>
 {
     EMPTY

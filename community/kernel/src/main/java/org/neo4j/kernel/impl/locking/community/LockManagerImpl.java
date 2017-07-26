@@ -29,7 +29,6 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.logging.Logger;
 
 public class LockManagerImpl
 {
@@ -84,25 +83,6 @@ public class LockManagerImpl
             throws LockNotFoundException, IllegalResourceException
     {
         getRWLockForReleasing( resource, tx, 0, 1, true ).releaseWriteLock( tx );
-    }
-
-    public void dumpLocksOnResource( final Object resource, Logger logger )
-    {
-        final RWLock lock;
-        synchronized ( resourceLockMap )
-        {
-            if ( !resourceLockMap.containsKey( resource ) )
-            {
-                logger.log( "No locks on " + resource );
-                return;
-            }
-            lock = resourceLockMap.get( resource );
-        }
-        logger.bulk( bulkLogger ->
-        {
-            bulkLogger.log( "Dump locks on resource %s", resource );
-            lock.logTo( bulkLogger );
-        } );
     }
 
     /**

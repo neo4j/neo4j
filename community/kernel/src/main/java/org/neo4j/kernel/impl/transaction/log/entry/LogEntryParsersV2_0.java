@@ -29,7 +29,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart.EMPTY_ADDITIONAL_ARRAY;
 
-// 2.0
 public enum LogEntryParsersV2_0 implements LogEntryParser<IdentifiableLogEntry>
 {
     EMPTY

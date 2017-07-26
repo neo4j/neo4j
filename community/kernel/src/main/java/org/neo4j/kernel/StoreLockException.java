@@ -24,11 +24,6 @@ package org.neo4j.kernel;
  */
 public class StoreLockException extends RuntimeException
 {
-    public StoreLockException( String msg )
-    {
-        super( msg );
-    }
-
     public StoreLockException( String msg, Throwable t )
     {
         super( msg, t );

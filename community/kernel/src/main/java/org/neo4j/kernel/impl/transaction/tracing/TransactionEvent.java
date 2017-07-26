@@ -81,7 +81,7 @@ public interface TransactionEvent extends AutoCloseable
 
     /**
      * Set the type of the transaction, as given by
-     * {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation.TransactionType}.
+     * {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation.TransactionWriteState}.
      */
     void setTransactionType( String transactionTypeName );
 
