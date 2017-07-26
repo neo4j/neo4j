@@ -55,7 +55,6 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertArrayEquals;
@@ -177,7 +176,6 @@ public class ListQueriesProcedureTest
         // given
         String query = "MATCH (n) SET n.v = n.v + 1";
         final Node node;
-        final Long bytes;
         try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
         {
             node = test.resource();
@@ -189,19 +187,17 @@ public class ListQueriesProcedureTest
             Object allocatedBytes = data.get( "allocatedBytes" );
             assertThat( allocatedBytes, anyOf( nullValue(), (Matcher) allOf(
                     instanceOf( Long.class ), greaterThan( 0L ) ) ) );
-            bytes = (Long) allocatedBytes;
         }
-        // execute a second time, this time the query should be cached, and thus allocate less
+
         try ( Resource<Node> test = test( () -> node, Transaction::acquireWriteLock, query ) )
         {
             // when
             Map<String,Object> data = getQueryListing( query );
 
-            // then
-            @SuppressWarnings( "RedundantCast" )
-            Matcher<Object> allocatedBytes = bytes == null ? nullValue() : (Matcher) allOf(
-                    greaterThan( 0L ), lessThanOrEqualTo( bytes ) );
-            assertThat( data, hasEntry( equalTo( "allocatedBytes" ), allocatedBytes ) );
+            assertThat( data, hasKey( "allocatedBytes" ) );
+            Object allocatedBytes = data.get( "allocatedBytes" );
+            assertThat( allocatedBytes,
+                    anyOf( nullValue(), (Matcher) allOf( instanceOf( Long.class ), greaterThan( 0L ) ) ) );
             assertSame( node, test.resource() );
         }
     }
