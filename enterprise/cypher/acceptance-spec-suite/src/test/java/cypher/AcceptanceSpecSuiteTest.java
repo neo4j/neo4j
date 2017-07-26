@@ -101,6 +101,24 @@ public class AcceptanceSpecSuiteTest
     @RunWith( Cucumber.class )
     @CucumberOptions(
             plugin = {
+                    DB_CONFIG + "cost-interpreted-enterprise.json",
+                    HTML_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
+                    JSON_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
+                    BLACKLIST_PLUGIN + "cost-interpreted-enterprise.txt",
+                    CYPHER_OPTION_PLUGIN + "cost-interpreted-enterprise.txt"
+            },
+            glue = { GLUE_PATH },
+            features = { FEATURE_PATH + FEATURE_TO_RUN },
+            tags = { "~@pending" },
+            strict = true
+    )
+    public static class CostEnterpriseInterpreted
+    {
+    }
+
+    @RunWith( Cucumber.class )
+    @CucumberOptions(
+            plugin = {
                     DB_CONFIG + "compatibility-23.json",
                     HTML_REPORT + SUITE_NAME + "/compatibility-23",
                     JSON_REPORT + SUITE_NAME + "/compatibility-23",

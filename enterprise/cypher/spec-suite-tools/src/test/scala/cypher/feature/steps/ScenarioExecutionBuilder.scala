@@ -131,26 +131,31 @@ case class RegularScenario(name: String, blacklisted: Boolean,
         case (execute, expect) =>
           val tx = db.beginTx()
           try {
-            Try(execute(db, params)) match {
-              case Success(result) =>
-                if (!blacklisted) {
+
+            try {
+              val result = execute(db, params)
+              if (blacklisted) {
+                try {
+                  expect(result)
+                  throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+                } catch {
+                  case t: Throwable => // failure is expected
+                }
+              } else {
+                try {
                   expect(result)
                   tx.success()
-                } else {
-                  Try(expect(result)) match {
-                    case Success(_) =>
-                      throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
-                    case _ => // failure is expected
-                  }
+                } catch {
+                  case e: Error =>
+                    throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
                 }
-              case Failure(throwable) =>
+              }
+
+            } catch {
+              case throwable: Throwable =>
                 if (!blacklisted)
                   throw new ScenarioFailedException(s"Scenario '$name' failed with ${throwable.getMessage}", throwable)
             }
-          } catch {
-            case e: Error =>
-              if (!blacklisted)
-                throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
           } finally {
             tx.close()
           }
