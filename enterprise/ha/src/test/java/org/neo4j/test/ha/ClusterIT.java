@@ -21,7 +21,6 @@ package org.neo4j.test.ha;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,7 +39,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -157,62 +155,6 @@ public class ClusterIT
                         .newGraphDatabase();
                 failed.shutdown();
                 fail("Should not start when ports conflict");
-            }
-            catch ( Exception e )
-            {
-                // good
-            }
-        }
-        finally
-        {
-            if ( first != null )
-            {
-                first.shutdown();
-            }
-        }
-    }
-
-    /**
-     * This test has been green because second database failed to start over directory conflict,
-     * not port conflict.
-     *
-     * With the directory conflict out of the way we start up but presumably are in a bad state.
-     *
-     * However, detecting bad state seems impossible here.
-     */
-    @Test
-    @Ignore( "The failure mode for HA port conflict is what?" )
-    public void testInstancesWithConflictingHaPorts() throws Throwable
-    {
-        HighlyAvailableGraphDatabase first = null;
-
-        int haPort = PortAuthority.allocatePort();
-
-        try
-        {
-            File storeDir1 = testDirectory.directory( testName.getMethodName() + 1 );
-            int clusterPort1 = PortAuthority.allocatePort();
-            first = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                     newEmbeddedDatabaseBuilder( storeDir1 )
-                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort1 )
-                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort1)
-                    .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
-                    .newGraphDatabase();
-
-            try
-            {
-                File storeDir2 = testDirectory.directory( testName.getMethodName() + 2 );
-                int clusterPort2 = PortAuthority.allocatePort();
-                HighlyAvailableGraphDatabase failed = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
-                        newEmbeddedDatabaseBuilder( storeDir2 )
-                        .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort1 )
-                        .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort2 )
-                        .setConfig( ClusterSettings.server_id, "2" )
-                        .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
-                        .newGraphDatabase();
-                failed.shutdown();
-                fail( "Should not start when ports conflict" );
             }
             catch ( Exception e )
             {
