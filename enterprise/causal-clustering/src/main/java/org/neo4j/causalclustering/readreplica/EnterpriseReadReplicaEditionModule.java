@@ -113,8 +113,7 @@ import static org.neo4j.causalclustering.discovery.ResolutionResolverFactory.cho
  */
 public class EnterpriseReadReplicaEditionModule extends EditionModule
 {
-    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule,
-            final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
+    EnterpriseReadReplicaEditionModule( final PlatformModule platformModule, final DiscoveryServiceFactory discoveryServiceFactory, MemberId myself )
     {
         LogService logging = platformModule.logging;
 
@@ -132,8 +131,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         this.accessCapability = new ReadOnly();
 
-        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging,
-                platformModule.jobScheduler, fileWatcherFileNameFilter() );
+        watcherService = createFileSystemWatcherService( fileSystem, storeDir, logging, platformModule.jobScheduler, fileWatcherFileNameFilter() );
         dependencies.satisfyDependencies( watcherService );
 
         GraphDatabaseFacade graphDatabaseFacade = platformModule.graphDatabaseFacade;
@@ -143,22 +141,17 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         statementLocksFactory = new StatementLocksFactorySelector( lockManager, config, logging ).select();
 
         idTypeConfigurationProvider = new EnterpriseIdTypeConfigurationProvider( config );
-        idGeneratorFactory = dependencies
-                .satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
+        idGeneratorFactory = dependencies.satisfyDependency( new DefaultIdGeneratorFactory( fileSystem, idTypeConfigurationProvider ) );
         idController = createDefaultIdController();
         dependencies.satisfyDependency( idGeneratorFactory );
         dependencies.satisfyDependency( idController );
         dependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
-        propertyKeyTokenHolder = life.add(
-                dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        labelTokenHolder = life.add(
-                dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
-        relationshipTypeTokenHolder = life.add(
-                dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        propertyKeyTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingPropertyKeyTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        labelTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingLabelTokenHolder( new ReadOnlyTokenCreator() ) ) );
+        relationshipTypeTokenHolder = life.add( dependencies.satisfyDependency( new DelegatingRelationshipTypeTokenHolder( new ReadOnlyTokenCreator() ) ) );
 
-        life.add(dependencies.satisfyDependency(
-                new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
+        life.add( dependencies.satisfyDependency( new DefaultKernelData( fileSystem, pageCache, storeDir, config, graphDatabaseFacade ) ) );
 
         headerInformationFactory = TransactionHeaderInformationFactory.DEFAULT;
 
@@ -170,8 +163,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 
-        coreAPIAvailabilityGuard =
-                new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
+        coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( platformModule.availabilityGuard, transactionStartTimeout );
 
         registerRecovery( platformModule.databaseInfo, life, dependencies );
 
@@ -187,15 +179,14 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         SslPolicy clusterSslPolicy = sslPolicyFactory.getPolicy( config.get( CausalClusteringSettings.ssl_policy ) );
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
-        TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
-                logProvider, platformModule.jobScheduler, myself, hostnameResolver );
+        TopologyService topologyService =
+                discoveryServiceFactory.topologyService( config, clusterSslPolicy, logProvider, platformModule.jobScheduler, myself, hostnameResolver );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
+        CatchUpClient catchUpClient =
+                life.add( new CatchUpClient( topologyService, logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -217,11 +208,9 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new LocalDatabase( platformModule.storeDir, storeFiles, platformModule.dataSourceManager, databaseHealthSupplier, watcherService,
                         platformModule.availabilityGuard, logProvider );
 
-        RemoteStore remoteStore =
-                new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                        new StoreCopyClient( catchUpClient, logProvider ,
-                       topologyService ), new TxPullClient( catchUpClient, platformModule.monitors ,topologyService ), new TransactionLogCatchUpFactory(),
-                        platformModule.monitors );
+        RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
+                new StoreCopyClient( catchUpClient, logProvider, topologyService ), new TxPullClient( catchUpClient, platformModule.monitors, topologyService ),
+                new TransactionLogCatchUpFactory(), platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
 
