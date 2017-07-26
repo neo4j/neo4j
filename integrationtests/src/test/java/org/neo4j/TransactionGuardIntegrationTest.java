@@ -36,6 +36,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -44,7 +45,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.harness.internal.Ports;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -370,7 +370,7 @@ public class TransactionGuardIntegrationTest
     {
         if ( databaseWithTimeoutAndGuard == null )
         {
-            boltPortCustomGuard = findFreePort();
+            boltPortCustomGuard = PortAuthority.allocatePort();
             Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortCustomGuard );
             databaseWithTimeoutAndGuard =
                     startCustomGuardedDatabase( testDirectory.directory( "dbWithoutTimeoutAndGuard" ), configMap );
@@ -382,7 +382,7 @@ public class TransactionGuardIntegrationTest
     {
         if ( databaseWithTimeout == null )
         {
-            boltPortDatabaseWithTimeout = findFreePort();
+            boltPortDatabaseWithTimeout = PortAuthority.allocatePort();
             Map<Setting<?>,String> configMap = getSettingsWithTimeoutAndBolt( boltPortDatabaseWithTimeout );
             databaseWithTimeout = startCustomDatabase( testDirectory.directory( "dbWithTimeout" ), configMap );
         }
@@ -458,23 +458,6 @@ public class TransactionGuardIntegrationTest
             }
         }
         return tempFile.toURI().toURL();
-    }
-
-    private int findFreePort()
-    {
-        return freePort( 8000, 8100 );
-    }
-
-    private int freePort( int startRange, int endRange )
-    {
-        try
-        {
-            return Ports.findFreePort( Ports.INADDR_LOCALHOST, new int[]{startRange, endRange} ).getPort();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to find an available port: " + e.getMessage(), e );
-        }
     }
 
     private Response execute( GraphDatabaseShellServer shellServer,
