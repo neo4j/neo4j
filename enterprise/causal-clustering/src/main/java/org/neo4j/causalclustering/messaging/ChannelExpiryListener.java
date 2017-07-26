@@ -17,39 +17,11 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.discovery;
+package org.neo4j.causalclustering.messaging;
 
-import java.util.Set;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 
-public class TopologyDifference<T>
+public interface ChannelExpiryListener
 {
-    private Set<T> added;
-    private Set<T> removed;
-
-    TopologyDifference( Set<T> added, Set<T> removed )
-    {
-        this.added = added;
-        this.removed = removed;
-    }
-
-    public  Set<T> added()
-    {
-        return added;
-    }
-
-    public Set<T> removed()
-    {
-        return removed;
-    }
-
-    boolean hasChanges()
-    {
-        return added.size() > 0 || removed.size() > 0;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "{added=%s, removed=%s}", added, removed );
-    }
+    void onChannelExpiry( AdvertisedSocketAddress advertisedSocketAddress );
 }

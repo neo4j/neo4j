@@ -21,25 +21,30 @@ package org.neo4j.causalclustering.discovery;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
-class Difference
+public class Difference<T>
 {
     private MemberId memberId;
-    private CatchupServerAddress server;
+    private T server;
 
-    private Difference( MemberId memberId, CatchupServerAddress server )
+    private Difference( MemberId memberId, T server )
     {
         this.memberId = memberId;
         this.server = server;
     }
 
-    static Difference asDifference( CoreTopology topology, MemberId memberId )
+    static Difference<CoreServerInfo> asDifference( CoreTopology topology, MemberId memberId )
     {
-        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
+        return new Difference<>( memberId, topology.find( memberId ).orElse( null ) );
     }
 
-    static Difference asDifference( ReadReplicaTopology topology, MemberId memberId )
+    static Difference<ReadReplicaInfo> asDifference( ReadReplicaTopology topology, MemberId memberId )
     {
-        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
+        return new Difference<>( memberId, topology.find( memberId ).orElse( null ) );
+    }
+
+    public T getServer()
+    {
+        return server;
     }
 
     @Override

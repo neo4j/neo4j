@@ -72,18 +72,18 @@ public class CoreTopology
         return format( "{clusterId=%s, bootstrappable=%s, coreMembers=%s}", clusterId, canBeBootstrapped(), coreMembers );
     }
 
-    TopologyDifference difference( CoreTopology other )
+    public TopologyDifference<Difference<CoreServerInfo>> difference( CoreTopology other )
     {
         Set<MemberId> members = coreMembers.keySet();
         Set<MemberId> otherMembers = other.coreMembers.keySet();
 
-        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
+        Set<Difference<CoreServerInfo>> added = otherMembers.stream().filter( m -> !members.contains( m ) )
                 .map( memberId -> Difference.asDifference( other, memberId ) ).collect( toSet() );
 
-        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
+        Set<Difference<CoreServerInfo>> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
                 .map( memberId -> Difference.asDifference( CoreTopology.this, memberId ) ).collect( toSet() );
 
-        return new TopologyDifference( added, removed );
+        return new TopologyDifference<>( added, removed );
     }
 
     public Optional<MemberId> anyCoreMemberId()

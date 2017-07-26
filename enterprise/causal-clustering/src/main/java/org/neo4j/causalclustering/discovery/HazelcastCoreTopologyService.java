@@ -19,6 +19,12 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import com.hazelcast.config.InterfacesConfig;
 import com.hazelcast.config.JoinConfig;
 import com.hazelcast.config.MemberAttributeConfig;
@@ -30,12 +36,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.core.MemberAttributeEvent;
 import com.hazelcast.core.MembershipEvent;
 import com.hazelcast.core.MembershipListener;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -57,6 +57,7 @@ import static com.hazelcast.spi.properties.GroupProperty.MERGE_NEXT_RUN_DELAY_SE
 import static com.hazelcast.spi.properties.GroupProperty.OPERATION_CALL_TIMEOUT_MILLIS;
 import static com.hazelcast.spi.properties.GroupProperty.PREFER_IPv4_STACK;
 import static com.hazelcast.spi.properties.GroupProperty.WAIT_SECONDS_BEFORE_JOIN;
+
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.disable_middleware_logging;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.discovery_listen_address;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_discovery_members;
@@ -110,7 +111,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     public void addCoreTopologyListener( Listener listener )
     {
         listenerService.addCoreTopologyListener( listener );
-        listener.onCoreTopologyChange( coreTopology );
+        listener.onCoreTopologyChange( coreTopology, coreTopology);
     }
 
     @Override
@@ -324,14 +325,15 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     {
         waitOnHazelcastInstanceCreation();
         CoreTopology newCoreTopology = getCoreTopology( hazelcastInstance, config, log );
-        TopologyDifference difference = coreTopology.difference( newCoreTopology );
+        TopologyDifference<Difference<CoreServerInfo>> difference = coreTopology.difference( newCoreTopology );
         if ( difference.hasChanges() )
         {
             log.info( "Core topology changed %s", difference );
         }
 
+        CoreTopology oldCoreTopology = this.coreTopology;
+        listenerService.notifyListeners( oldCoreTopology, newCoreTopology );
         this.coreTopology = newCoreTopology;
-        listenerService.notifyListeners( this.coreTopology );
 
     }
 
@@ -340,7 +342,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         waitOnHazelcastInstanceCreation();
         ReadReplicaTopology newReadReplicaTopology = getReadReplicaTopology( hazelcastInstance, log );
 
-        TopologyDifference difference = readReplicaTopology.difference( newReadReplicaTopology );
+        TopologyDifference<Difference<ReadReplicaInfo>> difference = readReplicaTopology.difference( newReadReplicaTopology );
         if ( difference.hasChanges() )
         {
             log.info( "Read replica topology changed %s", difference );

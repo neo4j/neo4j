@@ -55,7 +55,7 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     public synchronized void addCoreTopologyListener( Listener listener )
     {
         listeners.add( listener );
-        listener.onCoreTopologyChange( coreTopology );
+        listener.onCoreTopologyChange( coreTopology, coreTopology);
     }
 
     @Override
@@ -101,11 +101,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
 
     synchronized void onCoreTopologyChange( CoreTopology coreTopology )
     {
+        CoreTopology oldCoreTopology = this.coreTopology;
         log.info( "Notified of core topology change " + coreTopology );
         this.coreTopology = coreTopology;
         for ( Listener listener : listeners )
         {
-            listener.onCoreTopologyChange( coreTopology );
+            listener.onCoreTopologyChange( oldCoreTopology, coreTopology );
         }
     }
 
