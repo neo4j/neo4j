@@ -80,7 +80,7 @@ public class CoreStateDownloaderTest
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
-        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( Optional.of( remoteAddress ) );
+        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( remoteAddress );
     }
 
     @Test

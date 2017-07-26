@@ -25,7 +25,6 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.core.state.snapshot.CoreStateDownloaderException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -48,9 +47,9 @@ public class StoreCopyClient
 
     long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
         try
         {
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
             return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
             {
                 private String destination;
@@ -78,7 +77,7 @@ public class StoreCopyClient
                 }
             } );
         }
-        catch ( CoreStateDownloaderException | CatchUpClientException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreCopyFailedException( e );
         }
@@ -86,6 +85,7 @@ public class StoreCopyClient
 
     StoreId fetchStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
         try
         {
             CatchUpResponseAdaptor<StoreId> responseHandler = new CatchUpResponseAdaptor<StoreId>()
@@ -96,10 +96,9 @@ public class StoreCopyClient
                     signal.complete( response.storeId() );
                 }
             };
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new CoreStateDownloaderException( from ) );
             return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreIdRequest(), responseHandler );
         }
-        catch ( CoreStateDownloaderException | CatchUpClientException e )
+        catch ( CatchUpClientException e )
         {
             throw new StoreIdDownloadFailedException( e );
         }

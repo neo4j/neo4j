@@ -23,19 +23,19 @@ import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.lang.String.format;
 
-public class CoreStateDownloaderException extends Exception
+public class TopologyLookupException extends RuntimeException
 {
-    public CoreStateDownloaderException( Throwable cause )
+    public TopologyLookupException( Throwable cause )
     {
         super( cause );
     }
 
-    public CoreStateDownloaderException( MemberId memberId )
+    public TopologyLookupException( MemberId memberId )
     {
         super( format( "Cannot find the target member %s socket address", memberId ) );
     }
 
-    public CoreStateDownloaderException( String message )
+    public TopologyLookupException( String message )
     {
         super( message );
     }

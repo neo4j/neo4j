@@ -108,8 +108,7 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source )
-                    .orElseThrow( () -> new CoreStateDownloaderException( source ) );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source );
             CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( fromAddress, new CoreSnapshotRequest(),
                     new CatchUpResponseAdaptor<CoreSnapshot>()
                     {
