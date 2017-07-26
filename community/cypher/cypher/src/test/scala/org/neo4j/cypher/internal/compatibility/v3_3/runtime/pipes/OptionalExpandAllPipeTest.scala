@@ -52,7 +52,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
   }
 
   test("should support optional expand from a node with no relationships") {
@@ -66,7 +66,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> null))
+    single.toMap should equal(Map("a" -> startNode, "r" -> null, "b" -> null))
   }
 
   test("should support optional expand from a node with relationships that do not match the predicates") {
@@ -81,7 +81,7 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> null))
+    single.toMap should equal(Map("a" -> startNode, "r" -> null, "b" -> null))
   }
 
   test("should support expand between two nodes with multiple relationships") {
@@ -95,8 +95,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -110,8 +110,8 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
   }
 
   test("given empty input, should return empty output") {

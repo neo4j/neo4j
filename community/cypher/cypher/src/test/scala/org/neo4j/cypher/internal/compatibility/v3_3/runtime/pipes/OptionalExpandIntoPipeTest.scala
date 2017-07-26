@@ -54,7 +54,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
   }
 
   test("should support optional expand from a node with no relationships") {
@@ -68,7 +68,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode1))
   }
 
   test("should find null when two nodes have no shared relationships but do have some rels") {
@@ -82,7 +82,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode2))
+    single.toMap should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode2))
   }
 
   test("should filter out relationships not matching the end node") {
@@ -97,7 +97,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+    single.toMap should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
   }
 
   test("should support optional expand from a node with relationships that do not match the predicates") {
@@ -112,7 +112,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> startNode, "r" -> null, "b" -> endNode1))
   }
 
   test("should support expand between two nodes with multiple relationships") {
@@ -127,8 +127,8 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -144,8 +144,8 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
   }
 
   test("given empty input, should return empty output") {
