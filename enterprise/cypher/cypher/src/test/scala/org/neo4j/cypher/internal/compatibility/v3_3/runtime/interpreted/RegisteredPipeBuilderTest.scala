@@ -361,5 +361,5 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       ExpandAllRegisterPipe(
         ArgumentRegisterPipe(lhsPipeline)(), 0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, rhsPipeline)())())
   }
-
+  
 }
