@@ -29,7 +29,6 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -121,7 +120,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
                 @Override
                 public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs,
-                        PageCache pageCache, LabelScanStoreProvider labelScanStoreProvider )
+                        PageCache pageCache )
                 {
                     return StoreMigrationParticipant.NOT_PARTICIPATING;
                 }
@@ -220,8 +219,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
         return new File( new File( new File( storeDir, "schema" ), "index" ), getProviderDescriptor().getKey() );
     }
 
-    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache,
-            LabelScanStoreProvider labelScanStoreProvider );
+    public abstract StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache );
 
     /**
      * Provides a snapshot of meta files about this index provider, not the indexes themselves.

@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -34,17 +33,10 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
-import org.neo4j.kernel.extension.dependency.NamedLabelScanStoreSelectionStrategy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -55,7 +47,6 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -160,23 +151,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 "temp." + DEFAULT_NAME, DELETE_ON_CLOSE ).openNeoStores( true, RELATIONSHIP_GROUP );
 
         // Initialize kernel extensions
-        Dependencies dependencies = new Dependencies();
-        dependencies.satisfyDependency( this.neo4jConfig );
-        dependencies.satisfyDependency( fileSystem );
-        dependencies.satisfyDependency( this );
-        dependencies.satisfyDependency( logService );
-        dependencies.satisfyDependency( IndexStoreView.EMPTY );
-        dependencies.satisfyDependency( pageCache );
-        dependencies.satisfyDependency( new Monitors() );
-        dependencies.satisfyDependency( RecoveryCleanupWorkCollector.IMMEDIATE );
-        KernelContext kernelContext = new SimpleKernelContext( storeDir, DatabaseInfo.UNKNOWN, dependencies );
-        @SuppressWarnings( { "unchecked", "rawtypes" } )
-        KernelExtensions extensions = life.add( new KernelExtensions(
-                kernelContext, (Iterable) Service.load( KernelExtensionFactory.class ),
-                dependencies, UnsatisfiedDependencyStrategies.ignore() ) );
         life.start();
-        labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
-                new NamedLabelScanStoreSelectionStrategy( neo4jConfig ) ).getLabelScanStore() );
+        labelScanStore = new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, false, new Monitors(),
+                RecoveryCleanupWorkCollector.IMMEDIATE );
+        life.add( labelScanStore );
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -188,10 +166,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         PageCache pageCache = createPageCache( fileSystem, neo4jConfig, logService.getInternalLogProvider(), tracer,
                 DefaultPageCursorTracerSupplier.INSTANCE );
 
-        BatchingNeoStores batchingNeoStores =
-                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
-                        initialIds, false, tracer::bytesWritten );
-        return batchingNeoStores;
+        return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
+                initialIds, false, tracer::bytesWritten );
     }
 
     public static BatchingNeoStores batchingNeoStoresWithExternalPageCache( FileSystemAbstraction fileSystem,
@@ -200,13 +176,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         Config neo4jConfig = getNeo4jConfig( config, dbConfig );
 
-        BatchingNeoStores batchingNeoStores =
-                new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
-                        initialIds, true, tracer::bytesWritten );
-        return batchingNeoStores;
+        return new BatchingNeoStores( fileSystem, pageCache, storeDir, recordFormats, neo4jConfig, config, logService,
+                initialIds, true, tracer::bytesWritten );
     }
 
-    protected static Config getNeo4jConfig( Configuration config, Config dbConfig )
+    private static Config getNeo4jConfig( Configuration config, Config dbConfig )
     {
         return dbConfig.with( stringMap(
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
@@ -288,7 +262,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     @Override
     public void close() throws IOException
     {
-        // Here as a safety mechanism when e.g. panicing.
+        // Here as a safety mechanism when e.g. panicking.
         if ( flusher != null )
         {
             stopFlushingPageCache();

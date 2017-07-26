@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
-import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.FailedIndexProxyFactory;
 import org.neo4j.kernel.impl.api.index.FlippableIndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
@@ -48,20 +47,11 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 
 public class LabelScanViewNodeStoreScanTest
 {
@@ -72,7 +62,6 @@ public class LabelScanViewNodeStoreScanTest
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
     private Visitor<NodeLabelUpdate,Exception> labelUpdateVisitor = mock( Visitor.class );
     private Visitor<NodeUpdates,Exception> propertyUpdateVisitor = mock( Visitor.class );
-    private IndexDescriptor index = IndexDescriptorFactory.forLabel( 1, 3 );
 
     @Before
     public void setUp()
@@ -114,51 +103,6 @@ public class LabelScanViewNodeStoreScanTest
         {
             verify( population.populator ).configureSampling( false );
         }
-    }
-
-    @Test
-    public void resetNodeIdIteratorDuringConcurrentUpdates()
-    {
-        when( labelScanReader.nodesWithAnyOfLabels( 1, 2 ) )
-                .thenReturn( PrimitiveLongCollections.iterator( 1, 2, 3, 4 ) );
-
-        LabelScanViewNodeStoreScan<Exception> scanViewStoreScan = getLabelScanViewStoreScan( new int[]{1, 2} );
-        PrimitiveLongResourceIterator nodeIdIterator = scanViewStoreScan.getNodeIdIterator();
-
-        verify( labelScanStore).newReader();
-        verify( labelScanReader ).nodesWithAnyOfLabels( 1, 2 );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "First expected node id is 1.", 1, nodeIdIterator.next() );
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Second expected node id is 2.", 2, nodeIdIterator.next() );
-
-        populateWithConcurrentUpdates( scanViewStoreScan );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Third expected node id is 3.", 3, nodeIdIterator.next() );
-
-        verify( labelScanReader ).close();
-        verify( labelScanStore, times( 2 ) ).newReader();
-        verify( labelScanReader, times( 2 ) ).nodesWithAnyOfLabels( 1, 2 );
-
-        assertTrue( "Contain 4 nodes id.", nodeIdIterator.hasNext() );
-        assertEquals( "Fourth expected node id is 4.", 4, nodeIdIterator.next() );
-
-        assertFalse( nodeIdIterator.hasNext() );
-
-        verifyNoMoreInteractions( labelScanReader, labelScanStore );
-    }
-
-    private void populateWithConcurrentUpdates( LabelScanViewNodeStoreScan<Exception> scanViewStoreScan )
-    {
-        MultipleIndexPopulator.MultipleIndexUpdater indexUpdater = mock( MultipleIndexPopulator.MultipleIndexUpdater.class );
-        scanViewStoreScan.acceptUpdate( indexUpdater, add( 1, index.schema(), Values.of( "add" ) ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater,
-                change( 2, index.schema(), Values.of( "changeBefore" ), Values.of( "changeAfter" ) ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater,
-                change( 2, index.schema(), Values.of( "changeBefore2" ), Values.of( "changeAfter2" ) ), 0L );
-        scanViewStoreScan.acceptUpdate( indexUpdater, remove( 3, index.schema(), Values.of( "remove" ) ), 0L );
     }
 
     private MultipleIndexPopulator.IndexPopulation getPopulation( LabelScanTestMultipleIndexPopulator indexPopulator )

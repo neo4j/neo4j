@@ -41,7 +41,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,7 +51,6 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
@@ -58,25 +59,21 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.labelscan.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
-import org.neo4j.kernel.impl.api.scan.NativeLabelScanStoreExtension;
-import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -84,14 +81,13 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.IndexRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -106,6 +102,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.emptyArray;
@@ -124,7 +121,6 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.GraphDatabaseInternalLogIT.INTERNAL_LOG_FILE;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.helpers.collection.Iterables.addToCollection;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
@@ -241,15 +237,7 @@ public class BatchInsertTest
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
     {
-        List<KernelExtensionFactory<?>> extensions = Arrays.asList( provider, new NativeLabelScanStoreExtension() );
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
-    }
-
-    private BatchInserter newBatchInserterWithLabelScanStore( KernelExtensionFactory<?> provider ) throws Exception
-    {
-        List<KernelExtensionFactory<?>> extensions = Arrays.asList(
-                new InMemoryIndexProviderFactory(), provider );
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), extensions );
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), configuration(), singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
@@ -666,7 +654,7 @@ public class BatchInsertTest
         BatchInserter inserter = globalInserter;
 
         setAndGet( inserter, "http://www.w3.org/1999/02/22-rdf-syntax-ns#type" );
-        setAndGet( inserter, intArray( 20 ) );
+        setAndGet( inserter, intArray() );
     }
 
     @Test
@@ -1023,8 +1011,7 @@ public class BatchInsertTest
     {
         // GIVEN
         // -- a database and a mocked label scan store
-        UpdateTrackingLabelScanStore labelScanStore = new UpdateTrackingLabelScanStore();
-        BatchInserter inserter = newBatchInserterWithLabelScanStore( new ControlledLabelScanStore( labelScanStore ) );
+        BatchInserter inserter = newBatchInserter();
 
         // -- and some data that we insert
         long node1 = inserter.createNode( null, Labels.FIRST );
@@ -1034,32 +1021,19 @@ public class BatchInsertTest
         long node5 = inserter.createNode( null, Labels.FIRST, Labels.THIRD );
 
         // WHEN we shut down the batch inserter
+        LabelScanStore labelScanStore = getLabelScanStore();
         inserter.shutdown();
+
+        labelScanStore.init();
+        labelScanStore.start();
 
         // THEN the label scan store should receive all the updates.
         // of course, we don't know the label ids at this point, but we're assuming 0..2 (bad boy)
-        labelScanStore.assertRecivedUpdate( node1, 0 );
-        labelScanStore.assertRecivedUpdate( node2, 1 );
-        labelScanStore.assertRecivedUpdate( node3, 2 );
-        labelScanStore.assertRecivedUpdate( node4, 0, 1 );
-        labelScanStore.assertRecivedUpdate( node5, 0, 2 );
-        labelScanStore.assertForcedWithNoMoreChanges();
-    }
+        assertLabelScanStoreContains( labelScanStore, 0, node1, node4, node5 );
+        assertLabelScanStoreContains( labelScanStore, 1, node2, node4 );
+        assertLabelScanStoreContains( labelScanStore, 2, node3, node5 );
 
-    @Test
-    public void shouldSkipStoreScanIfNoLabelsAdded() throws Exception
-    {
-        // GIVEN
-        UpdateTrackingLabelScanStore labelScanStore = new UpdateTrackingLabelScanStore();
-        BatchInserter inserter = newBatchInserterWithLabelScanStore( new ControlledLabelScanStore( labelScanStore ) );
-
-        // WHEN
-        inserter.createNode( null );
-        inserter.createNode( null );
-        inserter.shutdown();
-
-        // THEN
-        assertEquals( 0, labelScanStore.writersCreated );
+        labelScanStore.shutdown();
     }
 
     @Test
@@ -1093,7 +1067,6 @@ public class BatchInsertTest
      * During first update email property will be migrated to dynamic property and last property record will become
      * empty. That record should be deleted form property chain or otherwise on next node load user will get an
      * property record not in use exception.
-     * @throws Exception
      */
     @Test
     public void testCleanupEmptyPropertyRecords() throws Exception
@@ -1193,8 +1166,8 @@ public class BatchInsertTest
         // GIVEN
         BatchInserter inserter = globalInserter;
         long node = inserter.createNode( null );
-        createRelationships( inserter, node, RelTypes.REL_TYPE1, 3, 2, 1 );
-        createRelationships( inserter, node, RelTypes.REL_TYPE2, 4, 5, 6 );
+        createRelationships( inserter, node, RelTypes.REL_TYPE1, 3 );
+        createRelationships( inserter, node, RelTypes.REL_TYPE2, 4 );
 
         // WHEN
         Set<Long> gottenRelationships = Iterables.asSet( inserter.getRelationshipIds( node ) );
@@ -1413,7 +1386,7 @@ public class BatchInsertTest
     {
         // given
         BatchInserter inserter = globalInserter;
-        long id = inserter.createNode( Collections.<String,Object>emptyMap() );
+        long id = inserter.createNode( Collections.emptyMap() );
 
         // when
         inserter.removeNodeProperty( id, "non-existent" );
@@ -1426,7 +1399,7 @@ public class BatchInsertTest
     {
         // given
         BatchInserter inserter = globalInserter;
-        Map<String,Object> noProperties = Collections.<String,Object>emptyMap();
+        Map<String,Object> noProperties = Collections.emptyMap();
         long nodeId1 = inserter.createNode( noProperties );
         long nodeId2 = inserter.createNode( noProperties );
         long id = inserter.createRelationship( nodeId1, nodeId2, MyRelTypes.TEST, noProperties );
@@ -1437,8 +1410,33 @@ public class BatchInsertTest
         // then no exception should be thrown, this mimics GraphDatabaseService behaviour
     }
 
-    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType,
-            int out, int in, int loop )
+    private LabelScanStore getLabelScanStore()
+    {
+        return new NativeLabelScanStore( pageCacheRule.getPageCache( fileSystemRule.get() ), storeDir.absolutePath(),
+                FullStoreChangeStream.EMPTY, true, new Monitors(), RecoveryCleanupWorkCollector.IMMEDIATE );
+    }
+
+    private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
+    {
+        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+        {
+            List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
+            List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
+            assertEquals( expectedNodeIds, actualNodeIds );
+        }
+    }
+
+    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongIterator primitiveLongIterator )
+    {
+        List<Long> actualNodeIds = new ArrayList<>();
+        while ( primitiveLongIterator.hasNext() )
+        {
+            actualNodeIds.add( primitiveLongIterator.next() );
+        }
+        return actualNodeIds;
+    }
+
+    private void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )
     {
         for ( int i = 0; i < out; i++ )
         {
@@ -1472,157 +1470,6 @@ public class BatchInsertTest
         return nodeId;
     }
 
-    private static class UpdateTrackingLabelScanStore implements LabelScanStore
-    {
-        private final List<NodeLabelUpdate> allUpdates = new ArrayList<>();
-        private boolean forced;
-        private int forcedOnWriterCount;
-        private int writersClosed;
-        int writersCreated;
-
-        void assertRecivedUpdate( long node, long... labels )
-        {
-            for ( NodeLabelUpdate update : allUpdates )
-            {
-                if ( update.getNodeId() == node &&
-                        Arrays.equals( update.getLabelsAfter(), labels ) )
-                {
-                    return;
-                }
-            }
-
-            fail( "No update matching [nodeId:" + node + ", labels:" + Arrays.toString( labels ) + " found among: " +
-                    allUpdates );
-        }
-
-        void assertForcedWithNoMoreChanges()
-        {
-            if ( !forced || forcedOnWriterCount != writersCreated || writersCreated != writersClosed )
-            {
-                fail( "Expected label scan store to be have been forced and free from new updates" );
-            }
-        }
-
-        @Override
-        public void force( IOLimiter limiter ) throws UnderlyingStorageException
-        {
-            if ( writersCreated == writersClosed )
-            {
-                forced = true;
-                forcedOnWriterCount = writersCreated;
-            }
-        }
-
-        @Override
-        public AllEntriesLabelScanReader allNodeLabelRanges()
-        {
-            return null;
-        }
-
-        @Override
-        public LabelScanReader newReader()
-        {
-            return null;
-        }
-
-        @Override
-        public ResourceIterator<File> snapshotStoreFiles() throws IOException
-        {
-            return null;
-        }
-
-        @Override
-        public void init() throws IOException
-        {
-        }
-
-        @Override
-        public void start() throws IOException
-        {
-        }
-
-        @Override
-        public void stop() throws IOException
-        {
-        }
-
-        @Override
-        public void shutdown() throws IOException
-        {
-        }
-
-        @Override
-        public boolean isEmpty() throws IOException
-        {
-            return allUpdates.isEmpty();
-        }
-
-        @Override
-        public void drop() throws IOException
-        {
-        }
-
-        @Override
-        public LabelScanWriter newWriter()
-        {
-            forced = false;
-            writersCreated++;
-            return new LabelScanWriter()
-            {
-                @Override
-                public void write( NodeLabelUpdate update ) throws IOException
-                {
-                    addToCollection( Collections.singletonList( update ), allUpdates );
-                }
-
-                @Override
-                public void close() throws IOException
-                {
-                    writersClosed++;
-                }
-            };
-        }
-
-        @Override
-        public boolean isReadOnly()
-        {
-            return false;
-        }
-
-        @Override
-        public boolean hasStore()
-        {
-            return false;
-        }
-
-        @Override
-        public File getLabelScanStoreFile()
-        {
-            return null;
-        }
-    }
-
-    interface NoDependencies
-    {
-    }
-
-    private static class ControlledLabelScanStore extends KernelExtensionFactory<NoDependencies>
-    {
-        private final LabelScanStore labelScanStore;
-
-        ControlledLabelScanStore( LabelScanStore labelScanStore )
-        {
-            super( "batch" );
-            this.labelScanStore = labelScanStore;
-        }
-
-        @Override
-        public Lifecycle newInstance( KernelContext context, NoDependencies dependencies ) throws Throwable
-        {
-            return new LabelScanStoreProvider( GraphDatabaseSettings.label_index.getDefaultValue(), labelScanStore );
-        }
-    }
-
     private void setAndGet( BatchInserter inserter, Object value )
     {
         long nodeId = inserter.createNode( map( "key", value ) );
@@ -1630,8 +1477,9 @@ public class BatchInsertTest
         assertEquals( Values.of( value ), readValue );
     }
 
-    private int[] intArray( int length )
+    private int[] intArray()
     {
+        int length = 20;
         int[] array = new int[length];
         for ( int i = 0, startValue = (int)Math.pow( 2, 30 ); i < length; i++ )
         {

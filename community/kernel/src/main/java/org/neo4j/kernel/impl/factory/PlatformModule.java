@@ -155,7 +155,7 @@ public class PlatformModule
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
 
-        // Cleanup after recovery, used by GBPTree, added to life in CommunityEditionModule
+        // Cleanup after recovery, used by GBPTree, added to life in NeoStoreDataSource
         recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
         dependencies.satisfyDependency( recoveryCleanupWorkCollector );
 

@@ -22,8 +22,8 @@ package org.neo4j.test.rule;
 import java.io.File;
 import java.util.function.Function;
 
-import org.neo4j.concurrent.Runnables;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.TokenNameLookup;
@@ -33,13 +33,13 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -66,7 +66,6 @@ import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.test.rule.NeoStoreDataSourceRule.nativeLabelScanStoreProvider;
 
 /**
  * Conveniently manages a {@link RecordStorageEngine} in a test. Needs {@link FileSystemAbstraction} and
@@ -103,8 +102,6 @@ public class RecordStorageEngineRule extends ExternalResource
             throw new IllegalStateException();
         }
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        LabelScanStoreProvider labelScanStoreProvider =
-                nativeLabelScanStoreProvider( storeDirectory, fs, pageCache, monitors );
         LegacyIndexProviderLookup legacyIndexProviderLookup = mock( LegacyIndexProviderLookup.class );
         when( legacyIndexProviderLookup.all() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDirectory, fs );
@@ -119,9 +116,10 @@ public class RecordStorageEngineRule extends ExternalResource
                 mock( RelationshipTypeTokenHolder.class ), mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(),
                 schemaIndexProvider, IndexingService.NO_MONITOR, databaseHealth,
-                labelScanStoreProvider, legacyIndexProviderLookup, indexConfigStore,
+                legacyIndexProviderLookup, indexConfigStore,
                 new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
-                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
+                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
+                RecoveryCleanupWorkCollector.IMMEDIATE, OperationalMode.single ) );
     }
 
     @Override
@@ -201,16 +199,17 @@ public class RecordStorageEngineRule extends ExternalResource
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, SchemaIndexProvider indexProvider,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                LabelScanStoreProvider labelScanStoreProvider, LegacyIndexProviderLookup legacyIndexProviderLookup,
+                LegacyIndexProviderLookup legacyIndexProviderLookup,
                 IndexConfigStore indexConfigStore, IdOrderingQueue legacyIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
             super( storeDir, config, pageCache, fs, logProvider, propertyKeyTokenHolder, labelTokens,
                     relationshipTypeTokens, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, indexProvider, indexingServiceMonitor, databaseHealth, labelScanStoreProvider,
+                    lockService, indexProvider, indexingServiceMonitor, databaseHealth,
                     legacyIndexProviderLookup, indexConfigStore, legacyIndexTransactionOrdering, idGeneratorFactory,
-                    idController );
+                    idController, monitors, recoveryCleanupWorkCollector, operationalMode );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

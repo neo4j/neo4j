@@ -21,6 +21,7 @@ package org.neo4j.graphdb;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
@@ -30,6 +31,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,8 +42,10 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.single;
 
-public abstract class LabelScanStoreUpdateIT
+public class NativeLabelScanStoreUpdateIT
 {
+    @ClassRule
+    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
     @Rule
     public final TestName testName = new TestName();
 
@@ -171,7 +176,7 @@ public abstract class LabelScanStoreUpdateIT
     public void shouldHandleLargeAmountsOfNodesAddedAndRemovedInSameTx() throws Exception
     {
         // Given
-        GraphDatabaseService db = db();
+        GraphDatabaseService db = dbRule;
         int labelsToAdd = 80;
         int labelsToRemove = 40;
 
@@ -209,13 +214,11 @@ public abstract class LabelScanStoreUpdateIT
         }
     }
 
-    protected abstract GraphDatabaseService db();
-
     private void verifyFoundNodes( Label label, String sizeMismatchMessage, long... expectedNodeIds )
     {
-        try ( Transaction ignored = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            ResourceIterator<Node> nodes = db().findNodes( label );
+            ResourceIterator<Node> nodes = dbRule.findNodes( label );
             List<Node> nodeList = Iterators.asList( nodes );
             assertThat( sizeMismatchMessage, nodeList, Matchers.hasSize( expectedNodeIds.length ) );
             int index = 0;
@@ -228,7 +231,7 @@ public abstract class LabelScanStoreUpdateIT
 
     private void removeLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             for ( Label label : labels )
             {
@@ -240,7 +243,7 @@ public abstract class LabelScanStoreUpdateIT
 
     private void deleteNode( Node node )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             node.delete();
             tx.success();
@@ -249,17 +252,17 @@ public abstract class LabelScanStoreUpdateIT
 
     private Set<Node> getAllNodesWithLabel( Label label )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            return asSet( db().findNodes( label ) );
+            return asSet( dbRule.findNodes( label ) );
         }
     }
 
     private Node createLabeledNode( Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
-            Node node = db().createNode( labels );
+            Node node = dbRule.createNode( labels );
             tx.success();
             return node;
         }
@@ -267,7 +270,7 @@ public abstract class LabelScanStoreUpdateIT
 
     private void addLabels( Node node, Label... labels )
     {
-        try ( Transaction tx = db().beginTx() )
+        try ( Transaction tx = dbRule.beginTx() )
         {
             for ( Label label : labels )
             {
@@ -279,9 +282,9 @@ public abstract class LabelScanStoreUpdateIT
 
     private Node getNodeById( long id )
     {
-        try ( Transaction ignored = db().beginTx() )
+        try ( Transaction ignored = dbRule.beginTx() )
         {
-            return db().getNodeById( id );
+            return dbRule.getNodeById( id );
         }
     }
 

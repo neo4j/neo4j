@@ -74,6 +74,7 @@ import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -242,9 +243,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             Statement statement = transactionStatementContextBridge.get();
 
-            DynamicIndexStoreView storeView =
-                    new DynamicIndexStoreViewWrapper( labelScanStore, LockService.NO_LOCK_SERVICE, neoStores,
-                            updates );
+            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( updates, neoStores, labelScanStore );
 
             SchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( getSchemaIndexProvider() );
             JobScheduler scheduler = getJobScheduler();
@@ -260,6 +259,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService.createIndexes( rules );
             transaction.success();
         }
+    }
+
+    private DynamicIndexStoreView dynamicIndexStoreViewWrapper( List<NodeUpdates> updates, NeoStores neoStores,
+            LabelScanStore labelScanStore )
+    {
+        LockService locks = LockService.NO_LOCK_SERVICE;
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, neoStores );
+        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, locks, neoStores, updates );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -399,10 +406,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         private final List<NodeUpdates> updates;
 
-        DynamicIndexStoreViewWrapper( LabelScanStore labelScanStore, LockService locks, NeoStores neoStores,
-                List<NodeUpdates> updates )
+        DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
+                NeoStores neoStores, List<NodeUpdates> updates )
         {
-            super( labelScanStore, locks, neoStores, NullLogProvider.getInstance() );
+            super( neoStoreIndexStoreView, labelScanStore, locks, neoStores, NullLogProvider.getInstance() );
             this.updates = updates;
         }
 

@@ -26,7 +26,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
@@ -50,7 +49,6 @@ public class DatabaseMigrator
     private final Config config;
     private final LogService logService;
     private final SchemaIndexProvider schemaIndexProvider;
-    private final LabelScanStoreProvider labelScanStoreProvider;
     private final Map<String,IndexImplementation> indexProviders;
     private final PageCache pageCache;
     private final RecordFormats format;
@@ -58,7 +56,6 @@ public class DatabaseMigrator
     public DatabaseMigrator(
             MigrationProgressMonitor progressMonitor, FileSystemAbstraction fs,
             Config config, LogService logService, SchemaIndexProvider schemaIndexProvider,
-            LabelScanStoreProvider labelScanStoreProvider,
             Map<String,IndexImplementation> indexProviders, PageCache pageCache,
             RecordFormats format )
     {
@@ -67,7 +64,6 @@ public class DatabaseMigrator
         this.config = config;
         this.logService = logService;
         this.schemaIndexProvider = schemaIndexProvider;
-        this.labelScanStoreProvider = labelScanStoreProvider;
         this.indexProviders = indexProviders;
         this.pageCache = pageCache;
         this.format = format;
@@ -87,8 +83,7 @@ public class DatabaseMigrator
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
                 logProvider );
 
-        StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache,
-                labelScanStoreProvider );
+        StoreMigrationParticipant schemaMigrator = schemaIndexProvider.storeMigrationParticipant( fs, pageCache );
         LegacyIndexMigrator legacyIndexMigrator = new LegacyIndexMigrator( fs, indexProviders, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );

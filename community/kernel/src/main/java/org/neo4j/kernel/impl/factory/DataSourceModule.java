@@ -219,7 +219,8 @@ public class DataSourceModule
                 platformModule.clock, editionModule.accessCapability,
                 platformModule.storeCopyCheckPointMutex,
                 platformModule.recoveryCleanupWorkCollector,
-                editionModule.idController ) );
+                editionModule.idController,
+                platformModule.databaseInfo.operationalMode ) );
 
         dataSourceManager.register( neoStoreDataSource );
 

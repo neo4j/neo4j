@@ -45,7 +45,6 @@ import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
 import org.neo4j.kernel.impl.cache.MonitorGc;
 import org.neo4j.logging.Level;
 
-import static org.neo4j.helpers.collection.Iterables.enumNames;
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
@@ -70,6 +69,7 @@ import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -544,6 +544,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> batch_inserter_batch_size = setting( "unsupported.tools.batch_inserter.batch_size", INTEGER,
             "10000" );
 
+    /**
+     * @deprecated - lucene label index has been removed.
+     */
+    @Deprecated
     public enum LabelIndex
     {
         /**
@@ -562,12 +566,14 @@ public class GraphDatabaseSettings implements LoadableConfig
         AUTO
     }
 
+    /**
+     * @deprecated - lucene label index has been removed, thus 'native' is only viable option and this setting is not needed.
+     */
+    @Deprecated
     @Description( "Backend to use for label --> nodes index" )
     @Internal
-    public static final Setting<String> label_index = setting( "dbms.label_index",
-            options( enumNames( LabelIndex.class ), true ), LabelIndex.NATIVE.name() );
-
-    // Security settings
+    public static final Setting<String> label_index =
+            setting( "dbms.label_index", optionsIgnoreCase( LabelIndex.NATIVE.name(), LabelIndex.AUTO.name() ), LabelIndex.NATIVE.name() );
 
     @Description( "Enable auth requirement to access Neo4j." )
     public static final Setting<Boolean> auth_enabled = setting( "dbms.security.auth_enabled", BOOLEAN, "false" );
