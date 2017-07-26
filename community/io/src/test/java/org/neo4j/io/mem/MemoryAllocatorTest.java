@@ -32,7 +32,10 @@ import static org.junit.Assert.assertThat;
 
 public class MemoryAllocatorTest
 {
-    protected MemoryAllocator createAllocator( long expectedMaxMemory )
+    protected static final String ONE_PAGE = PageCache.PAGE_SIZE + "";
+    protected static final String EIGHT_PAGES = (8 * PageCache.PAGE_SIZE) + "";
+
+    protected MemoryAllocator createAllocator( String expectedMaxMemory )
     {
         return MemoryAllocator.createAllocator( expectedMaxMemory );
     }
@@ -40,7 +43,7 @@ public class MemoryAllocatorTest
     @Test
     public void allocatedPointerMustNotBeNull() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( EIGHT_PAGES );
         long address = mman.allocateAligned( PageCache.PAGE_SIZE, 8 );
         assertThat( address, is( not( 0L ) ) );
     }
@@ -48,7 +51,7 @@ public class MemoryAllocatorTest
     @Test
     public void allocatedPointerMustBePageAligned() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 8 * PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( EIGHT_PAGES );
         long address = mman.allocateAligned( PageCache.PAGE_SIZE, UnsafeUtil.pageSize() );
         assertThat( address % UnsafeUtil.pageSize(), is( 0L ) );
     }
@@ -56,7 +59,7 @@ public class MemoryAllocatorTest
     @Test
     public void mustBeAbleToAllocatePastMemoryLimit() throws Exception
     {
-        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( ONE_PAGE );
         for ( int i = 0; i < 4100; i++ )
         {
             assertThat( mman.allocateAligned( 1, 2 ) % 2, is( 0L ) );
@@ -67,13 +70,13 @@ public class MemoryAllocatorTest
     @Test( expected = IllegalArgumentException.class )
     public void alignmentCannotBeZero() throws Exception
     {
-        createAllocator( PageCache.PAGE_SIZE ).allocateAligned( 8, 0 );
+        createAllocator( ONE_PAGE ).allocateAligned( 8, 0 );
     }
 
     @Test
     public void mustBeAbleToAllocateSlabsLargerThanGrabSize() throws Exception
     {
-        MemoryAllocator mman = createAllocator( 32 * 1024 * 1024 );
+        MemoryAllocator mman = createAllocator( "32 KiB" );
         long page1 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
         long largeBlock = mman.allocateAligned( 1024 * 1024, 1 ); // 1 MiB
         long page2 = mman.allocateAligned( UnsafeUtil.pageSize(), 1 );
@@ -85,7 +88,7 @@ public class MemoryAllocatorTest
     @Test
     public void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() throws Exception
     {
-        MemoryAllocator mman = createAllocator( PageCache.PAGE_SIZE );
+        MemoryAllocator mman = createAllocator( ONE_PAGE );
         assertThat( mman.usedMemory(), is( 0L ) );
         assertThat( mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );
         assertThat( mman.usedMemory() + mman.availableMemory(), is( (long) PageCache.PAGE_SIZE ) );

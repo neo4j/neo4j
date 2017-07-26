@@ -19,11 +19,18 @@
  */
 package org.neo4j.io.mem;
 
+import org.neo4j.io.ByteUnit;
+
 /**
  * A MemoryAllocator is simple: it only allocates memory, until it itself is finalizable and frees it all in one go.
  */
 public interface MemoryAllocator
 {
+    static MemoryAllocator createAllocator( String expectedMemory )
+    {
+        return new GrabAllocator( ByteUnit.parse( expectedMemory ) );
+    }
+
     static MemoryAllocator createAllocator( long expectedMaxMemory )
     {
         return new GrabAllocator( expectedMaxMemory );
