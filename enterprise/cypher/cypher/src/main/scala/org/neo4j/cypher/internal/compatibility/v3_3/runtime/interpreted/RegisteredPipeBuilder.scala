@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Exp
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes, Pipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -84,13 +84,16 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val fromSlot = pipelineInformation(from)
         val relSlot = pipelineInformation(relName)
         val toSlot = pipelineInformation(to)
-        ExpandAllRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
+        val wrappedSource = if(fromSlot.nullable) NullCheckPipe(source, fromSlot.offset)(id) else source
+        ExpandAllRegisterPipe(wrappedSource, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipelineInformation)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromSlot = pipelineInformation.get(from).get
-        val relSlot = pipelineInformation.get(relName).get
-        val toSlot = pipelineInformation.get(to).get
-        ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
+        val fromSlot = pipelineInformation(from)
+        val relSlot = pipelineInformation(relName)
+        val toSlot = pipelineInformation(to)
+        val nullableOffsets = List(fromSlot, toSlot).filter(slot => slot.nullable).map(slot => slot.offset).distinct
+        val wrappedSource = if (nullableOffsets.isEmpty) source else NullCheckPipe(source, nullableOffsets: _*)(id)
+        ExpandIntoRegisterPipe(wrappedSource, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipelineInformation)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols

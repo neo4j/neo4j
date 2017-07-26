@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation, Slot}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 case class ExpandAllRegisterPipe(source: Pipe,
-                                 fromSlot: Slot,
-                                 relSlot: Slot,
-                                 toSlot: Slot,
+                                 fromOffset: Int,
+                                 relOffset: Int,
+                                 toOffset: Int,
                                  dir: SemanticDirection,
                                  types: LazyTypes,
                                  pipelineInformation: PipelineInformation)
@@ -40,9 +39,7 @@ case class ExpandAllRegisterPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       (inputRow: ExecutionContext) =>
-        val fromNode = inputRow.getLongAt(fromSlot.offset)
-        if (NullChecker.nodeIsNull(fromNode))
-          resultForNull(fromSlot)
+        val fromNode = inputRow.getLongAt(fromOffset)
         val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
         var otherSide: Long = 0
 
@@ -58,16 +55,10 @@ case class ExpandAllRegisterPipe(source: Pipe,
           relationships.relationshipVisit(relId, relVisitor)
           val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
           outputRow.copyFrom(inputRow)
-          outputRow.setLongAt(relSlot.offset, relId)
-          outputRow.setLongAt(toSlot.offset, otherSide)
+          outputRow.setLongAt(relOffset, relId)
+          outputRow.setLongAt(toOffset, otherSide)
           outputRow
         })
     }
   }
-
-  private def resultForNull(slot: Slot) =
-    if (slot.nullable)
-      Iterator.empty
-    else
-      throw new InternalException(s"Expected to find a node at ${slot.name} but found nothing")
 }
