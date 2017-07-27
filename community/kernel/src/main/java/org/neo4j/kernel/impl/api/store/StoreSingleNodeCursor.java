@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.cursor.Cursor;
+import org.neo4j.helpers.Numbers;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -31,12 +32,11 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.RecordCursors;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.storageengine.api.NodeItem;
 
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 /**
  * Base cursor for nodes.
@@ -110,7 +110,7 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     public PrimitiveIntSet labels()
     {
         ensureLabels();
-        return PrimitiveIntCollections.asSet( labels, IoPrimitiveUtils::safeCastLongToInt );
+        return PrimitiveIntCollections.asSet( labels, Numbers::safeCastLongToInt );
     }
 
     private void ensureLabels()

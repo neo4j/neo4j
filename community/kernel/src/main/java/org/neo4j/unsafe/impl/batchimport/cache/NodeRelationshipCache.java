@@ -33,10 +33,11 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
+import static org.neo4j.helpers.Numbers.safeCastIntToUnsignedShort;
+import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 
 /**
  * Caches of parts of node store and relationship group store. A crucial part of batch import where
@@ -622,7 +623,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
 
         int getTypeId( ByteArray array, long index )
         {
-            return IoPrimitiveUtils.shortToUnsignedInt( array.getShort( index, TYPE_OFFSET ) );
+            return unsignedShortToInt( array.getShort( index, TYPE_OFFSET ) );
         }
 
         /**
@@ -678,7 +679,7 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
             long rebasedIndex = rebase( index );
             ByteArray array = this.array.at( rebasedIndex );
             clearIndex( array, rebasedIndex );
-            short shortTypeId = IoPrimitiveUtils.safeCastIntToUnsignedShort( typeId );
+            short shortTypeId = safeCastIntToUnsignedShort( typeId );
             array.setShort( rebasedIndex, TYPE_OFFSET, shortTypeId );
             return index;
         }

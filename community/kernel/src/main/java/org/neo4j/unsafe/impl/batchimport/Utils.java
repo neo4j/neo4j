@@ -29,33 +29,6 @@ import org.neo4j.unsafe.impl.batchimport.input.SourceInputIterator;
  */
 public class Utils
 {
-    public static int safeCastLongToInt( long value )
-    {
-        if ( value > Integer.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Integer.TYPE ) );
-        }
-        return (int) value;
-    }
-
-    public static short safeCastLongToShort( long value )
-    {
-        if ( value > Short.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Short.TYPE ) );
-        }
-        return (short) value;
-    }
-
-    public static byte safeCastLongToByte( long value )
-    {
-        if ( value > Byte.MAX_VALUE )
-        {
-            throw new ArithmeticException( getOverflowMessage( value, Byte.TYPE ) );
-        }
-        return (byte) value;
-    }
-
     public enum CompareType
     {
         EQ, GT, GE, LT, LE, NE
@@ -205,11 +178,6 @@ public class Utils
                 into[t--] = into[i--];
             }
         }
-    }
-
-    private static String getOverflowMessage( long value, Class clazz )
-    {
-        return "Value " + value + " is too big to be represented as " + clazz.getName();
     }
 
     private Utils()
