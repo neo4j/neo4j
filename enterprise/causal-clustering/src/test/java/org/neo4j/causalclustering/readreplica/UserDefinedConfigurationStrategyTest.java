@@ -114,9 +114,9 @@ public class UserDefinedConfigurationStrategyTest
             }
 
             @Override
-            public AdvertisedSocketAddress findCatchupAddress( MemberId upstream )
+            public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
             {
-                return Optional.ofNullable( catchupAddresses.get( upstream ) ).orElseThrow( () -> new TopologyLookupException( upstream ) );
+                return Optional.ofNullable( catchupAddresses.get( upstream ) );
             }
 
             @Override

@@ -80,7 +80,7 @@ public class CoreStateDownloaderTest
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
-        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( remoteAddress );
+        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( Optional.of( remoteAddress ) );
     }
 
     @Test
@@ -96,7 +96,7 @@ public class CoreStateDownloaderTest
 
         // then
         verify( remoteStore, never() ).tryCatchingUp( any(), any(), any() );
-        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, remoteStoreId );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteAddress, remoteStoreId );
     }
 
     @Test
@@ -145,13 +145,13 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
+        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
         downloader.downloadSnapshot( remoteMember );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );
+        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir );
         verify( remoteStore, never() ).copy( any(), any(), any() );
     }
 
@@ -161,13 +161,13 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
+        when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
         downloader.downloadSnapshot( remoteMember );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );
-        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, storeId );
+        verify( remoteStore ).tryCatchingUp( remoteAddress, storeId, storeDir );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteAddress, storeId );
     }
 }

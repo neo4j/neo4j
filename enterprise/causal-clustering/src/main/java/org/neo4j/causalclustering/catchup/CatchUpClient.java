@@ -49,7 +49,6 @@ import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 public class CatchUpClient extends LifecycleAdapter
 {
     private final LogProvider logProvider;
-    private final TopologyService topologyService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
@@ -59,11 +58,10 @@ public class CatchUpClient extends LifecycleAdapter
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
+    public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
             SslPolicy sslPolicy )
     {
         this.logProvider = logProvider;
-        this.topologyService = topologyService;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;

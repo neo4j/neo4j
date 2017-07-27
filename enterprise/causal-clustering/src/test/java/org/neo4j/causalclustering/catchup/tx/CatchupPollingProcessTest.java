@@ -78,7 +78,7 @@ public class CatchupPollingProcessTest
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
-        when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( coreMemberAddress );
+        when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( Optional.of( coreMemberAddress ) );
     }
 
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
@@ -174,7 +174,7 @@ public class CatchupPollingProcessTest
         // then
         verify( localDatabase ).stopForStoreCopy();
         verify( startStopOnStoreCopy ).stop();
-        verify( storeCopyProcess ).replaceWithStoreFrom( any( MemberId.class ), eq( storeId ) );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any( AdvertisedSocketAddress.class ), eq( storeId ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();

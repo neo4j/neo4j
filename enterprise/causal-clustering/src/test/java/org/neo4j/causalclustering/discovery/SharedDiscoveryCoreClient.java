@@ -88,11 +88,12 @@ class SharedDiscoveryCoreClient extends LifecycleAdapter implements CoreTopology
     }
 
     @Override
-    public AdvertisedSocketAddress findCatchupAddress( MemberId upstream )
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId upstream )
     {
-        return coreTopology.find( upstream ).map( info -> Optional.of( info.getCatchupServer() ) )
-                .orElseGet( () -> readReplicaTopology.find( upstream ).map( ReadReplicaInfo::getCatchupServer ) )
-                .orElseThrow( () -> new TopologyLookupException( upstream ) );
+        return coreTopology.find( upstream )
+                .map( info -> Optional.of( info.getCatchupServer() ) )
+                .orElseGet( () -> readReplicaTopology.find( upstream )
+                        .map( ReadReplicaInfo::getCatchupServer ) );
     }
 
     @Override
