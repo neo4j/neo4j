@@ -59,7 +59,7 @@ public class IndexBackupIT
     @Rule
     public RandomRule randomRule = new RandomRule();
     @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule();
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;

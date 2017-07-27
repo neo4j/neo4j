@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 public class ConsistentPropertyReadsIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule( getClass() );
+    public DatabaseRule db = new EmbeddedDatabaseRule();
 
     @Test
     public void shouldReadConsistentPropertyValues() throws Throwable

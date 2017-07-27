@@ -71,7 +71,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );

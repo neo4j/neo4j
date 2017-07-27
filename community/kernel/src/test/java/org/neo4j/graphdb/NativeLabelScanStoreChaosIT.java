@@ -42,7 +42,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class NativeLabelScanStoreChaosIT
 {
-    private final DatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() );
+    private final DatabaseRule dbRule = new EmbeddedDatabaseRule();
     private final RandomRule randomRule = new RandomRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );

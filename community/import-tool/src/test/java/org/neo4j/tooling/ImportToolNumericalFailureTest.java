@@ -95,7 +95,7 @@ public class ImportToolNumericalFailureTest
     public String expectedError;
 
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
 

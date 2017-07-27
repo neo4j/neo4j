@@ -49,7 +49,7 @@ public class BackupToolIT
     @Rule
     public ExpectedException expected = ExpectedException.none();
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
     private DefaultFileSystemAbstraction fs;
     private PageCache pageCache;

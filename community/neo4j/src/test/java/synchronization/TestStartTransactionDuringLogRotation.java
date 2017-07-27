@@ -46,7 +46,7 @@ import org.neo4j.test.rule.concurrent.OtherThreadRule;
 public class TestStartTransactionDuringLogRotation
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule( getClass() )
+    public DatabaseRule db = new EmbeddedDatabaseRule()
     {
         @Override
         protected GraphDatabaseBuilder newBuilder( GraphDatabaseFactory factory )

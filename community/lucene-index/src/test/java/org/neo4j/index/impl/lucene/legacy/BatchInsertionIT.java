@@ -44,7 +44,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BatchInsertionIT
 {
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( BatchInsertionIT.class ).startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 

@@ -41,7 +41,7 @@ import static org.junit.Assert.fail;
 public class ConstraintCreationIT
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( ConstraintCreationIT.class );
+    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     private static final Label LABEL = Label.label( "label1" );
     private static final String INDEX_IDENTIFIER = "1";

@@ -59,7 +59,7 @@ public class OnlineBackupCommandIT
     @ClassRule
     public static final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
+    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );

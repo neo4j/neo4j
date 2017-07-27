@@ -127,7 +127,7 @@ public class BackupServiceIT
 
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory target = TestDirectory.testDirectory();
-    private final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    private final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
     private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 

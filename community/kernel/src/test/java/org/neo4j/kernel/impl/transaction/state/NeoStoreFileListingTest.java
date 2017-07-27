@@ -56,7 +56,7 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 public class NeoStoreFileListingTest
 {
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( getClass() );
+    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
     private NeoStoreDataSource neoStoreDataSource;
     private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
             "index",

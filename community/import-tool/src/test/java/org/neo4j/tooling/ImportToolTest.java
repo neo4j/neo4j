@@ -98,7 +98,7 @@ public class ImportToolTest
     private static final IntPredicate TRUE = i -> true;
 
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule( getClass() ).startLazily();
+    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule

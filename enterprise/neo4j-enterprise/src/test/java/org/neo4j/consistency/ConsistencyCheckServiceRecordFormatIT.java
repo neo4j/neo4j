@@ -20,7 +20,6 @@
 package org.neo4j.consistency;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -48,18 +47,13 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
 
 @RunWith( Parameterized.class )
 public class ConsistencyCheckServiceRecordFormatIT
 {
-    @ClassRule
-    public static final TestDirectory dir = TestDirectory.testDirectory();
-
-    private final File storeDir = dir.directory( "db" );
-    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( storeDir ).startLazily();
+    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
