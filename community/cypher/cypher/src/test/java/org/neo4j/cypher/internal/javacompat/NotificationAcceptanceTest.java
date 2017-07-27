@@ -175,7 +175,7 @@ public class NotificationAcceptanceTest
         assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem( notification(
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 containsString( "the missing label name is: NO_SUCH_THING)" ),
-                any( InputPosition.class ),
+                equalTo(new InputPosition(17,1,18)),
                 SeverityLevel.WARNING ) ) );
     }
 
@@ -186,6 +186,26 @@ public class NotificationAcceptanceTest
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 containsString( "the missing label name is: X)" ),
                 equalTo(new InputPosition(27,2,10)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() throws Exception
+    {
+        assertNotifications("//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(52,4,11)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() throws Exception
+    {
+        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(31,1,32)),
                 SeverityLevel.WARNING ) ) );
     }
 
