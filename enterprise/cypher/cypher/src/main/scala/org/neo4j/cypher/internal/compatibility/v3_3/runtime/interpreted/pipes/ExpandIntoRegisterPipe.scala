@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation, Slot}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 /**
   * Expand when both end-points are known, find all relationships of the given
@@ -58,16 +58,12 @@ case class ExpandIntoRegisterPipe(source: Pipe,
         val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
           .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
-        if (!relationships.hasNext)
-          Iterator.empty
-        else {
-          PrimitiveLongHelper.map(relationships, (relId: Long) => {
-            val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
-            outputRow.copyFrom(inputRow)
-            outputRow.setLongAt(relOffset, relId)
-            outputRow
-          })
-        }
+        PrimitiveLongHelper.map(relationships, (relId: Long) => {
+          val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
+          outputRow.copyFrom(inputRow)
+          outputRow.setLongAt(relOffset, relId)
+          outputRow
+        })
     }
   }
 }

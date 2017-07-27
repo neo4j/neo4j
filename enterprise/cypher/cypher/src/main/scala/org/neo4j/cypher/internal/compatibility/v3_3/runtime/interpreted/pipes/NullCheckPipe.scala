@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
 case class NullCheckPipe(source: Pipe, offsets: Int*)
@@ -29,12 +29,9 @@ case class NullCheckPipe(source: Pipe, offsets: Int*)
   extends PipeWithSource(source) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap {
+    input.filter {
       inputRow =>
-        if (offsets.exists(o => NullChecker.nodeIsNull(inputRow.getLongAt(o))))
-          Iterator.empty
-        else
-          Iterator.single(inputRow)
+        offsets.exists(o => !NullChecker.nodeIsNull(inputRow.getLongAt(o)))
     }
   }
 }
