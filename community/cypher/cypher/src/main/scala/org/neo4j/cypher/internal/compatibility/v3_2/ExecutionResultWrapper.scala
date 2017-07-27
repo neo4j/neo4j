@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_2.{ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2, _}
-import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, PlannerName}
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
@@ -46,7 +46,7 @@ object ExecutionResultWrapper {
 }
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
-                             preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionResult {
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset : Option[frontend.v3_2.InputPosition]) extends ExecutionResult {
 
   override def planDescriptionRequested = inner.planDescriptionRequested
   override def javaIterator = inner.javaIterator
@@ -111,9 +111,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
-      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
+      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case PlannerUnsupportedNotification =>
       NotificationCode.PLANNER_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case RuntimeUnsupportedNotification =>
@@ -131,29 +131,29 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.asInputPosition, NotificationDetail.Factory.label(label))
+      NotificationCode.MISSING_LABEL.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      NotificationCode.MISSING_REL_TYPE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.asInputPosition, NotificationDetail.Factory.propertyName(name))
+      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
-      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
+      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
-      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.asInputPosition)
+      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_FUNCTION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
+      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
-      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
+      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedRelTypeSeparatorNotification(pos) =>
-      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.asInputPosition)
+      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPlannerNotification =>
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCode.PROCEDURE_WARNING.notification(pos.asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
+      NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = inner.accept(wrapVisitor(visitor))
