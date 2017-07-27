@@ -50,7 +50,7 @@ public class IndexPopulationIT
     @ClassRule
     public static final TestDirectory directory = TestDirectory.testDirectory();
 
-    private static final int TEST_TIMEOUT = 10_000;
+    private static final int TEST_TIMEOUT = 30_000;
     private static GraphDatabaseService database;
     private static ExecutorService executorService;
 
