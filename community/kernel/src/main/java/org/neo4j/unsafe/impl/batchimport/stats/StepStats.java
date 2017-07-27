@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.neo4j.unsafe.impl.batchimport.staging.Step;
+
 /**
  * Provides stats about a {@link Step}.
  */

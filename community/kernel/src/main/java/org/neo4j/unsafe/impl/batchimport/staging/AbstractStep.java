@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
-import java.util.function.LongPredicate;
 
 import org.neo4j.concurrent.WorkSync;
 import org.neo4j.helpers.Exceptions;
@@ -53,14 +52,6 @@ public abstract class AbstractStep<T> implements Step<T>
     protected volatile Throwable panic;
     private volatile boolean completed;
     protected int orderingGuarantees;
-    protected final LongPredicate rightDoneTicket = new LongPredicate()
-    {
-        @Override
-        public boolean test( long ticket )
-        {
-            return doneBatches.get() == ticket;
-        }
-    };
 
     // Milliseconds awaiting downstream to process batches so that its queue size goes beyond the configured threshold
     // If this is big then it means that this step is faster than downstream.

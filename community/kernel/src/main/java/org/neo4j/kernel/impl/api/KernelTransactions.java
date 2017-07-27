@@ -289,17 +289,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         return new KernelTransactionImplementationHandle( tx );
     }
 
-    /**
-     * Get all transactions
-     * * <p>
-     * <b>Note:</b> this method is package-private for testing <b>only</b>.
-     * @return set of all kernel transaction
-     */
-    Set<KernelTransactionImplementation> getAllTransactions()
-    {
-        return allTransactions;
-    }
-
     private void assertRunning()
     {
         if ( availabilityGuard.isShutdown() )

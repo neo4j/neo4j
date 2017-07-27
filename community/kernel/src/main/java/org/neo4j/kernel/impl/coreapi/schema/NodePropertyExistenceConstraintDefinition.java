@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
-import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.lang.String.format;
 
@@ -30,11 +29,6 @@ public class NodePropertyExistenceConstraintDefinition extends NodeConstraintDef
     public NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, Label label, String[] propertyKeys )
     {
         super( actions, label, propertyKeys );
-    }
-
-    protected NodePropertyExistenceConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
-    {
-        super( actions, indexDefinition );
     }
 
     @Override

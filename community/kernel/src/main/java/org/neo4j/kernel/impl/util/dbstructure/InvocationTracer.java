@@ -43,23 +43,6 @@ public class InvocationTracer<C> implements InvocationHandler, AutoCloseable
                              String generatedClassPackage,
                              String generatedClassName,
                              Class<C> interfaceClass,
-                             ArgumentFormatter argumentFormatter )
-            throws IOException
-    {
-        this(
-                generatorInfo,
-                generatedClassPackage,
-                generatedClassName,
-                interfaceClass,
-                argumentFormatter,
-                new StringBuilder()
-        );
-    }
-
-    public InvocationTracer( String generatorInfo,
-                             String generatedClassPackage,
-                             String generatedClassName,
-                             Class<C> interfaceClass,
                              ArgumentFormatter argumentFormatter,
                              Appendable output )
             throws IOException

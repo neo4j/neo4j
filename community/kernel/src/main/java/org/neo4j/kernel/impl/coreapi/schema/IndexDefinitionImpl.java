@@ -35,12 +35,6 @@ public class IndexDefinitionImpl implements IndexDefinition
     private final String[] propertyKeys;
     private final boolean constraintIndex;
 
-    public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String propertyKey,
-            boolean constraintIndex )
-    {
-        this( actions, label, new String[]{propertyKey}, constraintIndex );
-    }
-
     public IndexDefinitionImpl( InternalSchemaActions actions, Label label, String[] propertyKeys,
             boolean constraintIndex )
     {

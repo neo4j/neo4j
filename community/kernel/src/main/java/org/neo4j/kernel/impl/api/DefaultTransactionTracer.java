@@ -137,7 +137,7 @@ public class DefaultTransactionTracer implements TransactionTracer, LogRotationM
         }
 
         @Override
-        public void setTransactionType( String transactionTypeName )
+        public void setTransactionWriteState( String transactionWriteState )
         {
         }
 

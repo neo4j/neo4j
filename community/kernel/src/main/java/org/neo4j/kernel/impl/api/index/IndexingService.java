@@ -754,11 +754,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 descriptor.schema().userDescription( tokenNameLookup ), state.name() );
     }
 
-    public IndexSamplingController getSamplingController()
-    {
-        return samplingController;
-    }
-
     private void logIndexStateSummary( String method, Map<InternalIndexState,List<IndexLogRecord>> indexStates )
     {
         int mostPopularStateCount = Integer.MIN_VALUE;

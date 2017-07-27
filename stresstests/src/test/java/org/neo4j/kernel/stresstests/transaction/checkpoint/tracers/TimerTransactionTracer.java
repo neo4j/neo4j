@@ -185,7 +185,7 @@ public class TimerTransactionTracer implements TransactionTracer, CheckPointTrac
         }
 
         @Override
-        public void setTransactionType( String s )
+        public void setTransactionWriteState( String transactionWriteState )
         {
         }
 
