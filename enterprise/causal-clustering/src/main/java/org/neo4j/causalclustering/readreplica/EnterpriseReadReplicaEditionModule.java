@@ -209,7 +209,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         platformModule.availabilityGuard, logProvider );
 
         RemoteStore remoteStore = new RemoteStore( platformModule.logging.getInternalLogProvider(), fileSystem, platformModule.pageCache,
-                new StoreCopyClient( catchUpClient, logProvider, topologyService ), new TxPullClient( catchUpClient, platformModule.monitors, topologyService ),
+                new StoreCopyClient( catchUpClient, logProvider, topologyService ), new TxPullClient( catchUpClient, platformModule.monitors ),
                 new TransactionLogCatchUpFactory(), platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
@@ -274,7 +274,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
 
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
         life.add( new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector, retryStrategy, logProvider,
-                platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
+                platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
         CatchupServer catchupServer =
                 new CatchupServer( platformModule.logging.getInternalLogProvider(), platformModule.logging.getUserLogProvider(), localDatabase::storeId,

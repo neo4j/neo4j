@@ -45,12 +45,11 @@ public class StoreCopyClient
         this.topologyService = topologyService;
     }
 
-    long copyStoreFiles( MemberId from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    long copyStoreFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
     {
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
         try
         {
-            return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
+            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
             {
                 private String destination;
                 private int requiredAlignment;

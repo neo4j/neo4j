@@ -121,19 +121,19 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                storeCopyProcess.replaceWithStoreFrom( source, remoteStoreId );
+                storeCopyProcess.replaceWithStoreFrom( fromAddress, remoteStoreId );
             }
             else
             {
                 StoreId localStoreId = localDatabase.storeId();
-                CatchupResult catchupResult = remoteStore.tryCatchingUp( source, localStoreId, localDatabase.storeDir() );
+                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase.storeDir() );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
-                    log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." );
+                    log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." ); // TODO source changed to fromAddress
                     localDatabase.delete();
 
-                    storeCopyProcess.replaceWithStoreFrom( source, localStoreId );
+                    storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {

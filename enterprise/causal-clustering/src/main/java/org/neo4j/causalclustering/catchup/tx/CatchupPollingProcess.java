@@ -323,9 +323,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
             throw new RuntimeException( throwable );
         }
 
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream );
         try
         {
-            storeCopyProcess.replaceWithStoreFrom( upstream, localStoreId );
+            storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
         }
         catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {

@@ -119,7 +119,7 @@ public class CoreServerModule
 
         RemoteStore remoteStore =
                 new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider, topologyService ),
-                        new TxPullClient( catchUpClient, platformModule.monitors, topologyService ), new TransactionLogCatchUpFactory(),
+                        new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
                         platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );

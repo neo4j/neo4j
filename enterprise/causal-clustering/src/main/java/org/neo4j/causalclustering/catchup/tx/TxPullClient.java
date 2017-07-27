@@ -35,20 +35,17 @@ public class TxPullClient
 {
     private final CatchUpClient catchUpClient;
     private PullRequestMonitor pullRequestMonitor;
-    private final TopologyService topologyService;
 
-    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors, TopologyService topologyService )
+    public TxPullClient( CatchUpClient catchUpClient, Monitors monitors )
     {
         this.catchUpClient = catchUpClient;
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
-        this.topologyService = topologyService;
     }
 
-    public TxPullRequestResult pullTransactions( MemberId from, StoreId storeId, long previousTxId, TxPullResponseListener txPullResponseListener )
-            throws CatchUpClientException
+    public TxPullRequestResult pullTransactions( AdvertisedSocketAddress fromAddress, StoreId storeId, long previousTxId,
+            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
         return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
         {
             private long lastTxIdReceived = previousTxId;
