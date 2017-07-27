@@ -91,6 +91,7 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;

@@ -25,6 +25,7 @@ import org.neo4j.csv.reader.CharSeeker;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
@@ -148,9 +149,9 @@ public class CsvInput implements Input
     }
 
     @Override
-    public IdMapper idMapper()
+    public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
     {
-        return idType.idMapper();
+        return idType.idMapper( numberArrayFactory );
     }
 
     @Override

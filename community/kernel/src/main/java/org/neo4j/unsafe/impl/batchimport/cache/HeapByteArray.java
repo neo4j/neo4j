@@ -50,12 +50,14 @@ public class HeapByteArray extends HeapNumberArray<ByteArray> implements ByteArr
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
+    public void swap( long fromIndex, long toIndex )
     {
-        byte[] intermediary = new byte[numberOfEntries * itemSize];
-        System.arraycopy( array, index( toIndex, 0 ), intermediary, 0, intermediary.length );
-        System.arraycopy( array, index( fromIndex, 0 ), array, index( toIndex, 0 ), intermediary.length );
-        System.arraycopy( intermediary, 0, array, index( fromIndex, 0 ), intermediary.length );
+        byte[] a = defaultValue.clone();
+        byte[] b = defaultValue.clone();
+        get( fromIndex, a );
+        get( toIndex, b );
+        set( fromIndex, b );
+        set( toIndex, a );
     }
 
     @Override

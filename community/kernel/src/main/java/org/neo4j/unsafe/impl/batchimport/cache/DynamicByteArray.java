@@ -37,18 +37,14 @@ public class DynamicByteArray extends DynamicNumberArray<ByteArray> implements B
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
+    public void swap( long fromIndex, long toIndex )
     {
-        // Let's just do this the stupid way. There's room for optimization here
-        byte[] intermediary = defaultValue.clone();
-        byte[] transport = defaultValue.clone();
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            get( fromIndex + i, intermediary );
-            get( toIndex + i, transport );
-            set( fromIndex + i, transport );
-            set( toIndex + i, intermediary );
-        }
+        byte[] a = defaultValue.clone();
+        byte[] b = defaultValue.clone();
+        get( fromIndex, a );
+        get( toIndex, b );
+        set( fromIndex, b );
+        set( toIndex, a );
     }
 
     @Override

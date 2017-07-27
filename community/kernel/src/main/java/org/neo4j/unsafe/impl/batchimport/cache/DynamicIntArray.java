@@ -49,18 +49,6 @@ public class DynamicIntArray extends DynamicNumberArray<IntArray> implements Int
     }
 
     @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        // Let's just do this the stupid way. There's room for optimization here
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            int intermediary = get( fromIndex + i );
-            set( fromIndex + i, get( toIndex + i ) );
-            set( toIndex + i, intermediary );
-        }
-    }
-
-    @Override
     protected IntArray addChunk( long chunkSize, long base )
     {
         return factory.newIntArray( chunkSize, defaultValue, base );

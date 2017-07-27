@@ -192,6 +192,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final Config config;
     private final BatchInserterImpl.BatchSchemaActions actions;
     private final StoreLocker storeLocker;
+    private final PageCache pageCache;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -266,6 +267,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         life.start();
         neoStores = sf.openAllNeoStores( true );
         neoStores.verifyStoreOk();
+        this.pageCache = pageCache;
 
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
@@ -556,7 +558,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             throw new UnderlyingStorageException( e );
         }
 
-        CountsComputer.recomputeCounts( neoStores );
+        CountsComputer.recomputeCounts( neoStores, pageCache );
     }
 
     private class InitialNodeLabelCreationVisitor implements Visitor<NodeLabelUpdate, IOException>, Closeable

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
@@ -166,7 +167,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
                 int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId,
-                        highRelationshipTypeId, progressMonitor );
+                        highRelationshipTypeId, NumberArrayFactory.auto( pageCache, migrationDir ), progressMonitor );
                 life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
                         storeFileBase ).setInitializer( initializer ) );
             }

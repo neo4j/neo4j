@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
@@ -30,18 +31,20 @@ import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void recomputeCounts( NeoStores stores )
+
+    private final NumberArrayFactory numberArrayFactory;
+
+    public static void recomputeCounts( NeoStores stores, PageCache pageCache )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
         CountsTracker counts = stores.getCounts();
         try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
         {
-            new CountsComputer( stores ).initialize( updater );
+            new CountsComputer( stores, pageCache ).initialize( updater );
         }
     }
 
@@ -52,29 +55,31 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final long lastCommittedTransactionId;
     private final MigrationProgressMonitor.Section progressMonitor;
 
-    public CountsComputer( NeoStores stores )
+    public CountsComputer( NeoStores stores, PageCache pageCache )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
-              stores.getNodeStore(), stores.getRelationshipStore(),
-              (int) stores.getLabelTokenStore().getHighId(),
-              (int) stores.getRelationshipTypeTokenStore().getHighId() );
+                stores.getNodeStore(), stores.getRelationshipStore(),
+                (int) stores.getLabelTokenStore().getHighId(),
+                (int) stores.getRelationshipTypeTokenStore().getHighId(),
+                NumberArrayFactory.auto( pageCache, stores.getStoreDir() ) );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId, int highRelationshipTypeId )
+            int highLabelId, int highRelationshipTypeId, NumberArrayFactory numberArrayFactory )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                SilentMigrationProgressMonitor.NO_OP_SECTION );
+                numberArrayFactory, SilentMigrationProgressMonitor.NO_OP_SECTION );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,
-            int highLabelId, int highRelationshipTypeId, MigrationProgressMonitor.Section progressMonitor )
+            int highLabelId, int highRelationshipTypeId, NumberArrayFactory numberArrayFactory, MigrationProgressMonitor.Section progressMonitor )
     {
         this.lastCommittedTransactionId = lastCommittedTransactionId;
         this.nodes = nodes;
         this.relationships = relationships;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
+        this.numberArrayFactory = numberArrayFactory;
         this.progressMonitor = progressMonitor;
     }
 
@@ -82,7 +87,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     public void initialize( CountsAccessor.Updater countsUpdater )
     {
         progressMonitor.start( nodes.getHighestPossibleIdInUse() + relationships.getHighestPossibleIdInUse() );
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO, highLabelId );
+        NodeLabelsCache cache = new NodeLabelsCache( numberArrayFactory, highLabelId );
         try
         {
             // Count nodes
@@ -92,7 +97,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
             // Count relationships
             superviseDynamicExecution(
                     new RelationshipCountsStage( Configuration.DEFAULT, cache, relationships, highLabelId,
-                            highRelationshipTypeId, countsUpdater, AUTO, progressMonitor ) );
+                            highRelationshipTypeId, countsUpdater, numberArrayFactory, progressMonitor ) );
         }
         finally
         {
