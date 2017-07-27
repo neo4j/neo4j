@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.input;
 
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 
@@ -50,8 +51,9 @@ public interface Input
      * @return {@link IdMapper} which will get populated by {@link InputNode#id() input node ids}
      * and later queried by {@link InputRelationship#startNode()} and {@link InputRelationship#endNode()} ids
      * to resolve potentially temporary input node ids to actual node ids in the database.
+     * @param numberArrayFactory The factory for creating data-structures to use for caching internally in the IdMapper.
      */
-    IdMapper idMapper();
+    IdMapper idMapper( NumberArrayFactory numberArrayFactory );
 
     /**
      * @return {@link IdGenerator} which is responsible for generating actual node ids from input node ids.

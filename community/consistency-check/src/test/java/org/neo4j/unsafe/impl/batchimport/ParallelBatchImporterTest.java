@@ -85,7 +85,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO;
+import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.fromInput;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators.startingFromTheBeginning;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers.longs;
@@ -153,13 +153,13 @@ public class ParallelBatchImporterTest
         return Arrays.<Object[]>asList(
 
                 // synchronous I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), true},
+                new Object[]{new LongInputIdGenerator(), longs( AUTO_WITHOUT_PAGECACHE ), fromInput(), true},
                 // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), true},
+                new Object[]{new StringInputIdGenerator(), strings( AUTO_WITHOUT_PAGECACHE ), startingFromTheBeginning(), true},
                 // synchronous I/O, string id input
-                new Object[]{new StringInputIdGenerator(), strings( AUTO ), startingFromTheBeginning(), false},
+                new Object[]{new StringInputIdGenerator(), strings( AUTO_WITHOUT_PAGECACHE ), startingFromTheBeginning(), false},
                 // extra slow parallel I/O, actual node id input
-                new Object[]{new LongInputIdGenerator(), longs( AUTO ), fromInput(), false}
+                new Object[]{new LongInputIdGenerator(), longs( AUTO_WITHOUT_PAGECACHE ), fromInput(), false}
         );
     }
 

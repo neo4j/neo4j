@@ -87,7 +87,7 @@ public class RelationshipCountsProcessorTest
         when( nodeLabelCache.get( eq( client ), eq( 4L ), any( int[].class ) ) ).thenReturn( new int[]{} );
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
-                relationTypes, countsUpdater, NumberArrayFactory.AUTO );
+                relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );
 
         countsProcessor.process( 1, 0, 3 );
         countsProcessor.process( 2, 1, 4 );

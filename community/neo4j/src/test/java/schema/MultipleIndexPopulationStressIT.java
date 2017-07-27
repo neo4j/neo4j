@@ -62,6 +62,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
@@ -384,7 +385,7 @@ public class MultipleIndexPopulationStressIT
         }
 
         @Override
-        public IdMapper idMapper()
+        public IdMapper idMapper( NumberArrayFactory numberArrayFactory )
         {
             return IdMappers.actual();
         }

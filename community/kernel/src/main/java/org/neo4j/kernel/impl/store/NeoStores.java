@@ -632,7 +632,7 @@ public class NeoStores implements AutoCloseable
             public void initialize( CountsAccessor.Updater updater )
             {
                 log.warn( "Missing counts store, rebuilding it." );
-                new CountsComputer( neoStores ).initialize( updater );
+                new CountsComputer( neoStores, pageCache ).initialize( updater );
                 log.warn( "Counts store rebuild completed." );
             }
 

@@ -60,15 +60,4 @@ public class HeapLongArray extends HeapNumberArray<LongArray> implements LongArr
     {
         Arrays.fill( array, defaultValue );
     }
-
-    @Override
-    public void swap( long fromIndex, long toIndex, int numberOfEntries )
-    {
-        for ( int i = 0; i < numberOfEntries; i++ )
-        {
-            long fromValue = get( fromIndex + i );
-            set( fromIndex + i, get( toIndex + i ) );
-            set( toIndex + i, fromValue );
-        }
-    }
 }

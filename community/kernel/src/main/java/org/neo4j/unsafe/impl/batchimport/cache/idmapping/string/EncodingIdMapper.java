@@ -397,7 +397,7 @@ public class EncodingIdMapper implements IdMapper
                     if ( dataIndexA > dataIndexB )
                     {
                         // Swap so that lower tracker index means lower data index. TODO Why do we do this?
-                        trackerCache.swap( i, i + 1, 1 );
+                        trackerCache.swap( i, i + 1 );
                     }
 
                     if ( collision != ID_NOT_FOUND )

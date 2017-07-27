@@ -87,7 +87,7 @@ public class NodeRelationshipCacheTest
     public void shouldReportCorrectNumberOfDenseNodes() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 5, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 100, base );
         cache.setHighNodeId( 26 );
         increment( cache, 2, 10 );
         increment( cache, 5, 2 );
@@ -133,7 +133,7 @@ public class NodeRelationshipCacheTest
     public void shouldObserveFirstRelationshipAsEmptyInEachDirection() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
         int nodes = 100;
         int typeId = 5;
         Direction[] directions = Direction.values();
@@ -170,7 +170,7 @@ public class NodeRelationshipCacheTest
     public void shouldResetCountAfterGetOnDenseNodes() throws Exception
     {
         // GIVEN
-        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO, 1, 100, base );
+        cache = new NodeRelationshipCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 1, 100, base );
         long nodeId = 0;
         int typeId = 3;
         cache.setHighNodeId( 1 );

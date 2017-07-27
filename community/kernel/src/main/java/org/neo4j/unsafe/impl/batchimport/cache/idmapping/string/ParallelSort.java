@@ -273,7 +273,7 @@ public class ParallelSort
             long li = leftIndex, ri = rightIndex - 2, pi = pivotIndex;
             long pivot = clearCollision( dataCache.get( tracker.get( pi ) ) );
             // save pivot in last index
-            tracker.swap( pi, rightIndex - 1, 1 );
+            tracker.swap( pi, rightIndex - 1 );
             long left = clearCollision( dataCache.get( tracker.get( li ) ) );
             long right = clearCollision( dataCache.get( tracker.get( ri ) ) );
             while ( li < ri )
@@ -288,7 +288,7 @@ public class ParallelSort
                 }
                 else
                 {   // this value is on the wrong side of the pivot, swapping
-                    tracker.swap( li, ri, 1 );
+                    tracker.swap( li, ri );
                     long temp = left;
                     left = right;
                     right = temp;
@@ -300,7 +300,7 @@ public class ParallelSort
                 partingIndex++;
             }
             // restore pivot
-            tracker.swap( rightIndex - 1, partingIndex, 1 );
+            tracker.swap( rightIndex - 1, partingIndex );
             return partingIndex;
         }
 

@@ -30,4 +30,12 @@ public interface LongArray extends NumberArray<LongArray>
     long get( long index );
 
     void set( long index, long value );
+
+    @Override
+    default void swap( long fromIndex, long toIndex )
+    {
+        long intermediary = get( fromIndex );
+        set( fromIndex, get( toIndex ) );
+        set( toIndex, intermediary );
+    }
 }

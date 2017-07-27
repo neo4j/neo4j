@@ -832,16 +832,17 @@ public class NodeRelationshipCache implements MemoryStatsVisitor.Visitable
                 continue;
             }
 
-            ByteArray chunk = array.at( nodeId );
-            for ( int i = 0; i < chunkSize && nodeId < highNodeId; i++, nodeId++ )
+            ByteArray subArray = array.at( nodeId );
+            long subArrayLength = subArray.length();
+            for ( int i = 0; i < subArrayLength && nodeId < highNodeId; i++, nodeId++ )
             {
                 boolean nodeHasChanged =
-                        (NodeType.isDense( nodeTypes ) && nodeIsChanged( chunk, nodeId, denseMask )) ||
-                        (NodeType.isSparse( nodeTypes ) && nodeIsChanged( chunk, nodeId, sparseMask ));
+                        (NodeType.isDense( nodeTypes ) && nodeIsChanged( subArray, nodeId, denseMask )) ||
+                        (NodeType.isSparse( nodeTypes ) && nodeIsChanged( subArray, nodeId, sparseMask ));
 
                 if ( nodeHasChanged && NodeType.matchesDense( nodeTypes, isDense( array, nodeId ) ) )
                 {
-                    visitor.change( nodeId, chunk );
+                    visitor.change( nodeId, subArray );
                 }
             }
         }
