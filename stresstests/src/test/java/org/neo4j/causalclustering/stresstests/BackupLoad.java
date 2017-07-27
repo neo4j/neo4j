@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
@@ -35,6 +37,15 @@ import org.neo4j.helpers.SocketAddress;
 
 class BackupLoad extends RepeatUntilOnSelectedMemberCallable
 {
+    private static final OutputStream NULL_OUTPUT_STREAM =  new OutputStream()
+    {
+        @Override
+        public void write( int b ) throws IOException
+        {
+            // it's *null* output stream
+        }
+    };
+
     private final Predicate<Throwable> isTransientError =
             new IsConnectionException().or( new IsConnectionRestByPeer() ).or( new IsChannelClosedException() )
                     .or( new IsStoreClosed() );
@@ -59,7 +70,8 @@ class BackupLoad extends RepeatUntilOnSelectedMemberCallable
         OnlineBackup backup;
         try
         {
-            backup = OnlineBackup.from( address.getHostname(), address.getPort() ).backup( backupDirectory );
+            backup = OnlineBackup.from( address.getHostname(), address.getPort() ).withOutput( NULL_OUTPUT_STREAM )
+                    .backup( backupDirectory );
         }
         catch ( RuntimeException e )
         {
