@@ -48,7 +48,7 @@ public interface TransactionEvent extends AutoCloseable
         }
 
         @Override
-        public void setTransactionType( String transactionTypeName )
+        public void setTransactionWriteState( String transactionWriteState )
         {
         }
 
@@ -80,10 +80,10 @@ public interface TransactionEvent extends AutoCloseable
     void close();
 
     /**
-     * Set the type of the transaction, as given by
+     * Set write state of the transaction, as given by
      * {@link org.neo4j.kernel.impl.api.KernelTransactionImplementation.TransactionWriteState}.
      */
-    void setTransactionType( String transactionTypeName );
+    void setTransactionWriteState( String transactionWriteState );
 
     /**
      * Specify that the transaction was read-only.
