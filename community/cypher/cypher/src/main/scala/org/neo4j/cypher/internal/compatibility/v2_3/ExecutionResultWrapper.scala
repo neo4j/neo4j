@@ -23,7 +23,6 @@ import java.io.PrintWriter
 import java.util
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
@@ -38,13 +37,18 @@ import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection.{BOTH, INCOMING
 import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, LegacyPlannerNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InternalInputPosition}
 import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.{QueryStatistics, compatibility}
 import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
-import org.neo4j.graphdb.{InputPosition, Notification, QueryExecutionType, ResourceIterator}
+import org.neo4j.values.result.QueryResult
+import org.neo4j.values.result.QueryResult.Record
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 
 object ExecutionResultWrapper {
+
   def unapply(v: Any): Option[(InternalExecutionResult, PlannerName, RuntimeName)] = v match {
     case closing: ClosingExecutionResult => unapply(closing.inner)
     case wrapper: ExecutionResultWrapper => Some((wrapper.inner, wrapper.planner, wrapper.runtime))
@@ -63,13 +67,17 @@ object ExecutionResultWrapper {
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKey) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
+      NotificationCode.INDEX_HINT_UNFULFILLABLE
+        .notification(InputPosition.empty, NotificationDetail.Factory.index(label, propertyKey))
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNFULFILLABLE
+        .notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case JoinHintUnsupportedNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNSUPPORTED
+        .notification(InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY
+        .notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case BareNodeSyntaxDeprecatedNotification(pos) =>
       NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.withOffset(offset).asInputPosition)
     case EagerLoadCsvNotification =>
@@ -87,8 +95,10 @@ object ExecutionResultWrapper {
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: InternalInputPosition) {
+
     def asInputPosition = new InputPosition(pos.offset, pos.line, pos.column)
   }
+
 }
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
@@ -101,10 +111,6 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
 
   override def columnAs[T](column: String): Iterator[Nothing] = inner.columnAs(column)
-
-  override def columns: List[String] = inner.columns
-
-  override def javaColumns: util.List[String] = inner.javaColumns
 
   def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()
@@ -131,12 +137,12 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
   def executionPlanDescription(): InternalPlanDescription3_3 =
-      convert(inner.executionPlanDescription().
-        addArgument(Version("CYPHER 2.3")).
-        addArgument(Planner(planner.toTextOutput)).
-        addArgument(PlannerImpl(planner.name)).
-        addArgument(Runtime(runtime.toTextOutput)).
-        addArgument(RuntimeImpl(runtime.name)))
+    convert(inner.executionPlanDescription().
+      addArgument(Version("CYPHER 2.3")).
+      addArgument(Planner(planner.toTextOutput)).
+      addArgument(PlannerImpl(planner.name)).
+      addArgument(Runtime(runtime.toTextOutput)).
+      addArgument(RuntimeImpl(runtime.name)))
 
   private def convert(i: InternalPlanDescription): InternalPlanDescription3_3 = exceptionHandler.runSafely {
     LegacyPlanDescription(i.name, convert(i.arguments), Set.empty, i.toString)
@@ -153,11 +159,12 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
         case OUTGOING => v3_3.SemanticDirection.OUTGOING
         case BOTH => v3_3.SemanticDirection.BOTH
       }
-      InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName,relTypes,to, dir3_3, 0, None)
+      InternalPlanDescription3_3.Arguments.ExpandExpression(from, relName, relTypes, to, dir3_3, 0, None)
 
     case Arguments.Index(label, propertyKey) => InternalPlanDescription3_3.Arguments.Index(label, Seq(propertyKey))
     case Arguments.LegacyIndex(value) => InternalPlanDescription3_3.Arguments.LegacyIndex(value)
-    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments.InequalityIndex(label, propertyKey, bounds)
+    case Arguments.InequalityIndex(label, propertyKey, bounds) => InternalPlanDescription3_3.Arguments
+      .InequalityIndex(label, propertyKey, bounds)
     case Arguments.Planner(value) => InternalPlanDescription3_3.Arguments.Planner(value)
     case Arguments.PlannerImpl(value) => InternalPlanDescription3_3.Arguments.PlannerImpl(value)
     case Arguments.Runtime(value) => InternalPlanDescription3_3.Arguments.Runtime(value)
@@ -173,7 +180,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def close(): Unit = inner.close()
 
-  def executionType: InternalQueryType = inner.executionType.queryType() match {
+  def queryType: InternalQueryType = inner.executionType.queryType() match {
     case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY
     case QueryExecutionType.QueryType.WRITE => WRITE
     case QueryExecutionType.QueryType.READ_WRITE => READ_WRITE
@@ -193,4 +200,13 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def withNotifications(notification: Notification*): internal.InternalExecutionResult =
     new ExecutionResultWrapper(inner, planner, runtime, preParsingNotifications ++ notification, offset)
+
+  override def fieldNames(): Array[String] = inner.columns.toArray
+
+  override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit =
+    inner.accept(new ResultVisitor[E] {
+      override def visit(row: Result.ResultRow): Boolean = visitor.visit(new Record {
+        override def fields(): Array[AnyValue] = fieldNames().map(k => AnyValues.of(row.get(k)))
+      })
+    })
 }

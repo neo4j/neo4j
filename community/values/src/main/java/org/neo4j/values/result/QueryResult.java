@@ -19,21 +19,11 @@
  */
 package org.neo4j.values.result;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.NoSuchElementException;
-
 import org.neo4j.graphdb.ExecutionPlanDescription;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Result;
 import org.neo4j.values.AnyValue;
-
-import static org.neo4j.helpers.Exceptions.withCause;
 
 public interface QueryResult
 {
@@ -52,101 +42,13 @@ public interface QueryResult
         AnyValue[] fields();
     }
 
-    QueryExecutionType getQueryExecutionType();
+    QueryExecutionType executionType();
 
-    QueryStatistics getQueryStatistics();
+    QueryStatistics queryStatistics();
 
-    ExecutionPlanDescription getExecutionPlanDescription();
+    ExecutionPlanDescription executionPlanDescription();
 
     Iterable<Notification> getNotifications();
 
-    Result asPublicResult();
-
     void close();
-}
-
-abstract class IterableQueryResult implements QueryResult, Result
-{
-    private final Map<String,Integer> indexLookup;
-
-    IterableQueryResult()
-    {
-        String[] names = fieldNames();
-        indexLookup = new HashMap<>( names.length );
-        for ( int i = 0; i < names.length; i++ )
-        {
-            indexLookup.put( names[i], i );
-        }
-    }
-
-    @Override
-    public <VisitationException extends Exception> void accept( ResultVisitor<VisitationException> visitor )
-            throws VisitationException
-    {
-        accept( (QueryResultVisitor<VisitationException>) row -> visitor.visit( new ResultRow()
-        {
-            @Override
-            public Node getNode( String key )
-            {
-                return get( key, Node.class );
-            }
-
-            @Override
-            public Relationship getRelationship( String key )
-            {
-                return get( key, Relationship.class );
-            }
-
-            @Override
-            public Object get( String key )
-            {
-                return get( key, Object.class );
-            }
-
-            @Override
-            public String getString( String key )
-            {
-                return get( key, String.class );
-            }
-
-            @Override
-            public Number getNumber( String key )
-            {
-                return get( key, Number.class );
-            }
-
-            @Override
-            public Boolean getBoolean( String key )
-            {
-                return get( key, Boolean.class );
-            }
-
-            @Override
-            public Path getPath( String key )
-            {
-                return get( key, Path.class );
-            }
-
-            private <T> T get( String key, Class<T> type )
-            {
-                if ( !indexLookup.containsKey( key ) )
-                {
-                    throw new NoSuchElementException( "No such entry: " + key );
-                }
-                Integer index = indexLookup.get( key );
-
-                //TODO do this with a writer, this is wrong
-                Object value = row.fields()[index];
-                try
-                {
-                    return type.cast( value );
-                }
-                catch ( ClassCastException e )
-                {
-                    throw withCause( new NoSuchElementException(
-                            "Element '" + key + "' is not a " + type.getSimpleName() ), e );
-                }
-            }
-        } ) );
-    }
 }

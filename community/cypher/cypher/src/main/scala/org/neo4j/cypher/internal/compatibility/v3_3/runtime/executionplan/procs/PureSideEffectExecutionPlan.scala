@@ -46,7 +46,7 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
       if (planType == ExplainMode) {
         //close all statements
         ctx.transactionalContext.close(success = true)
-        ExplainExecutionResult(List.empty, description, queryType, Set.empty)
+        ExplainExecutionResult(Array.empty, description, queryType, Set.empty)
       } else {
         if (queryType == SCHEMA_WRITE) ctx.assertSchemaWritesAllowed()
 

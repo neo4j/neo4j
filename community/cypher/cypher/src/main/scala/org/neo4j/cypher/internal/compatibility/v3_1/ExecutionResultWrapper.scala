@@ -26,7 +26,6 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{LegacyPlanDescription, Argument => Argument3_3, InternalPlanDescription => InternalPlanDescription3_3}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.compiler.v3_1.executionplan.{InternalExecutionResult, _}
@@ -42,6 +41,9 @@ import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{InputPosition, Notification, ResourceIterator}
+import org.neo4j.values.result.QueryResult
+import org.neo4j.values.result.QueryResult.Record
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 
@@ -122,7 +124,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def next(): Map[String, Any] = inner.next()
   override def close(): Unit = inner.close()
 
-  override def executionType: compatibility.v3_3.runtime.executionplan.InternalQueryType = inner.executionType match {
+  override def queryType: compatibility.v3_3.runtime.executionplan.InternalQueryType = inner.executionType match {
       case READ_ONLY => compatibility.v3_3.runtime.executionplan.READ_ONLY
       case READ_WRITE => compatibility.v3_3.runtime.executionplan.READ_WRITE
       case WRITE => compatibility.v3_3.runtime.executionplan.WRITE
@@ -156,6 +158,15 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def withNotifications(notification: Notification*): internal.InternalExecutionResult =
     new ExecutionResultWrapper(inner, planner, runtime, preParsingNotification ++ notification, offset)
+
+  override def fieldNames(): Array[String] = inner.columns.toArray
+
+  override def accept[E <: Exception](visitor: QueryResult.QueryResultVisitor[E]): Unit =
+    inner.accept(new InternalResultVisitor[E] {
+      override def visit(internalResultRow: InternalResultRow): Boolean = visitor.visit(new Record {
+        override def fields(): Array[AnyValue] = fieldNames().map(k => AnyValues.of(internalResultRow.get(k)))
+      })
+    })
 }
 
 object ExecutionResultWrapper {

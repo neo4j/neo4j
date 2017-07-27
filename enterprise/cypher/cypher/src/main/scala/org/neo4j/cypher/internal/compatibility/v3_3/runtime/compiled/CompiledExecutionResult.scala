@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
-import java.util
-
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, Provider, READ_ONLY, StandardInternalExecutionResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
@@ -30,7 +28,7 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 /**
   * Main class for compiled execution results, implements everything in InternalExecutionResult
@@ -49,9 +47,9 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   // *** Delegate to compiled code
   def executionMode: ExecutionMode = compiledCode.executionMode()
 
-  override def javaColumns: util.List[String] = compiledCode.javaColumns()
+  override def fieldNames(): Array[String] = compiledCode.fieldNames()
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit =
+  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit =
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {
@@ -65,7 +63,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   override def queryStatistics() = QueryStatistics()
 
   //TODO delegate to compiled code once writes are being implemented
-  override def executionType: InternalQueryType = READ_ONLY
+  override def queryType: InternalQueryType = READ_ONLY
 
   override def withNotifications(notification: Notification*): InternalExecutionResult =
     new CompiledExecutionResult(taskCloser, context, compiledCode, description, notification)

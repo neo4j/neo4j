@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, symbols}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator, Result}
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 object RewindableExecutionResult {
 
@@ -49,7 +50,7 @@ object RewindableExecutionResult {
     inner match {
       case other: PipeExecutionResult =>
         exceptionHandler.runSafely {
-          new PipeExecutionResult(other.result.toEager, other.columns, other.state, other.executionPlanBuilder,
+          new PipeExecutionResult(other.result.toEager, other.columns.toArray, other.state, other.executionPlanBuilder,
                                   other.executionMode, READ_WRITE)
         }
       case other: StandardInternalExecutionResult =>
@@ -141,7 +142,7 @@ object RewindableExecutionResult {
 
     override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
 
-    override def executionType: InternalQueryType = inner.executionType.queryType() match {
+    override def queryType: InternalQueryType = inner.executionType.queryType() match {
       case QueryExecutionType.QueryType.READ_ONLY => READ_ONLY
       case QueryExecutionType.QueryType.READ_WRITE => READ_WRITE
       case QueryExecutionType.QueryType.WRITE => WRITE
@@ -150,9 +151,7 @@ object RewindableExecutionResult {
 
     override def columnAs[T](column: String): Iterator[T] = inner.columnAs(column)
 
-    override def columns: List[String] = inner.columns
-
-    override def javaColumns: util.List[String] = inner.javaColumns
+    override def fieldNames(): Array[String] = inner.columns.toArray
 
     override def queryStatistics(): QueryStatistics = {
       val stats = inner.queryStatistics()
@@ -171,6 +170,9 @@ object RewindableExecutionResult {
 
     @throws(classOf[Exception])
     override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = ???
+
+    @throws(classOf[Exception])
+    override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = ???
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
@@ -257,7 +259,7 @@ object RewindableExecutionResult {
 
     override def javaIterator: ResourceIterator[util.Map[String, Any]] = ???
 
-    override def executionType: InternalQueryType = inner.executionType match {
+    override def queryType: InternalQueryType = inner.executionType match {
       case v3_1.executionplan.READ_ONLY => READ_ONLY
       case v3_1.executionplan.READ_WRITE => READ_WRITE
       case v3_1.executionplan.WRITE => WRITE
@@ -271,13 +273,15 @@ object RewindableExecutionResult {
 
     override def javaColumns: util.List[String] = inner.javaColumns
 
+    override def fieldNames(): Array[String] = inner.columns.toArray
+
     override def queryStatistics(): QueryStatistics = {
       val stats = inner.queryStatistics()
-      new QueryStatistics(stats.nodesCreated, stats.relationshipsCreated, stats.propertiesSet,
-                          stats.nodesDeleted, stats.relationshipsDeleted, stats.labelsAdded, stats.labelsRemoved,
-                          stats.indexesAdded, stats.indexesRemoved, stats.uniqueConstraintsAdded,
-                          stats.uniqueConstraintsRemoved,
-                          stats.existenceConstraintsAdded, stats.existenceConstraintsRemoved)
+      QueryStatistics(stats.nodesCreated, stats.relationshipsCreated, stats.propertiesSet,
+                      stats.nodesDeleted, stats.relationshipsDeleted, stats.labelsAdded, stats.labelsRemoved,
+                      stats.indexesAdded, stats.indexesRemoved, stats.uniqueConstraintsAdded,
+                      stats.uniqueConstraintsRemoved,
+                      stats.existenceConstraintsAdded, stats.existenceConstraintsRemoved)
     }
 
     override def executionMode: ExecutionMode = NormalMode
@@ -288,6 +292,9 @@ object RewindableExecutionResult {
 
     @throws(classOf[Exception])
     override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = ???
+
+    @throws(classOf[Exception])
+    override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = ???
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
@@ -389,7 +396,7 @@ object RewindableExecutionResult {
 
     override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
 
-    override def executionType: InternalQueryType = inner.executionType match {
+    override def queryType: InternalQueryType = inner.executionType match {
       case v3_2.executionplan.READ_ONLY => READ_ONLY
       case v3_2.executionplan.READ_WRITE => READ_WRITE
       case v3_2.executionplan.WRITE => WRITE
@@ -399,17 +406,15 @@ object RewindableExecutionResult {
 
     override def columnAs[T](column: String): Iterator[T] = inner.columnAs(column)
 
-    override def columns: List[String] = inner.columns
-
-    override def javaColumns: util.List[String] = inner.javaColumns
+    override def fieldNames(): Array[String] = inner.columns.toArray
 
     override def queryStatistics(): QueryStatistics = {
       val stats = inner.queryStatistics()
-      new QueryStatistics(stats.nodesCreated, stats.relationshipsCreated, stats.propertiesSet,
-                          stats.nodesDeleted, stats.relationshipsDeleted, stats.labelsAdded, stats.labelsRemoved,
-                          stats.indexesAdded, stats.indexesRemoved, stats.uniqueConstraintsAdded,
-                          stats.uniqueConstraintsRemoved,
-                          stats.existenceConstraintsAdded, stats.existenceConstraintsRemoved)
+      QueryStatistics(stats.nodesCreated, stats.relationshipsCreated, stats.propertiesSet,
+                      stats.nodesDeleted, stats.relationshipsDeleted, stats.labelsAdded, stats.labelsRemoved,
+                      stats.indexesAdded, stats.indexesRemoved, stats.uniqueConstraintsAdded,
+                      stats.uniqueConstraintsRemoved,
+                      stats.existenceConstraintsAdded, stats.existenceConstraintsRemoved)
     }
 
     override def executionMode: ExecutionMode = NormalMode
@@ -420,6 +425,9 @@ object RewindableExecutionResult {
 
     @throws(classOf[Exception])
     override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = ???
+
+    @throws(classOf[Exception])
+    override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = ???
 
     override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 

@@ -24,7 +24,7 @@ import java.util
 
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{RuntimeJavaValueConverter, RuntimeScalaValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl, Version}
@@ -32,16 +32,18 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValue
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
+import org.neo4j.values.result.QueryResult
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class PipeExecutionResult(val result: ResultIterator,
-                          val columns: List[String],
+                          val fieldNames: Array[String],
                           val state: QueryState,
                           val executionPlanBuilder: () => InternalPlanDescription,
                           val executionMode: ExecutionMode,
-                          val executionType: InternalQueryType)
+                          val queryType: InternalQueryType)
   extends InternalExecutionResult {
 
   self =>
@@ -58,8 +60,6 @@ class PipeExecutionResult(val result: ResultIterator,
       .addArgument(Version("CYPHER 3.3"))
       .addArgument(Runtime(InterpretedRuntimeName.toTextOutput))
       .addArgument(RuntimeImpl(InterpretedRuntimeName.name))
-
-  def javaColumns: java.util.List[String] = columns.asJava
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
@@ -109,11 +109,21 @@ class PipeExecutionResult(val result: ResultIterator,
   override val notifications = Iterable.empty[Notification]
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
-  def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
+  def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     try {
-      javaValues.feedIteratorToVisitable(self).accept(visitor)
+      javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
     } finally {
       self.close()
     }
+  }
+
+  override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
+    accept(new QueryResultVisitor[E] {
+      override def visit(record: QueryResult.Record): Boolean = {
+        val row = new MapBasedRow
+        row.map = fieldNames.zip(record.fields().map(state.query.asObject)).toMap
+        visitor.visit(row)
+      }
+    })
   }
 }

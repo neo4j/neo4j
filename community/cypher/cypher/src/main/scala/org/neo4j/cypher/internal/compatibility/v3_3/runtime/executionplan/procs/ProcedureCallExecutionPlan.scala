@@ -76,7 +76,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                             input: Seq[Any], planType: ExecutionMode) = {
       val descriptionGenerator = () => createNormalPlan
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType)
+      val array: Option[IndexedSeq[CypherType]] = signature.outputSignature.map(_.map(_.typ))
+      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+                                   null, resultIndices, descriptionGenerator, planType)
     }
 
     private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
@@ -85,7 +87,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       taskCloser.close(success = true)
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
       val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-      ExplainExecutionResult(columns, createNormalPlan, callMode.queryType, notifications)
+      ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
     }
 
     private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
@@ -93,7 +95,10 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       val rowCounter = Counter()
       val descriptionGenerator = createProfilePlanGenerator(rowCounter)
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input, resultIndices, descriptionGenerator, planType) {
+      val array: Option[IndexedSeq[CypherType]] = signature.outputSignature.map(_.map(_.typ))
+      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
+                                   null, resultIndices,
+                                   descriptionGenerator, planType) {
         override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
       }
     }

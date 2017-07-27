@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import java.util.{List => JavaList, Map => JavaMap}
 
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Node, Path, Relationship}
 import org.neo4j.values.AnyValue
+import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -47,38 +46,20 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
     case anything => anything
   }
 
-  case class feedIteratorToVisitable[EX <: Exception](iterator: Iterator[Map[String, Any]]) {
-    def accept(visitor: ResultVisitor[EX]) = {
-      val row = new MapBasedRow()
+  case class feedIteratorToVisitable[EX <: Exception](fields: Iterator[Array[AnyValue]]) {
+    def accept(visitor: QueryResultVisitor[EX]) = {
+      val row = new ResultRecord()
       var continue = true
-      while (continue && iterator.hasNext) {
-        row.map = iterator.next()
+      while (continue && fields.hasNext) {
+        row._fields = fields.next()
         continue = visitor.visit(row)
       }
     }
   }
 
-  private class MapBasedRow extends ResultRow {
-    var map: Map[String, Any] = Map.empty
-
-    override def getNode(key: String): Node = getWithType(key, classOf[Node])
-    override def getRelationship(key: String): Relationship = getWithType(key, classOf[Relationship])
-    override def get(key: String): Object = getWithType(key, classOf[Object])
-    override def getNumber(key: String): Number = getWithType(key, classOf[Number])
-    override def getBoolean(key: String): java.lang.Boolean = getWithType(key, classOf[java.lang.Boolean])
-    override def getPath(key: String): Path = getWithType(key, classOf[Path])
-    override def getString(key: String): String = getWithType(key, classOf[String])
-
-    private def getWithType[T](key: String, clazz: Class[T]): T = {
-      map.get(key) match {
-        case None =>
-          throw new IllegalArgumentException("No column \"" + key + "\" exists")
-        case Some(value) if clazz.isInstance(value) || value == null =>
-          clazz.cast(asDeepJavaValue(value))
-        case Some(value) =>
-          throw new NoSuchElementException("The current item in column \"" + key + "\" is not a " + clazz + ": \"" + value + "\"")
-      }
-    }
+  private class ResultRecord extends Record {
+    var _fields: Array[AnyValue] = Array.empty
+    override def fields(): Array[AnyValue] = _fields
   }
 }
 

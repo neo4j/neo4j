@@ -20,19 +20,24 @@
 package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
+import java.{lang, util}
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, QueryExecutionType, ResourceIterator}
+import org.neo4j.graphdb._
+import org.neo4j.values.result.QueryResult
 
-trait InternalExecutionResult extends Iterator[Map[String, Any]] {
+import scala.collection.JavaConverters._
+import scala.collection.Map
 
-  def columns: List[String]
+trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResult {
+
+  def columns: List[String] = List(fieldNames():_*)
   def columnAs[T](column: String): Iterator[T]
 
-  def javaColumns: java.util.List[String]
+  def javaColumns: java.util.List[String] = util.Arrays.asList(fieldNames():_*)
   def javaColumnAs[T](column: String): ResourceIterator[T]
   def javaIterator: ResourceIterator[java.util.Map[String, Any]]
 
@@ -44,20 +49,21 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] {
   def planDescriptionRequested: Boolean
   def executionPlanDescription(): InternalPlanDescription
 
-  def executionType: InternalQueryType
+  def queryType: InternalQueryType
+
   def executionMode: ExecutionMode
 
   def notifications: Iterable[Notification]
 
-  def accept[EX <: Exception](visitor: ResultVisitor[EX])
+  override def getNotifications: lang.Iterable[Notification] = notifications.asJava
 
-  def close()
+  def accept[E <: Exception](visitor: ResultVisitor[E]): Unit
 
   def withNotifications(notification: Notification*): InternalExecutionResult
 
-  def publicExecutionType: QueryExecutionType = {
+  def executionType: QueryExecutionType = {
 
-    val qt = executionType match {
+    val qt = queryType match {
       case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
       case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
       case WRITE => QueryExecutionType.QueryType.WRITE

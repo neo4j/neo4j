@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
+import org.neo4j.values.storable.Values.{intValue, stringValue}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -32,32 +34,32 @@ class RowIteratorVisitationTest extends CypherFunSuite {
 
   test("should convert non-empty iterator to visitor") {
     // Given
-    val input = List[Map[String, Any]](Map("a" -> "1", "b" -> 2), Map("a" -> "11", "b" -> 22))
+    val input = List[Array[AnyValue]](Array(stringValue("1"), intValue(2)), Array(stringValue("11"), intValue(22)))
     val recordingVisitor = RecordingResultVisitor("a", "b")()
 
     // When
     feedIteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
-    recordingVisitor.recorded should equal(input.flatMap(_.toList))
+    recordingVisitor.recorded.toList should equal(List("a" -> stringValue("1"), "b" -> intValue(2), "a" -> stringValue("11"), "b" -> intValue(22)))
   }
 
   test("should stop when visitor asks to stop") {
     // Given
     val rowsToAccept = 2
-    val input = List(Map("a" -> "1"), Map("a" -> "2"), Map("a" -> "3"))
+    val input = List[Array[AnyValue]](Array(stringValue("1")), Array(stringValue("2")), Array(stringValue("3")))
     val recordingVisitor = RecordingResultVisitor("a")(rowsToAccept)
 
     // When
     feedIteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
-    recordingVisitor.recorded should equal(input.take(rowsToAccept).flatMap(_.toList))
+    recordingVisitor.recorded.toList should equal(List("a" -> stringValue("1"), "a" -> stringValue("2")))
   }
 
   test("should accept nothing if iterator is empty") {
     // Given
-    val visitor = mock[ResultVisitor[RuntimeException]]
+    val visitor = mock[QueryResultVisitor[RuntimeException]]
 
     // When
     feedIteratorToVisitable(Iterator.empty).accept(visitor)
@@ -66,14 +68,14 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     verifyZeroInteractions(visitor)
   }
 
-  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue) extends ResultVisitor[RuntimeException] {
+  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue) extends QueryResultVisitor[RuntimeException] {
 
     require(rowsToAccept >= 0)
 
-    val recorded = new ArrayBuffer[(String, Any)]()
+    val recorded = new ArrayBuffer[(String, AnyValue)]()
 
-    def visit(row: ResultRow) = {
-      recorded ++= columns.map(name => name -> row.get(name))
+    def visit(row: Record) = {
+      recorded ++= columns.zip(row.fields())
       recorded.size != rowsToAccept
     }
   }

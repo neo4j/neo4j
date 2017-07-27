@@ -211,7 +211,7 @@ public class ListTest
                     VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
                     {
                         long l = ((LongValue) anyValue).longValue();
-                        return l != 1L && l != 4L && l != 7L;
+                        return l == 1L || l == 4L || l == 7L;
                     } ),
                     VirtualValues.slice( list( -2L, 1L, 4L, 7L, 10L ), 1, 4 ),
                     VirtualValues.drop( list( -2L, 1L, 4L, 7L ), 1 ),

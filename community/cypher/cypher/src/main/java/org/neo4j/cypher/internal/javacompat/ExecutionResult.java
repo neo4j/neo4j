@@ -74,7 +74,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         inner = Objects.requireNonNull( projection );
         //if updating query we must fetch the iterator right away in order to eagerly perform updates
-        if ( projection.publicExecutionType().queryType() == QueryType.WRITE )
+        if ( projection.executionType().queryType() == QueryType.WRITE )
         {
             innerIterator();
         }
@@ -114,7 +114,7 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     {
         try
         {
-            return inner.publicExecutionType();
+            return inner.executionType();
         }
         catch ( CypherException e )
         {

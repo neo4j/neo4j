@@ -94,12 +94,12 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        ExplainExecutionResult(columns, planDescription, queryType, notificationLogger.notifications.map(asKernelNotification))
+        ExplainExecutionResult(columns.toArray, planDescription, queryType, notificationLogger.notifications.map(asKernelNotification))
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
         val descriptor = buildDescriptor(planDescription, resultIterator.wasMaterialized)
-        new PipeExecutionResult(resultIterator, columns, state, descriptor, planType, queryType)
+        new PipeExecutionResult(resultIterator, columns.toArray, state, descriptor, planType, queryType)
       }
     }
 

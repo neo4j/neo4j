@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb
-import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{Notification, ResourceIterator}
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecutionResult, runSafely: RunSafely)
                             (implicit innerMonitor: QueryExecutionMonitor)
@@ -95,13 +96,10 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
     }
   }
 
-  override def columns = runSafely {
-    inner.columns
+  override def fieldNames() = runSafely {
+    inner.fieldNames()
   }
 
-  override def javaColumns = runSafely {
-    inner.javaColumns
-  }
 
   override def queryStatistics() = runSafely { inner.queryStatistics() }
 
@@ -148,7 +146,7 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
     endQueryExecution()
   }
 
-  override def next(): Map[String, Any] = runSafely {
+  override def next(): collection.Map[String, Any] = runSafely {
     val result = inner.next()
     closeIfEmpty()
     result
@@ -162,13 +160,18 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
     next
   }
 
-  override def executionType: InternalQueryType = runSafely {
-    inner.executionType
+  override def queryType: InternalQueryType = runSafely {
+    inner.queryType
   }
 
   override def notifications: Iterable[Notification] = runSafely { inner.notifications }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = runSafely {
+    inner.accept(visitor)
+    endQueryExecution()
+  }
+
+  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = runSafely {
     inner.accept(visitor)
     endQueryExecution()
   }

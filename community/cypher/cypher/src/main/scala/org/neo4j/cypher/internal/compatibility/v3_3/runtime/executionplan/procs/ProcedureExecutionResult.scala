@@ -27,11 +27,17 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Inte
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.spatial.{Geometry, Point}
+import org.neo4j.values.AnyValues.{asMapValue, asPathValue, asPointValue}
+import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.{doubleValue, longValue, stringValue}
+import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 /**
   * Execution result of a Procedure
@@ -50,12 +56,13 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                name: QualifiedName,
                                                callMode: ProcedureCallMode,
                                                args: Seq[Any],
+                                               resultTypes: Array[CypherType],
                                                indexResultNameMappings: Seq[(Int, String)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
 
-  override def columns: List[String] = indexResultNameMappings.map(_._2).toList
+  override def fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
 
   private final val executionResults = executeCall
 
@@ -81,8 +88,34 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
     }
   }
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {
-    executionResults.foreach { res => visitor.visit(new ResultRowImpl(resultAsRefMap(res))) }
+  private def transform[T](value: AnyRef, f: T => AnyValue): AnyValue = {
+    if (value == null) Values.NO_VALUE
+    else f(value.asInstanceOf[T])
+  }
+
+  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
+    executionResults.foreach { res =>
+      assert(res.length == resultTypes.length)
+      val fields = new Array[AnyValue](res.length)
+      for (i <- resultTypes.indices) {
+        fields(i) = resultTypes(i) match {
+          case CTNode => transform(res(i), fromNodeProxy)
+          case CTRelationship => transform(res(i), fromRelationshipProxy)
+          case CTPath => transform(res(i), asPathValue)
+          case CTInteger => transform(res(i), longValue)
+          case CTFloat => transform(res(i), doubleValue)
+          case CTString => transform(res(i), stringValue)
+          case CTBoolean => transform(res(i), Values.booleanValue)
+          case CTPoint => transform(res(i), (p: Point) => asPointValue(p))
+          case CTGeometry => transform(res(i), (g: Geometry) => asPointValue(g))
+          case CTMap => transform(res(i), asMapValue)
+          case ListType(_) => transform(res(i), AnyValues.asListValue)
+        }
+      }
+      visitor.visit(new Record {
+        override def fields(): Array[AnyValue] = fields
+      })
+    }
     close()
   }
 
@@ -90,7 +123,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   //      of to get accurate stats for procedure code
   override def queryStatistics(): QueryStatistics = context.getOptStatistics.getOrElse(QueryStatistics())
 
-  override def executionType: InternalQueryType = callMode.queryType
+  override def queryType: InternalQueryType = callMode.queryType
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
     val mapData = new util.HashMap[String, Any](rowData.length)

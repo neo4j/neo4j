@@ -21,23 +21,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import java.io.PrintWriter
 import java.util
-import java.util.Collections
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb.{Notification, ResourceIterator}
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
-case class ExplainExecutionResult(columns: List[String],
+case class ExplainExecutionResult(fieldNames: Array[String],
                                   executionPlanDescription: InternalPlanDescription,
-                                  executionType: InternalQueryType,
+                                  queryType: InternalQueryType,
                                   notifications: Set[Notification])
   extends InternalExecutionResult {
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
   def columnAs[T](column: String) = Iterator.empty
-  def javaColumns: util.List[String] = Collections.emptyList()
 
   def queryStatistics() = QueryStatistics()
 
@@ -62,6 +61,7 @@ case class ExplainExecutionResult(columns: List[String],
   def hasNext = false
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
+  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode
 
