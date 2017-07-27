@@ -57,7 +57,7 @@ public abstract class AbstractShellIT
     protected GraphDatabaseAPI db;
     protected ShellServer shellServer;
     protected ShellClient shellClient;
-    private Integer remotelyAvailableOnPort;
+    protected Integer remotelyAvailableOnPort;
     protected static final RelationshipType RELATIONSHIP_TYPE = withName( "TYPE" );
 
     @Rule

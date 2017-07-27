@@ -19,25 +19,35 @@
  */
 package org.neo4j.shell;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.rmi.RemoteException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.shell.impl.SimpleAppServer;
 
 import static org.junit.Assert.assertTrue;
 
 public class ClientReconnectIT extends AbstractShellIT
 {
+    @Before
+    public void setUp() throws RemoteException
+    {
+        makeServerRemotelyAvailable();
+    }
+
     @Test
     public void remoteClientAbleToReconnectAndContinue() throws Exception
     {
-        makeServerRemotelyAvailable();
         ShellClient client = newRemoteClient();
         executeCommand( client, "help", "Available commands" );
+        int serverPort = this.remotelyAvailableOnPort;
         restartServer();
-        makeServerRemotelyAvailable();
+        makeRemoveAvailableOnPort( serverPort );
         executeCommand( client, "help", "Available commands" );
         client.shutdown();
     }
@@ -46,7 +56,6 @@ public class ClientReconnectIT extends AbstractShellIT
     public void initialSessionValuesSurvivesReconnect() throws Exception
     {
         createRelationshipChain( 2 );
-        makeServerRemotelyAvailable();
         Map<String,Serializable> initialSession = MapUtil.genericMap( "TITLE_KEYS", "test" );
         ShellClient client = newRemoteClient( initialSession );
         String name = "MyTest";
@@ -54,5 +63,24 @@ public class ClientReconnectIT extends AbstractShellIT
         client.evaluate( "set test " + name );
         assertTrue( client.getPrompt().contains( name ) );
         client.shutdown();
+    }
+
+    private void makeRemoveAvailableOnPort( int serverPort ) throws RemoteException
+    {
+        long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis( 30 );
+        do
+        {
+            try
+            {
+                shellServer.makeRemotelyAvailable( serverPort, SimpleAppServer.DEFAULT_NAME );
+                return;
+            }
+            catch ( Throwable t )
+            {
+                //ignore
+            }
+        }
+        while ( System.currentTimeMillis() < deadline );
+        throw new RuntimeException( "Not able to start shell server on desired port for more then 30 seconds." );
     }
 }
