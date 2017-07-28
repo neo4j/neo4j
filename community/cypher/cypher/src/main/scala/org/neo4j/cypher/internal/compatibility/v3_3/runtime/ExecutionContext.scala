@@ -117,4 +117,11 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
   protected def createWithNewMap(newMap: MutableMap[String, Any]) = {
     copy(m = newMap)
   }
+
+  override def toString(): String =
+    if (m != null)
+      s"ExecutionContext(${m.mkString}"
+    else
+      s"ExecutionContext(longs = [${longs.mkString(", ")}])"
+
 }

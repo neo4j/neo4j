@@ -19,22 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
-case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: PipelineInformation)
-                                   (val id: Id = new Id) extends Pipe {
+case class ArgumentRegisterPipe(pipelineInformation: PipelineInformation)
+                               (val id: Id = new Id)
+                                extends Pipe {
 
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
-      val context = ExecutionContext(pipelineInformation.numberOfLongs)
-      state.copyArgumentStateTo(context)
-      context.setLongAt(offset, nodeId)
-      context
-    })
+  override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val context = ExecutionContext(pipelineInformation.numberOfLongs)
+    state.copyArgumentStateTo(context)
+    Iterator(context)
   }
 }

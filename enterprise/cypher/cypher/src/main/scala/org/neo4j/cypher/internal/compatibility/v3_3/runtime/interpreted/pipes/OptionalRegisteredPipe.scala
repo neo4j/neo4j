@@ -19,22 +19,27 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
-case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: PipelineInformation)
-                                   (val id: Id = new Id) extends Pipe {
+case class OptionalRegisteredPipe(source: Pipe, nullableOffsets: Seq[Int],
+                                  pipelineInformation: PipelineInformation)
+                                 (val id: Id = new Id)
+  extends PipeWithSource(source) with Pipe {
 
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
-      val context = ExecutionContext(pipelineInformation.numberOfLongs)
-      state.copyArgumentStateTo(context)
-      context.setLongAt(offset, nodeId)
-      context
-    })
+  private def notFoundExecutionContext(state: QueryState): ExecutionContext = {
+    val context = ExecutionContext(pipelineInformation.numberOfLongs)
+    state.copyArgumentStateTo(context)
+    // TODO: This can probably be done with java.util.Arrays.fill knowing the first offset
+    nullableOffsets.foreach(offset => context.setLongAt(offset, -1))
+    context
   }
+
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    if (input.isEmpty) {
+      Iterator(notFoundExecutionContext(state))
+    } else {
+      input
+    }
 }

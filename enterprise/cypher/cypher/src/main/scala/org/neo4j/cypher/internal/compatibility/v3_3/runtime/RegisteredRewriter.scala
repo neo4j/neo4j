@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, PrimitiveEquals}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, NullCheck, PrimitiveEquals}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
@@ -78,11 +78,11 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         val slot = pipelineInformation(key)
         slot match {
-          case LongSlot(offset, _, typ, _) if typ == CTNode =>
-            NodeProperty(offset, token)
+          case LongSlot(offset, false, typ, _) if typ == CTNode => NodeProperty(offset, token)
+          case LongSlot(offset, true, typ, _) if typ == CTNode => NullCheck(offset, NodeProperty(offset, token))
         }
 
-      case e@Equals(Variable(k1), Variable(k2)) =>
+      case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
         if (slot1.typ == slot2.typ)

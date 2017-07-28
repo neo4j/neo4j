@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, PrimitiveEquals}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, NullCheck, PrimitiveEquals}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -88,6 +88,35 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
 
     // then
     result should equal(Selection(Seq(Not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))(pos)), argument)(solved))
+    newLookup(result) should equal(pipelineInformation)
+  }
+
+  test("return nullable node") {
+    // match optional (a) return (a)
+    // given
+    val node1 = IdName("a")
+    val argument = AllNodesScan(node1, Set.empty)(solved)
+    val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
+    val selection = Selection(Seq(predicate), argument)(solved)
+    val pipelineInformation = PipelineInformation(Map(
+      "a" -> LongSlot(0, nullable = true, typ = CTNode, name = "a")
+    ), numberOfLongs = 1, numberOfReferences = 0)
+
+    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
+      argument -> pipelineInformation,
+      selection -> pipelineInformation
+    )
+    val tokenContext = mock[TokenContext]
+    val tokenId = 666
+    when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
+    val rewriter = new RegisteredRewriter(tokenContext)
+
+    // when
+    val (result, newLookup) = rewriter(selection, lookup)
+
+    // then
+    val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666)), literalInt(42))(pos)
+    result should equal(Selection(Seq(expectedPredicate), argument)(solved))
     newLookup(result) should equal(pipelineInformation)
   }
 

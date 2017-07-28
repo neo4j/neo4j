@@ -19,22 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 
-case class AllNodesScanRegisterPipe(ident: String, pipelineInformation: PipelineInformation)
-                                   (val id: Id = new Id) extends Pipe {
-
-  private val offset = pipelineInformation.getLongOffsetFor(ident)
-
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    PrimitiveLongHelper.map(state.query.nodeOps.allPrimitive, { nodeId =>
-      val context = ExecutionContext(pipelineInformation.numberOfLongs)
-      state.copyArgumentStateTo(context)
-      context.setLongAt(offset, nodeId)
-      context
-    })
-  }
+case class ApplyRegisterPipe(lhs: Pipe, rhs: Pipe)
+                            (val id: Id = new Id)
+                             extends PipeWithSource(lhs) with Pipe {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.flatMap {
+      lhsContext =>
+        val rhsState = state.withInitialContext(lhsContext)
+        rhs.createResults(rhsState)
+    }
 }
