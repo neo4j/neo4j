@@ -41,6 +41,9 @@ case class Addition(lhs: CodeGenExpression, rhs: CodeGenExpression) extends Code
     case (singleElement, ListType(innerType)) =>
       CypherCodeGenType(ListType(innerType leastUpperBound singleElement), ReferenceType)
 
+    case (CTAny, _) => CypherCodeGenType(CTAny, ReferenceType)
+    case (_, CTAny) => CypherCodeGenType(CTAny, ReferenceType)
+
     // Strings
     case (CTString, _) => CypherCodeGenType(CTString, ReferenceType)
     case (_, CTString) => CypherCodeGenType(CTString, ReferenceType)

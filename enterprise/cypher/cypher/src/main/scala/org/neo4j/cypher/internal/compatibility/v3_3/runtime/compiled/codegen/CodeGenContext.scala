@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.JoinData
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
@@ -29,7 +30,8 @@ import scala.collection.mutable
 
 case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id], val namer: Namer = Namer()) {
+class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id],
+                     lookup: Map[String, Int], val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty
@@ -41,6 +43,10 @@ class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, I
     //assert(!variables.isDefinedAt(queryVariable)) // TODO: Make the cases where overwriting the value is ok explicit (by using updateVariable)
     variables.put(queryVariable, variable)
   }
+
+  def numberOfColumns() = lookup.size
+
+  def nameToIndex(name: String) = lookup.getOrElse(name, throw new InternalException(s"$name is not a mapped column"))
 
   def updateVariable(queryVariable: String, variable: Variable) {
     assert(variables.isDefinedAt(queryVariable))

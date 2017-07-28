@@ -37,7 +37,8 @@ public class ResultRowImpl implements Result.ResultRow
         this.results = results;
     }
 
-    public ResultRowImpl( )
+    public
+    ResultRowImpl( )
     {
         this( new HashMap<>() );
     }

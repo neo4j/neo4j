@@ -96,9 +96,9 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     executionResults.foreach { res =>
       assert(res.length == resultTypes.length)
-      val fields = new Array[AnyValue](res.length)
+      val fieldArray = new Array[AnyValue](res.length)
       for (i <- resultTypes.indices) {
-        fields(i) = resultTypes(i) match {
+        fieldArray(i) = resultTypes(i) match {
           case CTNode => transform(res(i), fromNodeProxy)
           case CTRelationship => transform(res(i), fromRelationshipProxy)
           case CTPath => transform(res(i), asPathValue)
@@ -113,7 +113,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
         }
       }
       visitor.visit(new Record {
-        override def fields(): Array[AnyValue] = fields
+        override def fields(): Array[AnyValue] = fieldArray
       })
     }
     close()

@@ -76,9 +76,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                             input: Seq[Any], planType: ExecutionMode) = {
       val descriptionGenerator = () => createNormalPlan
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val array: Option[IndexedSeq[CypherType]] = signature.outputSignature.map(_.map(_.typ))
+      val array = signature.outputSignature.map(_.map(_.typ)).getOrElse(IndexedSeq.empty).toArray
       new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   null, resultIndices, descriptionGenerator, planType)
+                                   array, resultIndices, descriptionGenerator, planType)
     }
 
     private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
@@ -95,9 +95,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       val rowCounter = Counter()
       val descriptionGenerator = createProfilePlanGenerator(rowCounter)
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val array: Option[IndexedSeq[CypherType]] = signature.outputSignature.map(_.map(_.typ))
+      val array = signature.outputSignature.map(_.map(_.typ)).getOrElse(IndexedSeq.empty).toArray
       new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   null, resultIndices,
+                                   array, resultIndices,
                                    descriptionGenerator, planType) {
         override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
       }

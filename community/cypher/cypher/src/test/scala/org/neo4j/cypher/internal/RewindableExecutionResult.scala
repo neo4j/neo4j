@@ -269,10 +269,6 @@ object RewindableExecutionResult {
 
     override def columnAs[T](column: String): Iterator[T] = inner.columnAs(column)
 
-    override def columns: List[String] = inner.columns
-
-    override def javaColumns: util.List[String] = inner.javaColumns
-
     override def fieldNames(): Array[String] = inner.columns.toArray
 
     override def queryStatistics(): QueryStatistics = {

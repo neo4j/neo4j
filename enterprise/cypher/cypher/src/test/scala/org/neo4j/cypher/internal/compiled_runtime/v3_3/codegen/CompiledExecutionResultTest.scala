@@ -20,21 +20,29 @@
 package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen
 
 import java.util
+import java.util.function.BiConsumer
 
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.CompiledExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.Iterators
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
+import org.neo4j.values.storable._
+import org.neo4j.values.virtual.{ListValue, MapValue}
+import org.neo4j.values.{AnyValue, AnyValues}
 
+import scala.collection.JavaConverters
 import scala.collection.JavaConverters._
 
 class CompiledExecutionResultTest extends CypherFunSuite {
@@ -76,9 +84,9 @@ class CompiledExecutionResultTest extends CypherFunSuite {
   }
 
   test("should return java objects for list") {
-    val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42)))
+    val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42L)))
 
-    Iterators.asList(result.javaColumnAs[List[Integer]]("foo")) should equal(javaList(javaList(42)))
+    Iterators.asList(result.javaColumnAs[List[Integer]]("foo")) should equal(javaList(javaList(42L)))
   }
 
   test("should return java objects for map") {
@@ -112,9 +120,9 @@ class CompiledExecutionResultTest extends CypherFunSuite {
   }
 
   test("should return a java iterator for list") {
-    val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42)))
+    val result = newCompiledExecutionResult(javaMap("foo" -> javaList(42L)))
 
-    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaList(42))))
+    Iterators.asList(result.javaIterator) should equal(javaList(javaMap("foo" -> javaList(42L))))
   }
 
   test("should return a java iterator for map") {
@@ -162,13 +170,19 @@ class CompiledExecutionResultTest extends CypherFunSuite {
                                          assertion: () => Unit = () => {}) = {
     val noCompiledCode: GeneratedQueryExecution = new GeneratedQueryExecution {
       override def setCompletable(closeable: Completable){}
-      override def javaColumns(): util.List[String] = new util.ArrayList(row.keySet())
+
+      override def fieldNames(): Array[String] = row.keySet().toArray(new Array[String](row.size()))
+
       override def executionMode(): ExecutionMode = NormalMode
-      override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
+      override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
         try {
-          val rowImpl = new ResultRowImpl()
-          row.asScala.foreach { case (k, v) => rowImpl.set(k, v) }
-          visitor.visit(rowImpl)
+          val fields = new Array[AnyValue](row.size())
+          var i = 0
+          row.asScala.foreach { case (k, v) =>
+            fields(i) = AnyValues.of(v)
+            i += 1
+          }
+          visitor.visit(new ResultRecord(fields))
           assertion()
         } finally {
           taskCloser.close(success = true)
@@ -178,8 +192,32 @@ class CompiledExecutionResultTest extends CypherFunSuite {
     }
 
     val context = mock[QueryContext]
+    when(context.asObject(any())).thenAnswer(new Answer[AnyRef] {
+      override def answer(invocationOnMock: InvocationOnMock): AnyRef =
+        toObjectConverter(invocationOnMock.getArguments()(0))
+    })
     when(context.isGraphKernelResultValue(any())).thenReturn(false)
+
     new CompiledExecutionResult(taskCloser, context, noCompiledCode, null)
+  }
+
+  import JavaConverters._
+  private def toObjectConverter(a: AnyRef): AnyRef = a match {
+    case Values.NO_VALUE => null
+    case s: TextValue => s.stringValue()
+    case b: BooleanValue => Boolean.box(b.booleanValue())
+    case f: FloatingPointValue => Double.box(f.doubleValue())
+    case i: IntegralValue => Long.box(i.longValue())
+    case l: ListValue =>
+      val list = new util.ArrayList[AnyRef]
+      l.iterator().asScala.foreach(a => list.add(toObjectConverter(a)))
+      list
+    case m: MapValue =>
+      val map = new util.HashMap[String, AnyRef]()
+      m.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(t: String, u: AnyValue): Unit = map.put(t, toObjectConverter(u))
+      })
+      map
   }
 
   private def javaList[T](elements: T*): util.List[T] = elements.toList.asJava

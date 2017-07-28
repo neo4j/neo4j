@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier
 import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
-import org.neo4j.codegen.Expression.{constant, invoke, newInstance}
+import org.neo4j.codegen.Expression.{constant, invoke, newArray, newInstance}
 import org.neo4j.codegen.MethodReference.constructorReference
 import org.neo4j.codegen.TypeReference._
 import org.neo4j.codegen.bytecode.ByteCode.{BYTECODE, VERIFY_GENERATED_BYTECODE}
@@ -39,13 +39,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id,
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
-import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
-import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 import scala.collection.mutable
 
@@ -152,7 +152,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
                         fields: Fields,
                         conf: CodeGenConfiguration)(implicit codeGenContext: CodeGenContext) = {
     using(clazz.generate(MethodDeclaration.method(typeRef[Unit], "accept",
-      Parameter.param(parameterizedType(classOf[ResultVisitor[_]],
+      Parameter.param(parameterizedType(classOf[QueryResultVisitor[_]],
         typeParameter("E")), "visitor")).
       parameterizedWith("E", extending(typeRef[Exception])).
       throwsException(typeParameter("E")))) { (codeBlock: CodeBlock) =>
@@ -161,10 +161,14 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
           val target = Expression.get(block.self(), fields.closeable)
           val reference = method[Completable, Unit]("completed", typeRef[Boolean])
           val constant1 = Expression.constant(success)
-          val invoke1 = Expression.invoke(target, reference, constant1)
+          val invoke1 = invoke(target, reference, constant1)
           block.expression(invoke1)
         }))
-      codeBlock.assign(typeRef[ResultRowImpl], "row", Templates.newResultRow)
+      codeBlock.assign(typeRef[ResultRecord], "row",
+                       invoke(newInstance(typeRef[ResultRecord]),
+                              MethodReference.constructorReference(typeRef[ResultRecord], typeRef[Int]),
+                              constant(codeGenContext.numberOfColumns()))
+                      )
       methodStructure(structure)
       structure.finalizers.foreach(_ (true)(codeBlock))
     }
@@ -176,7 +180,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     clazz.generate(Templates.setCompletable(clazz.handle()))
     clazz.generate(Templates.executionMode(clazz.handle()))
     clazz.generate(Templates.executionPlanDescription(clazz.handle()))
-    clazz.generate(Templates.JAVA_COLUMNS)
+    clazz.generate(Templates.FIELD_NAMES)
   }
 
   private def setOperatorIds(clazz: ClassGenerator, operatorIds: Map[String, Id]) = {
@@ -186,8 +190,8 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   private def createFields(columns: Seq[String], clazz: ClassGenerator) = {
-    clazz.staticField(typeRef[util.List[String]], "COLUMNS", Templates.asList[String](
-      columns.map(key => constant(key))))
+    clazz.staticField(TypeReference.typeReference(classOf[Array[String]]),
+                      "COLUMNS", newArray(typeRef[String], columns.map(key => constant(key)):_*))
 
     Fields(
       closer = clazz.field(typeRef[TaskCloser], "closer"),

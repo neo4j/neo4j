@@ -23,21 +23,21 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
-import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.graphdb.GraphDatabaseService
@@ -121,7 +121,7 @@ trait CodeGenSugar extends MockitoSugar {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
     CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, codeGenConfiguration)(
-      new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
+      new CodeGenContext(new SemanticTable(), Map.empty, columns.indices.map(i => columns(i) -> i).toMap, new Namer(
         new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD"))).query
   }
 

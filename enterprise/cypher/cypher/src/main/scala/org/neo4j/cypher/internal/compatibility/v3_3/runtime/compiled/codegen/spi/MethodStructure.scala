@@ -61,6 +61,7 @@ trait MethodStructure[E] {
   def incrementInteger(name: String, value: E): Unit
   def checkInteger(variableName: String, comparator: Comparator, value: Long): E
   def newTableValue(targetVar: String, tupleDescriptor: TupleDescriptor): E
+  def noValue(): E
   def constantExpression(value: AnyRef): E
   def constantPrimitiveExpression(value: AnyVal): E = constantExpression(value.asInstanceOf[AnyRef])
   def asMap(map: Map[String, E]): E
@@ -123,7 +124,9 @@ trait MethodStructure[E] {
   def markAsNull(varName: String, codeGenType: CodeGenType): Unit
   def nullablePrimitive(varName: String, codeGenType: CodeGenType, onSuccess: E): E
   def nullableReference(varName: String, codeGenType: CodeGenType, onSuccess: E): E
+  def isNull(expr: E, codeGenType: CodeGenType): E
   def isNull(name: String, codeGenType: CodeGenType): E
+  def notNull(expr: E, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
   def box(expression:E, codeGenType: CodeGenType): E
   def unbox(expression:E, codeGenType: CodeGenType): E
@@ -189,7 +192,8 @@ trait MethodStructure[E] {
   def materializeAny(expression: E): E
   /** Feed single row to the given visitor */
   def visitorAccept(): Unit
-  def setInRow(column: String, value: E): Unit
+  def setInRow(column: Int, value: E): Unit
+  def toAnyValue(e: E, t: CodeGenType): E
 }
 
 sealed trait Comparator

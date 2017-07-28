@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen
 import java.time.Clock
 import java.util
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
-import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, Provider}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription, LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
@@ -90,7 +90,8 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
   private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id],
                             columns: Seq[String], conf: CodeGenConfiguration): CodeStructureResult[GeneratedQuery] = {
     import LogicalPlanConverter._
-    implicit val context = new CodeGenContext(semantics, ids)
+    val lookup = columns.indices.map(i => columns(i) -> i).toMap
+    implicit val context = new CodeGenContext(semantics, ids, lookup)
     val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id

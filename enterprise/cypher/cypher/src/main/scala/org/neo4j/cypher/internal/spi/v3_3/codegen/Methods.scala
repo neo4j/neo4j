@@ -27,10 +27,9 @@ import org.neo4j.cypher.internal.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.QueryExecutionEvent
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.javacompat.ResultRecord
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.graphdb.Direction
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.IndexQuery
@@ -38,6 +37,8 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.storable.{Value, Values}
 
 object Methods {
@@ -102,8 +103,8 @@ object Methods {
   val materializeAnyResult = method[CompiledConversionUtils, Object]("materializeAnyResult", typeRef[NodeManager], typeRef[Object])
   val nodeId = method[NodeIdWrapper, Long]("id")
   val relId = method[RelationshipIdWrapper, Long]("id")
-  val set = method[ResultRowImpl, Unit]("set", typeRef[String], typeRef[Object])
-  val visit = method[ResultVisitor[_], Boolean]("visit", typeRef[ResultRow])
+  val set = method[ResultRecord, Unit]("set", typeRef[Int], typeRef[AnyValue])
+  val visit = method[QueryResultVisitor[_], Boolean]("visit", typeRef[Record])
   val executeOperator = method[QueryExecutionTracer, QueryExecutionEvent]("executeOperator", typeRef[Id])
   val dbHit = method[QueryExecutionEvent, Unit]("dbHit")
   val row = method[QueryExecutionEvent, Unit]("row")

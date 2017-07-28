@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
@@ -77,8 +77,8 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
         if (executionMode == ExplainMode) {
           //close all statements
           taskCloser.close(success = true)
-          ExplainExecutionResult(compiled.columns.toList,
-            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications.map(InternalWrapping.asKernelNotification))
+          ExplainExecutionResult(compiled.columns.toArray,
+            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications.map(asKernelNotification))
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
                                           immutableMapValues(params, queryContext.asObject), taskCloser)

@@ -55,8 +55,6 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
   override def columnAs[T](column: String): Iterator[Nothing] = inner.columnAs(column)
-  override def columns: List[String] = inner.columns
-  override def javaColumns: util.List[String] = inner.javaColumns
 
   override def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()

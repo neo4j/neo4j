@@ -30,7 +30,6 @@ import org.neo4j.graphdb._
 import org.neo4j.values.result.QueryResult
 
 import scala.collection.JavaConverters._
-import scala.collection.Map
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResult {
 

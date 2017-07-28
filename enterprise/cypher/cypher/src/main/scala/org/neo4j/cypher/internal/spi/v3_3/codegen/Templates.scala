@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.values.storable.{Value, Values}
 
 /**
   * Contains common code generation constructs.
@@ -120,6 +121,7 @@ object Templates {
     }, exception)
   }
 
+  val noValue = Expression.getStatic(staticField[Values, Value]("NO_VALUE"))
   val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
   val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
   val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
@@ -182,7 +184,7 @@ object Templates {
                    method[Provider[InternalPlanDescription], Object]("get")))).
     build()
 
-  val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
-    returns(get(typeRef[util.List[String]], "COLUMNS")).
+  val FIELD_NAMES = MethodTemplate.method(TypeReference.typeReference(classOf[Array[String]]), "fieldNames").
+    returns(get(TypeReference.typeReference(classOf[Array[String]]), "COLUMNS")).
     build()
 }

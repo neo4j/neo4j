@@ -128,10 +128,6 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   override def columnAs[T](column: String): Iterator[Nothing] = inner.columnAs(column)
 
-  override def columns: List[String] = inner.columns
-
-  override def javaColumns: util.List[String] = inner.javaColumns
-
   override def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()
     QueryStatistics(nodesCreated = i.nodesCreated,

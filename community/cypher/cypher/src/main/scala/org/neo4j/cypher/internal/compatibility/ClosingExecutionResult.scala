@@ -146,7 +146,7 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
     endQueryExecution()
   }
 
-  override def next(): collection.Map[String, Any] = runSafely {
+  override def next(): Map[String, Any] = runSafely {
     val result = inner.next()
     closeIfEmpty()
     result
