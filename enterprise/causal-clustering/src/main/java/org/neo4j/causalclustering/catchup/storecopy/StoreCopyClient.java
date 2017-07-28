@@ -25,12 +25,16 @@ import java.util.concurrent.CompletableFuture;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
+import org.neo4j.causalclustering.catchup.TopologyAddressResolutionException;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+
+import static org.neo4j.causalclustering.catchup.TopologyAddressResolutionException.topologyAddressResolutionException;
 
 public class StoreCopyClient
 {
@@ -84,7 +88,7 @@ public class StoreCopyClient
 
     StoreId fetchStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from );
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( topologyAddressResolutionException( from ) );
         try
         {
             CatchUpResponseAdaptor<StoreId> responseHandler = new CatchUpResponseAdaptor<StoreId>()

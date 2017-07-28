@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
+import org.neo4j.causalclustering.catchup.TopologyAddressResolutionException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
@@ -34,6 +35,7 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
@@ -49,6 +51,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.causalclustering.catchup.TopologyAddressResolutionException.topologyAddressResolutionException;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.CANCELLED;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
@@ -247,7 +250,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
         log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream );
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( topologyAddressResolutionException( upstream ) );
         TxStreamFinishedResponse response;
         try
         {
@@ -323,7 +326,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             throw new RuntimeException( throwable );
         }
 
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream );
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( topologyAddressResolutionException( upstream ) );
         try
         {
             storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );

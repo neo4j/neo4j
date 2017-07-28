@@ -310,9 +310,9 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     }
 
     @Override
-    public AdvertisedSocketAddress findCatchupAddress( MemberId memberId )
+    public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
     {
-        return Optional.ofNullable( catchupAddressMap.get( memberId ) ).orElseThrow( () -> new TopologyLookupException( memberId ) );
+        return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }
 
     private synchronized void refreshTopology() throws InterruptedException
