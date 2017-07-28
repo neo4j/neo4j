@@ -206,11 +206,12 @@ public abstract class AbstractStep<T> implements Step<T>
                 // stillWorking(), once false cannot again return true so no need to check
                 if ( !isCompleted() )
                 {
+                    done();
                     if ( downstream != null )
                     {
                         downstream.endOfUpstream();
                     }
-                    done();
+                    endTime = currentTimeMillis();
                     completed = true;
                 }
             }
@@ -223,7 +224,6 @@ public abstract class AbstractStep<T> implements Step<T>
      */
     protected void done()
     {
-        endTime = currentTimeMillis();
     }
 
     @Override
