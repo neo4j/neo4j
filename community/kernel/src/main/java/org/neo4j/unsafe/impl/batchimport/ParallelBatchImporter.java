@@ -166,8 +166,6 @@ public class ParallelBatchImporter implements BatchImporter
         long startTime = currentTimeMillis();
         CountingStoreUpdateMonitor storeUpdateMonitor = new CountingStoreUpdateMonitor();
         try ( BatchingNeoStores neoStore = getBatchingNeoStores();
-              CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
-                    neoStore.getLastCommittedTransactionId() );
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             NumberArrayFactory numberArrayFactory =
@@ -233,17 +231,21 @@ public class ParallelBatchImporter implements BatchImporter
             groupDefragmenter.run( max( maxMemory, peakMemoryUsage ), neoStore, highNodeId );
 
             // Count nodes per label and labels per node
-            MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-            nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
-            memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
-            executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
-                    neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
-                    memoryUsageStats ) );
-            // Count label-[type]->label
-            executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
-                    neoStore.getLabelRepository().getHighId(),
-                    neoStore.getRelationshipTypeRepository().getHighId(),
-                    countsUpdater, numberArrayFactory, progressMonitor.startSection( "Relationships" ) ) );
+            try ( CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
+                    neoStore.getLastCommittedTransactionId() ) )
+            {
+                MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+                nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
+                memoryUsageStats = new MemoryUsageStatsProvider( nodeLabelsCache );
+                executeStage( new NodeCountsStage( config, nodeLabelsCache, neoStore.getNodeStore(),
+                        neoStore.getLabelRepository().getHighId(), countsUpdater, progressMonitor.startSection( "Nodes" ),
+                        memoryUsageStats ) );
+                // Count label-[type]->label
+                executeStage( new RelationshipCountsStage( config, nodeLabelsCache, relationshipStore,
+                        neoStore.getLabelRepository().getHighId(),
+                        neoStore.getRelationshipTypeRepository().getHighId(),
+                        countsUpdater, numberArrayFactory, progressMonitor.startSection( "Relationships" ) ) );
+            }
 
             // We're done, do some final logging about it
             long totalTimeMillis = currentTimeMillis() - startTime;
