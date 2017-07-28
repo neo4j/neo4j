@@ -180,6 +180,22 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions() throws Exception
+    {
+        assertNotifications("CYPHER 2.3 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(38,2,10)),
+                SeverityLevel.WARNING ) ) );
+
+        assertNotifications("CYPHER 3.1 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(38,2,10)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
     public void shouldWarnOnMissingLabelWithCommentInBeginning() throws Exception
     {
         assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
