@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticTable, ast => frontEndAst}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilder(fallback: PipeBuilder,
@@ -109,6 +109,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
             k -> runtimeExpressions.NodeFromRegister(offset)
           case LongSlot(offset, true, CTNode, _) =>
             k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.NodeFromRegister(offset))
+          case _ =>
+            throw new InternalException("Did not find " + k + "in the pipeline information1")
         }
     }
     runtimeColumns
