@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1, v3_2, v3_3}
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
@@ -159,7 +159,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Version3_2: TestConfig = Compiled3_2 + Scenarios.Compatibility3_2
 
-    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion
+    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion + Scenarios.EnterpriseInterpreted
 
     def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
@@ -268,7 +268,6 @@ trait LernaeanTestSupport extends CypherTestSupport {
     object CompiledSource3_3 extends CompiledScenario {
       override def prepare(): Unit = newRuntimeMonitor.clear()
 
-
       override def preparserOptions: String = "planner=cost runtime=compiled debug=generate_java_source"
 
       override def name: String = "compiled runtime through source code"
@@ -281,6 +280,15 @@ trait LernaeanTestSupport extends CypherTestSupport {
       override def preparserOptions: String = "planner=cost runtime=compiled"
 
       override def name: String = "compiled runtime straight to bytecode"
+    }
+
+    object EnterpriseInterpreted extends RuntimeScenario {
+
+      override protected def argumentName: String = "INTERPRETED-ENTERPRISE"
+
+      override def preparserOptions: String = "runtime=interpreted debug=sleipnir"
+
+      override def name: String = "enterprise interpreted"
     }
 
     object CommunityInterpreted extends RuntimeScenario {
