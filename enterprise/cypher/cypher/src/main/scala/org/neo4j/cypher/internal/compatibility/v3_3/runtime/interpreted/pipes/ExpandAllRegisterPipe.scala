@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -40,25 +41,30 @@ case class ExpandAllRegisterPipe(source: Pipe,
     input.flatMap {
       (inputRow: ExecutionContext) =>
         val fromNode = inputRow.getLongAt(fromOffset)
-        val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
-        var otherSide: Long = 0
 
-        val relVisitor = new RelationshipVisitor[InternalException] {
-          override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
-            if (fromNode == startNodeId)
-              otherSide = endNodeId
-            else
-              otherSide = startNodeId
+        if (nodeIsNull(fromNode))
+          Iterator.empty
+        else {
+          val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
+          var otherSide: Long = 0
+
+          val relVisitor = new RelationshipVisitor[InternalException] {
+            override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
+              if (fromNode == startNodeId)
+                otherSide = endNodeId
+              else
+                otherSide = startNodeId
+          }
+
+          PrimitiveLongHelper.map(relationships, relId => {
+            relationships.relationshipVisit(relId, relVisitor)
+            val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
+            outputRow.copyFrom(inputRow)
+            outputRow.setLongAt(relOffset, relId)
+            outputRow.setLongAt(toOffset, otherSide)
+            outputRow
+          })
         }
-
-        PrimitiveLongHelper.map(relationships, relId => {
-          relationships.relationshipVisit(relId, relVisitor)
-          val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
-          outputRow.copyFrom(inputRow)
-          outputRow.setLongAt(relOffset, relId)
-          outputRow.setLongAt(toOffset, otherSide)
-          outputRow
-        })
     }
   }
 }

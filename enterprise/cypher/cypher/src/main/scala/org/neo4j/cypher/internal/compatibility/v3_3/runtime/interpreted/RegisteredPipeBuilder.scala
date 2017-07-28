@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
@@ -51,10 +51,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val pipelineInformation = pipelines(plan)
 
     plan match {
-      case p@AllNodesScan(IdName(column), _) =>
+      case AllNodesScan(IdName(column), _) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
 
-      case p@NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _ /*TODO*/) =>
+      case NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
           valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
@@ -62,7 +62,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case Argument(_) =>
         ArgumentRegisterPipe(pipelineInformation)(id)
 
-      case p@NodeByLabelScan(IdName(column), label, _) =>
+      case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case _ => fallback.build(plan)
@@ -73,32 +73,29 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipelineInformation = pipelines(plan)
+    val pipeline = pipelines(plan)
 
     plan match {
       case ProduceResult(columns, _) =>
-        val runtimeColumns = createProjectionsForResult(columns, pipelineInformation)
+        val runtimeColumns = createProjectionsForResult(columns, pipeline)
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-        val fromSlot = pipelineInformation(from)
-        val relSlot = pipelineInformation(relName)
-        val toSlot = pipelineInformation(to)
-        val wrappedSource = if(fromSlot.nullable) NullCheckPipe(source, fromSlot.offset)(id) else source
-        ExpandAllRegisterPipe(wrappedSource, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipelineInformation)(id)
+        val fromSlot = pipeline(from)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
+        ExpandAllRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromSlot = pipelineInformation(from)
-        val relSlot = pipelineInformation(relName)
-        val toSlot = pipelineInformation(to)
-        val nullableOffsets = List(fromSlot, toSlot).filter(slot => slot.nullable).map(slot => slot.offset).distinct
-        val wrappedSource = if (nullableOffsets.isEmpty) source else NullCheckPipe(source, nullableOffsets: _*)(id)
-        ExpandIntoRegisterPipe(wrappedSource, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipelineInformation)(id)
+        val fromSlot = pipeline(from)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
+        ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
-        val nullableOffsets = nullableKeys.map(k => pipelineInformation.getLongOffsetFor(k.name))
-        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipelineInformation)(id)
+        val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
+        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case _ => fallback.build(plan, source)
     }
@@ -123,7 +120,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipelineInformation = pipelines(plan)
 
     plan match {
       case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
