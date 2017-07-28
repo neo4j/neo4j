@@ -177,7 +177,9 @@ public class ParallelBatchImporterTest
     {
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
-        final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
+        File storeDir = directory.directory( "dir" + random.string( 8, 8, Randoms.CSA_LETTERS_AND_DIGITS ) );
+        storeDir.mkdirs();
+        final BatchImporter inserter = new ParallelBatchImporter( storeDir,
                 fileSystemRule.get(), config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.empty(), getFormat() );
 
@@ -197,7 +199,7 @@ public class ParallelBatchImporterTest
 
             // THEN
             GraphDatabaseService db = new TestGraphDatabaseFactory()
-                    .newEmbeddedDatabaseBuilder( directory.graphDbDir() )
+                    .newEmbeddedDatabaseBuilder( storeDir )
                     .newGraphDatabase();
             try ( Transaction tx = db.beginTx() )
             {
@@ -209,14 +211,14 @@ public class ParallelBatchImporterTest
             {
                 db.shutdown();
             }
-            assertConsistent( directory.graphDbDir() );
+            assertConsistent( storeDir );
             successful = true;
         }
         finally
         {
             if ( !successful )
             {
-                File failureFile = directory.file( "input" );
+                File failureFile = new File( storeDir, "input" );
                 try ( PrintStream out = new PrintStream( failureFile ) )
                 {
                     out.println( "Seed used in this failing run: " + random.seed() );
@@ -241,7 +243,7 @@ public class ParallelBatchImporterTest
         }
     }
 
-    private void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
+    protected void assertConsistent( File storeDir ) throws ConsistencyCheckIncompleteException, IOException
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
