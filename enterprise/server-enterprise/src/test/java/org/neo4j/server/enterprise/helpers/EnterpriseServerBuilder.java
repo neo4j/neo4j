@@ -23,6 +23,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
@@ -32,6 +34,8 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
+
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -50,6 +54,8 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         EnterpriseServerBuilder server = server();
         server.onRandomPorts();
         server.withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" );
+        server.withProperty( OnlineBackupSettings.online_backup_server.name(),
+                listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
         return server;
     }
 
