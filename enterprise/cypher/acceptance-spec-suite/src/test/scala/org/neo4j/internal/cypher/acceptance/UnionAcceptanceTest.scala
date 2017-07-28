@@ -23,50 +23,47 @@ import org.neo4j.cypher._
 
 class UnionAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
 
-  test("Should work when doing union with same return varibles"){
-    createLabeledNode(Map("a" -> "a", "b" -> "b"),"A")
-    createLabeledNode(Map("a" -> "a", "b" -> "b"),"B")
+  test("Should work when doing union with same return varibles") {
+    createLabeledNode(Map("a" -> "a", "b" -> "b"), "A")
+    createLabeledNode(Map("a" -> "a", "b" -> "b"), "B")
 
-    val query ="""
-                 |MATCH (N:A)
-                 | RETURN
-                 |	N.a as A,
-                 |	N.b as B
-                 |UNION
-                 |
-                 |MATCH (M:B) RETURN
-                 |	M.b as A,
-                 |	M.a as B
-               """.stripMargin
+    val query =
+    """
+      |MATCH (N:A)
+      |RETURN
+      |N.a as A,
+      |N.b as B
+      |UNION
+      |MATCH (M:B) RETURN
+      |M.b as A,
+      |M.a as B
+    """.stripMargin
 
     val result = testWith(Configs.All - Configs.Compiled, query)
     val expected = List(Map("A" -> "a", "B" -> "b"), Map("A" -> "b", "B" -> "a"))
 
-
     result.toList should equal(expected)
-
   }
 
-  test("Should work when doing union with permutated return varibles"){
-    createLabeledNode(Map("a" -> "a", "b" -> "b"),"A")
-    createLabeledNode(Map("a" -> "b", "b" -> "a"),"B")
+  test("Should work when doing union with permutated return varibles") {
+    createLabeledNode(Map("a" -> "a", "b" -> "b"), "A")
+    createLabeledNode(Map("a" -> "b", "b" -> "a"), "B")
 
-    val query ="""
-                 |MATCH (N:A)
-                 | RETURN
-                 |	N.a as B,
-                 |	N.b as A
-                 |UNION
-                 |
-                 |MATCH (M:B) RETURN
-                 |	M.b as A,
-                 |	M.a as B
-               """.stripMargin
+    val query =
+    """
+      |MATCH (N:A)
+      |RETURN
+      |N.a as B,
+      |N.b as A
+      |UNION
+      |MATCH (M:B) RETURN
+      |M.b as A,
+      |M.a as B
+    """.stripMargin
 
 
     val result = testWith(Configs.All - Configs.Compiled - Configs.BackwardsCompatibility + Configs.AllRulePlanners, query)
     val expected = List(Map("A" -> "b", "B" -> "a"), Map("A" -> "a", "B" -> "b"))
-
 
     result.toList should equal(expected)
   }
