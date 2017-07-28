@@ -20,9 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
+import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
-import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
@@ -149,7 +149,11 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Compiled3_2: TestConfig = CompiledSource3_2 + CompiledByteCode3_2
 
-    def Interpreted: TestConfig = AbsolutelyAll - Compiled - Procs
+    def Interpreted: TestConfig = CommunityInterpreted + EnterpriseInterpreted
+
+    def CommunityInterpreted: TestConfig = AbsolutelyAll - Compiled - Procs - EnterpriseInterpreted
+
+    def EnterpriseInterpreted: TestConfig = TestConfig.from(Scenarios.EnterpriseInterpreted)
 
     def Cost2_3: TestConfig = TestConfig.from(Scenarios.Compatibility2_3Cost)
 
@@ -159,7 +163,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Version3_2: TestConfig = Compiled3_2 + Scenarios.Compatibility3_2
 
-    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion + Scenarios.EnterpriseInterpreted
+    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion + EnterpriseInterpreted
 
     def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
@@ -172,6 +176,8 @@ trait LernaeanTestSupport extends CypherTestSupport {
     interesting scenarios.
      */
     def All: TestConfig = AbsolutelyAll - Procs
+
+    def AllExceptSleipnir: TestConfig = All - EnterpriseInterpreted
 
     def AbsolutelyAll: TestConfig = Version3_3 + BackwardsCompatibility + Procs
   }
