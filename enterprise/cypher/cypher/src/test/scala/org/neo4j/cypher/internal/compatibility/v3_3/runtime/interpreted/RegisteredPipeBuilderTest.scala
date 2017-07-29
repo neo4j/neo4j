@@ -174,16 +174,18 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       "r" -> rRelSlot,
       "z" -> zNodeSlot), numberOfLongs = 3, numberOfReferences = 0)
 
-    pipe should equal(ExpandAllRegisterPipe(
-      OptionalPipe(
-        Set("x"),
-        AllNodesScanRegisterPipe("x", allNodeScanPipeline)()
-      )(),
-      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
-      SemanticDirection.INCOMING,
-      LazyTypes.empty,
-      expandPipeline
-    )())
+    pipe should equal(
+      ExpandAllRegisterPipe(
+        OptionalRegisteredPipe(
+          AllNodesScanRegisterPipe("x", allNodeScanPipeline)(),
+          Seq(0),
+          allNodeScanPipeline
+        )(),
+        xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+        SemanticDirection.INCOMING,
+        LazyTypes.empty,
+        expandPipeline
+      )())
   }
 
   test("single optional node with expand into") {
@@ -201,13 +203,15 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val allNodeScanPipeline = PipelineInformation(Map("x" -> nodeSlot), numberOfLongs = 1, numberOfReferences = 0)
     val expandPipeline = PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
 
-    pipe should equal(ExpandIntoRegisterPipe(
-      OptionalPipe(
-        Set("x"),
-        AllNodesScanRegisterPipe("x", allNodeScanPipeline)()
-      )(),
-      nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
-      expandPipeline)()
+    pipe should equal(
+      ExpandIntoRegisterPipe(
+        OptionalRegisteredPipe(
+          AllNodesScanRegisterPipe("x", allNodeScanPipeline)(),
+          Seq(0),
+          allNodeScanPipeline
+        )(),
+        nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
+        expandPipeline)()
     )
   }
 
