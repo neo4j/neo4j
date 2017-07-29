@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, LazyTypes, Pipe, _}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -51,10 +51,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val pipelineInformation = pipelines(plan)
 
     plan match {
-      case p@AllNodesScan(IdName(column), _) =>
+      case AllNodesScan(IdName(column), _) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
 
-      case p@NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _ /*TODO*/) =>
+      case NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
           valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
@@ -62,7 +62,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case Argument(_) =>
         ArgumentRegisterPipe(pipelineInformation)(id)
 
-      case p@NodeByLabelScan(IdName(column), label, _) =>
+      case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case _ => fallback.build(plan)
@@ -73,29 +73,29 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipelineInformation = pipelines(plan)
+    val pipeline = pipelines(plan)
 
     plan match {
-      case p@ProduceResult(columns, _) =>
-        val runtimeColumns = createProjectionsForResult(columns, pipelineInformation)
+      case ProduceResult(columns, _) =>
+        val runtimeColumns = createProjectionsForResult(columns, pipeline)
         ProduceResultRegisterPipe(source, runtimeColumns)(id)
 
-      case e@Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
-        val fromOffset = pipelineInformation.getLongOffsetFor(from)
-        val relOffset = pipelineInformation.getLongOffsetFor(relName)
-        val toOffset = pipelineInformation.getLongOffsetFor(to)
-        ExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), pipelineInformation)(id)
+      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
+        val fromSlot = pipeline(from)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
+        ExpandAllRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
-      case e@Expand(s, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
-        val fromSlot = pipelineInformation.get(from).get
-        val relSlot = pipelineInformation.get(relName).get
-        val toSlot = pipelineInformation.get(to).get
-        ExpandIntoRegisterPipe(source, fromSlot, relSlot, toSlot, dir, LazyTypes(types), pipelineInformation)(id)
+      case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
+        val fromSlot = pipeline(from)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
+        ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
-        val nullableOffsets = nullableKeys.map(k => pipelineInformation.getLongOffsetFor(k.name))
-        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipelineInformation)(id)
+        val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
+        OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
       case _ => fallback.build(plan, source)
     }
@@ -120,7 +120,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     implicit val table: SemanticTable = context.semanticTable
 
     val id = idMap.getOrElse(plan, new Id)
-    val pipelineInformation = pipelines(plan)
 
     plan match {
       case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)

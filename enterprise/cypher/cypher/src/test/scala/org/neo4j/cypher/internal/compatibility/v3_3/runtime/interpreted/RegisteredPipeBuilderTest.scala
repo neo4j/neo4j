@@ -122,13 +122,18 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
+    val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
+    val rRelSlot = LongSlot(1, nullable = false, CTRelationship, "r")
+    val zNodeSlot = LongSlot(2, nullable = false, CTNode, "z")
     pipe should equal(ExpandAllRegisterPipe(
-      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
-      0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty,
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
+      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      SemanticDirection.INCOMING,
+      LazyTypes.empty,
       PipelineInformation(Map(
-        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
-        "r" -> LongSlot(1, nullable = false, CTRelationship, "r"),
-        "z" -> LongSlot(2, nullable = false, CTNode, "z")), numberOfLongs = 3, numberOfReferences = 0)
+        "x" -> xNodeSlot,
+        "r" -> rRelSlot,
+        "z" -> zNodeSlot), numberOfLongs = 3, numberOfReferences = 0)
     )())
   }
 
@@ -145,8 +150,69 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val relSlot = LongSlot(1, nullable = false, CTRelationship, "r")
     pipe should equal(ExpandIntoRegisterPipe(
       AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> nodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
-      nodeSlot, relSlot, nodeSlot, SemanticDirection.INCOMING, LazyTypes.empty, PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
+      nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
+      PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
     )())
+  }
+
+  test("single optional node with expand") {
+    // given
+    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val optional = Optional(allNodesScan)(solved)
+    val expand = Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
+
+    // when
+    val pipe = build(expand)
+
+    // then
+    val xNodeSlot = LongSlot(0, nullable = true, CTNode, "x")
+    val rRelSlot = LongSlot(1, nullable = false, CTRelationship, "r")
+    val zNodeSlot = LongSlot(2, nullable = false, CTNode, "z")
+    val allNodeScanPipeline = PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0)
+    val expandPipeline = PipelineInformation(Map(
+      "x" -> xNodeSlot,
+      "r" -> rRelSlot,
+      "z" -> zNodeSlot), numberOfLongs = 3, numberOfReferences = 0)
+
+    pipe should equal(
+      ExpandAllRegisterPipe(
+        OptionalRegisteredPipe(
+          AllNodesScanRegisterPipe("x", allNodeScanPipeline)(),
+          Seq(0),
+          allNodeScanPipeline
+        )(),
+        xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+        SemanticDirection.INCOMING,
+        LazyTypes.empty,
+        expandPipeline
+      )())
+  }
+
+  test("single optional node with expand into") {
+    // given
+    val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val optional = Optional(allNodesScan)(solved)
+    val expand = Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
+
+    // when
+    val pipe = build(expand)
+
+    // then
+    val nodeSlot = LongSlot(0, nullable = true, CTNode, "x")
+    val relSlot = LongSlot(1, nullable = false, CTRelationship, "r")
+    val allNodeScanPipeline = PipelineInformation(Map("x" -> nodeSlot), numberOfLongs = 1, numberOfReferences = 0)
+    val expandPipeline = PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
+
+    pipe should equal(
+      ExpandIntoRegisterPipe(
+        OptionalRegisteredPipe(
+          AllNodesScanRegisterPipe("x", allNodeScanPipeline)(),
+          Seq(0),
+          allNodeScanPipeline
+        )(),
+        nodeSlot.offset, relSlot.offset, nodeSlot.offset, SemanticDirection.INCOMING, LazyTypes.empty,
+        expandPipeline)()
+    )
   }
 
   test("optional node") {

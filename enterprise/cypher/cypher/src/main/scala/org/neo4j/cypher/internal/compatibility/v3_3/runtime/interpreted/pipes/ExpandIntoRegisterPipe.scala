@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation, Slot}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 /**
   * Expand when both end-points are known, find all relationships of the given
@@ -36,9 +37,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirec
   * This pipe also caches relationship information between nodes for the duration of the query
   */
 case class ExpandIntoRegisterPipe(source: Pipe,
-                                  fromSlot: Slot,
-                                  relSlot: Slot,
-                                  toSlot: Slot,
+                                  fromOffset: Int,
+                                  relOffset: Int,
+                                  toOffset: Int,
                                   dir: SemanticDirection,
                                   lazyTypes: LazyTypes,
                                   pipelineInformation: PipelineInformation)
@@ -53,37 +54,22 @@ case class ExpandIntoRegisterPipe(source: Pipe,
 
     input.flatMap {
       inputRow =>
-        val fromNode = inputRow.getLongAt(fromSlot.offset)
-        if (isNull(fromNode))
-          resultForNull(fromSlot)
-        else {
-          val toNode = inputRow.getLongAt(toSlot.offset)
-          if (isNull(toNode))
-            resultForNull(toSlot)
-          else {
-            val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
-              .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+        val fromNode = inputRow.getLongAt(fromOffset)
+        val toNode = inputRow.getLongAt(toOffset)
 
-            if (!relationships.hasNext)
-              Iterator.empty
-            else {
-              PrimitiveLongHelper.map(relationships, (relId: Long) => {
-                val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
-                outputRow.copyFrom(inputRow)
-                outputRow.setLongAt(relSlot.offset, relId)
-                outputRow
-              })
-            }
-          }
+        if (nodeIsNull(fromNode) || nodeIsNull(toNode))
+          Iterator.empty
+        else {
+          val relationships: PrimitiveLongIterator = relCache.get(fromNode, toNode, dir)
+            .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
+
+          PrimitiveLongHelper.map(relationships, (relId: Long) => {
+            val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
+            outputRow.copyFrom(inputRow)
+            outputRow.setLongAt(relOffset, relId)
+            outputRow
+          })
         }
     }
   }
-
-  private def isNull(nodeId: Long) = -1 == nodeId
-
-  private def resultForNull(slot: Slot) =
-    if (slot.nullable)
-      Iterator.empty
-    else
-      throw new InternalException(s"Expected to find a node at ${slot.name} but found nothing")
 }
