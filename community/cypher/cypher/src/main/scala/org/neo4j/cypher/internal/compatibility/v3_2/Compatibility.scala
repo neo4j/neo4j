@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v3_2
 import org.neo4j.cypher.internal.compiler.v3_2.executionplan.{LegacyNodeIndexUsage, LegacyRelationshipIndexUsage, SchemaIndexScanUsage, SchemaIndexSeekUsage, ExecutionPlan => ExecutionPlan_v3_2}
 import org.neo4j.cypher.internal.compiler.v3_2.phases.CompilerContext
 import org.neo4j.cypher.internal.compiler.v3_2.{InfoLogger, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
+import org.neo4j.cypher.internal.frontend.v3_2.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_2.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
 import org.neo4j.cypher.internal.spi.v3_2.TransactionBoundQueryContext.IndexSearchMonitor
@@ -74,14 +75,14 @@ trait Compatibility[C <: CompilerContext] {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, preParsingNotifications, preParsedQuery.offset), extractedParameters)
       }
 
       override protected val trier = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_2.InputPosition)
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -102,7 +103,7 @@ trait Compatibility[C <: CompilerContext] {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
           exceptionHandler.runSafely
         )
       }

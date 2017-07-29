@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => Transa
 import org.neo4j.cypher.internal.spi.v3_2.{TransactionalContextWrapper => TransactionalContextWrapperV3_2}
 import org.neo4j.cypher.internal.{frontend, _}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.api.KernelAPI
+import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -78,14 +78,14 @@ trait Compatibility {
           // Log notifications/warnings from planning
           planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-          (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as3_1(preParsedQuery.offset)), extractedParameters)
         }
 
       override protected val trier = preparedSyntacticQueryForV_3_1
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionPlan {
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_1, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_1.InputPosition) extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
 
@@ -105,7 +105,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
           exceptionHandler.runSafely
         )
       }

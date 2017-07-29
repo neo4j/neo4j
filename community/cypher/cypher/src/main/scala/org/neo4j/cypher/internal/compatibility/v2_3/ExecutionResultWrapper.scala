@@ -45,7 +45,7 @@ object ExecutionResultWrapper {
 }
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
-                             preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionResult {
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification], offset : Option[frontend.v2_3.InputPosition]) extends ExecutionResult {
 
   override def planDescriptionRequested = inner.planDescriptionRequested
 
@@ -105,11 +105,11 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LegacyPlannerNotification =>
       NotificationCode.LEGACY_PLANNER.notification(InputPosition.empty)
     case LengthOnNonPathNotification(pos) =>
-      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
+      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case PlannerUnsupportedNotification =>
       NotificationCode.PLANNER_UNSUPPORTED.notification(InputPosition.empty)
     case RuntimeUnsupportedNotification =>
@@ -123,19 +123,19 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
     case IndexLookupUnfulfillableNotification(labels) =>
       NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case BareNodeSyntaxDeprecatedNotification(pos) =>
-      NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.asInputPosition)
+      NotificationCode.BARE_NODE_SYNTAX_DEPRECATED.notification(pos.withOffset(offset).asInputPosition)
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.asInputPosition, NotificationDetail.Factory.label(label))
+      NotificationCode.MISSING_LABEL.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      NotificationCode.MISSING_REL_TYPE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.asInputPosition, NotificationDetail.Factory.propertyName(name))
+      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
-      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
+      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]) = inner.accept(visitor)

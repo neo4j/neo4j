@@ -175,7 +175,63 @@ public class NotificationAcceptanceTest
         assertNotifications("EXPLAIN MATCH (a:NO_SUCH_THING) RETURN a", containsItem( notification(
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 containsString( "the missing label name is: NO_SUCH_THING)" ),
-                any( InputPosition.class ),
+                equalTo(new InputPosition(17,1,18)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions() throws Exception
+    {
+        assertNotifications("CYPHER 2.3 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(38,2,10)),
+                SeverityLevel.WARNING ) ) );
+
+        assertNotifications("CYPHER 3.1 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(38,2,10)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginning() throws Exception
+    {
+        assertNotifications("EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(27,2,10)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningTwoLines() throws Exception
+    {
+        assertNotifications("//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(52,4,11)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInBeginningOnOneLine() throws Exception
+    {
+        assertNotifications("explain /* Testing */ MATCH (n:X) RETURN n", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(31,1,32)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingLabelWithCommentInMiddel() throws Exception
+    {
+        assertNotifications("EXPLAIN\nMATCH (n)\n//TESTING \nMATCH (n:X)\nreturn n Limit 1", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                containsString( "the missing label name is: X)" ),
+                equalTo(new InputPosition(38,4,10)),
                 SeverityLevel.WARNING ) ) );
     }
 
@@ -190,12 +246,32 @@ public class NotificationAcceptanceTest
     }
 
     @Test
+    public void shouldWarnOnMissingRelationshipTypeWithComment() throws Exception
+    {
+        assertNotifications("EXPLAIN /*Comment*/ MATCH ()-[a:NO_SUCH_THING]->() RETURN a", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
+                containsString( "the missing relationship type is: NO_SUCH_THING)" ),
+                equalTo(new InputPosition(32,1,33)),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
     public void shouldWarnOnMissingProperty() throws Exception
     {
         assertNotifications("EXPLAIN MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( notification(
                 "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
                 containsString( "the missing property name is: NO_SUCH_THING)" ),
                 any( InputPosition.class ),
+                SeverityLevel.WARNING ) ) );
+    }
+
+    @Test
+    public void shouldWarnOnMissingPropertyWithComment() throws Exception
+    {
+        assertNotifications("EXPLAIN /*Comment*/ MATCH (a {NO_SUCH_THING: 1337}) RETURN a", containsItem( notification(
+                "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
+                containsString( "the missing property name is: NO_SUCH_THING)" ),
+                equalTo(new InputPosition(30,1,31)),
                 SeverityLevel.WARNING ) ) );
     }
 
