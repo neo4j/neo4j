@@ -43,9 +43,9 @@ trait LernaeanTestSupport extends CypherTestSupport {
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
     */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs)
 
-    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs = false)
   }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
@@ -54,7 +54,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     object NanReplacement
 
-    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
+    def toComparableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
         case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
