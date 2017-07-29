@@ -20,12 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-<<<<<<< HEAD
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
-=======
-import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
->>>>>>> Refactor how execution results are handled in cypher
 
 case class EagerPipe(src: Pipe)(val id: Id = new Id)
   extends PipeWithSource(src) {
