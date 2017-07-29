@@ -352,7 +352,7 @@ public class TransportSessionIT
                                 "make sure you didn't misspell it or that the label is available when " +
                                 "you run this statement in your application (the missing label name is: " +
                                 "THIS_IS_NOT_A_LABEL)",
-                                SeverityLevel.WARNING, new InputPosition( 9, 1, 10 ) ) ) ) );
+                                SeverityLevel.WARNING, new InputPosition( 17, 1, 18 ) ) ) ) );
 
     }
 
