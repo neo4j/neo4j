@@ -86,7 +86,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
   val newRuntimeMonitor = new NewRuntimeMonitor
 
-  private def extractFirstScenario(config: TestConfig): TestScenario = {
+  private def extractFirstScenario(config: TestConfiguration): TestScenario = {
     val preferredScenario = Scenarios.CommunityInterpreted
     if (config.scenarios.contains(preferredScenario))
       preferredScenario
@@ -94,7 +94,8 @@ trait LernaeanTestSupport extends CypherTestSupport {
       config.scenarios.head
   }
 
-  protected def testWith(expectedSuccessFrom: TestConfig, query: String, params: (String, Any)*): InternalExecutionResult = {
+  protected def testWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*):
+  InternalExecutionResult = {
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
     firstScenario.prepare()
     val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
@@ -137,51 +138,54 @@ trait LernaeanTestSupport extends CypherTestSupport {
   }
 
   object Configs {
-    def CompiledSource: TestConfig = TestConfig.from(Scenarios.CompiledSource3_3)
+    def CompiledSource: TestConfiguration = Scenarios.CompiledSource3_3
 
-    def CompiledByteCode: TestConfig = TestConfig.from(Scenarios.CompiledByteCode3_3)
+    def CompiledByteCode: TestConfiguration = Scenarios.CompiledByteCode3_3
 
-    def Compiled: TestConfig = CompiledByteCode + CompiledSource
+    def Compiled: TestConfiguration = CompiledByteCode + CompiledSource
 
-    def CompiledSource3_2: TestConfig = TestConfig.from(Scenarios.CompiledSource3_2)
+    def CompiledSource3_2: TestConfiguration = Scenarios.CompiledSource3_2
 
-    def CompiledByteCode3_2: TestConfig = TestConfig.from(Scenarios.CompiledByteCode3_2)
+    def CompiledByteCode3_2: TestConfiguration = Scenarios.CompiledByteCode3_2
 
-    def Compiled3_2: TestConfig = CompiledSource3_2 + CompiledByteCode3_2
+    def Compiled3_2: TestConfiguration = CompiledSource3_2 + CompiledByteCode3_2
 
-    def Interpreted: TestConfig = CommunityInterpreted + EnterpriseInterpreted
+    def Interpreted: TestConfiguration = CommunityInterpreted + EnterpriseInterpreted
 
-    def CommunityInterpreted: TestConfig = AbsolutelyAll - Compiled - Procs - EnterpriseInterpreted
+    def CommunityInterpreted: TestConfiguration = AbsolutelyAll - Compiled - Procs - EnterpriseInterpreted
 
-    def EnterpriseInterpreted: TestConfig = TestConfig.from(Scenarios.EnterpriseInterpreted)
+    def EnterpriseInterpreted: TestConfiguration = Scenarios.EnterpriseInterpreted
 
-    def Cost2_3: TestConfig = TestConfig.from(Scenarios.Compatibility2_3Cost)
+    def Cost2_3: TestConfiguration = Scenarios.Compatibility2_3Cost
 
-    def Version2_3: TestConfig = Scenarios.Compatibility2_3Rule + Cost2_3
+    def Version2_3: TestConfiguration = Scenarios.Compatibility2_3Rule + Cost2_3
 
-    def Version3_1: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility3_1Cost
+    def Version3_1: TestConfiguration = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility3_1Cost
 
-    def Version3_2: TestConfig = Compiled3_2 + Scenarios.Compatibility3_2
+    def Version3_2: TestConfiguration = Compiled3_2 + Scenarios.Compatibility3_2
 
-    def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion + EnterpriseInterpreted
+    def Version3_3: TestConfiguration = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion +
+      EnterpriseInterpreted
 
-    def AllRulePlanners: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios.RulePlannerOnLatestVersion
+    def AllRulePlanners: TestConfiguration = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios
+      .RulePlannerOnLatestVersion
 
-    def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
+    def Cost: TestConfiguration = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios
+      .ForcedCostPlanner
 
-    def BackwardsCompatibility: TestConfig = Version2_3 + Version3_1
+    def BackwardsCompatibility: TestConfiguration = Version2_3 + Version3_1
 
-    def Procs: TestConfig = TestConfig.from(Scenarios.ProcedureOrSchema)
+    def Procs: TestConfiguration = Scenarios.ProcedureOrSchema
 
     /*
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
     interesting scenarios.
      */
-    def All: TestConfig = AbsolutelyAll - Procs
+    def All: TestConfiguration = AbsolutelyAll - Procs
 
-    def AllExceptSleipnir: TestConfig = All - EnterpriseInterpreted
+    def AllExceptSleipnir: TestConfiguration = All - EnterpriseInterpreted
 
-    def AbsolutelyAll: TestConfig = Version3_3 + BackwardsCompatibility + Procs
+    def AbsolutelyAll: TestConfiguration = Version3_3 + BackwardsCompatibility + Procs
   }
 
   object Scenarios {
@@ -393,12 +397,12 @@ trait LernaeanTestSupport extends CypherTestSupport {
   */
 object LernaeanTestSupport {
 
-  trait TestScenario extends Assertions {
+  trait TestScenario extends Assertions with TestConfiguration {
     def name: String
 
-    def +(other: TestScenario): TestConfig = TestConfig(Set(this, other))
+//    def +(other: TestScenario): TestConfig = TestConfig(Set(this, other))
 
-    def +(other: TestConfig): TestConfig = other + this
+//    def +(other: TestConfig): TestConfig = other + this
 
     def prepare(): Unit = {}
 
@@ -414,21 +418,25 @@ object LernaeanTestSupport {
     def checkResultForSuccess(query: String, internalExecutionResult: InternalExecutionResult): Unit = {}
 
     def preparserOptions: String
+
+    override def scenarios: Set[TestScenario] = Set(this)
   }
 
-  object TestConfig {
-    def from(scenario: TestScenario) = new TestConfig(Set(scenario))
+  trait TestConfiguration {
+    def scenarios: Set[TestScenario]
+
+    def name: String
+
+    def +(other: TestConfiguration): TestConfiguration = TestConfig(scenarios ++ other.scenarios)
+
+    def -(other: TestConfiguration): TestConfiguration = TestConfig(scenarios -- other.scenarios)
   }
 
-  case class TestConfig(scenarios: Set[TestScenario]) {
-    def name: String = scenarios.map(_.name).mkString(" + ")
+  case class TestConfig(scenarios: Set[TestScenario]) extends TestConfiguration {
+    override def name: String = scenarios.map(_.name).mkString(" + ")
 
-    def +(other: TestScenario): TestConfig = TestConfig(scenarios + other)
+    override def +(other: TestConfiguration): TestConfig = TestConfig(scenarios ++ other.scenarios)
 
-    def +(other: TestConfig): TestConfig = TestConfig(scenarios ++ other.scenarios)
-
-    def -(other: TestScenario): TestConfig = TestConfig(scenarios - other)
-
-    def -(other: TestConfig): TestConfig = TestConfig(scenarios -- other.scenarios)
+    override def -(other: TestConfiguration): TestConfig = TestConfig(scenarios -- other.scenarios)
   }
 }
