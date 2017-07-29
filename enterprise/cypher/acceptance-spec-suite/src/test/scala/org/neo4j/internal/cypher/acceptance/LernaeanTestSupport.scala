@@ -165,6 +165,8 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     def Version3_3: TestConfig = Compiled + Scenarios.CommunityInterpreted + Scenarios.RulePlannerOnLatestVersion + EnterpriseInterpreted
 
+    def AllRulePlanners: TestConfig = Scenarios.Compatibility3_1Rule + Scenarios.Compatibility2_3Rule + Scenarios.RulePlannerOnLatestVersion
+
     def Cost: TestConfig = Compiled + Scenarios.Compatibility3_1Cost + Scenarios.Compatibility2_3Cost + Scenarios.ForcedCostPlanner
 
     def BackwardsCompatibility: TestConfig = Version2_3 + Version3_1
