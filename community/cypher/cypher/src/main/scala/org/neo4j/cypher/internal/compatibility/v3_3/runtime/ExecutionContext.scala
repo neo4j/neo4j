@@ -111,5 +111,8 @@ case class MapExecutionContext(m: MutableMap[String, Any])
     copy(m = newMap).asInstanceOf[this.type]
   }
 
-  override def -=(key: String) = throw new InternalException("Method not supported")
+  override def -=(key: String): this.type = {
+    m.remove(key)
+    this
+  }
 }
