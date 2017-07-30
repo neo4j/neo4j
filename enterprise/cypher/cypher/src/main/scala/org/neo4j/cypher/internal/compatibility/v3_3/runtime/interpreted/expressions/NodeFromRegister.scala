@@ -35,3 +35,15 @@ case class NodeFromRegister(offset: Int) extends Expression {
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }
+
+case class ReferenceFromRegister(offset: Int) extends Expression {
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+    ctx.getRefAt(offset)
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set.empty
+}

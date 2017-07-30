@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class PrimitiveExecutionContextTest extends CypherFunSuite {
 
   private def longSize(s: Int) = new PipelineInformation(Map.empty, s, 0)
+  private def refSize(s: Int) = new PipelineInformation(Map.empty, 0, s)
 
   test("copy fills upp the first few elements") {
     val input = PrimitiveExecutionContext(longSize(2))
@@ -47,4 +48,10 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
     intercept[InternalException](result.copyFrom(input))
   }
 
+  test("copy fails if copy from larger 2") {
+    val input = PrimitiveExecutionContext(refSize(4))
+    val result = PrimitiveExecutionContext(refSize(2))
+
+    intercept[InternalException](result.copyFrom(input))
+  }
 }

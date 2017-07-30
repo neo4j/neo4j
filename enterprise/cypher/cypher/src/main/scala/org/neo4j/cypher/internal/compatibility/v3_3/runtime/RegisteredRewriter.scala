@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
@@ -39,6 +39,22 @@ class RegisteredRewriter(tokenContext: TokenContext) {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithRegisters = topDown(Rewriter.lift {
+      // TODO: This is a hack. The rewrite framework should do it for us, but it is not going into
+      // the expressions map. Will need to revisit, just not right now.
+      case p@Projection(source, expressions) =>
+        val information = pipelineInformation(p)
+        val rewriter = rewriteCreator(information, p)
+
+        val newExpressions = expressions.mapValues { e =>
+            e.endoRewrite(rewriter)
+        }
+        val newPlan = Projection(source, newExpressions)(p.solved)
+
+        newPipelineInfo += (newPlan -> information)
+        rewrites += (p -> newPlan)
+
+        newPlan
+
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
         val rewriter = rewriteCreator(information, oldPlan)
@@ -83,7 +99,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token)
         }
 
-        if(slot.nullable)
+        if (slot.nullable)
           NullCheck(slot.offset, propExpression)
         else
           propExpression
