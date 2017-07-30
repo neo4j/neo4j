@@ -39,12 +39,10 @@ case class NodeIndexScanRegisterPipe(ident: String,
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val baseContext = state.createOrGetInitialContext()
     val nodes = state.query.indexScanPrimitive(descriptor)
-
     PrimitiveLongHelper.map(nodes, { node =>
       val context = ExecutionContext(pipelineInformation.numberOfLongs)
-      context.copyFrom(baseContext)
+      state.copyArgumentStateTo(context)
       context.setLongAt(offset, node)
       context
     })
