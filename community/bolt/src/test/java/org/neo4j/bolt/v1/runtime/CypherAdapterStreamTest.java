@@ -31,15 +31,13 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.values.result.QueryResult;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -74,9 +72,10 @@ public class CypherAdapterStreamTest
         when( queryStatistics.getLabelsAdded() ).thenReturn( 10 );
         when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
 
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when(result.fieldNames()).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( query( READ_WRITE ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
         Clock clock = mock( Clock.class );
@@ -112,11 +111,12 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when(result.fieldNames()).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
-        when( result.getExecutionPlanDescription() ).thenReturn(
+        when( result.executionPlanDescription() ).thenReturn(
                 plan("Join", map( "arg1", 1 ), singletonList( "id1" ),
                 plan("Scan", map( "arg2", 1 ), singletonList("id2")) ) );
 
@@ -148,11 +148,12 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when(result.fieldNames()).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
-        when( result.getExecutionPlanDescription() ).thenReturn(
+        when( result.executionPlanDescription() ).thenReturn(
                 plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, singletonList( "id2" ) ) ) );
 
@@ -194,13 +195,14 @@ public class CypherAdapterStreamTest
     public void shouldIncludeNotificationsIfPresent() throws Throwable
     {
         // Given
-        Result result = mock( Result.class );
+        QueryResult result = mock( QueryResult.class );
+        when(result.fieldNames()).thenReturn( new String[0] );
 
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
 
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
-        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        when( result.executionType() ).thenReturn( query( READ_WRITE ) );
 
         when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
@@ -236,7 +238,7 @@ public class CypherAdapterStreamTest
         stream.accept( new BoltResult.Visitor()
         {
             @Override
-            public void visit( Record record ) throws Exception
+            public void visit( QueryResult.Record record ) throws Exception
             {
 
             }

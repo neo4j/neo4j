@@ -19,11 +19,13 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import org.neo4j.bolt.v1.packstream.PackStream;
-import org.neo4j.kernel.api.exceptions.Status;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.neo4j.bolt.v1.packstream.PackStream;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
 
 import static org.neo4j.bolt.v1.runtime.Neo4jError.codeFromString;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
@@ -59,10 +61,10 @@ public class BoltResponseMessageReader
                     break;
                 case RECORD:
                     long length = unpacker.unpackListHeader();
-                    final Object[] fields = new Object[(int) length];
+                    final AnyValue[] fields = new AnyValue[(int) length];
                     for ( int i = 0; i < length; i++ )
                     {
-                        fields[i] = unpacker.unpack();
+                        fields[i] = AnyValues.of(unpacker.unpack());
                     }
                     handler.onRecord( record( fields ) );
                     break;

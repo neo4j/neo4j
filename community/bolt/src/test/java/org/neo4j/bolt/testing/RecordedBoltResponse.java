@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
-import org.neo4j.bolt.v1.runtime.spi.Record;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
+import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.values.result.QueryResult;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThan;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertArrayEquals;
 
 public class RecordedBoltResponse
 {
-    private List<Record> records;
+    private List<QueryResult.Record> records;
     private BoltResponseMessage response;
     private Map<String, Object> metadata;
 
@@ -44,7 +45,7 @@ public class RecordedBoltResponse
         metadata = new HashMap<>();
     }
 
-    public void addRecord( Record record )
+    public void addRecord( QueryResult.Record record )
     {
         records.add( record );
     }

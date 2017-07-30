@@ -39,6 +39,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValues;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
@@ -58,6 +59,8 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BoltResponseMessageTest
 {
@@ -67,7 +70,7 @@ public class BoltResponseMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( new RecordMessage( record( 1L, "b", 2L ) ) );
+        assertSerializes( new RecordMessage( record( longValue( 1L ), stringValue( "b" ), longValue( 2L ) ) ) );
         assertSerializes( new SuccessMessage( new HashMap<>() ) );
         assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( new IgnoredMessage() );
@@ -136,7 +139,7 @@ public class BoltResponseMessageTest
         assertThat( serialized( PATH_WITH_LENGTH_ZERO ),
                 equalTo( "B1 71 91 B3 50 91 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
-                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 90 90"  ) );
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 90 90" ) );
         assertThat( serialized( PATH_WITH_LENGTH_ONE ),
                 equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
@@ -145,7 +148,7 @@ public class BoltResponseMessageTest
                          "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 2C 91 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73 69" + lineSeparator() +
                          "6E 63 65 C9 07 CF 92 01 01"
-        ) );
+                ) );
         assertThat( serialized( PATH_WITH_LENGTH_TWO ),
                 equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
@@ -154,8 +157,8 @@ public class BoltResponseMessageTest
                          "85 43 61 72 6F 6C B3 4E C9 03 EC 90 A1 84 6E 61" + lineSeparator() +
                          "6D 65 84 44 61 76 65 92 B3 72 0D 85 4C 49 4B 45" + lineSeparator() +
                          "53 A0 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F" + lineSeparator() +
-                         "A0 94 01 01 02 02"  ) );
-        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION),
+                         "A0 94 01 01 02 02" ) );
+        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION ),
                 equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
                          "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9" + lineSeparator() +
@@ -193,20 +196,20 @@ public class BoltResponseMessageTest
                          "4B 45 53 A0 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73" + lineSeparator() +
                          "69 6E 63 65 C9 07 CF B3 72 22 8A 4D 41 52 52 49" + lineSeparator() +
                          "45 44 5F 54 4F A0 9A 01 01 02 02 FD 00 01 01 04" + lineSeparator() +
-                         "03") );
+                         "03" ) );
         assertThat( serialized( PATH_WITH_LOOP ),
                 equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 EB 91 86 50 65 72" + lineSeparator() +
                          "73 6F 6E A1 84 6E 61 6D 65 85 43 61 72 6F 6C B3" + lineSeparator() +
                          "4E C9 03 EC 90 A1 84 6E 61 6D 65 84 44 61 76 65" + lineSeparator() +
                          "92 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F A0" + lineSeparator() +
                          "B3 72 2C 89 57 4F 52 4B 53 5F 46 4F 52 A0 94 01" + lineSeparator() +
-                         "01 02 01") );
+                         "01 02 01" ) );
     }
 
     private String serialized( Object object ) throws IOException
     {
         RecordMessage message =
-                new RecordMessage( record( object ) );
+                new RecordMessage( record( AnyValues.of( object ) ) );
         return HexPrinter.hex( serialize( message ), 4, " " );
     }
 
@@ -250,7 +253,7 @@ public class BoltResponseMessageTest
 
     private void assertSerializesNeoValue( Object val ) throws IOException
     {
-        assertSerializes( new RecordMessage( record( val ) ) );
+        assertSerializes( new RecordMessage( record( AnyValues.of( val ) ) ) );
     }
 
 }

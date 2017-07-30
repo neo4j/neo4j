@@ -26,8 +26,8 @@ import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
 import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.result.QueryResult;
 
 public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage> implements BoltResponseMessageHandler<RuntimeException>
 {
@@ -38,7 +38,7 @@ public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage
     }
 
     @Override
-    public void onRecord( Record item )
+    public void onRecord( QueryResult.Record item )
     {
         messages.add( new RecordMessage( item ) );
     }

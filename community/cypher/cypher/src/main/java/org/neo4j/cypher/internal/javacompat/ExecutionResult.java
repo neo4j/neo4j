@@ -40,6 +40,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
+import org.neo4j.values.result.QueryResult;
 
 /**
  * Holds Cypher query result sets, in tabular form. Each row of the result is a map
@@ -389,6 +390,11 @@ public class ExecutionResult implements ResourceIterable<Map<String,Object>>, Re
     }
 
     public InternalExecutionResult internalExecutionResult()
+    {
+        return inner;
+    }
+
+    public QueryResult queryResult()
     {
         return inner;
     }

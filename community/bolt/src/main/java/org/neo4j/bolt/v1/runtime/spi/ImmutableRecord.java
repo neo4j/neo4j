@@ -21,17 +21,20 @@ package org.neo4j.bolt.v1.runtime.spi;
 
 import java.util.Arrays;
 
-public class ImmutableRecord implements Record
-{
-    private final Object[] fields;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
 
-    public ImmutableRecord( Object[] fields )
+public class ImmutableRecord implements QueryResult.Record
+{
+    private final AnyValue[] fields;
+
+    public ImmutableRecord( AnyValue[] fields )
     {
         this.fields = fields;
     }
 
     @Override
-    public Object[] fields()
+    public AnyValue[] fields()
     {
         return fields;
     }
@@ -43,12 +46,12 @@ public class ImmutableRecord implements Record
         {
             return true;
         }
-        if ( o == null || !(o instanceof Record) )
+        if ( o == null || !(o instanceof QueryResult.Record) )
         {
             return false;
         }
 
-        Record that = (Record) o;
+        QueryResult.Record that = (QueryResult.Record) o;
         return Arrays.equals( fields, that.fields() );
     }
 

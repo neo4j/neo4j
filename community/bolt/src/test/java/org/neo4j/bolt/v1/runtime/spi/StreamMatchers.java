@@ -27,6 +27,8 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.values.result.QueryResult;
+
 import static java.util.Arrays.asList;
 
 public class StreamMatchers
@@ -35,12 +37,12 @@ public class StreamMatchers
     {
     }
 
-    public static Matcher<Record> eqRecord( final Matcher<?>... expectedFieldValues )
+    public static Matcher<QueryResult.Record> eqRecord( final Matcher<?>... expectedFieldValues )
     {
-        return new TypeSafeMatcher<Record>()
+        return new TypeSafeMatcher<QueryResult.Record>()
         {
             @Override
-            protected boolean matchesSafely( Record item )
+            protected boolean matchesSafely( QueryResult.Record item )
             {
                 if ( expectedFieldValues.length != item.fields().length )
                 {
@@ -85,7 +87,7 @@ public class StreamMatchers
                     item.accept( new BoltResult.Visitor()
                     {
                         @Override
-                        public void visit( Record record )
+                        public void visit( QueryResult.Record record )
                         {
                             if ( !expected.hasNext() || !expected.next().matches( record ) )
                             {

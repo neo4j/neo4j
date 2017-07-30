@@ -19,17 +19,15 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.bolt.v1.runtime.spi.Record;
-import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import static java.lang.String.format;
+import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
+import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.values.result.QueryResult;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
@@ -62,7 +60,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
         result.accept( new BoltResult.Visitor()
         {
             @Override
-            public void visit( Record record ) throws Exception
+            public void visit( QueryResult.Record record ) throws Exception
             {
                 currentResponse.addRecord( record );
             }

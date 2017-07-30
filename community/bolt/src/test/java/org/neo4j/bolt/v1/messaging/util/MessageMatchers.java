@@ -47,11 +47,11 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.TestNotification;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.result.QueryResult;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -223,7 +223,7 @@ public class MessageMatchers
         };
     }
 
-    public static Matcher<ResponseMessage> msgRecord( final Matcher<Record> matcher )
+    public static Matcher<ResponseMessage> msgRecord( final Matcher<QueryResult.Record> matcher )
     {
         return new TypeSafeMatcher<ResponseMessage>()
         {

@@ -35,6 +35,7 @@ import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValues;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
@@ -60,7 +61,7 @@ public class BoltRequestMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( init( "MyClient/1.0", map("scheme", "basic") ) );
+        assertSerializes( init( "MyClient/1.0", map( "scheme", "basic" ) ) );
         assertSerializes( ackFailure() );
         assertSerializes( reset() );
         assertSerializes( run( "CREATE (n) RETURN åäö" ) );
@@ -109,7 +110,7 @@ public class BoltRequestMessageTest
     private String serialized( Object object ) throws IOException
     {
         RecordMessage message =
-                new RecordMessage( record( object ) );
+                new RecordMessage( record( AnyValues.of( object ) ) );
         return HexPrinter.hex( serialize( message ), 4, " " );
     }
 

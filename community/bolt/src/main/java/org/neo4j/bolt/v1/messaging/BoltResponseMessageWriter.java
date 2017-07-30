@@ -22,8 +22,9 @@ package org.neo4j.bolt.v1.messaging;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
@@ -53,12 +54,12 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     }
 
     @Override
-    public void onRecord( Record item ) throws IOException
+    public void onRecord( QueryResult.Record item ) throws IOException
     {
-        Object[] fields = item.fields();
+        AnyValue[] fields = item.fields();
         packer.packStructHeader( 1, RECORD.signature() );
         packer.packListHeader( fields.length );
-        for ( Object field : fields )
+        for ( AnyValue field : fields )
         {
             packer.pack( field );
         }

@@ -19,13 +19,16 @@
  */
 package org.neo4j.bolt.v1.runtime.spi;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
+
 public class Records
 {
     private Records()
     {
     }
 
-    public static Record record( final Object ... fields )
+    public static QueryResult.Record record( final AnyValue... fields )
     {
         return new ImmutableRecord( fields );
     }

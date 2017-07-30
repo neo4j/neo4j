@@ -27,25 +27,25 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
 
 class CypherAdapterStream extends BoltResult
 {
-    private final Result delegate;
+    private final QueryResult delegate;
     private final String[] fieldNames;
     private CypherAdapterRecord currentRecord;
     private final Clock clock;
 
-    CypherAdapterStream( Result delegate, Clock clock )
+    CypherAdapterStream( QueryResult delegate, Clock clock )
     {
         this.delegate = delegate;
-        this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );
+        this.fieldNames = delegate.fieldNames();
         this.currentRecord = new CypherAdapterRecord( fieldNames );
         this.clock = clock;
     }
@@ -72,17 +72,17 @@ class CypherAdapterStream extends BoltResult
             return true;
         } );
         visitor.addMetadata( "result_consumed_after", clock.millis() - start );
-        QueryExecutionType qt = delegate.getQueryExecutionType();
+        QueryExecutionType qt = delegate.executionType();
         visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
 
-        if ( delegate.getQueryStatistics().containsUpdates() )
+        if ( delegate.queryStatistics().containsUpdates() )
         {
-            Object stats = queryStats( delegate.getQueryStatistics() );
+            Object stats = queryStats( delegate.queryStatistics() );
             visitor.addMetadata( "stats", stats );
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
-            ExecutionPlanDescription rootPlanTreeNode = delegate.getExecutionPlanDescription();
+            ExecutionPlanDescription rootPlanTreeNode = delegate.executionPlanDescription();
             String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
             visitor.addMetadata( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
@@ -140,29 +140,27 @@ class CypherAdapterStream extends BoltResult
         }
     }
 
-    private static class CypherAdapterRecord implements Record
+    //TODO is this copy necessary
+    private static class CypherAdapterRecord implements QueryResult.Record
     {
-        private final Object[] fields; // This exists solely to avoid re-creating a new array for each record
+        private final AnyValue[] fields; // This exists solely to avoid re-creating a new array for each record
         private final String[] fieldNames;
 
         private CypherAdapterRecord( String[] fieldNames )
         {
-            this.fields = new Object[fieldNames.length];
+            this.fields = new AnyValue[fieldNames.length];
             this.fieldNames = fieldNames;
         }
 
         @Override
-        public Object[] fields()
+        public AnyValue[] fields()
         {
             return fields;
         }
 
-        public CypherAdapterRecord reset( Result.ResultRow cypherRecord ) throws BoltIOException
+        public CypherAdapterRecord reset( QueryResult.Record cypherRecord ) throws BoltIOException
         {
-            for ( int i = 0; i < fields.length; i++ )
-            {
-                fields[i] = cypherRecord.get( fieldNames[i] );
-            }
+            System.arraycopy( this.fields, 0, cypherRecord.fields(), 0, this.fields.length );
             return this;
         }
     }
