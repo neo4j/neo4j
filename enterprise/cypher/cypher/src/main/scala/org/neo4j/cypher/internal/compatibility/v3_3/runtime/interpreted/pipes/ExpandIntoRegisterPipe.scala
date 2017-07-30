@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
@@ -64,7 +65,7 @@ case class ExpandIntoRegisterPipe(source: Pipe,
             .getOrElse(findRelationships(state.query, fromNode, toNode, relCache, dir, lazyTypes.types(state.query)))
 
           PrimitiveLongHelper.map(relationships, (relId: Long) => {
-            val outputRow = ExecutionContext(pipelineInformation.numberOfLongs)
+            val outputRow = PrimitiveExecutionContext(pipelineInformation)
             outputRow.copyFrom(inputRow)
             outputRow.setLongAt(relOffset, relId)
             outputRow

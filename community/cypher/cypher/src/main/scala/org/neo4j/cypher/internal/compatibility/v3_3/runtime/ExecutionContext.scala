@@ -30,45 +30,50 @@ object ExecutionContext {
 
   def from(x: (String, Any)*): ExecutionContext = apply().newWith(x)
 
-  def apply(m: MutableMap[String, Any] = MutableMaps.empty) = new ExecutionContext(m, 0)
-
-  def apply(numberOfLongs: Int) = new ExecutionContext(m = null, numberOfLongs = numberOfLongs)
+  def apply(m: MutableMap[String, Any] = MutableMaps.empty) = MapExecutionContext(m)
 }
 
-case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: Int)
-  extends MutableMap[String, Any] {
+trait ExecutionContext extends MutableMap[String, Any] {
+  def copyFrom(input: ExecutionContext): Unit
+  def setLongAt(offset: Int, value: Long): Unit
+  def getLongAt(offset: Int): Long
 
-  def copyFrom(input: ExecutionContext): Unit = {
-    if (input.numberOfLongs > numberOfLongs)
-      throw new InternalException("Tried to copy more data into less.")
+  def newWith(newEntries: Seq[(String, Any)]): ExecutionContext
+  def newWith1(key1: String, value1: Any): ExecutionContext
+  def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext
+  def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext
+  def mergeWith(other: ExecutionContext): ExecutionContext
+  def createClone(): ExecutionContext
+}
 
-    System.arraycopy(input.longs, 0, longs, 0, input.numberOfLongs)
+case class MapExecutionContext(m: MutableMap[String, Any])
+  extends ExecutionContext {
+
+  override def copyFrom(input: ExecutionContext): Unit = fail()
+
+  override def setLongAt(offset: Int, value: Long): Unit = fail()
+
+  override def getLongAt(offset: Int): Long = fail()
+
+  private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
+
+  override def get(key: String): Option[Any] = m.get(key)
+
+  override def iterator: Iterator[(String, Any)] = m.iterator
+
+  override def size: Int = m.size
+
+  override def mergeWith(other: ExecutionContext): ExecutionContext = other match {
+    case MapExecutionContext(otherMap) => copy(m = m ++ otherMap)
+    case _ => fail()
   }
-
-  private val longs = new Array[Long](numberOfLongs)
-
-  def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
-  def getLongAt(offset: Int): Long = longs(offset)
-
-  def get(key: String): Option[Any] = m.get(key)
-
-  def iterator: Iterator[(String, Any)] = m.iterator
-
-  override def size = m.size
-
-  def ++(other: ExecutionContext): ExecutionContext = copy(m = m ++ other.m)
 
   override def foreach[U](f: ((String, Any)) => U) {
     m.foreach(f)
   }
 
-  def +=(kv: (String, Any)) = {
+  override def +=(kv: (String, Any)) = {
     m += kv
-    this
-  }
-
-  def -=(key: String) = {
-    m -= key
     this
   }
 
@@ -77,34 +82,22 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
   def newWith(newEntries: Seq[(String, Any)]) =
     createWithNewMap(m.clone() ++= newEntries)
 
-  def newWith(newEntries: scala.collection.Map[String, Any]) =
-    createWithNewMap(m.clone() ++= newEntries)
-
-  def newFrom(newEntries: Seq[(String, Any)]) =
-    createWithNewMap(MutableMaps.create(newEntries: _*))
-
-  def newFromMutableMap(newEntries: scala.collection.mutable.Map[String, Any]) =
-    createWithNewMap(newEntries)
-
-  def newWith(newEntry: (String, Any)) =
-    createWithNewMap(m.clone() += newEntry)
-
   // This may seem silly but it has measurable impact in tight loops
 
-  def newWith1(key1: String, value1: Any) = {
+  override def newWith1(key1: String, value1: Any) = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     createWithNewMap(newMap)
   }
 
-  def newWith2(key1: String, value1: Any, key2: String, value2: Any) = {
+  override def newWith2(key1: String, value1: Any, key2: String, value2: Any) = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
     createWithNewMap(newMap)
   }
 
-  def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any) = {
+  override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any) = {
     val newMap = m.clone()
     newMap.put(key1, value1)
     newMap.put(key2, value2)
@@ -112,16 +105,14 @@ case class ExecutionContext private (m: MutableMap[String, Any], numberOfLongs: 
     createWithNewMap(newMap)
   }
 
-  override def clone(): ExecutionContext = createWithNewMap(m.clone())
+  override def createClone(): ExecutionContext = createWithNewMap(m.clone())
 
-  protected def createWithNewMap(newMap: MutableMap[String, Any]) = {
-    copy(m = newMap)
+  protected def createWithNewMap(newMap: MutableMap[String, Any]): this.type = {
+    copy(m = newMap).asInstanceOf[this.type]
   }
 
-  override def toString(): String =
-    if (m != null)
-      s"ExecutionContext(${m.mkString}"
-    else
-      s"ExecutionContext(longs = [${longs.mkString(", ")}])"
-
+  override def -=(key: String): this.type = {
+    m.remove(key)
+    this
+  }
 }

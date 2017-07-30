@@ -29,7 +29,7 @@ import scala.collection.mutable.ListBuffer
 case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
                                 (val id: Id = new Id)
   extends PipeWithSource(source) {
-  val nullColumns: Map[String, Any] = nullableVariables.map(_ -> null).toMap
+  val nullColumns: Seq[(String, Null)] = nullableVariables.map(_ -> null).toSeq
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
 
@@ -45,7 +45,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
       yield {
         val seq = probeTable(joinKey)
         seenKeys.add(joinKey)
-        seq.map(context ++ _)
+        seq.map(context.mergeWith)
       }).flatten
 
     def rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap {
@@ -57,7 +57,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     rowsWithNullAsJoinKey ++ joinedRows ++ rowsWithoutRhsMatch
   }
 
-  private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
+  private def addNulls(in: ExecutionContext): ExecutionContext = in.newWith(nullColumns)
 
   private def buildProbeTableAndFindNullRows(input: Iterator[ExecutionContext]): ProbeTable = {
     val probeTable = new ProbeTable()

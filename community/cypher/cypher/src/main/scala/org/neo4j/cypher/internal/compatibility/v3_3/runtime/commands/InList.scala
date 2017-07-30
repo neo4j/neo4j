@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Closure, Expression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
@@ -44,7 +43,7 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
     else {
       val seq = makeTraversable(list).toIndexedSeq
 
-      seqMethod(seq)(item => predicate.isMatch(m.newWith(id -> item)))
+      seqMethod(seq)(item => predicate.isMatch(m.newWith1(id, item)))
     }
   }
 

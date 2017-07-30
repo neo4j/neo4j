@@ -30,10 +30,10 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
     input.flatMap {
       (outerContext) =>
         if (condition(outerContext)) {
-          val original = outerContext.clone()
+          val original = outerContext.createClone()
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
-          innerResults.map { context => original ++ context }
+          innerResults.map { context => original mergeWith context }
         } else Iterator.single(outerContext)
     }
 

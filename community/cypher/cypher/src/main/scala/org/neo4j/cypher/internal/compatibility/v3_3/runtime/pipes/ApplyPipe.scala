@@ -26,10 +26,10 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(val id: Id = new Id) extends Pip
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.flatMap {
-      (outerContext) =>
-        val original = outerContext.clone()
+      (outerContext: ExecutionContext) =>
+        val original = outerContext.createClone()
         val innerState = state.withInitialContext(outerContext)
         val innerResults = inner.createResults(innerState)
-        innerResults.map { context => context ++ original }
+        innerResults.map { context => context mergeWith original }
     }
 }

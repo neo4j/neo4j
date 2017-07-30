@@ -27,7 +27,7 @@ case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     for (outer <- lhs.createResults(state);
          inner <- rhs.createResults(state))
-      yield outer ++ inner
+      yield outer mergeWith inner
   }
 
 }

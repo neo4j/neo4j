@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
@@ -30,7 +29,7 @@ case class FilterFunction(collection: Expression, id: String, predicate: Predica
   with ListSupport
   with Closure {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
-    makeTraversable(value).filter(element => predicate.isTrue(m.newWith(id -> element)  ))
+    makeTraversable(value).filter(element => predicate.isTrue(m.newWith1(id, element)  ))
 
   def rewrite(f: (Expression) => Expression) =
     f(FilterFunction(collection.rewrite(f), id, predicate.rewriteAsPredicate(f)))
