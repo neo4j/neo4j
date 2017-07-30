@@ -128,15 +128,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
-    val relationships = types match {
-      case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
-    }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor)
-  }
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
+    new BeansAPIRelationshipIterator(getRelationshipsForIdsPrimitive(node.getId, dir, types), entityAccessor)
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
     types match {
@@ -273,7 +266,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property)))(nodeOps.getById)
+    mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getById)
+
+  override def indexScanPrimitive(index: IndexDescriptor) =
+    transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property))
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.property, value)))(nodeOps.getById)
@@ -294,7 +290,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(getNodesByLabelPrimitive(id))(nodeOps.getById)
 
   override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
     transactionalContext.statement.readOperations().nodesGetForLabel(id)
