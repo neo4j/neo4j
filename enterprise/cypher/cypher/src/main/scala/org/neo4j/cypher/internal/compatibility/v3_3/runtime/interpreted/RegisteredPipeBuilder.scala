@@ -116,7 +116,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
           case LongSlot(offset, true, CTRelationship, _) =>
             k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.RelationshipFromRegister(offset))
           case _ =>
-            throw new InternalException("Did not find " + k + "in the pipeline information1")
+            throw new InternalException("Did not find `" + k + "` in the pipeline information1")
         }
     }
     runtimeColumns

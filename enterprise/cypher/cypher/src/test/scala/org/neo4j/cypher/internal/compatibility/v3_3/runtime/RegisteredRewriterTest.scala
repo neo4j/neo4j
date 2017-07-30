@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, NullCheck, PrimitiveEquals}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -118,6 +118,28 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666)), literalInt(42))(pos)
     result should equal(Selection(Seq(expectedPredicate), argument)(solved))
     newLookup(result) should equal(pipelineInformation)
+  }
+
+  test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n when token is unknown") {
+    val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
+    val predicate = GreaterThan(prop("x", "prop"), literalInt(42))(pos)
+    val selection = Selection(Seq(predicate), allNodes)(solved)
+    val produceResult = ProduceResult(Seq("x"), selection)
+    val offset = 0
+    val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
+    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
+      allNodes -> pipeline,
+      selection -> pipeline,
+      produceResult -> pipeline)
+    val tokenContext = mock[TokenContext]
+    when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
+    val rewriter = new RegisteredRewriter(tokenContext)
+    val (result, newLookup) = rewriter(produceResult, lookup)
+
+    val newPredicate = GreaterThan(NodePropertyLate(offset, "prop"), literalInt(42))(pos)
+
+    result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
+    newLookup(result) should equal(pipeline)
   }
 
 }

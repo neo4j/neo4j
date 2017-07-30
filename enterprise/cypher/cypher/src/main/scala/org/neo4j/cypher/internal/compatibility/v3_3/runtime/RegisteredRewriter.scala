@@ -73,16 +73,20 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
   private def rewriteCreator(pipelineInformation: PipelineInformation, thisPlan: LogicalPlan): Rewriter = {
     val innerRewriter = Rewriter.lift {
-      case Property(Variable(key), PropertyKeyName(prop)) =>
-        val token: Int = tokenContext.getOptPropertyKeyId(prop).get
+      case Property(Variable(key), PropertyKeyName(propKey)) =>
+        val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
         val slot = pipelineInformation(key)
-        slot match {
-          case LongSlot(offset, false, CTNode, _) => NodeProperty(offset, token)
-          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, NodeProperty(offset, token))
-          case LongSlot(offset, false, CTRelationship, _) => RelationshipProperty(offset, token)
-          case LongSlot(offset, true, CTRelationship, _) => NullCheck(offset, RelationshipProperty(offset, token))
+        val propExpression = (slot, maybeToken) match {
+          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTNode => NodeProperty(offset, token)
+          case (LongSlot(offset, _, typ, _), None) if typ == CTNode => NodePropertyLate(offset, propKey)
+          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token)
         }
+
+        if(slot.nullable)
+          NullCheck(slot.offset, propExpression)
+        else
+          propExpression
 
       case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
