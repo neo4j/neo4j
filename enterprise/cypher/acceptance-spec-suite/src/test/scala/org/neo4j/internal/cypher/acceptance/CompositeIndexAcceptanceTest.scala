@@ -150,7 +150,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
