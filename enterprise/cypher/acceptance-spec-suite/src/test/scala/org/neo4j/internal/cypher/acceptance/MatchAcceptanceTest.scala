@@ -274,7 +274,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.AllExceptSleipnir, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = testWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -292,7 +292,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -309,7 +309,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))

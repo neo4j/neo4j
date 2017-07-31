@@ -22,6 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
+object PrimitiveExecutionContext {
+  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0,0))
+}
+
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
   def copyFrom(input: ExecutionContext): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
