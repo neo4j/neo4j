@@ -30,6 +30,7 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
     expression match {
       case runtimeAst.NodeFromRegister(offset) => Some(runtimeExpression.NodeFromRegister(offset))
       case runtimeAst.NodeProperty(offset, token) => Some(runtimeExpression.NodeProperty(offset, token))
+      case runtimeAst.RelationshipProperty(offset, token) => Some(runtimeExpression.RelationshipProperty(offset, token))
       case runtimeAst.IdFromSlot(offset) => Some(runtimeExpression.IdFromSlot(offset))
       case runtimeAst.PrimitiveEquals(a, b) =>
         val lhs = self.toCommandExpression(a)
