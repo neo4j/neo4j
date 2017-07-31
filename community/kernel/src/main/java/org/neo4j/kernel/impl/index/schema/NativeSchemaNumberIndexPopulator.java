@@ -37,6 +37,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.index.GBPTreeUtil;
 
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
  *
@@ -46,8 +48,9 @@ import org.neo4j.kernel.impl.index.GBPTreeUtil;
 public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexPopulator
 {
-    static final byte BYTE_ONLINE = 1;
     static final byte BYTE_FAILED = 0;
+    static final byte BYTE_ONLINE = 1;
+    static final byte BYTE_POPULATING = 2;
 
     private final KEY treeKey;
     private final VALUE treeValue;
@@ -71,7 +74,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
-        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE );
+        instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
     }
 
@@ -172,7 +175,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     {
         if ( tree == null )
         {
-            instantiateTree( RecoveryCleanupWorkCollector.NULL );
+            instantiateTree( RecoveryCleanupWorkCollector.NULL, NO_HEADER_WRITER );
         }
     }
 

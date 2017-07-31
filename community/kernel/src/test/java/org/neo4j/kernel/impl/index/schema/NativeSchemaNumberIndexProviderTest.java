@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -44,6 +45,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -298,6 +300,68 @@ public class NativeSchemaNumberIndexProviderTest
 
     /* getInitialState */
     // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
+
+    @Test
+    public void shouldReportInitialStateAsPopulatingIfIndexDoesntExist() throws Exception
+    {
+        // given
+        provider = newProvider();
+
+        // when
+        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+
+        // then
+        assertEquals( InternalIndexState.POPULATING, state );
+    }
+
+    @Test
+    public void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete() throws Exception
+    {
+        // given
+        provider = newProvider();
+        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        populator.create();
+
+        // when
+        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+
+        // then
+        assertEquals( InternalIndexState.POPULATING, state );
+        populator.close( true );
+    }
+
+    @Test
+    public void shouldReportInitialStateAsFailedIfMarkedAsFailed() throws Exception
+    {
+        // given
+        provider = newProvider();
+        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        populator.create();
+        populator.markAsFailed( "Just some failure" );
+        populator.close( false );
+
+        // when
+        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+
+        // then
+        assertEquals( InternalIndexState.FAILED, state );
+    }
+
+    @Test
+    public void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully() throws Exception
+    {
+        // given
+        provider = newProvider();
+        IndexPopulator populator = provider.getPopulator( indexId, descriptor(), samplingConfig() );
+        populator.create();
+        populator.close( true );
+
+        // when
+        InternalIndexState state = provider.getInitialState( indexId, descriptor() );
+
+        // then
+        assertEquals( InternalIndexState.ONLINE, state );
+    }
 
     /* storeMigrationParticipant */
 

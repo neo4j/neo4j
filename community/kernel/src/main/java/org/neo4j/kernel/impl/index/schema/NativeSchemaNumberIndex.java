@@ -22,14 +22,15 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
-import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
 class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
@@ -47,9 +48,10 @@ class NativeSchemaNumberIndex<KEY extends SchemaNumberKey, VALUE extends SchemaN
         this.layout = layout;
     }
 
-    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws IOException
+    void instantiateTree( RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Consumer<PageCursor> headerWriter )
+            throws IOException
     {
-        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER, NO_HEADER_WRITER,
+        tree = new GBPTree<>( pageCache, storeFile, layout, 0, NO_MONITOR, NO_HEADER_READER, headerWriter,
                 recoveryCleanupWorkCollector );
     }
 

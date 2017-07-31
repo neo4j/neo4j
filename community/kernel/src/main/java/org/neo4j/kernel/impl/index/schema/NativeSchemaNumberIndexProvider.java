@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
-
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -35,6 +34,13 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_POPULATING;
+
+/**
+ * Schema index provider for native indexes backed by e.g. {@link GBPTree}.
+ */
 public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     private static final String KEY = "native";
@@ -115,14 +121,35 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private String readPopulationFailure( long indexId ) throws IOException
     {
         NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
-        GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(), headerReader );
+        GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(),
+                headerReader );
         return headerReader.failureMessage;
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
-        return null;
+        try
+        {
+            NativeSchemaIndexHeaderReader headerReader = new NativeSchemaIndexHeaderReader();
+            GBPTree.readHeader( pageCache, nativeIndexFileFromIndexId( indexId ), new ReadOnlyMetaNumberLayout(),
+                    headerReader );
+            switch ( headerReader.state )
+            {
+            case BYTE_FAILED:
+                return InternalIndexState.FAILED;
+            case BYTE_ONLINE:
+                return InternalIndexState.ONLINE;
+            case BYTE_POPULATING:
+                return InternalIndexState.POPULATING;
+            default:
+                throw new IllegalStateException( "Unexpected initial state byte value " + headerReader.state );
+            }
+        }
+        catch ( IOException e )
+        {
+            return InternalIndexState.POPULATING;
+        }
     }
 
     @Override
