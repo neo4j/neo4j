@@ -45,9 +45,9 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
     private final long itemsPerLabel;
     private final long itemsPerType;
 
-    private final int START = 0;
-    private final int END = 1;
-    private final int SIDES = 2;
+    private static final int START = 0;
+    private static final int END = 1;
+    private static final int SIDES = 2;
 
     public RelationshipCountsProcessor( NodeLabelsCache nodeLabelCache,
             int highLabelId, int highRelationshipTypeId, CountsAccessor.Updater countsUpdater,
@@ -110,8 +110,8 @@ public class RelationshipCountsProcessor implements RecordProcessor<Relationship
         {
             int type = wildcardType == anyRelationshipType ? ReadOperations.ANY_RELATIONSHIP_TYPE : wildcardType;
             long count = wildcardCounts.get( wildcardType );
-            countsUpdater.incrementRelationshipCount( ReadOperations.ANY_LABEL, type, ReadOperations
-                    .ANY_LABEL, count );
+            countsUpdater.incrementRelationshipCount(
+                    ReadOperations.ANY_LABEL, type, ReadOperations.ANY_LABEL, count );
         }
 
         for ( int labelId = 0; labelId < anyLabel; labelId++ )

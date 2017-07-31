@@ -36,7 +36,7 @@ public abstract class PullingProducerStep extends ProducerStep
     @Override
     protected void process()
     {
-        Object batch = null;
+        Object batch;
         while ( true )
         {
             long startTime = nanoTime();
