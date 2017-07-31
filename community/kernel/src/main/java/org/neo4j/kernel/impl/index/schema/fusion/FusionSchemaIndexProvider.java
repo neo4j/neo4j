@@ -50,11 +50,10 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     private final SchemaIndexProvider luceneProvider;
     private final Selector selector;
 
-    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector )
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector,
+            SchemaIndexProvider.Descriptor descriptor, int priority )
     {
-        super( new Descriptor(
-                nativeProvider.getProviderDescriptor().getKey() + "+" + luceneProvider.getProviderDescriptor().getKey(),
-                nativeProvider.getProviderDescriptor().getVersion() + "+" + luceneProvider.getProviderDescriptor().getVersion() ), 0 );
+        super( descriptor, priority );
         this.nativeProvider = nativeProvider;
         this.luceneProvider = luceneProvider;
         this.selector = selector;

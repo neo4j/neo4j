@@ -74,6 +74,7 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     public synchronized void create() throws IOException
     {
         GBPTreeUtil.deleteIfPresent( pageCache, storeFile );
+        pageCache.getCachedFileSystem().mkdirs( storeFile.getParentFile() );
         instantiateTree( RecoveryCleanupWorkCollector.IMMEDIATE, new NativeSchemaIndexHeaderWriter( BYTE_POPULATING ) );
         instantiateWriter();
     }

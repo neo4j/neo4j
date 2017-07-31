@@ -212,7 +212,7 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     /**
      * Get schema index store root directory in specified store.
      * @param storeDir store root directory
-     * @return shema index store root directory
+     * @return schema index store root directory
      */
     public File getSchemaIndexStoreDirectory( File storeDir )
     {

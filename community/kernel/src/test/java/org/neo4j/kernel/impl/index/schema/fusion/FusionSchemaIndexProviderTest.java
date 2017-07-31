@@ -45,6 +45,8 @@ import static org.mockito.Mockito.when;
 
 public class FusionSchemaIndexProviderTest
 {
+    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "test-fusion", "1" );
+
     @Rule
     public RandomRule random = new RandomRule();
 
@@ -57,7 +59,7 @@ public class FusionSchemaIndexProviderTest
         when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
         when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
         FusionSchemaIndexProvider fusionSchemaIndexProvider =
-                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector() );
+                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
         IndexDescriptor anyIndexDescriptor = IndexDescriptorFactory.forLabel( 0, 0 );
 
         for ( InternalIndexState nativeState : InternalIndexState.values() )
@@ -173,7 +175,7 @@ public class FusionSchemaIndexProviderTest
         when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
         when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
         FusionSchemaIndexProvider fusionSchemaIndexProvider =
-                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector() );
+                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
 
         // when
         // ... no failure

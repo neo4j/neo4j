@@ -53,12 +53,12 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    NativeSchemaNumberIndexProvider( PageCache pageCache, File nativeSchemaIndexBaseDir, LogProvider logging,
+    public NativeSchemaNumberIndexProvider( PageCache pageCache, File storeDir, LogProvider logging,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0 );
         this.pageCache = pageCache;
-        this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( nativeSchemaIndexBaseDir );
+        this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( storeDir );
         this.log = logging.getLog( getClass() );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;

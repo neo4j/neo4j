@@ -58,6 +58,11 @@ public class LuceneSchemaIndexProviderFactory extends
     @Override
     public LuceneSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
+        return create( context, dependencies );
+    }
+
+    static LuceneSchemaIndexProvider create( KernelContext context, Dependencies dependencies ) throws Throwable
+    {
         Config config = dependencies.getConfig();
         LogProvider logging = dependencies.getLogging().getInternalLogProvider();
         boolean ephemeral = config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral );
