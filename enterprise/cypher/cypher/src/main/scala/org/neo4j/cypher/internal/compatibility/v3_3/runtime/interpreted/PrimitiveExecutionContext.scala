@@ -27,21 +27,28 @@ object PrimitiveExecutionContext {
 }
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
+
+  private val longs = new Array[Long](pipeline.numberOfLongs)
+  private val refs = new Array[Any](pipeline.numberOfReferences)
+
   def copyFrom(input: ExecutionContext): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
-      if (otherPipeline.numberOfLongs > pipeline.numberOfLongs)
+      if (otherPipeline.numberOfLongs > pipeline.numberOfLongs || otherPipeline.numberOfReferences > pipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
-      else
+      else {
         System.arraycopy(other.longs, 0, longs, 0, otherPipeline.numberOfLongs)
-
+        System.arraycopy(other.refs, 0, refs, 0, otherPipeline.numberOfReferences)
+      }
     case _ => fail()
   }
 
-  private val longs = new Array[Long](pipeline.numberOfLongs)
+  override def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
 
-  def setLongAt(offset: Int, value: Long): Unit = longs(offset) = value
+  override def getLongAt(offset: Int): Long = longs(offset)
 
-  def getLongAt(offset: Int): Long = longs(offset)
+  override def setRefAt(offset: Int, value: Any): Unit = refs(offset) = value
+
+  override def getRefAt(offset: Int): Any = refs(offset)
 
   override def +=(kv: (String, Any)) = fail()
 
