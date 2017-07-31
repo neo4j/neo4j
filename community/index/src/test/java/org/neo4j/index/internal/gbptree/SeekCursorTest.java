@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -59,6 +60,9 @@ public class SeekCursorTest
     private static final Supplier<Root> failingRootCatchup = () ->
     {
         throw new AssertionError( "Should not happen" );
+    };
+    private static final Consumer<Throwable> exceptionDecorator = t ->
+    {
     };
 
     private final SimpleIdProvider id = new SimpleIdProvider();
@@ -1238,7 +1242,7 @@ public class SeekCursorTest
         // WHEN
         try ( SeekCursor<MutableLong,MutableLong> cursor = new SeekCursor<>( this.cursor,
                 node, from, to, layout, stableGeneration, unstableGeneration, () -> 0L, failingRootCatchup,
-                unstableGeneration ) )
+                unstableGeneration, exceptionDecorator ) )
         {
             // reading a couple of keys
             assertTrue( cursor.next() );
@@ -1894,7 +1898,8 @@ public class SeekCursorTest
 
         // when
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1 ) )
+                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, generation - 1,
+                exceptionDecorator ) )
         {
             // do nothing
         }
@@ -1950,7 +1955,8 @@ public class SeekCursorTest
         from.setValue( 1L );
         to.setValue( 2L );
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration ) )
+                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, unstableGeneration,
+                exceptionDecorator ) )
         {
             // do nothing
         }
@@ -2005,7 +2011,8 @@ public class SeekCursorTest
         from.setValue( 1L );
         to.setValue( 20L );
         try ( SeekCursor<MutableLong,MutableLong> seek = new SeekCursor<>( cursor, node, from, to, layout,
-                stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration ) )
+                stableGeneration - 1, unstableGeneration - 1, generationSupplier, rootCatchup, unstableGeneration,
+                exceptionDecorator ) )
         {
             while ( seek.next() )
             {
@@ -2206,8 +2213,8 @@ public class SeekCursorTest
     {
         from.setValue( fromInclusive );
         to.setValue( toExclusive );
-        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGeneration, unstableGeneration, generationSupplier,
-                failingRootCatchup, unstableGeneration );
+        return new SeekCursor<>( pageCursor, node, from, to, layout, stableGeneration, unstableGeneration,
+                generationSupplier, failingRootCatchup, unstableGeneration , exceptionDecorator );
     }
 
     /**

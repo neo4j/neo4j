@@ -20,6 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
+import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
@@ -362,14 +363,21 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean closed;
 
+    /**
+     * Decorator for caught exceptions, adding information about which tree the exception relates to.
+     */
+    private final Consumer<Throwable> exceptionDecorator;
+
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
-            Supplier<Root> rootCatchup, long lastFollowedPointerGeneration ) throws IOException
+            Supplier<Root> rootCatchup, long lastFollowedPointerGeneration, Consumer<Throwable> exceptionDecorator )
+                    throws IOException
     {
         this.cursor = cursor;
         this.fromInclusive = fromInclusive;
         this.toExclusive = toExclusive;
         this.layout = layout;
+        this.exceptionDecorator = exceptionDecorator;
         this.exactMatch = layout.compare( fromInclusive, toExclusive ) == 0;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -386,7 +394,15 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
 
-        traverseDownToFirstLeaf();
+        try
+        {
+            traverseDownToFirstLeaf();
+        }
+        catch ( Throwable e )
+        {
+            exceptionDecorator.accept( e );
+            throw e;
+        }
     }
 
     /**
@@ -473,6 +489,19 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     @Override
     public boolean next() throws IOException
+    {
+        try
+        {
+            return internalNext();
+        }
+        catch ( Throwable e )
+        {
+            exceptionDecorator.accept( e );
+            throw e;
+        }
+    }
+
+    private boolean internalNext() throws IOException
     {
         while ( true )
         {

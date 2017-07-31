@@ -28,9 +28,4 @@ public class TreeInconsistencyException extends RuntimeException
     {
         super( String.format( format, args ) );
     }
-
-    TreeInconsistencyException( String message )
-    {
-        super( message );
-    }
 }

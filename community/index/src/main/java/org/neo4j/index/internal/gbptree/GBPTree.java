@@ -46,6 +46,7 @@ import static java.lang.String.format;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointer.MIN_GENERATION;
 import static org.neo4j.index.internal.gbptree.Header.CARRY_OVER_PREVIOUS_HEADER;
 import static org.neo4j.index.internal.gbptree.Header.replace;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
@@ -325,7 +326,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
-    private boolean closed;
+    private boolean closed = true;
 
     /**
      * True if tree is clean, false if dirty
@@ -336,6 +337,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * State of cleanup job.
      */
     private final CleanupJob cleaning;
+
+    /**
+     * {@link Consumer} to hand out to others who want to decorate information about this tree
+     * to exceptions thrown out from its surface.
+     */
+    private final Consumer<Throwable> exceptionDecorator = t -> appendTreeInformation( t );
 
     /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist.
@@ -376,17 +383,19 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
-        this.generation = Generation.generation( GenerationSafePointer.MIN_GENERATION, GenerationSafePointer.MIN_GENERATION + 1 );
+        this.generation = Generation.generation( MIN_GENERATION, MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
         this.layout = layout;
-        this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
-        this.bTreeNode = new TreeNode<>( pageSize, layout );
-        this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
-        this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
         try
         {
+            this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
+            closed = false;
+            this.bTreeNode = new TreeNode<>( pageSize, layout );
+            this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
+            this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
+
             // Create or load state
             if ( created )
             {
@@ -408,6 +417,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         catch ( Throwable t )
         {
+            appendTreeInformation( t );
             try
             {
                 close();
@@ -457,7 +467,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
             try
             {
-                readMeta( indexFile, layout, pagedFile );
+                readMeta( layout, pagedFile );
                 pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
                 return pagedFile;
             }
@@ -481,10 +491,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
             pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
-                        " was about to be created with page size:" + pageSize +
-                        ", but page cache used to create it has a smaller page size:" +
-                        pageCache.pageSize() + " so cannot be created" );
+                throw new MetadataMismatchException(
+                        "Was about to create tree with page size %d" +
+                        ", but page cache used to create it has a smaller page size %d" +
+                        " so cannot be created", pageSize, pageCache.pageSize() );
             }
 
             // We need to create this index
@@ -613,8 +623,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return metaCursor;
     }
 
-    private void readMeta( File indexFile, Layout<KEY,VALUE> layout, PagedFile pagedFile )
-            throws IOException
+    private void readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
     {
         // Read meta
         int formatVersion;
@@ -638,28 +647,31 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
         catch ( CursorException e )
         {
-            throw new MetadataMismatchException( format(
-                    "Tried to open %s, but caught an error while reading meta data. " +
-                            "File is expected to be corrupt, try to rebuild.", indexFile ), e );
+            throw new MetadataMismatchException( e,
+                    "Tried to open, but caught an error while reading meta data. " +
+                    "File is expected to be corrupt, try to rebuild." );
         }
 
         if ( formatVersion != FORMAT_VERSION )
         {
-            throw new MetadataMismatchException( "Tried to open %s with a different format version than " +
-                    "what it was created with. Created with:%d, opened with %d",
-                    indexFile, formatVersion, FORMAT_VERSION );
+            throw new MetadataMismatchException(
+                    "Tried to open with a different format version than " +
+                    "what it was created with. Created with %d, opened with %d",
+                    formatVersion, FORMAT_VERSION );
         }
         if ( layoutIdentifier != layout.identifier() )
         {
-            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout identifier " +
-                    "than what it was created with. Created with:" + layoutIdentifier + ", opened with " +
-                    layout.identifier() );
+            throw new MetadataMismatchException(
+                    "Tried to open using different layout identifier " +
+                    "than what it was created with. Created with %d, opened with %d",
+                    layoutIdentifier, layout.identifier() );
         }
         if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
         {
-            throw new MetadataMismatchException( "Tried to open " + indexFile + " using different layout version " +
-                    "than what it was created with. Created with:" + majorVersion + "." + minorVersion +
-                    ", opened with " + layout.majorVersion() + "." + layout.minorVersion() );
+            throw new MetadataMismatchException(
+                    "Tried to open using different layout version " +
+                    "than what it was created with. Created with %d.%d, opened with %d.%d",
+                    majorVersion, minorVersion, layout.majorVersion(), layout.minorVersion() );
         }
     }
 
@@ -685,10 +697,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             if ( pageSize > pageCache.pageSize() )
             {
-                throw new MetadataMismatchException( "Tree in " + indexFile.getAbsolutePath() +
-                        " was created with page size:" + pageSize +
-                        ", but page cache used to open it this time has a smaller page size:" +
-                        pageCache.pageSize() + " so cannot be opened" );
+                throw new MetadataMismatchException(
+                        " was created with page size %d, but page cache used to open it this time " +
+                        "has a smaller page size %d so cannot be opened",
+                        pageSize, pageCache.pageSize() );
             }
             pagedFile.close();
             return pageCache.map( indexFile, pageSize );
@@ -743,7 +755,8 @@ public class GBPTree<KEY,VALUE> implements Closeable
 
         // Returns cursor which is now initiated with left-most leaf node for the specified range
         return new SeekCursor<>( cursor, bTreeNode, fromInclusive, toExclusive, layout,
-                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGeneration );
+                stableGeneration, unstableGeneration, generationSupplier, rootCatchup, rootGeneration,
+                exceptionDecorator );
     }
 
     /**
@@ -1010,7 +1023,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 stableGeneration( generation ), unstableGeneration( generation ) );
     }
 
-    private TreeInconsistencyException appendTreeInformation( TreeInconsistencyException e )
+    private <E extends Throwable> E appendTreeInformation( E e )
     {
         return Exceptions.withMessage( e, e.getMessage() + " | " + toString() );
     }
@@ -1075,9 +1088,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 treeLogic.initialize( cursor );
                 success = true;
             }
-            catch ( TreeInconsistencyException e )
+            catch ( Throwable e )
             {
-                throw appendTreeInformation( e );
+                appendTreeInformation( e );
+                throw e;
             }
             finally
             {
@@ -1102,9 +1116,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 treeLogic.insert( cursor, structurePropagation, key, value, valueMerger,
                         stableGeneration, unstableGeneration );
             }
-            catch ( TreeInconsistencyException e )
+            catch ( Throwable e )
             {
-                throw appendTreeInformation( e );
+                appendTreeInformation( e );
+                throw e;
             }
 
             if ( structurePropagation.hasRightKeyInsert )
@@ -1147,9 +1162,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 result = treeLogic.remove( cursor, structurePropagation, key, layout.newValue(),
                         stableGeneration, unstableGeneration );
             }
-            catch ( TreeInconsistencyException e )
+            catch ( Throwable e )
             {
-                throw appendTreeInformation( e );
+                appendTreeInformation( e );
+                throw e;
             }
 
             if ( structurePropagation.hasMidChildUpdate )

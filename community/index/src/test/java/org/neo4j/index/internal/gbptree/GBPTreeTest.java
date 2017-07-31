@@ -173,7 +173,6 @@ public class GBPTreeTest
         };
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( otherLayout ).build() )
         {
-
             fail( "Should not load" );
         }
         catch ( MetadataMismatchException e )
