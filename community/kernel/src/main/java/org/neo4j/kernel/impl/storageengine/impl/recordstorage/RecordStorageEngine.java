@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
@@ -59,6 +58,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
@@ -89,7 +89,6 @@ import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
-import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.Loaders;
 import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
@@ -144,7 +143,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
-    private final DefaultSchemaIndexProviderMap schemaIndexProviderMap;
+    private final SchemaIndexProviderMap schemaIndexProviderMap;
     private final LegacyIndexApplierLookup legacyIndexApplierLookup;
     private final SchemaState schemaState;
     private final SchemaStorage schemaStorage;
@@ -181,7 +180,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             JobScheduler scheduler,
             TokenNameLookup tokenNameLookup,
             LockService lockService,
-            SchemaIndexProvider indexProvider,
+            SchemaIndexProviderMap indexProviderMap,
             IndexingService.Monitor indexingServiceMonitor,
             DatabaseHealth databaseHealth,
             LegacyIndexProviderLookup legacyIndexProviderLookup,
@@ -220,7 +219,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
                     readOnly, monitors, recoveryCleanupWorkCollector );
 
             indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
-            schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( indexProvider );
+            schemaIndexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, schemaIndexProviderMap,
                     indexStoreView, tokenNameLookup,
                     Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() ), logProvider,
