@@ -70,7 +70,6 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         {
             deleteIndexes( schemaIndexDirectory );
         }
-        deleteIndexes( getLuceneStoreDirectory( storeDir ) );
     }
 
     private void deleteIndexes( File indexRootDirectory ) throws IOException
@@ -78,8 +77,4 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
         fileSystem.deleteRecursively( indexRootDirectory );
     }
 
-    static File getLuceneStoreDirectory( File storeRootDir )
-    {
-        return new File( new File( new File( storeRootDir, "schema" ), "label" ), "lucene" );
-    }
 }
