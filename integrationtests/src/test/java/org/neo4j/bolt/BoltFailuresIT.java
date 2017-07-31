@@ -19,20 +19,21 @@
  */
 package org.neo4j.bolt;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.time.Clock;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 
+import org.junit.After;
+import org.junit.Rule;
+import org.junit.Test;
+
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -56,6 +57,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static java.util.concurrent.TimeUnit.MINUTES;
+
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -65,6 +67,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
@@ -104,15 +107,11 @@ public class BoltFailuresIT
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 
         db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ) );
-        driver = createDriver();
-        // creating a session does not force driver to open a new connection, it opens connections
-        // lazily either when transaction is started or when query is executed via #run()
-        session = driver.session();
 
         try
         {
-            // attempt to begin a transaction to make driver create new socket connection
-            session.beginTransaction();
+            // attempt to create a driver when server is unavailable
+            driver = createDriver();
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -129,15 +128,10 @@ public class BoltFailuresIT
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
         db = startDbWithBolt( newDbFactory().setMonitors( monitors ) );
-        driver = createDriver();
-        // creating a session does not force driver to open a new connection, it opens connections
-        // lazily either when transaction is started or when query is executed via #run()
-        session = driver.session();
-
         try
         {
-            // attempt to begin a transaction to make driver create new socket connection
-            session.beginTransaction();
+            // attempt to create a driver when server is unavailable
+            driver = createDriver();
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -226,14 +220,17 @@ public class BoltFailuresIT
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
         db = startTestDb( monitors );
-        driver = createDriver();
 
-        try ( Session session = driver.session();
-              Transaction tx = session.beginTransaction() )
+        try
         {
+            driver = GraphDatabase.driver( "bolt://localhost", Config.build().withoutEncryption().toConfig() );
             if ( shouldBeAbleToBeginTransaction )
             {
-                tx.run( "CREATE ()" ).consume();
+                try ( Session session = driver.session();
+                      Transaction tx = session.beginTransaction() )
+                {
+                    tx.run( "CREATE ()" ).consume();
+                }
             }
             else
             {
