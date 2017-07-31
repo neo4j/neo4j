@@ -19,37 +19,28 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.Layout;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 
-public class NonUniqueNumberLayout extends NumberLayout
+import org.neo4j.index.internal.gbptree.Header;
+
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+
+class NativeSchemaIndexHeaderReader implements Header.Reader
 {
-    private static final String IDENTIFIER_NAME = "NUNI";
-    static final int MAJOR_VERSION = 0;
-    static final int MINOR_VERSION = 1;
-    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
+    byte state;
+    String failureMessage;
 
     @Override
-    public long identifier()
+    public void read( ByteBuffer headerData )
     {
-        return IDENTIFIER;
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return MAJOR_VERSION;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return MINOR_VERSION;
-    }
-
-    @Override
-    public int compare( SchemaNumberKey o1, SchemaNumberKey o2 )
-    {
-        int comparison = o1.compareValueTo( o2 );
-        return comparison != 0 ? comparison : Long.compare( o1.entityId, o2.entityId );
+        state = headerData.get();
+        if ( state == BYTE_FAILED )
+        {
+            short messageLength = headerData.getShort();
+            byte[] failureMessageBytes = new byte[messageLength];
+            headerData.get( failureMessageBytes );
+            failureMessage = new String( failureMessageBytes, Charset.forName( "UTF-8" ) );
+        }
     }
 }

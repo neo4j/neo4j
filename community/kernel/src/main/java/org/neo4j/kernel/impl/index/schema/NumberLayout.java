@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCursor;
 /**
  * {@link Layout} for numbers where numbers doesn't need to be unique.
  */
-abstract class NumberLayout implements Layout<SchemaNumberKey,SchemaNumberValue>
+abstract class NumberLayout extends Layout.Adapter<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
     public SchemaNumberKey newKey()
@@ -86,17 +86,5 @@ abstract class NumberLayout implements Layout<SchemaNumberKey,SchemaNumberValue>
     @Override
     public void readValue( PageCursor cursor, SchemaNumberValue into )
     {
-    }
-
-    @Override
-    public int majorVersion()
-    {
-        return 0;
-    }
-
-    @Override
-    public int minorVersion()
-    {
-        return 1;
     }
 }

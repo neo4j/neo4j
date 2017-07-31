@@ -27,12 +27,27 @@ import org.neo4j.index.internal.gbptree.Layout;
 class UniqueNumberLayout extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "UNI";
+    static final int MAJOR_VERSION = 0;
+    static final int MINOR_VERSION = 1;
+    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberKey.SIZE );
 
     @Override
     public long identifier()
     {
         // todo Is Number.Value.SIZE a good checksum?
-        return Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberKey.SIZE );
+        return IDENTIFIER;
+    }
+
+    @Override
+    public int majorVersion()
+    {
+        return MAJOR_VERSION;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return MINOR_VERSION;
     }
 
     @Override

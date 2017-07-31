@@ -29,6 +29,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -628,6 +629,8 @@ public class GBPTreeTest
             length.set( headerData.limit() );
             headerData.get( readHeader );
         };
+
+        // Read as part of construction
         try ( GBPTree<MutableLong,MutableLong> ignored = index().with( headerReader ).build() )
         {   // open/close is enough to read header
         }
@@ -635,6 +638,55 @@ public class GBPTreeTest
         // THEN
         assertEquals( expectedHeader.length, length.get() );
         assertArrayEquals( expectedHeader, readHeader );
+
+        // WHEN
+        // Read separate
+        GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+
+        assertEquals( expectedHeader.length, length.get() );
+        assertArrayEquals( expectedHeader, readHeader );
+    }
+
+    @Test
+    public void readHeaderMustThrowIfFileDoesNotExist() throws Exception
+    {
+        // given
+        File doesNotExist = new File( "Does not exist" );
+        try
+        {
+            GBPTree.readHeader( createPageCache( 256 ), doesNotExist, layout, NO_HEADER_READER );
+            fail( "Should have failed" );
+        }
+        catch ( NoSuchFileException e )
+        {
+            // good
+        }
+    }
+
+    @Test
+    public void readHeaderMustWorkWithOpenIndex() throws Exception
+    {
+        // GIVEN
+        byte[] headerBytes = new byte[12];
+        ThreadLocalRandom.current().nextBytes( headerBytes );
+        Consumer<PageCursor> headerWriter = pc -> pc.putBytes( headerBytes );
+
+        // WHEN
+        try ( GBPTree<MutableLong,MutableLong> ignore = index().with( headerWriter ).build() )
+        {
+            byte[] readHeader = new byte[headerBytes.length];
+            AtomicInteger length = new AtomicInteger();
+            Header.Reader headerReader = headerData ->
+            {
+                length.set( headerData.limit() );
+                headerData.get( readHeader );
+            };
+            GBPTree.readHeader( pageCache, indexFile, layout, headerReader );
+
+            // THEN
+            assertEquals( headerBytes.length, length.get() );
+            assertArrayEquals( headerBytes, readHeader);
+        }
     }
 
     /* Mutex tests */
