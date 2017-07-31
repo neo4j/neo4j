@@ -207,22 +207,27 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
     }
 
-    abstract class ReadOnlyMetaLayout<KEY, VALUE> implements Layout<KEY,VALUE>
+    /**
+     * Abstract {@link Layout} for read-only scenarios. Mainly used for reading header off of a closed
+     * {@link GBPTree}.
+     */
+    @SuppressWarnings( "rawtypes" )
+    abstract class ReadOnlyMetaLayout implements Layout
     {
         @Override
-        public KEY newKey()
+        public Object newKey()
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public KEY copyKey( KEY key, KEY into )
+        public Object copyKey( Object key, Object into )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public VALUE newValue()
+        public Object newValue()
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
@@ -240,25 +245,25 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public void writeKey( PageCursor cursor, KEY key )
+        public void writeKey( PageCursor cursor, Object key )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public void writeValue( PageCursor cursor, VALUE value )
+        public void writeValue( PageCursor cursor, Object value )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public void readKey( PageCursor cursor, KEY into )
+        public void readKey( PageCursor cursor, Object into )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
 
         @Override
-        public void readValue( PageCursor cursor, VALUE into )
+        public void readValue( PageCursor cursor, Object into )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
@@ -282,7 +287,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
         }
 
         @Override
-        public int compare( KEY o1, KEY o2 )
+        public int compare( Object o1, Object o2 )
         {
             throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
