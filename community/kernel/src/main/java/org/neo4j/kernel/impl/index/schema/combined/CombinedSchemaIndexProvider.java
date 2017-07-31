@@ -104,7 +104,8 @@ public class CombinedSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
-        return null;
+        // TODO implementation of this depends on decisions around defaults and migration. Coming soon.
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
     static <T> T select( T boost, T fallback, Value... values )

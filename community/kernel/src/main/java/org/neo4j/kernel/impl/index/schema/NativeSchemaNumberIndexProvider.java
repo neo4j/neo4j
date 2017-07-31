@@ -155,7 +155,9 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     @Override
     public StoreMigrationParticipant storeMigrationParticipant( FileSystemAbstraction fs, PageCache pageCache )
     {
-        return null;
+        // Since this native provider is a new one, there's no need for migration on this level.
+        // Migration should happen in the combined layer for the time being.
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
     }
 
     private File nativeIndexFileFromIndexId( long indexId )
