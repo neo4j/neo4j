@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
 import org.neo4j.bolt.v1.runtime.WorkerFactory;
+import org.neo4j.driver.v1.Config;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
@@ -237,7 +238,8 @@ public class BoltFailuresIT
 
     private static Driver createDriver()
     {
-        return GraphDatabase.driver( "bolt://localhost" );
+        return GraphDatabase.driver( "bolt://localhost" ,
+                Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig());
     }
 
     private static Monitors newMonitorsSpy( ThrowingSessionMonitor sessionMonitor )
