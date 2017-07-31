@@ -66,7 +66,7 @@ class CombinedIndexTestHelp
                     Values.floatArray( new float[]{9.10f, 11.12f} ),
                     Values.doubleArray( new double[]{13.14, 15.16} ),
                     Values.charArray( new char[2] ),
-                    Values.stringArray( new String[2] ),
+                    Values.stringArray( new String[]{"a", "b"} ),
                     Values.NO_VALUE
             };
 
