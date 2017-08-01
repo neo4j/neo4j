@@ -55,7 +55,7 @@ import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values
 
@@ -351,7 +351,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long) = try {
-      transactionalContext.graph.getNodeById(id)
+      entityAccessor.newNodeProxyById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
@@ -427,8 +427,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def getById(id: Long) = try {
-      transactionalContext.graph.getRelationshipById(id)
+    override def getById(id: Long): RelationshipProxy = try {
+      entityAccessor.newRelationshipProxyById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
