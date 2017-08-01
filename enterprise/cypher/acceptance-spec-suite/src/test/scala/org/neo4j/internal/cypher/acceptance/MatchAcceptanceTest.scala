@@ -326,8 +326,7 @@ return p""")
     val r1 = relate(node1, node2, "prop" -> 10)
     val r2 = relate(node1, node2, "prop" -> 0)
 
-    //TODO: This should be done with lernaean test support!
-    val result = innerExecute("cypher runtime=interpreted debug=sleipir "+query)
+    val result = testWith(Configs.All - Configs.Compiled, query)
 
     result.toList should equal (List(Map("r" -> r1)))
   }
