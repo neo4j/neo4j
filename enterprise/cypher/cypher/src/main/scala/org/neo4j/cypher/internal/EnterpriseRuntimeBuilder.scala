@@ -47,7 +47,7 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
         BuildInterpretedExecutionPlan
 
       case Some(EnterpriseInterpretedRuntimeName) =>
-        BuildEnterpriseInterpretedExecutionPlan
+        pickInterpretedExecutionPlan()
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen

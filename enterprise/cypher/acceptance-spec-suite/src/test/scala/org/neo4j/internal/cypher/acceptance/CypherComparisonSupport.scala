@@ -362,7 +362,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       override protected def argumentName: String = "ENTERPRISE-INTERPRETED"
 
-      override def preparserOptions: String = "runtime=enterprise_interpreted"
+      override def preparserOptions: String = "runtime=enterprise-interpreted"
 
       override def name: String = "enterprise interpreted"
     }
