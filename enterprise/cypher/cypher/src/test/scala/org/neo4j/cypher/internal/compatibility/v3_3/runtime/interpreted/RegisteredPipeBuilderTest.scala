@@ -305,7 +305,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  test("aggregation used for distinct") {
+  ignore("aggregation used for distinct") {
     // given
     val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val distinct = Aggregation(leaf, Map("x" -> varFor("x")), Map.empty)(solved)
@@ -321,7 +321,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  test("optional travels through aggregation used for distinct") {
+  ignore("optional travels through aggregation used for distinct") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
     val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
@@ -343,7 +343,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  test("optional travels through aggregation") {
+  ignore("optional travels through aggregation") {
     // given OPTIONAL MATCH (x) RETURN x, x.propertyKey, count(*)
     val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
@@ -364,7 +364,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  test("labelscan with projection") {
+  ignore("labelscan with projection") {
     // given
     val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
