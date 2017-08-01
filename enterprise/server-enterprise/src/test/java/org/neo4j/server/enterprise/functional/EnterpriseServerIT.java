@@ -21,16 +21,17 @@ package org.neo4j.server.enterprise.functional;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.CoreMatchers.is;
@@ -38,6 +39,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.mode;
 import static org.neo4j.cluster.ClusterSettings.server_id;
@@ -45,19 +47,21 @@ import static org.neo4j.cluster.ClusterSettings.server_id;
 public class EnterpriseServerIT
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public final TemporaryFolder folder = new TemporaryFolder();
     @Rule
-    public DumpPortListenerOnNettyBindFailure dumpPorts = new DumpPortListenerOnNettyBindFailure();
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldBeAbleToStartInHAMode() throws Throwable
     {
         // Given
+        int clusterPort = PortAuthority.allocatePort();
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
-                .withProperty( initial_hosts.name(), ":5001" )
+                .withProperty( cluster_server.name(), ":" + clusterPort )
+                .withProperty( initial_hosts.name(), ":" + clusterPort )
                 .persistent()
                 .build();
 
@@ -84,12 +88,14 @@ public class EnterpriseServerIT
     public void shouldRequireAuthorizationForHAStatusEndpoints() throws Exception
     {
         // Given
+        int clusterPort = PortAuthority.allocatePort();
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
-                .withProperty( initial_hosts.name(), ":5001" )
+                .withProperty( cluster_server.name(), ":" + clusterPort )
+                .withProperty( initial_hosts.name(), ":" + clusterPort )
                 .persistent()
                 .build();
 
@@ -115,13 +121,15 @@ public class EnterpriseServerIT
     public void shouldAllowDisablingAuthorizationOnHAStatusEndpoints() throws Exception
     {
         // Given
+        int clusterPort = PortAuthority.allocatePort();
         NeoServer server = EnterpriseServerBuilder.serverOnRandomPorts()
                 .withProperty( GraphDatabaseSettings.auth_enabled.name(), "true" )
                 .withProperty( HaSettings.ha_status_auth_enabled.name(), "false" )
                 .usingDataDir( folder.getRoot().getAbsolutePath() )
                 .withProperty( mode.name(), "HA" )
                 .withProperty( server_id.name(), "1" )
-                .withProperty( initial_hosts.name(), ":5001" )
+                .withProperty( cluster_server.name(), ":" + clusterPort )
+                .withProperty( initial_hosts.name(), ":" + clusterPort )
                 .persistent()
                 .build();
 
@@ -147,11 +155,5 @@ public class EnterpriseServerIT
     private String getHaEndpoint( NeoServer server )
     {
         return server.baseUri().toString() + "db/manage/server/ha";
-    }
-
-    @After
-    public void whoListensOn5001()
-    {
-        dumpPorts.dumpListenersOn( 5001 );
     }
 }
