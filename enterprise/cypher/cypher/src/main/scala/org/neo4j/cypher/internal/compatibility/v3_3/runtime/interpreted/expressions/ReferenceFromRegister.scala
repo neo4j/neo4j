@@ -22,12 +22,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.graphdb.Node
 
-case class NodeFromRegister(offset: Int) extends Expression {
+case class ReferenceFromRegister(offset: Int) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Node =
-    state.query.nodeOps.getById(ctx.getLongAt(offset))
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+    ctx.getRefAt(offset)
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 
