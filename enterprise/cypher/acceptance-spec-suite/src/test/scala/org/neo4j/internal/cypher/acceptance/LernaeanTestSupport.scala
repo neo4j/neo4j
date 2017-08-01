@@ -43,9 +43,9 @@ trait LernaeanTestSupport extends CypherTestSupport {
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
     */
   implicit class RichInternalExecutionResults(res: InternalExecutionResult) {
-    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs)
+    def toComparableResultWithOptions(replaceNaNs: Boolean): Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs)
 
-    def toComparableResult: Seq[Map[String, Any]] = res.toList.toCompararableSeq(replaceNaNs = false)
+    def toComparableResult: Seq[Map[String, Any]] = res.toList.toComparableSeq(replaceNaNs = false)
   }
 
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
@@ -54,7 +54,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     object NanReplacement
 
-    def toCompararableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
+    def toComparableSeq(replaceNaNs: Boolean): Seq[Map[String, Any]] = {
       def convert(v: Any): Any = v match {
         case p: GeographicPointv3_1 => GeographicPoint(p.longitude, p.latitude, CRS(p.crs.name, p.crs.code, p.crs.url))
         case p: CartesianPointv3_1 => CartesianPoint(p.x, p.y, CRS(p.crs.name, p.crs.code, p.crs.url))
@@ -94,6 +94,45 @@ trait LernaeanTestSupport extends CypherTestSupport {
       config.scenarios.head
   }
 
+  protected def testWithUpdate(expectedSuccessFrom: TestConfiguration,
+                               query: String,
+                               params: (String, Any)*): InternalExecutionResult = {
+    val firstScenario = extractFirstScenario(expectedSuccessFrom)
+
+    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
+      thisScenario =>
+        thisScenario.prepare()
+
+        val tryResult = graph.rollback(Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)))
+
+        val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
+
+        if (expectedToSucceed) {
+          val thisResult = tryResult.get
+          thisScenario.checkStateForSuccess(query)
+          thisScenario.checkResultForSuccess(query, thisResult)
+          Some(thisResult -> thisScenario.name)
+        } else {
+          thisScenario.checkStateForFailure(query)
+          thisScenario.checkResultForFailure(query, tryResult)
+          None
+        }
+
+    }
+
+    firstScenario.prepare()
+    val lastResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
+    firstScenario.checkStateForSuccess(query)
+    firstScenario.checkResultForSuccess(query, lastResult)
+
+    positiveResults.foreach {
+      case (result,name) =>
+        assertResultsAreSame(result, lastResult, query, s"$name returned different results than ${firstScenario.name}" )
+    }
+
+    lastResult
+  }
+
   protected def testWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*):
   InternalExecutionResult = {
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
@@ -112,6 +151,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
         val thisResult = tryResult.get
         thisScenario.checkStateForSuccess(query)
         thisScenario.checkResultForSuccess(query, thisResult)
+        assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
       } else {
         thisScenario.checkStateForFailure(query)
         thisScenario.checkResultForFailure(query, tryResult)
@@ -120,6 +160,17 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
     firstResult
   }
+
+  protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
+    withClue(errorMsg) {
+      if (queryText.toLowerCase contains "order by") {
+        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsInOrderAs result2.toComparableResultWithOptions(replaceNaNs)
+      } else {
+        result1.toComparableResultWithOptions(replaceNaNs) should contain theSameElementsAs result2.toComparableResultWithOptions(replaceNaNs)
+      }
+    }
+  }
+
 
   private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
     val innerResult = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))

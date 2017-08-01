@@ -49,11 +49,11 @@ case class NodeIndexSeekRegisterPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = indexFactory(state)
-    val baseContext = state.createOrGetInitialContext()
+    val baseContext = state.initialContext.getOrElse(PrimitiveExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
       val context = PrimitiveExecutionContext(pipelineInformation)
-      context.copyFrom(baseContext)
+      state.copyArgumentStateTo(context)
       context.setLongAt(offset, node.getId)
       context
     }

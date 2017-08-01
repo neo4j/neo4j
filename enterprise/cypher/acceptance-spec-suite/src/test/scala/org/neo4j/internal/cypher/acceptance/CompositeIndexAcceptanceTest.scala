@@ -58,7 +58,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should use("NodeIndexSeek")
@@ -98,7 +98,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should useIndex(":User(firstname,lastname)")
@@ -121,7 +121,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.AllExceptSleipnir,
+    val result = testWith(Configs.All,
       """
         |MATCH (n:User)
         |USING INDEX n:User(lastname)
@@ -163,7 +163,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     graph.createIndex("Person", "firstname", "lastname")
     val n = graph.execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").next().asInstanceOf[Node]
     graph.execute("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
@@ -173,7 +173,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     testWith(Configs.CommunityInterpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
     result should useIndex(":Person(firstname,lastname)")
   }
 
@@ -298,8 +298,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
 
     // For all combinations
     Seq(
-      (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", true),         // all equality
-      (Configs.CommunityInterpreted, "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'", true),         // different order
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", true),         // all equality
+      (Configs.Interpreted, "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'", true),         // different order
       (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)", false),       // exists()
       (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true", false),       // inequality
       (Configs.Interpreted, "n.name = 'joe' AND n.surname STARTS WITH 's' AND n.age = 25 AND n.active = true", false), // prefix
