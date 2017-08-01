@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.LogProvider;
@@ -38,7 +39,6 @@ import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
 import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -55,11 +55,8 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
 {
-    private TemporaryFolder folder = new TemporaryFolder();
-    private CleanupRule cleanupRule = new CleanupRule();
-
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final TemporaryFolder folder = new TemporaryFolder();
+    private final CleanupRule cleanupRule = new CleanupRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule(folder).around( cleanupRule );
@@ -93,11 +90,13 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
     public void shouldBeAbleToStartInHAMode() throws Exception
     {
         // When
+        int clusterPort = PortAuthority.allocatePort();
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( ClusterSettings.mode, "HA" ),
                 "-c", configOption( ClusterSettings.server_id, "1" ),
-                "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
+                "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort ),
+                "-c", configOption( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
