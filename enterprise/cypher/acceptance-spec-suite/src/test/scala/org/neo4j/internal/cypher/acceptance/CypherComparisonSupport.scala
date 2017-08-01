@@ -360,9 +360,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     object EnterpriseInterpreted extends RuntimeScenario {
 
-      override protected def argumentName: String = "INTERPRETED-ENTERPRISE"
+      override protected def argumentName: String = "ENTERPRISE-INTERPRETED"
 
-      override def preparserOptions: String = "runtime=interpreted debug=sleipnir"
+      override def preparserOptions: String = "runtime=enterprise_interpreted"
 
       override def name: String = "enterprise interpreted"
     }

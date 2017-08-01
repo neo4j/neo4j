@@ -29,14 +29,24 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
 
 object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
   def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] = {
+
+    def pickInterpretedExecutionPlan() =
+      BuildEnterpriseInterpretedExecutionPlan andThen
+        If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
+          BuildInterpretedExecutionPlan
+        }
+
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
-            BuildEnterpriseInterpretedExecutionPlan
+            pickInterpretedExecutionPlan()
           }
 
       case Some(InterpretedRuntimeName) =>
+        BuildInterpretedExecutionPlan
+
+      case Some(EnterpriseInterpretedRuntimeName) =>
         BuildEnterpriseInterpretedExecutionPlan
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
@@ -49,7 +59,7 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
         BuildCompiledExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
             Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              BuildEnterpriseInterpretedExecutionPlan
+              pickInterpretedExecutionPlan()
           )
 
       case Some(x) =>

@@ -639,10 +639,10 @@ return p""")
       val a = createLabeledNode("A")
       relate(a, b)
     }
-
-    val resultNoAlias = graph.execute("MATCH (a:A) with a SKIP 0 MATCH (a)-[]->(b:B) return a, b")
+    //TODO move to LernaeanTestSupport
+    val resultNoAlias = graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a SKIP 0 MATCH (a)-[]->(b:B) return a, b")
     resultNoAlias.asScala.toList.size should equal(11)
-    val resultWithAlias = graph.execute("MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
+    val resultWithAlias = graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
     resultWithAlias.asScala.toList.size should equal(11)
 
     var descriptionNoAlias = resultNoAlias.getExecutionPlanDescription
