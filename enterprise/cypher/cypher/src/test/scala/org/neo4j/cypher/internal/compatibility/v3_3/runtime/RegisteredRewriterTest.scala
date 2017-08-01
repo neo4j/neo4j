@@ -202,4 +202,54 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     newLookup(result) should equal(pipeline)
     newLookup(newProjection) should equal(pipeline)
   }
+
+  test("rewriting variable should always work, even if Variable is not part of a bigger tree") {
+    // given
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
+    val tokenContext = mock[TokenContext]
+    val tokenId = 2
+    when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
+    val pipeline = PipelineInformation.empty.
+      newLong("x", nullable = false, CTNode).
+      newReference("x.propertyKey", nullable = true, CTAny)
+
+    // when
+    val rewriter = new RegisteredRewriter(tokenContext)
+    val (resultPlan, newLookup) = rewriter(projection, Map(leaf -> pipeline, projection -> pipeline))
+
+    // then
+    resultPlan should equal(
+      Projection(leaf, Map(
+        "x" -> RelationshipFromRegister(pipeline.getLongOffsetFor("x")),
+        "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId)
+      ))(solved)
+    )
+  }
+
+  test("make sure to handle nullable nodes correctly") {
+    // given
+    val leaf = NodeByLabelScan(IdName("x"), LabelName("label")(pos), Set.empty)(solved)
+    val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
+    val tokenContext = mock[TokenContext]
+    val tokenId = 2
+    when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
+    val pipeline = PipelineInformation.empty.
+      newLong("x", nullable = true, CTNode).
+      newReference("x.propertyKey", nullable = true, CTAny)
+
+    // when
+    val rewriter = new RegisteredRewriter(tokenContext)
+    val (resultPlan, newLookup) = rewriter(projection, Map(leaf -> pipeline, projection -> pipeline))
+
+    // then
+    val nodeOffset = pipeline.getLongOffsetFor("x")
+    resultPlan should equal(
+      Projection(leaf, Map(
+        "x" -> NullCheck(nodeOffset, RelationshipFromRegister(nodeOffset)),
+        "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId))
+      ))(solved)
+    )
+  }
+
 }

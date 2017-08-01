@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.{EnterpriseExpressionConverters, NodeProperty}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, ExpandIntoRegisterPipe, NodesByLabelScanRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.CompiledRuntimeContextHelper
@@ -364,7 +364,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )())
   }
 
-  ignore("labelscan with projection") {
+  test("labelscan with projection") {
     // given
     val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
@@ -373,11 +373,12 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(projection)
 
     // then
-    pipe should equal(ProjectionPipe(
+    val pipeline = PipelineInformation(numberOfLongs = 1, numberOfReferences = 1,
+      slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"), "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey")))
+    pipe should equal(ProjectionRegisterPipe(
       NodesByLabelScanRegisterPipe("x", LazyLabel("label"),
-        PipelineInformation(numberOfLongs = 1, numberOfReferences = 1,
-          slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"), "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey"))))(),
-      Map("x" -> Variable("x"), "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
+        pipeline)(),
+      Map(pipeline("x.propertyKey").offset -> NodeProperty(pipeline("x.propertyKey").offset, 0))
     )())
   }
 

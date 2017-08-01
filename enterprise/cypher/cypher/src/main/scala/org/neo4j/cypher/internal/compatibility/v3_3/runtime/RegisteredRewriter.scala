@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown}
 
 import scala.collection.mutable
 
@@ -39,6 +39,25 @@ class RegisteredRewriter(tokenContext: TokenContext) {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithRegisters = topDown(Rewriter.lift {
+      /*
+      Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
+      would just write to the row the data that is already in it, we can just skip them
+       */
+      case oldPlan@Projection(_, expressions) =>
+        val information = pipelineInformation(oldPlan)
+        val rewriter = rewriteCreator(information, oldPlan)
+
+        val newExpressions = expressions collect {
+          case (column, expression) if !expression.isInstanceOf[Variable] => column -> expression.endoRewrite(rewriter)
+        }
+
+        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
+        newPipelineInfo += (newPlan -> information)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
+
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
         val rewriter = rewriteCreator(information, oldPlan)
@@ -96,8 +115,19 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
         else
           e
+
+      case Variable(k) =>
+        pipelineInformation(k) match {
+          case LongSlot(offset, false, CTNode, _) => NodeFromRegister(offset)
+          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, NodeFromRegister(offset))
+          case LongSlot(offset, false, CTRelationship, _) => RelationshipFromRegister(offset)
+          case LongSlot(offset, true, CTRelationship, _) => NullCheck(offset, RelationshipFromRegister(offset))
+          case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
+          case _ =>
+            throw new InternalException("Did not find `" + k + "` in the pipeline information")
+        }
     }
-    bottomUp(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
+    topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
 
   private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {

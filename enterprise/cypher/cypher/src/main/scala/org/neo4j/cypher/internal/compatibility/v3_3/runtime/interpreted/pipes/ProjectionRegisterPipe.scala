@@ -28,15 +28,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 Projection evaluates expressions and stores their values into new slots in the execution context.
 It's an additive operation - nothing is lost in the execution context, the pipe simply adds new key-value pairs.
  */
-case class ProjectionRegisterPipe(source: Pipe, expressions: Map[Int, Expression])
+case class ProjectionRegisterPipe(source: Pipe, introducedExpressions: Map[Int, Expression])
                                  (val id: Id = new Id) extends PipeWithSource(source) {
 
-  expressions.values.foreach(_.registerOwningPipe(this))
+  introducedExpressions.values.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       ctx =>
-        expressions.foreach {
+        introducedExpressions.foreach {
           case (offset, expression) =>
             val result = expression(ctx)(state)
             ctx.setRefAt(offset, result)

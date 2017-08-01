@@ -46,18 +46,20 @@ class PipelineInformation(private var slots: Map[String, Slot], var numberOfLong
     new PipelineInformation(this.slots, numberOfLongs, numberOfReferences)
   }
 
-  def newLong(name: String, nullable: Boolean, typ: CypherType): Unit = {
+  def newLong(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
     checkNotAlreadyTaken(name)
     val slot = LongSlot(numberOfLongs, nullable, typ, name)
     slots = slots + (name -> slot)
     numberOfLongs = numberOfLongs + 1
+    this
   }
 
-  def newReference(name: String, nullable: Boolean, typ: CypherType): Unit = {
+  def newReference(name: String, nullable: Boolean, typ: CypherType): PipelineInformation = {
     checkNotAlreadyTaken(name)
     val slot = RefSlot(numberOfReferences, nullable, typ, name)
     slots = slots + (name -> slot)
     numberOfReferences = numberOfReferences + 1
+    this
   }
 
   def getReferenceOffsetFor(name: String): Int = slots.get(name) match {
