@@ -111,6 +111,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
             k -> runtimeExpressions.NodeFromRegister(offset)
           case LongSlot(offset, true, CTNode, _) =>
             k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.NodeFromRegister(offset))
+          case LongSlot(offset, false, CTRelationship, _) =>
+            k -> runtimeExpressions.RelationshipFromRegister(offset)
+          case LongSlot(offset, true, CTRelationship, _) =>
+            k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.RelationshipFromRegister(offset))
           case _ =>
             throw new InternalException("Did not find " + k + "in the pipeline information1")
         }

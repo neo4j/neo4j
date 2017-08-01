@@ -318,6 +318,20 @@ return p""")
 
   // End of index hints
 
+  test("filter on edge property") {
+    val query = "MATCH ()-[r]->() WHERE r.prop > 5 RETURN r"
+
+    val node1 = createNode()
+    val node2 = createNode()
+    val r1 = relate(node1, node2, "prop" -> 10)
+    val r2 = relate(node1, node2, "prop" -> 0)
+
+    //TODO: This should be done with lernaean test support!
+    val result = innerExecute("cypher runtime=interpreted debug=sleipir "+query)
+
+    result.toList should equal (List(Map("r" -> r1)))
+  }
+
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
