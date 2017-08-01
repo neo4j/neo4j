@@ -32,7 +32,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
   private def nodeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTNode, name = name)
-  private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTNode, name = name)
+  private def edgeAt(offset: Int, name: String) = LongSlot(offset, nullable = false, typ = CTRelationship, name = name)
 
   test("selection with property comparison MATCH (n) WHERE n.prop > 42 RETURN n") {
     val allNodes = AllNodesScan(IdName("x"), Set.empty)(solved)
@@ -65,7 +65,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val node3 = IdName("c")
     val rel1 = IdName("r1")
     val rel2 = IdName("r2")
-    val argument = Argument(Set(node1,node2,node3,rel1,rel2))(solved)()
+    val argument = Argument(Set(node1, node2, node3, rel1, rel2))(solved)()
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     val pipelineInformation = PipelineInformation(Map(
@@ -140,6 +140,36 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
 
     result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
     newLookup(result) should equal(pipeline)
+  }
+
+  test("reading property key when the token does not exist at compile time") {
+    // match (a)-[r1]->b-[r2]->(c) where not(r1 = r2)
+    // given
+    val node1 = IdName("a")
+    val node2 = IdName("b")
+    val edge = IdName("r")
+    val argument = Argument(Set(node1, node2, edge))(solved)()
+    val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
+    val selection = Selection(Seq(predicate), argument)(solved)
+    val pipelineInformation = PipelineInformation(Map(
+      "a" -> nodeAt(0, "a"),
+      "b" -> nodeAt(1, "b"),
+      "r" -> edgeAt(2, "r")
+    ), numberOfLongs = 3, numberOfReferences = 0)
+
+    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
+      argument -> pipelineInformation,
+      selection -> pipelineInformation
+    )
+    val tokenContext = mock[TokenContext]
+    when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
+    val rewriter = new RegisteredRewriter(tokenContext)
+
+    // when
+    val (result, newLookup) = rewriter(selection, lookup)
+
+    result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop"), literalInt(42))(pos)), argument)(solved))
+    newLookup(result) should equal(pipelineInformation)
   }
 
   test("projection with map lookup MATCH (n) RETURN n.prop") {

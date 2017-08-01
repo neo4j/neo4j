@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
@@ -81,6 +81,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTNode => NodeProperty(offset, token)
           case (LongSlot(offset, _, typ, _), None) if typ == CTNode => NodePropertyLate(offset, propKey)
           case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token)
+          case (LongSlot(offset, _, typ, _), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey)
         }
 
         if (slot.nullable)
