@@ -277,50 +277,6 @@ class DeleteAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     assertStats(result, nodesDeleted = 2, relationshipsDeleted = 2)
   }
 
-  //see https://github.com/neo4j/neo4j/issues/7407
-  test("should plan within reasonable time") {
-    updateWithBothPlannersAndCompatibilityMode(
-      """CREATE (n1: `node1` {oid: '1'})
-        |CREATE (n2: `node2` {oid: '2'})
-        |CREATE (n3: `node3` {oid: '3'})
-        |CREATE (n4: `node4` {oid: '4'})
-        |CREATE (n5: `node5` {oid: '5'})
-        |CREATE (n6: `node6` {oid: '6'})
-        |CREATE (n7: `node7` {oid: '7'})
-        |CREATE (n8: `users` {oid: '8'})
-        |CREATE (n9: `user` {oid: '9'})
-        |CREATE (n1)-[r10:`HAS_CHILD` {oid: '10'}]->(n2)
-        |CREATE (n1)-[r11:`HAS_CHILD` {oid: '11'}]->(n3)
-        |CREATE (n2)-[r12:`HAS_CHILD` {oid: '12'}]->(n4)
-        |CREATE (n2)-[r13:`HAS_CHILD` {oid: '13'}]->(n5)
-        |CREATE (n3)-[r14:`HAS_CHILD` {oid: '14'}]->(n6)
-        |CREATE (n3)-[r15:`HAS_CHILD` {oid: '15'}]->(n7)
-        |CREATE (n8)-[r16:`SECURITY` {oid: '16'}]->(n3)
-        |CREATE (n9)-[r17:`PART_OF` {oid: '17'}]->(n8)""".stripMargin)
-
-    val query =
-      """OPTIONAL MATCH (n0 { oid: '1'})
-      |OPTIONAL MATCH (n1 { oid: '2'})
-      |OPTIONAL MATCH (n2 { oid: '3'})
-      |OPTIONAL MATCH (n3 { oid: '4'})
-      |OPTIONAL MATCH (n4 { oid: '5'})
-      |OPTIONAL MATCH (n5 { oid: '6'})
-      |OPTIONAL MATCH (n6 { oid: '7'})
-      |OPTIONAL MATCH (n7 { oid: '8'})
-      |OPTIONAL MATCH (n8 { oid: '9'})
-      |OPTIONAL MATCH ( { oid : '1'})-[r0 { oid: '10'}]-( { oid : '2'})
-      |OPTIONAL MATCH ( { oid : '1'})-[r1 { oid: '11'}]-( { oid : '3'})
-      |OPTIONAL MATCH ( { oid : '2'})-[r2 { oid: '12'}]-( { oid : '4'})
-      |OPTIONAL MATCH ( { oid : '2'})-[r3 { oid: '13'}]-( { oid : '5'})
-      |OPTIONAL MATCH ( { oid : '3'})-[r4 { oid: '14'}]-( { oid : '6'})
-      |OPTIONAL MATCH ( { oid : '3'})-[r5 { oid: '15'}]-( { oid : '7'})
-      |OPTIONAL MATCH ( { oid : '8'})-[r6 { oid: '16'}]-( { oid : '3'})
-      |OPTIONAL MATCH ( { oid : '9'})-[r7 { oid: '17'}]-( { oid : '8'})
-      |DETACH DELETE n0, n1, n2, n3, n4, n5, n6, n7, n8 DELETE r0, r1, r2, r3, r4, r5, r6, r7""".stripMargin
-
-    updateWithBothPlannersAndCompatibilityMode(s"EXPLAIN $query")
-  }
-
   //https://github.com/neo4j/neo4j-java-driver/issues/212
   test("should handle bidirectional match and relationship types") {
     // GIVEN
