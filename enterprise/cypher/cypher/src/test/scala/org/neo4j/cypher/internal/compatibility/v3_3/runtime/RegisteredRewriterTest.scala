@@ -142,4 +142,34 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     newLookup(result) should equal(pipeline)
   }
 
+  test("projection with map lookup MATCH (n) RETURN n.prop") {
+    // given
+    val node = Variable("n")(pos)
+    val allNodes = AllNodesScan(IdName.fromVariable(node), Set.empty)(solved)
+    val projection = Projection(allNodes, Map("n.prop" -> prop("n", "prop")))(solved)
+    val produceResult = ProduceResult(Seq("n.prop"), projection)
+    val nodeOffset = 0
+    val propOffset = 0
+    val pipeline = PipelineInformation(Map(
+      "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode, "n"),
+      "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny, "n.prop")),
+      1, 1)
+    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
+      allNodes -> pipeline,
+      projection -> pipeline,
+      produceResult -> pipeline)
+    val tokenContext = mock[TokenContext]
+    when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
+    val rewriter = new RegisteredRewriter(tokenContext)
+
+    //when
+    val (result, newLookup) = rewriter(produceResult, lookup)
+
+    //then
+    val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop")))(solved)
+    result should equal(
+      ProduceResult(Seq("n.prop"), newProjection))
+    newLookup(result) should equal(pipeline)
+    newLookup(newProjection) should equal(pipeline)
+  }
 }
