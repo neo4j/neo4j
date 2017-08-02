@@ -492,7 +492,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             if ( pageSize > pageCache.pageSize() )
             {
                 throw new MetadataMismatchException(
-                        "Was about to create tree with page size %d" +
+                        "Tried to create tree with page size %d" +
                         ", but page cache used to create it has a smaller page size %d" +
                         " so cannot be created", pageSize, pageCache.pageSize() );
             }
@@ -698,7 +698,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             if ( pageSize > pageCache.pageSize() )
             {
                 throw new MetadataMismatchException(
-                        " was created with page size %d, but page cache used to open it this time " +
+                        "Tried to create tree with page size %d, but page cache used to open it this time " +
                         "has a smaller page size %d so cannot be opened",
                         pageSize, pageCache.pageSize() );
             }
