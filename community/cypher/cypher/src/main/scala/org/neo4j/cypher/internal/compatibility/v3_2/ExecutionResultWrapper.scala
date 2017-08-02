@@ -34,12 +34,8 @@ import org.neo4j.cypher.internal.compiler.v3_2.planDescription.InternalPlanDescr
 import org.neo4j.cypher.internal.compiler.v3_2.planDescription.{Argument, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_2.spi.{InternalResultRow, InternalResultVisitor}
 import org.neo4j.cypher.internal.compiler.v3_2.{RuntimeName, ExplainMode => ExplainModev3_2, NormalMode => NormalModev3_2, ProfileMode => ProfileModev3_2}
-<<<<<<< HEAD
-import org.neo4j.cypher.internal.frontend.v3_2.{InputPosition, PlannerName}
-=======
 import org.neo4j.cypher.internal.frontend.v3_2.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_2.SemanticDirection.{BOTH, INCOMING, OUTGOING}
->>>>>>> Added typed accept method to Result
 import org.neo4j.cypher.internal.frontend.v3_2.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.graphdb

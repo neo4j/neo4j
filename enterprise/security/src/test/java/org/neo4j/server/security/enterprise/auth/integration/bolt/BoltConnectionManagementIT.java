@@ -34,7 +34,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.messaging.message.ResetMessage;
 import org.neo4j.bolt.v1.runtime.spi.ImmutableRecord;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
 import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
 import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
@@ -49,6 +48,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.result.QueryResult;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -380,7 +380,7 @@ public class BoltConnectionManagementIT
 
     }
 
-    static class CollectingMatcher extends BaseMatcher<Record>
+    static class CollectingMatcher extends BaseMatcher<QueryResult.Record>
     {
         Map<String, Long> resultMap = new HashMap<>();
 

@@ -235,7 +235,7 @@ object RewindableExecutionResult {
     override def close(): Unit = inner.close()
 
     override def notifications: Iterable[Notification] =
-      inner.notifications.map(org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification)
+      inner.notifications.map(org.neo4j.cypher.internal.compatibility.v2_3.ExecutionResultWrapper.asKernelNotification(None))
 
     private def lift(position: frontend.v2_3.InputPosition): InputPosition = {
       InputPosition.apply(position.offset, position.line, position.column)
@@ -356,7 +356,7 @@ object RewindableExecutionResult {
     override def close(): Unit = inner.close()
 
     override def notifications: Iterable[Notification] = inner.notifications
-      .map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification)
+      .map(org.neo4j.cypher.internal.compatibility.v3_1.ExecutionResultWrapper.asKernelNotification(None))
 
     private def lift(position: frontend.v3_1.InputPosition): InputPosition = {
       InputPosition.apply(position.offset, position.line, position.column)
@@ -493,7 +493,7 @@ object RewindableExecutionResult {
     override def close(): Unit = inner.close()
 
     override def notifications: Iterable[Notification] = inner.notifications
-      .map(org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper.asKernelNotification)
+      .map(org.neo4j.cypher.internal.compatibility.v3_2.ExecutionResultWrapper.asKernelNotification(None))
 
 
     private def lift(position: frontend.v3_2.InputPosition): InputPosition = {

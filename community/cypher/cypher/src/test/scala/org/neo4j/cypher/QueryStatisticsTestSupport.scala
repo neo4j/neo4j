@@ -19,10 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.ExecutionResultWrapper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
-import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor

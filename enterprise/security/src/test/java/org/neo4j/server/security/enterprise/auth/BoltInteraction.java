@@ -54,6 +54,11 @@ import org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
@@ -81,7 +86,7 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         this( config, EphemeralFileSystemAbstraction::new );
     }
 
-    BoltInteraction( Map<String, String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
+    BoltInteraction( Map<String,String> config, Supplier<FileSystemAbstraction> fileSystemSupplier ) throws IOException
     {
         TestEnterpriseGraphDatabaseFactory factory = new TestEnterpriseGraphDatabaseFactory();
         fileSystem = fileSystemSupplier.get();
@@ -93,7 +98,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
                     settings.put( GraphDatabaseSettings.auth_enabled.name(), "true" );
                     settings.putAll( config );
                 } );
-        server.ensureDatabase( r -> {} );
+        server.ensureDatabase( r ->
+        {
+        } );
         GraphDatabaseFacade db = (GraphDatabaseFacade) server.graphDatabaseService();
         authManager = db.getDependencyResolver().resolveDependency( EnterpriseAuthManager.class );
     }
@@ -162,7 +169,8 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
             subject.client.disconnect();
             subject.client = connectionFactory.newInstance();
         }
-        subject.client.connect( server.lookupDefaultConnector() ).send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
+        subject.client.connect( server.lookupDefaultConnector() )
+                .send( TransportTestUtil.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( TransportTestUtil.chunk( InitMessage.init( "TestClient/1.1",
                         map( REALM_KEY, NATIVE_REALM, PRINCIPAL, username, CREDENTIALS, password,
                                 SCHEME_KEY, BASIC_SCHEME ) ) ) );
@@ -246,8 +254,12 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
 
         if ( message instanceof SuccessMessage )
         {
-            Map<String,Object> metadata = ((SuccessMessage) message).meta();
-            fieldNames = (List<String>) metadata.get( "fields" );
+            MapValue metadata = ((SuccessMessage) message).meta();
+            ListValue fieldNameValues = (ListValue) metadata.get( "fields" );
+            for ( AnyValue value : fieldNameValues )
+            {
+                fieldNames.add( ((TextValue) value).stringValue() );
+            }
         }
         else if ( message instanceof FailureMessage )
         {
@@ -305,8 +317,9 @@ class BoltInteraction implements NeoInteractionLevel<BoltInteraction.BoltSubject
         {
             if ( result instanceof SuccessMessage )
             {
-                Map<String,Object> meta = ((SuccessMessage) result).meta();
-                if ( meta.containsKey( "credentials_expired" ) && meta.get( "credentials_expired" ).equals( true ) )
+                MapValue meta = ((SuccessMessage) result).meta();
+                if ( meta.containsKey( "credentials_expired" ) &&
+                     meta.get( "credentials_expired" ).equals( Values.TRUE ) )
                 {
                     loginResult = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
                 }

@@ -218,7 +218,7 @@ public class CypherAdapterStreamTest
         when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.executionType() ).thenReturn( query( READ_WRITE ) );
 
-        when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
+        when( result.getNotifications() ).thenReturn( Arrays.asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );

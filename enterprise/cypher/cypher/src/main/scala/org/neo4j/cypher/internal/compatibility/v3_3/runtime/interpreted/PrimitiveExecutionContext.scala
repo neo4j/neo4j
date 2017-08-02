@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
   def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0,0))
@@ -29,7 +30,7 @@ object PrimitiveExecutionContext {
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
 
   private val longs = new Array[Long](pipeline.numberOfLongs)
-  private val refs = new Array[Any](pipeline.numberOfReferences)
+  private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
   def copyFrom(input: ExecutionContext): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
@@ -46,11 +47,11 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def getLongAt(offset: Int): Long = longs(offset)
 
-  override def setRefAt(offset: Int, value: Any): Unit = refs(offset) = value
+  override def setRefAt(offset: Int, value: AnyValue): Unit = refs(offset) = value
 
-  override def getRefAt(offset: Int): Any = refs(offset)
+  override def getRefAt(offset: Int): AnyValue = refs(offset)
 
-  override def +=(kv: (String, Any)) = fail()
+  override def +=(kv: (String, AnyValue)) = fail()
 
   override def -=(key: String) = fail()
 
@@ -60,15 +61,15 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   private def fail(): Nothing = throw new InternalException("Tried using a primitive context as a map")
 
-  override def newWith1(key1: String, value1: Any): ExecutionContext = fail()
+  override def newWith1(key1: String, value1: AnyValue): ExecutionContext = fail()
 
-  override def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext = fail()
+  override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
 
-  override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext = fail()
+  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
 
   override def createClone(): ExecutionContext = fail()
 
-  override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = fail()
+  override def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext = fail()
 }
