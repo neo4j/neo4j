@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
 class RegisteredPipeBuilder(fallback: PipeBuilder,
                             expressionConverters: ExpressionConverters,
@@ -103,7 +103,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val toSlot = pipeline(to)
         ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
-
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
         val fromOffset = pipeline(fromName).offset
         val relOffset = pipeline(relName).offset
@@ -117,6 +116,20 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val toOffset = pipeline(toName).offset
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+
+      case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
+        // TODO: This is not right!
+        val predicate = VarLengthRegisterPredicate.NONE
+
+        val closedPath = expansionMode match {
+          case ExpandAll => false
+          case ExpandInto => true
+        }
+        val fromOffset = pipeline.getLongOffsetFor(fromName)
+        val toOffset = pipeline.getLongOffsetFor(toName)
+        val relOffset = pipeline.getReferenceOffsetFor(relName)
+        VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir,
+          LazyTypes(types), min, max, closedPath, predicate, pipeline)(id = id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols

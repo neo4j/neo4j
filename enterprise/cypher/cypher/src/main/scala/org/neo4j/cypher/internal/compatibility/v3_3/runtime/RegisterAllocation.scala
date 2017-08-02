@@ -144,6 +144,13 @@ object RegisterAllocation {
         result += (lp -> cartesianProductPipeline)
         cartesianProductPipeline
 
+      case VarExpand(lhs, IdName(from), dir, projectedDir, types, IdName(to), IdName(edge), length, ExpandAll, predicates) =>
+        val pipeline = allocate(lhs, nullable, argument)
+        pipeline.newLong(to, nullable, CTNode)
+        pipeline.newReference(edge, nullable, CTList(CTRelationship))
+        result += (lp -> pipeline)
+        pipeline
+
       case CreateNode(source, IdName(name), labels, properties) =>
         val pipeline = allocate(source, nullable, argument)
         pipeline.newLong(name,false,CTNode)

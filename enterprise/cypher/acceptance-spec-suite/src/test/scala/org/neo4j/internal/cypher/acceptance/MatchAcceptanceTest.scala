@@ -41,6 +41,23 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
+  test("varlength apa") {
+
+    val n1 = createLabeledNode("Start")
+    val n2 = createNode()
+    val n3 = createNode()
+    val n4 = createNode()
+
+    relate(n1,n2)
+    relate(n1,createNode())
+    relate(n2,n3)
+    relate(n3,n4)
+
+    println(innerExecute("MATCH (n:Start)-[*1..2]->(x) RETURN x", Map.empty).dumpToString())
+    println(innerExecute("cypher runtime=interpreted debug=sleipnir MATCH (n:Start)-[*1..2]->(x) RETURN x", Map.empty).dumpToString())
+
+  }
+
   test("Do not count null elements in nodes with labels") {
 
     createLabeledNode(Map("name" -> "a"), "Person")
