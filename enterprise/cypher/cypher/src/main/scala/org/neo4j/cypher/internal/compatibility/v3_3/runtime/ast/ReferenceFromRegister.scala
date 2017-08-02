@@ -19,7 +19,4 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-case class NodeProperty(offset: Int, propToken: Int) extends RuntimeExpression
-
-// Token did not exist at plan time, so we'll need to look it up at runtime
-case class NodePropertyLate(offset: Int, propKey: String) extends RuntimeExpression
+case class ReferenceFromRegister(offset: Int) extends RuntimeExpression

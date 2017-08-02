@@ -29,7 +29,7 @@ class IdAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport 
     val expected = createNode().getId
 
     // WHEN
-    val result = testWith(Configs.AllExceptSleipnir, "MATCH (n) RETURN id(n)")
+    val result = testWith(Configs.All, "MATCH (n) RETURN id(n)")
 
     // THEN
     result.toList should equal(List(Map("id(n)" -> expected)))

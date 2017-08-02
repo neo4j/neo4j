@@ -334,14 +334,14 @@ return p""")
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = testWith(Configs.AllExceptSleipnir, "MATCH (n) WHERE id(n)=1337 RETURN n")
+    val result = testWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    testWith(Configs.CommunityInterpreted, "match (n) where id(n) in [0,1] return n").toList
+    testWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
 
@@ -371,7 +371,7 @@ return p""")
     graph.createIndex("Label", "property")
 
     // when
-    val result = testWith(Configs.AllExceptSleipnir, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = testWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal (List(Map("a" -> a, "b" -> b)))
@@ -405,7 +405,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -420,7 +420,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -444,7 +444,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) RETURN n")
+    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head), Map("n" -> nodes(1))))
@@ -531,7 +531,7 @@ return p""")
     //WHEN
     val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = testWith(Configs.AllExceptSleipnir, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = testWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -565,7 +565,7 @@ return p""")
 
     val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = testWith(Configs.AllExceptSleipnir, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = testWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)

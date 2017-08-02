@@ -99,6 +99,14 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
         OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
 
+      case Projection(_, expressions) =>
+        val expressionsWithOffsets = expressions map {
+          case (k, e) =>
+            val offset = pipeline.getReferenceOffsetFor(k)
+            offset -> convertExpressions(e)
+        }
+        ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
+
       case _ => fallback.build(plan, source)
     }
   }
@@ -115,8 +123,12 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
             k -> runtimeExpressions.RelationshipFromRegister(offset)
           case LongSlot(offset, true, CTRelationship, _) =>
             k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.RelationshipFromRegister(offset))
+
+          case RefSlot(offset, _, _, _) =>
+            k -> runtimeExpressions.ReferenceFromRegister(offset)
+
           case _ =>
-            throw new InternalException("Did not find " + k + "in the pipeline information1")
+            throw new InternalException("Did not find `" + k + "` in the pipeline information1")
         }
     }
     runtimeColumns

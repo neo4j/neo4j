@@ -34,3 +34,20 @@ case class RelationshipProperty(offset: Int, token: Int) extends Expression {
 
   override def symbolTableDependencies: Set[String] = Set.empty
 }
+
+case class RelationshipPropertyLate(offset: Int, propKey: String) extends Expression {
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+    val maybeToken = state.query.getOptPropertyKeyId(propKey)
+    if (maybeToken.isEmpty)
+      null
+    else
+      state.query.relationshipOps.getProperty(ctx.getLongAt(offset), maybeToken.get)
+  }
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set.empty
+}
