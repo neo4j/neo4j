@@ -60,18 +60,15 @@ import static org.neo4j.unsafe.impl.batchimport.staging.Step.ORDER_SEND_DOWNSTRE
  */
 public class NodeStage extends Stage
 {
-    private final NodeRelationshipCache cache;
     private final NodeStore nodeStore;
 
     public NodeStage( Configuration config, IoMonitor writeMonitor,
             InputIterable<InputNode> nodes, IdMapper idMapper, IdGenerator idGenerator,
             BatchingNeoStores neoStore, InputCache inputCache, LabelScanStore labelScanStore,
             EntityStoreUpdaterStep.Monitor storeUpdateMonitor,
-            NodeRelationshipCache cache,
             StatsProvider memoryUsage ) throws IOException
     {
         super( "Nodes", config, ORDER_SEND_DOWNSTREAM );
-        this.cache = cache;
         add( new InputIteratorBatcherStep<>( control(), config, nodes.iterator(), InputNode.class, t -> true ) );
         if ( !nodes.supportsMultiplePasses() )
         {
@@ -86,14 +83,5 @@ public class NodeStage extends Stage
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
         add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore, writeMonitor,
                 storeUpdateMonitor ) );
-    }
-
-    @Override
-    public void close()
-    {
-        // At this point we know how many nodes we have, so we tell the cache that instead of having the
-        // cache keeping track of that in a the face of concurrent updates.
-        cache.setHighNodeId( nodeStore.getHighId() );
-        super.close();
     }
 }

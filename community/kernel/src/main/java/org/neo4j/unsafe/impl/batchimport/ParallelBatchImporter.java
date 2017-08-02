@@ -63,10 +63,10 @@ import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.io.IoMonitor;
-
 import static java.lang.Long.max;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
@@ -187,7 +187,7 @@ public class ParallelBatchImporter implements BatchImporter
             Configuration nodeConfig = configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             NodeStage nodeStage = new NodeStage( nodeConfig, writeMonitor,
                     nodes, idMapper, idGenerator, neoStore, inputCache, neoStore.getLabelScanStore(),
-                    storeUpdateMonitor, nodeRelationshipCache, memoryUsageStats );
+                    storeUpdateMonitor, memoryUsageStats );
             neoStore.startFlushingPageCache();
             executeStage( nodeStage );
             neoStore.stopFlushingPageCache();
@@ -201,34 +201,39 @@ public class ParallelBatchImporter implements BatchImporter
                     executeStage( new DeleteDuplicateNodesStage( config, duplicateNodeIds, neoStore ) );
                 }
             }
-
             // Import relationships (unlinked), properties
             Configuration relationshipConfig =
                     configWithRecordsPerPageBasedBatchSize( config, neoStore.getNodeStore() );
             RelationshipStage unlinkedRelationshipStage =
                     new RelationshipStage( relationshipConfig, writeMonitor, relationships, idMapper,
-                            badCollector, inputCache, nodeRelationshipCache, neoStore, storeUpdateMonitor );
+                            badCollector, inputCache, neoStore, storeUpdateMonitor );
             neoStore.startFlushingPageCache();
             executeStage( unlinkedRelationshipStage );
             neoStore.stopFlushingPageCache();
-
+            idMapper.close();
+            idMapper = null;
             // Link relationships together with each other, their nodes and their relationship groups
-            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
+            long availableMemory = maxMemory - totalMemoryUsageOf( nodeRelationshipCache, neoStore );
+            // This is where the nodeRelationshipCache is allocated memory.
+            // This has to happen after idMapped is released
+            nodeRelationshipCache.setHighNodeId( neoStore.getNodeStore().getHighId() );
+            NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage( relationshipConfig,
+                    neoStore.getRelationshipStore(), nodeRelationshipCache );
+            neoStore.startFlushingPageCache();
+            executeStage( nodeDegreeStage );
+            neoStore.stopFlushingPageCache();
+
             linkData( nodeRelationshipCache, neoStore, unlinkedRelationshipStage.getDistribution(),
                     availableMemory );
 
             // Release this potentially really big piece of cached data
-            long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, idMapper, neoStore );
+            long peakMemoryUsage = totalMemoryUsageOf( nodeRelationshipCache, neoStore );
             long highNodeId = nodeRelationshipCache.getHighNodeId();
-            idMapper.close();
-            idMapper = null;
             nodeRelationshipCache.close();
             nodeRelationshipCache = null;
-
             // Defragment relationships groups for better performance
-            RelationshipGroupDefragmenter groupDefragmenter =
-                    new RelationshipGroupDefragmenter( config, executionMonitor, numberArrayFactory );
-            groupDefragmenter.run( max( maxMemory, peakMemoryUsage ), neoStore, highNodeId );
+            new RelationshipGroupDefragmenter( config, executionMonitor, numberArrayFactory )
+                    .run( max( maxMemory, peakMemoryUsage ), neoStore, highNodeId );
 
             // Count nodes per label and labels per node
             nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );

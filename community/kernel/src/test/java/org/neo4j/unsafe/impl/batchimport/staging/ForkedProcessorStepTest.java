@@ -267,19 +267,6 @@ public class ForkedProcessorStepTest
         }
     }
 
-    private static class DeadEndStep extends ProcessorStep<Object>
-    {
-        DeadEndStep( StageControl control )
-        {
-            super( control, "END", Configuration.DEFAULT, 1 );
-        }
-
-        @Override
-        protected void process( Object batch, BatchSender sender ) throws Throwable
-        {
-        }
-    }
-
     private static class TrackingStep implements Step<Batch>
     {
         private final AtomicLong received = new AtomicLong();
