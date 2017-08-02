@@ -128,7 +128,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
             k -> runtimeExpressions.ReferenceFromRegister(offset)
 
           case _ =>
-            throw new InternalException("Did not find `" + k + "` in the pipeline information1")
+            throw new InternalException(s"Did not find `$k` in the pipeline information")
         }
     }
     runtimeColumns
