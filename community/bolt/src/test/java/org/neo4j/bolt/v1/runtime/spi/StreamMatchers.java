@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
 
 import static java.util.Arrays.asList;
@@ -96,7 +97,7 @@ public class StreamMatchers
                         }
 
                         @Override
-                        public void addMetadata( String key, Object value )
+                        public void addMetadata( String key, AnyValue value )
                         {
 
                         }

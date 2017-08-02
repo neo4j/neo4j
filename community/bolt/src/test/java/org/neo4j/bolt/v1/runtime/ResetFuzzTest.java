@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLog;
 import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -117,7 +118,7 @@ public class ResetFuzzTest
             }
 
             @Override
-            public void onSuccess( Map metadata ) throws IOException
+            public void onSuccess( MapValue metadata ) throws IOException
             {
             }
         }, Runnables.EMPTY_RUNNABLE );

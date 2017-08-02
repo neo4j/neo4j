@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
 import org.neo4j.bolt.v1.runtime.spi.Record;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -36,7 +37,7 @@ public class RecordedBoltResponse
 {
     private List<QueryResult.Record> records;
     private BoltResponseMessage response;
-    private Map<String, Object> metadata;
+    private Map<String, AnyValue> metadata;
 
     public RecordedBoltResponse()
     {
@@ -50,7 +51,7 @@ public class RecordedBoltResponse
         records.add( record );
     }
 
-    public void addMetadata( String key, Object value )
+    public void addMetadata( String key, AnyValue value )
     {
         metadata.put( key, value );
     }

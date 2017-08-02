@@ -222,49 +222,6 @@ public final class AnyValues
         return map( mapValues( map ) );
     }
 
-    public static ListValue concat( ListValue... lists )
-    {
-        int totalSize = 0;
-        for ( ListValue list : lists )
-        {
-            totalSize += list.size();
-        }
-
-        AnyValue[] anyValues = new AnyValue[totalSize];
-        int startPoint = 0;
-        for ( ListValue list : lists )
-        {
-            System.arraycopy( list.asArray(), 0, anyValues, startPoint, list.size() );
-            startPoint += list.size();
-        }
-
-        return VirtualValues.list( anyValues );
-    }
-
-    public static MapValue combine( MapValue a, MapValue b )
-    {
-        HashMap<String,AnyValue> map = new HashMap<>( a.size() + b.size() );
-        a.foreach( map::put );
-        b.foreach( map::put );
-        return VirtualValues.map( map );
-    }
-
-    public static ListValue appendToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        System.arraycopy( list.asArray(), 0, newValues, 0, list.size() );
-        newValues[list.size()] = value;
-        return VirtualValues.list( newValues );
-    }
-
-    public static ListValue prependToList( ListValue list, AnyValue value )
-    {
-        AnyValue[] newValues = new AnyValue[list.size() + 1];
-        newValues[0] = value;
-        System.arraycopy( list.asArray(), 0, newValues, 1, list.size() );
-        return VirtualValues.list( newValues );
-    }
-
     public static PointValue fromMap( MapValue map )
     {
         if ( map.containsKey( "x" ) && map.containsKey( "y" ) )

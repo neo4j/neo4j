@@ -21,12 +21,12 @@ package org.neo4j.values.virtual;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.Value;
 
 /**
  * This class is way too similar to org.neo4j.collection.primitive.PrimitiveArrays.
@@ -76,6 +76,18 @@ final class ArrayHelpers
     }
 
     static boolean containsNull( AnyValue[] values )
+    {
+        for ( AnyValue value : values )
+        {
+            if ( value == null )
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static boolean containsNull( List<AnyValue> values )
     {
         for ( AnyValue value : values )
         {

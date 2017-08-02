@@ -26,6 +26,7 @@ import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.logging.Log;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
 
 /**
@@ -139,7 +140,7 @@ public class BoltMessageRouter implements BoltRequestMessageHandler<RuntimeExcep
                 }
 
                 @Override
-                public void addMetadata( String key, Object value )
+                public void addMetadata( String key, AnyValue value )
                 {
                     metadata.put( key, value );
                 }

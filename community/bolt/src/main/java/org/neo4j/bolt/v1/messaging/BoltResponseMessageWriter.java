@@ -20,11 +20,11 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
@@ -72,7 +72,7 @@ public class BoltResponseMessageWriter implements BoltResponseMessageHandler<IOE
     }
 
     @Override
-    public void onSuccess( Map<String, Object> metadata ) throws IOException
+    public void onSuccess( MapValue metadata ) throws IOException
     {
         packer.packStructHeader( 1, SUCCESS.signature() );
         packer.packRawMap( metadata );

@@ -29,10 +29,13 @@ import org.neo4j.bolt.v1.runtime.BoltWorker;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.logging.Log;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 class MessageProcessingHandler implements BoltResponseHandler
 {
-    protected final Map<String,Object> metadata = new HashMap<>();
+    protected final Map<String,AnyValue> metadata = new HashMap<>();
 
     protected final Log log;
     protected final BoltWorker worker;
@@ -62,7 +65,7 @@ class MessageProcessingHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onMetadata( String key, Object value )
+    public void onMetadata( String key, AnyValue value )
     {
         metadata.put( key, value );
     }
@@ -109,9 +112,9 @@ class MessageProcessingHandler implements BoltResponseHandler
         }
     }
 
-    Map<String,Object> getMetadata()
+    MapValue getMetadata()
     {
-        return metadata;
+        return VirtualValues.map( metadata );
     }
 
     private void clearState()

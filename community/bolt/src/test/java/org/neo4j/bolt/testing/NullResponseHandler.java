@@ -22,6 +22,7 @@ package org.neo4j.bolt.testing;
 import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.values.AnyValue;
 
 /**
  * Used by tests when the response for a request is not relevant.
@@ -52,7 +53,7 @@ public class NullResponseHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onMetadata( String key, Object value )
+    public void onMetadata( String key, AnyValue value )
     {
         // this page intentionally left blank
     }

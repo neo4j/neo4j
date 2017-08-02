@@ -20,12 +20,12 @@
 package org.neo4j.bolt.v1.messaging;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.StringValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.bolt.v1.runtime.Neo4jError.codeFromString;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
@@ -56,7 +56,7 @@ public class BoltResponseMessageReader
                 switch ( message )
                 {
                 case SUCCESS:
-                    Map<String, Object> successMetadata = unpacker.unpackMap();
+                    MapValue successMetadata = unpacker.unpackMap();
                     handler.onSuccess( successMetadata );
                     break;
                 case RECORD:
@@ -64,7 +64,7 @@ public class BoltResponseMessageReader
                     final AnyValue[] fields = new AnyValue[(int) length];
                     for ( int i = 0; i < length; i++ )
                     {
-                        fields[i] = AnyValues.of(unpacker.unpack());
+                        fields[i] = unpacker.unpack();
                     }
                     handler.onRecord( record( fields ) );
                     break;
@@ -72,12 +72,12 @@ public class BoltResponseMessageReader
                     handler.onIgnored();
                     break;
                 case FAILURE:
-                    Map<String, Object> failureMetadata = unpacker.unpackMap();
+                    MapValue failureMetadata = unpacker.unpackMap();
                     String code = failureMetadata.containsKey( "code" ) ?
-                            (String) failureMetadata.get( "code" ) :
+                                  ((StringValue) failureMetadata.get( "code" )).stringValue() :
                             Status.General.UnknownError.name();
                     String msg = failureMetadata.containsKey( "message" ) ?
-                            (String) failureMetadata.get( "message" ) :
+                                 ((StringValue) failureMetadata.get( "message" )).stringValue() :
                             "<No message supplied>";
                     handler.onFailure( codeFromString( code ), msg );
                     break;

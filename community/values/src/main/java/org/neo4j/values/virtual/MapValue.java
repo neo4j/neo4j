@@ -22,6 +22,7 @@ package org.neo4j.values.virtual;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
@@ -120,6 +121,11 @@ public final class MapValue extends VirtualValue
     public void foreach( BiConsumer<String,AnyValue> f )
     {
         map.forEach( f );
+    }
+
+    public Set<Map.Entry<String,AnyValue>> entrySet()
+    {
+        return map.entrySet();
     }
 
     public boolean containsKey( String key )

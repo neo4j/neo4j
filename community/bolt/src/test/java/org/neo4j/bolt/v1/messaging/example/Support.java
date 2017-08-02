@@ -19,77 +19,41 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Path;
-import org.neo4j.graphdb.Relationship;
-
-import static java.util.Arrays.asList;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 public class Support
 {
-    public static final List<Label> NO_LABELS = new ArrayList<>();
-    public static final Map<String, Object> NO_PROPERTIES = new HashMap<>();
+    static final TextArray NO_LABELS = Values.stringArray();
+    static final MapValue NO_PROPERTIES = VirtualValues.EMPTY_MAP;
 
     private Support()
     {
     }
 
-    // Collect labels from a Node
-    public static Collection<Label> labels( Node node )
-    {
-        List<Label> labels = new ArrayList<>();
-        for ( Label label : node.getLabels() )
-        {
-            labels.add( label );
-        }
-        return labels;
-    }
-
     // Helper to produce literal list of nodes
-    public static List<Node> nodes( Node... nodes )
+    public static NodeValue[] nodes( NodeValue... nodes )
     {
-        return new ArrayList<>( asList( nodes ) );
-    }
-
-    // Helper to extract list of nodes from a path
-    public static List<Node> nodes( Path path )
-    {
-        List<Node> nodes = new ArrayList<>( path.length() + 1 );
-        for ( Node node : path.nodes() )
-        {
-            nodes.add( node );
-        }
         return nodes;
     }
 
+    // Helper to extract list of nodes from a path
+    public static List<NodeValue> nodes( PathValue path )
+    {
+        return Arrays.asList( path.nodes() );
+    }
+
     // Helper to produce literal list of relationships
-    public static List<Relationship> relationships( Relationship... relationships )
+    public static EdgeValue[] edges( EdgeValue... edgeValues )
     {
-        return new ArrayList<>( asList( relationships ) );
+        return edgeValues;
     }
-
-    // Helper to extract list of relationships from a path
-    public static List<Relationship> relationships( Path path )
-    {
-        List<Relationship> relationships = new ArrayList<>( path.length() );
-        for ( Relationship relationship : path.relationships() )
-        {
-            relationships.add( relationship );
-        }
-        return relationships;
-    }
-
-    // Helper to produce literal list of integers, used for path sequence information
-    public static List<Integer> sequence( Integer... integers )
-    {
-        return new ArrayList<>( asList( integers ) );
-    }
-
 }

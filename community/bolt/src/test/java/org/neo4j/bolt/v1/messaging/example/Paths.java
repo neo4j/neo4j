@@ -19,21 +19,20 @@
  */
 package org.neo4j.bolt.v1.messaging.example;
 
-import org.neo4j.bolt.v1.messaging.infrastructure.ValuePath;
-import org.neo4j.graphdb.Path;
+import org.neo4j.values.virtual.PathValue;
 
+import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
+import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_LIKES_CAROL;
+import static org.neo4j.bolt.v1.messaging.example.Edges.CAROL_DISLIKES_BOB;
+import static org.neo4j.bolt.v1.messaging.example.Edges.CAROL_MARRIED_TO_DAVE;
+import static org.neo4j.bolt.v1.messaging.example.Edges.DAVE_WORKS_FOR_DAVE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.CAROL;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.DAVE;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_LIKES_CAROL;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.CAROL_DISLIKES_BOB;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.CAROL_MARRIED_TO_DAVE;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.DAVE_WORKS_FOR_DAVE;
+import static org.neo4j.bolt.v1.messaging.example.Support.edges;
 import static org.neo4j.bolt.v1.messaging.example.Support.nodes;
-import static org.neo4j.bolt.v1.messaging.example.Support.relationships;
-import static org.neo4j.bolt.v1.messaging.example.Support.sequence;
+import static org.neo4j.values.virtual.VirtualValues.path;
 
 /*
  * This class contains a number of paths used for testing, all based on
@@ -56,46 +55,37 @@ import static org.neo4j.bolt.v1.messaging.example.Support.sequence;
 public class Paths
 {
     // Paths
-    public static final Path PATH_WITH_LENGTH_ZERO =
-            new ValuePath( // A
-                    nodes( ALICE ),
-                    relationships(),
-                    sequence( /* 0 */ ) );
-    public static final Path PATH_WITH_LENGTH_ONE =
-            new ValuePath( // A->B
-                    nodes( ALICE, BOB ),
-                    relationships( ALICE_KNOWS_BOB ),
-                    sequence( /* 0 */ +1, 1 ) );
-    public static final Path PATH_WITH_LENGTH_TWO =
-            new ValuePath( // A->C->D
-                    nodes( ALICE, CAROL, DAVE ),
-                    relationships( ALICE_LIKES_CAROL,
-                            CAROL_MARRIED_TO_DAVE ),
-                    sequence( /* 0 */ +1, 1, +2, 2 ) );
-    public static final Path PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION =
-            new ValuePath( // A->B<-C->D
-                    nodes( ALICE, BOB, CAROL, DAVE ),
-                    relationships( ALICE_KNOWS_BOB, CAROL_DISLIKES_BOB, CAROL_MARRIED_TO_DAVE ),
-                    sequence( /* 0 */ +1, 1, -2, 2, +3, 3 ) );
-    public static final Path PATH_WITH_NODES_VISITED_MULTIPLE_TIMES =
-            new ValuePath( // A->B<-A->C->B<-C
-                    nodes( ALICE, BOB, CAROL ),
-                    relationships( ALICE_KNOWS_BOB, ALICE_LIKES_CAROL,
-                            CAROL_DISLIKES_BOB ),
-                    sequence( /* 0 */ +1, 1, -1, 0, +2, 2, +3, 1, -3, 2 ) );
-    public static final Path PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION =
-            new ValuePath( // A->C->B<-A->C->D
-                    nodes( ALICE, BOB, CAROL, DAVE ),
-                    relationships( ALICE_LIKES_CAROL, CAROL_DISLIKES_BOB, ALICE_KNOWS_BOB,
-                            CAROL_MARRIED_TO_DAVE ),
-                    sequence( /* 0 */ +1, 2, +2, 1, -3, 0, +1, 2, +4, 3 ) );
-    public static final Path PATH_WITH_LOOP =
-            new ValuePath( // C->D->D
-                    nodes( CAROL, DAVE ),
-                    relationships( CAROL_MARRIED_TO_DAVE, DAVE_WORKS_FOR_DAVE ),
-                    sequence( /* 0 */ +1, 1, +2, 1 ) );
+    public static final PathValue PATH_WITH_LENGTH_ZERO = path( nodes( ALICE ), edges() );
 
-    public static final Path[] ALL_PATHS = new Path[] {
+    public static final PathValue PATH_WITH_LENGTH_ONE =
+            path( // A->B
+                    nodes( ALICE, BOB ),
+                    edges( ALICE_KNOWS_BOB ) );
+    public static final PathValue PATH_WITH_LENGTH_TWO =
+            path( // A->C->D
+                    nodes( ALICE, CAROL, DAVE ),
+                    edges( ALICE_LIKES_CAROL,
+                            CAROL_MARRIED_TO_DAVE ) );
+    public static final PathValue PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION =
+            path( // A->B<-C->D
+                    nodes( ALICE, BOB, CAROL, DAVE ),
+                    edges( ALICE_KNOWS_BOB, CAROL_DISLIKES_BOB, CAROL_MARRIED_TO_DAVE ) );
+    public static final PathValue PATH_WITH_NODES_VISITED_MULTIPLE_TIMES =
+            path( // A->B<-A->C->B<-C
+                    nodes( ALICE, BOB, ALICE, CAROL, BOB, CAROL),
+                    edges( ALICE_KNOWS_BOB, ALICE_KNOWS_BOB, ALICE_LIKES_CAROL,
+                            CAROL_DISLIKES_BOB, CAROL_DISLIKES_BOB ) );
+    public static final PathValue PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION =
+            path( // A->C->B<-A->C->D
+                    nodes( ALICE, CAROL, BOB, ALICE, CAROL, DAVE ),
+                    edges( ALICE_LIKES_CAROL, CAROL_DISLIKES_BOB, ALICE_KNOWS_BOB,ALICE_LIKES_CAROL,
+                            CAROL_MARRIED_TO_DAVE ) );
+    public static final PathValue PATH_WITH_LOOP =
+            path( // C->D->D
+                    nodes( CAROL, DAVE, DAVE ),
+                    edges( CAROL_MARRIED_TO_DAVE, DAVE_WORKS_FOR_DAVE ) );
+
+    public static final PathValue[] ALL_PATHS = new PathValue[]{
             PATH_WITH_LENGTH_ZERO,
             PATH_WITH_LENGTH_ONE,
             PATH_WITH_LENGTH_TWO,

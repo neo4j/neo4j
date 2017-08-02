@@ -21,6 +21,7 @@ package org.neo4j.values.virtual;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -49,6 +50,11 @@ public final class VirtualValues
     public static ListValue list( AnyValue... values )
     {
         return new ListValue.ArrayListValue( values );
+    }
+
+    public static ListValue fromList( List<AnyValue> values )
+    {
+        return new ListValue.JavaListListValue( values );
     }
 
     public static ListValue range( long start, long end, long step )
@@ -102,6 +108,41 @@ public final class VirtualValues
         return new ListValue.ReversedList( list );
     }
 
+    public static ListValue concat( ListValue... lists )
+    {
+        int totalSize = 0;
+        for ( ListValue list : lists )
+        {
+            totalSize += list.size();
+        }
+
+        AnyValue[] anyValues = new AnyValue[totalSize];
+        int startPoint = 0;
+        for ( ListValue list : lists )
+        {
+            System.arraycopy( list.asArray(), 0, anyValues, startPoint, list.size() );
+            startPoint += list.size();
+        }
+
+        return VirtualValues.list( anyValues );
+    }
+
+    public static ListValue appendToList( ListValue list, AnyValue value )
+    {
+        AnyValue[] newValues = new AnyValue[list.size() + 1];
+        System.arraycopy( list.asArray(), 0, newValues, 0, list.size() );
+        newValues[list.size()] = value;
+        return VirtualValues.list( newValues );
+    }
+
+    public static ListValue prependToList( ListValue list, AnyValue value )
+    {
+        AnyValue[] newValues = new AnyValue[list.size() + 1];
+        newValues[0] = value;
+        System.arraycopy( list.asArray(), 0, newValues, 1, list.size() );
+        return VirtualValues.list( newValues );
+    }
+
     public static MapValue emptyMap()
     {
         return EMPTY_MAP;
@@ -116,6 +157,14 @@ public final class VirtualValues
             map.put( keys[i], values[i] );
         }
         return new MapValue( map );
+    }
+
+    public static MapValue combine( MapValue a, MapValue b )
+    {
+        HashMap<String,AnyValue> map = new HashMap<>( a.size() + b.size() );
+        a.foreach( map::put );
+        b.foreach( map::put );
+        return VirtualValues.map( map );
     }
 
     public static MapValue map( Map<String,AnyValue> map )

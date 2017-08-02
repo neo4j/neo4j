@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.util.Map;
-
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -28,11 +26,12 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.virtual.MapValue;
 
 public class BoltResponseMessageRecorder extends MessageRecorder<ResponseMessage> implements BoltResponseMessageHandler<RuntimeException>
 {
     @Override
-    public void onSuccess( Map<String, Object> metadata )
+    public void onSuccess( MapValue metadata )
     {
         messages.add( new SuccessMessage( metadata ) );
     }

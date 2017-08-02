@@ -34,6 +34,7 @@ import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
@@ -43,6 +44,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.bolt.v1.runtime.BoltStateMachine.State.READY;
 import static org.neo4j.bolt.v1.runtime.MachineRoom.newMachine;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BoltMatchers
 {
@@ -69,7 +71,7 @@ public class BoltMatchers
         };
     }
 
-    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final Object value )
+    public static Matcher<RecordedBoltResponse> succeededWithMetadata( final String key, final AnyValue value )
     {
         return new BaseMatcher<RecordedBoltResponse>()
         {
@@ -161,7 +163,7 @@ public class BoltMatchers
                 final RecordedBoltResponse response = (RecordedBoltResponse) item;
                 return response.message() == FAILURE &&
                         response.hasMetadata( "code" ) &&
-                        response.metadata( "code" ).equals( status.code().serialize() );
+                        response.metadata( "code" ).equals( stringValue( status.code().serialize() ) );
             }
 
             @Override

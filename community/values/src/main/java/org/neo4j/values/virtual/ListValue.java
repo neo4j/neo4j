@@ -22,6 +22,7 @@ package org.neo4j.values.virtual;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.function.Function;
 
@@ -34,7 +35,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.virtual.ArrayHelpers.containsNull;
 
-public abstract class ListValue extends VirtualValue implements  SequenceValue, Iterable<AnyValue>
+public abstract class ListValue extends VirtualValue implements SequenceValue, Iterable<AnyValue>
 {
     public abstract int size();
 
@@ -55,6 +56,24 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
     public boolean storable()
     {
         return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        StringBuilder sb = new StringBuilder( "List{" );
+        int i = 0;
+        for ( ; i < size() - 1; i++ )
+        {
+            sb.append( value( i ) );
+            sb.append( ", " );
+        }
+        if ( size() > 0 )
+        {
+            sb.append( value( i ) );
+        }
+        sb.append( '}' );
+        return sb.toString();
     }
 
     public ArrayValue toStorableArray()
@@ -230,27 +249,57 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
         }
 
         @Override
-        public String toString()
+        public int hash()
         {
-            StringBuilder sb = new StringBuilder( "List{" );
-            int i = 0;
-            for ( ; i < values.length - 1; i++ )
+            return Arrays.hashCode( values );
+        }
+    }
+
+    static final class JavaListListValue extends ListValue
+    {
+        private final List<AnyValue> values;
+
+        JavaListListValue( List<AnyValue> values )
+        {
+            assert values != null;
+            assert !containsNull( values );
+
+            this.values = values;
+        }
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            writer.beginList( values.size() );
+            for ( AnyValue value : values )
             {
-                sb.append( values[i] );
-                sb.append( ", " );
+                value.writeTo( writer );
             }
-            if ( values.length > 0 )
-            {
-                sb.append( values[i] );
-            }
-            sb.append( '}' );
-            return sb.toString();
+            writer.endList();
+        }
+
+        @Override
+        public int size()
+        {
+            return values.size();
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            return values.get( offset );
+        }
+
+        @Override
+        public AnyValue[] asArray()
+        {
+            return values.toArray( new AnyValue[values.size()] );
         }
 
         @Override
         public int hash()
         {
-            return Arrays.hashCode( values );
+            return values.hashCode();
         }
     }
 
@@ -651,6 +700,12 @@ public abstract class ListValue extends VirtualValue implements  SequenceValue, 
             }
             writer.endList();
 
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Range(" + start + "..." + end + ", step = " + step + ")";
         }
 
         private boolean check( long current )

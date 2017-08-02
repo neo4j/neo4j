@@ -25,10 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -36,10 +33,13 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
+import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
@@ -57,10 +57,13 @@ import static org.neo4j.bolt.v1.messaging.example.Paths
         .PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 public class BoltResponseMessageTest
 {
@@ -71,7 +74,7 @@ public class BoltResponseMessageTest
     public void shouldHandleCommonMessages() throws Throwable
     {
         assertSerializes( new RecordMessage( record( longValue( 1L ), stringValue( "b" ), longValue( 2L ) ) ) );
-        assertSerializes( new SuccessMessage( new HashMap<>() ) );
+        assertSerializes( new SuccessMessage( VirtualValues.EMPTY_MAP ) );
         assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( new IgnoredMessage() );
     }
@@ -113,10 +116,10 @@ public class BoltResponseMessageTest
     @Test
     public void shouldSerializeNode() throws Throwable
     {
-        ValueNode valueNode = new ValueNode( 12L, asList( label( "User" ), label( "Banana" ) ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueNode ),
+        NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), VirtualValues
+                .map( new String[]{"name", "age"},
+                        new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( nodeValue ),
                 equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
                          "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 0E" ) );
@@ -125,10 +128,12 @@ public class BoltResponseMessageTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        ValueRelationship valueRelationship = new ValueRelationship( 12L, 1L, 2L, RelationshipType.withName( "KNOWS" ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueRelationship ),
+        EdgeValue edgeValue = edgeValue( 12L,
+                nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
+                nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
+                stringValue( "KNOWS" ), VirtualValues.map( new String[]{"name", "age"},
+                        new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( edgeValue ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
@@ -206,10 +211,10 @@ public class BoltResponseMessageTest
                          "01 02 01" ) );
     }
 
-    private String serialized( Object object ) throws IOException
+    private String serialized( AnyValue object ) throws IOException
     {
         RecordMessage message =
-                new RecordMessage( record( AnyValues.of( object ) ) );
+                new RecordMessage( record( object ) );
         return HexPrinter.hex( serialize( message ), 4, " " );
     }
 

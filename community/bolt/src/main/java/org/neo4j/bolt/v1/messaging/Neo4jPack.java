@@ -32,18 +32,25 @@ import org.neo4j.bolt.v1.packstream.PackStream;
 import org.neo4j.bolt.v1.packstream.PackType;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.collection.primitive.PrimitiveLongIntKeyValueArray;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.AnyValues;
+import org.neo4j.values.BaseToObjectValueWriter;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
 import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
+import static org.neo4j.values.storable.Values.byteArray;
 
 /**
  * Extended PackStream packer and unpacker classes for working
@@ -52,7 +59,7 @@ import static org.neo4j.bolt.v1.packstream.PackStream.UNKNOWN_SIZE;
 public class Neo4jPack
 {
     private static final List<Object> EMPTY_LIST = new ArrayList<>();
-    private static final Map<String,Object> EMPTY_MAP = new HashMap<>();
+    private static final Map<String,AnyValue> EMPTY_MAP = new HashMap<>();
 
     public static final byte NODE = 'N';
     public static final byte RELATIONSHIP = 'R';
@@ -79,26 +86,10 @@ public class Neo4jPack
             value.writeTo( this );
         }
 
-        //TODO this should go away when we have cypher providing us with values
-        public void pack( Object value ) throws IOException
-        {
-            try
-            {
-                pack( AnyValues.of( value ) );
-            }
-            catch ( IllegalArgumentException e )
-            {
-                error = new Error( Status.Request.Invalid,
-                        "Unpackable value " + value + " of type " + value.getClass().getName() );
-                packNull();
-            }
-        }
-
-        //TODO this needs to go away as well since it is relying on pack(Object)
-        public void packRawMap( Map<String,Object> map ) throws IOException
+        public void packRawMap( MapValue map ) throws IOException
         {
             packMapHeader( map.size() );
-            for ( Map.Entry<String,Object> entry : map.entrySet() )
+            for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
             {
                 pack( entry.getKey() );
                 pack( entry.getValue() );
@@ -440,25 +431,25 @@ public class Neo4jPack
             super( input );
         }
 
-        public Object unpack() throws IOException
+        public AnyValue unpack() throws IOException
         {
             PackType valType = peekNextType();
             switch ( valType )
             {
             case BYTES:
-                return unpackBytes();
+                return byteArray( unpackBytes() );
             case STRING:
-                return unpackString();
+                return Values.stringValue( unpackString() );
             case INTEGER:
-                return unpackLong();
+                return Values.longValue( unpackLong() );
             case FLOAT:
-                return unpackDouble();
+                return Values.doubleValue( unpackDouble() );
             case BOOLEAN:
-                return unpackBoolean();
+                return Values.booleanValue( unpackBoolean() );
             case NULL:
                 // still need to move past the null value
                 unpackNull();
-                return null;
+                return Values.NO_VALUE;
             case LIST:
             {
                 return unpackList();
@@ -505,14 +496,14 @@ public class Neo4jPack
             }
         }
 
-        List<Object> unpackList() throws IOException
+        ListValue unpackList() throws IOException
         {
             int size = (int) unpackListHeader();
             if ( size == 0 )
             {
-                return EMPTY_LIST;
+                return VirtualValues.EMPTY_LIST;
             }
-            ArrayList<Object> list;
+            ArrayList<AnyValue> list;
             if ( size == UNKNOWN_SIZE )
             {
                 list = new ArrayList<>();
@@ -539,17 +530,17 @@ public class Neo4jPack
                     list.add( unpack() );
                 }
             }
-            return list;
+            return VirtualValues.list( list.toArray( new AnyValue[list.size()] ) );
         }
 
-        public Map<String,Object> unpackMap() throws IOException
+        public MapValue unpackMap() throws IOException
         {
             int size = (int) unpackMapHeader();
             if ( size == 0 )
             {
-                return EMPTY_MAP;
+                return VirtualValues.EMPTY_MAP;
             }
-            Map<String,Object> map;
+            Map<String,AnyValue> map;
             if ( size == UNKNOWN_SIZE )
             {
                 map = new HashMap<>();
@@ -558,7 +549,7 @@ public class Neo4jPack
                 {
                     PackType keyType = peekNextType();
                     String key;
-                    Object val;
+                    AnyValue val;
                     switch ( keyType )
                     {
                     case END_OF_STREAM:
@@ -608,12 +599,25 @@ public class Neo4jPack
                         throw new PackStream.PackStreamException( "Bad key type: " + type );
                     }
 
-                    Object val = unpack();
+                    AnyValue val = unpack();
                     if ( map.put( key, val ) != null )
                     {
                         errors.add( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `" + key + "`." ) );
                     }
                 }
+            }
+            return VirtualValues.map( map );
+        }
+
+        public Map<String,Object> unpackToRawMap() throws IOException
+        {
+            MapValue mapValue = unpackMap();
+            HashMap<String,Object> map = new HashMap<>( mapValue.size() );
+            for ( Map.Entry<String,AnyValue> entry : mapValue.entrySet() )
+            {
+                UnpackerWriter unpackerWriter = new UnpackerWriter();
+                entry.getValue().writeTo( unpackerWriter );
+                map.put( entry.getKey(), unpackerWriter.value() );
             }
             return map;
         }
@@ -657,5 +661,33 @@ public class Neo4jPack
 
     private Neo4jPack()
     {
+    }
+
+    private static class UnpackerWriter extends BaseToObjectValueWriter<RuntimeException>
+    {
+
+        @Override
+        protected Node newNodeProxyById( long id )
+        {
+            throw new UnsupportedOperationException( "Cannot unpack nodes" );
+        }
+
+        @Override
+        protected Relationship newRelationshipProxyById( long id )
+        {
+            throw new UnsupportedOperationException( "Cannot unpack relationships" );
+        }
+
+        @Override
+        protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+        {
+            throw new UnsupportedOperationException( "Cannot unpack points" );
+        }
+
+        @Override
+        protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+        {
+            throw new UnsupportedOperationException( "Cannot unpack points" );
+        }
     }
 }

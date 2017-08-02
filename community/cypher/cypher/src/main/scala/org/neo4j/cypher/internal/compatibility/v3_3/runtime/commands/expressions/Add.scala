@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMathSupport {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
@@ -38,9 +38,9 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
       case (x: IntegralValue, y: IntegralValue) => Values.longValue(StrictMath.addExact(x.longValue(),y.longValue()))
       case (x: NumberValue, y: NumberValue) => Values.doubleValue(x.doubleValue() + y.doubleValue())
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
-      case (x: ListValue, y: ListValue) => AnyValues.concat(x, y)
-      case (x: ListValue, y)         => AnyValues.appendToList(x, y)
-      case (x, y: ListValue)         => AnyValues.prependToList(y, x)
+      case (x: ListValue, y: ListValue) => VirtualValues.concat(x, y)
+      case (x: ListValue, y)         => VirtualValues.appendToList(x, y)
+      case (x, y: ListValue)         => VirtualValues.prependToList(y, x)
       case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
       case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())

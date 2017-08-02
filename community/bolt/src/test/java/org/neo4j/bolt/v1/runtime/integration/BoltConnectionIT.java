@@ -40,6 +40,7 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
 import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.AnyValue;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -401,7 +402,7 @@ public class BoltConnectionIT
             }
 
             @Override
-            public void onMetadata( String key, Object value )
+            public void onMetadata( String key, AnyValue value )
             {
             }
 
