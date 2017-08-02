@@ -81,7 +81,7 @@ public class RelationshipStage extends Stage
         add( new RelationshipRecordPreparationStep( control(), config, neoStore.getRelationshipTypeRepository() ) );
         add( new CalculateDenseNodesStep( control(), config, cache, badCollector ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
-        add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore,
+        add( new EntityStoreUpdaterStep<>( control(), config, relationshipStore, propertyStore, null,
                 writeMonitor, storeUpdateMonitor ) );
     }
 

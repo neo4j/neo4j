@@ -72,6 +72,9 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_thresho
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_GROUP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 
@@ -155,8 +158,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 neoStores.getRelationshipTypeTokenStore() );
 
         // Instantiate the temporary stores
-        temporaryNeoStores = newStoreFactory(
-                "temp." + DEFAULT_NAME, DELETE_ON_CLOSE ).openNeoStores( true, RELATIONSHIP_GROUP );
+        temporaryNeoStores = newStoreFactory( temp( DEFAULT_NAME ), DELETE_ON_CLOSE ).openNeoStores( true,
+                RELATIONSHIP_GROUP, PROPERTY_STRING, PROPERTY_ARRAY, PROPERTY );
 
         // Initialize kernel extensions
         Dependencies dependencies = new Dependencies();
@@ -175,6 +178,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         life.start();
         labelScanStore = life.add( extensions.resolveDependency( LabelScanStoreProvider.class,
                 new NamedLabelScanStoreSelectionStrategy( neo4jConfig ) ).getLabelScanStore() );
+    }
+
+    private static String temp( String name )
+    {
+        return "temp." + name;
     }
 
     public static BatchingNeoStores batchingNeoStores( FileSystemAbstraction fileSystem, File storeDir,
@@ -281,6 +289,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     public CountsTracker getCountsStore()
     {
         return neoStores.getCounts();
+    }
+
+    public PropertyStore getInputIdValueStore()
+    {
+        return temporaryNeoStores.getPropertyStore();
     }
 
     @Override

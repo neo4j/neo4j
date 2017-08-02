@@ -93,7 +93,7 @@ public class BadCollectorTest
         badCollector.collectBadRelationship( inputRelationship().build(), 2 );
         try
         {
-            badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
+            badCollector.collectDuplicateNode( 1, 1, "group" );
             fail( "Should have thrown an InputException" );
         }
         catch ( InputException ignored )
@@ -111,7 +111,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.COLLECT_ALL );
 
         // when
-        badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
+        badCollector.collectDuplicateNode( 1, 1, "group" );
         try
         {
             badCollector.collectBadRelationship( inputRelationship().build(), 2 );
@@ -132,7 +132,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( badOutputFile(), tolerance, BadCollector.DUPLICATE_NODES );
 
         // when
-        badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
+        badCollector.collectDuplicateNode( 1, 1, "group" );
         try
         {
             badCollector.collectBadRelationship( inputRelationship().build(), 2 );
@@ -156,7 +156,7 @@ public class BadCollectorTest
         badCollector.collectBadRelationship( inputRelationship().build(), 2 );
         try
         {
-            badCollector.collectDuplicateNode( 1, 1, "group", "source", "otherSource" );
+            badCollector.collectDuplicateNode( 1, 1, "group" );
         }
         catch ( InputException ignored )
         {
@@ -176,7 +176,7 @@ public class BadCollectorTest
         // when
         for ( int i = 0; i < 15; i++ )
         {
-            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
+            badCollector.collectDuplicateNode( i, i, "group" );
         }
 
         // then
@@ -194,9 +194,9 @@ public class BadCollectorTest
     {
         // GIVEN
         BadCollector badCollector = new BadCollector( badOutputFile(), 10, BadCollector.DUPLICATE_NODES );
-        badCollector.collectDuplicateNode( "a", 10, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "b", 8, "group", "source1", "source2" );
-        badCollector.collectDuplicateNode( "c", 12, "group", "source1", "source2" );
+        badCollector.collectDuplicateNode( "a", 10, "group" );
+        badCollector.collectDuplicateNode( "b", 8, "group" );
+        badCollector.collectDuplicateNode( "c", 12, "group" );
 
         // WHEN
         long[] nodeIds = PrimitiveLongCollections.asArray( badCollector.leftOverDuplicateNodesIds() );
@@ -215,7 +215,7 @@ public class BadCollectorTest
         int count = 10_000;
         for ( int i = 0; i < count; i++ )
         {
-            collector.collectDuplicateNode( i, i, "group", "first", "other" );
+            collector.collectDuplicateNode( i, i, "group" );
         }
 
         // THEN
@@ -229,7 +229,7 @@ public class BadCollectorTest
         BadCollector badCollector = new BadCollector( outputStream, 100, COLLECT_ALL, true );
         for ( int i = 0; i < 2; i++ )
         {
-            badCollector.collectDuplicateNode( i, i, "group", "source" + i, "otherSource" + i );
+            badCollector.collectDuplicateNode( i, i, "group" );
         }
         badCollector.collectBadRelationship( inputRelationship().build(), 2 );
         badCollector.collectExtraColumns( "a,b,c", 1, "a" );

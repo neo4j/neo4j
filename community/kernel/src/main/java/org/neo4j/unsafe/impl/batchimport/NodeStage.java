@@ -83,9 +83,11 @@ public class NodeStage extends Stage
         add( new NodeEncoderStep( control(), config, idMapper, idGenerator,
                 neoStore.getLabelRepository(), nodeStore, memoryUsage ) );
         add( new PropertyEncoderStep<>( control(), config, neoStore.getPropertyKeyRepository(), propertyStore ) );
+        add( new InputIdValueEncoderStep( control(), config, neoStore.getInputIdValueStore() ) );
         add( new LabelScanStorePopulationStep( control(), config, labelScanStore ) );
-        add( new EntityStoreUpdaterStep<>( control(), config, nodeStore, propertyStore, writeMonitor,
-                storeUpdateMonitor ) );
+        add( new EntityStoreUpdaterStep<>( control(), config, nodeStore,
+                propertyStore, neoStore.getInputIdValueStore(),
+                writeMonitor, storeUpdateMonitor ) );
     }
 
     @Override
