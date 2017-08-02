@@ -69,6 +69,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val periodicCommig = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
       val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommig, planner, indexes, func, pipe, context.config)
+      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(execPlan))
     } catch {
       case e : CypherException =>
