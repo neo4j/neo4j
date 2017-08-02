@@ -1,7 +1,4 @@
 Accept valid Unicode literal
-Adding list properties in projection
-Aliasing expressions
-Allow addition
 Appending lists of same type
 Arithmetic precedence test
 Arithmetic precedence with parenthesis test
@@ -18,26 +15,13 @@ DISTINCT inside aggregation should work with nested lists in maps
 DISTINCT inside aggregation should work with nested lists of maps in maps
 DISTINCT on nullable values
 Directed match of a simple relationship, count
-Directed match of a simple relationship
-Directed match of self-relationship on self-relationship graph
 Directed match on self-relationship graph, count
-Directed match on self-relationship graph
 Distinct on null
-Do not return non-existent relationships
-Does not lose precision
 Double unwinding a list of lists
-Filter based on rel prop name
 Get rows in the middle by param
 Get rows in the middle
 Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
-Handling cyclic patterns when separated into two parts
-Handling cyclic patterns
-Handling explicit equality of large integer, non-equal values
-Handling explicit equality of large integer
-Handling inlined equality of large integer, non-equal values
-Handling inlined equality of large integer
-Handling triadic friend of a friend
 Honour the column name for RETURN items
 It is unknown - i.e. null - if a null is equal to a null
 It is unknown - i.e. null - if a null is not equal to a null
@@ -45,18 +29,9 @@ Keeping used expression 1
 LIMIT 0 should return an empty result
 Limit to two hits
 Limiting amount of rows when there are fewer left than the LIMIT argument
-Matching a relationship pattern using a label predicate on both sides
 Matching a self-loop
 Matching and returning ordered results, with LIMIT
-Matching nodes using multiple labels
-Matching nodes with many labels
-Matching using an undirected pattern
 Matching with aggregation
-Matching with many predicates and larger pattern
-Missing node property should become null
-Missing relationship property should become null
-Mixing directed and undirected pattern parts with self-relationship, simple
-Mixing directed and undirected pattern parts with self-relationship, undirected
 Multiple unwinds after each other
 ORDER BY DESC should order booleans in the expected order
 ORDER BY DESC should order floats in the expected order
@@ -89,14 +64,9 @@ Return an empty list
 Return an empty map
 Return an integer
 Return null
-Return two subgraphs with bound undirected relationship
 Returned columns do not change from using ORDER BY
-Returning a node property value
 Returning a projected map
-Returning a relationship property value
 Returning all variables with ordering
-Returning label predicate expression
-Returning multiple node property values
 Simple counting of nodes
 Start the result from the second row by param
 Start the result from the second row
@@ -105,9 +75,6 @@ Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
 The inverse of a null is a null
-Undirected match in self-relationship graph
-Undirected match of self-relationship in self-relationship graph
-Undirected match on simple relationship graph
 Unwind does not prune context
 Unwinding a concatenation of lists
 Unwinding a list
@@ -115,27 +82,13 @@ Unwinding list with duplicates
 Unwinding null
 Unwinding the empty list
 Use multiple MATCH clauses to do a Cartesian product
-Use params in pattern matching predicates
 Using aliased DISTINCT expression in ORDER BY
 `type()` on two relationships
 `type()`
-Adding a property and a literal in projection
-Finding strings containing newline
-Finding strings containing whitespace
-Finding strings ending with newline
-Finding strings ending with whitespace
-Finding strings starting with newline
-Finding strings starting with whitespace
 Returning bound nodes that are not part of the pattern
 Comparing nodes for equality
-Matching using self-referencing pattern returns no result
-Multiple anonymous nodes in a pattern
-Matching a relationship pattern using a label predicate
-Matching using a simple pattern with label predicate
 Matching disconnected patterns
 Non-optional matches should not return nulls
-Find labelled nodes
-Passing on pattern nodes
 No dependencies between the query parts
 
 Support multiple divisions in aggregate function
@@ -173,7 +126,6 @@ Handling string ranges 2
 Handling string ranges 3
 Handling string ranges 4
 Handling empty range
-Handling long chains of operators
 Number-typed integer comparison
 Number-typed float comparison
 Any-typed string comparison
@@ -184,7 +136,6 @@ IN should work with nested literal list subscripting
 IN should work with list slices
 IN should work with literal list slices
 Execute n[0]
-Execute n['name'] in read queries
 Execute n['name'] in update queries
 Use dynamic property lookup based on parameters when there is no type information
 Use dynamic property lookup based on parameters when there is lhs type information
@@ -197,10 +148,8 @@ Fail at runtime when trying to index into a map with a non-string
 Fail at runtime when attempting to index with a String into a Collection
 Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
-Run coalesce
 Functions should return null if they get path containing unbound
 `split()`
-`properties()` on a node
 `properties()` on a relationship
 `properties()` on a map
 `properties()` on null
@@ -239,7 +188,6 @@ Creating node without label
 Creating node with two labels
 Ignore space when creating node with labels
 Create node with label in pattern
-Using `labels()` in return clauses
 Removing a label
 Removing a non-existent label
 Returning a list comprehension
@@ -269,7 +217,6 @@ Zero-length variable length pattern in the middle of the pattern
 Simple variable length pattern
 Variable length relationship without lower bound
 Variable length relationship without bounds
-MATCH with OPTIONAL MATCH in longer pattern
 Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
@@ -278,13 +225,9 @@ Excluding connected nodes
 Variable length relationship in OPTIONAL MATCH
 ORDER BY with LIMIT
 Handling direction of named paths
-Simple OPTIONAL MATCH on empty graph
 `collect()` filtering nulls
 Handling fixed-length variable length pattern
-Matching from null nodes should return no results owing to finding no matches
-Matching from null nodes should return no results owing to matches being filtered out
 Optionally matching from null nodes should return null
-OPTIONAL MATCH returns null
 Zero-length named path
 Variable-length named path
 Matching using a relationship that is already bound
@@ -334,10 +277,7 @@ Ignore null when deleting relationship
 Satisfies the open world assumption, relationships between same nodes
 Satisfies the open world assumption, single relationship
 Satisfies the open world assumption, relationships between different nodes
-Return null when no matches due to inline label predicate
-Return null when no matches due to label predicate in WHERE
 MATCH after OPTIONAL MATCH
-WITH after OPTIONAL MATCH
 Named paths in optional matches
 Named paths inside optional matches with node predicates
 Variable length optional relationships
@@ -452,7 +392,6 @@ Handling triadic friend of a friend that is a friend with implicit superset of l
 `toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
 `toString()`
-`toString()` handling boolean properties
 `toString()` handling inlined boolean
 `toString()` handling boolean literal
 `toString()` should work on Any type
@@ -511,7 +450,6 @@ WHERE after WITH can filter on top of an aggregation
 ORDER BY on an aggregating key
 WHERE on a DISTINCT column
 A simple pattern with one bound endpoint
-Null handling
 Nested maps
 Connected components succeeding WITH
 Single WITH using a predicate and aggregation
