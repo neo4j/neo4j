@@ -114,6 +114,7 @@
                       <rules>
                           <requireFilesDontExist>
                               <files>
+                                  <file>cypher-compiler-3.2</file>
                                   <file>cypher-compiler-3.1</file>
                                   <file>cypher-compiler-3.0</file>
                                   <file>cypher-compiler-2.3</file>
