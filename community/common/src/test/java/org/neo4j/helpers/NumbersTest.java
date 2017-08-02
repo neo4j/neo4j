@@ -97,7 +97,7 @@ public class NumbersTest
     {
         assertEquals(1, safeCastIntToUnsignedShort( 1 ));
         assertEquals(10, safeCastIntToUnsignedShort( 10 ));
-        assertEquals(Short.MAX_VALUE, safeCastIntToUnsignedShort( Short.MAX_VALUE ));
+        assertEquals( -1, safeCastIntToUnsignedShort( (Short.MAX_VALUE << 1) + 1 ) );
     }
 
     @Test
