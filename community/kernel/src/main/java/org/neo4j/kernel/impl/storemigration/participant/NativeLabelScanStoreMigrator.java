@@ -21,8 +21,11 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -57,7 +60,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     public void migrate( File storeDir, File migrationDir, MigrationProgressMonitor.Section progressMonitor,
             String versionToMigrateFrom, String versionToMigrateTo ) throws IOException
     {
-        if ( migrateNativeLabelScanStore( storeDir ) )
+        if ( isNativeLabelScanStoreMigrationRequired( storeDir ) )
         {
             StoreFactory storeFactory = getStoreFactory( storeDir, versionToMigrateFrom );
             try ( NeoStores neoStores = storeFactory.openAllNeoStores();
@@ -78,8 +81,18 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
         if ( nativeLabelScanStoreMigrated )
         {
             File nativeLabelIndex = new File( migrationDir, NativeLabelScanStore.FILE_NAME );
-            fileSystem.moveToDirectory( nativeLabelIndex, storeDir );
+            moveNativeIndexFile( storeDir, nativeLabelIndex );
             deleteLuceneLabelIndex( getLuceneStoreDirectory( storeDir ) );
+        }
+    }
+
+    private void moveNativeIndexFile( File storeDir, File nativeLabelIndex ) throws IOException
+    {
+        Optional<FileHandle> nativeIndexFileHandle =
+                pageCache.getCachedFileSystem().streamFilesRecursive( nativeLabelIndex ).findFirst();
+        if ( nativeIndexFileHandle.isPresent() )
+        {
+            nativeIndexFileHandle.get().rename( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
         }
     }
 
@@ -98,9 +111,18 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
                         selectForVersion( versionToMigrateFrom ), NullLogProvider.getInstance() );
     }
 
-    private boolean migrateNativeLabelScanStore( File storeDir )
+    private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException
     {
-        return !fileSystem.fileExists( new File( storeDir, NativeLabelScanStore.FILE_NAME ) );
+        try
+        {
+            return pageCache.getCachedFileSystem()
+                    .streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
+                    .noneMatch( Predicates.alwaysTrue() );
+        }
+        catch ( Exception e )
+        {
+            return true;
+        }
     }
 
     private void deleteLuceneLabelIndex( File indexRootDirectory ) throws IOException
