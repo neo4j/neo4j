@@ -235,7 +235,14 @@ public class ImportTool
                 "(advanced) Maximum memory that importer can use for various data structures and caching " +
                 "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
                 "% of (free memory on machine - max JVM memory). " +
-                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." );
+                "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." ),
+        CACHE_ON_HEAP( "cache-on-heap",
+                org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.allowCacheAllocationOnHeap(),
+                "Whether or not to allow allocating memory for the cache on heap",
+                "(advanced) Whether or not to allow allocating memory for the cache on heap. " +
+                "If 'false' then caches will still be allocated off-heap, but the additional free memory " +
+                "inside the JVM will not be allocated for the caches. This to be able to have better control " +
+                "over the heap memory" );
 
         private final String key;
         private final Object defaultValue;
@@ -429,7 +436,10 @@ public class ImportTool
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             dbConfig = dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
-            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory );
+            boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
+                    (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
+            configuration = importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, maxMemory,
+                    allowCacheOnHeap );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -656,11 +666,13 @@ public class ImportTool
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
             final boolean defaultSettingsSuitableForTests, final Config dbConfig )
     {
-        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null );
+        return importConfiguration( processors, defaultSettingsSuitableForTests, dbConfig, null,
+                org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT.allowCacheAllocationOnHeap() );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration( final Number processors,
-            final boolean defaultSettingsSuitableForTests, final Config dbConfig, Long maxMemory )
+            final boolean defaultSettingsSuitableForTests, final Config dbConfig, Long maxMemory,
+            boolean allowCacheOnHeap )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -686,6 +698,12 @@ public class ImportTool
             public long maxMemoryUsage()
             {
                 return maxMemory != null ? maxMemory.longValue() : DEFAULT.maxMemoryUsage();
+            }
+
+            @Override
+            public boolean allowCacheAllocationOnHeap()
+            {
+                return allowCacheOnHeap;
             }
         };
     }
