@@ -27,9 +27,11 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.RetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -46,13 +48,14 @@ class ReadReplicaStartupProcess implements Lifecycle
 
     private final RetryStrategy retryStrategy;
     private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+    private final TopologyService topologyService;
 
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
             Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, RetryStrategy retryStrategy,
-            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
+            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess, TopologyService topologyService )
     {
         this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
@@ -62,6 +65,7 @@ class ReadReplicaStartupProcess implements Lifecycle
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.storeCopyProcess = storeCopyProcess;
+        this.topologyService = topologyService;
     }
 
     @Override
@@ -157,7 +161,8 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( source, storeId );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source );
+            storeCopyProcess.replaceWithStoreFrom( fromAddress, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

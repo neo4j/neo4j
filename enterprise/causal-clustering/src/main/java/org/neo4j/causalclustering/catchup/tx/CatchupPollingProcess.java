@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
+import org.neo4j.causalclustering.catchup.TopologyAddressResolutionException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
@@ -34,10 +35,13 @@ import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedE
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.RenewableTimeout;
 import org.neo4j.causalclustering.core.consensus.schedule.RenewableTimeoutService.TimeoutName;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseSelectionException;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -47,7 +51,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-
+import static org.neo4j.causalclustering.catchup.TopologyAddressResolutionException.topologyAddressResolutionException;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.CANCELLED;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.PANIC;
 import static org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess.State.STORE_COPYING;
@@ -88,6 +92,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
     private final PullRequestMonitor pullRequestMonitor;
+    private final TopologyService topologyService;
 
     private RenewableTimeout timeout;
     private volatile State state = TX_PULLING;
@@ -97,7 +102,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
     public CatchupPollingProcess( LogProvider logProvider, LocalDatabase localDatabase, Lifecycle startStopOnStoreCopy, CatchUpClient catchUpClient,
             UpstreamDatabaseStrategySelector selectionStrategy, RenewableTimeoutService timeoutService, long txPullIntervalMillis, BatchingTxApplier applier,
-            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier )
+            Monitors monitors, StoreCopyProcess storeCopyProcess, Supplier<DatabaseHealth> databaseHealthSupplier, TopologyService topologyService )
 
     {
         this.localDatabase = localDatabase;
@@ -111,6 +116,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
         this.storeCopyProcess = storeCopyProcess;
         this.databaseHealthSupplier = databaseHealthSupplier;
+        this.topologyService = topologyService;
     }
 
     @Override
@@ -244,10 +250,11 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxPullRequest txPullRequest = new TxPullRequest( lastQueuedTxId, localStoreId );
         log.debug( "Pull transactions from %s where tx id > %d [batch #%d]", upstream, lastQueuedTxId, batchCount );
 
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( topologyAddressResolutionException( upstream ) );
         TxStreamFinishedResponse response;
         try
         {
-            response = catchUpClient.makeBlockingRequest( upstream, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
+            response = catchUpClient.makeBlockingRequest( fromAddress, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
             {
                 @Override
                 public void onTxPullResponse( CompletableFuture<TxStreamFinishedResponse> signal, TxPullResponse response )
@@ -281,8 +288,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
             upToDateFuture.complete( true );
             return false;
         case E_TRANSACTION_PRUNED:
-            log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.",
-                    lastQueuedTxId );
+            log.info( "Tx pull unable to get transactions starting from %d since transactions have been pruned. Attempting a store copy.", lastQueuedTxId );
             state = STORE_COPYING;
             return false;
         default:
@@ -320,9 +326,10 @@ public class CatchupPollingProcess extends LifecycleAdapter
             throw new RuntimeException( throwable );
         }
 
+        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( topologyAddressResolutionException( upstream ) );
         try
         {
-            storeCopyProcess.replaceWithStoreFrom( upstream, localStoreId );
+            storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
         }
         catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {
