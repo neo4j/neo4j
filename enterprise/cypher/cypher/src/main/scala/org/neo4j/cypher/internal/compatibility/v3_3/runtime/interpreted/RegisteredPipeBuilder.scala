@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{A
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
@@ -67,7 +68,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
-      case _ => fallback.build(plan)
+      case _ =>
+        //fallback.build(plan)
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+
     }
   }
 
