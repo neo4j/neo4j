@@ -17,9 +17,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
+package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions
 
-case class NodeProperty(offset: Int, propToken: Int) extends RuntimeExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
-// Token did not exist at plan time, so we'll need to look it up at runtime
-case class NodePropertyLate(offset: Int, propKey: String) extends RuntimeExpression
+case class ReferenceFromRegister(offset: Int) extends Expression {
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+    ctx.getRefAt(offset)
+
+  override def rewrite(f: (Expression) => Expression): Expression = f(this)
+
+  override def arguments: Seq[Expression] = Seq.empty
+
+  override def symbolTableDependencies: Set[String] = Set.empty
+}
