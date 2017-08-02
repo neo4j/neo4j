@@ -21,8 +21,6 @@ package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.UncheckedIOException;
-import java.nio.file.NoSuchFileException;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -56,23 +54,14 @@ public class StreamFilesRecursive
      * @param directory The base directory to start streaming files from, or the specific individual file to stream.
      * @param fs The {@link FileSystemAbstraction} to use for manipulating files.
      * @return A {@link Stream} of {@link FileHandle}s
-     * @throws NoSuchFileException If the given base directory or file does not exists.
      * @throws IOException If an I/O error occurs, possibly with the canonicalisation of the paths.
      */
     public static Stream<FileHandle> streamFilesRecursive( File directory, FileSystemAbstraction fs ) throws IOException
     {
-        try
-        {
-            File canonicalizedDirectory = directory.getCanonicalFile();
-            // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
-            List<File> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
-            return snapshot.stream().map( f -> new WrappingFileHandle( f, canonicalizedDirectory, fs ) );
-        }
-        catch ( UncheckedIOException e )
-        {
-            // We sneak checked IOExceptions through UncheckedIOExceptions due to our use of streams and lambdas.
-            throw e.getCause();
-        }
+        File canonicalizedDirectory = directory.getCanonicalFile();
+        // We grab a snapshot of the file tree to avoid seeing the same file twice or more due to renames.
+        List<File> snapshot = streamFilesRecursiveInner( canonicalizedDirectory, fs ).collect( toList() );
+        return snapshot.stream().map( f -> new WrappingFileHandle( f, canonicalizedDirectory, fs ) );
     }
 
     private static Stream<File> streamFilesRecursiveInner( File directory, FileSystemAbstraction fs )
@@ -82,7 +71,7 @@ public class StreamFilesRecursive
         {
             if ( !fs.fileExists( directory ) )
             {
-                throw new UncheckedIOException( new NoSuchFileException( directory.getPath() ) );
+                return Stream.empty();
             }
             return Stream.of( directory );
         }
