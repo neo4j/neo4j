@@ -52,13 +52,13 @@ case object CypherPreParser extends Parser with Base {
     | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
-  def RuntimeOption: Rule1[RuntimePreParserOption with Product with Serializable] = rule("runtime option")(
+  def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
       | option("runtime", "enterprise-interpreted") ~ push(RegisterInterpretedRuntimeOption)
   )
 
-  def StrategyOption: Rule1[EagerOption.type] = rule("strategy option")(
+  def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(
     option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
@@ -72,9 +72,9 @@ case object CypherPreParser extends Parser with Base {
 
   def Digits: Rule0 = oneOrMore("0" - "9")
 
-  def Profile: Rule1[ProfileOption.type] = keyword("PROFILE") ~ push(ProfileOption)
+  def Profile: Rule1[ExecutionModePreParserOption] = keyword("PROFILE") ~ push(ProfileOption)
 
-  def Explain: Rule1[ExplainOption.type] = keyword("EXPLAIN") ~ push(ExplainOption)
+  def Explain: Rule1[ExecutionModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainOption)
 
   def option(key: String, value: String): Rule0 = {
     keyword(key) ~~ "=" ~~ keyword(value)
