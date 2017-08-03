@@ -33,6 +33,7 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     RelationshipIterator iterator;
     Statement statement;
     private Relationship next;
+    private boolean closed;
 
     public RelationshipConversion( NodeProxy.NodeActions actions )
     {
@@ -48,7 +49,12 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     @Override
     public boolean hasNext()
     {
-        return iterator.hasNext();
+        boolean hasNext = iterator.hasNext();
+        if ( !hasNext )
+        {
+            close();
+        }
+        return hasNext;
     }
 
     @Override
@@ -73,6 +79,10 @@ public class RelationshipConversion implements RelationshipVisitor<RuntimeExcept
     @Override
     public void close()
     {
-        statement.close();
+        if ( !closed )
+        {
+            statement.close();
+            closed = true;
+        }
     }
 }
