@@ -20,12 +20,16 @@
 package org.neo4j.unsafe.impl.batchimport.cache;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCache;
 
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
@@ -112,14 +116,37 @@ public interface NumberArrayFactory
     /**
      * {@link Auto} factory which has a page cache backed number array as final fallback, in order to prevent OOM
      * errors.
+     * @param pageCache {@link PageCache} to fallback allocation into, if no more memory is available.
+     * @param dir directory where cached files are placed.
+     * @param allowHeapAllocation whether or not to allow allocation on heap. Otherwise allocation is restricted
+     * to off-heap and the page cache fallback. This to be more in control of available space in the heap at all times.
+     * @return a {@link NumberArrayFactory} which tries to allocation off-heap, then potentially on heap
+     * and lastly falls back to allocating inside the given {@code pageCache}.
      */
-    static NumberArrayFactory auto( PageCache pageCache, File dir )
+    static NumberArrayFactory auto( PageCache pageCache, File dir, boolean allowHeapAllocation )
     {
         PageCachedNumberArrayFactory pagedArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
-        ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory( OFF_HEAP, HEAP,
-                pagedArrayFactory );
-        return new Auto( OFF_HEAP, HEAP, chunkedArrayFactory );
+        ChunkedNumberArrayFactory chunkedArrayFactory = new ChunkedNumberArrayFactory(
+                allocationAlternatives( allowHeapAllocation, pagedArrayFactory ) );
+        return new Auto( allocationAlternatives( allowHeapAllocation, chunkedArrayFactory ) );
     }
+
+    /**
+     * @param allowHeapAllocation whether or not to include heap allocation as an alternative.
+     * @param additional other means of allocation to try after the standard off/on heap alternatives.
+     * @return an array of {@link NumberArrayFactory} with the desired alternatives.
+     */
+    static NumberArrayFactory[] allocationAlternatives( boolean allowHeapAllocation, NumberArrayFactory... additional )
+    {
+        List<NumberArrayFactory> result = new ArrayList<>( asList( OFF_HEAP ) );
+        if ( allowHeapAllocation )
+        {
+            result.add( HEAP );
+        }
+        result.addAll( asList( additional ) );
+        return result.toArray( new NumberArrayFactory[result.size()] );
+    }
+
     /**
      * Looks at available memory and decides where the requested array fits best. Tries to allocate the whole
      * array with the first candidate, falling back to others as needed.

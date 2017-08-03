@@ -106,7 +106,7 @@ public class LongArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( LongArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir, true );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
         return Arrays.asList( HEAP, OFF_HEAP, autoWithPageCacheFallback, pageCacheArrayFactory );
     }
