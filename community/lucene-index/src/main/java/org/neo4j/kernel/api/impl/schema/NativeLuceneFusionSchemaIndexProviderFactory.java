@@ -63,7 +63,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         // create lucene schema index provider
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( context, dependencies );
 
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 100 );
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 50 );
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )
