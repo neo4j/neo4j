@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
+import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown}
 
@@ -126,6 +128,9 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case _ =>
             throw new InternalException("Did not find `" + k + "` in the pipeline information")
         }
+
+      case _: ScopeExpression | _: NestedPlanExpression =>
+        throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
