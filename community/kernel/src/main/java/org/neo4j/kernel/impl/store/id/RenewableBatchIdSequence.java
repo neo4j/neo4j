@@ -19,38 +19,53 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
+import org.neo4j.graphdb.Resource;
 
-public class RenewableIdBatch
-        extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-        implements PrimitiveLongResourceIterator
+import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+
+public class RenewableBatchIdSequence implements IdSequence, Resource
 {
     private final Supplier<IdRangeIterator> source;
     private IdRangeIterator currentBatch;
+    private final LongConsumer excessIdConsumer;
 
-    public RenewableIdBatch( Supplier<IdRangeIterator> source )
+    public RenewableBatchIdSequence( Supplier<IdRangeIterator> source, LongConsumer excessIdConsumer )
     {
         this.source = source;
+        this.excessIdConsumer = excessIdConsumer;
     }
 
     @Override
     public void close()
     {
-        // todo release excess ids back to id generator
+        if ( currentBatch != null )
+        {
+            long id;
+            while ( (id = currentBatch.next()) != VALUE_REPRESENTING_NULL )
+            {
+                excessIdConsumer.accept( id );
+            }
+        }
     }
 
     @Override
-    protected boolean fetchNext()
+    public long nextId()
     {
         long id;
-        if ( currentBatch == null || (id = currentBatch.next()) == IdRangeIterator.VALUE_REPRESENTING_NULL )
+        if ( currentBatch == null || (id = currentBatch.next()) == VALUE_REPRESENTING_NULL )
         {
             currentBatch = source.get();
             id = currentBatch.next();
         }
-        return next( id );
+        return id;
+    }
+
+    @Override
+    public IdRange nextIdBatch( int size )
+    {
+        throw new UnsupportedOperationException( "Haven't been needed so far" );
     }
 }

@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StorageLayer;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -91,14 +90,6 @@ import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
 import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
-import org.neo4j.kernel.impl.transaction.state.Loaders;
-import org.neo4j.kernel.impl.transaction.state.PropertyCreator;
-import org.neo4j.kernel.impl.transaction.state.PropertyDeleter;
-import org.neo4j.kernel.impl.transaction.state.PropertyTraverser;
-import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
-import org.neo4j.kernel.impl.transaction.state.RelationshipCreator;
-import org.neo4j.kernel.impl.transaction.state.RelationshipDeleter;
-import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
@@ -126,6 +117,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandCreationContext.DEFAULT_ID_BATCH_SIZE;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
@@ -159,13 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
-
-    // Immutable state for creating/applying commands
-    private final Loaders loaders;
-    private final RelationshipCreator relationshipCreator;
-    private final RelationshipDeleter relationshipDeleter;
-    private final PropertyCreator propertyCreator;
-    private final PropertyDeleter propertyDeleter;
+    private final int denseNodeThreshold;
 
     public RecordStorageEngine(
             File storeDir,
@@ -243,16 +229,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             commandReaderFactory = new RecordStorageCommandReaderFactory();
             indexUpdatesSync = new WorkSync<>( indexingService );
 
-            // Immutable state for creating/applying commands
-            loaders = new Loaders( neoStores );
-            RelationshipGroupGetter relationshipGroupGetter =
-                    new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
-            relationshipCreator = new RelationshipCreator( relationshipGroupGetter,
-                    config.get( GraphDatabaseSettings.dense_node_threshold ) );
-            PropertyTraverser propertyTraverser = new PropertyTraverser();
-            propertyDeleter = new PropertyDeleter( propertyTraverser );
-            relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
-            propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
+            denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
         }
         catch ( Throwable failure )
         {
@@ -266,13 +243,27 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
         LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
-        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService );
+        return new Supplier<StorageStatement>()
+        {
+            @Override
+            public StorageStatement get()
+            {
+                return new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService,
+                        allocateCommandCreationContext() );
+            }
+        };
     }
 
     @Override
     public StoreReadLayer storeReadLayer()
     {
         return storeLayer;
+    }
+
+    @Override
+    public RecordStorageCommandCreationContext allocateCommandCreationContext()
+    {
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, DEFAULT_ID_BATCH_SIZE );
     }
 
     @Override
@@ -293,10 +284,13 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         if ( txState != null )
         {
-            RecordChangeSet recordChangeSet = new RecordChangeSet( loaders );
-            TransactionRecordState recordState = new TransactionRecordState( neoStores, integrityValidator,
-                    recordChangeSet, lastTransactionIdWhenStarted, locks,
-                    relationshipCreator, relationshipDeleter, propertyCreator, propertyDeleter );
+            // We can make this cast here because we expected that the storageStatement passed in here comes from
+            // this storage engine itself, anything else is considered a bug. And we do know the inner workings
+            // of the storage statements that we create.
+            RecordStorageCommandCreationContext creationContext =
+                    (RecordStorageCommandCreationContext) storageStatement.getCommandCreationContext();
+            TransactionRecordState recordState =
+                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,

@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -149,6 +150,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final IndexProxy index;
         private int i;
         private int base;
+        private final CommandCreationContext commandCreationContext;
 
         Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
         {
@@ -159,6 +161,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
+            this.commandCreationContext = storageEngine.allocateCommandCreationContext();
         }
 
         @Override
@@ -184,6 +187,10 @@ public class IndexWorkSyncTransactionApplicationStressIT
             catch ( Exception e )
             {
                 throw new RuntimeException( e );
+            }
+            finally
+            {
+                commandCreationContext.close();
             }
         }
 

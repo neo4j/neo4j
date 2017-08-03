@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.junit.Test;
 
@@ -44,7 +44,7 @@ public class StoreStatementTest
 
         when( scanStore.get() ).thenReturn( scanReader );
         StoreStatement statement = new StoreStatement( MockedNeoStores.basicMockedNeoStores(), mock( Supplier.class ),
-                scanStore, LockService.NO_LOCK_SERVICE );
+                scanStore, LockService.NO_LOCK_SERVICE, mock( RecordStorageCommandCreationContext.class ) );
         statement.acquire();
 
         // when

@@ -52,7 +52,7 @@ public class StoreSingleNodeCursor implements Cursor<NodeItem>, NodeItem
     private long nodeId = StatementConstants.NO_SUCH_NODE;
     private long[] labels;
 
-    StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
+    public StoreSingleNodeCursor( NodeRecord nodeRecord, Consumer<StoreSingleNodeCursor> instanceCache,
             RecordCursors recordCursors, LockService lockService )
     {
         this.nodeRecord = nodeRecord;

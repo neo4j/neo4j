@@ -42,13 +42,20 @@ public interface StorageEngine
     StoreReadLayer storeReadLayer();
 
     /**
+     * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageStatement, ResourceLocker,
+     * long)}.
+     * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
+     */
+    CommandCreationContext allocateCommandCreationContext();
+
+    /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
      * ({@code state} and {@code legacyIndexTransactionState}.
      * The returned commands can be used to form {@link CommandsToApply} batches, which can be applied to this
      * storage using {@link #apply(CommandsToApply, TransactionApplicationMode)}.
      * The reason this is separated like this is that the generated commands can be used for other things
      * than applying to storage, f.ex replicating to another storage engine.
-     *
      * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageStatement {@link StorageStatement} to use for reading store state during creation of commands.
@@ -61,6 +68,7 @@ public interface StorageEngine
      * @param lastTransactionIdWhenStarted transaction id which was seen as last committed when this
      * transaction started, i.e. before any changes were made and before any data was read.
      * TODO Transitional (Collection), might be {@link Stream} or whatever.
+     *
      * @throws TransactionFailureException if command generation fails or some prerequisite of some command
      * didn't validate, for example if trying to delete a node that still has relationships.
      * @throws CreateConstraintFailureException if this transaction was set to create a constraint and that failed.

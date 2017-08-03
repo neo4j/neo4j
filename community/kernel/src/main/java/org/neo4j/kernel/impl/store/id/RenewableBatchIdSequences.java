@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.id;
 
+import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.Resource;
@@ -27,29 +28,30 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
-public class RenewableIdBatches implements Resource
+public class RenewableBatchIdSequences implements Resource
 {
-    private final RenewableIdBatch[] types = new RenewableIdBatch[StoreType.values().length];
+    private final RenewableBatchIdSequence[] types = new RenewableBatchIdSequence[StoreType.values().length];
 
-    public RenewableIdBatches( NeoStores stores, int batchSize )
+    public RenewableBatchIdSequences( NeoStores stores, int batchSize )
     {
         for ( StoreType type : StoreType.values() )
         {
             RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
             Supplier<IdRangeIterator> source = () -> new IdRangeIterator( store.nextIdBatch( batchSize ) );
-            types[type.ordinal()] = new RenewableIdBatch( source );
+            LongConsumer idConsumer = id -> store.freeId( id );
+            types[type.ordinal()] = new RenewableBatchIdSequence( source, idConsumer );
         }
     }
 
     public long nextId( StoreType type )
     {
-        return types[type.ordinal()].next();
+        return types[type.ordinal()].nextId();
     }
 
     @Override
     public void close()
     {
-        for ( RenewableIdBatch renewableIdBatch : types )
+        for ( RenewableBatchIdSequence renewableIdBatch : types )
         {
             renewableIdBatch.close();
         }
