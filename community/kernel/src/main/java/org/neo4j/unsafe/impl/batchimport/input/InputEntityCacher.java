@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToShort;
+import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;

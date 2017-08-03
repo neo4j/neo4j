@@ -26,6 +26,9 @@ import java.util.Map;
 import static java.lang.Character.isWhitespace;
 import static java.lang.reflect.Modifier.isStatic;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.helpers.Numbers.safeCastLongToByte;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToShort;
 
 /**
  * Common implementations of {@link Extractor}. Since array values can have a delimiter of user choice that isn't
@@ -1009,32 +1012,5 @@ public class Extractors
         }
 
         return true;
-    }
-
-    private static int safeCastLongToInt( long value )
-    {
-        if ( value > Integer.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (int) value;
-    }
-
-    private static short safeCastLongToShort( long value )
-    {
-        if ( value > Short.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (short) value;
-    }
-
-    private static byte safeCastLongToByte( long value )
-    {
-        if ( value > Byte.MAX_VALUE )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m" );
-        }
-        return (byte) value;
     }
 }

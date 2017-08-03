@@ -28,6 +28,7 @@ import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
 
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.EncodingIdMapper.clearCollision;
 
 /**
@@ -354,7 +355,7 @@ public class ParallelSort
 
             long low = Math.max( start, randomIndex - 5 );
             long high = Math.min( low + 10, end );
-            int length = Utils.safeCastLongToInt( high - low );
+            int length = safeCastLongToInt( high - low );
 
             int j = 0;
             for ( long i = low; i < high; i++, j++ )

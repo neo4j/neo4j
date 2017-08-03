@@ -38,7 +38,8 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.unsafe.impl.batchimport.Utils;
+
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 public class MandatoryProperties
 {
@@ -89,7 +90,7 @@ public class MandatoryProperties
             for ( long labelId : NodeLabelReader.getListOfLabels( node, storeAccess.getNodeDynamicLabelStore() ) )
             {
                 // labelId _is_ actually an int. A technical detail in the store format has these come in a long[]
-                int[] propertyKeys = nodes.get( Utils.safeCastLongToInt( labelId ) );
+                int[] propertyKeys = nodes.get( safeCastLongToInt( labelId ) );
                 if ( propertyKeys != null )
                 {
                     if ( keys == null )

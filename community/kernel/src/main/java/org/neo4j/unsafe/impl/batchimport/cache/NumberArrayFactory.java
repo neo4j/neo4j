@@ -28,7 +28,7 @@ import org.neo4j.io.pagecache.PageCache;
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 /**
  * Factory of {@link LongArray}, {@link IntArray} and {@link ByteArray} instances. Users can select in which type of

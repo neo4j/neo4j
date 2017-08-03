@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaRule.Kind;
 
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
 
 /**

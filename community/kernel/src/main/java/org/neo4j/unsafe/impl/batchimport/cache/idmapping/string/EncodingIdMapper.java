@@ -28,7 +28,6 @@ import org.neo4j.function.Factory;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
-import org.neo4j.unsafe.impl.batchimport.Utils;
 import org.neo4j.unsafe.impl.batchimport.Utils.CompareType;
 import org.neo4j.unsafe.impl.batchimport.cache.IntArray;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArray;
@@ -44,7 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.String.format;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedDifference;
 import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
@@ -578,7 +577,7 @@ public class EncodingIdMapper implements IdMapper
                 // We cast the collision index to an int here. This means that we can't support > int-range
                 // number of collisions. But that's probably alright since the data structures and
                 // actual collisions values for all these collisions wouldn't fit in a heap anyway.
-                Object inputId = collisionValues.get( Utils.safeCastLongToInt( collisionIndex ) );
+                Object inputId = collisionValues.get( safeCastLongToInt( collisionIndex ) );
                 int detectorIndex = detector.add( inputId, sourceInformation );
                 if ( detectorIndex != -1 )
                 {   // Duplicate

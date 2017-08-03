@@ -44,13 +44,13 @@ import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdd
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 
+import static org.neo4j.helpers.Numbers.unsignedShortToInt;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.COLLECTION_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_DELETED_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.transaction.command.CommandReading.PROPERTY_INDEX_DYNAMIC_RECORD_ADDER;
 import static org.neo4j.kernel.impl.util.Bits.bitFlag;
 import static org.neo4j.kernel.impl.util.Bits.notFlag;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.shortToUnsignedInt;
 
 public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
 {
@@ -169,7 +169,7 @@ public class PhysicalLogCommandReaderV2_1 extends BaseCommandReader
         {
             throw new IOException( "Illegal in use flag: " + inUseByte );
         }
-        int type = shortToUnsignedInt( channel.getShort() );
+        int type = unsignedShortToInt( channel.getShort() );
         RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
         record.setInUse( inUse );
         record.setNext( channel.getLong() );
