@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -312,7 +313,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         return labelNameIdMap.values().stream()
                 .map( index -> IndexRule.indexRule( index, IndexDescriptorFactory.forLabel( index, propertyId ),
-                        new SchemaIndexProvider.Descriptor( "lucene", "version" ) ) )
+                        LuceneSchemaIndexProviderFactory.PROVIDER_DESCRIPTOR ) )
                 .toArray( IndexRule[]::new );
     }
 
