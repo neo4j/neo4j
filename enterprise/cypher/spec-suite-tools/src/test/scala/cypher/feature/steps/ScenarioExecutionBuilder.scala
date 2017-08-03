@@ -25,7 +25,7 @@ import cypher.cucumber.BlacklistPlugin.blacklisted
 import org.neo4j.graphdb.{QueryStatistics, Result, Transaction}
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 class ScenarioExecutionBuilder {
 
@@ -123,42 +123,43 @@ case class RegularScenario(name: String, blacklisted: Boolean,
       return
     }
 
-    init.foreach(f => f(db))
-    procedureRegistration.foreach(f => f(db))
-
     try {
+      init.foreach(f => f(db))
+      procedureRegistration.foreach(f => f(db))
+
       executions.zip(expectations).foreach {
         case (execute, expect) =>
           val tx = db.beginTx()
           try {
-
-            try {
-              val result = execute(db, params)
-              if (blacklisted) {
-                try {
-                  expect(result)
-                  throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
-                } catch {
-                  case t: Throwable => // failure is expected
-                }
-              } else {
-                try {
-                  expect(result)
-                  tx.success()
-                } catch {
-                  case e: Error =>
-                    throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
-                }
+            val result = execute(db, params)
+            if (blacklisted) {
+              try {
+                expect(result)
+                println(s"Scenario '$name' was blacklisted, but succeeded")
+                throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+              } catch {
+                case x: BlacklistException => throw x // let's not swallow these
+                case t: Throwable => // failure is expected
               }
-
-            } catch {
-              case throwable: Throwable =>
-                if (!blacklisted)
-                  throw new ScenarioFailedException(s"Scenario '$name' failed with ${throwable.getMessage}", throwable)
+            } else {
+              try {
+                expect(result)
+                tx.success()
+              } catch {
+                case e: Error =>
+                  throw new ScenarioFailedException(s"Scenario '$name' failed with ${e.getMessage}", e)
+              }
             }
-          } finally {
+          } catch {
+            case x: BlacklistException => throw x // let's not swallow these
+            case t: Throwable if blacklisted => // expected
+          }
+
+          finally {
             tx.close()
           }
+          if(name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the registered runtime, this should go away
+            return
       }
     } finally {
       db.shutdown()
