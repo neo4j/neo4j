@@ -69,7 +69,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case _ =>
-        //fallback.build(plan)
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
 
     }
@@ -111,7 +110,12 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         }
         ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
 
-      case _ => fallback.build(plan, source)
+        // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
+      case _: Selection =>  // selection relies on inner expressions to interact with variables
+        fallback.build(plan, source)
+
+      case _ =>
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
 
@@ -145,7 +149,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
-      case _ => fallback.build(plan, lhs, rhs)
+      case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
 }
