@@ -119,6 +119,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
       case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
         // TODO: This is not right!
+        if(predicates.nonEmpty)
+          throw new CantCompileQueryException("does not handle varexpand with predicates")
         val predicate = VarLengthRegisterPredicate.NONE
 
         val closedPath = expansionMode match {
