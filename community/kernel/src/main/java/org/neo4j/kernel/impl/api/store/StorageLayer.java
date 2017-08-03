@@ -448,18 +448,6 @@ public class StorageLayer implements StoreReadLayer
     }
 
     @Override
-    public long reserveNode()
-    {
-        return nodeStore.nextId();
-    }
-
-    @Override
-    public long reserveRelationship()
-    {
-        return relationshipStore.nextId();
-    }
-
-    @Override
     public void releaseNode( long id )
     {
         nodeStore.freeId( id );

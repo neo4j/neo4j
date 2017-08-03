@@ -417,7 +417,7 @@ public class StateHandlingStatementOperations implements
     @Override
     public long nodeCreate( KernelStatement state )
     {
-        long nodeId = storeLayer.reserveNode();
+        long nodeId = state.getStoreStatement().reserveNode();
         state.txState().nodeDoCreate(nodeId);
         return nodeId;
     }
@@ -452,7 +452,7 @@ public class StateHandlingStatementOperations implements
         {
             try ( Cursor<NodeItem> endNode = nodeCursorById( state, endNodeId ) )
             {
-                long id = storeLayer.reserveRelationship();
+                long id = state.getStoreStatement().reserveRelationship();
                 state.txState().relationshipDoCreate( id, relationshipTypeId, startNode.get().id(), endNode.get().id() );
                 return id;
             }

@@ -35,7 +35,7 @@ public class StoreSingleRelationshipCursor extends StoreAbstractRelationshipCurs
     private final InstanceCache<StoreSingleRelationshipCursor> instanceCache;
     private long relationshipId = StatementConstants.NO_SUCH_RELATIONSHIP;
 
-    StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
+    public StoreSingleRelationshipCursor( RelationshipRecord relationshipRecord,
             InstanceCache<StoreSingleRelationshipCursor> instanceCache, RecordCursors cursors, LockService lockService )
     {
         super( relationshipRecord, cursors, lockService );

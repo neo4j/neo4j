@@ -32,13 +32,13 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.txstate.LegacyIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.store.StoreStatement;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.locking.LockTracer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreStatement;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -95,9 +95,11 @@ public class KernelTransactionTestBase
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
         when( storageEngine.storeReadLayer() ).thenReturn( readLayer );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArguments()[0]).add( null ) )
-                .when( storageEngine ).createCommands( anyCollectionOf( StorageCommand.class ),
-                any( ReadableTransactionState.class ), any( StorageStatement.class ),
-                any( ResourceLocker.class ), anyLong() );
+            .when( storageEngine ).createCommands(
+                    anyCollectionOf( StorageCommand.class ),
+                    any( ReadableTransactionState.class ),
+                    any( StorageStatement.class ), any( ResourceLocker.class ),
+                    anyLong() );
     }
 
     public KernelTransactionImplementation newTransaction( long transactionTimeoutMillis )

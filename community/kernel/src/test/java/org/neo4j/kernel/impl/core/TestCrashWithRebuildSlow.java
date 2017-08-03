@@ -56,6 +56,7 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
@@ -76,7 +77,9 @@ public class TestCrashWithRebuildSlow
     {
         File storeDir = new File( "dir" ).getAbsoluteFile();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
+                .newGraphDatabase();
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
         Map<IdType,Long> highIdsBeforeCrash = getHighIds( db );
 
@@ -158,7 +161,8 @@ public class TestCrashWithRebuildSlow
                 nodes.add( node );
                 if ( previous != null )
                 {
-                    previous.createRelationshipTo( node, MyRelTypes.TEST );
+                    Relationship rel = previous.createRelationshipTo( node, MyRelTypes.TEST );
+                    System.out.println( rel );
                 }
                 previous = node;
             }

@@ -21,15 +21,19 @@ package org.neo4j.kernel.impl.store.id;
 
 import java.util.Arrays;
 
+import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+
+import static java.lang.Integer.min;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
-public class IdRangeIterator
+public class IdRangeIterator implements IdSequence
 {
     public static IdRangeIterator EMPTY_ID_RANGE_ITERATOR =
             new IdRangeIterator( new IdRange( EMPTY_LONG_ARRAY, 0, 0 ) )
             {
                 @Override
-                public long next()
+                public long nextId()
                 {
                     return VALUE_REPRESENTING_NULL;
                 }
@@ -48,7 +52,8 @@ public class IdRangeIterator
         this.length = idRange.getRangeLength();
     }
 
-    public long next()
+    @Override
+    public long nextId()
     {
         try
         {
@@ -58,7 +63,7 @@ public class IdRangeIterator
             }
 
             long candidate = nextRangeCandidate();
-            if ( candidate == IdGeneratorImpl.INTEGER_MINUS_ONE )
+            if ( IdValidator.isReservedId( candidate ) )
             {
                 position++;
                 candidate = nextRangeCandidate();
@@ -71,10 +76,42 @@ public class IdRangeIterator
         }
     }
 
+    @Override
+    public IdRange nextIdBatch( int size )
+    {
+        int sizeLeft = size;
+        long[] rangeDefrag = EMPTY_LONG_ARRAY;
+        if ( position < defrag.length )
+        {
+            // There are defragged ids to grab
+            int numberOfDefrags = min( sizeLeft, defrag.length - position );
+            rangeDefrag = Arrays.copyOfRange( defrag, position, numberOfDefrags + position );
+            position += numberOfDefrags;
+            sizeLeft -= numberOfDefrags;
+        }
+
+        long rangeStart = 0;
+        int rangeLength = 0;
+        int rangeOffset = currentRangeOffset();
+        int rangeAvailable = length - rangeOffset;
+        if ( sizeLeft > 0 && rangeAvailable > 0 )
+        {
+            rangeStart = start + rangeOffset;
+            rangeLength = min( rangeAvailable, sizeLeft );
+            position += rangeLength;
+        }
+        return new IdRange( rangeDefrag, rangeStart, rangeLength );
+    }
+
     private long nextRangeCandidate()
     {
-        int offset = position - defrag.length;
+        int offset = currentRangeOffset();
         return (offset < length) ? (start + offset) : VALUE_REPRESENTING_NULL;
+    }
+
+    private int currentRangeOffset()
+    {
+        return position - defrag.length;
     }
 
     @Override

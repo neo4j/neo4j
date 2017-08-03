@@ -139,7 +139,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
 
     private static IdRangeIterator idRange( int size, IdSequence idSource )
     {
-        return size > 0 ? new IdRangeIterator( idSource.nextIdBatch( size ) ) : IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
+        return size > 0 ? idSource.nextIdBatch( size ).iterator() : IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
     }
 
     private static void reassignPropertyIds( InputEntity input, PrimitiveRecord record, PropertyRecord[] propertyRecords,
@@ -165,7 +165,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     private static long reassignPropertyRecordIds( PrimitiveRecord record, IdRangeIterator ids,
             PropertyRecord[] propertyRecords )
     {
-        long newId = ids.next();
+        long newId = ids.nextId();
         long firstId = newId;
         PropertyRecord prev = null;
         for ( PropertyRecord propertyRecord : propertyRecords )
@@ -174,7 +174,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
             propertyRecord.setId( newId );
             if ( !Record.NO_NEXT_PROPERTY.is( propertyRecord.getNextProp() ) )
             {
-                propertyRecord.setNextProp( newId = ids.next() );
+                propertyRecord.setNextProp( newId = ids.nextId() );
             }
             if ( prev != null )
             {
@@ -214,7 +214,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
     private static void reassignDynamicRecordIds( PropertyBlock block, PropertyType type, IdRangeIterator ids )
     {
         Iterator<DynamicRecord> dynamicRecords = block.getValueRecords().iterator();
-        long newId = ids.next();
+        long newId = ids.nextId();
         block.getValueBlocks()[0] = PropertyStore.singleBlockLongValue( block.getKeyIndexId(), type, newId );
         while ( dynamicRecords.hasNext() )
         {
@@ -222,7 +222,7 @@ public class PropertyEncoderStep<RECORD extends PrimitiveRecord,INPUT extends In
             dynamicRecord.setId( newId );
             if ( dynamicRecords.hasNext() )
             {
-                dynamicRecord.setNextBlock( newId = ids.next() );
+                dynamicRecord.setNextBlock( newId = ids.nextId() );
             }
         }
     }

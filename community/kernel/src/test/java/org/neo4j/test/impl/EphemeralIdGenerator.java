@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
@@ -35,12 +36,14 @@ import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfiguration
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfiguration;
 import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 
+import static java.lang.Integer.min;
+
 public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
         protected final Map<IdType, IdGenerator> generators = new EnumMap<>( IdType.class );
-        private IdTypeConfigurationProvider
+        private final IdTypeConfigurationProvider
                 idTypeConfigurationProvider = new CommunityIdTypeConfigurationProvider();
 
         @Override
@@ -92,7 +95,7 @@ public class EphemeralIdGenerator implements IdGenerator
     }
 
     @Override
-    public long nextId()
+    public synchronized long nextId()
     {
         if ( freeList != null )
         {
@@ -106,9 +109,19 @@ public class EphemeralIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
-        throw new UnsupportedOperationException();
+        long[] defragIds = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+        if ( freeList != null && !freeList.isEmpty() )
+        {
+            defragIds = new long[min( size, freeList.size() )];
+            for ( int i = 0; i < defragIds.length; i++ )
+            {
+                defragIds[i] = freeList.poll();
+            }
+            size -= defragIds.length;
+        }
+        return new IdRange( defragIds, nextId.getAndAdd( size ), size );
     }
 
     @Override

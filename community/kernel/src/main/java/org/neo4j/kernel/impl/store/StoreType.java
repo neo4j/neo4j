@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.storemigration.StoreFile;
 
 public enum StoreType
 {
-    NODE_LABEL( StoreFile.NODE_LABEL_STORE )
+    NODE_LABEL( StoreFile.NODE_LABEL_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -40,7 +40,7 @@ public enum StoreType
                             GraphDatabaseSettings.label_block_size );
                 }
             },
-    NODE( StoreFile.NODE_STORE )
+    NODE( StoreFile.NODE_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -48,7 +48,7 @@ public enum StoreType
                     return neoStores.createNodeStore( getStoreName() );
                 }
             },
-    PROPERTY_KEY_TOKEN_NAME( StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE )
+    PROPERTY_KEY_TOKEN_NAME( StoreFile.PROPERTY_KEY_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -57,7 +57,7 @@ public enum StoreType
                             TokenStore.NAME_STORE_BLOCK_SIZE );
                 }
             },
-    PROPERTY_KEY_TOKEN( StoreFile.PROPERTY_KEY_TOKEN_STORE )
+    PROPERTY_KEY_TOKEN( StoreFile.PROPERTY_KEY_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -65,7 +65,7 @@ public enum StoreType
                     return neoStores.createPropertyKeyTokenStore( getStoreName() );
                 }
             },
-    PROPERTY_STRING( StoreFile.PROPERTY_STRING_STORE )
+    PROPERTY_STRING( StoreFile.PROPERTY_STRING_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -74,7 +74,7 @@ public enum StoreType
                             GraphDatabaseSettings.string_block_size );
                 }
             },
-    PROPERTY_ARRAY( StoreFile.PROPERTY_ARRAY_STORE )
+    PROPERTY_ARRAY( StoreFile.PROPERTY_ARRAY_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -83,7 +83,7 @@ public enum StoreType
                             GraphDatabaseSettings.array_block_size );
                 }
             },
-    PROPERTY( StoreFile.PROPERTY_STORE )
+    PROPERTY( StoreFile.PROPERTY_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -91,7 +91,7 @@ public enum StoreType
                     return neoStores.createPropertyStore( getStoreName() );
                 }
             },
-    RELATIONSHIP( StoreFile.RELATIONSHIP_STORE )
+    RELATIONSHIP( StoreFile.RELATIONSHIP_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -99,7 +99,7 @@ public enum StoreType
                     return neoStores.createRelationshipStore( getStoreName() );
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN_NAME( StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE )
+    RELATIONSHIP_TYPE_TOKEN_NAME( StoreFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -108,7 +108,7 @@ public enum StoreType
                             TokenStore.NAME_STORE_BLOCK_SIZE );
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE )
+    RELATIONSHIP_TYPE_TOKEN( StoreFile.RELATIONSHIP_TYPE_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -116,7 +116,7 @@ public enum StoreType
                     return neoStores.createRelationshipTypeTokenStore( getStoreName() );
                 }
             },
-    LABEL_TOKEN_NAME( StoreFile.LABEL_TOKEN_NAMES_STORE )
+    LABEL_TOKEN_NAME( StoreFile.LABEL_TOKEN_NAMES_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -125,7 +125,7 @@ public enum StoreType
                             TokenStore.NAME_STORE_BLOCK_SIZE );
                 }
             },
-    LABEL_TOKEN( StoreFile.LABEL_TOKEN_STORE )
+    LABEL_TOKEN( StoreFile.LABEL_TOKEN_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -133,7 +133,7 @@ public enum StoreType
                     return neoStores.createLabelTokenStore( getStoreName() );
                 }
             },
-    SCHEMA( StoreFile.SCHEMA_STORE )
+    SCHEMA( StoreFile.SCHEMA_STORE, true, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -141,7 +141,7 @@ public enum StoreType
                     return neoStores.createSchemaStore( getStoreName() );
                 }
             },
-    RELATIONSHIP_GROUP( StoreFile.RELATIONSHIP_GROUP_STORE )
+    RELATIONSHIP_GROUP( StoreFile.RELATIONSHIP_GROUP_STORE, true, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -149,7 +149,7 @@ public enum StoreType
                     return neoStores.createRelationshipGroupStore( getStoreName() );
                 }
             },
-    COUNTS( null, false )
+    COUNTS( null, false, false )
             {
                 @Override
                 public CountsTracker open( final NeoStores neoStores )
@@ -176,7 +176,7 @@ public enum StoreType
                     return StoreFactory.COUNTS_STORE;
                 }
             },
-    META_DATA( StoreFile.NEO_STORE ) // Make sure this META store is last
+    META_DATA( StoreFile.NEO_STORE, true, true ) // Make sure this META store is last
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -186,17 +186,14 @@ public enum StoreType
             };
 
     private final boolean recordStore;
+    private final boolean limitedIdStore;
     private final StoreFile storeFile;
 
-    StoreType( StoreFile storeFile )
-    {
-        this( storeFile, true );
-    }
-
-    StoreType( StoreFile storeFile, boolean recordStore )
+    StoreType( StoreFile storeFile, boolean recordStore, boolean limitedIdStore )
     {
         this.storeFile = storeFile;
         this.recordStore = recordStore;
+        this.limitedIdStore = limitedIdStore;
     }
 
     abstract Object open( NeoStores neoStores );
@@ -204,6 +201,15 @@ public enum StoreType
     public boolean isRecordStore()
     {
         return recordStore;
+    }
+
+    /**
+     * @return {@code true} to signal that this store has a quite limited id space and is more of a meta data store.
+     * Originally came about when adding transaction-local id batching, to avoid id generator batching on certain stores.
+     */
+    public boolean isLimitedIdStore()
+    {
+        return limitedIdStore;
     }
 
     public String getStoreName()

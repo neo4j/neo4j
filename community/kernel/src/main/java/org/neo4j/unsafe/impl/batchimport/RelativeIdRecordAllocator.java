@@ -20,46 +20,35 @@
 package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingIdSequence;
 
 /**
  * {@link DynamicRecordAllocator} that allocates new {@link DynamicRecord dynamic records} which has,
  * relative ids, {@link #initialize() starting} at 0, ignoring any global id generator. This is because when using
  * this allocator it is assumed that the ids are re-assigned later anyway.
  */
-public class RelativeIdRecordAllocator implements DynamicRecordAllocator
+public class RelativeIdRecordAllocator extends StandardDynamicRecordAllocator
 {
-    private final int dataSize;
-    private long id;
-
     public RelativeIdRecordAllocator( int dataSize )
     {
-        this.dataSize = dataSize;
+        super( new BatchingIdSequence(), dataSize );
     }
 
     public RelativeIdRecordAllocator initialize()
     {
-        this.id = 0;
+        idSequence().reset();
         return this;
     }
 
-    @Override
-    public int getRecordDataSize()
+    private BatchingIdSequence idSequence()
     {
-        return dataSize;
+        return (BatchingIdSequence) idGenerator;
     }
 
     public long peek()
     {
-        return id;
-    }
-
-    @Override
-    public DynamicRecord nextRecord()
-    {
-        DynamicRecord record = new DynamicRecord( id++ );
-        record.setInUse( true );
-        record.setCreated();
-        return record;
+        return idSequence().peek();
     }
 }

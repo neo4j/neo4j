@@ -71,6 +71,7 @@ import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 /**
@@ -459,8 +460,17 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Integer> label_block_size = setting("unsupported.dbms.block_size.labels", INTEGER,
             "0", min( 0 ) );
 
-    @Description("An identifier that uniquely identifies this graph database instance within this JVM. " +
-            "Defaults to an auto-generated number depending on how many instance are started in this JVM.")
+    @Description( "Specifies the size of id batches local to each transaction when committing. " +
+            "Committing a transaction which contains changes most often results in new data records being created. " +
+            "For each record a new id needs to be generated from an id generator. " +
+            "It's more efficient to allocate a batch of ids from the contended id generator, which the transaction " +
+            "holds and generates ids from while creating these new records. " +
+            "This setting specifies how big those batches are. " +
+            "Remaining ids are freed back to id generator on clean shutdown." )
+    @Internal
+    public static final Setting<Integer> record_id_batch_size = setting( "unsupported.dbms.record_id_batch_size", INTEGER,
+            "20", range( 1, 1_000 ) );
+
     @Internal
     public static final Setting<String> forced_kernel_id = setting("unsupported.dbms.kernel_id", STRING, NO_DEFAULT,
             illegalValueMessage("has to be a valid kernel identifier", matches("[a-zA-Z0-9]*")));
