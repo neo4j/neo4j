@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -27,27 +27,29 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedSchemaIndexProvider.combineSamples;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedSchemaIndexProvider.select;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
-class CombinedIndexPopulator implements IndexPopulator
+class FusionIndexPopulator implements IndexPopulator
 {
-    private final IndexPopulator boostPopulator;
-    private final IndexPopulator fallbackPopulator;
+    private final IndexPopulator nativePopulator;
+    private final IndexPopulator lucenePopulator;
+    private final Selector selector;
 
-    CombinedIndexPopulator( IndexPopulator boostPopulator, IndexPopulator fallbackPopulator )
+    FusionIndexPopulator( IndexPopulator nativePopulator, IndexPopulator lucenePopulator, Selector selector )
     {
-        this.boostPopulator = boostPopulator;
-        this.fallbackPopulator = fallbackPopulator;
+        this.nativePopulator = nativePopulator;
+        this.lucenePopulator = lucenePopulator;
+        this.selector = selector;
     }
 
     @Override
     public void create() throws IOException
     {
-        boostPopulator.create();
-        fallbackPopulator.create();
+        nativePopulator.create();
+        lucenePopulator.create();
     }
 
     @Override
@@ -55,11 +57,11 @@ class CombinedIndexPopulator implements IndexPopulator
     {
         try
         {
-            boostPopulator.drop();
+            nativePopulator.drop();
         }
         finally
         {
-            fallbackPopulator.drop();
+            lucenePopulator.drop();
         }
     }
 
@@ -75,23 +77,23 @@ class CombinedIndexPopulator implements IndexPopulator
     @Override
     public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
     {
-        select( boostPopulator, fallbackPopulator, update.values() ).add( update );
+        selector.select( nativePopulator, lucenePopulator, update.values() ).add( update );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        boostPopulator.verifyDeferredConstraints( propertyAccessor );
-        fallbackPopulator.verifyDeferredConstraints( propertyAccessor );
+        nativePopulator.verifyDeferredConstraints( propertyAccessor );
+        lucenePopulator.verifyDeferredConstraints( propertyAccessor );
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( PropertyAccessor accessor ) throws IOException
     {
-        return new CombinedIndexUpdater(
-                boostPopulator.newPopulatingUpdater( accessor ),
-                fallbackPopulator.newPopulatingUpdater( accessor ) );
+        return new FusionIndexUpdater(
+                nativePopulator.newPopulatingUpdater( accessor ),
+                lucenePopulator.newPopulatingUpdater( accessor ), selector );
     }
 
     @Override
@@ -99,11 +101,11 @@ class CombinedIndexPopulator implements IndexPopulator
     {
         try
         {
-            boostPopulator.close( populationCompletedSuccessfully );
+            nativePopulator.close( populationCompletedSuccessfully );
         }
         finally
         {
-            fallbackPopulator.close( populationCompletedSuccessfully );
+            lucenePopulator.close( populationCompletedSuccessfully );
         }
     }
 
@@ -112,31 +114,31 @@ class CombinedIndexPopulator implements IndexPopulator
     {
         try
         {
-            boostPopulator.markAsFailed( failure );
+            nativePopulator.markAsFailed( failure );
         }
         finally
         {
-            fallbackPopulator.markAsFailed( failure );
+            lucenePopulator.markAsFailed( failure );
         }
     }
 
     @Override
     public void includeSample( IndexEntryUpdate update )
     {
-        boostPopulator.includeSample( update );
-        fallbackPopulator.includeSample( update );
+        nativePopulator.includeSample( update );
+        lucenePopulator.includeSample( update );
     }
 
     @Override
     public void configureSampling( boolean onlineSampling )
     {
-        boostPopulator.configureSampling( onlineSampling );
-        fallbackPopulator.configureSampling( onlineSampling );
+        nativePopulator.configureSampling( onlineSampling );
+        lucenePopulator.configureSampling( onlineSampling );
     }
 
     @Override
     public IndexSample sampleResult()
     {
-        return combineSamples( boostPopulator.sampleResult(), fallbackPopulator.sampleResult() );
+        return combineSamples( nativePopulator.sampleResult(), lucenePopulator.sampleResult() );
     }
 }

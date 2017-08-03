@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.schema.IndexQuery.StringContainsPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
+import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 
@@ -44,32 +46,32 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-public class CombinedIndexReaderTest
+public class FusionIndexReaderTest
 {
-    private IndexReader boostReader;
-    private IndexReader fallbackReader;
-    private CombinedIndexReader combinedIndexReader;
+    private IndexReader nativeReader;
+    private IndexReader luceneReader;
+    private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
 
     @Before
     public void setup()
     {
-        boostReader = mock( IndexReader.class );
-        fallbackReader = mock( IndexReader.class );
-        combinedIndexReader = new CombinedIndexReader( boostReader, fallbackReader );
+        nativeReader = mock( IndexReader.class );
+        luceneReader = mock( IndexReader.class );
+        fusionIndexReader = new FusionIndexReader( nativeReader, luceneReader, new NativeSelector() );
     }
 
     /* close */
 
     @Test
-    public void closeMustCloseBothBoostAndFallback() throws Exception
+    public void closeMustCloseBothNativeAndLucene() throws Exception
     {
         // when
-        combinedIndexReader.close();
+        fusionIndexReader.close();
 
         // then
-        verify( boostReader, times( 1 ) ).close();
-        verify( fallbackReader, times( 1 ) ).close();
+        verify( nativeReader, times( 1 ) ).close();
+        verify( luceneReader, times( 1 ) ).close();
     }
 
     /* countIndexedNodes */
@@ -78,120 +80,120 @@ public class CombinedIndexReaderTest
     public void countIndexedNodesMustSelectCorrectReader() throws Exception
     {
         // given
-        Value[] boostValues = CombinedIndexTestHelp.valuesSupportedByBoost();
-        Value[] otherValues = CombinedIndexTestHelp.valuesNotSupportedByBoost();
-        Value[] allValues = CombinedIndexTestHelp.allValues();
+        Value[] nativeValues = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] allValues = FusionIndexTestHelp.allValues();
 
         // when
-        for ( Value boostValue : boostValues )
+        for ( Value nativeValue : nativeValues )
         {
-            verifyCountIndexedNodesWithCorrectReader( boostReader, fallbackReader, boostValue );
+            verifyCountIndexedNodesWithCorrectReader( nativeReader, luceneReader, nativeValue );
         }
 
         for ( Value otherValue : otherValues )
         {
-            verifyCountIndexedNodesWithCorrectReader( fallbackReader, boostReader, otherValue );
+            verifyCountIndexedNodesWithCorrectReader( luceneReader, nativeReader, otherValue );
         }
 
         for ( Value firstValue : allValues )
         {
             for ( Value secondValue : allValues )
             {
-                verifyCountIndexedNodesWithCorrectReader( fallbackReader, boostReader, firstValue, secondValue );
+                verifyCountIndexedNodesWithCorrectReader( luceneReader, nativeReader, firstValue, secondValue );
             }
         }
     }
 
-    private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, IndexReader wrong, Value... boostValue )
+    private void verifyCountIndexedNodesWithCorrectReader( IndexReader correct, IndexReader wrong, Value... nativeValue )
     {
-        combinedIndexReader.countIndexedNodes( 0, boostValue );
-        verify( correct, times( 1 ) ).countIndexedNodes( 0, boostValue );
-        verify( wrong, times( 0 ) ).countIndexedNodes( 0, boostValue );
+        fusionIndexReader.countIndexedNodes( 0, nativeValue );
+        verify( correct, times( 1 ) ).countIndexedNodes( 0, nativeValue );
+        verify( wrong, times( 0 ) ).countIndexedNodes( 0, nativeValue );
     }
 
     /* query */
 
     @Test
-    public void mustSelectFallbackForCompositePredicate() throws Exception
+    public void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
-        verifyQueryWithCorrectReader( fallbackReader, boostReader, any( IndexQuery.class ), any( IndexQuery.class ) );
+        verifyQueryWithCorrectReader( luceneReader, nativeReader, any( IndexQuery.class ), any( IndexQuery.class ) );
     }
 
     @Test
-    public void mustSelectBoostForExactPredicateWithNumberValue() throws Exception
+    public void mustSelectNativeForExactPredicateWithNumberValue() throws Exception
     {
         // given
-        for ( Object numberValue : CombinedIndexTestHelp.valuesSupportedByBoost() )
+        for ( Object numberValue : FusionIndexTestHelp.valuesSupportedByNative() )
         {
             IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, numberValue );
 
             // then
-            verifyQueryWithCorrectReader( boostReader, fallbackReader, indexQuery );
+            verifyQueryWithCorrectReader( nativeReader, luceneReader, indexQuery );
         }
     }
 
     @Test
-    public void mustSelectFallbackForExactPredicateWithNonNumberValue() throws Exception
+    public void mustSelectLuceneForExactPredicateWithNonNumberValue() throws Exception
     {
         // given
-        for ( Object nonNumberValue : CombinedIndexTestHelp.valuesNotSupportedByBoost() )
+        for ( Object nonNumberValue : FusionIndexTestHelp.valuesNotSupportedByNative() )
         {
             IndexQuery indexQuery = IndexQuery.exact( PROP_KEY, nonNumberValue );
 
             // then
-            verifyQueryWithCorrectReader( fallbackReader, boostReader, indexQuery );
+            verifyQueryWithCorrectReader( luceneReader, nativeReader, indexQuery );
         }
     }
 
     @Test
-    public void mustSelectFallbackForRangeStringPredicate() throws Exception
+    public void mustSelectLuceneForRangeStringPredicate() throws Exception
     {
         // given
         StringRangePredicate stringRange = IndexQuery.range( PROP_KEY, "abc", true, "def", false );
 
         // then
-        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringRange );
+        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringRange );
     }
 
     @Test
-    public void mustSelectBoostForRangeNumericPredicate() throws Exception
+    public void mustSelectNativeForRangeNumericPredicate() throws Exception
     {
         // given
         NumberRangePredicate numberRange = IndexQuery.range( PROP_KEY, 0, true, 1, false );
 
         // then
-        verifyQueryWithCorrectReader( boostReader, fallbackReader, numberRange );
+        verifyQueryWithCorrectReader( nativeReader, luceneReader, numberRange );
     }
 
     @Test
-    public void mustSelectFallbackForStringPrefixPredicate() throws Exception
+    public void mustSelectLuceneForStringPrefixPredicate() throws Exception
     {
         // given
         StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringPrefix );
+        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringPrefix );
     }
 
     @Test
-    public void mustSelectFallbackForStringSuffixPredicate() throws Exception
+    public void mustSelectLuceneForStringSuffixPredicate() throws Exception
     {
         // given
         StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringPrefix );
+        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringPrefix );
     }
 
     @Test
-    public void mustSelectFallbackForStringContainsPredicate() throws Exception
+    public void mustSelectLuceneForStringContainsPredicate() throws Exception
     {
         // given
         StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, "abc" );
 
         // then
-        verifyQueryWithCorrectReader( fallbackReader, boostReader, stringContains );
+        verifyQueryWithCorrectReader( luceneReader, nativeReader, stringContains );
     }
 
     @Test
@@ -199,11 +201,11 @@ public class CombinedIndexReaderTest
     {
         // given
         IndexQuery.ExistsPredicate exists = IndexQuery.exists( PROP_KEY );
-        when( boostReader.query( exists ) ).thenReturn( Primitive.iterator( 0L, 1L, 3L, 4L, 7L ) );
-        when( fallbackReader.query( exists ) ).thenReturn( Primitive.iterator( 2L, 5L, 6L ) );
+        when( nativeReader.query( exists ) ).thenReturn( Primitive.iterator( 0L, 1L, 3L, 4L, 7L ) );
+        when( luceneReader.query( exists ) ).thenReturn( Primitive.iterator( 2L, 5L, 6L ) );
 
         // when
-        PrimitiveLongIterator result = combinedIndexReader.query( exists );
+        PrimitiveLongIterator result = fusionIndexReader.query( exists );
 
         // then
         PrimitiveLongSet resultSet = PrimitiveLongCollections.asSet( result );
@@ -217,7 +219,7 @@ public class CombinedIndexReaderTest
             throws IndexNotApplicableKernelException
     {
         // when
-        combinedIndexReader.query( indexQuery );
+        fusionIndexReader.query( indexQuery );
 
         // then
         verify( expectedReader, times( 1 ) ).query( indexQuery );

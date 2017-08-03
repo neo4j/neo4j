@@ -43,7 +43,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulato
  */
 public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
-    private static final String KEY = "native";
+    public static final String KEY = "native";
     private static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private final PageCache pageCache;
     private final File nativeSchemaIndexBaseDir;

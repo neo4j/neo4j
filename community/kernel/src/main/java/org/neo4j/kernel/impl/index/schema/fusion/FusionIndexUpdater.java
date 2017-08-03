@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 
@@ -25,25 +25,26 @@ import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedSchemaIndexProvider.select;
-
-class CombinedIndexUpdater implements IndexUpdater
+class FusionIndexUpdater implements IndexUpdater
 {
-    private final IndexUpdater boostUpdater;
-    private final IndexUpdater fallbackUpdater;
+    private final IndexUpdater nativeUpdater;
+    private final IndexUpdater luceneUpdater;
+    private final Selector selector;
 
-    CombinedIndexUpdater( IndexUpdater boostUpdater, IndexUpdater fallbackUpdater )
+    FusionIndexUpdater( IndexUpdater nativeUpdater, IndexUpdater luceneUpdater, Selector selector )
     {
-        this.boostUpdater = boostUpdater;
-        this.fallbackUpdater = fallbackUpdater;
+        this.nativeUpdater = nativeUpdater;
+        this.luceneUpdater = luceneUpdater;
+        this.selector = selector;
     }
 
     @Override
     public void remove( PrimitiveLongSet nodeIds ) throws IOException
     {
-        boostUpdater.remove( nodeIds );
-        fallbackUpdater.remove( nodeIds );
+        nativeUpdater.remove( nodeIds );
+        luceneUpdater.remove( nodeIds );
     }
 
     @Override
@@ -52,14 +53,14 @@ class CombinedIndexUpdater implements IndexUpdater
         switch ( update.updateMode() )
         {
         case ADDED:
-            select( boostUpdater, fallbackUpdater, update.values() ).process( update );
+            selector.select( nativeUpdater, luceneUpdater, update.values() ).process( update );
             break;
         case CHANGED:
-            // Hmm, here's a little conundrum. What if we change from a value that goes into boost
+            // Hmm, here's a little conundrum. What if we change from a value that goes into native
             // to a value that goes into fallback, or vice versa? We also don't want to blindly pass
             // all CHANGED updates to both updaters since not all values will work in them.
-            IndexUpdater from = select( boostUpdater, fallbackUpdater, update.beforeValues() );
-            IndexUpdater to = select( boostUpdater, fallbackUpdater, update.values() );
+            IndexUpdater from = selector.select( nativeUpdater, luceneUpdater, update.beforeValues() );
+            IndexUpdater to = selector.select( nativeUpdater, luceneUpdater, update.values() );
             // There are two cases:
             // - both before/after go into the same updater --> pass update into that updater
             if ( from == to )
@@ -76,7 +77,7 @@ class CombinedIndexUpdater implements IndexUpdater
             }
             break;
         case REMOVED:
-            select( boostUpdater, fallbackUpdater, update.values() ).process( update );
+            selector.select( nativeUpdater, luceneUpdater, update.values() ).process( update );
             break;
         default:
             throw new IllegalArgumentException( "Unknown update mode" );
@@ -88,11 +89,11 @@ class CombinedIndexUpdater implements IndexUpdater
     {
         try
         {
-            boostUpdater.close();
+            nativeUpdater.close();
         }
         finally
         {
-            fallbackUpdater.close();
+            luceneUpdater.close();
         }
     }
 }

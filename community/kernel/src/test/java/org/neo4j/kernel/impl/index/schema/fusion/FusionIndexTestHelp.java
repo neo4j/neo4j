@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.mockito.Mockito;
@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 
-class CombinedIndexTestHelp
+class FusionIndexTestHelp
 {
     private static LabelSchemaDescriptor indexKey = SchemaDescriptorFactory.forLabel( 0, 0 );
     private static LabelSchemaDescriptor compositeIndexKey = SchemaDescriptorFactory.forLabel( 0, 0, 1 );
@@ -70,12 +70,12 @@ class CombinedIndexTestHelp
                     Values.NO_VALUE
             };
 
-    static Value[] valuesSupportedByBoost()
+    static Value[] valuesSupportedByNative()
     {
         return numberValues;
     }
 
-    static Value[] valuesNotSupportedByBoost()
+    static Value[] valuesNotSupportedByNative()
     {
         return otherValues;
     }
@@ -135,7 +135,7 @@ class CombinedIndexTestHelp
     }
 
     static void verifyOtherIsClosedOnSingleThrow( AutoCloseable failingCloseable, AutoCloseable successfulCloseable,
-            AutoCloseable combinedCloseable ) throws Exception
+            AutoCloseable fusionCloseable ) throws Exception
     {
         IOException failure = new IOException( "fail" );
         doThrow( failure ).when( failingCloseable ).close();
@@ -143,7 +143,7 @@ class CombinedIndexTestHelp
         // when
         try
         {
-            combinedCloseable.close();
+            fusionCloseable.close();
             fail( "Should have failed" );
         }
         catch ( IOException ignore )
@@ -154,14 +154,14 @@ class CombinedIndexTestHelp
         verify( successfulCloseable, Mockito.times( 1 ) ).close();
     }
 
-    static void verifyCombinedCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable combinedCloseable )
+    static void verifyFusionCloseThrowOnSingleCloseThrow( AutoCloseable failingCloseable, AutoCloseable fusionCloseable )
             throws Exception
     {
         IOException expectedFailure = new IOException( "fail" );
         doThrow( expectedFailure ).when( failingCloseable ).close();
         try
         {
-            combinedCloseable.close();
+            fusionCloseable.close();
             fail( "Should have failed" );
         }
         catch ( IOException e )
@@ -170,25 +170,25 @@ class CombinedIndexTestHelp
         }
     }
 
-    static void verifyCombinedCloseThrowIfBothThrow( AutoCloseable boostCloseable, AutoCloseable fallbackCloseable,
-            AutoCloseable combinedCloseable ) throws Exception
+    static void verifyFusionCloseThrowIfBothThrow( AutoCloseable nativeCloseable, AutoCloseable luceneCloseable,
+            AutoCloseable fusionCloseable ) throws Exception
     {
         // given
-        IOException boostFailure = new IOException( "boost" );
-        IOException fallbackFailure = new IOException( "fallback" );
-        doThrow( boostFailure ).when( boostCloseable ).close();
-        doThrow( fallbackFailure ).when( fallbackCloseable ).close();
+        IOException nativeFailure = new IOException( "native" );
+        IOException luceneFailure = new IOException( "lucene" );
+        doThrow( nativeFailure ).when( nativeCloseable ).close();
+        doThrow( luceneFailure ).when( luceneCloseable ).close();
 
         try
         {
             // when
-            combinedCloseable.close();
+            fusionCloseable.close();
             fail( "Should have failed" );
         }
         catch ( IOException e )
         {
             // then
-            assertThat( e, anyOf( sameInstance( boostFailure ), sameInstance( fallbackFailure ) ) );
+            assertThat( e, anyOf( sameInstance( nativeFailure ), sameInstance( luceneFailure ) ) );
         }
     }
 }

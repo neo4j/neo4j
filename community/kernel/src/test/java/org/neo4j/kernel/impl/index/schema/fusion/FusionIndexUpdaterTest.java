@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -30,41 +30,43 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
+import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexUpdater;
 import org.neo4j.values.storable.Value;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.add;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.change;
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedIndexTestHelp.remove;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.add;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.change;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.remove;
 
-public class CombinedIndexUpdaterTest
+public class FusionIndexUpdaterTest
 {
-    private IndexUpdater boostUpdater;
-    private IndexUpdater fallbackUpdater;
-    private CombinedIndexUpdater combinedIndexUpdater;
+    private IndexUpdater nativeUpdater;
+    private IndexUpdater luceneUpdater;
+    private FusionIndexUpdater fusionIndexUpdater;
 
     @Before
     public void setup()
     {
-        boostUpdater = mock( IndexUpdater.class );
-        fallbackUpdater = mock( IndexUpdater.class );
-        combinedIndexUpdater = new CombinedIndexUpdater( boostUpdater, fallbackUpdater );
+        nativeUpdater = mock( IndexUpdater.class );
+        luceneUpdater = mock( IndexUpdater.class );
+        fusionIndexUpdater = new FusionIndexUpdater( nativeUpdater, luceneUpdater, new NativeSelector() );
     }
 
     /* remove */
 
     @Test
-    public void removeMustRemoveFromBothBoostAndFallback() throws Exception
+    public void removeMustRemoveFromBothNativeAndLucene() throws Exception
     {
         // when
         PrimitiveLongSet nodeIds = asPrimitiveSet( 1, 2, 3 );
-        combinedIndexUpdater.remove( nodeIds );
+        fusionIndexUpdater.remove( nodeIds );
 
         // then
-        verify( boostUpdater, times( 1 ) ).remove( nodeIds );
-        verify( fallbackUpdater, times( 1 ) ).remove( nodeIds );
+        verify( nativeUpdater, times( 1 ) ).remove( nodeIds );
+        verify( luceneUpdater, times( 1 ) ).remove( nodeIds );
     }
 
     private PrimitiveLongSet asPrimitiveSet( long... nodeIds )
@@ -83,23 +85,23 @@ public class CombinedIndexUpdaterTest
     public void processMustSelectCorrectForAdd() throws Exception
     {
         // given
-        Value[] supportedByBoost = CombinedIndexTestHelp.valuesSupportedByBoost();
-        Value[] notSupportedByBoost = CombinedIndexTestHelp.valuesNotSupportedByBoost();
-        Value[] allValues = CombinedIndexTestHelp.allValues();
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] allValues = FusionIndexTestHelp.allValues();
 
         // when
-        // ... value supported by boost
-        for ( Value value : supportedByBoost )
+        // ... value supported by native
+        for ( Value value : supportedByNative )
         {
             //then
-            verifyAddWithCorrectUpdater( boostUpdater, fallbackUpdater, value );
+            verifyAddWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
         }
 
         // when
-        // ... value not supported by boost
-        for ( Value value : notSupportedByBoost )
+        // ... value not supported by native
+        for ( Value value : notSupportedByNative )
         {
-            verifyAddWithCorrectUpdater( fallbackUpdater, boostUpdater, value );
+            verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
         }
 
         // when
@@ -108,7 +110,7 @@ public class CombinedIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyAddWithCorrectUpdater( fallbackUpdater, boostUpdater, firstValue, secondValue );
+                verifyAddWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
             }
         }
     }
@@ -117,23 +119,23 @@ public class CombinedIndexUpdaterTest
     public void processMustSelectCorrectForRemove() throws Exception
     {
         // given
-        Value[] supportedByBoost = CombinedIndexTestHelp.valuesSupportedByBoost();
-        Value[] notSupportedByBoost = CombinedIndexTestHelp.valuesNotSupportedByBoost();
-        Value[] allValues = CombinedIndexTestHelp.allValues();
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
+        Value[] allValues = FusionIndexTestHelp.allValues();
 
         // when
-        // ... value supported by boost
-        for ( Value value : supportedByBoost )
+        // ... value supported by native
+        for ( Value value : supportedByNative )
         {
             //then
-            verifyRemoveWithCorrectUpdater( boostUpdater, fallbackUpdater, value );
+            verifyRemoveWithCorrectUpdater( nativeUpdater, luceneUpdater, value );
         }
 
         // when
-        // ... value not supported by boost
-        for ( Value value : notSupportedByBoost )
+        // ... value not supported by native
+        for ( Value value : notSupportedByNative )
         {
-            verifyRemoveWithCorrectUpdater( fallbackUpdater, boostUpdater, value );
+            verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, value );
         }
 
         // when
@@ -142,78 +144,78 @@ public class CombinedIndexUpdaterTest
         {
             for ( Value secondValue : allValues )
             {
-                verifyRemoveWithCorrectUpdater( fallbackUpdater, boostUpdater, firstValue, secondValue );
+                verifyRemoveWithCorrectUpdater( luceneUpdater, nativeUpdater, firstValue, secondValue );
             }
         }
     }
 
     @Test
-    public void processMustSelectCorrectForChangeSupportedByBoost() throws Exception
+    public void processMustSelectCorrectForChangeSupportedByNative() throws Exception
     {
         // given
-        Value[] supportedByBoost = CombinedIndexTestHelp.valuesSupportedByBoost();
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
 
         // when
         // ... before - supported
         // ... after - supported
-        for ( Value before : supportedByBoost )
+        for ( Value before : supportedByNative )
         {
-            for ( Value after : supportedByBoost )
+            for ( Value after : supportedByNative )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( boostUpdater, fallbackUpdater, before, after );
+                verifyChangeWithCorrectUpdaterNotMixed( nativeUpdater, luceneUpdater, before, after );
             }
         }
     }
 
     @Test
-    public void processMustSelectCorrectForChangeNotSupportedByBoost() throws Exception
+    public void processMustSelectCorrectForChangeNotSupportedByNative() throws Exception
     {
         // given
-        Value[] notSupportedByBoost = CombinedIndexTestHelp.valuesNotSupportedByBoost();
+        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
 
         // when
         // ... before - not supported
         // ... after - not supported
-        for ( Value before : notSupportedByBoost )
+        for ( Value before : notSupportedByNative )
         {
-            for ( Value after : notSupportedByBoost )
+            for ( Value after : notSupportedByNative )
             {
-                verifyChangeWithCorrectUpdaterNotMixed( fallbackUpdater, boostUpdater, before, after );
+                verifyChangeWithCorrectUpdaterNotMixed( luceneUpdater, nativeUpdater, before, after );
             }
         }
     }
 
     @Test
-    public void processMustSelectCorrectForChangeFromBoostToFallback() throws Exception
+    public void processMustSelectCorrectForChangeFromNativeToLucene() throws Exception
     {
         // given
-        Value[] supportedByBoost = CombinedIndexTestHelp.valuesSupportedByBoost();
-        Value[] notSupportedByBoost = CombinedIndexTestHelp.valuesNotSupportedByBoost();
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
 
         // when
         // ... before - supported
         // ... after - not supported
-        verifyChangeWithCorrectUpdaterMixed( boostUpdater, fallbackUpdater, supportedByBoost, notSupportedByBoost );
+        verifyChangeWithCorrectUpdaterMixed( nativeUpdater, luceneUpdater, supportedByNative, notSupportedByNative );
     }
 
     @Test
-    public void processMustSelectCorrectForChangeFromFallbackToBoost() throws Exception
+    public void processMustSelectCorrectForChangeFromLuceneToNative() throws Exception
     {
         // given
-        Value[] supportedByBoost = CombinedIndexTestHelp.valuesSupportedByBoost();
-        Value[] notSupportedByBoost = CombinedIndexTestHelp.valuesNotSupportedByBoost();
+        Value[] supportedByNative = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] notSupportedByNative = FusionIndexTestHelp.valuesNotSupportedByNative();
 
         // when
         // ... before - not supported
         // ... after - supported
-        verifyChangeWithCorrectUpdaterMixed( fallbackUpdater, boostUpdater, notSupportedByBoost, supportedByBoost );
+        verifyChangeWithCorrectUpdaterMixed( luceneUpdater, nativeUpdater, notSupportedByNative, supportedByNative );
     }
 
     private void verifyAddWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
         IndexEntryUpdate<LabelSchemaDescriptor> update = add( numberValues );
-        combinedIndexUpdater.process( update );
+        fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
         verify( wrongPopulator, times( 0 ) ).process( update );
     }
@@ -221,8 +223,8 @@ public class CombinedIndexUpdaterTest
     private void verifyRemoveWithCorrectUpdater( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value... numberValues )
             throws IndexEntryConflictException, IOException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = CombinedIndexTestHelp.remove( numberValues );
-        combinedIndexUpdater.process( update );
+        IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.remove( numberValues );
+        fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
         verify( wrongPopulator, times( 0 ) ).process( update );
     }
@@ -230,8 +232,8 @@ public class CombinedIndexUpdaterTest
     private void verifyChangeWithCorrectUpdaterNotMixed( IndexUpdater correctPopulator, IndexUpdater wrongPopulator, Value before,
             Value after ) throws IndexEntryConflictException, IOException
     {
-        IndexEntryUpdate<LabelSchemaDescriptor> update = CombinedIndexTestHelp.change( before, after );
-        combinedIndexUpdater.process( update );
+        IndexEntryUpdate<LabelSchemaDescriptor> update = FusionIndexTestHelp.change( before, after );
+        fusionIndexUpdater.process( update );
         verify( correctPopulator, times( 1 ) ).process( update );
         verify( wrongPopulator, times( 0 ) ).process( update );
     }
@@ -249,7 +251,7 @@ public class CombinedIndexUpdaterTest
                 IndexEntryUpdate<LabelSchemaDescriptor> change = change( before, after );
                 IndexEntryUpdate<LabelSchemaDescriptor> remove = remove( before );
                 IndexEntryUpdate<LabelSchemaDescriptor> add = add( after );
-                combinedIndexUpdater.process( change );
+                fusionIndexUpdater.process( change );
                 verify( expectRemoveFrom, times( afterIndex + 1 ) ).process( remove );
                 verify( expectAddTo, times( beforeIndex + 1 ) ).process( add );
             }
@@ -259,43 +261,43 @@ public class CombinedIndexUpdaterTest
     /* close */
 
     @Test
-    public void closeMustCloseBothBoostAndFallback() throws Exception
+    public void closeMustCloseBothNativeAndLucene() throws Exception
     {
         // when
-        combinedIndexUpdater.close();
+        fusionIndexUpdater.close();
 
         // then
-        verify( boostUpdater, times( 1 ) ).close();
-        verify( fallbackUpdater, times( 1 ) ).close();
+        verify( nativeUpdater, times( 1 ) ).close();
+        verify( luceneUpdater, times( 1 ) ).close();
     }
 
     @Test
-    public void closeMustThrowIfFallbackThrow() throws Exception
+    public void closeMustThrowIfLuceneThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( fallbackUpdater, combinedIndexUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( luceneUpdater, fusionIndexUpdater );
     }
 
     @Test
-    public void closeMustThrowIfBoostThrow() throws Exception
+    public void closeMustThrowIfNativeThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyCombinedCloseThrowOnSingleCloseThrow( boostUpdater, combinedIndexUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowOnSingleCloseThrow( nativeUpdater, fusionIndexUpdater );
     }
 
     @Test
-    public void closeMustCloseBoostIfFallbackThrow() throws Exception
+    public void closeMustCloseNativeIfLuceneThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyOtherIsClosedOnSingleThrow( fallbackUpdater, boostUpdater, combinedIndexUpdater );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( luceneUpdater, nativeUpdater, fusionIndexUpdater );
     }
 
     @Test
-    public void closeMustCloseFallbackIfBoostThrow() throws Exception
+    public void closeMustCloseLuceneIfNativeThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyOtherIsClosedOnSingleThrow( boostUpdater, fallbackUpdater, combinedIndexUpdater );
+        FusionIndexTestHelp.verifyOtherIsClosedOnSingleThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
     }
 
     @Test
     public void closeMustThrowIfBothThrow() throws Exception
     {
-        CombinedIndexTestHelp.verifyCombinedCloseThrowIfBothThrow( boostUpdater, fallbackUpdater, combinedIndexUpdater );
+        FusionIndexTestHelp.verifyFusionCloseThrowIfBothThrow( nativeUpdater, luceneUpdater, fusionIndexUpdater );
     }
 }

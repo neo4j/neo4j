@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
@@ -26,21 +26,22 @@ import org.neo4j.kernel.api.schema.IndexQuery;
 import org.neo4j.kernel.api.schema.IndexQuery.ExactPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.ExistsPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.NumberRangePredicate;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedSchemaIndexProvider.select;
-
-class CombinedIndexReader implements IndexReader
+class FusionIndexReader implements IndexReader
 {
-    private final IndexReader boostReader;
-    private final IndexReader fallbackReader;
+    private final IndexReader nativeReader;
+    private final IndexReader luceneReader;
+    private final Selector selector;
 
-    CombinedIndexReader( IndexReader boostReader, IndexReader fallbackReader )
+    FusionIndexReader( IndexReader nativeReader, IndexReader luceneReader, Selector selector )
     {
-        this.boostReader = boostReader;
-        this.fallbackReader = fallbackReader;
+        this.nativeReader = nativeReader;
+        this.luceneReader = luceneReader;
+        this.selector = selector;
     }
 
     @Override
@@ -48,24 +49,24 @@ class CombinedIndexReader implements IndexReader
     {
         try
         {
-            boostReader.close();
+            nativeReader.close();
         }
         finally
         {
-            fallbackReader.close();
+            luceneReader.close();
         }
     }
 
     @Override
     public long countIndexedNodes( long nodeId, Value... propertyValues )
     {
-        return select( boostReader, fallbackReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
+        return selector.select( nativeReader, luceneReader, propertyValues ).countIndexedNodes( nodeId, propertyValues );
     }
 
     @Override
     public IndexSampler createSampler()
     {
-        return new CombinedIndexSampler( boostReader.createSampler(), fallbackReader.createSampler() );
+        return new FusionIndexSampler( nativeReader.createSampler(), luceneReader.createSampler() );
     }
 
     @Override
@@ -73,35 +74,35 @@ class CombinedIndexReader implements IndexReader
     {
         if ( predicates.length > 1 )
         {
-            return fallbackReader.query( predicates );
+            return luceneReader.query( predicates );
         }
 
         if ( predicates[0] instanceof ExactPredicate )
         {
             ExactPredicate exactPredicate = (ExactPredicate) predicates[0];
-            return select( boostReader, fallbackReader, exactPredicate.value() ).query( predicates );
+            return selector.select( nativeReader, luceneReader, exactPredicate.value() ).query( predicates );
         }
 
         if ( predicates[0] instanceof NumberRangePredicate )
         {
-            return boostReader.query( predicates[0] );
+            return nativeReader.query( predicates[0] );
         }
 
         // todo: There will be no ordering of the node ids here. Is this a problem?
         if ( predicates[0] instanceof ExistsPredicate )
         {
-            PrimitiveLongIterator boostResult = boostReader.query( predicates[0] );
-            PrimitiveLongIterator fallbackResult = fallbackReader.query( predicates[0] );
-            return PrimitiveLongCollections.concat( boostResult, fallbackResult );
+            PrimitiveLongIterator nativeResult = nativeReader.query( predicates[0] );
+            PrimitiveLongIterator luceneResult = luceneReader.query( predicates[0] );
+            return PrimitiveLongCollections.concat( nativeResult, luceneResult );
         }
 
-        return fallbackReader.query( predicates );
+        return luceneReader.query( predicates );
     }
 
     @Override
     public boolean hasFullNumberPrecision()
     {
-        // Since we know that boost reader can do this we return true
+        // Since we know that native reader can do this we return true
         return true;
     }
 }

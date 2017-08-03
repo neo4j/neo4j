@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-import static org.neo4j.kernel.impl.index.schema.combined.CombinedSchemaIndexProvider.combineSamples;
+import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
 
-class CombinedIndexSampler implements IndexSampler
+class FusionIndexSampler implements IndexSampler
 {
-    private final IndexSampler boostSampler;
-    private final IndexSampler fallbackSampler;
+    private final IndexSampler nativeSampler;
+    private final IndexSampler luceneSampler;
 
-    CombinedIndexSampler( IndexSampler boostSampler, IndexSampler fallbackSampler )
+    FusionIndexSampler( IndexSampler nativeSampler, IndexSampler luceneSampler )
     {
-        this.boostSampler = boostSampler;
-        this.fallbackSampler = fallbackSampler;
+        this.nativeSampler = nativeSampler;
+        this.luceneSampler = luceneSampler;
     }
 
     @Override
     public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
-        return combineSamples( boostSampler.sampleIndex(), fallbackSampler.sampleIndex() );
+        return combineSamples( nativeSampler.sampleIndex(), luceneSampler.sampleIndex() );
     }
 }

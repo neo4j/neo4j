@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.IOException;
 
@@ -32,73 +32,78 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
-
 import static java.lang.String.format;
 
 /**
- * Exactly what this provider will be called and where it will live is undecided, so for the time being
- * it will be called something temporary.
- *
- * The idea is to have a boosted provider which can handle some type of data and is faster, where all other
- * data is managed by the fallback provider.
+ * This {@link SchemaIndexProvider index provider} act as one logical index but is backed by two physical
+ * indexes, the native index and the lucene index. All index entries that can be handled by the native index will be directed
+ * there and the rest will be directed to the lucene index.
  */
-public class CombinedSchemaIndexProvider extends SchemaIndexProvider
+public class FusionSchemaIndexProvider extends SchemaIndexProvider
 {
-    private final SchemaIndexProvider boostProvider;
-    private final SchemaIndexProvider fallbackProvider;
-
-    public CombinedSchemaIndexProvider( SchemaIndexProvider boostProvider, SchemaIndexProvider fallbackProvider )
+    public interface Selector
     {
-        super( new Descriptor( "combined", "0.1" ), 0 );
-        this.boostProvider = boostProvider;
-        this.fallbackProvider = fallbackProvider;
+        <T> T select( T nativeInstance, T luceneInstance, Value... values );
+    }
+
+    private final SchemaIndexProvider nativeProvider;
+    private final SchemaIndexProvider luceneProvider;
+    private final Selector selector;
+
+    public FusionSchemaIndexProvider( SchemaIndexProvider nativeProvider, SchemaIndexProvider luceneProvider, Selector selector )
+    {
+        super( new Descriptor(
+                nativeProvider.getProviderDescriptor().getKey() + "+" + luceneProvider.getProviderDescriptor().getKey(),
+                nativeProvider.getProviderDescriptor().getVersion() + "+" + luceneProvider.getProviderDescriptor().getVersion() ), 0 );
+        this.nativeProvider = nativeProvider;
+        this.luceneProvider = luceneProvider;
+        this.selector = selector;
     }
 
     @Override
     public IndexPopulator getPopulator( long indexId, IndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
-        return new CombinedIndexPopulator(
-                boostProvider.getPopulator( indexId, descriptor, samplingConfig ),
-                fallbackProvider.getPopulator( indexId, descriptor, samplingConfig ) );
+        return new FusionIndexPopulator(
+                nativeProvider.getPopulator( indexId, descriptor, samplingConfig ),
+                luceneProvider.getPopulator( indexId, descriptor, samplingConfig ), selector );
     }
 
     @Override
     public IndexAccessor getOnlineAccessor( long indexId, IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig ) throws IOException
     {
-        return new CombinedIndexAccessor(
-                boostProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
-                fallbackProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ) );
+        return new FusionIndexAccessor(
+                nativeProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ),
+                luceneProvider.getOnlineAccessor( indexId, descriptor, samplingConfig ), selector );
     }
 
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String boostFailure = boostProvider.getPopulationFailure( indexId );
-        String fallbackFailure = fallbackProvider.getPopulationFailure( indexId );
-        if ( boostFailure != null )
+        String nativeFailure = nativeProvider.getPopulationFailure( indexId );
+        String luceneFailure = luceneProvider.getPopulationFailure( indexId );
+        if ( nativeFailure != null )
         {
-            return fallbackFailure == null ? boostFailure : boostFailure + " and " + fallbackFailure;
+            return luceneFailure == null ? nativeFailure : nativeFailure + " and " + luceneFailure;
         }
         else
         {
-            return fallbackFailure;
+            return luceneFailure;
         }
     }
 
     @Override
     public InternalIndexState getInitialState( long indexId, IndexDescriptor descriptor )
     {
-        InternalIndexState boostState = boostProvider.getInitialState( indexId, descriptor );
-        InternalIndexState fallbackState = fallbackProvider.getInitialState( indexId, descriptor );
-        if ( boostState != fallbackState )
+        InternalIndexState nativeState = nativeProvider.getInitialState( indexId, descriptor );
+        InternalIndexState luceneState = luceneProvider.getInitialState( indexId, descriptor );
+        if ( nativeState != luceneState )
         {
             throw new IllegalStateException(
-                    format( "Internal providers answer with different state boost:%s, fallback:%s",
-                            boostState, fallbackState ) );
+                    format( "Internal providers answer with different state native:%s, lucene:%s",
+                            nativeState, luceneState ) );
         }
-        return boostState;
+        return nativeState;
     }
 
     @Override
@@ -106,23 +111,6 @@ public class CombinedSchemaIndexProvider extends SchemaIndexProvider
     {
         // TODO implementation of this depends on decisions around defaults and migration. Coming soon.
         return StoreMigrationParticipant.NOT_PARTICIPATING;
-    }
-
-    static <T> T select( T boost, T fallback, Value... values )
-    {
-        if ( values.length > 1 )
-        {
-            // Multiple values must be handled by fallback
-            return fallback;
-        }
-
-        Value singleValue = values[0];
-        if ( singleValue.valueGroup() == ValueGroup.NUMBER )
-        {
-            // It's a number, the boost can handle this
-            return boost;
-        }
-        return fallback;
     }
 
     static IndexSample combineSamples( IndexSample first, IndexSample other )

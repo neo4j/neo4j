@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.index.schema.combined;
+package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,20 +31,23 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
-class CombinedIndexAccessor implements IndexAccessor
+class FusionIndexAccessor implements IndexAccessor
 {
-    private final IndexAccessor boostAccessor;
-    private final IndexAccessor fallbackAccessor;
+    private final IndexAccessor nativeAccessor;
+    private final IndexAccessor luceneAccessor;
+    private final Selector selector;
 
-    CombinedIndexAccessor( IndexAccessor boostAccessor, IndexAccessor fallbackAccessor )
+    FusionIndexAccessor( IndexAccessor nativeAccessor, IndexAccessor luceneAccessor, Selector selector )
     {
-        this.boostAccessor = boostAccessor;
-        this.fallbackAccessor = fallbackAccessor;
+        this.nativeAccessor = nativeAccessor;
+        this.luceneAccessor = luceneAccessor;
+        this.selector = selector;
     }
 
     @Override
@@ -52,25 +55,25 @@ class CombinedIndexAccessor implements IndexAccessor
     {
         try
         {
-            boostAccessor.drop();
+            nativeAccessor.drop();
         }
         finally
         {
-            fallbackAccessor.drop();
+            luceneAccessor.drop();
         }
     }
 
     @Override
     public IndexUpdater newUpdater( IndexUpdateMode mode )
     {
-        return new CombinedIndexUpdater( boostAccessor.newUpdater( mode ), fallbackAccessor.newUpdater( mode ) );
+        return new FusionIndexUpdater( nativeAccessor.newUpdater( mode ), luceneAccessor.newUpdater( mode ), selector );
     }
 
     @Override
     public void force() throws IOException
     {
-        boostAccessor.force();
-        fallbackAccessor.force();
+        nativeAccessor.force();
+        luceneAccessor.force();
     }
 
     @Override
@@ -78,34 +81,34 @@ class CombinedIndexAccessor implements IndexAccessor
     {
         try
         {
-            boostAccessor.close();
+            nativeAccessor.close();
         }
         finally
         {
-            fallbackAccessor.close();
+            luceneAccessor.close();
         }
     }
 
     @Override
     public IndexReader newReader()
     {
-        return new CombinedIndexReader( boostAccessor.newReader(), fallbackAccessor.newReader() );
+        return new FusionIndexReader( nativeAccessor.newReader(), luceneAccessor.newReader(), selector );
     }
 
     @Override
     public BoundedIterable<Long> newAllEntriesReader()
     {
-        BoundedIterable<Long> boostAllEntries = boostAccessor.newAllEntriesReader();
-        BoundedIterable<Long> fallbackAllEntries = fallbackAccessor.newAllEntriesReader();
+        BoundedIterable<Long> nativeAllEntries = nativeAccessor.newAllEntriesReader();
+        BoundedIterable<Long> luceneAllEntries = luceneAccessor.newAllEntriesReader();
         return new BoundedIterable<Long>()
         {
             @Override
             public long maxCount()
             {
-                long boostMaxCount = boostAllEntries.maxCount();
-                long fallbackMaxCount = fallbackAllEntries.maxCount();
-                return boostMaxCount == UNKNOWN_MAX_COUNT || fallbackMaxCount == UNKNOWN_MAX_COUNT ?
-                       UNKNOWN_MAX_COUNT : boostMaxCount + fallbackMaxCount;
+                long nativeMaxCount = nativeAllEntries.maxCount();
+                long luceneMaxCount = luceneAllEntries.maxCount();
+                return nativeMaxCount == UNKNOWN_MAX_COUNT || luceneMaxCount == UNKNOWN_MAX_COUNT ?
+                       UNKNOWN_MAX_COUNT : nativeMaxCount + luceneMaxCount;
             }
 
             @Override
@@ -113,18 +116,18 @@ class CombinedIndexAccessor implements IndexAccessor
             {
                 try
                 {
-                    boostAllEntries.close();
+                    nativeAllEntries.close();
                 }
                 finally
                 {
-                    fallbackAllEntries.close();
+                    luceneAllEntries.close();
                 }
             }
 
             @Override
             public Iterator<Long> iterator()
             {
-                return Iterables.concat( boostAllEntries, fallbackAllEntries ).iterator();
+                return Iterables.concat( nativeAllEntries, luceneAllEntries ).iterator();
             }
         };
     }
@@ -133,14 +136,14 @@ class CombinedIndexAccessor implements IndexAccessor
     public ResourceIterator<File> snapshotFiles() throws IOException
     {
         return concatResourceIterators(
-                asList( boostAccessor.snapshotFiles(), fallbackAccessor.snapshotFiles() ).iterator() );
+                asList( nativeAccessor.snapshotFiles(), luceneAccessor.snapshotFiles() ).iterator() );
     }
 
     @Override
     public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
             throws IndexEntryConflictException, IOException
     {
-        boostAccessor.verifyDeferredConstraints( propertyAccessor );
-        fallbackAccessor.verifyDeferredConstraints( propertyAccessor );
+        nativeAccessor.verifyDeferredConstraints( propertyAccessor );
+        luceneAccessor.verifyDeferredConstraints( propertyAccessor );
     }
 }
