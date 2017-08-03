@@ -23,8 +23,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 
-import static org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.combineSamples;
-
 class FusionIndexSampler implements IndexSampler
 {
     private final IndexSampler nativeSampler;
@@ -40,5 +38,13 @@ class FusionIndexSampler implements IndexSampler
     public IndexSample sampleIndex() throws IndexNotFoundKernelException
     {
         return combineSamples( nativeSampler.sampleIndex(), luceneSampler.sampleIndex() );
+    }
+
+    static IndexSample combineSamples( IndexSample first, IndexSample other )
+    {
+        return new IndexSample(
+                first.indexSize() + other.indexSize(),
+                first.uniqueValues() + other.uniqueValues(),
+                first.sampleSize() + other.sampleSize() );
     }
 }

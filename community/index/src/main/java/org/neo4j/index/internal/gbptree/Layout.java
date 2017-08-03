@@ -167,15 +167,19 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
     }
 
     /**
-     * Typically, layout is compatible with given identifier, major and minor version if
+     * Typically, a layout is compatible with given identifier, major and minor version if
      * <ul>
-     *     <li>{@code layoutIdentifier == this.identifier()}</li>
-     *     <li>{@code majorVersion == this.majorVersion()}</li>
-     *     <li>{@code minorVersion == this.minorVersion()}</li>
+     * <li>{@code layoutIdentifier == this.identifier()}</li>
+     * <li>{@code majorVersion == this.majorVersion()}</li>
+     * <li>{@code minorVersion == this.minorVersion()}</li>
      * </ul>
      * <p>
-     * Edge case: When only want to {@link GBPTree#readHeader(PageCache, File, Layout, Header.Reader)} read header} of index and not
-     * actually use it there may be multiple different combinations that is considered to be valid.
+     * When opening a {@link GBPTree tree} to 'use' it, read and write to it, providing a layout with the right compatibility is
+     * important because it decides how to read and write entries in the tree.
+     * A layout also needs to be provided when only {@link GBPTree#readHeader(PageCache, File, Layout, Header.Reader)} reading header}
+     * of tree. In this case there is no intention of reading or writing entries in the tree. If multiple layout implementations share
+     * the same header layout (but have different structure for entries) then a layout that is compatible with either of those layouts
+     * can be provided for the read header operation.
      *
      * @param layoutIdentifier the stored layout identifier we want to check compatibility against.
      * @param majorVersion the stored major version we want to check compatibility against.

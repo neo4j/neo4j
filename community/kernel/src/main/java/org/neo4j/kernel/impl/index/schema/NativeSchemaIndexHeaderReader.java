@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 
 import org.neo4j.index.internal.gbptree.Header;
 
@@ -40,7 +40,7 @@ class NativeSchemaIndexHeaderReader implements Header.Reader
             short messageLength = headerData.getShort();
             byte[] failureMessageBytes = new byte[messageLength];
             headerData.get( failureMessageBytes );
-            failureMessage = new String( failureMessageBytes, Charset.forName( "UTF-8" ) );
+            failureMessage = new String( failureMessageBytes, StandardCharsets.UTF_8 );
         }
     }
 }
