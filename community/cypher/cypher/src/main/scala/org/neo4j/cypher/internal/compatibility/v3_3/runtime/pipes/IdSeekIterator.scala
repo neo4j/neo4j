@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
-import org.neo4j.cypher.internal.frontend.v3_3.EntityNotFoundException
 import org.neo4j.cypher.internal.spi.v3_3.Operations
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 
@@ -47,12 +46,9 @@ abstract class IdSeekIterator[T <: PropertyContainer]
 
   private def computeNextEntity(): T = {
     while (entityIds.hasNext) {
-      try {
-        return operations.getById(asLongEntityId(entityIds.next()))
-      }
-      catch {
-        case _: EntityNotFoundException =>
-      }
+      val id = asLongEntityId(entityIds.next())
+      if (operations.exists(id))
+        return operations.getById(asLongEntityId(id))
     }
     null.asInstanceOf[T]
   }

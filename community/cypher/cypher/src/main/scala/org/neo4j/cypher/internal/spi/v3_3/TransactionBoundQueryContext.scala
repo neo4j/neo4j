@@ -54,6 +54,7 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
+import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
@@ -377,6 +378,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+
+    override def exists(id: Long): Boolean =
+      transactionalContext.statement.readOperations().nodeExists(id)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -457,6 +461,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+
+    override def exists(id: Long): Boolean = {
+      try {
+        transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
+        true
+      } catch {
+        case e: EntityNotFoundException =>
+          false
+      }
+    }
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
@@ -762,4 +776,9 @@ object TransactionBoundQueryContext {
 
     def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
   }
+}
+
+object NoopVisitor extends RelationshipVisitor[RuntimeException] {
+  // should just throw if the relationship is missing
+  override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {}
 }
