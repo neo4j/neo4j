@@ -140,9 +140,9 @@ abstract class DuplicateCheckStrategy
             public int hashCode()
             {
                 int result = 0;
-                for ( Property property : properties )
+                for ( Object value : values )
                 {
-                    result = 31 * (result + property.hashCode());
+                    result = 31 * (result + value.hashCode());
                 }
                 return result;
             }
@@ -161,8 +161,8 @@ abstract class DuplicateCheckStrategy
 
         private static final int MAX_NUMBER_OF_BUCKETS = 100;
         private final int numberOfBuckets;
-        private EntrySet[] actualValues;
-        private final int entrySetSize;
+        private BucketEntry[] buckets;
+        private final int bucketSetSize;
 
         BucketsDuplicateCheckStrategy()
         {
@@ -172,22 +172,22 @@ abstract class DuplicateCheckStrategy
         BucketsDuplicateCheckStrategy( int expectedNumberOfEntries )
         {
             numberOfBuckets = min( MAX_NUMBER_OF_BUCKETS, (expectedNumberOfEntries / BASE_ENTRY_SIZE) + 1 );
-            actualValues = new EntrySet[numberOfBuckets];
-            entrySetSize = max( 100, BUCKET_STRATEGY_ENTRIES_THRESHOLD / numberOfBuckets );
+            buckets = new BucketEntry[numberOfBuckets];
+            bucketSetSize = max( 100, BUCKET_STRATEGY_ENTRIES_THRESHOLD / numberOfBuckets );
         }
 
         @Override
         public void checkForDuplicate( Property[] properties, Object[] values, long nodeId )
                 throws IndexEntryConflictException
         {
-            EntrySet current = bucketEntrySet( Arrays.hashCode( values ), entrySetSize );
+            BucketEntry current = bucketEntrySet( Arrays.hashCode( values ), bucketSetSize );
 
             // We either have to find the first conflicting entry set element,
             // or append one for the property we just fetched:
             scan:
             do
             {
-                for ( int i = 0; i < entrySetSize; i++ )
+                for ( int i = 0; i < bucketSetSize; i++ )
                 {
                     Object[] currentValues = (Object[])current.value[i];
 
@@ -195,9 +195,9 @@ abstract class DuplicateCheckStrategy
                     {
                         current.value[i] = values;
                         current.nodeId[i] = nodeId;
-                        if ( i == entrySetSize - 1 )
+                        if ( i == bucketSetSize - 1 )
                         {
-                            current.next = new EntrySet( entrySetSize );
+                            current.next = new BucketEntry( bucketSetSize );
                         }
                         break scan;
                     }
@@ -214,14 +214,14 @@ abstract class DuplicateCheckStrategy
         @Override
         void checkForDuplicate( Property property, Object propertyValue, long nodeId ) throws IndexEntryConflictException
         {
-            EntrySet current = bucketEntrySet( propertyValue.hashCode(), entrySetSize );
+            BucketEntry current = bucketEntrySet( propertyValue.hashCode(), bucketSetSize );
 
             // We either have to find the first conflicting entry set element,
             // or append one for the property we just fetched:
             scan:
             do
             {
-                for ( int i = 0; i < entrySetSize; i++ )
+                for ( int i = 0; i < bucketSetSize; i++ )
                 {
                     Object value = current.value[i];
 
@@ -229,9 +229,9 @@ abstract class DuplicateCheckStrategy
                     {
                         current.value[i] = propertyValue;
                         current.nodeId[i] = nodeId;
-                        if ( i == entrySetSize - 1 )
+                        if ( i == bucketSetSize - 1 )
                         {
-                            current.next = new EntrySet( entrySetSize );
+                            current.next = new BucketEntry( bucketSetSize );
                         }
                         break scan;
                     }
@@ -245,25 +245,30 @@ abstract class DuplicateCheckStrategy
             while ( current != null );
         }
 
-        private EntrySet bucketEntrySet( int hashCode, int entrySetSize )
+        private BucketEntry bucketEntrySet( int hashCode, int entrySetSize )
         {
             int bucket = Math.abs( hashCode ) % numberOfBuckets;
-            EntrySet current = actualValues[bucket];
+            BucketEntry current = buckets[bucket];
             if ( current == null )
             {
-                current = new EntrySet( entrySetSize );
-                actualValues[bucket] = current;
+                current = new BucketEntry( entrySetSize );
+                buckets[bucket] = current;
             }
             return current;
         }
 
-        private static class EntrySet
+        /**
+         * Each bucket entry contains arrays of nodes and corresponding values and link to next BucketEntry in the
+         * chain for cases when we have more data then the size of one bucket. So bucket entries will form a
+         * chain of entries to represent values in particular bucket
+         */
+        private static class BucketEntry
         {
             final Object[] value;
             final long[] nodeId;
-            EntrySet next;
+            BucketEntry next;
 
-            EntrySet( int entrySize )
+            BucketEntry( int entrySize )
             {
                 value = new Object[entrySize];
                 nodeId = new long[entrySize];
