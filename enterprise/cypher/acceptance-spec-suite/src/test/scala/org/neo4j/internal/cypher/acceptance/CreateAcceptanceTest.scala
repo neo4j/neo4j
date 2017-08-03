@@ -87,5 +87,4 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     // Should not get StackOverflowException
     result.executionPlanDescription()
   }
-
 }
