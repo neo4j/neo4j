@@ -169,7 +169,7 @@ public class ParallelBatchImporter implements BatchImporter
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             NumberArrayFactory numberArrayFactory =
-                    NumberArrayFactory.auto( pageCache, storeDir );
+                    NumberArrayFactory.auto( pageCache, storeDir, config.allowCacheAllocationOnHeap() );
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
             IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
