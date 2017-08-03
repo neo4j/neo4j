@@ -29,21 +29,6 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
 import scala.collection.mutable
 
-trait VarLengthRegisterPredicate {
-  def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean
-
-  def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean
-}
-
-object VarLengthRegisterPredicate {
-  val NONE: VarLengthRegisterPredicate = new VarLengthRegisterPredicate {
-
-    override def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean = true
-
-    override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean = true
-  }
-}
-
 case class VarLengthExpandRegisterPipe(source: Pipe,
                                        fromOffset: Int,
                                        relOffset: Int,
@@ -118,17 +103,33 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
         val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
         val paths: Iterator[(LNode, Seq[LRelationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
         paths collect {
-          case (toNode: LNode, rels: Seq[LRelationship]) if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
+          case (toNode: LNode, relIds: Seq[LRelationship])
+            if relIds.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
             val resultRow = PrimitiveExecutionContext(pipeline)
             resultRow.copyFrom(inputRowWithFromNode)
             resultRow.setLongAt(toOffset, toNode)
+            val rels = relIds.map(state.query.relationshipOps.getById)
             resultRow.setRefAt(relOffset, rels)
             resultRow
         }
-
     }
   }
 
   private def isToNodeValid(row: ExecutionContext, node: LNode): Boolean =
     !closedPath || row.getLongAt(toOffset) == node
+}
+
+trait VarLengthRegisterPredicate {
+  def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean
+
+  def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean
+}
+
+object VarLengthRegisterPredicate {
+  val NONE: VarLengthRegisterPredicate = new VarLengthRegisterPredicate {
+
+    override def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean = true
+
+    override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean = true
+  }
 }

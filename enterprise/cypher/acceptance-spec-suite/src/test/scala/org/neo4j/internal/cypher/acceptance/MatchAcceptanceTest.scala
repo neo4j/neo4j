@@ -53,9 +53,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n2,n3)
     relate(n3,n4)
 
-    println(innerExecute("MATCH (n:Start)-[*1..2]->(x) RETURN x", Map.empty).dumpToString())
-    println(innerExecute("cypher runtime=interpreted debug=sleipnir MATCH (n:Start)-[*1..2]->(x) RETURN x", Map.empty).dumpToString())
-
+    testWith(Configs.Interpreted,  "MATCH (n:Start)-[r*1..2]->(x) RETURN r")
   }
 
   test("Do not count null elements in nodes with labels") {
