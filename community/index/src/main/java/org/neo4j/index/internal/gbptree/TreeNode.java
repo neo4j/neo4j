@@ -104,13 +104,14 @@ class TreeNode<KEY,VALUE>
 
         if ( internalMaxKeyCount < 2 )
         {
-            throw new MetadataMismatchException( "For layout " + layout + " a page size of " + pageSize +
-                    " would only fit " + internalMaxKeyCount + " internal keys, minimum is 2" );
+            throw new MetadataMismatchException(
+                    "For layout %s a page size of %d would only fit %d internal keys, minimum is 2",
+                    layout, pageSize, internalMaxKeyCount );
         }
         if ( leafMaxKeyCount < 2 )
         {
-            throw new MetadataMismatchException( "A page size of " + pageSize + " would only fit " +
-                    leafMaxKeyCount + " leaf keys, minimum is 2" );
+            throw new MetadataMismatchException( "A page size of %d would only fit leaf keys, minimum is 2",
+                    pageSize, leafMaxKeyCount );
         }
     }
 
