@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
