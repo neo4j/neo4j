@@ -170,7 +170,7 @@ public interface Configuration
      */
     default boolean allowCacheAllocationOnHeap()
     {
-        return true;
+        return false;
     }
 
     Configuration DEFAULT = new Configuration()
