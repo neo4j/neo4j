@@ -622,13 +622,14 @@ return p""")
     createNode()
     createNode()
 
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 0") should have size 5
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 1") should have size 4
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 2") should have size 3
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 3") should have size 2
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 4") should have size 1
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 5") should have size 0
-    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 6") should have size 0
+    val config = Configs.AllExceptSleipnir
+    succeedWith(config, "MATCH (n) RETURN n SKIP 0") should have size 5
+    succeedWith(config, "MATCH (n) RETURN n SKIP 1") should have size 4
+    succeedWith(config, "MATCH (n) RETURN n SKIP 2") should have size 3
+    succeedWith(config, "MATCH (n) RETURN n SKIP 3") should have size 2
+    succeedWith(config, "MATCH (n) RETURN n SKIP 4") should have size 1
+    succeedWith(config, "MATCH (n) RETURN n SKIP 5") should have size 0
+    succeedWith(config, "MATCH (n) RETURN n SKIP 6") should have size 0
 
   }
 

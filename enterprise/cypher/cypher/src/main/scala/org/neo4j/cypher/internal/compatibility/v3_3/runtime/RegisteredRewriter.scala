@@ -118,6 +118,14 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         else
           e
 
+      case GetDegree(Variable(n), typ, direction) =>
+        val maybeToken: Option[String] = typ.map(r => r.name)
+        pipelineInformation(n) match {
+          case LongSlot(offset, false, CTNode, _) => GetDegreePrimitive(offset, maybeToken, direction)
+          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
+          case _ => throw new InternalException(s"Invalid slot for GetDegree: $n")
+        }
+
       case Variable(k) =>
         pipelineInformation(k) match {
           case LongSlot(offset, false, CTNode, _) => NodeFromRegister(offset)
@@ -128,6 +136,15 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case _ =>
             throw new InternalException("Did not find `" + k + "` in the pipeline information")
         }
+
+      case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
+        idFunction
+
+      case _: FunctionInvocation =>
+        throw new CantCompileQueryException(s"Expressions with functions not yet supported in register allocation")
+
+      case _: ShortestPathExpression =>
+        throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in register allocation")
 
       case _: ScopeExpression | _: NestedPlanExpression =>
         throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")

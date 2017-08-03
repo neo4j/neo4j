@@ -73,7 +73,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       new CompilationState(from, Some(execPlan))
     } catch {
       case e : CypherException =>
-        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException())
+        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, None)
     }
   }
