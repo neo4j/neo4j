@@ -114,6 +114,12 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case _: Selection =>  // selection relies on inner expressions to interact with variables
         fallback.build(plan, source)
 
+      case _: OptionalExpand =>
+        fallback.build(plan, source)
+
+      case _: Skip =>
+        fallback.build(plan, source)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
