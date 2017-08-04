@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -43,6 +43,7 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     val end = getNode(context, endNode)
     val typeId = typ.typ(state.query)
     val relationship = state.query.createRelationship(start.getId, end.getId, typeId)
+    relationship.getType // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.getId)
     context += key -> relationship
   }
