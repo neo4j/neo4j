@@ -34,7 +34,6 @@ import org.neo4j.kernel.api.schema.IndexQuery.StringPrefixPredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringRangePredicate;
 import org.neo4j.kernel.api.schema.IndexQuery.StringSuffixPredicate;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexReader;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.values.storable.Value;
 

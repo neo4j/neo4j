@@ -27,7 +27,6 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
-import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider.Selector;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.test.rule.RandomRule;
