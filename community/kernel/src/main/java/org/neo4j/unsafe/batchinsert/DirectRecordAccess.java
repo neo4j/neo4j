@@ -21,7 +21,6 @@ package org.neo4j.unsafe.batchinsert;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,30 +29,29 @@ import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
-import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
 
 /**
  * Provides direct access to records in a store. Changes are batched up and written whenever {@link #commit()}
  * is called, or {@link #close()} for that matter.
  */
-public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends AbstractBaseRecord,ADDITIONAL>
-        implements RecordAccess<KEY,RECORD,ADDITIONAL>
+public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
+        implements RecordAccess<RECORD,ADDITIONAL>
 {
     private final RecordStore<RECORD> store;
-    private final Loader<KEY, RECORD, ADDITIONAL> loader;
-    private final Map<KEY,DirectRecordProxy> batch = new HashMap<>();
+    private final Loader<RECORD, ADDITIONAL> loader;
+    private final Map<Long,DirectRecordProxy> batch = new HashMap<>();
 
     private final IntCounter changeCounter = new IntCounter();
 
-    public DirectRecordAccess( RecordStore<RECORD> store, Loader<KEY, RECORD, ADDITIONAL> loader )
+    public DirectRecordAccess( RecordStore<RECORD> store, Loader<RECORD, ADDITIONAL> loader )
     {
         this.store = store;
         this.loader = loader;
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData )
     {
         DirectRecordProxy loaded = batch.get( key );
         if ( loaded != null )
@@ -63,7 +61,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         return proxy( key, loader.load( key, additionalData ), additionalData, false );
     }
 
-    private RecordProxy<KEY, RECORD, ADDITIONAL> putInBatch( KEY key, DirectRecordProxy proxy )
+    private RecordProxy<RECORD, ADDITIONAL> putInBatch( long key, DirectRecordProxy proxy )
     {
         DirectRecordProxy previous = batch.put( key, proxy );
         assert previous == null;
@@ -71,25 +69,25 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> create( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData )
     {
         return proxy( key, loader.newUnused( key, additionalData ), additionalData, true );
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> getIfLoaded( KEY key )
+    public RecordProxy<RECORD,ADDITIONAL> getIfLoaded( long key )
     {
         return batch.get( key );
     }
 
     @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> setRecord( KEY key, RECORD record, ADDITIONAL additionalData )
+    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData )
     {
         throw new UnsupportedOperationException( "Not supported" );
     }
@@ -101,33 +99,33 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
     }
 
     @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
+    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
     {
-        return new IterableWrapper<RecordProxy<KEY,RECORD,ADDITIONAL>,DirectRecordProxy>(
+        return new IterableWrapper<RecordProxy<RECORD,ADDITIONAL>,DirectRecordProxy>(
                 batch.values() )
         {
             @Override
-            protected RecordProxy<KEY,RECORD,ADDITIONAL> underlyingObjectToObject( DirectRecordProxy object )
+            protected RecordProxy<RECORD,ADDITIONAL> underlyingObjectToObject( DirectRecordProxy object )
             {
                 return object;
             }
         };
     }
 
-    private DirectRecordProxy proxy( final KEY key, final RECORD record, final ADDITIONAL additionalData, boolean created )
+    private DirectRecordProxy proxy( final long key, final RECORD record, final ADDITIONAL additionalData, boolean created )
     {
         return new DirectRecordProxy( key, record, additionalData, created );
     }
 
-    private class DirectRecordProxy implements RecordProxy<KEY,RECORD,ADDITIONAL>
+    private class DirectRecordProxy implements RecordProxy<RECORD,ADDITIONAL>
     {
-        private final KEY key;
+        private final long key;
         private final RECORD record;
         private final ADDITIONAL additionalData;
         private boolean changed;
         private final boolean created;
 
-        DirectRecordProxy( KEY key, RECORD record, ADDITIONAL additionalData, boolean created )
+        DirectRecordProxy( long key, RECORD record, ADDITIONAL additionalData, boolean created )
         {
             this.key = key;
             this.record = record;
@@ -140,7 +138,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         }
 
         @Override
-        public KEY getKey()
+        public long getKey()
         {
             return key;
         }
@@ -236,7 +234,7 @@ public class DirectRecordAccess<KEY extends Comparable<KEY>,RECORD extends Abstr
         }
 
         List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
-        Collections.sort(directRecordProxies, ( o1, o2 ) -> -o1.getKey().compareTo( o2.getKey() ) );
+        Collections.sort(directRecordProxies, ( o1, o2 ) -> Long.compare( -o1.getKey(), o2.getKey() ) );
         for ( DirectRecordProxy proxy : directRecordProxies )
         {
             proxy.store();
