@@ -21,53 +21,62 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 
-class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+// with QueryStatisticsTestSupport
+class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
 
   test("should handle map projection with property selectors") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeScalarWithAllPlanners[Any]("MATCH (n) RETURN n{.foo,.bar,.baz}") should equal(
-      Map("foo" -> 1, "bar" -> "apa", "baz" -> null))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "MATCH (n) RETURN n{.foo,.bar,.baz}")
+
+    result.toList.head("n") should equal(Map("foo" -> 1, "bar" -> "apa", "baz" -> null))
   }
 
   test("should handle map projection with property selectors and identifier selector") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeScalarWithAllPlanners[Any]("WITH 42 as x MATCH (n) RETURN n{.foo,.bar,x}") should equal(
-      Map("foo" -> 1, "bar" -> "apa", "x" -> 42))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "WITH 42 as x MATCH (n) RETURN n{.foo,.bar,x}")
+
+    result.toList.head("n") should equal(Map("foo" -> 1, "bar" -> "apa", "x" -> 42))
   }
 
   test("should use the map identifier as the alias for return items") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeWithAllPlanners("MATCH (n) RETURN n{.foo,.bar}").toList should equal(
-      List(Map("n" -> Map("foo" -> 1, "bar" -> "apa"))))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "MATCH (n) RETURN n{.foo,.bar}")
+
+    result.toList should equal(List(Map("n" -> Map("foo" -> 1, "bar" -> "apa"))))
   }
 
   test("map projection with all-properties selector") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeWithAllPlanners("MATCH (n) RETURN n{.*}").toList should equal(
-      List(Map("n" -> Map("foo" -> 1, "bar" -> "apa"))))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "MATCH (n) RETURN n{.*}")
+
+    result.toList should equal(List(Map("n" -> Map("foo" -> 1, "bar" -> "apa"))))
   }
 
   test("returning all properties of a node and adds other selectors") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeWithAllPlanners("MATCH (n) RETURN n{.*, .baz}").toList should equal(
-      List(Map("n" -> Map("foo" -> 1, "bar" -> "apa", "baz" -> null))))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "MATCH (n) RETURN n{.*, .baz}")
+
+    result.toList should equal(List(Map("n" -> Map("foo" -> 1, "bar" -> "apa", "baz" -> null))))
   }
 
   test("returning all properties of a node and overwrites some with other selectors") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    executeWithAllPlanners("MATCH (n) RETURN n{.*, bar:'apatisk'}").toList should equal(
-      List(Map("n" -> Map("foo" -> 1, "bar" -> "apatisk"))))
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "MATCH (n) RETURN n{.*, bar:'apatisk'}")
+
+    result.toList should equal(List(Map("n" -> Map("foo" -> 1, "bar" -> "apatisk"))))
   }
 
   test("projecting from a null identifier produces a null value") {
-    executeWithAllPlanners("OPTIONAL MATCH (n) RETURN n{.foo, .bar}").toList should equal(
-      List(Map("n" -> null)))
+
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "OPTIONAL MATCH (n) RETURN n{.foo, .bar}")
+
+    result.toList should equal(List(Map("n" -> null)))
   }
 
   test("graph projections with aggregation") {
@@ -76,9 +85,10 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
     relate(actor, createLabeledNode(Map("title" -> "Movie 1"), "Movie"))
     relate(actor, createLabeledNode(Map("title" -> "Movie 2"), "Movie"))
 
-    executeWithAllPlanners(
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3,
       """MATCH (actor:Actor)-->(movie:Movie)
-        |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin).toList should equal(
+        |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin)
+    result.toList should equal(
       List(Map("actor" ->
         Map("name" -> "Actor 1", "movies" -> Seq(
           Map("title" -> "Movie 2"),
@@ -87,13 +97,17 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with QueryStatist
 
   test("prepending item to a list should behave correctly in all runtimes") {
     val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN 'a:' + x.a AS r"
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Seq[Any]](query)
-    result should equal(List("a:", 1, 2, 3))
+
+    val result = succeedWith(Configs.All - Configs.EnterpriseInterpreted, query)
+
+    result.toList.head("r") should equal(List("a:", 1, 2, 3))
   }
 
   test("appending item to a list should behave correctly in all runtimes") {
     val query = "CYPHER WITH {a:[1,2,3]} AS x RETURN x.a + 'a:' AS r"
-    val result = executeScalarWithAllPlannersAndRuntimesAndCompatibilityMode[Seq[Any]](query)
-    result should equal(List(1, 2, 3, "a:"))
+
+    val result = succeedWith(Configs.All - Configs.EnterpriseInterpreted, query)
+
+    result.toList.head("r") should equal(List(1, 2, 3, "a:"))
   }
 }
