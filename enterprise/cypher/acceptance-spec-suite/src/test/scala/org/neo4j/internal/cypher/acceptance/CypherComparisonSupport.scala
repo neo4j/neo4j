@@ -34,10 +34,10 @@ import org.scalatest.Assertions
 
 import scala.util.{Failure, Success, Try}
 
-trait LernaeanTestSupport extends CypherTestSupport {
+trait CypherComparisonSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  import LernaeanTestSupport._
+  import CypherComparisonSupport._
 
   /**
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
@@ -254,7 +254,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
 
   object Scenarios {
 
-    import LernaeanTestSupport._
+    import CypherComparisonSupport._
 
     trait RuntimeScenario extends TestScenario {
 
@@ -459,7 +459,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
   * This is expected and useful - it let's us know how a change impacts how many acceptance tests now start
   * succeeding where they weren't earlier.
   */
-object LernaeanTestSupport {
+object CypherComparisonSupport {
 
   trait TestScenario extends Assertions with TestConfiguration {
     def name: String

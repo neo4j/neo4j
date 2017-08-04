@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 
-class UnionAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
+class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("Should work when doing union with same return varibles") {
     createLabeledNode(Map("a" -> "a", "b" -> "b"), "A")

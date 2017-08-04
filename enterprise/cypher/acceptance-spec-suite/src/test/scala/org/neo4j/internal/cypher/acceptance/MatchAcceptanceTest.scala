@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.Iterators.single
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with LernaeanTestSupport {
+class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   test("Do not count null elements in nodes without labels") {
 

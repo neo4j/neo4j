@@ -21,7 +21,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 
-class ExplainAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
+class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("normal query is marked as such") {
     createNode()

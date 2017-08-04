@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
   * If you only want to verify that plans using indexes are actually planned, please use
   * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
   */
-class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
+class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should succeed in creating and deleting composite index") {
     // When
@@ -312,7 +312,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
       case (testConfig, predicates, valid) =>
 
         // When
-        val query = s"MATCH (n:User) WHERE ${predicates} RETURN n"
+        val query = s"MATCH (n:User) WHERE $predicates RETURN n"
         val result = try {
           succeedWith(testConfig, query)
         } catch {
