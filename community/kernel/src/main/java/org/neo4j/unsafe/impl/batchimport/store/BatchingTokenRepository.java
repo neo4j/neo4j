@@ -38,6 +38,7 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 
 /**
  * Batching version of a {@link TokenStore} where tokens can be created and retrieved, but only persisted
@@ -165,12 +166,12 @@ public abstract class BatchingTokenRepository<RECORD extends TokenRecord, TOKEN 
     public void close()
     {
         // Batch-friendly record access
-        BatchingRecordAccess<Integer, RECORD, Void> recordAccess = new BatchingRecordAccess<Integer, RECORD, Void>()
+        BatchingRecordAccess<RECORD, Void> recordAccess = new BatchingRecordAccess<RECORD, Void>()
         {
             @Override
-            protected RECORD createRecord( Integer key, Void additionalData )
+            protected RECORD createRecord( long key, Void additionalData )
             {
-                return BatchingTokenRepository.this.createRecord( key );
+                return BatchingTokenRepository.this.createRecord( toIntExact( key ) );
             }
         };
 

@@ -80,7 +80,7 @@ public class RelationshipGroupGetterTest
             NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
-            RecordAccess<Long, RelationshipGroupRecord, Integer> access =
+            RecordAccess<RelationshipGroupRecord, Integer> access =
                     new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
             RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
 

@@ -75,8 +75,8 @@ public class RelationshipCreator
     }
 
     private void convertNodeToDenseIfNecessary( NodeRecord node,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         if ( node.isDense() )
         {
@@ -85,7 +85,7 @@ public class RelationshipCreator
         long relId = node.getNextRel();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
+            RecordProxy<RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
             if ( relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
@@ -101,8 +101,8 @@ public class RelationshipCreator
 
     private void connectRelationship( NodeRecord firstNode,
             NodeRecord secondNode, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         // Assertion interpreted: if node is a normal node and we're trying to create a
         // relationship that we already have as first rel for that node --> error
@@ -155,8 +155,8 @@ public class RelationshipCreator
     }
 
     private void connectRelationshipToDenseNode( NodeRecord node, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         RelationshipGroupRecord group =
                 relGroupGetter.getOrCreateRelationshipGroup( node, rel.getType(), relGroupRecords ).forChangingData();
@@ -168,14 +168,14 @@ public class RelationshipCreator
     }
 
     private void connect( NodeRecord node, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         connect( node.getId(), node.getNextRel(), rel, relRecords, locks );
     }
 
     private void convertNodeToDenseNode( NodeRecord node, RelationshipRecord firstRel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords,
-            RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords,
+            RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords, ResourceLocker locks )
     {
         node.setDense( true );
         node.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
@@ -195,7 +195,7 @@ public class RelationshipCreator
     }
 
     private void connect( long nodeId, long firstRelId, RelationshipRecord rel,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         long newCount = 1;
         if ( firstRelId != Record.NO_NEXT_RELATIONSHIP.intValue() )
