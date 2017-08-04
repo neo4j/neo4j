@@ -35,11 +35,11 @@ import org.neo4j.kernel.impl.transaction.state.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.transaction.state.TransactionRecordState;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
+import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 class RecordStorageCommandCreationContext implements CommandCreationContext
 {
-    // todo find an empirically good value
-    static final int DEFAULT_ID_BATCH_SIZE = 1;
+    static final int DEFAULT_ID_BATCH_SIZE = FeatureToggles.getInteger( RecordStorageCommandCreationContext.class, "batchSize", 20 );
 
     private final NeoStores neoStores;
     private final Loaders loaders;
