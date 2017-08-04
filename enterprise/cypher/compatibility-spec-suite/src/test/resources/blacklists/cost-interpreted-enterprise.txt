@@ -184,9 +184,6 @@ Do not return anything because path length does not match
 Pass the path length test
 Return relationships by fetching them from the path - starting from the end
 Return relationships by fetching them from the path
-Return relationships by collecting them as a list - wrong way
-Return relationships by collecting them as a list - undirected
-Return relationships by collecting them as a list
 Return a var length path
 Return a var length path of length zero
 Return a named var length path of length zero
@@ -195,20 +192,16 @@ Do not fail when evaluating predicates with illegal operations if the OR'd predi
 Fail when comparing strings and integers using > in an AND'd predicate
 Fail when comparing strings and integers using > in a OR'd predicate
 Aggregation with named paths
-Zero-length variable length pattern in the middle of the pattern
-Simple variable length pattern
 Variable length relationship without lower bound
 Variable length relationship without bounds
 Optionally matching named paths
 Optionally matching named paths with single and variable length patterns
 Optionally matching named paths with variable length patterns
-Matching variable length patterns from a bound node
 Excluding connected nodes
 Variable length relationship in OPTIONAL MATCH
 ORDER BY with LIMIT
 Handling direction of named paths
 `collect()` filtering nulls
-Handling fixed-length variable length pattern
 Zero-length named path
 Variable-length named path
 Matching using a relationship that is already bound
@@ -242,7 +235,6 @@ Respecting direction when matching non-existent path
 Respecting direction when matching non-existent path with multiple directions
 Matching path with both directions should respect other directions
 Matching path with multiple bidirectional relationships
-Matching longer variable length paths
 Counting rows after MATCH, MERGE, OPTIONAL MATCH
 Failing on merging relationship with null property
 Failing on merging node with null property
@@ -381,26 +373,8 @@ Unwinding a collected unwound expression
 Unwinding a collected expression
 Creating nodes from an unwound parameter list
 Unwind does not remove variables from scope
-Handling unbounded variable length match
-Handling explicitly unbounded variable length match
 Fail when asterisk operator is missing
-Handling single bounded variable length match 1
-Handling single bounded variable length match 2
-Handling single bounded variable length match 3
-Handling upper and lower bounded variable length match 1
-Handling upper and lower bounded variable length match 2
-Handling symmetrically bounded variable length match, bounds are zero
-Handling symmetrically bounded variable length match, bounds are one
-Handling symmetrically bounded variable length match, bounds are two
 Fail on negative bound
-Handling upper and lower bounded variable length match, empty interval 1
-Handling upper and lower bounded variable length match, empty interval 2
-Handling upper bounded variable length match, empty interval
-Handling upper bounded variable length match 1
-Handling upper bounded variable length match 2
-Handling lower bounded variable length match 1
-Handling lower bounded variable length match 2
-Handling lower bounded variable length match 3
 Handling a variable length relationship and a standard relationship in chain, zero length 1
 Handling a variable length relationship and a standard relationship in chain, zero length 2
 Handling a variable length relationship and a standard relationship in chain, single length 1
