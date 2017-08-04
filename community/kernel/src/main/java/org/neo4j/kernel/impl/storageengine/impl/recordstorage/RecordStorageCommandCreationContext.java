@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.id.RenewableBatchIdSequences;
 import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
@@ -37,7 +38,8 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
 
 class RecordStorageCommandCreationContext implements CommandCreationContext
 {
-    static final int DEFAULT_ID_BATCH_SIZE = 20;
+    // todo find an empirically good value
+    static final int DEFAULT_ID_BATCH_SIZE = 1;
 
     private final NeoStores neoStores;
     private final Loaders loaders;
@@ -50,16 +52,22 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     RecordStorageCommandCreationContext( NeoStores neoStores, int denseNodeThreshold, int idBatchSize )
     {
         this.neoStores = neoStores;
+        this.idBatches = new RenewableBatchIdSequences( neoStores, idBatchSize );
+
         this.loaders = new Loaders( neoStores );
         RelationshipGroupGetter relationshipGroupGetter =
-                new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
+                new RelationshipGroupGetter( idBatches.idGenerator( StoreType.RELATIONSHIP_GROUP ) );
         this.relationshipCreator = new RelationshipCreator( relationshipGroupGetter, denseNodeThreshold );
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyDeleter = new PropertyDeleter( propertyTraverser );
         this.relationshipDeleter = new RelationshipDeleter( relationshipGroupGetter, propertyDeleter );
-        this.propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), propertyTraverser );
-
-        this.idBatches = new RenewableBatchIdSequences( neoStores, idBatchSize );
+        this.propertyCreator = new PropertyCreator(
+                new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_STRING ),
+                        neoStores.getPropertyStore().getStringStore().getRecordDataSize() ),
+                new StandardDynamicRecordAllocator( idBatches.idGenerator( StoreType.PROPERTY_ARRAY ),
+                        neoStores.getPropertyStore().getArrayStore().getRecordDataSize() ),
+                idBatches.idGenerator( StoreType.PROPERTY ),
+                propertyTraverser );
     }
 
     public long nextId( StoreType storeType )

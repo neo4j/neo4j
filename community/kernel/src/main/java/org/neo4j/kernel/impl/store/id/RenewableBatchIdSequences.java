@@ -36,24 +36,35 @@ public class RenewableBatchIdSequences implements Resource
     {
         for ( StoreType type : StoreType.values() )
         {
-            RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
-            Supplier<IdRangeIterator> source = () -> new IdRangeIterator( store.nextIdBatch( batchSize ) );
-            LongConsumer idConsumer = id -> store.freeId( id );
-            types[type.ordinal()] = new RenewableBatchIdSequence( source, idConsumer );
+            if ( type.isRecordStore() )
+            {
+                RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
+                Supplier<IdRangeIterator> source = () -> new IdRangeIterator( store.nextIdBatch( batchSize ) );
+                LongConsumer idConsumer = id -> store.freeId( id );
+                types[type.ordinal()] = new RenewableBatchIdSequence( source, idConsumer );
+            }
         }
     }
 
     public long nextId( StoreType type )
     {
-        return types[type.ordinal()].nextId();
+        return idGenerator( type ).nextId();
+    }
+
+    public RenewableBatchIdSequence idGenerator( StoreType type )
+    {
+        return types[type.ordinal()];
     }
 
     @Override
     public void close()
     {
-        for ( RenewableBatchIdSequence renewableIdBatch : types )
+        for ( StoreType type : StoreType.values() )
         {
-            renewableIdBatch.close();
+            if ( type.isRecordStore() )
+            {
+                idGenerator( type ).close();
+            }
         }
     }
 }
