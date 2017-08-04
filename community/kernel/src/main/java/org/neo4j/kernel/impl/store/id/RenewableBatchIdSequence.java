@@ -20,44 +20,58 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Resource;
 
 import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
+/**
+ * An {@link IdSequence} which does internal batching by using another {@link IdSequence} as source of batches.
+ * Meant to be used by a single thread during its life time only.
+ */
 public class RenewableBatchIdSequence implements IdSequence, Resource
 {
-    private final Supplier<IdRangeIterator> source;
-    private IdRangeIterator currentBatch;
+    private final IdSequence source;
+    private final int batchSize;
     private final LongConsumer excessIdConsumer;
+    private IdRangeIterator currentBatch;
+    private boolean closed;
 
-    public RenewableBatchIdSequence( Supplier<IdRangeIterator> source, LongConsumer excessIdConsumer )
+    public RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
     {
         this.source = source;
+        this.batchSize = batchSize;
         this.excessIdConsumer = excessIdConsumer;
     }
 
+    /**
+     * It's dangerous to potentially have multiple concurrent calls to close w/ regards to freeing excessive ids.
+     * This class isn't designed for concurrent access, but close can guard for it nonetheless. Only the first call
+     * to close will perform close.
+     */
     @Override
-    public void close()
+    public synchronized void close()
     {
-        if ( currentBatch != null )
+        if ( !closed && currentBatch != null )
         {
             long id;
             while ( (id = currentBatch.next()) != VALUE_REPRESENTING_NULL )
             {
                 excessIdConsumer.accept( id );
             }
+            currentBatch = null;
         }
+        closed = true;
     }
 
     @Override
     public long nextId()
     {
+        assert !closed;
+
         long id;
         if ( currentBatch == null || (id = currentBatch.next()) == VALUE_REPRESENTING_NULL )
         {
-            currentBatch = source.get();
+            currentBatch = new IdRangeIterator( source.nextIdBatch( batchSize ) );
             id = currentBatch.next();
         }
         return id;

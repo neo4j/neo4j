@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.util.function.LongConsumer;
-import java.util.function.Supplier;
-
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -39,9 +37,8 @@ public class RenewableBatchIdSequences implements Resource
             if ( type.isRecordStore() )
             {
                 RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
-                Supplier<IdRangeIterator> source = () -> new IdRangeIterator( store.nextIdBatch( batchSize ) );
                 LongConsumer idConsumer = id -> store.freeId( id );
-                types[type.ordinal()] = new RenewableBatchIdSequence( source, idConsumer );
+                types[type.ordinal()] = new RenewableBatchIdSequence( store, batchSize, idConsumer );
             }
         }
     }
