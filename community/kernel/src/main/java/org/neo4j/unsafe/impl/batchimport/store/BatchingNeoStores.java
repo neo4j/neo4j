@@ -357,4 +357,9 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     {
         visitor.offHeapUsage( (long) pageCache.maxCachedPages() * pageCache.pageSize() );
     }
+
+    public PageCache getPageCache()
+    {
+        return pageCache;
+    }
 }

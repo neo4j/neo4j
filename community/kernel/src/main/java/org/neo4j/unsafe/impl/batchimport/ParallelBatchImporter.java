@@ -95,38 +95,19 @@ public class ParallelBatchImporter implements BatchImporter
     private final AdditionalInitialIds additionalInitialIds;
     private final Config dbConfig;
     private final RecordFormats recordFormats;
-    private final PageCache pageCache;
+    private final PageCache externalPageCache;
 
     /**
      * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
      * a constructor with fewer arguments instead.
+     *
+     * @param externalPageCache a {@link PageCache} to use, otherwise {@code null} where an appropriate one will be created.
      */
-    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
-            LogService logService, ExecutionMonitor executionMonitor,
-            AdditionalInitialIds additionalInitialIds,
-            Config dbConfig, RecordFormats recordFormats )
-    {
-        this.storeDir = storeDir;
-        this.fileSystem = fileSystem;
-        this.pageCache = null;
-        this.config = config;
-        this.logService = logService;
-        this.dbConfig = dbConfig;
-        this.recordFormats = recordFormats;
-        this.log = logService.getInternalLogProvider().getLog( getClass() );
-        this.executionMonitor = executionMonitor;
-        this.additionalInitialIds = additionalInitialIds;
-    }
-
-    /**
-     * Advanced usage of the parallel batch importer, for special and very specific cases. Please use
-     * a constructor with fewer arguments instead.
-     */
-    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, PageCache pageCache,
+    public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, PageCache externalPageCache,
             Configuration config, LogService logService, ExecutionMonitor executionMonitor,
             AdditionalInitialIds additionalInitialIds, Config dbConfig, RecordFormats recordFormats )
     {
-        this.pageCache = pageCache;
+        this.externalPageCache = externalPageCache;
         this.storeDir = storeDir;
         this.fileSystem = fileSystem;
         this.config = config;
@@ -146,7 +127,7 @@ public class ParallelBatchImporter implements BatchImporter
     public ParallelBatchImporter( File storeDir, FileSystemAbstraction fileSystem, Configuration config,
             LogService logService, ExecutionMonitor executionMonitor, Config dbConfig )
     {
-        this( storeDir, fileSystem, config, logService,
+        this( storeDir, fileSystem, null, config, logService,
                 withDynamicProcessorAssignment( executionMonitor, config ), EMPTY, dbConfig,
                 RecordFormatSelector.selectForConfig( dbConfig, NullLogProvider.getInstance() ) );
     }
@@ -169,7 +150,7 @@ public class ParallelBatchImporter implements BatchImporter
               InputCache inputCache = new InputCache( fileSystem, storeDir, recordFormats, config ) )
         {
             NumberArrayFactory numberArrayFactory =
-                    NumberArrayFactory.auto( pageCache, storeDir, config.allowCacheAllocationOnHeap() );
+                    NumberArrayFactory.auto( neoStore.getPageCache(), storeDir, config.allowCacheAllocationOnHeap() );
             Collector badCollector = input.badCollector();
             // Some temporary caches and indexes in the import
             IoMonitor writeMonitor = new IoMonitor( neoStore.getIoTracer() );
@@ -269,14 +250,14 @@ public class ParallelBatchImporter implements BatchImporter
 
     private BatchingNeoStores getBatchingNeoStores()
     {
-        if ( pageCache == null )
+        if ( externalPageCache == null )
         {
             return BatchingNeoStores.batchingNeoStores( fileSystem, storeDir, recordFormats, config, logService,
                     additionalInitialIds, dbConfig );
         }
         else
         {
-            return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
+            return BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, externalPageCache,
                     PageCacheTracer.NULL, storeDir, recordFormats, config, logService, additionalInitialIds, dbConfig );
         }
     }

@@ -79,7 +79,7 @@ public class ImportPanicIT
     public void shouldExitAndThrowExceptionOnPanic() throws Exception
     {
         // GIVEN
-        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, Configuration.DEFAULT,
+        BatchImporter importer = new ParallelBatchImporter( directory.absolutePath(), fs, null, Configuration.DEFAULT,
                 NullLogService.getInstance(), ExecutionMonitors.invisible(), AdditionalInitialIds.EMPTY,
                 Config.empty(), StandardV3_0.RECORD_FORMATS );
         Iterable<DataFactory<InputNode>> nodeData =

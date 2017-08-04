@@ -22,6 +22,7 @@ package org.neo4j.unsafe.impl.batchimport.cache;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Objects;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -40,6 +41,7 @@ public class PageCachedNumberArrayFactory extends NumberArrayFactory.Adapter
 
     PageCachedNumberArrayFactory( PageCache pageCache, File storeDir )
     {
+        Objects.requireNonNull( pageCache );
         this.pageCache = pageCache;
         this.storeDir = storeDir;
     }
