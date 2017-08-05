@@ -59,7 +59,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     result should equal(expected)
   }
 
-  test("should plan hash join when join hint is used") {
+  test("should plan computeHash join when join hint is used") {
     val cypherQuery = """
                         |MATCH (a:A)-[r1:X]->(b)-[r2:X]->(c:C)
                         |USING JOIN ON b

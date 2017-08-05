@@ -202,7 +202,7 @@ public class DbRepresentation
         }
 
         /*
-         * Yes, this is not the best way to do it - hash map does a deep equals. However,
+         * Yes, this is not the best way to do it - computeHash map does a deep equals. However,
          * if things go wrong, this way give the ability to check where the inequality
          * happened. If you feel strongly about this, feel free to change.
          * Admittedly, the implementation could use some cleanup.

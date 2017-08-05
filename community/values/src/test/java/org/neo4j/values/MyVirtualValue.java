@@ -51,7 +51,7 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         return hashCode;
     }

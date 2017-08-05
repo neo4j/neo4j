@@ -30,7 +30,7 @@ import org.neo4j.values.virtual.VirtualValueGroup;
 public abstract class VirtualValue extends AnyValue
 {
     @Override
-    public final boolean equals( Object other )
+    public final boolean eq( Object other )
     {
         if ( other == null )
         {
@@ -43,14 +43,6 @@ public abstract class VirtualValue extends AnyValue
         }
         return other instanceof VirtualValue && equals( (VirtualValue) other );
     }
-
-    @Override
-    public final int hashCode()
-    {
-        return hash();
-    }
-
-    public abstract int hash();
 
     public abstract boolean equals( VirtualValue other );
 

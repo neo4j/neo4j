@@ -34,7 +34,7 @@ case class PlannedComponent(queryGraph: QueryGraph, plan: LogicalPlan)
 
 /*
 This class is responsible for connecting two disconnected logical plans, which can be
-done with hash joins when an useful predicate connects the two plans, or with cartesian
+done with computeHash joins when an useful predicate connects the two plans, or with cartesian
 product lacking that.
 
 The input is a set of disconnected patterns and this class will greedily find the

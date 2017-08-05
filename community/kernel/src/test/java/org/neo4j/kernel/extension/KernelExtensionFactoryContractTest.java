@@ -123,17 +123,17 @@ public abstract class KernelExtensionFactoryContractTest
     {
         KernelExtensionFactory<?> one = newInstance();
         KernelExtensionFactory<?> two = newInstance();
-        assertEquals( "new instances have different hash codes", one.hashCode(), two.hashCode() );
+        assertEquals( "new instances have different computeHash codes", one.hashCode(), two.hashCode() );
         assertEquals( "new instances are not equals", one, two );
 
         one = loadInstance();
         two = loadInstance();
-        assertEquals( "loaded instances have different hash codes", one.hashCode(), two.hashCode() );
+        assertEquals( "loaded instances have different computeHash codes", one.hashCode(), two.hashCode() );
         assertEquals( "loaded instances are not equals", one, two );
 
         one = loadInstance();
         two = newInstance();
-        assertEquals( "loaded instance and new instance have different hash codes", one.hashCode(), two.hashCode() );
+        assertEquals( "loaded instance and new instance have different computeHash codes", one.hashCode(), two.hashCode() );
         assertEquals( "loaded instance and new instance are not equals", one, two );
     }
 

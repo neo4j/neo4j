@@ -73,7 +73,7 @@ public abstract class PointValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         int result = 0;
         result = 31 * (result + NumberValues.hash( xCoordinate ));

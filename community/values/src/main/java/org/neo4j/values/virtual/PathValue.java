@@ -71,7 +71,7 @@ public final class PathValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         int result = nodes[0].hashCode();
         for ( int i = 1; i < nodes.length; i++ )

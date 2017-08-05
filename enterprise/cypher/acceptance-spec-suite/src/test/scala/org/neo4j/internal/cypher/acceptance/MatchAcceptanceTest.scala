@@ -23,7 +23,6 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
-import org.neo4j.kernel.api.exceptions.KernelException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer

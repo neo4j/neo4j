@@ -201,7 +201,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             return array.hashCode();
         }
@@ -249,7 +249,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             return Arrays.hashCode( values );
         }
@@ -297,7 +297,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             return values.hashCode();
         }
@@ -356,7 +356,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             int hashCode = 1;
             for ( int i = from; i < to; i++ )
@@ -412,7 +412,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             int hashCode = 1;
             for ( int i = inner.size() - 1; i >= 0; i-- )
@@ -470,7 +470,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             int hashCode = 1;
             for ( int i = 0; i < size(); i++ )
@@ -567,7 +567,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             int hashCode = 1;
             for ( int i = 0; i < inner.size(); i++ )
@@ -766,7 +766,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
-        public int hash()
+        public int computeHash()
         {
             int hashCode = 1;
             long current = start;

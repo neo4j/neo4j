@@ -26,7 +26,7 @@ public abstract class StringValue extends TextValue
     abstract String value();
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
     }
@@ -50,7 +50,7 @@ public abstract class StringValue extends TextValue
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return value().hashCode();
     }

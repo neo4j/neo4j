@@ -37,7 +37,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   import org.mockito.Mockito._
 
-  test("should support simple hash join over nodes") {
+  test("should support simple computeHash join over nodes") {
     // given
     val node1 = newMockedNode(1)
     val node2 = newMockedNode(2)

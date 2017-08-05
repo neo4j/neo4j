@@ -36,7 +36,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
   val node2 = newMockedNode(2)
   val node3 = newMockedNode(3)
 
-  test("should support simple hash join over nodes") {
+  test("should support simple computeHash join over nodes") {
     // given
     val queryState = QueryStateHelper.empty
 

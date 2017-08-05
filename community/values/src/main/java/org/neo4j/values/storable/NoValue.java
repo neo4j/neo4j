@@ -35,13 +35,13 @@ final class NoValue extends Value
     }
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return this == other;
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return System.identityHashCode( this );
     }

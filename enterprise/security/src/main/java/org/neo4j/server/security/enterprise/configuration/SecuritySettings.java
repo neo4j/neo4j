@@ -180,7 +180,7 @@ public class SecuritySettings implements LoadableConfig
                   "(see `dbms.security.auth_cache_ttl`).\n" +
                   "An important consequence of setting this to `true` is that " +
                   "Neo4j then needs to cache a hashed version of the credentials in order to perform credentials " +
-                  "matching. This hashing is done using a cryptographic hash function together with a random salt. " +
+                  "matching. This hashing is done using a cryptographic computeHash function together with a random salt. " +
                   "Preferably a conscious decision should be made if this method is considered acceptable by " +
                   "the security standards of the organization in which this Neo4j instance is deployed." )
     public static final Setting<Boolean> ldap_authentication_cache_enabled =

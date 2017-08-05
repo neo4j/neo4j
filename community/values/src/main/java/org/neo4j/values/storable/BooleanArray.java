@@ -102,7 +102,7 @@ abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return NumberValues.hash( value() );
     }
@@ -150,7 +150,7 @@ abstract class BooleanArray extends ArrayValue
     }
 
     @Override
-    public final boolean equals( Object other )
+    public final boolean eq( Object other )
     {
         if ( other == null )
         {

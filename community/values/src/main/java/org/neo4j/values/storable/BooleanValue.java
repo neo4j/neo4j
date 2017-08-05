@@ -35,7 +35,7 @@ public final class BooleanValue extends ScalarValue
     }
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
     }
@@ -65,7 +65,7 @@ public final class BooleanValue extends ScalarValue
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return value ? -1 : 0;
     }

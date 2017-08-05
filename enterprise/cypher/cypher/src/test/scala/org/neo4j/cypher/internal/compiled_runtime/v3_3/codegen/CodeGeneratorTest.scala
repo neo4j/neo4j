@@ -106,7 +106,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("hash join of all nodes scans") { // MATCH a RETURN a
+  test("computeHash join of all nodes scans") { // MATCH a RETURN a
     //given
     val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
     val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
@@ -130,7 +130,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       Map("a" -> iNode)))
   }
 
-  test("hash join on multiple keys") {
+  test("computeHash join on multiple keys") {
     //given
     val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
     val rhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
@@ -413,7 +413,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("hash join on top of two expands from two all node scans") {
+  test("computeHash join on top of two expands from two all node scans") {
     // MATCH (a)-[r1]->(b)<-[r2]-(c) RETURN a,b,c (kind of nothing enforcing that r1 and r2 are distinct)
 
     //given
@@ -445,7 +445,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("hash join on top of two expands from two label scans") {
+  test("computeHash join on top of two expands from two label scans") {
     // MATCH (a:T1)-[r1]->(b)<-[r2]-(c:T2) RETURN b
 
     //given
@@ -468,7 +468,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     ))
   }
 
-  test("hash join on top of hash join") {
+  test("computeHash join on top of computeHash join") {
 
     //given
     val scan1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)

@@ -35,7 +35,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   import org.mockito.Mockito._
 
-  test("should support simple hash join between two identifiers") {
+  test("should support simple computeHash join between two identifiers") {
     // given
     val queryState = QueryStateHelper.empty
 

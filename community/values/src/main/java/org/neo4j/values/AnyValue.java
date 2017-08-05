@@ -21,12 +21,29 @@ package org.neo4j.values;
 
 public abstract class AnyValue
 {
-    @Override
-    public abstract boolean equals( Object other );
+    private int hash;
 
     @Override
-    public abstract int hashCode();
+    public boolean equals( Object other )
+    {
+        return eq( other );
+    }
 
+    @Override
+    public int hashCode()
+    {
+        //We will always recompute hashcode for values
+        //where `hashCode == 0`, e.g. empty strings and empty lists
+        //however that should be shouldn't be too costly
+        if ( hash == 0 )
+        {
+            hash = computeHash();
+        }
+        return hash;
+    }
+
+    public abstract boolean eq( Object other );
+    public abstract int computeHash();
     public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
 
     public boolean isSequenceValue()

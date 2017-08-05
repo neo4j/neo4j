@@ -295,7 +295,7 @@ public class ValueEqualityTest
         void assertEquality( Value a, Value b )
         {
             assertTrue( String.format( "Expected %s to be equal to %s but it wasn't.", a, b ), a.equals( b ) );
-            assertTrue( String.format( "Expected %s and %s to share hash, but they didn't.", a, b ),
+            assertTrue( String.format( "Expected %s and %s to share computeHash, but they didn't.", a, b ),
                     a.hashCode() == b.hashCode() );
         }
 

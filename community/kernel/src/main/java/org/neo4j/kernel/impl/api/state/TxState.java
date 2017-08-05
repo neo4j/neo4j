@@ -1158,7 +1158,7 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     // Ensure sorted index updates for a given index. This is needed for range query support and
-    // may involve converting the existing hash map first
+    // may involve converting the existing computeHash map first
     //
     private TreeMap<ValueTuple, DiffSets<Long>> getSortedIndexUpdates( LabelSchemaDescriptor descriptor )
     {

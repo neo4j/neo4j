@@ -42,7 +42,7 @@ abstract class VirtualNodeValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         return Long.hashCode( id() );
     }

@@ -43,7 +43,7 @@ abstract class DoubleArray extends FloatingPointArray
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return NumberValues.hash( value() );
     }
@@ -91,7 +91,7 @@ abstract class DoubleArray extends FloatingPointArray
     }
 
     @Override
-    public final boolean equals( Object other )
+    public final boolean eq( Object other )
     {
         if ( other == null )
         {

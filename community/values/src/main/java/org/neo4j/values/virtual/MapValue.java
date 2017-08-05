@@ -51,7 +51,7 @@ public final class MapValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         return map.hashCode();
     }

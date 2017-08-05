@@ -29,7 +29,7 @@ class RuntimeScalaValueConverterTest extends CypherFunSuite {
 
   val converter = new RuntimeScalaValueConverter(_ => false)
 
-  test("should convert hash map") {
+  test("should convert computeHash map") {
     val it = new util.HashMap[String, Any]()
     it.put("k1", 5)
     it.put("k2", 15)

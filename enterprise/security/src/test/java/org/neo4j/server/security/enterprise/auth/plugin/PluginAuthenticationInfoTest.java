@@ -50,7 +50,7 @@ public class PluginAuthenticationInfoTest
     public void shouldCreateCorrectAuthenticationInfoFromCacheable()
     {
         SecureHasher hasher = mock( SecureHasher.class );
-        when( hasher.hash( Matchers.any() ) ).thenReturn( new SimpleHash( "some-hash" ) );
+        when( hasher.hash( Matchers.any() ) ).thenReturn( new SimpleHash( "some-computeHash" ) );
 
         PluginAuthenticationInfo internalAuthInfo =
                 PluginAuthenticationInfo.createCacheable(
@@ -66,7 +66,7 @@ public class PluginAuthenticationInfoTest
     public void shouldCreateCorrectAuthenticationInfoFromCustomCacheable()
     {
         SecureHasher hasher = mock( SecureHasher.class );
-        when( hasher.hash( Matchers.any() ) ).thenReturn( new SimpleHash( "some-hash" ) );
+        when( hasher.hash( Matchers.any() ) ).thenReturn( new SimpleHash( "some-computeHash" ) );
 
         PluginAuthenticationInfo internalAuthInfo =
                 PluginAuthenticationInfo.createCacheable(
