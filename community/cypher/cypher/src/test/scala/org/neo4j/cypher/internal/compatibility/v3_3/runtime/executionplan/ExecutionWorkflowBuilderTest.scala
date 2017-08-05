@@ -51,7 +51,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, Map.empty, devNullLogger)
+    val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
@@ -69,7 +69,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", NormalMode, Map.empty, devNullLogger)
+    val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
@@ -88,7 +88,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     builder.setQueryContext(context)
 
     // THEN
-    val result = builder.build("42", ExplainMode, Map.empty, devNullLogger)
+    val result = builder.build("42", ExplainMode, Map.empty, devNullLogger, InterpretedRuntimeName)
     result shouldBe a [ExplainExecutionResult]
   }
 }

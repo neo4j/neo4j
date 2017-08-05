@@ -58,21 +58,27 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
       val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-        expressionConverters = converters, pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines))
-      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
-      val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
+                                                              expressionConverters = converters,
+                                                              pipeBuilderFactory = EnterprisePipeBuilderFactory(
+                                                                pipelines))
+      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(),
+                                                         from.plannerName)
+      val pipeInfo = executionPlanBuilder
+        .build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
       val columns = from.statement().returnColumns
       val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
-      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating,
+                                                                        resultBuilderFactory,
+                                                                        context.notificationLogger,
+                                                                        EnterpriseInterpretedRuntimeName)
       val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
       val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
-      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(execPlan))
     } catch {
-      case e : CypherException =>
+      case e: CypherException =>
         runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
         new CompilationState(from, None)
     }
@@ -92,10 +98,13 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
                                      runFunction: (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult,
                                      pipe: Pipe,
                                      config: CypherCompilerConfiguration) extends executionplan.ExecutionPlan {
-    override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult =
+
+    override def run(queryContext: QueryContext, planType: ExecutionMode,
+                     params: Map[String, AnyValue]): InternalExecutionResult =
       runFunction(queryContext, planType, params)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint
+      .isStale(lastTxId, statistics)
 
     override def runtimeUsed: RuntimeName = EnterpriseInterpretedRuntimeName
 
@@ -111,7 +120,8 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
 
       val expressionToExpression = recursePipes(recurse, planContext) _
 
-      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, expressionToExpression)
+      val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters,
+                                          expressionToExpression)
 
       new EnterprisePipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
         expressionToExpression)

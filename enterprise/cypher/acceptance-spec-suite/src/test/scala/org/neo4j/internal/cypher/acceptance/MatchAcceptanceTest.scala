@@ -23,6 +23,7 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
+import org.neo4j.kernel.api.exceptions.KernelException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -134,14 +135,15 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate("A" -> "KNOWS" -> "B")
 
     val result = succeedWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*..15]-(b {name:'B'})) return p").
+
       toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       val number_of_relationships_in_path = result.length()
-      number_of_relationships_in_path should equal (1)
-      result.startNode() should equal (node("A"))
-      result.endNode() should equal (node("B"))
-      result.lastRelationship() should equal (r1)
+      number_of_relationships_in_path should equal(1)
+      result.startNode() should equal(node("A"))
+      result.endNode() should equal(node("B"))
+      result.lastRelationship() should equal(r1)
     }
   }
 
@@ -164,7 +166,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     // then
     graph.inTx {
-      result.size should equal (1)
+      result.size should equal(1)
     }
   }
 
@@ -208,7 +210,7 @@ match (a), (d) where id(a) = 0 and id(d) = 3
 match p = allShortestPaths( (a)-[*]->(d) )
 return p""")
 
-    result.toList.size should equal (2)
+    result.toList.size should equal(2)
   }
 
   test("shortest Path Direction Respected") {
@@ -217,8 +219,8 @@ return p""")
     relate(a, b)
     val result = succeedWith(Configs.CommunityInterpreted, "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
 
-    result.startNode() should equal (b)
-    result.endNode() should equal (a)
+    result.startNode() should equal(b)
+    result.endNode() should equal(a)
   }
 
   test("should return shortest paths when only one side is bound") {
@@ -228,11 +230,12 @@ return p""")
 
     val result = succeedWith(Configs.CommunityInterpreted, "match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
 
+
     graph.inTx {
       result.startNode() should equal(a)
       result.endNode() should equal(b)
       result.length() should equal(1)
-      result.lastRelationship() should equal (r1)
+      result.lastRelationship() should equal(r1)
     }
   }
 
@@ -249,7 +252,8 @@ return p""")
 
     val result = succeedWith(Configs.CommunityInterpreted, query, "0" -> node1.getId, "1" -> node2.getId)
     graph.inTx(
-      result.toSet should equal(Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
+      result.toSet should equal(
+        Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
     )
   }
 
@@ -277,7 +281,7 @@ return p""")
     val result = succeedWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
     result.executionPlanDescription().toString should include("IndexSeek")
   }
 
@@ -295,7 +299,7 @@ return p""")
     val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
     result.executionPlanDescription().toString should include("IndexSeek")
   }
 
@@ -312,7 +316,7 @@ return p""")
     val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
 
     // then
-    result.toList should equal (List(Map("n" -> jake)))
+    result.toList should equal(List(Map("n" -> jake)))
     result.executionPlanDescription().toString should include("IndexSeek")
   }
 
@@ -328,7 +332,7 @@ return p""")
 
     val result = succeedWith(Configs.All - Configs.Compiled, query)
 
-    result.toList should equal (List(Map("r" -> r1)))
+    result.toList should equal(List(Map("r" -> r1)))
   }
 
   // Not TCK material -- id()
@@ -374,10 +378,11 @@ return p""")
     val result = succeedWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
-    result.toList should equal (List(Map("a" -> a, "b" -> b)))
+    result.toList should equal(List(Map("a" -> a, "b" -> b)))
   }
 
-  test("should handle queries that cant be index solved because expressions lack dependencies with two disjoin patterns") {
+  test(
+    "should handle queries that cant be index solved because expressions lack dependencies with two disjoin patterns") {
     // given
     val a = createLabeledNode(Map("property" -> 42), "Label")
     val b = createLabeledNode(Map("property" -> 42), "Label")
@@ -467,7 +472,8 @@ return p""")
   test("index hints should work in optional match") {
     //GIVEN
     val subnet = createLabeledNode("Subnet")
-    createLabeledNode("Subnet")//extra dangling subnet
+    createLabeledNode("Subnet")
+    //extra dangling subnet
     val host = createLabeledNode(Map("name" -> "host"), "Host")
 
     relate(subnet, host)
@@ -485,7 +491,7 @@ return p""")
     val result = profile(query)
 
     //THEN
-    result.toList should equal (List(Map("host" -> host), Map("host" -> null)))
+    result.toList should equal(List(Map("host" -> host), Map("host" -> null)))
   }
 
   // End of indexes
@@ -647,12 +653,14 @@ return p""")
 
     var descriptionNoAlias = resultNoAlias.getExecutionPlanDescription
     var descriptionWithAlias = resultWithAlias.getExecutionPlanDescription
-    descriptionWithAlias.getArguments.get("EstimatedRows") should equal(descriptionNoAlias.getArguments.get("EstimatedRows"))
+    descriptionWithAlias.getArguments.get("EstimatedRows") should equal(
+      descriptionNoAlias.getArguments.get("EstimatedRows"))
     while (descriptionWithAlias.getChildren.isEmpty) {
       descriptionWithAlias = single(descriptionWithAlias.getChildren.iterator())
-      if ( descriptionWithAlias.getName != "Projection" ) {
+      if (descriptionWithAlias.getName != "Projection") {
         descriptionNoAlias = single(descriptionNoAlias.getChildren.iterator())
-        descriptionWithAlias.getArguments.get("EstimatedRows") should equal(descriptionNoAlias.getArguments.get("EstimatedRows"))
+        descriptionWithAlias.getArguments.get("EstimatedRows") should equal(
+          descriptionNoAlias.getArguments.get("EstimatedRows"))
       }
     }
 
@@ -731,8 +739,8 @@ return p""")
   }
 
   /**
-   * Append variable to keys and transform value arrays to lists
-   */
+    * Append variable to keys and transform value arrays to lists
+    */
   private def asResult(data: Map[String, Any], id: String) =
     data.map {
       case (k, v) => (s"$id.$k", v)

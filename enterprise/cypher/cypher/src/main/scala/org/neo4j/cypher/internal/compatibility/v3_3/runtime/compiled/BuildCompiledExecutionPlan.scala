@@ -77,8 +77,9 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
         if (executionMode == ExplainMode) {
           //close all statements
           taskCloser.close(success = true)
+          val logger = context.notificationLogger
           ExplainExecutionResult(compiled.columns.toArray,
-            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications.map(asKernelNotification))
+                                 compiled.planDescription, READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
         } else
           compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
                                           immutableMapValues(params, queryContext.asObject), taskCloser)

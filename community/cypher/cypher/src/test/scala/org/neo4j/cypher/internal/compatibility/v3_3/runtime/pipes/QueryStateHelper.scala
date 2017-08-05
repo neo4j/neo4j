@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.mockito.{Matchers, Mockito}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.values.AnyValue
+import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.spatial.Point
+import org.neo4j.values.{AnyValue, BaseToObjectValueWriter}
 
 import scala.collection.mutable
 
@@ -33,4 +38,25 @@ object QueryStateHelper {
                 initialContext: Option[ExecutionContext] = None) =
     new QueryState(query = query, resources = resources, params = params, decorator = decorator,
       initialContext = initialContext, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+
+  def emptyWithValueSerialization: QueryState = emptyWith(query = context)
+
+  private val context = Mockito.mock(classOf[QueryContext])
+  Mockito.when(context.asObject(Matchers.any())).thenAnswer(new Answer[Any] {
+    override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObject(invocationOnMock.getArgumentAt(0, classOf[AnyValue]))
+  })
+
+  private def toObject(any: AnyValue) = {
+    val writer = new BaseToObjectValueWriter[RuntimeException] {
+      override protected def newNodeProxyById(id: Long): Node = ???
+      override protected def newRelationshipProxyById(id: Long): Relationship = ???
+      override protected def newGeographicPoint(longitude: Double, latitude: Double, name: String,
+                                                code: Int,
+                                                href: String): Point = ???
+      override protected def newCartesianPoint(x: Double, y: Double, name: String, code: Int,
+                                               href: String): Point = ???
+    }
+    any.writeTo(writer)
+    writer.value()
+  }
 }

@@ -19,13 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
+import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException => InternalExhaustiveShortestPathForbiddenException}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, ExhaustiveShortestPathForbiddenException, NewPlannerTestSupport}
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.impl.notification.NotificationCode
 import org.neo4j.graphdb.impl.notification.NotificationCode.EXHAUSTIVE_SHORTEST_PATH
 
 import scala.collection.mutable
@@ -55,7 +53,7 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
     // then
     result.notifications.toSeq should equal(
-      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(10, 1, 11))
+      Seq(EXHAUSTIVE_SHORTEST_PATH.notification(new org.neo4j.graphdb.InputPosition(18, 1, 19))
       )
     )
   }

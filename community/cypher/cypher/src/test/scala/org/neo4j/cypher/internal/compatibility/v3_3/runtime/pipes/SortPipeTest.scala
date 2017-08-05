@@ -35,7 +35,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
     val source = new FakePipe(List(), "x" -> CTAny)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
-    assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
+    assertEquals(List(), sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList)
   }
 
   test("simple sorting is supported") {
@@ -43,7 +43,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
     val source = new FakePipe(list, "x" -> CTString)
     val sortPipe = new SortPipe(source, List(Ascending("x")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(Map("x" -> "A"), Map("x" -> "B")))
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(Map("x" -> "A"), Map("x" -> "B")))
   }
 
   test("sort by two columns") {
@@ -56,7 +56,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Ascending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("x" -> "A", "y" -> 100),
       Map("x" -> "B", "y" -> 10),
       Map("x" -> "B", "y" -> 20)))
@@ -72,7 +72,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       Ascending("x"),
       Descending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should beEquivalentTo(List(
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map[String, Any]("x" -> "A", "y" -> 100),
       Map[String, Any]("x" -> "B", "y" -> 20),
       Map[String, Any]("x" -> "B", "y" -> 10)))
@@ -87,7 +87,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.empty).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should equal(List(
       Map("y" -> intValue(1)),
       Map("y" -> intValue(2)),
       Map("y" -> Values.NO_VALUE)))

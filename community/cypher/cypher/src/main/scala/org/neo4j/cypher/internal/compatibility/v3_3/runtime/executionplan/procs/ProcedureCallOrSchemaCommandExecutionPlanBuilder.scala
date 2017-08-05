@@ -53,8 +53,9 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder extends Phase[Commu
         // Global call: CALL foo.bar.baz("arg1", 2)
         case StandAloneProcedureCall(signature, args, types, indices) =>
           val converters = new ExpressionConverters(CommunityExpressionConverter)
+          val logger = context.notificationLogger
           Some(ProcedureCallExecutionPlan(signature, args, types, indices,
-                                          context.notificationLogger.notifications.map(asKernelNotification), converters))
+                                          logger.notifications.map(asKernelNotification(logger.offset)), converters))
 
         // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
         case CreateNodeKeyConstraint(_, label, props) =>

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v3_2.helpers.IsMap
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.IsList
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
@@ -42,11 +43,12 @@ trait CypherSerializer {
     keyValStrings.mkString("{", ",", "}")
   }
 
+  import scala.collection.JavaConverters._
   protected def serialize(a: Any, qtx: QueryContext): String = a match {
     case x: Node         => x.toString + serializeProperties(x, qtx)
     case x: Relationship => ":" + x.getType.name() + "[" + x.getId + "]" + serializeProperties(x, qtx)
-    //TODO
-    //case IsMap(m)        => makeString(m, qtx)
+    case x: Any if x.isInstanceOf[Map[_, _]] => makeString(_ => x.asInstanceOf[Map[String, Any]], qtx)
+    case x: Any if x.isInstanceOf[java.util.Map[_, _]] => makeString(_ => x.asInstanceOf[java.util.Map[String, Any]].asScala, qtx)
     case IsList(coll)    => coll.map(elem => serialize(elem, qtx)).mkString("[", ",", "]")
     case x: String       => "\"" + x + "\""
     case v: KeyToken     => v.name

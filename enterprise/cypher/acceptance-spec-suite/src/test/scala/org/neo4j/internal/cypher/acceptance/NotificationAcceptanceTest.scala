@@ -42,7 +42,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val res1 = innerExecute("explain MATCH (a)-[:A|:B|:C {foo:'bar'}]-(b) RETURN a,b")
 
     res1.notifications should contain(
-      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(9, 1, 10)))
+      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(17, 1, 18)))
 
     val res2 = innerExecute("explain MATCH (a)-[:A|B|C {foo:'bar'}]-(b) RETURN a,b")
 
@@ -59,19 +59,19 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val res5 = innerExecute("explain MATCH (a)-[x:A|:B|:C]-() RETURN a")
 
     res5.notifications should contain(
-      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(9, 1, 10)))
+      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(17, 1, 18)))
 
     val res6 = innerExecute("explain MATCH (a)-[:A|:B|:C*]-() RETURN a")
 
     res6.notifications should contain(
-      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(9, 1, 10)))
+      DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(new graphdb.InputPosition(17, 1, 18)))
   }
 
   test("Warn on binding variable length relationships") {
     val res1 = innerExecute("explain MATCH ()-[rs*]-() RETURN rs")
 
     res1.notifications should contain(
-      DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(new graphdb.InputPosition(8, 1, 9),
+      DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(new graphdb.InputPosition(16, 1, 17),
                                                               bindingVarLengthRelationship("rs")))
 
     val res2 = innerExecute("explain MATCH p = ()-[*]-() RETURN relationships(p) AS rs")
@@ -84,14 +84,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications.toList should equal(
       List(
-        DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(0, 1, 1), deprecatedName("oldProc", "newProc"))))
+        DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(8, 1, 9), deprecatedName("oldProc", "newProc"))))
   }
 
   test("Warn on deprecated in-query procedure calls") {
     val result = innerExecute("explain CALL oldProc() RETURN 1")
 
     result.notifications.toList should equal(
-      List(DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(0, 1, 1), deprecatedName("oldProc", "newProc"))))
+      List(DEPRECATED_PROCEDURE.notification(new graphdb.InputPosition(8, 1, 9), deprecatedName("oldProc", "newProc"))))
   }
 
   test("Warn on deprecated procedure result field") {
@@ -99,7 +99,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     result.notifications.toList should equal(
       List(
-        DEPRECATED_PROCEDURE_RETURN_FIELD.notification(new graphdb.InputPosition(25, 1, 26),
+        DEPRECATED_PROCEDURE_RETURN_FIELD.notification(new graphdb.InputPosition(33, 1, 34),
                                                        deprecatedField("changedProc", "oldField"))))
   }
 
@@ -107,14 +107,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("explain match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(0, 1, 1), cartesianProduct(Set("c", "d").asJava))))
+      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Warn for cartesian product with runtime=compiled") {
     val result = innerExecute("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)")
 
     result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(0, 1, 1), cartesianProduct(Set("c", "d").asJava)),
+      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava)),
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
   }
 
@@ -122,7 +122,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("explain cypher runtime=interpreted match (a)-->(b), (c)-->(d) return *")
 
     result.notifications.toList should equal(List(
-      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(0, 1, 1), cartesianProduct(Set("c", "d").asJava))))
+      CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(35, 1, 36), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("Don't warn for cartesian product when not using explain") {
@@ -135,7 +135,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("explain return length([1, 2, 3])")
 
     result.notifications should equal(Set(
-      LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(14, 1, 15))))
+      LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(22, 1, 23))))
   }
 
   test("do not warn when using length on a path") {
@@ -148,13 +148,13 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = executeWithAllPlannersAndCompatibilityMode(
       "explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
-    result.notifications should contain(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(45, 1, 46)))
+    result.notifications should contain(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(77, 1, 78)))
   }
 
   test("do warn when using length on a string") {
     val result = innerExecute("explain return length('a string')")
 
-    result.notifications should equal(Set(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(14, 1, 15))))
+    result.notifications should equal(Set(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(22, 1, 23))))
   }
 
   test("do not warn when using size on a collection") {
@@ -235,7 +235,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     resultWithoutExplain shouldBe empty
     resultWithExplain.notifications.toList should equal(
-      List(CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(0, 1, 1), cartesianProduct(Set("c", "d").asJava))))
+      List(CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(24, 1, 25), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label") {
@@ -456,7 +456,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     //then
     resultMisspelled.notifications should contain(
-      MISSING_LABEL.notification(new graphdb.InputPosition(9, 1, 10), label("Preson")))
+      MISSING_LABEL.notification(new graphdb.InputPosition(17, 1, 18), label("Preson")))
 
     resultCorrectlySpelled.notifications shouldBe empty
   }
@@ -480,7 +480,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     resultMisspelled.notifications should contain(
       MISSING_REL_TYPE
-        .notification(new graphdb.InputPosition(12, 1, 13), NotificationDetail.Factory.relationshipType("r")))
+        .notification(new graphdb.InputPosition(20, 1, 21), NotificationDetail.Factory.relationshipType("r")))
 
     resultCorrectlySpelled.notifications shouldBe empty
   }
@@ -493,7 +493,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n")
 
     resultMisspelled.notifications should contain(
-      NotificationCode.MISSING_PROPERTY_NAME.notification(new graphdb.InputPosition(18, 1, 19), propertyName("propp")))
+      NotificationCode.MISSING_PROPERTY_NAME.notification(new graphdb.InputPosition(26, 1, 27), propertyName("propp")))
 
     resultCorrectlySpelled.notifications shouldBe empty
   }
@@ -508,7 +508,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val res = innerExecute("EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m")
 
     res.notifications should contain(
-      UNBOUNDED_SHORTEST_PATH.notification(new graphdb.InputPosition(26, 1, 27)))
+      UNBOUNDED_SHORTEST_PATH.notification(new graphdb.InputPosition(34, 1, 35)))
   }
 
   test("2.3 can warn about bare nodes") {
@@ -575,7 +575,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn for use of deprecated toInt") {
     val result = innerExecute("EXPLAIN RETURN toInt('1') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(7, 1, 8),
+    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
                                                                          deprecatedName("toInt", "toInteger"))
     )
   }
@@ -583,14 +583,14 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   test("warn for use of deprecated upper") {
     val result = innerExecute("EXPLAIN RETURN upper('foo') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(7, 1, 8),
+    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
                                                                           deprecatedName("upper", "toUpper")))
   }
 
   test("warn for use of deprecated lower") {
     val result = innerExecute("EXPLAIN RETURN lower('BAR') AS one")
 
-    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(7, 1, 8),
+    result.notifications should contain(DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(15, 1, 16),
                                                                          deprecatedName("lower", "toLower")))
   }
 
@@ -598,7 +598,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val result = innerExecute("EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r")
 
     result.notifications should contain(
-      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(25, 1, 26),
+      DEPRECATED_FUNCTION.notification(new graphdb.InputPosition(33, 1, 34),
                                        deprecatedName("rels", "relationships")))
   }
 }

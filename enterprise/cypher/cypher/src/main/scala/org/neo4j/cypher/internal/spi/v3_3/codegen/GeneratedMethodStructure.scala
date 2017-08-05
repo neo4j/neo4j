@@ -1327,6 +1327,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
+  override def localVariable(variable: String, e: Expression): Unit = {
+    val local = generator.declare(e.`type`(), variable)
+    generator.assign(local, e)
+  }
+
   override def declareFlag(name: String, initialValue: Boolean) = {
     val localVariable = generator.declare(typeRef[Boolean], name)
     locals += (name -> localVariable)

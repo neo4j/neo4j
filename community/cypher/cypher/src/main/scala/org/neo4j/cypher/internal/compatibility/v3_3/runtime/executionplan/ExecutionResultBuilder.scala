@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 import org.neo4j.cypher.internal.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, RuntimeName}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeDecorator
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
@@ -32,7 +32,8 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def setExceptionDecorator(newDecorator: CypherException => CypherException)
-  def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue], notificationLogger: InternalNotificationLogger): InternalExecutionResult
+  def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue],
+            notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult
 }
 
 trait ExecutionResultBuilderFactory {

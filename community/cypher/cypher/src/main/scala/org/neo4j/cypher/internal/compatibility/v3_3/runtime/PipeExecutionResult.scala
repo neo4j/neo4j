@@ -58,8 +58,6 @@ class PipeExecutionResult(val result: ResultIterator,
   def executionPlanDescription(): InternalPlanDescription =
     executionPlanBuilder()
       .addArgument(Version("CYPHER 3.3"))
-      .addArgument(Runtime(InterpretedRuntimeName.toTextOutput))
-      .addArgument(RuntimeImpl(InterpretedRuntimeName.name))
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext

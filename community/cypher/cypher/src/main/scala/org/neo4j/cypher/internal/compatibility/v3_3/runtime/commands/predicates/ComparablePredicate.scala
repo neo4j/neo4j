@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValues
-import org.neo4j.values.storable.{ArrayValue, FloatingPointValue, Values}
+import org.neo4j.values.storable._
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
@@ -38,7 +38,10 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     else (l, r) match {
       case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
       case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (_, _) => Some(compare(AnyValues.COMPARATOR.compare(l, r)))
+      case (n1: NumberValue, n2: NumberValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+      case (n1: TextValue, n2: TextValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+      case (n1: BooleanValue, n2: BooleanValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+      case _ => None
     }
   }
 

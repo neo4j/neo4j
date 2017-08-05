@@ -38,7 +38,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
   * This SPI describes the operations that can be put in that method.
   */
 trait MethodStructure[E] {
+
+
   // misc
+  def localVariable(variable: String, e: E): Unit
   def declareFlag(name: String, initialValue: Boolean)
   def updateFlag(name: String, newValue: Boolean)
   def declarePredicate(name: String): Unit

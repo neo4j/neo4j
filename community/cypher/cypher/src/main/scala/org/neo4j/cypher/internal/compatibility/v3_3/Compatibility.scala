@@ -94,7 +94,7 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
   implicit lazy val executionMonitor: QueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
   def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
                          preParsingNotifications: Set[org.neo4j.graphdb.Notification]): ParsedQuery = {
-    val notificationLogger = new RecordingNotificationLogger
+    val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
 
     val preparedSyntacticQueryForV_3_2 =
       Try(compiler.parseQuery(preParsedQuery.statement,
@@ -180,7 +180,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
         val context = queryContext(transactionalContext)
 
         val innerResult: InternalExecutionResult = inner.run(context, innerExecutionMode, asValues(params))
-
         new ExecutionResult(new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
           innerResult.withNotifications(preParsingNotifications.toSeq:_*),
@@ -188,7 +187,6 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext,
         ))
       }
     }
-
 
     def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 

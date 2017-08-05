@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IsList, TypeSafeMathSupport}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -38,9 +38,9 @@ case class Add(a: Expression, b: Expression) extends Expression with TypeSafeMat
       case (x: IntegralValue, y: IntegralValue) => Values.longValue(StrictMath.addExact(x.longValue(),y.longValue()))
       case (x: NumberValue, y: NumberValue) => Values.doubleValue(x.doubleValue() + y.doubleValue())
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
-      case (x: ListValue, y: ListValue) => VirtualValues.concat(x, y)
-      case (x: ListValue, y)         => VirtualValues.appendToList(x, y)
-      case (x, y: ListValue)         => VirtualValues.prependToList(y, x)
+      case (IsList(x),  IsList(y)) => VirtualValues.concat(x, y)
+      case (IsList(x), y)         => VirtualValues.appendToList(x, y)
+      case (x, IsList(y))         => VirtualValues.prependToList(y, x)
       case (x: TextValue, y: IntegralValue) => Values.stringValue(x.stringValue() + y.longValue())
       case (x: IntegralValue, y: TextValue) => Values.stringValue(x.longValue() + y.stringValue())
       case (x: TextValue, y: FloatValue) => Values.stringValue(x.stringValue() + y.doubleValue())

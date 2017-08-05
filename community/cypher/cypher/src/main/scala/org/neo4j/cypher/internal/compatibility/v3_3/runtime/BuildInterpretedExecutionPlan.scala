@@ -57,7 +57,8 @@ BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlan
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
-    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
+    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
+                                        context.notificationLogger, InterpretedRuntimeName)
     val execPlan = new ExecutionPlan {
       private val fingerprint = context.createFingerprintReference(fp)
 
@@ -91,7 +92,8 @@ BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlan
                                        queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
-                                       notificationLogger: InternalNotificationLogger):
+                                       notificationLogger: InternalNotificationLogger,
+                                        runtimeName: RuntimeName):
   (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult =
     (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]) => {
       val builder = resultBuilderFactory.create()
@@ -110,6 +112,6 @@ BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlan
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger)
+      builder.build(queryId, planType, params, notificationLogger, runtimeName)
     }
 }

@@ -48,6 +48,12 @@ object CastSupport {
       s"Expected $value to be a ${ev.runtimeClass.getName}, but it was a ${value.getClass.getName}")
   }
 
+  def castOrFail[A >: AnyValue](value: AnyValue)(implicit ev: ClassTag[A]): A = value match {
+    case v: A => v
+    case _ => throw new CypherTypeException(
+      s"Expected $value to be a Number, but it was a String")
+  }
+
   /*
   This method takes two values and finds the type both values could be represented in.
 

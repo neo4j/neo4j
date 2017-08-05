@@ -65,13 +65,14 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
-    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue], notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
+    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue],
+              notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
       val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
                                  triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
       try {
         try {
-          createResults(state, planType, notificationLogger)
+          createResults(state, planType, notificationLogger, runtimeName)
         }
         catch {
           case e: CypherException =>
@@ -85,16 +86,19 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       }
     }
 
-    private def createResults(state: QueryState, planType: ExecutionMode, notificationLogger: InternalNotificationLogger): InternalExecutionResult = {
+    private def createResults(state: QueryState, planType: ExecutionMode,
+                              notificationLogger: InternalNotificationLogger,
+                              runtimeName: RuntimeName): InternalExecutionResult = {
       val queryType: InternalQueryType = getQueryType
       val planDescription: InternalPlanDescription =
         LogicalPlan2PlanDescription(logicalPlan, idMap, pipeInfo.plannerUsed)
-          .addArgument(Runtime(InterpretedRuntimeName.toTextOutput))
-          .addArgument(RuntimeImpl(InterpretedRuntimeName.name))
+          .addArgument(Runtime(runtimeName.toTextOutput))
+          .addArgument(RuntimeImpl(runtimeName.name))
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        ExplainExecutionResult(columns.toArray, planDescription, queryType, notificationLogger.notifications.map(asKernelNotification))
+        ExplainExecutionResult(columns.toArray, planDescription, queryType,
+                               notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
       } else {
         val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
