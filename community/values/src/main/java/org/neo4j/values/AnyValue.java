@@ -34,7 +34,7 @@ public abstract class AnyValue
     {
         //We will always recompute hashcode for values
         //where `hashCode == 0`, e.g. empty strings and empty lists
-        //however that should be shouldn't be too costly
+        //however that shouldn't be shouldn't be too costly
         if ( hash == 0 )
         {
             hash = computeHash();

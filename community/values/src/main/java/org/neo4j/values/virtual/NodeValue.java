@@ -101,6 +101,25 @@ public abstract class NodeValue extends VirtualNodeValue
         }
 
         @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            TextArray l;
+            MapValue p;
+            try
+            {
+                l = labels();
+                p = properties();
+            }
+            catch ( NotFoundException e )
+            {
+                l = Values.stringArray();
+                p = VirtualValues.EMPTY_MAP;
+
+            }
+            writer.writeNode( node.getId(), l, p );
+        }
+
+        @Override
         public TextArray labels()
         {
             TextArray l = labels;
@@ -111,19 +130,13 @@ public abstract class NodeValue extends VirtualNodeValue
                     l = labels;
                     if ( l == null )
                     {
-                        try
+                        ArrayList<String> ls = new ArrayList<>();
+                        for ( Label label : node.getLabels() )
                         {
-                            ArrayList<String> ls = new ArrayList<>();
-                            for ( Label label : node.getLabels() )
-                            {
-                                ls.add( label.name() );
-                            }
-                            l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+                            ls.add( label.name() );
                         }
-                        catch ( NotFoundException e )
-                        {
-                           l = Values.stringArray(  );
-                        }
+                        l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+
                     }
                 }
             }
@@ -141,14 +154,7 @@ public abstract class NodeValue extends VirtualNodeValue
                     m = properties;
                     if ( m == null )
                     {
-                        try
-                        {
-                            m = properties = AnyValues.asMapValue( node.getAllProperties() );
-                        }
-                        catch ( NotFoundException e )
-                        {
-                            m = VirtualValues.EMPTY_MAP;
-                        }
+                        m = properties = AnyValues.asMapValue( node.getAllProperties() );
                     }
                 }
             }

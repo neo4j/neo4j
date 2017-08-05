@@ -29,7 +29,8 @@ case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(
 
   override def compute(value: AnyValue, m: ExecutionContext)
                       (implicit state: QueryState): AnyValue = value match {
-    case n: NodeValue => VirtualValues.fromArray(n.labels())
+    case n: NodeValue =>
+      VirtualValues.fromArray(n.labels())
     case x => throw new ParameterWrongTypeException("Expected a Node, got: " + x)
   }
 

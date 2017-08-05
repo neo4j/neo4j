@@ -126,6 +126,22 @@ public abstract class EdgeValue extends VirtualEdgeValue
         }
 
         @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            MapValue p;
+            try
+            {
+                p = properties();
+            }
+            catch ( NotFoundException e )
+            {
+                p = VirtualValues.EMPTY_MAP;
+
+            }
+            writer.writeEdge( id(), startNode().id(), endNode().id(), type(), p);
+        }
+
+        @Override
         public NodeValue startNode()
         {
             NodeValue start = startNode;
@@ -172,14 +188,7 @@ public abstract class EdgeValue extends VirtualEdgeValue
                     t = type;
                     if ( t == null )
                     {
-                        try
-                        {
-                            t = type = Values.stringValue( relationship.getType().name() );
-                        }
-                        catch ( NotFoundException e )
-                        {
-                            t = type = Values.EMPTY_STRING;
-                        }
+                        t = type = Values.stringValue( relationship.getType().name() );
                     }
                 }
             }
@@ -197,14 +206,7 @@ public abstract class EdgeValue extends VirtualEdgeValue
                     m = properties;
                     if ( m == null )
                     {
-                        try
-                        {
-                            m = properties = AnyValues.asMapValue( relationship.getAllProperties() );
-                        }
-                        catch ( NotFoundException e )
-                        {
-                            m = VirtualValues.EMPTY_MAP;
-                        }
+                        m = properties = AnyValues.asMapValue( relationship.getAllProperties() );
                     }
                 }
             }
