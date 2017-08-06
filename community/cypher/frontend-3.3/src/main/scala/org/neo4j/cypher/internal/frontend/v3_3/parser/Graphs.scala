@@ -27,8 +27,8 @@ trait Graphs
   }
 
   private def CopyGraph: Rule1[ast.CopyGraph] = rule("COPY GRAPH") {
-    keyword("COPY") ~~
-      GraphRef ~~ keyword("TO") ~~ GraphUrl ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.CopyGraph(_, _, _))
+    keyword("COPY") ~~ GraphRef ~~
+      optional(keyword("TO") ~~ GraphUrl) ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.CopyGraph(_, _, _))
   }
 
   private def LoadGraph: Rule1[ast.LoadGraph] = rule("GRAPH AT") {

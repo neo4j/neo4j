@@ -24,12 +24,12 @@ import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("from graph") {
-    val query = "FROM GRAPH test AT 'graph://url' MATCH (a)-->() RETURN a"
+    val query = "FROM GRAPH AT 'graph://url' AS test MATCH (a)-->() RETURN a"
     expect(query) doesNotSupport "FROM"
   }
 
   test("into graph") {
-    val query = "MATCH (a)--() INTO GRAPH test AT 'graph://url' CREATE (a)-->(b:B) RETURN b"
+    val query = "MATCH (a)--() INTO GRAPH AT 'graph://url' AS test CREATE (a)-->(b:B) RETURN b"
     expect(query) doesNotSupport "INTO"
   }
 

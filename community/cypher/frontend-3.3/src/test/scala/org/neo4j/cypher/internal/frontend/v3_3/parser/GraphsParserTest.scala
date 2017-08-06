@@ -73,19 +73,35 @@ class GraphsParserTest
   }
 
   test("COPY foo TO 'url' AS bar") {
-    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), url("url"), Some("bar")))
+    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), Some(url("url")), Some("bar")))
   }
 
   test("COPY foo TO 'url'") {
-    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), url("url"), None))
+    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), Some(url("url")), None))
   }
 
   test("COPY SOURCE GRAPH TO 'url' AS bar") {
-    yields(ast.CopyGraph(ast.SourceGraph()(pos), url("url"), Some("bar")))
+    yields(ast.CopyGraph(ast.SourceGraph()(pos), Some(url("url")), Some("bar")))
   }
 
   test("COPY SOURCE GRAPH TO 'url'") {
-    yields(ast.CopyGraph(ast.SourceGraph()(pos), url("url"), None))
+    yields(ast.CopyGraph(ast.SourceGraph()(pos), Some(url("url")), None))
+  }
+
+  test("COPY foo AS bar") {
+    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), None, Some("bar")))
+  }
+
+  test("COPY foo") {
+    yields(ast.CopyGraph(ast.NamedGraph("foo")(pos), None, None))
+  }
+
+  test("COPY SOURCE GRAPH AS bar") {
+    yields(ast.CopyGraph(ast.SourceGraph()(pos), None, Some("bar")))
+  }
+
+  test("COPY SOURCE GRAPH") {
+    yields(ast.CopyGraph(ast.SourceGraph()(pos), None, None))
   }
 
   private def url(addr: String): GraphUrl = ast.GraphUrl(ast.StringLiteral(addr)(pos))(pos)

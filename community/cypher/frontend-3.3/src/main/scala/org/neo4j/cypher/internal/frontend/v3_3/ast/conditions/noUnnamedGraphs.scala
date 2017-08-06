@@ -14,18 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.neo4j.cypher.internal.frontend.v3_3.ast
+package org.neo4j.cypher.internal.frontend.v3_3.ast.conditions
 
-import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
+import org.neo4j.cypher.internal.frontend.v3_3.ast.GraphDef
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.Condition
 
-case class GraphReturnItems(star: Boolean, items: Seq[GraphDef])
-                           (val position: InputPosition)
-  extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
-
-  override def semanticCheck = {
-    val covariant = CTGraphRef.covariant
-    items.flatMap(_.alias).foldSemanticCheck(_.expectType(covariant)) chain
-    FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+case object noUnnamedGraphs extends Condition {
+  def apply(that: Any): Seq[String] = {
+    val graphs = collectNodesOfType[GraphDef].apply(that)
+    val unnamed = graphs.filter(_.alias.isEmpty)
+    unnamed.map { graphDef => s"GraphDef at ${graphDef.position} is unnamed" }
   }
+
+  override def name: String = productPrefix
 }
