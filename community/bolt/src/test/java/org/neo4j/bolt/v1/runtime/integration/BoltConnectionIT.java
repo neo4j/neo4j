@@ -38,9 +38,10 @@ import org.neo4j.bolt.v1.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult.Record;
+import org.neo4j.values.storable.LongValue;
 
 import static java.util.Collections.emptyMap;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -55,6 +56,8 @@ import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.IGNORED;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unchecked" )
 public class BoltConnectionIT
@@ -156,7 +159,7 @@ public class BoltConnectionIT
         machine.pullAll( recorder );
 
         // Then
-        recorder.nextResponse().assertRecord( 0, "k" );
+        recorder.nextResponse().assertRecord( 0, stringValue( "k" ) );
         //assertThat( pulling.next(), streamContaining( StreamMatchers.eqRecord( equalTo( "k" ) ) ) );
     }
 
@@ -445,7 +448,7 @@ public class BoltConnectionIT
 
         // When I issue a statement in a separate session
         Object[] stream = runAndPull( secondMachine, "CREATE (a:Person) RETURN id(a)" );
-        long id = (long) ((Record) stream[0]).fields()[0];
+        long id = ((LongValue) ((Record) stream[0]).fields()[0]).value();
 
         // And when I roll back that first session transaction
         runAndPull( firstMachine, "ROLLBACK" );
@@ -484,9 +487,9 @@ public class BoltConnectionIT
         assertThat( result.length, equalTo( 1 ) );
         Record record = (Record) result[0];
 
-        Object[] fields = record.fields();
+        AnyValue[] fields = record.fields();
         assertThat( fields.length, equalTo( 1) );
-        assertThat( fields[0], equalTo( 150L ) );
+        assertThat( fields[0], equalTo( longValue( 150L )) );
 
         /*
          * 7 tokens have been created for
@@ -608,7 +611,7 @@ public class BoltConnectionIT
         Object[] stream = runAndPull( machine, "RETURN 1" );
 
         // Then
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( 1L ) );
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( longValue( 1L )) );
     }
 
     private String createLocalIrisData( BoltStateMachine machine ) throws Exception
@@ -628,12 +631,12 @@ public class BoltConnectionIT
         return runAndPull( machine, statement, EMPTY_PARAMS, SUCCESS );
     }
 
-    private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params ) throws Exception
+    private Record[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params ) throws Exception
     {
         return runAndPull( machine, statement, params, SUCCESS );
     }
 
-    private Object[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params,
+    private Record[] runAndPull( BoltStateMachine machine, String statement, Map<String, Object> params,
             BoltResponseMessage expectedResponse ) throws Exception
     {
         BoltResponseRecorder recorder = new BoltResponseRecorder();

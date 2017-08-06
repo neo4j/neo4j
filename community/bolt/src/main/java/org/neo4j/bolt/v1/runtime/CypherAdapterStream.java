@@ -167,7 +167,7 @@ class CypherAdapterStream extends BoltResult
 
         public CypherAdapterRecord reset( QueryResult.Record cypherRecord ) throws BoltIOException
         {
-            System.arraycopy( this.fields, 0, cypherRecord.fields(), 0, this.fields.length );
+            System.arraycopy( cypherRecord.fields(), 0, this.fields, 0, this.fields.length );
             return this;
         }
     }

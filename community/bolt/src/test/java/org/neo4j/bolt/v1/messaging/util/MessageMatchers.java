@@ -180,7 +180,7 @@ public class MessageMatchers
             protected boolean matchesSafely( ResponseMessage t )
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
-                assertThat( ((SuccessMessage) t).meta(), equalTo( metadata ) );
+                assertThat( toRawMap( ((SuccessMessage) t).meta() ), equalTo( metadata ) );
                 return true;
             }
 
@@ -200,7 +200,8 @@ public class MessageMatchers
             protected boolean matchesSafely( ResponseMessage t )
             {
                 assertThat( t, instanceOf( SuccessMessage.class ) );
-                assertThat( toRawMap( ((SuccessMessage) t).meta() ), matcher );
+                Map<String,Object> actual = toRawMap( ((SuccessMessage) t).meta() );
+                assertThat( actual, matcher );
                 return true;
             }
 

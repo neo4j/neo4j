@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
 
@@ -82,9 +81,9 @@ public class RecordedBoltResponse
         assertArrayEquals( records.get( index ).fields(), values );
     }
 
-    public Record[] records()
+    public QueryResult.Record[] records()
     {
-        Record[] recordArray = new Record[records.size()];
+        QueryResult.Record[] recordArray = new QueryResult.Record[records.size()];
         return records.toArray( recordArray );
     }
 }
