@@ -39,11 +39,11 @@ trait Clauses extends Parser
   }
 
   def FromGraph: Rule1[ast.FromGraph] = rule("FROM") {
-    keyword("FROM") ~~ GraphDef ~~>> (ast.FromGraph(_))
+    keyword("FROM") ~~ GraphSpecifier ~~>> (ast.FromGraph(_))
   }
 
   def IntoGraph: Rule1[ast.IntoGraph] = rule("INTO") {
-    keyword("INTO") ~~ GraphDef ~~>> (ast.IntoGraph(_))
+    keyword("INTO") ~~ GraphSpecifier ~~>> (ast.IntoGraph(_))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {

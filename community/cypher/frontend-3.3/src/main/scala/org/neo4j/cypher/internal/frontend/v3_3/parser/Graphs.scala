@@ -1,10 +1,17 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.ast.NoGraph
 import org.parboiled.scala.{Parser, Rule1}
 
 trait Graphs extends Parser
   with Expressions {
+
+  def GraphSpecifier: Rule1[ast.GraphSpecifier] = rule("-|GraphDef") {
+    NoGraph | GraphDef
+  }
+
+  def NoGraph: Rule1[ast.NoGraph] = "-" ~~ push(ast.NoGraph()(_))
 
   def GraphDef: Rule1[ast.GraphDef] = rule("GraphDef") {
    NewGraph | CopyGraph | LoadGraph | AliasGraph
