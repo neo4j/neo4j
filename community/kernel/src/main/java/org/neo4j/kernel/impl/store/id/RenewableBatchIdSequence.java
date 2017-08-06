@@ -33,7 +33,7 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
     private final IdSequence source;
     private final int batchSize;
     private final LongConsumer excessIdConsumer;
-    private IdRangeIterator currentBatch;
+    private IdSequence currentBatch;
     private boolean closed;
 
     public RenewableBatchIdSequence( IdSequence source, int batchSize, LongConsumer excessIdConsumer )
@@ -54,7 +54,7 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
         if ( !closed && currentBatch != null )
         {
             long id;
-            while ( (id = currentBatch.next()) != VALUE_REPRESENTING_NULL )
+            while ( (id = currentBatch.nextId()) != VALUE_REPRESENTING_NULL )
             {
                 excessIdConsumer.accept( id );
             }
@@ -69,10 +69,9 @@ public class RenewableBatchIdSequence implements IdSequence, Resource
         assert !closed;
 
         long id;
-        if ( currentBatch == null || (id = currentBatch.next()) == VALUE_REPRESENTING_NULL )
+        while ( currentBatch == null || (id = currentBatch.nextId()) == VALUE_REPRESENTING_NULL )
         {
-            currentBatch = new IdRangeIterator( source.nextIdBatch( batchSize ) );
-            id = currentBatch.next();
+            currentBatch = source.nextIdBatch( batchSize ).iterator();
         }
         return id;
     }

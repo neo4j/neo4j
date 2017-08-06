@@ -26,13 +26,15 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdContainer;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdRange;
+import org.neo4j.kernel.impl.store.id.IdRangeIterator;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.Math.max;
-import static org.neo4j.causalclustering.core.state.machines.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
-import static org.neo4j.causalclustering.core.state.machines.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
+
+import static org.neo4j.kernel.impl.store.id.IdRangeIterator.EMPTY_ID_RANGE_ITERATOR;
+import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
 
 class ReplicatedIdGenerator implements IdGenerator
 {
@@ -41,7 +43,7 @@ class ReplicatedIdGenerator implements IdGenerator
     private final ReplicatedIdRangeAcquirer acquirer;
     private volatile long highId;
     private volatile IdRangeIterator idQueue = EMPTY_ID_RANGE_ITERATOR;
-    private IdContainer idContainer;
+    private final IdContainer idContainer;
     private final ReentrantLock idContainerLock = new ReentrantLock();
 
     ReplicatedIdGenerator( FileSystemAbstraction fs, File file, IdType idType, long highId,
@@ -116,23 +118,35 @@ class ReplicatedIdGenerator implements IdGenerator
             return id;
         }
 
-        long nextId = idQueue.next();
+        long nextId = idQueue.nextId();
         if ( nextId == VALUE_REPRESENTING_NULL )
         {
-            IdAllocation allocation = acquirer.acquireIds( idType );
-
-            assert allocation.getIdRange().getRangeLength() > 0;
-            log.debug( "Received id allocation " + allocation + " for " + idType );
-            nextId = storeLocally( allocation );
+            acquireNextIdBatch();
+            nextId = idQueue.nextId();
         }
         highId = max( highId, nextId + 1 );
         return nextId;
     }
 
+    private void acquireNextIdBatch()
+    {
+        IdAllocation allocation = acquirer.acquireIds( idType );
+
+        assert allocation.getIdRange().getRangeLength() > 0;
+        log.debug( "Received id allocation " + allocation + " for " + idType );
+        storeLocally( allocation );
+    }
+
     @Override
     public IdRange nextIdBatch( int size )
     {
-        throw new UnsupportedOperationException( "Should never be called" );
+        IdRange range = idQueue.nextIdBatch( size );
+        if ( range.totalSize() == 0 )
+        {
+            acquireNextIdBatch();
+            range = idQueue.nextIdBatch( size );
+        }
+        return range;
     }
 
     @Override
@@ -188,11 +202,10 @@ class ReplicatedIdGenerator implements IdGenerator
         }
     }
 
-    private long storeLocally( IdAllocation allocation )
+    private void storeLocally( IdAllocation allocation )
     {
         setHighId( allocation.getHighestIdInUse() + 1 ); // high id is certainly bigger than the highest id in use
-        this.idQueue = new IdRangeIterator( respectingHighId( allocation.getIdRange() ) );
-        return idQueue.next();
+        this.idQueue = respectingHighId( allocation.getIdRange() ).iterator();
     }
 
     private IdRange respectingHighId( IdRange idRange )

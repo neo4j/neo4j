@@ -21,13 +21,18 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.junit.Test;
 
+import java.util.Iterator;
 import java.util.function.LongConsumer;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import static java.util.Arrays.asList;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 
@@ -129,6 +134,25 @@ public class RenewableBatchIdSequenceTest
 
         // then
         verifyNoMoreInteractions( excessIds );
+    }
+
+    @Test
+    public void shouldContinueThroughEmptyIdBatch() throws Exception
+    {
+        // given
+        IdSequence idSource = mock( IdSequence.class );
+        Iterator<IdRange> ranges = asList(
+                new IdRange( EMPTY_LONG_ARRAY, 0, BATCH_SIZE ),
+                new IdRange( EMPTY_LONG_ARRAY, BATCH_SIZE, 0 ),
+                new IdRange( EMPTY_LONG_ARRAY, BATCH_SIZE, BATCH_SIZE ) ).iterator();
+        when( idSource.nextIdBatch( anyInt() ) ).thenAnswer( invocation -> ranges.next() );
+        RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds );
+
+        // when/then
+        for ( long expectedId = 0; expectedId < BATCH_SIZE * 2; expectedId++ )
+        {
+            assertEquals( expectedId, ids.nextId() );
+        }
     }
 
     private static class IdSource implements IdSequence

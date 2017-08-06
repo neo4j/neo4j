@@ -144,7 +144,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         private final int grabSize;
         private final IdType idType;
         private volatile IdGeneratorState state;
-        private long maxId;
+        private final long maxId;
 
         HaIdGenerator( IdGenerator initialDelegate, File fileName, int grabSize,
                 IdType idType, IdGeneratorState initialState, long maxId )
@@ -333,41 +333,52 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             long nextId = nextLocalId();
             if ( nextId == IdRangeIterator.VALUE_REPRESENTING_NULL )
             {
-                // If we don't have anymore grabbed ids from master, grab a bunch
-                try ( Response<IdAllocation> response =
-                        master.allocateIds( requestContextFactory.newRequestContext(), idType ) )
-                {
-                    IdAllocation allocation = response.response();
-                    log.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
-                    nextId = storeLocally( allocation );
-                }
-                catch ( ComException e )
-                {
-                    throw new TransientTransactionFailureException(
-                            "Cannot allocate new entity ids from the cluster master. " +
-                            "The master instance is either down, or we have network connectivity problems", e );
-                }
+                askForNextRangeFromMaster();
+                nextId = nextLocalId();
             }
             return nextId;
+        }
+
+        private void askForNextRangeFromMaster()
+        {
+            // If we don't have anymore grabbed ids from master, grab a bunch
+            try ( Response<IdAllocation> response =
+                    master.allocateIds( requestContextFactory.newRequestContext(), idType ) )
+            {
+                IdAllocation allocation = response.response();
+                log.info( "Received id allocation " + allocation + " from master " + master + " for " + idType );
+                storeLocally( allocation );
+            }
+            catch ( ComException e )
+            {
+                throw new TransientTransactionFailureException(
+                        "Cannot allocate new entity ids from the cluster master. " +
+                        "The master instance is either down, or we have network connectivity problems", e );
+            }
         }
 
         @Override
         public IdRange nextIdBatch( int size )
         {
-            throw new UnsupportedOperationException( "Should never be called" );
+            IdRange range = idQueue.nextIdBatch( size );
+            if ( range.totalSize() == 0 )
+            {
+                askForNextRangeFromMaster();
+                range = idQueue.nextIdBatch( size );
+            }
+            return range;
         }
 
-        private long storeLocally( IdAllocation allocation )
+        private void storeLocally( IdAllocation allocation )
         {
             setHighId( allocation.getHighestIdInUse() );
             this.defragCount = allocation.getDefragCount();
-            this.idQueue = new IdRangeIterator( allocation.getIdRange() );
-            return idQueue.next();
+            this.idQueue = allocation.getIdRange().iterator();
         }
 
         private long nextLocalId()
         {
-            return this.idQueue.next();
+            return this.idQueue.nextId();
         }
 
         @Override
