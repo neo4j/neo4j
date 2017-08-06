@@ -31,6 +31,9 @@ case class Variable(name: String)(val position: InputPosition) extends Expressio
   }
 
   // double-dispatch helpers
+  def declareGraph =
+    (_: SemanticState).declareGraphVariable(this)
+
   def declare(possibleTypes: TypeSpec) =
     (_: SemanticState).declareVariable(this, possibleTypes)
 

@@ -9,8 +9,6 @@ case object nameAllGraphs extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case graphDef@AliasGraph(graphRef: NamedGraph, None) =>
-      graphDef.copy(alias = Some(graphRef.alias))(graphDef.position)
     case graphDef: GraphDef if graphDef.alias.isEmpty =>
       val pos = graphDef.position.bumped()
       graphDef.withNewName(Variable(UnNamedNameGenerator.name(pos))(pos))

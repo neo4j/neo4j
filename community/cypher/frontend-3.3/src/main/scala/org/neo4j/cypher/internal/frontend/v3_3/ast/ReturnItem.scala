@@ -29,6 +29,7 @@ sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckabl
     * Neo4j does not support the no variables case on the surface, but it may appear as the result of expanding the star (*) when no variables are in scope.
     * This field is true if the dash (-) was used by a user.
     */
+  def includeExisting: Boolean
   def checkUserEmpty: Boolean
   def declareVariables(previousScope: Scope): SemanticCheck
   def containsAggregate: Boolean
@@ -37,6 +38,7 @@ sealed trait ReturnItemsDef extends ASTNode with ASTPhrase with SemanticCheckabl
 }
 
 final case class EmptyReturnItems(fromRewriting: Boolean)(val position: InputPosition) extends ReturnItemsDef {
+  override def includeExisting: Boolean = false
   override def semanticCheck: SemanticCheck = _success
   override val checkUserEmpty = !fromRewriting
   override val items = Seq.empty

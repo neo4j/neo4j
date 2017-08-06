@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.{TreeElem, TreeZipper}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTGraphRef, TypeSpec}
 
 import scala.collection.immutable.HashMap
 import scala.language.postfixOps
@@ -42,7 +42,7 @@ case class SymbolUse(name: String, position: InputPosition) {
 // s3.localSymbol(n) = Symbol(n, Seq(1, 2), type(n))
 // s4.localSymbol(n) = Symbol(n, Seq(1, 2, 3), type(n))
 //
-case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec) {
+case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec, graph: Boolean = false) {
   if (positions.isEmpty)
     throw new InternalException(s"Cannot create empty symbol with name '$name'")
 
@@ -78,10 +78,17 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def symbolNames: Set[String] = symbolTable.keySet
 
+  def selectSymbolNames(f: Symbol => Boolean): Set[String] = symbolTable.collect {
+    case ((k, symbol)) if f(symbol) => k
+  }.toSet
+
   def importScope(other: Scope, exclude: Set[String] = Set.empty) = {
     val otherSymbols = other.symbolTable -- exclude
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
+
+  def updateGraphVariable(variable: String, positions: Set[InputPosition]) =
+    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, CTGraphRef, graph = true)))
 
   def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]) =
     copy(symbolTable = symbolTable.updated(variable, Symbol(variable, positions, types)))
@@ -173,6 +180,9 @@ object SemanticState {
       case (loc, sym)                      => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
     }
 
+    def updateGraphVariable(variable: String, positions: Set[InputPosition]): ScopeLocation =
+      location.replace(scope.updateGraphVariable(variable, positions))
+
     def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =
       location.replace(scope.updateVariable(variable, types, positions))
 
@@ -199,6 +209,14 @@ case class SemanticState(currentScope: ScopeLocation,
 
   def mergeScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.mergeScope(scope, exclude))
+
+  def declareGraphVariable(variable: ast.Variable, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
+    currentScope.localSymbol(variable.name) match {
+      case None =>
+        Right(updateGraphVariable(variable, positions + variable.position))
+      case Some(symbol) =>
+        Left(SemanticError(s"Variable `${variable.name}` already declared", variable.position, symbol.positions.toSeq: _*))
+    }
 
   def declareVariable(variable: ast.Variable, possibleTypes: TypeSpec, positions: Set[InputPosition] = Set.empty): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
@@ -250,6 +268,12 @@ case class SemanticState(currentScope: ScopeLocation,
   }
 
   def expressionType(expression: ast.Expression): ExpressionTypeInfo = typeTable.getOrElse(expression, ExpressionTypeInfo(TypeSpec.all))
+
+  private def updateGraphVariable(variable: ast.Variable, locations: Set[InputPosition]) =
+    copy(
+      currentScope = currentScope.updateGraphVariable(variable.name, locations),
+      typeTable = typeTable.updated(variable, ExpressionTypeInfo(CTGraphRef))
+    )
 
   private def updateVariable(variable: ast.Variable, types: TypeSpec, locations: Set[InputPosition]) =
     copy(

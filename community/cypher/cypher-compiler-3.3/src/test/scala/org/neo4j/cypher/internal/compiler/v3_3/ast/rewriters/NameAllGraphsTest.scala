@@ -37,7 +37,7 @@ class NameAllGraphsTest extends CypherFunSuite {
 
   test("name named graphs") {
     val original = parser.parse("FROM foo RETURN 1")
-    val expected = parser.parse("FROM foo AS foo RETURN 1")
+    val expected = parser.parse("FROM foo RETURN 1")
 
     val result = original.rewrite(nameAllGraphs)
     assert(result === expected)

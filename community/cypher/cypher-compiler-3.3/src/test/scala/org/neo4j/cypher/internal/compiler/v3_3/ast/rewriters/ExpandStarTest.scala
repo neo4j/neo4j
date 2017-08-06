@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, EmptyReturnItems}
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, bottomUp, inSequence}
 
 class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
   import parser.ParserFixture.parser
@@ -56,6 +56,31 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     assertRewrite(
       "match p=(a:Start)-->(b) return *",
       "match p=(a:Start)-->(b) return a, b, p")
+  }
+
+  test("rewrites * in return graphs") {
+    assertRewrite(
+      "from new graph as foo from new graph as bar return * graphs *",
+      "from new graph as foo from new graph as bar return - graphs bar as bar, foo as foo"
+    )
+
+    assertRewrite(
+      "from new graph as foo from new graph as bar return - graphs *",
+      "from new graph as foo from new graph as bar return - graphs bar as bar, foo as foo"
+    )
+
+  }
+
+  test("rewrites * in with graphs") {
+    assertRewrite(
+      "from new graph as foo from new graph as bar with * graphs * return 1",
+      "from new graph as foo from new graph as bar with - graphs bar as bar, foo as foo return 1"
+    )
+
+    assertRewrite(
+      "from new graph as foo from new graph as bar with - graphs * return 1",
+      "from new graph as foo from new graph as bar with - graphs bar as bar, foo as foo return 1"
+    )
   }
 
   test("rewrites * in with") {
@@ -109,8 +134,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private def assertRewrite(originalQuery: String, expectedQuery: String) {
     val mkException = new SyntaxExceptionCreator(originalQuery, Some(pos))
-    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val original = parser.parse(originalQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
+    val expected = parser.parse(expectedQuery).endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException), emptyReturnItemsAlwaysFromRewriting))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
     val rewriter = expandStar(checkResult.state)
@@ -118,4 +143,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = original.rewrite(rewriter)
     assert(result === expected)
   }
+
+  private val emptyReturnItemsAlwaysFromRewriting = bottomUp(Rewriter.lift {
+    case items@EmptyReturnItems(_) => items.copy(fromRewriting = true)(items.position)
+  })
 }
