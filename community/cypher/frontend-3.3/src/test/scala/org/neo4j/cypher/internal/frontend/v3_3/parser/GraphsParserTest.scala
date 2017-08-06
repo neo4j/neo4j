@@ -8,9 +8,7 @@ import scala.language.implicitConversions
 class GraphsParserTest
   extends ParserAstTest[ast.GraphSpecifier]
   with Graphs
-  with Expressions
-  with Literals
-  with Base {
+  with Expressions {
 
   implicit val parser = GraphSpecifier
 
@@ -50,28 +48,28 @@ class GraphsParserTest
     yields(ast.AliasGraph(ast.DefaultGraph()(pos), Some("foo")))
   }
 
-  test("NEW GRAPH foo AT 'url'") {
-    yields(ast.NewGraph(Some("foo"), Some(url("url"))))
+  test("NEW GRAPH AT 'url' AS foo") {
+    yields(ast.NewGraph(Some(url("url")), Some("foo")))
   }
 
   test("NEW GRAPH AT 'url'") {
-    yields(ast.NewGraph(None, Some(url("url"))))
+    yields(ast.NewGraph(Some(url("url")), None))
   }
 
-  test("NEW GRAPH foo") {
-    yields(ast.NewGraph(Some("foo"), None))
+  test("NEW GRAPH AS foo") {
+    yields(ast.NewGraph(None, Some("foo")))
   }
 
   test("NEW GRAPH") {
     yields(ast.NewGraph(None, None))
   }
 
-  test("GRAPH foo AT 'url'") {
-    yields(ast.LoadGraph(Some("foo"), url("url")))
+  test("GRAPH AT 'url' AS foo") {
+    yields(ast.LoadGraph(url("url"), Some("foo")))
   }
 
   test("GRAPH AT 'url'") {
-    yields(ast.LoadGraph(None, url("url")))
+    yields(ast.LoadGraph(url("url"), None))
   }
 
   test("COPY foo TO 'url' AS bar") {

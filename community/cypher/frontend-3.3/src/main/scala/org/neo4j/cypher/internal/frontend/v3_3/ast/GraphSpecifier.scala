@@ -16,13 +16,13 @@ sealed trait GraphDef extends GraphSpecifier {
 
   self =>
 
-  def name: Variable = alias.get
-  def alias: Option[Variable]
+  def name: Variable = as.get
+  def as: Option[Variable]
 
   def withNewName(newName: Variable): GraphDef
 
   override def semanticCheck: SemanticCheck = {
-    inner chain alias.map(_.declare(CTGraphRef): SemanticCheck).getOrElse(SemanticCheckResult.success)
+    inner chain as.map(_.declare(CTGraphRef): SemanticCheck).getOrElse(SemanticCheckResult.success)
   }
 
   final override def graph = Some(self)
@@ -32,31 +32,30 @@ sealed trait GraphDef extends GraphSpecifier {
 
 final case class AliasGraph(ref: GraphRef, as: Option[Variable])
                            (val position: InputPosition) extends GraphDef {
-  override def alias = as
   override protected def inner = ref.semanticCheck
 
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
 }
 
-final case class NewGraph(alias: Option[Variable], url: Option[GraphUrl])
+final case class NewGraph(url: Option[GraphUrl], as: Option[Variable])
                          (val position: InputPosition) extends GraphDef {
   override protected def inner = url.semanticCheck
 
-  override def withNewName(newName: Variable) = copy(alias = Some(newName))(position)
+  override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
 }
 
 final case class CopyGraph(ref: GraphRef, to: GraphUrl, as: Option[Variable])
                           (val position: InputPosition)
   extends GraphDef {
-  override def alias = as
+
   override protected def inner = ref.semanticCheck chain to.semanticCheck
 
   override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
 }
 
-final case class LoadGraph(alias: Option[Variable], url: GraphUrl)
+final case class LoadGraph(url: GraphUrl, as: Option[Variable])
                           (val position: InputPosition) extends GraphDef {
-  override protected def inner = url.semanticCheck
 
-  override def withNewName(newName: Variable) = copy(alias = Some(newName))(position)
+  override protected def inner = url.semanticCheck
+  override def withNewName(newName: Variable) = copy(as = Some(newName))(position)
 }

@@ -25,7 +25,7 @@ case class GraphReturnItems(star: Boolean, items: Seq[GraphDef])
 
   override def semanticCheck = {
     val covariant = CTGraphRef.covariant
-    items.flatMap(_.alias).foldSemanticCheck(_.expectType(covariant)) chain
+    items.flatMap(_.as).foldSemanticCheck(_.expectType(covariant)) chain
     FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
   }
 }

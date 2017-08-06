@@ -66,7 +66,6 @@ object GraphArchive {
   }
 }
 
-
 object GraphRecipe {
 
   final case class CypherScript(file: File, hash: String)

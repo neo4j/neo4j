@@ -1,10 +1,10 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.NoGraph
 import org.parboiled.scala.{Parser, Rule1}
 
-trait Graphs extends Parser
+trait Graphs
+  extends Parser
   with Expressions {
 
   def GraphSpecifier: Rule1[ast.GraphSpecifier] = rule("-|GraphDef") {
@@ -22,29 +22,18 @@ trait Graphs extends Parser
   }
 
   private def NewGraph: Rule1[ast.NewGraph] = rule("NEW GRAPH") {
-    keyword("NEW") ~~ keyword("GRAPH") ~~ (AnonNewGraph | NamedNewGraph)
-  }
-
-  private def AnonNewGraph: Rule1[ast.NewGraph] = rule("Anon NEW GRAPH") {
-    keyword("AT") ~~ GraphUrl ~~>> (url => ast.NewGraph(None, Some(url)))
-  }
-  private def NamedNewGraph: Rule1[ast.NewGraph] = rule("Named NEW GRAPH") {
-    optional(Variable) ~~ optional(keyword("AT") ~~ GraphUrl) ~~>> (ast.NewGraph(_, _))
+    keyword("NEW") ~~ keyword("GRAPH") ~~
+      optional(keyword("AT") ~~ GraphUrl) ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.NewGraph(_, _))
   }
 
   private def CopyGraph: Rule1[ast.CopyGraph] = rule("COPY GRAPH") {
-    keyword("COPY") ~~ GraphRef ~~ keyword("TO") ~~ GraphUrl ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.CopyGraph(_, _, _))
+    keyword("COPY") ~~
+      GraphRef ~~ keyword("TO") ~~ GraphUrl ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.CopyGraph(_, _, _))
   }
 
   private def LoadGraph: Rule1[ast.LoadGraph] = rule("GRAPH AT") {
-    keyword("GRAPH") ~~ (AnonLoadGraph | NamedLoadGraph)
-  }
-
-  private def AnonLoadGraph: Rule1[ast.LoadGraph] = rule("Anon GRAPH AT") {
-    keyword("AT") ~~ GraphUrl ~~>> (url => ast.LoadGraph(None, url))
-  }
-  private def NamedLoadGraph: Rule1[ast.LoadGraph] = rule("Named GRAPH AT") {
-    optional(Variable) ~~ keyword("AT") ~~ GraphUrl ~~>> (ast.LoadGraph(_, _))
+    keyword("GRAPH") ~~
+      keyword("AT") ~~ GraphUrl ~~ optional(keyword("AS") ~~ Variable) ~~>> (ast.LoadGraph(_, _))
   }
 
   def GraphRef: Rule1[ast.GraphRef] = rule("GraphRef") {
