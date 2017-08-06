@@ -21,6 +21,7 @@ import org.parboiled.scala._
 
 trait Clauses extends Parser
   with StartPoints
+  with Graphs
   with Patterns
   with Expressions
   with Base
@@ -38,23 +39,11 @@ trait Clauses extends Parser
   }
 
   def FromGraph: Rule1[ast.FromGraph] = rule("FROM") {
-    keyword("FROM") ~~ GraphSpecifier ~~>> (ast.FromGraph(_))
+    keyword("FROM") ~~ GraphDef ~~>> (ast.FromGraph(_))
   }
 
   def IntoGraph: Rule1[ast.IntoGraph] = rule("INTO") {
-    keyword("INTO") ~~ GraphSpecifier ~~>> (ast.IntoGraph(_))
-  }
-
-  def GraphSpecifier: Rule1[ast.GraphSpecifier] = rule("GraphSpec") {
-    newGraph | graphRef
-  }
-
-  private def newGraph: Rule1[ast.NewGraph] = rule("new graph") {
-    keyword("NEW GRAPH") ~~ Variable ~~ optional(keyword("AT") ~~ Expression) ~~>> (ast.NewGraph(_, _))
-  }
-
-  private def graphRef: Rule1[ast.GraphReference] = rule("graph ref") {
-    keyword("GRAPH") ~~ Variable ~~ keyword("AT") ~~ Expression ~~>> (ast.GraphReference(_, _))
+    keyword("INTO") ~~ GraphDef ~~>> (ast.IntoGraph(_))
   }
 
   def Start: Rule1[ast.Start] = rule("START") {
@@ -86,8 +75,8 @@ trait Clauses extends Parser
   }
 
   def Delete: Rule1[ast.Delete] = rule("DELETE")(
-    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, false))
-      | group(keyword("DETACH DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, true))
+    group(keyword("DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, forced = false))
+      | group(keyword("DETACH DELETE") ~~ oneOrMore(Expression, separator = CommaSep)) ~~>> (ast.Delete(_, forced = true))
   )
 
   def Remove: Rule1[ast.Remove] = rule("REMOVE") {
@@ -169,8 +158,8 @@ trait Clauses extends Parser
   )
 
   private def GraphReturnItems: Rule1[ast.GraphReturnItems] = rule("'*', an expression")(
-    keyword("GRAPHS") ~~ oneOrMore(Variable, separator = CommaSep) ~~>> (ast.GraphReturnItems(false, _)) |
-    keyword("GRAPHS") ~~ "*" ~ zeroOrMore(CommaSep ~ Variable) ~~>> (ast.GraphReturnItems(true, _))
+    keyword("GRAPHS") ~~ oneOrMore(GraphDef, separator = CommaSep) ~~>> (ast.GraphReturnItems(false, _)) |
+    keyword("GRAPHS") ~~ "*" ~ zeroOrMore(CommaSep ~ GraphDef) ~~>> (ast.GraphReturnItems(true, _))
   )
 
   private def ReturnItem: Rule1[ast.ReturnItem] = rule(

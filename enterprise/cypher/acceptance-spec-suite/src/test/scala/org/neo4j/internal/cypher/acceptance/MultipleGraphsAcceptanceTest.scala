@@ -25,13 +25,11 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
 
   test("from graph") {
     val query = "FROM GRAPH test AT 'graph://url' MATCH (a)-->() RETURN a"
-
     expect(query) doesNotSupport "FROM"
   }
 
   test("into graph") {
     val query = "MATCH (a)--() INTO GRAPH test AT 'graph://url' CREATE (a)-->(b:B) RETURN b"
-
     expect(query) doesNotSupport "INTO"
   }
 

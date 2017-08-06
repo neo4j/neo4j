@@ -19,14 +19,13 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTGraphRef
 
-case class GraphReturnItems(star: Boolean, items: Seq[Variable])
+case class GraphReturnItems(star: Boolean, items: Seq[GraphDef])
                            (val position: InputPosition)
   extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
 
   override def semanticCheck = {
     val covariant = CTGraphRef.covariant
-    items.foldSemanticCheck(_.expectType(covariant)) chain
-      FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
+    items.flatMap(_.alias).foldSemanticCheck(_.expectType(covariant)) chain
+    FeatureError("Projecting / returning graphs is not supported by Neo4j", position)
   }
-
 }
