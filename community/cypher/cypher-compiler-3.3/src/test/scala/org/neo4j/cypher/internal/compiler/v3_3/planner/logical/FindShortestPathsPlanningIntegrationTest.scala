@@ -60,7 +60,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
   }
 
-  test("find shortest paths on top of computeHash joins") {
+  test("find shortest paths on top of hash joins") {
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan

@@ -83,7 +83,7 @@ class CartesianProductsOrValueJoinsTest
     )
   }
 
-  test("should plan computeHash join between 2 pattern nodes") {
+  test("should plan hash join between 2 pattern nodes") {
     val equality = Equals(prop("a", "id"), prop("b", "id"))(pos)
 
     testThis(
@@ -96,7 +96,7 @@ class CartesianProductsOrValueJoinsTest
       expectedPlan = ValueHashJoin(planA, planB, equality)(solved))
   }
 
-  test("should plan computeHash joins between 3 pattern nodes") {
+  test("should plan hash joins between 3 pattern nodes") {
     val eq1 = Equals(prop("b", "id"), prop("a", "id"))(pos)
     val eq2 = Equals(prop("b", "id"), prop("c", "id"))(pos)
     val eq3 = Equals(prop("a", "id"), prop("c", "id"))(pos)

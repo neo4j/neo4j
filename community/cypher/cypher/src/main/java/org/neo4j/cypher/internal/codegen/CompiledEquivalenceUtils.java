@@ -27,7 +27,7 @@ import java.util.Map;
 import org.neo4j.helpers.MathUtil;
 
 /**
- * Helper class for dealing with equivalence an computeHash code in compiled code.
+ * Helper class for dealing with equivalence an hash code in compiled code.
  *
  * Note this class contains a lot of duplicated code in order to minimize boxing.
  */
@@ -181,9 +181,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculates computeHash code of a given object
-     * @param element the element to calculate computeHash code for
-     * @return the computeHash code of the given object
+     * Calculates hash code of a given object
+     * @param element the element to calculate hash code for
+     * @return the hash code of the given object
      */
     @SuppressWarnings( "unchecked" )
     public static int hashCode( Object element )
@@ -255,9 +255,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a map
-     * @param map the element to calculate computeHash code for
-     * @return the computeHash code of the given map
+     * Calculate hash code of a map
+     * @param map the element to calculate hash code for
+     * @return the hash code of the given map
      */
     public static int hashCode( Map<String,Object> map )
     {
@@ -272,9 +272,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a long value
-     * @param value the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a long value
+     * @param value the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( long value )
     {
@@ -282,9 +282,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a boolean value
-     * @param value the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a boolean value
+     * @param value the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( boolean value )
     {
@@ -292,9 +292,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a char value
-     * @param value the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a char value
+     * @param value the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( char value )
     {
@@ -302,9 +302,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a char[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a char[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( char[] array )
     {
@@ -325,9 +325,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a list value
-     * @param list the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a list value
+     * @param list the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( List<?> list )
     {
@@ -349,9 +349,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a Object[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a Object[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( Object[] array )
     {
@@ -372,9 +372,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a byte[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a byte[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( byte[] array )
     {
@@ -395,9 +395,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a short[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a short[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( short[] array )
     {
@@ -418,9 +418,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a int[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a int[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( int[] array )
     {
@@ -441,9 +441,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a long[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a long[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( long[] array )
     {
@@ -464,9 +464,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a float[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a float[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( float[] array )
     {
@@ -488,9 +488,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a double[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a double[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( double[] array )
     {
@@ -512,9 +512,9 @@ public final class CompiledEquivalenceUtils
     }
 
     /**
-     * Calculate computeHash code of a boolean[] value
-     * @param array the value to compute computeHash code for
-     * @return the computeHash code of the given value
+     * Calculate hash code of a boolean[] value
+     * @param array the value to compute hash code for
+     * @return the hash code of the given value
      */
     public static int hashCode( boolean[] array )
     {

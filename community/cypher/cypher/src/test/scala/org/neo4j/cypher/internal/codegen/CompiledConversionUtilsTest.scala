@@ -23,9 +23,9 @@ import java.util
 import java.util.stream.{DoubleStream, IntStream, LongStream}
 
 import org.mockito.Mockito.when
-import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
 import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.JavaConverters._
@@ -82,7 +82,7 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     CompiledConversionUtils.loadParameter(Array(1L, 2L, "Hello")).getClass.getComponentType.isPrimitive shouldBe false
   }
 
-  test("should be able to use a composite key in a computeHash map") {
+  test("should be able to use a composite key in a hash map") {
     //given
     val theKey = CompiledConversionUtils.compositeKey(1l, 2L, 11L)
     val theObject = mock[Object]

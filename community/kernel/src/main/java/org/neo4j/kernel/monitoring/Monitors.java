@@ -195,7 +195,7 @@ public class Monitors
      * monitors may incur overhead in calculating whatever data they expose through
      * their monitors. If no-one is listening, this overhead is wasteful.
      *
-     * This is a fast (single computeHash-map lookup) way to find out if there are
+     * This is a fast (single hash-map lookup) way to find out if there are
      * currently any listeners to a given monitor interface.
      */
     public boolean hasListeners( Class<?> monitorClass )

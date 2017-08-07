@@ -186,7 +186,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
       OptionalExpandIntoPipe(AllNodesScanPipe("a")(), "a", "r", "a", SemanticDirection.INCOMING, LazyTypes.empty, True())())
   }
 
-  test("simple computeHash join") {
+  test("simple hash join") {
     val logicalPlan =
       NodeHashJoin(
         Set(IdName("b")),

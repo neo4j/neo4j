@@ -658,7 +658,7 @@ class RWLock
     @Override
     public String toString()
     {
-        return "RWLock[" + resource + ", computeHash=" + hashCode() + "]";
+        return "RWLock[" + resource + ", hash=" + hashCode() + "]";
     }
 
     private void registerReadLockAcquired( Object tx, TxLockElement tle )

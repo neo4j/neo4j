@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.Equals
 import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
 
 /*
-Represents a common computeHash join on values and not node ids. The definition of a value join is an equality predicate
+Represents a common hash join on values and not node ids. The definition of a value join is an equality predicate
 between two expressions that have different, non-empty variable-dependency sets.
  */
 case class ValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals)

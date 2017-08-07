@@ -42,8 +42,10 @@ public abstract class AnyValue
         return hash;
     }
 
-    public abstract boolean eq( Object other );
-    public abstract int computeHash();
+    protected abstract boolean eq( Object other );
+
+    protected abstract int computeHash();
+
     public abstract <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E;
 
     public boolean isSequenceValue()

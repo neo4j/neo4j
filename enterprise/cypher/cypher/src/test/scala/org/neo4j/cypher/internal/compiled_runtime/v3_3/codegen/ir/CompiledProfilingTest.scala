@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.{AcceptVisitor, ScanAllNodes, WhileLoop}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
@@ -96,7 +96,7 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     seq.head
   }
 
-  test("should profile computeHash join") {
+  test("should profile hash join") {
     //given
     val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {

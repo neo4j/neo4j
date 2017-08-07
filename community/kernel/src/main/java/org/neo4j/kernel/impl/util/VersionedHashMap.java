@@ -72,7 +72,7 @@ public class VersionedHashMap<K, V> implements Map<K, V>
     private static final int MAX_BUCKETS = 1 << 30;
 
     /**
-     * Contains "buckets" of computeHash chains. Each entry in this array points to a linked-list type data structure that
+     * Contains "buckets" of hash chains. Each entry in this array points to a linked-list type data structure that
      * make up chains of values with hashes for the relevant bucket.
      *
      * See http://en.wikipedia.org/wiki/Hash_table

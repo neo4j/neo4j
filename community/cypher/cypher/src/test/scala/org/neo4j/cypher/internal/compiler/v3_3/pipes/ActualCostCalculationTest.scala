@@ -120,7 +120,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     }
   }
 
-  ignore("computeHash joins") {
+  ignore("hash joins") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
     val graph: GraphDatabaseQueryService = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
@@ -131,7 +131,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       setupDbForJoins(graph, labels)
 
       //permutate lhs, and rhs of the hashjoin, for each permutation
-      //calculate cost of lhs, rhs and the cost for the computeHash join
+      //calculate cost of lhs, rhs and the cost for the hash join
       for {label1 <- labels
            label2 <- labels if label1 != label2} {
 

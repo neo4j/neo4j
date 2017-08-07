@@ -89,7 +89,7 @@ public enum ResourceTypes implements ResourceType
         int propertyKeyId = predicates[i].propertyKeyId();
         Value value = predicates[i].value();
         // Note:
-        // It is important that single-property indexes only computeHash with this particular call; no additional hashing!
+        // It is important that single-property indexes only hash with this particular call; no additional hashing!
         long hash = indexEntryResourceId( labelId, propertyKeyId, stringOf( value ) );
         i++;
         if ( i < predicates.length )

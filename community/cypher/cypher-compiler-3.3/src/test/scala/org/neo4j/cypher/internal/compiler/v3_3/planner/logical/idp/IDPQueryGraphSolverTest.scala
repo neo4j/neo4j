@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
@@ -732,7 +733,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         verify(monitor).startConnectingComponents(omQG)
         verify(monitor).endConnectingComponents(omQG, expandAtoB)
 
-        // outer computeHash joins
+        // outer hash joins
         val omQGWithoutArguments = omQG.withoutArguments()
 
         verify(monitor).initTableFor(omQGWithoutArguments)
