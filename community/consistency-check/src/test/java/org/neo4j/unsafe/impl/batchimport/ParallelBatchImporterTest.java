@@ -178,7 +178,7 @@ public class ParallelBatchImporterTest
         // GIVEN
         ExecutionMonitor processorAssigner = eagerRandomSaturation( config.maxNumberOfProcessors() );
         final BatchImporter inserter = new ParallelBatchImporter( directory.graphDbDir(),
-                fileSystemRule.get(), config, NullLogService.getInstance(),
+                fileSystemRule.get(), null, config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.empty(), getFormat() );
 
         boolean successful = false;
