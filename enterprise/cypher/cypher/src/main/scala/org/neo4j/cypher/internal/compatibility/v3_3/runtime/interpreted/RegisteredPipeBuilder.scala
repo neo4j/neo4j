@@ -152,7 +152,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         CreateNodeRegisterPipe(idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
 
       case EmptyResult(_) =>
-        EmptyResultRegisterPipe(source)(id = id)
+        EmptyResultPipe(source)(id = id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
