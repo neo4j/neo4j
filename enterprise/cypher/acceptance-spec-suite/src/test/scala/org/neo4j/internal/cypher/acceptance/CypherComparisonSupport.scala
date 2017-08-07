@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
-import org.neo4j.kernel.impl.core.NodeProxy
 import org.scalatest.Assertions
 
 import scala.util.{Failure, Success, Try}
@@ -68,10 +67,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
           Eagerly.immutableMapValues(m.asScala, convert)
         case l: java.util.List[_] => l.asScala.map(convert)
         case d: java.lang.Double if replaceNaNs && java.lang.Double.isNaN(d) => NanReplacement
-        case n: NodeProxy => new NodeProxy(null,0)
         case m => m
       }
-
 
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
