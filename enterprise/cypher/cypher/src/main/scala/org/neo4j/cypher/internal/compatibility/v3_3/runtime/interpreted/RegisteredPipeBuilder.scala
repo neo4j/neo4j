@@ -108,6 +108,13 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
 
+      case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
+        val fromOffset = pipeline(fromName).offset
+        val relOffset = pipeline(relName).offset
+        val toOffset = pipeline(toName).offset
+        val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
