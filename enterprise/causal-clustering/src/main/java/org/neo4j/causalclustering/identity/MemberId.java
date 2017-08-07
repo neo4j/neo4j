@@ -32,13 +32,11 @@ import static java.lang.String.format;
 public class MemberId
 {
     private final UUID uuid;
-    private final String shortName;
 
     public MemberId( UUID uuid )
     {
         Objects.requireNonNull( uuid );
         this.uuid = uuid;
-        shortName = uuid.toString().substring( 0, 8 );
     }
 
     public UUID getUuid()
@@ -49,7 +47,7 @@ public class MemberId
     @Override
     public String toString()
     {
-        return format( "MemberId{%s}", shortName );
+        return format( "MemberId{%s}", uuid);
     }
 
     @Override

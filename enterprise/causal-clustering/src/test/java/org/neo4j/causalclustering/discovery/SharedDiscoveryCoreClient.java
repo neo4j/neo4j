@@ -24,7 +24,6 @@ import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.identity.ClusterId;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;

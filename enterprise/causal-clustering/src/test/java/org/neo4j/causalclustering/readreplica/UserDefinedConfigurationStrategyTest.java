@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.ClientConnectorAddresses;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.ReadReplicaInfo;

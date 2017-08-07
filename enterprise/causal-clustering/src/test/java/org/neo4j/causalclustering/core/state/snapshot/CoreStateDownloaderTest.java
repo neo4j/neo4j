@@ -88,7 +88,7 @@ public class CoreStateDownloaderTest
     {
         // given
         StoreId remoteStoreId = new StoreId( 5, 6, 7, 8 );
-        when( remoteStore.getStoreId( remoteMember ) ).thenReturn( remoteStoreId );
+        when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( remoteStoreId );
         when( localDatabase.isEmpty() ).thenReturn( true );
 
         // when
@@ -121,7 +121,7 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         StoreId remoteStoreId = new StoreId( 5, 6, 7, 8 );
-        when( remoteStore.getStoreId( remoteMember ) ).thenReturn( remoteStoreId );
+        when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( remoteStoreId );
 
         // when
         try
@@ -144,7 +144,7 @@ public class CoreStateDownloaderTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
-        when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
+        when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( storeId );
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
@@ -160,7 +160,7 @@ public class CoreStateDownloaderTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
-        when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
+        when( remoteStore.getStoreId( remoteAddress ) ).thenReturn( storeId );
         when( remoteStore.tryCatchingUp( remoteAddress, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when

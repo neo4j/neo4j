@@ -182,7 +182,7 @@ public class RemoteStore
         }
     }
 
-    public StoreId getStoreId( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId getStoreId( AdvertisedSocketAddress from ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( from );
     }

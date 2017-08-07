@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.helper.RobustJobSchedulerWrapper;
@@ -79,6 +80,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final long refreshPeriod;
     private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
+    private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -104,6 +106,18 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
+        this.topologyServiceRetryStrategy = resolveStrategy();
+    }
+
+    private TopologyServiceRetryStrategy resolveStrategy()
+    {
+        int timeoutMillis = 500;
+        int retries = 5;
+        if ( timeoutMillis > 0 || retries > 0 )
+        {
+            return new MultiRetryTopologyServiceStrategy( timeoutMillis, retries );
+        }
+        return new NoRetriesTopologyServiceStrategy();
     }
 
     @Override
@@ -311,7 +325,8 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
     {
-        return Optional.ofNullable( catchupAddressMap.get( memberId ) );
+        Function<MemberId, Optional<AdvertisedSocketAddress>> findCatchupAddress = memberid -> Optional.ofNullable( catchupAddressMap.get( memberId ) );
+        return Optional.of( topologyServiceRetryStrategy.findCatchupAddress( memberId, findCatchupAddress ) );
     }
 
     private synchronized void refreshTopology() throws InterruptedException
