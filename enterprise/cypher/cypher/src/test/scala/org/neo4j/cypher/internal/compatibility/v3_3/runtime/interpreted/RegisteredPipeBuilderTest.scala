@@ -241,10 +241,14 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
-    pipe should equal(OptionalExpandAllPipe(
+    pipe should equal(OptionalExpandAllRegisterPipe(
       AllNodesScanRegisterPipe("x",
         PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences = 0))(),
-      "x", "r", "z", SemanticDirection.INCOMING, LazyTypes.empty, predicates.True()
+      0, 1, 2, SemanticDirection.INCOMING, LazyTypes.empty, predicates.True(),
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> LongSlot(1, nullable = true, CTRelationship, "r"),
+        "z" -> LongSlot(2, nullable = true, CTNode, "z")), numberOfLongs = 3, numberOfReferences = 0)
     )())
   }
 
