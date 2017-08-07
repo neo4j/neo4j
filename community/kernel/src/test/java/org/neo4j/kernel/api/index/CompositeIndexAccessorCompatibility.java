@@ -76,6 +76,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
     // This behaviour is expected by General indexes
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends CompositeIndexAccessorCompatibility
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
@@ -106,6 +107,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
 
     // This behaviour is expected by Unique indexes
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends CompositeIndexAccessorCompatibility
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
