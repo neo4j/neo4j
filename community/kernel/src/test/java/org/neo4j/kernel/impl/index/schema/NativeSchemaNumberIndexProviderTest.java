@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -59,6 +60,7 @@ public class NativeSchemaNumberIndexProviderTest
     private static final int labelId = 1;
     private static final int propId = 1;
     private NativeSchemaNumberIndexProvider provider;
+    private final AssertableLogProvider logging = new AssertableLogProvider();
 
     @Before
     public void setup() throws IOException
@@ -312,6 +314,7 @@ public class NativeSchemaNumberIndexProviderTest
 
         // then
         assertEquals( InternalIndexState.POPULATING, state );
+        logging.assertContainsLogCallContaining( "Failed to open index" );
     }
 
     @Test
@@ -382,12 +385,12 @@ public class NativeSchemaNumberIndexProviderTest
 
     private NativeSchemaNumberIndexProvider newProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), RecoveryCleanupWorkCollector.IMMEDIATE, false );
+        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, false );
     }
 
     private NativeSchemaNumberIndexProvider newReadOnlyProvider()
     {
-        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), RecoveryCleanupWorkCollector.IMMEDIATE, true );
+        return new NativeSchemaNumberIndexProvider( pageCache(), baseDir(), logging, RecoveryCleanupWorkCollector.IMMEDIATE, true );
     }
 
     private PageCache pageCache()

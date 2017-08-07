@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
@@ -47,15 +49,17 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
     private static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private final PageCache pageCache;
     private final File nativeSchemaIndexBaseDir;
+    private final Log log;
     private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final boolean readOnly;
 
-    NativeSchemaNumberIndexProvider( PageCache pageCache, File nativeSchemaIndexBaseDir,
+    NativeSchemaNumberIndexProvider( PageCache pageCache, File nativeSchemaIndexBaseDir, LogProvider logging,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
         super( NATIVE_PROVIDER_DESCRIPTOR, 0 );
         this.pageCache = pageCache;
         this.nativeSchemaIndexBaseDir = getSchemaIndexStoreDirectory( nativeSchemaIndexBaseDir );
+        this.log = logging.getLog( getClass() );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.readOnly = readOnly;
     }
@@ -148,6 +152,7 @@ public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
         }
         catch ( IOException e )
         {
+            log.error( "Failed to open index:" + indexId + ", requesting re-population.", e );
             return InternalIndexState.POPULATING;
         }
     }
