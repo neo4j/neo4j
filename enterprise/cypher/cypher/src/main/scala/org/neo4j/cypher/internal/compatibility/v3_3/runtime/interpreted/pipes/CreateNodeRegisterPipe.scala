@@ -40,9 +40,8 @@ case class CreateNodeRegisterPipe(ident: String, pipelineInformation: PipelineIn
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val node: Node = state.query.createNode()
+    val nodeId = state.query.createNodeId()
     val context = PrimitiveExecutionContext(pipelineInformation)
-    val nodeId: Long = node.getId
     setProperties(context, state, nodeId)
     setLabels(context, state, nodeId)
 

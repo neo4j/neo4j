@@ -466,6 +466,12 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
+    public Long createNodeId()
+    {
+        return database.createNodeId();
+    }
+
+    @Override
     public Relationship getRelationshipById( long id )
     {
         return database.getRelationshipById( id );
