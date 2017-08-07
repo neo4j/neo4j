@@ -21,7 +21,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 
-// with QueryStatisticsTestSupport
 class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should handle map projection with property selectors") {
