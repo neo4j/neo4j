@@ -31,6 +31,7 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
@@ -55,11 +56,12 @@ public class CatchUpClient extends LifecycleAdapter
     private final SslPolicy sslPolicy;
     private final long inactivityTimeoutMillis;
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
+    private final TopologyService topologyService;
 
     private NioEventLoopGroup eventLoopGroup;
 
     public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors,
-            SslPolicy sslPolicy )
+            SslPolicy sslPolicy, TopologyService topologyService )
     {
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
@@ -67,13 +69,15 @@ public class CatchUpClient extends LifecycleAdapter
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.monitors = monitors;
         this.sslPolicy = sslPolicy;
+        this.topologyService = topologyService;
     }
 
-    public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
+    public <T> T makeBlockingRequest( MemberId memberId, AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
             throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
 
+        upstream = topologyService.findCatchupAddress( memberId ).orElseThrow( () -> new CatchUpClientException( "" + memberId ) );
         CatchUpChannel channel = pool.acquire( upstream );
 
         future.whenComplete( ( result, e ) ->

@@ -105,7 +105,7 @@ public class ReadReplicaStartupProcessTest
         readReplicaStartupProcess.start();
 
         // then
-        verify( storeCopyProcess ).replaceWithStoreFrom( any(), any() );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any(), any(), any() );
         verify( localDatabase ).start();
         verify( txPulling ).start();
     }

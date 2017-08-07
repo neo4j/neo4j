@@ -115,7 +115,7 @@ public class CoreServerModule
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life.add(
-               new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy ) );
+               new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy, topologyService ) );
 
         RemoteStore remoteStore =
                 new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider, topologyService ),

@@ -42,26 +42,27 @@ public class TxPullClient
         this.pullRequestMonitor = monitors.newMonitor( PullRequestMonitor.class );
     }
 
-    public TxPullRequestResult pullTransactions( AdvertisedSocketAddress fromAddress, StoreId storeId, long previousTxId,
+    public TxPullRequestResult pullTransactions( MemberId memberId, AdvertisedSocketAddress fromAddress, StoreId storeId, long previousTxId,
             TxPullResponseListener txPullResponseListener ) throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
-        return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()
-        {
-            private long lastTxIdReceived = previousTxId;
+        return catchUpClient.makeBlockingRequest( memberId, fromAddress, new TxPullRequest( previousTxId, storeId ),
+                new CatchUpResponseAdaptor<TxPullRequestResult>()
+                {
+                    private long lastTxIdReceived = previousTxId;
 
-            @Override
-            public void onTxPullResponse( CompletableFuture<TxPullRequestResult> signal, TxPullResponse response )
-            {
-                this.lastTxIdReceived = response.tx().getCommitEntry().getTxId();
-                txPullResponseListener.onTxReceived( response );
-            }
+                    @Override
+                    public void onTxPullResponse( CompletableFuture<TxPullRequestResult> signal, TxPullResponse response )
+                    {
+                        this.lastTxIdReceived = response.tx().getCommitEntry().getTxId();
+                        txPullResponseListener.onTxReceived( response );
+                    }
 
-            @Override
-            public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal, TxStreamFinishedResponse response )
-            {
-                signal.complete( new TxPullRequestResult( response.status(), lastTxIdReceived ) );
-            }
-        } );
+                    @Override
+                    public void onTxStreamFinishedResponse( CompletableFuture<TxPullRequestResult> signal, TxStreamFinishedResponse response )
+                    {
+                        signal.complete( new TxPullRequestResult( response.status(), lastTxIdReceived ) );
+                    }
+                } );
     }
 }

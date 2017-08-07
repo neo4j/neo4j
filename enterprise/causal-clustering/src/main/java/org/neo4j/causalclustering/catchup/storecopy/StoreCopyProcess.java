@@ -49,13 +49,13 @@ public class StoreCopyProcess
         this.log = logProvider.getLog( getClass() );
     }
 
-    public void replaceWithStoreFrom( AdvertisedSocketAddress source, StoreId expectedStoreId )
+    public void replaceWithStoreFrom( MemberId memberId, AdvertisedSocketAddress source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache,
                 localDatabase.storeDir() ) )
         {
-            remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
+            remoteStore.copy( memberId, source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }

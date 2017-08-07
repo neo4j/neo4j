@@ -252,7 +252,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         TxStreamFinishedResponse response;
         try
         {
-            response = catchUpClient.makeBlockingRequest( fromAddress, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
+            response = catchUpClient.makeBlockingRequest( upstream, fromAddress, txPullRequest, new CatchUpResponseAdaptor<TxStreamFinishedResponse>()
             {
                 @Override
                 public void onTxPullResponse( CompletableFuture<TxStreamFinishedResponse> signal, TxPullResponse response )
@@ -327,7 +327,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
         try
         {
-            storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
+            storeCopyProcess.replaceWithStoreFrom( upstream, fromAddress, localStoreId );
         }
         catch ( IOException | StoreCopyFailedException | StreamingTransactionsFailedException e )
         {

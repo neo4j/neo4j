@@ -106,7 +106,8 @@ public class CatchupPollingProcessTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( catchUpClient ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) );
+        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+                any( CatchUpResponseCallback.class ) );
     }
 
     @Test
@@ -118,14 +119,15 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ),
+                any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) ).thenReturn(
+                new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
                 new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 10 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) );
     }
 
@@ -134,7 +136,7 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 0 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
@@ -148,7 +150,7 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
@@ -162,7 +164,7 @@ public class CatchupPollingProcessTest
     {
         // given
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
         // when (tx pull)
@@ -174,7 +176,7 @@ public class CatchupPollingProcessTest
         // then
         verify( localDatabase ).stopForStoreCopy();
         verify( startStopOnStoreCopy ).stop();
-        verify( storeCopyProcess ).replaceWithStoreFrom( any( AdvertisedSocketAddress.class ), eq( storeId ) );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any( MemberId.class ), any( AdvertisedSocketAddress.class ), eq( storeId ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
@@ -205,9 +207,9 @@ public class CatchupPollingProcessTest
     public void shouldNotSignalOperationalUntilPulling() throws Throwable
     {
         // given
-        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ),
-                new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( AdvertisedSocketAddress.class ),
+                any( TxPullRequest.class ), any( CatchUpResponseCallback.class ) ) ).thenReturn(
+                new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ), new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
                 new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 15 ) );
 
         // when

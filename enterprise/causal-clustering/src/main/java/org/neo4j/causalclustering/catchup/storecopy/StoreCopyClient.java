@@ -33,7 +33,6 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-
 public class StoreCopyClient
 {
     private final CatchUpClient catchUpClient;
@@ -47,11 +46,12 @@ public class StoreCopyClient
         this.topologyService = topologyService;
     }
 
-    long copyStoreFiles( AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams ) throws StoreCopyFailedException
+    long copyStoreFiles( MemberId memberId, AdvertisedSocketAddress from, StoreId expectedStoreId, StoreFileStreams storeFileStreams )
+            throws StoreCopyFailedException
     {
         try
         {
-            return catchUpClient.makeBlockingRequest( from, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
+            return catchUpClient.makeBlockingRequest( memberId, from, new GetStoreRequest( expectedStoreId ), new CatchUpResponseAdaptor<Long>()
             {
                 private String destination;
                 private int requiredAlignment;
@@ -86,7 +86,7 @@ public class StoreCopyClient
 
     StoreId fetchStoreId( MemberId from ) throws StoreIdDownloadFailedException
     {
-        AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( from ).orElseThrow( () -> new TopologyLookupException( from ) );
+        AdvertisedSocketAddress fromAddress = null;
         try
         {
             CatchUpResponseAdaptor<StoreId> responseHandler = new CatchUpResponseAdaptor<StoreId>()
@@ -97,7 +97,7 @@ public class StoreCopyClient
                     signal.complete( response.storeId() );
                 }
             };
-            return catchUpClient.makeBlockingRequest( fromAddress, new GetStoreIdRequest(), responseHandler );
+            return catchUpClient.makeBlockingRequest( from, fromAddress, new GetStoreIdRequest(), responseHandler );
         }
         catch ( CatchUpClientException e )
         {

@@ -162,8 +162,9 @@ class ReadReplicaStartupProcess implements Lifecycle
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
-            storeCopyProcess.replaceWithStoreFrom( fromAddress, storeId );
+//            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
+            AdvertisedSocketAddress fromAddress = null;
+            storeCopyProcess.replaceWithStoreFrom( source, fromAddress, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }

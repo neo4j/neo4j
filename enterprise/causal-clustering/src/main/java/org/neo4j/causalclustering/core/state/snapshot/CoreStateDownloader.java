@@ -108,8 +108,9 @@ public class CoreStateDownloader
              * are ahead, and the correct decisions for their applicability have already been taken as encapsulated
              * in the copied store. */
 
-            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ));
-            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( fromAddress, new CoreSnapshotRequest(),
+//            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ));
+            AdvertisedSocketAddress fromAddress = null;
+            CoreSnapshot coreSnapshot = catchUpClient.makeBlockingRequest( source, fromAddress, new CoreSnapshotRequest(),
                     new CatchUpResponseAdaptor<CoreSnapshot>()
                     {
                         @Override
@@ -121,23 +122,23 @@ public class CoreStateDownloader
 
             if ( isEmptyStore )
             {
-                storeCopyProcess.replaceWithStoreFrom( fromAddress, remoteStoreId );
+                storeCopyProcess.replaceWithStoreFrom( source, fromAddress, remoteStoreId );
             }
             else
             {
                 StoreId localStoreId = localDatabase.storeId();
-                CatchupResult catchupResult = remoteStore.tryCatchingUp( fromAddress, localStoreId, localDatabase.storeDir() );
+                CatchupResult catchupResult = remoteStore.tryCatchingUp( source, fromAddress, localStoreId, localDatabase.storeDir() );
 
                 if ( catchupResult == E_TRANSACTION_PRUNED )
                 {
                     log.info( "Failed to pull transactions from " + source + ". They may have been pruned away." ); // TODO source changed to fromAddress
                     localDatabase.delete();
 
-                    storeCopyProcess.replaceWithStoreFrom( fromAddress, localStoreId );
+                    storeCopyProcess.replaceWithStoreFrom( source, fromAddress, localStoreId );
                 }
                 else if ( catchupResult != SUCCESS_END_OF_STREAM )
                 {
-                    throw new StoreCopyFailedException( "Failed to download store: " + catchupResult );
+                    throw new StoreCopyFailedException( String.format( "Failed to download store: %s", catchupResult ) );
                 }
             }
 
