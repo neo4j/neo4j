@@ -60,7 +60,7 @@ public class ClusteringModule
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
-        topologyService = discoveryServiceFactory
+        topologyService = discoveryServiceFactory // TODO platform module
                 .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
                         userLogProvider, hostnameResolver );
 
