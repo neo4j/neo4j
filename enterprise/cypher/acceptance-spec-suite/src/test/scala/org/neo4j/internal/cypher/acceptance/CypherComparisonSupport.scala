@@ -21,8 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
 import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
@@ -34,10 +34,10 @@ import org.scalatest.Assertions
 
 import scala.util.{Failure, Success, Try}
 
-trait LernaeanTestSupport extends CypherTestSupport {
+trait CypherComparisonSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
-  import LernaeanTestSupport._
+  import CypherComparisonSupport._
 
   /**
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
@@ -76,6 +76,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
       })
     }
   }
+
   override protected def initTest() {
     super.initTest()
     self.kernelMonitors.addMonitorListener(newPlannerMonitor)
@@ -126,39 +127,48 @@ trait LernaeanTestSupport extends CypherTestSupport {
     firstScenario.checkResultForSuccess(query, lastResult)
 
     positiveResults.foreach {
-      case (result,name) =>
-        assertResultsAreSame(result, lastResult, query, s"$name returned different results than ${firstScenario.name}" )
+      case (result, name) =>
+        assertResultsAreSame(result, lastResult, query, s"$name returned different results than ${firstScenario.name}")
     }
 
     lastResult
   }
 
-  protected def testWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*):
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*):
   InternalExecutionResult = {
-    val firstScenario = extractFirstScenario(expectedSuccessFrom)
-    firstScenario.prepare()
-    val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
-    firstScenario.checkStateForSuccess(query)
-    firstScenario.checkResultForSuccess(query, firstResult)
-
-    for (thisScenario <- Configs.AbsolutelyAll.scenarios if thisScenario != firstScenario) {
-      thisScenario.prepare()
-      val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
-
-      val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
-
-      if (expectedToSucceed) {
-        val thisResult = tryResult.get
-        thisScenario.checkStateForSuccess(query)
-        thisScenario.checkResultForSuccess(query, thisResult)
-        assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
-      } else {
+    if (expectedSuccessFrom.scenarios.isEmpty) {
+      for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
+        thisScenario.prepare()
+        val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
         thisScenario.checkStateForFailure(query)
         thisScenario.checkResultForFailure(query, tryResult)
       }
-    }
+      null
+    } else {
+      val firstScenario = extractFirstScenario(expectedSuccessFrom)
+      firstScenario.prepare()
+      val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
+      firstScenario.checkStateForSuccess(query)
 
-    firstResult
+      for (thisScenario <- Configs.AbsolutelyAll.scenarios if thisScenario != firstScenario) {
+        thisScenario.prepare()
+        val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
+
+        val expectedToSucceed = expectedSuccessFrom.scenarios.contains(thisScenario)
+
+        if (expectedToSucceed) {
+          val thisResult = tryResult.get
+          thisScenario.checkStateForSuccess(query)
+          thisScenario.checkResultForSuccess(query, thisResult)
+          assertResultsAreSame(thisResult, firstResult, query, s"${thisScenario.name} returned different results than ${firstScenario.name}", replaceNaNs = true)
+        } else {
+          thisScenario.checkStateForFailure(query)
+          thisScenario.checkResultForFailure(query, tryResult)
+        }
+      }
+
+      firstResult
+    }
   }
 
   protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
@@ -237,11 +247,14 @@ trait LernaeanTestSupport extends CypherTestSupport {
     def AllExceptSleipnir: TestConfiguration = All - EnterpriseInterpreted
 
     def AbsolutelyAll: TestConfiguration = Version3_3 + BackwardsCompatibility + Procs
+
+    def Empty: TestConfiguration = TestConfig(Set.empty)
+
   }
 
   object Scenarios {
 
-    import LernaeanTestSupport._
+    import CypherComparisonSupport._
 
     trait RuntimeScenario extends TestScenario {
 
@@ -446,7 +459,7 @@ trait LernaeanTestSupport extends CypherTestSupport {
   * This is expected and useful - it let's us know how a change impacts how many acceptance tests now start
   * succeeding where they weren't earlier.
   */
-object LernaeanTestSupport {
+object CypherComparisonSupport {
 
   trait TestScenario extends Assertions with TestConfiguration {
     def name: String

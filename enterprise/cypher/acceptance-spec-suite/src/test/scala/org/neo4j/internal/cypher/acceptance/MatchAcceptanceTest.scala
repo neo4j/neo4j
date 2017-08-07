@@ -27,7 +27,7 @@ import org.neo4j.helpers.collection.Iterators.single
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
-class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with LernaeanTestSupport {
+class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   test("Do not count null elements in nodes without labels") {
 
@@ -37,7 +37,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     createNode()
 
-    val result = testWith(Configs.AllExceptSleipnir, "MATCH (n) RETURN count(n.name)")
+    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (n) RETURN count(n.name)")
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
@@ -65,7 +65,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |MATCH p=(source:Neo)-[rel *0..1]->(dest)
         |WITH nodes(p) as d
         |RETURN DISTINCT d""".stripMargin
-    val result = testWith(Configs.CommunityInterpreted, query)
+    val result = succeedWith(Configs.CommunityInterpreted, query)
 
     result.toSet should equal(Set(Map("d" -> ArrayBuffer(n1)), Map("d" -> ArrayBuffer(n1, n2))))
   }
@@ -93,7 +93,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |RETURN a, b, COLLECT( DISTINCT c) as c
       """.stripMargin
 
-    val result = testWith(Configs.CommunityInterpreted, query)
+    val result = succeedWith(Configs.CommunityInterpreted, query)
     result.size should be(0)
     result.hasNext should be(false)
 
@@ -107,7 +107,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val result = testWith(Configs.Interpreted,
+    val result = succeedWith(Configs.Interpreted,
       s"match (n) where n.x < 100 return n"
     )
 
@@ -121,7 +121,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode(Map("x" -> "Zzing"))
     createNode(Map("x" -> 'Ä'))
 
-    val result = testWith(Configs.CommunityInterpreted,
+    val result = succeedWith(Configs.CommunityInterpreted,
       s"match (n) where n.x < 'Z' AND n.x < 'z' return n"
     )
 
@@ -133,7 +133,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B")
     val r1 = relate("A" -> "KNOWS" -> "B")
 
-    val result = testWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*..15]-(b {name:'B'})) return p").
+    val result = succeedWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*..15]-(b {name:'B'})) return p").
       toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
@@ -150,7 +150,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
 
     //Checking that we don't get an exception
-    testWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*]-(b {name:'B'})) return p").toList
+    succeedWith(Configs.CommunityInterpreted, "match p = shortestPath((a {name:'A'})-[*]-(b {name:'B'})) return p").toList
   }
 
   test("should not traverse same relationship twice in shortest path") {
@@ -159,7 +159,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
+    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
       toList
 
     // then
@@ -179,7 +179,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         | RETURN n, rel1, n1, rel2, n2;
         |""".stripMargin
 
-    val result = testWith(Configs.CommunityInterpreted, query)
+    val result = succeedWith(Configs.CommunityInterpreted, query)
     result.toList should equal(List(Map("n" -> n, "rel1" -> null, "rel2" -> null, "n1" -> null, "n2" -> null)))
   }
 
@@ -189,7 +189,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val c = createNode("C")
     val r = relate(a, b, "X")
 
-    val result = testWith(Configs.CommunityInterpreted,  """
+    val result = succeedWith(Configs.CommunityInterpreted,  """
 match (a {name:'A'}), (x) where x.name in ['B', 'C']
 optional match p = shortestPath((a)-[*]->(x))
 return x, p""").toSet
@@ -203,7 +203,7 @@ return x, p""").toSet
   test("should handle all shortest paths") {
     createDiamond()
 
-    val result = testWith(Configs.CommunityInterpreted,  """
+    val result = succeedWith(Configs.CommunityInterpreted,  """
 match (a), (d) where id(a) = 0 and id(d) = 3
 match p = allShortestPaths( (a)-[*]->(d) )
 return p""")
@@ -215,7 +215,7 @@ return p""")
     val a = createNode()
     val b = createNode()
     relate(a, b)
-    val result = testWith(Configs.CommunityInterpreted, "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
+    val result = succeedWith(Configs.CommunityInterpreted, "match (a), (b) where id(a) = 0 and id(b) = 1 match p=shortestPath((b)<-[*]-(a)) return p").toList.head("p").asInstanceOf[Path]
 
     result.startNode() should equal (b)
     result.endNode() should equal (a)
@@ -226,7 +226,7 @@ return p""")
     val b = createLabeledNode("B")
     val r1 = relate(a, b)
 
-    val result = testWith(Configs.CommunityInterpreted, "match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
+    val result = succeedWith(Configs.CommunityInterpreted, "match (a:A) match p = shortestPath( (a)-[*]->(b:B) ) return p").toList.head("p").asInstanceOf[Path]
 
     graph.inTx {
       result.startNode() should equal(a)
@@ -247,7 +247,7 @@ return p""")
                   |MATCH paths = (n)-[*..1]-(m)
                   |RETURN paths""".stripMargin
 
-    val result = testWith(Configs.CommunityInterpreted, query, "0" -> node1.getId, "1" -> node2.getId)
+    val result = succeedWith(Configs.CommunityInterpreted, query, "0" -> node1.getId, "1" -> node2.getId)
     graph.inTx(
       result.toSet should equal(Set(Map("paths" -> PathImpl(node1, r, node2)), Map("paths" -> PathImpl(node2, r, node1))))
     )
@@ -259,7 +259,7 @@ return p""")
   test("length on filter") {
     val q = "match (n) optional match (n)-[r]->(m) return length(filter(x in collect(r) WHERE x <> null)) as cn"
 
-    testWith(Configs.CommunityInterpreted, q).toList should equal (List(Map("cn" -> 0)))
+    succeedWith(Configs.CommunityInterpreted, q).toList should equal (List(Map("cn" -> 0)))
   }
 
   // Not TCK material -- index hints
@@ -274,7 +274,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = succeedWith(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -292,7 +292,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name STARTS WITH 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -309,7 +309,7 @@ return p""")
     graph.createIndex("Person", "name")
 
     // when
-    val result = testWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name > 'Jac' RETURN n")
 
     // then
     result.toList should equal (List(Map("n" -> jake)))
@@ -326,7 +326,7 @@ return p""")
     val r1 = relate(node1, node2, "prop" -> 10)
     val r2 = relate(node1, node2, "prop" -> 0)
 
-    val result = testWith(Configs.All - Configs.Compiled, query)
+    val result = succeedWith(Configs.All - Configs.Compiled, query)
 
     result.toList should equal (List(Map("r" -> r1)))
   }
@@ -334,22 +334,22 @@ return p""")
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = testWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
+    val result = succeedWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    testWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n").toList
+    succeedWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n").toList
     // should not throw an exception
   }
 
   test("should be able to set properties with a literal map twice in the same transaction") {
     val node = createLabeledNode("FOO")
 
-    testWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { first: 'value' }")
-    testWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { second: 'value' }")
+    succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { first: 'value' }")
+    succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:FOO) SET n = { second: 'value' }")
 
     graph.inTx {
       node.getProperty("first", null) should equal(null)
@@ -371,7 +371,7 @@ return p""")
     graph.createIndex("Label", "property")
 
     // when
-    val result = testWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
+    val result = succeedWith(Configs.All, "match (a:Label)-->(b:Label) where a.property = b.property return a, b")
 
     // then does not throw exceptions
     result.toList should equal (List(Map("a" -> a, "b" -> b)))
@@ -385,7 +385,7 @@ return p""")
     graph.createIndex("Label", "property")
 
     // when
-    val result = testWith(Configs.Interpreted, "match (a:Label), (b:Label) where a.property = b.property return *")
+    val result = succeedWith(Configs.Interpreted, "match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
     assert(result.toSet === Set(
@@ -405,7 +405,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -420,7 +420,7 @@ return p""")
     graph.createIndex("User", "email")
 
     // when
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) USING INDEX n:User(email) WHERE n.email IS NOT NULL RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> n), Map("n" -> m)))
@@ -444,7 +444,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.email) RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.email) RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head), Map("n" -> nodes(1))))
@@ -456,7 +456,7 @@ return p""")
     val nodes = setupIndexScanTest()
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
+    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:User) WHERE exists(n.email) AND n.email = 'me@mine' RETURN n")
 
     // then
     result.toList should equal(List(Map("n" -> nodes.head)))
@@ -531,7 +531,7 @@ return p""")
     //WHEN
     val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = testWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -565,7 +565,7 @@ return p""")
 
     val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check = testWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -574,9 +574,9 @@ return p""")
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    testWith(Configs.AllExceptSleipnir, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    testWith(Configs.AllExceptSleipnir, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    testWith(Configs.AllExceptSleipnir, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.AllExceptSleipnir, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()
@@ -589,7 +589,7 @@ return p""")
     1.to(1000).foreach(_ => createNode())
 
     // when
-    val result = testWith(Configs.CommunityInterpreted, s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
+    val result = succeedWith(Configs.CommunityInterpreted, s"profile WITH [$a,$b,$d] AS arr MATCH (n) WHERE id(n) IN arr return count(*)")
 
     // then
     result.toList should equal(List(Map("count(*)" -> 3)))
@@ -597,7 +597,7 @@ return p""")
 
   // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
-    val result = testWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
+    val result = succeedWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }
@@ -610,7 +610,7 @@ return p""")
 
     val query = "MATCH (a) MERGE (b) WITH * OPTIONAL MATCH (a)--(b) RETURN count(*)"
 
-    val result = testWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     result.columnAs[Long]("count(*)").next shouldBe 6
   }
@@ -622,13 +622,13 @@ return p""")
     createNode()
     createNode()
 
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 0") should have size 5
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 1") should have size 4
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 2") should have size 3
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 3") should have size 2
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 4") should have size 1
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 5") should have size 0
-    testWith(Configs.All, "MATCH (n) RETURN n SKIP 6") should have size 0
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 0") should have size 5
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 1") should have size 4
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 2") should have size 3
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 3") should have size 2
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 4") should have size 1
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 5") should have size 0
+    succeedWith(Configs.All, "MATCH (n) RETURN n SKIP 6") should have size 0
 
   }
 
@@ -671,7 +671,7 @@ return p""")
 
     // When
     val res =
-      testWith(Configs.AllExceptSleipnir, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
+      succeedWith(Configs.AllExceptSleipnir, "UNWIND {p} AS n MATCH (n)<-[:PING_DAY]-(p:Ping) RETURN count(p) as c", "p" -> List(node1, node2))
 
     //Then
     res.toList should equal(List(Map("c" -> 2)))
@@ -688,7 +688,7 @@ return p""")
 
     // When
     val res =
-      testWith(Configs.AllExceptSleipnir,
+      succeedWith(Configs.AllExceptSleipnir,
         """UNWIND {p1} AS n1
           |UNWIND {p2} AS n2
           |MATCH (n1)<-[:PING_DAY]-(n2) RETURN n1.prop, n2.prop""".stripMargin,
@@ -709,7 +709,7 @@ return p""")
     relate(node2, node4, "T", Map("roles" -> "NEO"))
 
     // When
-    val res = testWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
+    val res = succeedWith(Configs.CommunityInterpreted, "MATCH (n)-[r:T*2]->() WHERE last(r).roles = 'NEO' RETURN DISTINCT n")
 
     // Then
     res.toSet should equal(Set(Map("n" -> node1)))
@@ -724,7 +724,7 @@ return p""")
     relate(n3, createNode())
 
     // When
-    val result = testWith(Configs.CommunityInterpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
+    val result = succeedWith(Configs.CommunityInterpreted, "MATCH p=(n)-[*0..3]-() RETURN size(COLLECT(DISTINCT p)) AS size")
 
     // Then
     result.toList should equal(List(Map("size" -> 8)))
