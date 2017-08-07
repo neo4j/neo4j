@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
 import org.neo4j.kernel.impl.index.schema.NativeSelector;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.spi.KernelContext;
+import org.neo4j.logging.LogProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public class NativeLuceneFusionSchemaIndexProviderFactory
@@ -57,8 +58,9 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     {
         // create native schema index provider
         boolean readOnly = isReadOnly( dependencies.getConfig(), context.databaseInfo().operationalMode );
+        LogProvider logging = dependencies.getLogging().getInternalLogProvider();
         NativeSchemaNumberIndexProvider nativeProvider = new NativeSchemaNumberIndexProvider( dependencies.pageCache(),
-                context.storeDir(), dependencies.recoveryCleanupWorkCollector(), readOnly );
+                context.storeDir(), logging, dependencies.recoveryCleanupWorkCollector(), readOnly );
 
         // create lucene schema index provider
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( context, dependencies );
