@@ -117,7 +117,6 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandCreationContext.DEFAULT_ID_BATCH_SIZE;
 
 public class RecordStorageEngine implements StorageEngine, Lifecycle
 {
@@ -152,6 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
     private final int denseNodeThreshold;
+    private final int txIdBatchSize;
 
     public RecordStorageEngine(
             File storeDir,
@@ -230,6 +230,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
+            txIdBatchSize = config.get( GraphDatabaseSettings.tx_id_batch_size );
         }
         catch ( Throwable failure )
         {
@@ -263,7 +264,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext allocateCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, DEFAULT_ID_BATCH_SIZE );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, txIdBatchSize );
     }
 
     @Override

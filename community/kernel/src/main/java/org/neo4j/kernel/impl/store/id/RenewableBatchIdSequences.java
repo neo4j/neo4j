@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class RenewableBatchIdSequences implements Resource
 {
-    private final RenewableBatchIdSequence[] types = new RenewableBatchIdSequence[StoreType.values().length];
+    private final IdSequence[] types = new IdSequence[StoreType.values().length];
 
     public RenewableBatchIdSequences( NeoStores stores, int batchSize )
     {
@@ -37,8 +37,17 @@ public class RenewableBatchIdSequences implements Resource
             if ( type.isRecordStore() )
             {
                 RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
-                LongConsumer idConsumer = id -> store.freeId( id );
-                types[type.ordinal()] = new RenewableBatchIdSequence( store, batchSize, idConsumer );
+                if ( type.isLimitedIdStore() )
+                {
+                    // This is a token store or otherwise meta-data store, so let's not add batching for it
+                    types[type.ordinal()] = store;
+                }
+                else
+                {
+                    // This is a normal record store where id batching is beneficial
+                    LongConsumer idConsumer = id -> store.freeId( id );
+                    types[type.ordinal()] = new RenewableBatchIdSequence( store, batchSize, idConsumer );
+                }
             }
         }
     }
@@ -48,7 +57,7 @@ public class RenewableBatchIdSequences implements Resource
         return idGenerator( type ).nextId();
     }
 
-    public RenewableBatchIdSequence idGenerator( StoreType type )
+    public IdSequence idGenerator( StoreType type )
     {
         return types[type.ordinal()];
     }
@@ -58,9 +67,9 @@ public class RenewableBatchIdSequences implements Resource
     {
         for ( StoreType type : StoreType.values() )
         {
-            if ( type.isRecordStore() )
+            if ( type.isRecordStore() && !type.isLimitedIdStore() )
             {
-                idGenerator( type ).close();
+                ((Resource)idGenerator( type )).close();
             }
         }
     }

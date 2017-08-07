@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.store.id;
 
 import java.util.function.LongConsumer;
+
 import org.neo4j.graphdb.Resource;
 
 import static org.neo4j.kernel.impl.store.id.IdRangeIterator.VALUE_REPRESENTING_NULL;
