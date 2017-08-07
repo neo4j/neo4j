@@ -54,6 +54,8 @@ public class FusionSchemaIndexProviderTest
         // given
         SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
         SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
+        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
+        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
         FusionSchemaIndexProvider fusionSchemaIndexProvider =
                 new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector() );
         IndexDescriptor anyIndexDescriptor = IndexDescriptorFactory.forLabel( 0, 0 );
@@ -143,14 +145,14 @@ public class FusionSchemaIndexProviderTest
     public void mustCombineSamples() throws Exception
     {
         // given
-        int nativeIndexSize = random.nextInt();
-        int nativeUniqueValues = random.nextInt();
-        int nativeSampleSize = random.nextInt();
+        int nativeIndexSize = random.nextInt( 0, 1_000_000 );
+        int nativeUniqueValues = random.nextInt( 0, 1_000_000 );
+        int nativeSampleSize = random.nextInt( 0, 1_000_000 );
         IndexSample nativeSample = new IndexSample( nativeIndexSize, nativeUniqueValues, nativeSampleSize );
 
-        int luceneIndexSize = random.nextInt();
-        int luceneUniqueValues = random.nextInt();
-        int luceneSampleSize = random.nextInt();
+        int luceneIndexSize = random.nextInt( 0, 1_000_000 );
+        int luceneUniqueValues = random.nextInt( 0, 1_000_000 );
+        int luceneSampleSize = random.nextInt( 0, 1_000_000 );
         IndexSample luceneSample = new IndexSample( luceneIndexSize, luceneUniqueValues, luceneSampleSize );
 
         // when
@@ -168,6 +170,8 @@ public class FusionSchemaIndexProviderTest
         // given
         SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
         SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
+        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
+        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
         FusionSchemaIndexProvider fusionSchemaIndexProvider =
                 new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector() );
 
