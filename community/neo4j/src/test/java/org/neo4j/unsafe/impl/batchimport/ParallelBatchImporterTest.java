@@ -180,7 +180,7 @@ public class ParallelBatchImporterTest
         File storeDir = directory.directory( "dir" + random.string( 8, 8, Randoms.CSA_LETTERS_AND_DIGITS ) );
         storeDir.mkdirs();
         final BatchImporter inserter = new ParallelBatchImporter( storeDir,
-                fileSystemRule.get(), config, NullLogService.getInstance(),
+                fileSystemRule.get(), null, config, NullLogService.getInstance(),
                 processorAssigner, EMPTY, Config.empty(), getFormat() );
 
         boolean successful = false;
