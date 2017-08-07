@@ -238,7 +238,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
             // It failed like expected, and we did not specify any message for this config
           }
         }
-        case _: Throwable => // ???
+        case e: Throwable => throw e
       }
     }
   }
