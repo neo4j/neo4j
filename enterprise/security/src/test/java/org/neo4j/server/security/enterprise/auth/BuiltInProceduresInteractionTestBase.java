@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.values.AnyValues;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -165,9 +166,10 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
 
-            Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "adminSubject", listQueriesQuery );
+            Matcher<Map<String,Object>> thisQuery =
+                    listedQueryOfInteractionLevel( startTime, "adminSubject", listQueriesQuery );
             Matcher<Map<String,Object>> matchQueryMatcher =
-                    listedQueryWithMetaData( startTime, "writeSubject", matchQuery, map( "realUser", "MyMan") );
+                    listedQueryWithMetaData( startTime, "writeSubject", matchQuery, map( "realUser", "MyMan" ) );
 
             assertThat( maps, matchesOneToOneInAnyOrder( thisQuery, matchQueryMatcher ) );
         } );
@@ -176,13 +178,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         tx.closeAndAssertSuccess();
     }
 
+    private Object metadata( Map<String,Object> map )
+    {
+        return AnyValues.asMapValue( map );
+    }
+
+
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
         OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
 
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
@@ -214,7 +222,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     {
         DoubleLatch latch = new DoubleLatch( 3, true );
         OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
         ThreadedTransaction<S> read1 = new ThreadedTransaction<>( neo, latch );
         ThreadedTransaction<S> read2 = new ThreadedTransaction<>( neo, latch );
 
@@ -258,7 +266,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             int localPort = getLocalPort( server );
 
             OffsetDateTime startTime = OffsetDateTime
-                    .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
+                    .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
 
             // When
             ThreadedTransaction<S> write = new ThreadedTransaction<>( neo, latch );
@@ -267,7 +275,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             {
                 String writeQuery = write.executeEarly( threading, writeSubject, KernelTransaction.Type.implicit,
                         format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line ", localPort ) +
-                                "CREATE (n:A {id: line[0], square: line[1]}) " + "RETURN count(*)" );
+                        "CREATE (n:A {id: line[0], square: line[1]}) " + "RETURN count(*)" );
                 latch.startAndWaitForAllToStart();
 
                 // Then
@@ -304,7 +312,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         DoubleLatch latch = new DoubleLatch( 2, true );
         OffsetDateTime startTime = OffsetDateTime
-                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID);
+                .ofInstant( Instant.ofEpochMilli( OffsetDateTime.now().toEpochSecond() ), UTC_ZONE_ID );
 
         ThreadedTransaction<S> read = new ThreadedTransaction<>( neo, latch );
 
@@ -467,19 +475,21 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldSelfKillQuery() throws Throwable
     {
         String result = neo.executeQuery(
-            readSubject,
-            "WITH 'Hello' AS marker CALL dbms.listQueries() YIELD queryId AS id, query " +
-            "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
-            "RETURN count(username) AS count, username",
-            emptyMap(),
-            r -> {}
+                readSubject,
+                "WITH 'Hello' AS marker CALL dbms.listQueries() YIELD queryId AS id, query " +
+                "WITH * WHERE query CONTAINS 'Hello' CALL dbms.killQuery(id) YIELD username " +
+                "RETURN count(username) AS count, username",
+                emptyMap(),
+                r ->
+                {
+                }
         );
 
         assertThat( result, containsString( "Explicitly terminated by the user." ) );
 
         assertEmpty(
-            adminSubject,
-            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+                adminSubject,
+                "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
     @Test
@@ -496,9 +506,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             String id1 = extractQueryId( q1 );
             assertFail(
-                writeSubject,
-                "CALL dbms.killQuery('" + id1 + "') YIELD username RETURN *",
-                PERMISSION_DENIED
+                    writeSubject,
+                    "CALL dbms.killQuery('" + id1 + "') YIELD username RETURN *",
+                    PERMISSION_DENIED
             );
             latch.finishAndWaitForAllToFinish();
             read.closeAndAssertSuccess();
@@ -511,8 +521,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         }
 
         assertEmpty(
-            adminSubject,
-            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+                adminSubject,
+                "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -540,7 +550,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             {
                 String writeQuery = write.executeEarly( threading, writeSubject, KernelTransaction.Type.implicit,
                         format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line ", localPort ) +
-                                "CREATE (n:A {id: line[0], square: line[1]}) RETURN count(*)" );
+                        "CREATE (n:A {id: line[0], square: line[1]}) RETURN count(*)" );
                 latch.startAndWaitForAllToStart();
 
                 // Then
@@ -619,8 +629,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         write.closeAndAssertSuccess();
 
         assertEmpty(
-            adminSubject,
-            "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
+                adminSubject,
+                "CALL dbms.listQueries() YIELD query WITH * WHERE NOT query CONTAINS 'listQueries' RETURN *" );
     }
 
     String extractQueryId( String writeQuery )
@@ -647,10 +657,12 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String testValue = "testValue";
         String testKey = "test";
         GraphDatabaseFacade graph = neo.getLocalGraph();
-        try ( InternalTransaction transaction = neo.beginLocalTransactionAsUser( writeSubject, KernelTransaction.Type.explicit ) )
+        try ( InternalTransaction transaction = neo
+                .beginLocalTransactionAsUser( writeSubject, KernelTransaction.Type.explicit ) )
         {
             graph.execute( "CALL dbms.setTXMetaData({" + testKey + ":'" + testValue + "'})" );
-            Map<String,Object> metadata = (Map<String,Object>) graph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
+            Map<String,Object> metadata =
+                    (Map<String,Object>) graph.execute( "CALL dbms.getTXMetaData " ).next().get( "metadata" );
             assertEquals( testValue, metadata.get( testKey ) );
         }
     }
@@ -732,7 +744,8 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PUBLISHER, "role1Subject" );
-        assertEmpty( neo.login( "role1Subject", "abc" ), "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
+        assertEmpty( neo.login( "role1Subject", "abc" ),
+                "CALL test.allowedReadProcedure() YIELD value CREATE (:NEWNODE {name:value})" );
     }
 
     @Test
@@ -770,9 +783,9 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.addRoleToUser( "role1", "nopermission" );
         // should not be able to invoke any procedure
         assertSuccess( neo.login( "nopermission", "abc" ), "CALL test.allowedReadProcedure()",
-                itr -> assertEquals( itr.stream().collect( toList() ).size(), 1 ));
+                itr -> assertEquals( itr.stream().collect( toList() ).size(), 1 ) );
         assertFail( neo.login( "nopermission", "abc" ),
-                "CALL test.allowedReadProcedure() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED);
+                "CALL test.allowedReadProcedure() YIELD value MATCH (n:Secret) RETURN n.pass", READ_OPS_NOT_ALLOWED );
     }
 
     @Test
@@ -857,7 +870,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         userManager.newRole( "role1" );
         userManager.addRoleToUser( "role1", "role1Subject" );
         userManager.addRoleToUser( PredefinedRoles.PUBLISHER, "role1Subject" ); // Even if subject has WRITE permission
-                                                                                // the procedure should restrict to READ
+        // the procedure should restrict to READ
         assertFail( neo.login( "role1Subject", "abc" ),
                 "CALL test.nestedReadProcedure('test.allowedWriteProcedure') YIELD value",
                 WRITE_OPS_NOT_ALLOWED );
@@ -946,7 +959,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "1" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "activeTransactions",
+                r -> assertKeyIsMap( r, "username", "activeTransactions",
                         map( "adminSubject", "1", "writeSubject", "1" ) ) );
 
         latch.finishAndWaitForAllToFinish();
@@ -973,7 +986,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 r -> assertKeyIsMap( r, "username", "transactionsTerminated", map( "schemaSubject", "2" ) ) );
 
         assertSuccess( adminSubject, "CALL dbms.listTransactions()",
-                r ->  assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
+                r -> assertKeyIsMap( r, "username", "activeTransactions", map( "adminSubject", "1" ) ) );
 
         latch.finishAndWaitForAllToFinish();
 
@@ -1148,19 +1161,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQuery( String query )
+    private Matcher<Map<String,Object>> hasQuery( String query )
     {
         return (Matcher) hasEntry( equalTo( "query" ), equalTo( query ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasUsername( String username )
+    private Matcher<Map<String,Object>> hasUsername( String username )
     {
         return (Matcher) hasEntry( equalTo( "username" ), equalTo( username ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasQueryId()
+    private Matcher<Map<String,Object>> hasQueryId()
     {
         Matcher<String> queryId = equalTo( "queryId" );
         Matcher valueMatcher =
@@ -1169,7 +1182,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasStartTimeAfter( OffsetDateTime startTime )
+    private Matcher<Map<String,Object>> hasStartTimeAfter( OffsetDateTime startTime )
     {
         return (Matcher) hasEntry( equalTo( "startTime" ), new BaseMatcher<String>()
         {
@@ -1182,32 +1195,32 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             @Override
             public boolean matches( Object item )
             {
-                OffsetDateTime otherTime =  OffsetDateTime.from( ISO_OFFSET_DATE_TIME.parse( item.toString() ) );
+                OffsetDateTime otherTime = OffsetDateTime.from( ISO_OFFSET_DATE_TIME.parse( item.toString() ) );
                 return startTime.compareTo( otherTime ) <= 0;
             }
         } );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasNoParameters()
+    private Matcher<Map<String,Object>> hasNoParameters()
     {
         return (Matcher) hasEntry( equalTo( "parameters" ), equalTo( emptyMap() ) );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasProtocol( String expected )
+    private Matcher<Map<String,Object>> hasProtocol( String expected )
     {
         return (Matcher) hasEntry( "protocol", expected );
     }
 
     @SuppressWarnings( "unchecked" )
-    private Matcher<Map<String, Object>> hasMetaData( Map<String,Object> expected )
+    private Matcher<Map<String,Object>> hasMetaData( Map<String,Object> expected )
     {
         return (Matcher) hasEntry( equalTo( "metaData" ), allOf(
                 expected.entrySet().stream().map(
                         entryMapper()
-                        ).collect( Collectors.toList() )
-                ) );
+                ).collect( Collectors.toList() )
+        ) );
     }
 
     @SuppressWarnings( {"rawtypes", "unchecked"} )

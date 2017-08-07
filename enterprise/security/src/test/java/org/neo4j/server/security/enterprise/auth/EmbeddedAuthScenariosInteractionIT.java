@@ -38,4 +38,17 @@ public class EmbeddedAuthScenariosInteractionIT extends AuthScenariosInteraction
     {
         return new EmbeddedInteraction( config, () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
     }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Integer )
+        {
+            return ((Integer) obj).longValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
 }

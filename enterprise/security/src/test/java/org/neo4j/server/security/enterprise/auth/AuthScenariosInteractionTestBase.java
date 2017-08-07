@@ -32,6 +32,7 @@ import java.util.Objects;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DoubleLatch;
 
+import static java.util.Arrays.stream;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -67,7 +68,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         subject = neo.login( "Henrik", "foo" );
         neo.assertAuthenticated( subject );
         testFailWrite( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
     }
 
     @Test
@@ -87,7 +88,9 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     {
         S mats = neo.login( "mats", "neo4j" );
         // for REST, login doesn't happen until the subject does something
-        neo.executeQuery( mats, "UNWIND [] AS i RETURN 1", Collections.emptyMap(), r -> {} );
+        neo.executeQuery( mats, "UNWIND [] AS i RETURN 1", Collections.emptyMap(), r ->
+        {
+        } );
         assertEmpty( adminSubject, "CALL dbms.security.createUser('mats', 'neo4j', false)" );
         assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
         assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
@@ -113,11 +116,11 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         log.assertHasLine( "adminSubject", "deleted role `role1`" );
         log.assertHasLine( "mats", "logged in" );
         log.assertHasLine( "adminSubject", "added role `reader` to user `mats`" );
-        log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED);
-        log.assertHasLine( "mats", "tried to change password: A password cannot be empty.");
-        log.assertHasLine( "mats", "changed password");
-        log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`");
-        log.assertHasLine( "adminSubject", "deleted user `mats`");
+        log.assertHasLine( "mats", "tried to change password for user `neo4j`: " + PERMISSION_DENIED );
+        log.assertHasLine( "mats", "tried to change password: A password cannot be empty." );
+        log.assertHasLine( "mats", "changed password" );
+        log.assertHasLine( "adminSubject", "removed role `reader` from user `mats`" );
+        log.assertHasLine( "adminSubject", "deleted user `mats`" );
     }
 
     /*
@@ -141,7 +144,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         testFailWrite( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
     }
 
     /*
@@ -163,7 +166,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailRead( subject, 3 );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + PUBLISHER + "', 'Henrik')" );
         testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ) );
         testFailSchema( subject );
     }
 
@@ -193,7 +196,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailCreateUser( subject, PERMISSION_DENIED );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ARCHITECT + "', 'Henrik')" );
         testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ) );
         testSuccessfulSchema( subject );
         testFailCreateUser( subject, PERMISSION_DENIED );
     }
@@ -306,7 +309,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailRead( subject, 4 );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         testFailWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ) );
     }
 
     /*
@@ -349,10 +352,10 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         neo.assertAuthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ));
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
         testFailWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ) );
     }
 
     /*
@@ -375,7 +378,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         neo.assertAuthenticated( subject );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         testSuccessfulWrite( subject );
-        testSuccessfulRead( subject, 4 );
+        testSuccessfulRead( subject, valueOf( 4 ) );
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + READER + "', 'Henrik')" );
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
         testFailWrite( subject );
@@ -441,15 +444,15 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
         testFailTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('role1', 'mats')" );
-        testSuccessfulTestProcs( mats );
+        testSuccessfulTestProcs( mats, this::valueOf );
         assertEmpty( adminSubject, "CALL dbms.security.deleteRole('role1')" );
         testFailTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.createRole('role1')" );
         testFailTestProcs( mats );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('architect', 'mats')" );
-        testSuccessfulTestProcs( mats );
+        testSuccessfulTestProcs( mats, this::valueOf );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('role1', 'mats')" );
-        testSuccessfulTestProcs( mats );
+        testSuccessfulTestProcs( mats, this::valueOf );
     }
 
     //---------- User suspension -----------
@@ -489,7 +492,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
         assertEmpty( adminSubject, "CALL dbms.security.suspendUser('Henrik')" );
 
         neo.assertSessionKilled( subject );
@@ -533,14 +536,14 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
     @Test
     public void userListing() throws Throwable
     {
-        testSuccessfulListUsers( adminSubject, initialUsers );
+        testSuccessfulListUsers( adminSubject, stream( initialUsers ).map( this::valueOf ).toArray()  );
         assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', false)" );
-        testSuccessfulListUsers( adminSubject, with( initialUsers, "Henrik" ) );
+        testSuccessfulListUsers( adminSubject, stream(with( initialUsers, "Henrik" ) ).map( this::valueOf ).toArray());
         S subject = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( subject );
         testFailListUsers( subject, 6, PERMISSION_DENIED );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ADMIN + "', 'Henrik')" );
-        testSuccessfulListUsers( subject, with( initialUsers, "Henrik" ) );
+        testSuccessfulListUsers( subject, stream(with( initialUsers, "Henrik" )).map( this::valueOf ).toArray()  );
     }
 
     /*
@@ -557,10 +560,10 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.createUser('Henrik', 'bar', false)" );
         S subject = neo.login( "Henrik", "bar" );
         neo.assertAuthenticated( subject );
-        testFailListRoles( subject, PERMISSION_DENIED);
-        testSuccessfulListRoles( adminSubject, initialRoles );
+        testFailListRoles( subject, PERMISSION_DENIED );
+        testSuccessfulListRoles( adminSubject, stream( initialRoles ).map( this::valueOf ).toArray() );
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + ADMIN + "', 'Henrik')" );
-        testSuccessfulListRoles( subject, initialRoles );
+        testSuccessfulListRoles( subject, stream( initialRoles ).map( this::valueOf ).toArray() );
     }
 
     /*
@@ -585,11 +588,11 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         testFailListUserRoles( subject, "Craig", PERMISSION_DENIED );
         assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('Craig') YIELD value as roles RETURN roles",
-                r -> assertKeyIs( r, "roles", PUBLISHER ) );
+                r -> assertKeyIs( r, "roles", valueOf( PUBLISHER ) ) );
 
         S craigSubject = neo.login( "Craig", "foo" );
         assertSuccess( craigSubject, "CALL dbms.security.listRolesForUser('Craig') YIELD value as roles RETURN roles",
-                r -> assertKeyIs( r, "roles", PUBLISHER ) );
+                r -> assertKeyIs( r, "roles", valueOf( PUBLISHER ) ) );
     }
 
     /*
@@ -613,7 +616,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         testFailListRoleUsers( subject, PUBLISHER, PERMISSION_DENIED );
         assertSuccess( adminSubject,
                 "CALL dbms.security.listUsersForRole('" + PUBLISHER + "') YIELD value as users RETURN users",
-                r -> assertKeyIs( r, "users", "Henrik", "Craig", "writeSubject" ) );
+                r -> assertKeyIs( r, "users", valueOf( "Henrik" ), valueOf( "Craig" ), valueOf( "writeSubject" ) ) );
     }
 
     //---------- calling procedures -----------
@@ -641,13 +644,13 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
 
         assertEmpty( henrik, "CALL test.createNode()" );
         assertSuccess( henrik, "CALL test.numNodes() YIELD count as count RETURN count",
-                 r -> assertKeyIs( r, "count", "4" ) );
+                r -> assertKeyIs( r, "count", valueOf( "4" ) ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
 
         assertEmpty( henrik, "CALL test.createNode()" );
         assertSuccess( henrik, "CALL test.numNodes() YIELD count as count RETURN count",
-                r -> assertKeyIs( r, "count", "5" ) );
+                r -> assertKeyIs( r, "count", valueOf( "5" ) ) );
 
         assertEmpty( adminSubject, "CALL dbms.security.removeRoleFromUser('" + PUBLISHER + "', 'Henrik')" );
 
@@ -677,16 +680,17 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "abc" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
         assertEmpty( subject, "CALL dbms.security.changeUserPassword('Henrik', '123', false)" );
-        neo.updateAuthToken( subject, "Henrik", "123" ); // Because RESTSubject caches an auth token that is sent with every request
-        testSuccessfulRead( subject, 3 );
+        neo.updateAuthToken( subject, "Henrik",
+                "123" ); // Because RESTSubject caches an auth token that is sent with every request
+        testSuccessfulRead( subject, valueOf( 3) );
         neo.logout( subject );
         subject = neo.login( "Henrik", "abc" );
         neo.assertInitFailed( subject );
         subject = neo.login( "Henrik", "123" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3L ) );
     }
 
     /*
@@ -708,14 +712,14 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "abc" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
         assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword('Henrik', '123', false)" );
         neo.logout( subject );
         subject = neo.login( "Henrik", "abc" );
         neo.assertInitFailed( subject );
         subject = neo.login( "Henrik", "123" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
     }
 
     /*
@@ -734,7 +738,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'Henrik')" );
         S subject = neo.login( "Henrik", "abc" );
         neo.assertAuthenticated( subject );
-        testSuccessfulRead( subject, 3 );
+        testSuccessfulRead( subject, valueOf( 3 ) );
         assertFail( subject, "CALL dbms.security.changeUserPassword('Craig', '123')", PERMISSION_DENIED );
     }
 
@@ -746,15 +750,15 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
         assertEmpty( adminSubject, "CREATE (:MyNode)" );
 
         assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
-                r -> assertKeyIs( r, "c", "0" ) );
+                r -> assertKeyIs( r, "c", valueOf( "0" ) ) );
         assertFail( readSubject, "MATCH (n:MyNode) SET n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
                 TOKEN_CREATE_OPS_NOT_ALLOWED );
         assertFail( readSubject, "MATCH (n:MyNode) SET n:Foo RETURN toString(count(*)) AS c",
                 TOKEN_CREATE_OPS_NOT_ALLOWED );
         assertSuccess( schemaSubject, "MATCH (n:MyNode) SET n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
-                r -> assertKeyIs( r, "c", "1" ) );
+                r -> assertKeyIs( r, "c", valueOf( "1" ) ) );
         assertSuccess( readSubject, "MATCH (n:MyNode) WHERE n.nonExistent = 'foo' RETURN toString(count(*)) AS c",
-                r -> assertKeyIs( r, "c", "1" ) );
+                r -> assertKeyIs( r, "c", valueOf( "1" ) ) );
     }
 
     private class SecurityLog
@@ -766,7 +770,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
             File securityLog = new File( AuthScenariosInteractionTestBase.this.securityLog.getAbsolutePath() );
             try ( FileSystemAbstraction fileSystem = neo.fileSystem();
                   BufferedReader bufferedReader = new BufferedReader(
-                            fileSystem.openAsReader( securityLog, Charsets.UTF_8 ) ) )
+                          fileSystem.openAsReader( securityLog, Charsets.UTF_8 ) ) )
             {
                 lines = bufferedReader.lines().collect( java.util.stream.Collectors.toList() );
             }
@@ -778,4 +782,6 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
             assertThat( lines, hasItem( containsString( "[" + subject + "]: " + msg ) ) );
         }
     }
+
+    protected abstract Object valueOf( Object obj );
 }

@@ -22,6 +22,7 @@ package org.neo4j.server.security.enterprise.auth;
 import org.junit.Test;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -32,6 +33,8 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.virtual.MapValue;
 
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,7 +69,8 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     public void shouldWarnWhenUsingNativeAndOtherProvider() throws Throwable
     {
         configuredSetup( stringMap( SecuritySettings.auth_providers.name(), "native ,LDAP" ) );
-        assertSuccess( adminSubject, "CALL dbms.security.listUsers", r -> assertKeyIsMap( r, "username", "roles", userList ) );
+        assertSuccess( adminSubject, "CALL dbms.security.listUsers",
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
         InternalTransaction transaction = localGraph
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
@@ -84,7 +88,7 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
     {
         configuredSetup( stringMap( SecuritySettings.auth_provider.name(), "native" ) );
         assertSuccess( adminSubject, "CALL dbms.security.listUsers",
-                r -> assertKeyIsMap( r, "username", "roles", userList ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( userList ) ) );
         GraphDatabaseFacade localGraph = neo.getLocalGraph();
         InternalTransaction transaction = localGraph
                 .beginTransaction( KernelTransaction.Type.explicit, StandardEnterpriseSecurityContext.AUTH_DISABLED );
@@ -97,14 +101,19 @@ public abstract class ConfiguredAuthScenariosInteractionTestBase<S> extends Proc
         transaction.close();
     }
 
-    private Map<String, Object> userList = map(
+    protected Object valueOf( Object obj )
+    {
+        return obj;
+    }
+
+    private Map<String,Object> userList = map(
             "adminSubject", listOf( ADMIN ),
             "readSubject", listOf( READER ),
             "schemaSubject", listOf( ARCHITECT ),
             "writeSubject", listOf( PUBLISHER ),
             "editorSubject", listOf( EDITOR ),
-            "pwdSubject", listOf( ),
-            "noneSubject", listOf( ),
+            "pwdSubject", listOf(),
+            "noneSubject", listOf(),
             "neo4j", listOf( ADMIN )
     );
 

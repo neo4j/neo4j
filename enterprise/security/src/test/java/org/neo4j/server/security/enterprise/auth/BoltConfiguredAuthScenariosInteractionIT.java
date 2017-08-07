@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
+import org.neo4j.values.AnyValues;
+
 public class BoltConfiguredAuthScenariosInteractionIT extends ConfiguredAuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
     public BoltConfiguredAuthScenariosInteractionIT()
@@ -36,4 +38,11 @@ public class BoltConfiguredAuthScenariosInteractionIT extends ConfiguredAuthScen
     {
         return new BoltInteraction( config );
     }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        return AnyValues.of( obj );
+    }
+
 }

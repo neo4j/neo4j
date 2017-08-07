@@ -32,10 +32,10 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.spatial.{Geometry, Point}
-import org.neo4j.values.AnyValues.{asMapValue, asPathValue, asPointValue}
+import org.neo4j.values.AnyValues._
 import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{doubleValue, longValue, stringValue}
+import org.neo4j.values.storable.Values.{of => _, _}
 import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.{AnyValue, AnyValues}
 
@@ -104,12 +104,14 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
           case CTPath => transform(res(i), asPathValue)
           case CTInteger => transform(res(i), longValue)
           case CTFloat => transform(res(i), doubleValue)
+          case CTNumber => transform(res(i), numberValue)
           case CTString => transform(res(i), stringValue)
-          case CTBoolean => transform(res(i), Values.booleanValue)
+          case CTBoolean => transform(res(i), booleanValue)
           case CTPoint => transform(res(i), (p: Point) => asPointValue(p))
           case CTGeometry => transform(res(i), (g: Geometry) => asPointValue(g))
           case CTMap => transform(res(i), asMapValue)
-          case ListType(_) => transform(res(i), AnyValues.asListValue)
+          case ListType(_) => transform(res(i), asListValue)
+          case CTAny => transform(res(i), AnyValues.of)
         }
       }
       visitor.visit(new Record {
