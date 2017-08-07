@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.Log;
@@ -48,13 +49,13 @@ public class StoreCopyProcess
         this.log = logProvider.getLog( getClass() );
     }
 
-    public void replaceWithStoreFrom( MemberId source, StoreId expectedStoreId )
+    public void replaceWithStoreFrom( MemberId memberId, AdvertisedSocketAddress source, StoreId expectedStoreId )
             throws IOException, StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache,
                 localDatabase.storeDir() ) )
         {
-            remoteStore.copy( source, expectedStoreId, tempStore.storeDir() );
+            remoteStore.copy( memberId, source, expectedStoreId, tempStore.storeDir() );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }

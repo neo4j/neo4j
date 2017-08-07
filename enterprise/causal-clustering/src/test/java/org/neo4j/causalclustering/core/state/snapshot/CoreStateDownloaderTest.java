@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.neo4j.causalclustering.catchup.CatchUpClient;
@@ -34,13 +35,16 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.state.CommandApplicationProcess;
 import org.neo4j.causalclustering.core.state.CoreSnapshotService;
 import org.neo4j.causalclustering.core.state.machines.CoreStateMachines;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -57,24 +61,27 @@ public class CoreStateDownloaderTest
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private CoreSnapshotService snaptshotService = mock( CoreSnapshotService.class );
     private CommandApplicationProcess applicationProcess = mock( CommandApplicationProcess.class );
+    private TopologyService topologyService = mock( TopologyService.class );
 
     private final CoreStateMachines coreStateMachines = mock( CoreStateMachines.class );
 
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
 
     private final MemberId remoteMember = new MemberId( UUID.randomUUID() );
+    private final AdvertisedSocketAddress remoteAddress = new AdvertisedSocketAddress( "remoteAddress", 1234 );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final File storeDir = new File( "graph.db" );
 
     private final CoreStateDownloader downloader =
             new CoreStateDownloader( localDatabase, startStopLife, remoteStore, catchUpClient, logProvider, storeCopyProcess, coreStateMachines,
-                    snaptshotService, applicationProcess );
+                    snaptshotService, applicationProcess, topologyService );
 
     @Before
     public void commonMocking() throws IOException
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
+        when( topologyService.findCatchupAddress( remoteMember ) ).thenReturn( Optional.of( remoteAddress ) );
     }
 
     @Test
@@ -89,8 +96,8 @@ public class CoreStateDownloaderTest
         downloader.downloadSnapshot( remoteMember );
 
         // then
-        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any() );
-        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, remoteStoreId );
+        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), any() );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, null, remoteStoreId );
     }
 
     @Test
@@ -129,8 +136,8 @@ public class CoreStateDownloaderTest
         }
 
         // then
-        verify( remoteStore, never() ).copy( any(), any(), any() );
-        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any() );
+        verify( remoteStore, never() ).copy( any(), any(), any(), any() );
+        verify( remoteStore, never() ).tryCatchingUp( any(), any(), any(), any() );
     }
 
     @Test
@@ -139,14 +146,14 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
+        when( remoteStore.tryCatchingUp( remoteMember, null, storeId, storeDir ) ).thenReturn( SUCCESS_END_OF_STREAM );
 
         // when
         downloader.downloadSnapshot( remoteMember );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );
-        verify( remoteStore, never() ).copy( any(), any(), any() );
+        verify( remoteStore ).tryCatchingUp( remoteMember, null, storeId, storeDir );
+        verify( remoteStore, never() ).copy( any(), any(), any(), any() );
     }
 
     @Test
@@ -155,13 +162,13 @@ public class CoreStateDownloaderTest
         // given
         when( localDatabase.isEmpty() ).thenReturn( false );
         when( remoteStore.getStoreId( remoteMember ) ).thenReturn( storeId );
-        when( remoteStore.tryCatchingUp( remoteMember, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
+        when( remoteStore.tryCatchingUp( remoteMember, null, storeId, storeDir ) ).thenReturn( E_TRANSACTION_PRUNED );
 
         // when
         downloader.downloadSnapshot( remoteMember );
 
         // then
-        verify( remoteStore ).tryCatchingUp( remoteMember, storeId, storeDir );
-        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, storeId );
+        verify( remoteStore ).tryCatchingUp( remoteMember, null, storeId, storeDir );
+        verify( storeCopyProcess ).replaceWithStoreFrom( remoteMember, null, storeId );
     }
 }

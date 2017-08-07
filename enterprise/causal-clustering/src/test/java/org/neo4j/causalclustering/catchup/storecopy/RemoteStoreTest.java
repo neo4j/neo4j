@@ -32,6 +32,7 @@ import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.catchup.tx.TxPullResponseListener;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -50,6 +51,8 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
 
 public class RemoteStoreTest
 {
+    MemberId memberId = new MemberId( new UUID( 2, 3 ) );
+
     @Test
     public void shouldCopyStoreFilesAndPullTransactions() throws Exception
     {
@@ -57,7 +60,7 @@ public class RemoteStoreTest
         StoreId storeId = new StoreId( 1, 2, 3, 4 );
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( any(), any(), anyLong(), any() ) )
+        when( txPullClient.pullTransactions( any(), any(), any(), anyLong(), any() ) )
                 .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13 ) );
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
 
@@ -65,12 +68,12 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
-        MemberId localhost = new MemberId( UUID.randomUUID() );
-        remoteStore.copy( localhost, storeId, new File( "destination" ) );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
+        remoteStore.copy( memberId, localhost, storeId, new File( "destination" ) );
 
         // then
-        verify( storeCopyClient ).copyStoreFiles( eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) );
+        verify( storeCopyClient ).copyStoreFiles( eq( memberId), eq( localhost ), eq( storeId ), any( StoreFileStreams.class ) );
+        verify( txPullClient ).pullTransactions( eq( memberId ), eq( localhost ), eq( storeId ), anyLong(), any( TxPullResponseListener.class ) );
     }
 
     @Test
@@ -79,14 +82,14 @@ public class RemoteStoreTest
         // given
         long lastFlushedTxId = 12;
         StoreId wantedStoreId = new StoreId( 1, 2, 3, 4 );
-        MemberId localhost = new MemberId( UUID.randomUUID() );
+        AdvertisedSocketAddress localhost = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
 
         StoreCopyClient storeCopyClient = mock( StoreCopyClient.class );
-        when( storeCopyClient.copyStoreFiles( eq( localhost ), eq( wantedStoreId ), any( StoreFileStreams.class ) ) )
+        when( storeCopyClient.copyStoreFiles( eq( memberId ), eq( localhost ), eq( wantedStoreId ), any( StoreFileStreams.class ) ) )
                 .thenReturn( lastFlushedTxId );
 
         TxPullClient txPullClient = mock( TxPullClient.class );
-        when( txPullClient.pullTransactions( eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
+        when( txPullClient.pullTransactions( eq( memberId ), eq( localhost ), eq( wantedStoreId ), anyLong(), any( TxPullResponseListener.class ) ) )
                 .thenReturn( new TxPullRequestResult( SUCCESS_END_OF_STREAM, 13 ) );
 
         TransactionLogCatchUpWriter writer = mock( TransactionLogCatchUpWriter.class );
@@ -95,11 +98,11 @@ public class RemoteStoreTest
                 null, storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         // when
-        remoteStore.copy( localhost, wantedStoreId, new File( "destination" ) );
+        remoteStore.copy( memberId, localhost, wantedStoreId, new File( "destination" ) );
 
         // then
         long previousTxId = lastFlushedTxId - 1; // the interface is defined as asking for the one preceding
-        verify( txPullClient ).pullTransactions( eq( localhost ), eq( wantedStoreId ), eq( previousTxId ),
+        verify( txPullClient ).pullTransactions( eq( memberId ), eq( localhost ), eq( wantedStoreId ), eq( previousTxId ),
                 any( TxPullResponseListener.class ) );
     }
 
@@ -117,12 +120,12 @@ public class RemoteStoreTest
                 storeCopyClient, txPullClient, factory( writer ), new Monitors() );
 
         doThrow( StoreCopyFailedException.class ).when( txPullClient )
-                .pullTransactions( any( MemberId.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
+                .pullTransactions( any(), any( AdvertisedSocketAddress.class ), eq( storeId ), anyLong(), any( TransactionLogCatchUpWriter.class ) );
 
         // when
         try
         {
-            remoteStore.copy( null, storeId, null );
+            remoteStore.copy( null, null, storeId, null );
         }
         catch ( StoreCopyFailedException e )
         {

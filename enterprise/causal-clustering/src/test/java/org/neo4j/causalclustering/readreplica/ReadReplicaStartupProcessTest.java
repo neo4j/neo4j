@@ -40,6 +40,7 @@ import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -68,6 +69,7 @@ public class ReadReplicaStartupProcessTest
     private Lifecycle txPulling = mock( Lifecycle.class );
 
     private MemberId memberId = new MemberId( UUID.randomUUID() );
+    private AdvertisedSocketAddress fromAddress = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
     private StoreId localStoreId = new StoreId( 1, 2, 3, 4 );
     private StoreId otherStoreId = new StoreId( 5, 6, 7, 8 );
     private File storeDir = new File( "store-dir" );
@@ -79,8 +81,7 @@ public class ReadReplicaStartupProcessTest
         members.put( memberId, mock( CoreServerInfo.class ) );
 
         FileSystemAbstraction fileSystemAbstraction = mock( FileSystemAbstraction.class );
-        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) )
-                .thenAnswer( ( f ) -> Stream.empty());
+        when( fileSystemAbstraction.streamFilesRecursive( any( File.class ) ) ).thenAnswer( ( f ) -> Stream.empty() );
         when( pageCache.getCachedFileSystem() ).thenReturn( fileSystemAbstraction );
         when( localDatabase.storeDir() ).thenReturn( storeDir );
         when( localDatabase.storeId() ).thenReturn( localStoreId );
@@ -93,17 +94,18 @@ public class ReadReplicaStartupProcessTest
     {
         // given
         when( localDatabase.isEmpty() ).thenReturn( true );
+        when( topologyService.findCatchupAddress( any() )).thenReturn( Optional.of( fromAddress ) );
         when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
-                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(), retryStrategy, NullLogProvider.getInstance(),
+                        NullLogProvider.getInstance(), storeCopyProcess, topologyService );
 
         // when
         readReplicaStartupProcess.start();
 
         // then
-        verify( storeCopyProcess ).replaceWithStoreFrom( any(), any() );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any(), any(), any() );
         verify( localDatabase ).start();
         verify( txPulling ).start();
     }
@@ -124,8 +126,8 @@ public class ReadReplicaStartupProcessTest
         when( remoteStore.getStoreId( any() ) ).thenReturn( otherStoreId );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
-                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(), retryStrategy, NullLogProvider.getInstance(),
+                        NullLogProvider.getInstance(), storeCopyProcess, topologyService );
 
         // when
         try
@@ -136,9 +138,8 @@ public class ReadReplicaStartupProcessTest
         catch ( Exception ex )
         {
             //expected.
-            assertThat( ex.getMessage(), containsString(
-                    "This read replica cannot join the cluster. The local database is not empty and has a " +
-                            "mismatching storeId" ) );
+            assertThat( ex.getMessage(),
+                    containsString( "This read replica cannot join the cluster. The local database is not empty and has a " + "mismatching storeId" ) );
         }
 
         // then
@@ -153,8 +154,8 @@ public class ReadReplicaStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
-                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(), retryStrategy, NullLogProvider.getInstance(),
+                        NullLogProvider.getInstance(), storeCopyProcess, topologyService );
 
         // when
         readReplicaStartupProcess.start();
@@ -172,8 +173,8 @@ public class ReadReplicaStartupProcessTest
         when( localDatabase.isEmpty() ).thenReturn( false );
 
         ReadReplicaStartupProcess readReplicaStartupProcess =
-                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(),
-                        retryStrategy, NullLogProvider.getInstance(), NullLogProvider.getInstance(), storeCopyProcess );
+                new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, chooseFirstMember(), retryStrategy, NullLogProvider.getInstance(),
+                        NullLogProvider.getInstance(), storeCopyProcess, topologyService );
 
         readReplicaStartupProcess.start();
 
