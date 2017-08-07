@@ -41,21 +41,6 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.toList should equal(List(Map("count(n.name)" -> 3)))
   }
 
-  test("varlength apa") {
-
-    val n1 = createLabeledNode("Start")
-    val n2 = createNode()
-    val n3 = createNode()
-    val n4 = createNode()
-
-    relate(n1,n2)
-    relate(n1,createNode())
-    relate(n2,n3)
-    relate(n3,n4)
-
-    testWith(Configs.Interpreted,  "MATCH (n:Start)-[r*1..2]->(x) RETURN r")
-  }
-
   test("Do not count null elements in nodes with labels") {
 
     createLabeledNode(Map("name" -> "a"), "Person")
