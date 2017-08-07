@@ -39,6 +39,7 @@ object ValueConversion {
     case symbols.CTBoolean => b => Values.booleanValue(b.asInstanceOf[Boolean])
     case symbols.CTFloat => d => Values.doubleValue(d.asInstanceOf[Double])
     case symbols.CTInteger => l => Values.longValue(l.asInstanceOf[Long])
+    case symbols.CTNumber => l => Values.numberValue(l.asInstanceOf[Number])
     case symbols.CTString => l => Values.stringValue(l.asInstanceOf[String])
     case symbols.CTPath => p => AnyValues.asPathValue(p.asInstanceOf[Path])
     case symbols.CTMap => m => AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])

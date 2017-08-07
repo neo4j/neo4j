@@ -455,7 +455,7 @@ public class BoltConnectionIT
 
         // Then the two should not have interfered with each other
         stream = runAndPull( secondMachine, "MATCH (a:Person) WHERE id(a) = " + id + " RETURN COUNT(*)" );
-        assertThat( ((Record) stream[0]).fields()[0], equalTo( 1L ) );
+        assertThat( ((Record) stream[0]).fields()[0], equalTo( longValue( 1L ) ) );
     }
 
     @Test

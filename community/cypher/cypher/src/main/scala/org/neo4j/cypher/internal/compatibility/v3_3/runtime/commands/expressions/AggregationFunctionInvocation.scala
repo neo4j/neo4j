@@ -37,7 +37,9 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
 
     override def apply(data: ExecutionContext)
                       (implicit state: QueryState) = {
-      val argValues = arguments.map(arg => arg(data)(state))
+      val argValues = arguments.map(arg => {
+        state.query.asObject(arg(data)(state))
+      })
       aggregator.update(argValues)
     }
 
