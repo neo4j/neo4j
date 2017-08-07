@@ -150,6 +150,12 @@ public class ReadOnlyGraphDatabaseProxy implements GraphDatabaseService, GraphDa
     }
 
     @Override
+    public Long createNodeId()
+    {
+        return readOnly();
+    }
+
+    @Override
     public Node createNode( Label... labels )
     {
         return readOnly();

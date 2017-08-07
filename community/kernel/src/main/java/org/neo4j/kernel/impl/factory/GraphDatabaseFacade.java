@@ -267,6 +267,19 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     }
 
     @Override
+    public Long createNodeId()
+    {
+        try ( Statement statement = spi.currentStatement() )
+        {
+            return statement.dataWriteOperations().nodeCreate();
+        }
+        catch ( InvalidTransactionTypeKernelException e )
+        {
+            throw new ConstraintViolationException( e.getMessage(), e );
+        }
+    }
+
+    @Override
     public Node createNode( Label... labels )
     {
         try ( Statement statement = spi.currentStatement() )
