@@ -38,10 +38,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanIdent
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v3_3.{HardcodedGraphStatistics, IDPPlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTNode, CTRelationship}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTAny, CTList, CTNode, CTRelationship}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
 class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -289,6 +289,32 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       PipelineInformation(Map(
         "x" -> LongSlot(0, nullable = false, CTNode, "x"),
         "r" -> LongSlot(1, nullable = true, CTRelationship, "r")), numberOfLongs = 2, numberOfReferences = 0)
+    )())
+  }
+
+  test("single node with varlength expand") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, z, r, varLength, ExpandAll)(solved)
+
+    // when
+    val pipe = build(expand)
+
+    // then
+    val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
+    val zNodeSlot = LongSlot(1, nullable = false, CTNode, "z")
+    val rRelSlot = RefSlot(0, nullable = false, CTList(CTRelationship), "r")
+    pipe should equal(VarLengthExpandRegisterPipe(
+      AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
+      xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
+      SemanticDirection.INCOMING, SemanticDirection.INCOMING,
+      LazyTypes.empty, 1, Some(15), false,
+      VarLengthRegisterPredicate.NONE,
+      PipelineInformation(Map(
+        "x" -> xNodeSlot,
+        "r" -> rRelSlot,
+        "z" -> zNodeSlot), numberOfLongs = 2, numberOfReferences = 1)
     )())
   }
 
