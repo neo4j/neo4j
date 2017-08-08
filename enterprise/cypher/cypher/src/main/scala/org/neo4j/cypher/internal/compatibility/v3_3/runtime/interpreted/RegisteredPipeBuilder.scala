@@ -149,7 +149,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         fallback.build(plan, source)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodeRegisterPipe(idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
+        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
 
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
