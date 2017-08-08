@@ -126,11 +126,13 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
     {
         return new IndexUpdater()
         {
-            Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+            private boolean closed;
+            private Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
             @Override
             public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
             {
+                assertOpen();
                 updates.add( update );
             }
 
@@ -138,11 +140,20 @@ public abstract class NativeSchemaNumberIndexPopulator<KEY extends SchemaNumberK
             public void close() throws IOException, IndexEntryConflictException
             {
                 applyWithWorkSync( updates );
+                closed = true;
             }
 
             @Override
             public void remove( PrimitiveLongSet nodeIds ) throws IOException
             {   // no-op
+            }
+
+            private void assertOpen()
+            {
+                if ( closed )
+                {
+                    throw new IllegalStateException( "Updater has been closed" );
+                }
             }
         };
     }

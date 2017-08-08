@@ -26,7 +26,9 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -48,15 +50,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-
-import static java.util.Arrays.asList;
-
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
@@ -220,12 +220,11 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // when
-        applyInterleaved( updates, updater, populator );
+        applyInterleaved( updates, populator );
 
         // then
         populator.close( true );
@@ -543,19 +542,44 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         return RandomStringUtils.random( length, true, true );
     }
 
-    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, IndexUpdater updater,
-            NativeSchemaNumberIndexPopulator<KEY,VALUE> populator ) throws IOException, IndexEntryConflictException
+    private void applyInterleaved( IndexEntryUpdate<IndexDescriptor>[] updates, NativeSchemaNumberIndexPopulator<KEY,VALUE> populator )
+            throws IOException, IndexEntryConflictException
     {
+        boolean useUpdater = true;
+        Collection<IndexEntryUpdate<IndexDescriptor>> populatorBatch = new ArrayList<>();
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            if ( random.nextBoolean() )
+            if ( random.nextInt( 100 ) < 20 )
             {
-                populator.add( asList( update ) );
+                if ( useUpdater )
+                {
+                    updater.close();
+                    populatorBatch = new ArrayList<>();
+                }
+                else
+                {
+                    populator.add( populatorBatch );
+                    updater = populator.newPopulatingUpdater( null_property_accessor );
+                }
+                useUpdater = !useUpdater;
             }
-            else
+            if ( useUpdater )
             {
                 updater.process( update );
             }
+            else
+            {
+                populatorBatch.add( update );
+            }
+        }
+        if ( useUpdater )
+        {
+            updater.close();
+        }
+        else
+        {
+            populator.add( populatorBatch );
         }
     }
 

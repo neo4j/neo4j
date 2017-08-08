@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.File;
 import java.util.Arrays;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -33,10 +34,10 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-
 import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
 {
@@ -67,12 +68,15 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
             populator.add( Arrays.asList( updates ) );
             fail( "Updates should have conflicted" );
         }
-        catch ( IndexEntryConflictException e )
+        catch ( Throwable e )
         {
-            // then good
+            // then
+            assertTrue( Exceptions.contains( e, IndexEntryConflictException.class ) );
         }
-
-        populator.close( true );
+        finally
+        {
+            populator.close( true );
+        }
     }
 
     @Test
@@ -81,21 +85,27 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
         // given
         populator.create();
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
+
+        // when
+        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
-            {
-                updater.process( update );
-            }
+            updater.process( update );
+        }
+        try
+        {
+            updater.close();
             fail( "Updates should have conflicted" );
         }
-        catch ( IndexEntryConflictException e )
+        catch ( Throwable e )
         {
-            // then good
+            // then
+            assertTrue( e.getMessage(), Exceptions.contains( e, IndexEntryConflictException.class ) );
         }
-
-        populator.close( true );
+        finally
+        {
+            populator.close( true );
+        }
     }
 
     @Test
