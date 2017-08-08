@@ -46,12 +46,16 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexProvider;
+import org.neo4j.kernel.impl.index.schema.NativeSelector;
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -228,8 +232,13 @@ public class ConsistencyCheckService
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
             life.start();
-            SchemaIndexProvider indexes = life.add( new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
-                    storeDir, logProvider, config, operationalMode ) );
+
+            LuceneSchemaIndexProvider luceneProvider = new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT,
+                    storeDir, logProvider, config, operationalMode );
+            NativeSchemaNumberIndexProvider nativeProvider =
+                    new NativeSchemaNumberIndexProvider( pageCache, storeDir, logProvider, RecoveryCleanupWorkCollector.IMMEDIATE, true );
+            SchemaIndexProvider indexes = life.add( new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(),
+                    NativeLuceneFusionSchemaIndexProviderFactory.DESCRIPTOR, 50 ) );
 
             LabelScanStore labelScanStore =
                     new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),
