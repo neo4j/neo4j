@@ -1,4 +1,4 @@
 {
   "planner" : "cost",
-  "runtime" : "interpreted"
+  "runtime" : "enterprise-interpreted"
 }
