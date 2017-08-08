@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 case class GetDegreePrimitive(offset: Int, typ: Option[String], direction: SemanticDirection) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = typ match {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Long = typ match {
     case None => state.query.nodeGetDegree(ctx.getLongAt(offset), direction)
     case Some(t) => state.query.getOptRelTypeId(t) match {
       case None => 0
