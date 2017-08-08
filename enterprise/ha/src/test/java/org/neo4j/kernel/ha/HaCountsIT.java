@@ -241,7 +241,7 @@ public class HaCountsIT
             throws KernelException
     {
         long start = System.currentTimeMillis();
-        long end = start + 3000;
+        long end = start + 60_000;
         while ( System.currentTimeMillis() < end )
         {
             try ( Transaction tx = db.beginTx() )
