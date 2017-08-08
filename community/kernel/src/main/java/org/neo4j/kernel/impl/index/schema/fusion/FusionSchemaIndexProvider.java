@@ -97,7 +97,7 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
 
         if ( nativeFailure != null || luceneFailure != null )
         {
-            return "native:" + nativeFailure + " lucene:" + luceneFailure;
+            return "native: " + nativeFailure + " lucene: " + luceneFailure;
         }
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
