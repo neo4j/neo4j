@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,19 +35,30 @@ import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.helpers.ArrayUtil.array;
 
 public class FusionSchemaIndexProviderTest
 {
     private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( "test-fusion", "1" );
+
+    private SchemaIndexProvider nativeProvider;
+    private SchemaIndexProvider luceneProvider;
+
+    @Before
+    public void setup()
+    {
+        nativeProvider = mock( SchemaIndexProvider.class );
+        luceneProvider = mock( SchemaIndexProvider.class );
+        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
+        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
+    }
 
     @Rule
     public RandomRule random = new RandomRule();
@@ -55,9 +67,6 @@ public class FusionSchemaIndexProviderTest
     public void mustSelectCorrectTargetForAllGivenValueCombinations() throws Exception
     {
         // given
-        SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
-        SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
-
         Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
         Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
         Value[] allValues = FusionIndexTestHelp.allValues();
@@ -121,41 +130,67 @@ public class FusionSchemaIndexProviderTest
     }
 
     @Test
-    public void mustReportPopulationFailure() throws Exception
+    public void getPopulationFailureMustThrowIfNoFailure() throws Exception
     {
         // given
-        SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
-        SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
-        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
-        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
-        FusionSchemaIndexProvider fusionSchemaIndexProvider =
-                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
         // when
         // ... no failure
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( null );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( null );
+        IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
+        IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
+        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
+        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
         // then
-        assertNull( fusionSchemaIndexProvider.getPopulationFailure( 0 ) );
+        try
+        {
+            fusionSchemaIndexProvider.getPopulationFailure( 0 );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalStateException e )
+        {   // good
+        }
+    }
+
+    @Test
+    public void getPopulationFailureMustReportFailureWhenNativeFailure() throws Exception
+    {
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
         // when
         // ... native failure
         String nativeFailure = "native failure";
+        IllegalStateException luceneThrow = new IllegalStateException( "no lucene failure" );
         when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
-        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( null );
+        when( luceneProvider.getPopulationFailure( anyLong() ) ).thenThrow( luceneThrow );
         // then
-        assertEquals( nativeFailure, fusionSchemaIndexProvider.getPopulationFailure( 0 ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( nativeFailure ) );
+    }
+
+    @Test
+    public void getPopulationFailureMustReportFailureWhenLuceneFailure() throws Exception
+    {
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
         // when
         // ... lucene failure
         String luceneFailure = "lucene failure";
-        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( null );
+        IllegalStateException nativeThrow = new IllegalStateException( "no native failure" );
+        when( nativeProvider.getPopulationFailure( anyLong() ) ).thenThrow( nativeThrow );
         when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
         // then
-        assertEquals( luceneFailure, fusionSchemaIndexProvider.getPopulationFailure( 0 ) );
+        assertThat( fusionSchemaIndexProvider.getPopulationFailure( 0 ), containsString( luceneFailure ) );
+    }
+
+    @Test
+    public void getPopulationFailureMustReportFailureWhenBothFailure() throws Exception
+    {
+        FusionSchemaIndexProvider fusionSchemaIndexProvider = fusionProvider();
 
         // when
         // ... native and lucene failure
+        String luceneFailure = "lucene failure";
+        String nativeFailure = "native failure";
         when( nativeProvider.getPopulationFailure( anyLong() ) ).thenReturn( nativeFailure );
         when( luceneProvider.getPopulationFailure( anyLong() ) ).thenReturn( luceneFailure );
         // then
@@ -168,12 +203,7 @@ public class FusionSchemaIndexProviderTest
     public void shouldReportFailedIfAnyIsFailed() throws Exception
     {
         // given
-        SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
-        SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
-        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
-        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
-        SchemaIndexProvider provider =
-                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
+        SchemaIndexProvider provider = fusionProvider();
         IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : InternalIndexState.values() )
@@ -197,12 +227,7 @@ public class FusionSchemaIndexProviderTest
     public void shouldReportPopulatingIfAnyIsPopulating() throws Exception
     {
         // given
-        SchemaIndexProvider nativeProvider = mock( SchemaIndexProvider.class );
-        SchemaIndexProvider luceneProvider = mock( SchemaIndexProvider.class );
-        when( nativeProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "native", "1" ) );
-        when( luceneProvider.getProviderDescriptor() ).thenReturn( new SchemaIndexProvider.Descriptor( "lucene", "1" ) );
-        SchemaIndexProvider provider =
-                new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
+        SchemaIndexProvider provider = fusionProvider();
         IndexDescriptor indexDescriptor = IndexDescriptorFactory.forLabel( 1, 1 );
 
         for ( InternalIndexState state : array( InternalIndexState.ONLINE, InternalIndexState.POPULATING ) )
@@ -220,6 +245,11 @@ public class FusionSchemaIndexProviderTest
             assertEquals( InternalIndexState.POPULATING, failed1 );
             assertEquals( InternalIndexState.POPULATING, failed2 );
         }
+    }
+
+    private FusionSchemaIndexProvider fusionProvider()
+    {
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 10 );
     }
 
     private void setInitialState( SchemaIndexProvider mockedProvider, InternalIndexState state )
