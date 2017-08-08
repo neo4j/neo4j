@@ -160,7 +160,6 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
