@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.file.OpenOption;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -120,8 +119,7 @@ public class StoreFactoryTest
     public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
     {
         // when
-        StoreFactory readOnlyStoreFactory = storeFactory(
-                Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) ) );
+        StoreFactory readOnlyStoreFactory = storeFactory( Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE ) );
         neoStores = readOnlyStoreFactory.openAllNeoStores( true );
         long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
 

@@ -90,7 +90,7 @@ public class ReadOnlyIndexReferenceFactoryTest
         File storeDir = getStoreDir();
         indexStore = new IndexConfigStore( storeDir, fileSystemRule.get() );
         indexStore.set( Node.class, INDEX_NAME, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
-        LuceneDataSource luceneDataSource = new LuceneDataSource( storeDir, Config.defaults( MapUtil.stringMap() ),
+        LuceneDataSource luceneDataSource = new LuceneDataSource( storeDir, Config.defaults(),
                 indexStore, fileSystemRule.get(), OperationalMode.single );
         try
         {

@@ -82,7 +82,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.AUTO_WITHOUT_PAGECACHE;
@@ -247,7 +246,7 @@ public class ParallelBatchImporterTest
     {
         ConsistencyCheckService consistencyChecker = new ConsistencyCheckService();
         Result result = consistencyChecker.runFullConsistencyCheck( storeDir,
-                Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
+                Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), false );
         assertTrue( "Database contains inconsistencies, there should be a report in " + storeDir,

@@ -64,7 +64,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.file.Files.createOrOpenAsOuputStream;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
@@ -204,7 +203,7 @@ public class ConsistencyCheckService
             throws ConsistencyCheckIncompleteException
     {
         Log log = logProvider.getLog( getClass() );
-        config.augment( stringMap( GraphDatabaseSettings.read_only.name(), TRUE ) );
+        config.augment( GraphDatabaseSettings.read_only, TRUE );
         OperationalMode operationalMode = OperationalMode.single;
 
         StoreFactory factory = new StoreFactory( storeDir, config,

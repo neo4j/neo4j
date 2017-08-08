@@ -96,7 +96,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveBranchThenCopyTest
 {
@@ -351,7 +350,7 @@ public class SwitchToSlaveBranchThenCopyTest
 
     private Config configMock()
     {
-        return Config.defaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

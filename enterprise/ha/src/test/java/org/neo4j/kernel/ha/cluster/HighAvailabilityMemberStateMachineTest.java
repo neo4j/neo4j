@@ -28,7 +28,6 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -543,7 +542,7 @@ public class HighAvailabilityMemberStateMachineTest
             }
         };
 
-        Config config = Config.defaults( Collections.singletonMap( ClusterSettings.server_id.name(), me.toString() ) );
+        Config config = Config.defaults( ClusterSettings.server_id, me.toString() );
 
         TransactionStats transactionCounters = mock( TransactionStats.class );
         when( transactionCounters.getNumberOfActiveTransactions() ).thenReturn( 0L );

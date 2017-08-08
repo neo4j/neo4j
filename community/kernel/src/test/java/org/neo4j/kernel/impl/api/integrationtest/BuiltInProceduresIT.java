@@ -118,11 +118,6 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
                         "value :: STRING?)",
                         "List the currently active config of Neo4j."} ),
-                equalTo( new Object[]{"dbms.reloadConfig",
-                        "dbms.reloadConfig(dryRun = false :: BOOLEAN?) :: (type :: STRING?, key :: STRING?, oldValue " +
-                                ":: STRING?, newValue :: STRING?)",
-                        "Reload the active config file of Neo4j. If testRun is true the config will be parsed and validated" +
-                        " and the changes will be listed."}),
                 equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database."} ),
                 equalTo( new Object[]{"db.indexes",

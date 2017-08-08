@@ -40,7 +40,6 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.index.impl.lucene.legacy.LuceneIndexImplementation.EXACT_CONFIG;
 
 public class LuceneCommandApplierTest
@@ -60,9 +59,9 @@ public class LuceneCommandApplierTest
         String key = "key";
         IndexConfigStore configStore = new IndexConfigStore( dir, fs.get() );
         configStore.set( Node.class, indexName, EXACT_CONFIG );
-        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir, Config.defaults( stringMap(
-                LuceneDataSource.Configuration.ephemeral.name(), Settings.TRUE ) ),
-                configStore, fs.get(), OperationalMode.single ) ) );
+        LuceneDataSource dataSource = life.add( spy( new LuceneDataSource( dir,
+                Config.defaults( LuceneDataSource.Configuration.ephemeral, Settings.TRUE ), configStore, fs.get(),
+                OperationalMode.single ) ) );
 
         try ( LuceneCommandApplier applier = new LuceneCommandApplier( dataSource, false ) )
         {

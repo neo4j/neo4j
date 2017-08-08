@@ -56,7 +56,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
@@ -389,6 +388,6 @@ public class RecordFormatSelectorTest
 
     private static Config config( String recordFormatName )
     {
-        return Config.defaults( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ) );
+        return Config.defaults( GraphDatabaseSettings.record_format, recordFormatName );
     }
 }

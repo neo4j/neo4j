@@ -40,7 +40,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -72,8 +71,7 @@ public class PropertyStoreTest
     {
         // given
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
-        Config config =
-                Config.defaults( singletonMap( PropertyStore.Configuration.rebuild_idgenerators_fast.name(), "true" ));
+        Config config = Config.defaults( PropertyStore.Configuration.rebuild_idgenerators_fast, "true" );
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
 

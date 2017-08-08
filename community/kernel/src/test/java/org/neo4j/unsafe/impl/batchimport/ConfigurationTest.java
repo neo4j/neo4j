@@ -30,7 +30,6 @@ import static java.lang.String.valueOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.MAX_PAGE_CACHE_MEMORY;
 
@@ -40,7 +39,7 @@ public class ConfigurationTest
     public void shouldOverrideBigPageCacheMemorySettingContainingUnit() throws Exception
     {
         // GIVEN
-        Config dbConfig = Config.defaults( stringMap( pagecache_memory.name(), "2g" ) );
+        Config dbConfig = Config.defaults( pagecache_memory, "2g" );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN
@@ -55,7 +54,7 @@ public class ConfigurationTest
     {
         // GIVEN
         long overridden = parseLongWithUnit( "10m" );
-        Config dbConfig = Config.defaults( stringMap( pagecache_memory.name(), valueOf( overridden ) ) );
+        Config dbConfig = Config.defaults( pagecache_memory, valueOf( overridden ) );
         Configuration config = new Configuration.Overridden( dbConfig );
 
         // WHEN

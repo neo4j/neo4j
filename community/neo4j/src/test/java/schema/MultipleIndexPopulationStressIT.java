@@ -80,7 +80,6 @@ import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.helpers.progress.ProgressMonitorFactory.NONE;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
@@ -166,7 +165,7 @@ public class MultipleIndexPopulationStressIT
         populateDbAndIndexes( nodeCount, multiThreaded );
         ConsistencyCheckService cc = new ConsistencyCheckService();
         Result result = cc.runFullConsistencyCheck( directory.graphDbDir(),
-                Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) ),
+                Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" ),
                 NONE, NullLogProvider.getInstance(), false );
         assertTrue( result.isSuccessful() );
         dropIndexes();

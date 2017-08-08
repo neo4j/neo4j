@@ -61,7 +61,7 @@ public class ConfiguringPageCacheFactoryTest
         // Given
         final int pageSize = 8192;
         final long maxPages = 60;
-        Config config = Config.defaults( stringMap( pagecache_memory.name(), Long.toString( pageSize * maxPages ) ) );
+        Config config = Config.defaults( pagecache_memory, Long.toString( pageSize * maxPages ) );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(
@@ -146,8 +146,7 @@ public class ConfiguringPageCacheFactoryTest
         int cachePageSizeHint = 16 * 1024;
         PageSwapperFactoryForTesting.cachePageSizeHint.set( cachePageSizeHint );
         PageSwapperFactoryForTesting.cachePageSizeHintIsStrict.set( true );
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.pagecache_swapper.name(), TEST_PAGESWAPPER_NAME ) );
+        Config config = Config.defaults( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME );
 
         // When
         ConfiguringPageCacheFactory factory = new ConfiguringPageCacheFactory(

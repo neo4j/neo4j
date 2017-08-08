@@ -45,7 +45,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_descending;
 import static org.neo4j.kernel.ha.HaSettings.tx_push_strategy;
@@ -102,7 +101,7 @@ public class TransactionPropagatorTest
     {
         // GIVEN
         Configuration propagator = TransactionPropagator
-                .from( Config.defaults( stringMap( tx_push_strategy.name(), fixed_ascending.name() ) ) );
+                .from( Config.defaults( tx_push_strategy, fixed_ascending.name() ) );
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN
@@ -117,7 +116,7 @@ public class TransactionPropagatorTest
     {
         // GIVEN
         Configuration propagator = TransactionPropagator
-                .from( Config.defaults( stringMap( tx_push_strategy.name(), fixed_descending.name() )));
+                .from( Config.defaults( tx_push_strategy, fixed_descending.name() ) );
         SlavePriority strategy = propagator.getReplicationStrategy();
 
         // WHEN

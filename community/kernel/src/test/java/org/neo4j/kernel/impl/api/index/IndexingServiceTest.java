@@ -134,7 +134,6 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.loop;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -1236,8 +1235,7 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
 
-        Config config = Config.defaults( stringMap(
-                GraphDatabaseSettings.multi_threaded_schema_index_population_enabled.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( new Neo4jJobScheduler() ),

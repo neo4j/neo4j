@@ -31,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.time.Clocks;
@@ -66,8 +65,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
     @Before
     public void setUp()
     {
-        customConfig = Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.lock_acquisition_timeout.name(), "100ms"
-        ) );
+        customConfig = Config.defaults( GraphDatabaseSettings.lock_acquisition_timeout, "100ms" );
         clock = Clocks.fakeClock(100000, TimeUnit.MINUTES);
         lockManager = suite.createLockManager( customConfig, clock );
         client = lockManager.newClient();

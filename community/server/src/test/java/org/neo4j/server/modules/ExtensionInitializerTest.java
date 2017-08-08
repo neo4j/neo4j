@@ -36,7 +36,6 @@ import org.neo4j.server.plugins.Injectable;
 import org.neo4j.server.plugins.PluginLifecycle;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 
 public class ExtensionInitializerTest
@@ -45,7 +44,7 @@ public class ExtensionInitializerTest
     @Test
     public void testPluginInitialization()
     {
-        Config config = Config.defaults( stringMap( ServerSettings.transaction_idle_timeout.name(), "600" ) );
+        Config config = Config.defaults( ServerSettings.transaction_idle_timeout, "600" );
         NeoServer neoServer = Mockito.mock( NeoServer.class, Mockito.RETURNS_DEEP_STUBS );
         Mockito.when( neoServer.getConfig() ).thenReturn( config );
         ExtensionInitializer extensionInitializer = new ExtensionInitializer( neoServer );

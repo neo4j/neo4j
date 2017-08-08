@@ -69,7 +69,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.harness.TestServerBuilders.newInProcessBuilder;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class InProcessBuilderTestIT
 {
@@ -178,7 +177,7 @@ public class InProcessBuilderTestIT
         // When
         // create graph db with one node upfront
         Path dir = Files.createTempDirectory( getClass().getSimpleName() + "_shouldRunBuilderOnExistingStorageDir" );
-        File storeDir = Config.defaults( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dir.toString() ) )
+        File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, dir.toString() )
                 .get( DatabaseManagementSystemSettings.database_path );
         try
         {

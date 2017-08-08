@@ -42,8 +42,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 /**
  * Additional tests for stuff not already covered by {@link LuceneSchemaIndexProviderCompatibilitySuiteTest}
  */
@@ -70,7 +68,7 @@ public class LuceneSchemaIndexProviderTest
     @Test
     public void shouldFailToInvokePopulatorInReadOnlyMode() throws Exception
     {
-        Config readOnlyConfig = Config.defaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
         expectedException.expect( UnsupportedOperationException.class );
@@ -85,7 +83,7 @@ public class LuceneSchemaIndexProviderTest
         DirectoryFactory directoryFactory = DirectoryFactory.PERSISTENT;
         createEmptySchemaIndex( directoryFactory );
 
-        Config readOnlyConfig = Config.defaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 directoryFactory, fs, graphDbDir );
         IndexAccessor onlineAccessor = getIndexAccessor( readOnlyConfig, readOnlyIndexProvider );
@@ -97,7 +95,7 @@ public class LuceneSchemaIndexProviderTest
     @Test
     public void indexUpdateNotAllowedInReadOnlyMode() throws Exception
     {
-        Config readOnlyConfig = Config.defaults( stringMap( GraphDatabaseSettings.read_only.name(), Settings.TRUE ) );
+        Config readOnlyConfig = Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE );
         LuceneSchemaIndexProvider readOnlyIndexProvider = getLuceneSchemaIndexProvider( readOnlyConfig,
                 new DirectoryFactory.InMemoryDirectoryFactory(), fs, graphDbDir );
 

@@ -61,7 +61,7 @@ public class IndividualSettingsValidator implements ConfigurationValidator
             validConfig.putAll( validator.validate( rawConfig, log::warn ) );
         }
 
-        final Boolean strictValidation = config.get( strict_config_validation );
+        final boolean strictValidation = config.get( strict_config_validation );
 
         rawConfig.forEach( ( key, value ) ->
         {
@@ -76,7 +76,7 @@ public class IndividualSettingsValidator implements ConfigurationValidator
                         log.warn( "Unknown config option: %s", key );
                     }
 
-                    if ( strictValidation != null && strictValidation )
+                    if ( strictValidation )
                     {
                         throw new InvalidSettingException( String.format(
                                 "Unknown config option '%s'. To resolve either remove it from your configuration " +

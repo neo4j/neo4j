@@ -85,7 +85,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -167,8 +166,7 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = Config.defaults(
-                    stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
+            File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, rootDir.toString() )
                     .get( DatabaseManagementSystemSettings.database_path );
 
             store.prepareDirectory( storeDir );

@@ -26,7 +26,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -88,7 +87,7 @@ public class StoreMigration
 
     private static Config getMigrationConfig()
     {
-        return Config.defaults( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE) );
+        return Config.defaults( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE);
     }
 
     public void run( final FileSystemAbstraction fs, final File storeDirectory, Config config,

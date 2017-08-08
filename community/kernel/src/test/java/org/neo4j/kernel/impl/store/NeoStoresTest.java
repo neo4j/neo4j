@@ -95,7 +95,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -767,7 +766,7 @@ public class NeoStoresTest
     {
         // given
         FileSystemAbstraction fileSystem = fs.get();
-        Config defaults = Config.fromSettings( singletonMap( counts_store_rotation_timeout.name(), "60m" ) ).build();
+        Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
         StoreFactory factory =
                 new StoreFactory( storeDir, defaults, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
                         fileSystem, NullLogProvider.getInstance() );

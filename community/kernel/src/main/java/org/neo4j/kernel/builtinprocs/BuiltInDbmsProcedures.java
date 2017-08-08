@@ -110,31 +110,4 @@ public class BuiltInDbmsProcedures
             this.description = signature.description().orElse( "" );
         }
     }
-
-    public static class ConfigChangeResult
-    {
-        public final String type;
-        public final String key;
-        public final String oldValue;
-        public final String newValue;
-
-        private ConfigChangeResult( String key, String oldValue, String newValue )
-        {
-            this.key = key;
-            this.oldValue = oldValue;
-            this.newValue = newValue;
-            if ( oldValue == null )
-            {
-                type = "ADDED";
-            }
-            else if ( newValue == null )
-            {
-                type = "DELETED";
-            }
-            else
-            {
-                type = "CHANGED";
-            }
-        }
-    }
 }

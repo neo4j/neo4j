@@ -43,7 +43,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
 public class TestGrowingFileMemoryMapping
@@ -66,8 +65,7 @@ public class TestGrowingFileMemoryMapping
         int NUMBER_OF_RECORDS = 1000000;
 
         File storeDir = testDirectory.graphDbDir();
-        Config config = Config.defaults( stringMap(
-                pagecache_memory.name(), mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) ) );
+        Config config = Config.defaults( pagecache_memory, mmapSize( NUMBER_OF_RECORDS, NodeRecordFormat.RECORD_SIZE ) );
         FileSystemAbstraction fileSystemAbstraction = fileSystemRule.get();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystemAbstraction );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
