@@ -160,6 +160,11 @@ object RegisterAllocation {
         result += (lp -> pipeline)
         pipeline
 
+      case Eager(source) =>
+        val pipeline = allocate(source,nullable,argument)
+        result += (lp -> pipeline)
+        pipeline
+
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 

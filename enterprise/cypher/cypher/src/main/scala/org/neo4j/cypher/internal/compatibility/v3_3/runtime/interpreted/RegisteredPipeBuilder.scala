@@ -142,6 +142,9 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case _: Skip =>
         fallback.build(plan, source)
 
+      case Eager(_) =>
+        EagerRegisterPipe(source, pipeline)(id)
+         
       case CreateNode(_, idName, labels, props) =>
         CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
 
