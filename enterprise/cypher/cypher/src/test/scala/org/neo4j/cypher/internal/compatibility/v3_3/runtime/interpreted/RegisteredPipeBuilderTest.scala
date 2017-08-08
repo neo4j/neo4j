@@ -309,7 +309,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
       AllNodesScanRegisterPipe("x", PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0))(),
       xNodeSlot.offset, rRelSlot.offset, zNodeSlot.offset,
       SemanticDirection.INCOMING, SemanticDirection.INCOMING,
-      LazyTypes.empty, varLength.min, varLength.max, closedPath = false,
+      LazyTypes.empty, varLength.min, varLength.max, shouldExpandAll = true,
       VarLengthRegisterPredicate.NONE,
       PipelineInformation(Map(
         "x" -> xNodeSlot,

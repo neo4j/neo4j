@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pi
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 
@@ -38,7 +39,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
                                        types: LazyTypes,
                                        min: Int,
                                        maxDepth: Option[Int],
-                                       closedPath: Boolean,
+                                       shouldExpandAll: Boolean,
                                        filteringStep: VarLengthRegisterPredicate,
                                        pipeline: PipelineInformation)
                                       (val id: Id = new Id) extends PipeWithSource(source) {
@@ -116,7 +117,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
   }
 
   private def isToNodeValid(row: ExecutionContext, node: LNode): Boolean =
-    !closedPath || row.getLongAt(toOffset) == node
+    shouldExpandAll || row.getLongAt(toOffset) == node
 }
 
 trait VarLengthRegisterPredicate {

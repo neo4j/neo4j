@@ -123,15 +123,15 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
           throw new CantCompileQueryException("does not handle varexpand with predicates")
         val predicate = VarLengthRegisterPredicate.NONE
 
-        val closedPath = expansionMode match {
-          case ExpandAll => false
-          case ExpandInto => true
+        val shouldExpandAll = expansionMode match {
+          case ExpandAll => true
+          case ExpandInto => false
         }
         val fromOffset = pipeline.getLongOffsetFor(fromName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val relOffset = pipeline.getReferenceOffsetFor(relName)
         VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir,
-          LazyTypes(types), min, max, closedPath, predicate, pipeline)(id = id)
+          LazyTypes(types), min, max, shouldExpandAll, predicate, pipeline)(id = id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
