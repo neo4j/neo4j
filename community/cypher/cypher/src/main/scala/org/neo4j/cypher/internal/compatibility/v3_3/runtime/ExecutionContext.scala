@@ -39,6 +39,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
+  def longs(): Array[Long]
 
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
@@ -125,4 +126,6 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
   override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
 
   override def getRefAt(offset: Int): AnyValue = fail()
+
+  override def longs(): Array[Long] = fail()
 }

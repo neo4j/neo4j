@@ -193,6 +193,9 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
            _: Skip =>
         fallback.build(plan, source)
 
+      case Eager(_) =>
+        EagerRegisterPipe(source, pipeline)(id)
+         
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
