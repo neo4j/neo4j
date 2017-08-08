@@ -243,7 +243,7 @@ public class CheckConsistencyCommand implements AdminCommand
     {
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
 
-        return Config.fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir ).withConnectorsDisabled()
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled()
                 .withSettings( additionalConfig ).build();
     }
 
