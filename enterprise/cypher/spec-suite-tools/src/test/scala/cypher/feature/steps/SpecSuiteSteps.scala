@@ -20,6 +20,7 @@
 package cypher.feature.steps
 
 import java.util
+import java.util.concurrent.TimeUnit
 
 import cucumber.api.DataTable
 import cypher.SpecSuiteResources
@@ -92,6 +93,15 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
     scenarioBuilder.init { g: GraphDatabaseAPI =>
       // side effects are necessary for setting up graph state
       g.execute(s"CYPHER runtime=interpreted $query")
+      if (query.toUpperCase().contains("CREATE INDEX")) {
+        val tx = g.beginTx()
+        try {
+          g.schema().awaitIndexesOnline(10, TimeUnit.SECONDS)
+          tx.success()
+        } finally {
+          tx.close()
+        }
+      }
     }
   }
 
