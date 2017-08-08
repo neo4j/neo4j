@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IsMap, PrimitiveLongHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
@@ -33,21 +32,24 @@ import org.neo4j.graphdb.{Node, Relationship}
 
 import scala.collection.Map
 
-case class CreateNodeRegisterPipe(ident: String, pipelineInformation: PipelineInformation,
+case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
                                   labels: Seq[LazyLabel], properties: Option[Expression])
-                                   (val id: Id = new Id) extends Pipe {
+                                   (val id: Id = new Id) extends PipeWithSource(source) with Pipe{
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val nodeId = state.query.createNodeId()
-    val context = PrimitiveExecutionContext(pipelineInformation)
-    setProperties(context, state, nodeId)
-    setLabels(context, state, nodeId)
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    input.map {
+      row =>
+        val nodeId = state.query.createNodeId()
+        val context = PrimitiveExecutionContext(pipelineInformation)
+        setProperties(context, state, nodeId)
+        setLabels(context, state, nodeId)
 
-    state.copyArgumentStateTo(context)
-    context.setLongAt(offset, nodeId)
-    PrimitiveLongHelper.map(PrimitiveLongCollections.singleton(nodeId), nodeId => context)
+        state.copyArgumentStateTo(context)
+        context.setLongAt(offset, nodeId)
+        context
+    }
   }
 
   private def setProperties(context: ExecutionContext, state: QueryState, nodeId: Long) = {
