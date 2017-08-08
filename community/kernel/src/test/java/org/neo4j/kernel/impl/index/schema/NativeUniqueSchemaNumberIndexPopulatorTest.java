@@ -36,6 +36,8 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static java.util.Arrays.asList;
+
 public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumberIndexPopulatorTest<SchemaNumberKey,SchemaNumberValue>
 {
     @Override
@@ -105,9 +107,9 @@ public class NativeUniqueSchemaNumberIndexPopulatorTest extends NativeSchemaNumb
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
 
         // WHEN
+        populator.add( asList( updates ) );
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
-            populator.add( update );
             populator.includeSample( update );
         }
         IndexSample sample = populator.sampleResult();

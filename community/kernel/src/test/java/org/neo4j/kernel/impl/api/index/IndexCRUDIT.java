@@ -216,13 +216,6 @@ public class IndexCRUDIT
         }
 
         @Override
-        public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
-        {
-            ReadOperations statement = ctxSupplier.get().readOperations();
-            updatesCommitted.add( update );
-        }
-
-        @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException, IOException
         {
         }

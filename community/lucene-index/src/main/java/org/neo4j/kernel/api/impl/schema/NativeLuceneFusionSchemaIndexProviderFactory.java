@@ -39,7 +39,7 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
 {
     public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NativeSchemaNumberIndexProvider.KEY;
 
-    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "0.1" );
+    public static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "0.1" );
 
     public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
     {

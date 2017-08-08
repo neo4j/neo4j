@@ -54,6 +54,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_ONLINE;
@@ -502,7 +505,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
                     }
                 }
             }
-            populator.add( updates.next() );
+            populator.add( asList( updates.next() ) );
             count++;
         }
         return count;
@@ -547,7 +550,7 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
         {
             if ( random.nextBoolean() )
             {
-                populator.add( update );
+                populator.add( asList( update ) );
             }
             else
             {

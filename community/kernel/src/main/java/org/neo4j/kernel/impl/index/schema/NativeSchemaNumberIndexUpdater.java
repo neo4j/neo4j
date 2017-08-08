@@ -63,20 +63,7 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
     public void process( IndexEntryUpdate update ) throws IOException, IndexEntryConflictException
     {
         assertOpen();
-        switch ( update.updateMode() )
-        {
-        case ADDED:
-            processAdd( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
-            break;
-        case CHANGED:
-            processChange( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
-            break;
-        case REMOVED:
-            processRemove( treeKey, update, writer );
-            break;
-        default:
-            throw new IllegalArgumentException();
-        }
+        processUpdate( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
     }
 
     @Override
@@ -100,6 +87,26 @@ class NativeSchemaNumberIndexUpdater<KEY extends SchemaNumberKey, VALUE extends 
         if ( closed )
         {
             throw new IllegalStateException( "Updater has been closed" );
+        }
+    }
+
+    static <KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue> void processUpdate( KEY treeKey, VALUE treeValue,
+            IndexEntryUpdate update, Writer<KEY,VALUE> writer, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+            throws IOException, IndexEntryConflictException
+    {
+        switch ( update.updateMode() )
+        {
+        case ADDED:
+            processAdd( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            break;
+        case CHANGED:
+            processChange( treeKey, treeValue, update, writer, conflictDetectingValueMerger );
+            break;
+        case REMOVED:
+            processRemove( treeKey, update, writer );
+            break;
+        default:
+            throw new IllegalArgumentException();
         }
     }
 

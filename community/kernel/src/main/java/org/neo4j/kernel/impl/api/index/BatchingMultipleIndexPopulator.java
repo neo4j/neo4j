@@ -19,13 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -39,12 +33,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
-import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
@@ -79,11 +69,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
             getNumberOfPopulationWorkers() * 2 );
     private final int AWAIT_TIMEOUT_MINUTES = FeatureToggles.getInteger( getClass(), AWAIT_TIMEOUT_MINUTES_NAME, 30 );
-    private final int BATCH_SIZE = FeatureToggles.getInteger( getClass(), BATCH_SIZE_NAME, 10_000 );
 
     private final AtomicLong activeTasks = new AtomicLong();
     private final ExecutorService executor;
-    private final Map<IndexPopulation,List<IndexEntryUpdate<?>>> batchedUpdates = new HashMap<>();
 
     /**
      * Creates a new multi-threaded populator for the given store view.
@@ -91,7 +79,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      */
-    public BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider )
     {
         super( storeView, logProvider );
         this.executor = createThreadPool();
@@ -120,15 +108,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    protected IndexPopulation createPopulation( IndexPopulator populator, long indexId,
-            IndexDescriptor descriptor, SchemaIndexProvider.Descriptor providerDescriptor,
-            FlippableIndexProxy flipper, FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
-    {
-        return new BatchingIndexPopulation( populator, indexId, descriptor, providerDescriptor, flipper,
-                failedIndexProxyFactory, indexUserDescription );
-    }
-
-    @Override
     protected void populateFromQueue( long currentlyIndexedNodeId )
     {
         log.debug( "Populating from queue." + EOL + this );
@@ -141,9 +120,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     @Override
     public String toString()
     {
-        String updatesString = batchedUpdates.values()
+        String updatesString = populations
                 .stream()
-                .map( entry -> entry.size() + " updates" )
+                .map( population -> population.batchedUpdates.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
@@ -181,23 +160,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private void batchUpdate( IndexPopulation population, IndexEntryUpdate<?> update )
     {
-        List<IndexEntryUpdate<?>> batch = batchedUpdates.computeIfAbsent( population, key -> newBatch() );
-        batch.add( update );
-        flushIfNeeded( population, batch );
-    }
-
-    /**
-     * Insert given list of updates to the index if {@link #BATCH_SIZE} is reached.
-     *
-     * @param population the index population.
-     * @param batch the list of updates for the index.
-     */
-    private void flushIfNeeded( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
-    {
-        if ( batch.size() >= BATCH_SIZE )
+        if ( population.batch( update ) )
         {
-            batchedUpdates.remove( population );
-            flush( population, batch );
+            Collection<IndexEntryUpdate<?>> batchedUpdates = population.takeCurrentBatch();
+            flush( population, batchedUpdates );
         }
     }
 
@@ -206,18 +172,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      */
     private void flushAll()
     {
-        Iterator<Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>>> entries = batchedUpdates.entrySet().iterator();
-        while ( entries.hasNext() )
-        {
-            Map.Entry<IndexPopulation,List<IndexEntryUpdate<?>>> entry = entries.next();
-            IndexPopulation population = entry.getKey();
-            List<IndexEntryUpdate<?>> updates = entry.getValue();
-            entries.remove();
-            if ( updates != null && !updates.isEmpty() )
-            {
-                flush( population, updates );
-            }
-        }
+        populations.forEach( population -> flush( population, population.takeCurrentBatch() ) );
     }
 
     /**
@@ -226,7 +181,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      * @param batch the list of updates to insert.
      */
-    private void flush( IndexPopulation population, List<IndexEntryUpdate<?>> batch )
+    private void flush( IndexPopulation population, Collection<IndexEntryUpdate<?>> batch )
     {
         activeTasks.incrementAndGet();
 
@@ -293,11 +248,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
         log.warn( "Interrupted while waiting for index population tasks to complete." + EOL + this );
     }
 
-    private List<IndexEntryUpdate<?>> newBatch()
-    {
-        return new ArrayList<>( BATCH_SIZE );
-    }
-
     private ExecutorService createThreadPool()
     {
         int threads = getNumberOfPopulationWorkers();
@@ -331,28 +281,6 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private int getNumberOfPopulationWorkers()
     {
         return Math.max( 2, MAXIMUM_NUMBER_OF_WORKERS );
-    }
-
-    /**
-     * An {@link IndexPopulation} that does not insert updates one by one into the index but instead adds them to the
-     * map containing batches of updates for each index.
-     */
-    private class BatchingIndexPopulation extends IndexPopulation
-    {
-        BatchingIndexPopulation( IndexPopulator populator, long indexId, IndexDescriptor descriptor,
-                SchemaIndexProvider.Descriptor providerDescriptor, FlippableIndexProxy flipper,
-                FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
-        {
-            super( populator, indexId, descriptor, providerDescriptor, flipper, failedIndexProxyFactory,
-                    indexUserDescription );
-        }
-
-        @Override
-        protected void add( IndexEntryUpdate updates ) throws IOException,
-                IndexEntryConflictException
-        {
-            batchUpdate( this, updates );
-        }
     }
 
     /**

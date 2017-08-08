@@ -1304,8 +1304,10 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private static class IndexPopulatorWithSchema extends IndexPopulator.Adapter implements LabelSchemaSupplier
     {
+        private final int batchSize = 1_000;
         private final IndexPopulator populator;
         private final IndexDescriptor index;
+        private Collection<IndexEntryUpdate<?>> batchedUpdates = new ArrayList<>( batchSize );
 
         IndexPopulatorWithSchema( IndexPopulator populator, IndexDescriptor index )
         {
@@ -1324,16 +1326,21 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
             return index;
         }
 
-        @Override
         public void add( IndexEntryUpdate<?> update ) throws IndexEntryConflictException, IOException
         {
-            populator.add( update );
+            batchedUpdates.add( update );
+            if ( batchedUpdates.size() > batchSize )
+            {
+                populator.add( batchedUpdates );
+                batchedUpdates = new ArrayList<>( batchSize );
+            }
         }
 
         @Override
         public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
                 throws IndexEntryConflictException, IOException
         {
+            populator.add( batchedUpdates );
             populator.verifyDeferredConstraints( propertyAccessor );
         }
 
