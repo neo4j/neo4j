@@ -78,16 +78,28 @@ public class FusionSchemaIndexProvider extends SchemaIndexProvider
     @Override
     public String getPopulationFailure( long indexId ) throws IllegalStateException
     {
-        String nativeFailure = nativeProvider.getPopulationFailure( indexId );
-        String luceneFailure = luceneProvider.getPopulationFailure( indexId );
-        if ( nativeFailure != null )
+        String nativeFailure = null;
+        try
         {
-            return luceneFailure == null ? nativeFailure : nativeFailure + " and " + luceneFailure;
+            nativeFailure = nativeProvider.getPopulationFailure( indexId );
         }
-        else
+        catch ( IllegalStateException e )
+        {   // Just catch
+        }
+        String luceneFailure = null;
+        try
         {
-            return luceneFailure;
+            luceneFailure = luceneProvider.getPopulationFailure( indexId );
         }
+        catch ( IllegalStateException e )
+        {   // Just catch
+        }
+
+        if ( nativeFailure != null || luceneFailure != null )
+        {
+            return "native:" + nativeFailure + " lucene:" + luceneFailure;
+        }
+        throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
     @Override
