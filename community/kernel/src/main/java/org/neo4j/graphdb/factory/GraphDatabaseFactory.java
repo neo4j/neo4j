@@ -33,8 +33,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService} with Community Edition features.
  * <p>
@@ -105,9 +103,8 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir,
-                        config.augment( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
-                        state.databaseDependencies() );
+                config.augment( "unsupported.dbms.ephemeral", "false" );
+                return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
             }
         };
     }

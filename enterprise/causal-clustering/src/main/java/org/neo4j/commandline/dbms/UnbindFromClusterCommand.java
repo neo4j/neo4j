@@ -23,8 +23,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.causalclustering.core.state.ClusterStateDirectory;
 import org.neo4j.causalclustering.core.state.ClusterStateException;
@@ -62,10 +60,9 @@ public class UnbindFromClusterCommand implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        Config config = fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir ).build();
-        Map<String,String> additionalConfig = new HashMap<>();
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.augment( additionalConfig );
+        return fromFile( configDir.resolve( "neo4j.conf" ) )
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withHome( homeDir ).build();
     }
 
     @Override

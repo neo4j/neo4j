@@ -182,9 +182,10 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
     private static Config getNeo4jConfig( Configuration config, Config dbConfig )
     {
-        return dbConfig.augment( stringMap(
+        dbConfig.augment( stringMap(
                 dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ),
                 pagecache_memory.name(), valueOf( config.pageCacheMemory() ) ) );
+        return dbConfig;
     }
 
     private static PageCache createPageCache( FileSystemAbstraction fileSystem, Config config, LogProvider log,

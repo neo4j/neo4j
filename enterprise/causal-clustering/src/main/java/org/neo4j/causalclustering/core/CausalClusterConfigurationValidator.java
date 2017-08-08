@@ -19,16 +19,14 @@
  */
 package org.neo4j.causalclustering.core;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
-import java.util.function.Function;
 import javax.annotation.Nonnull;
 
 import org.neo4j.causalclustering.load_balancing.LoadBalancingPluginLoader;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ClusterSettings.Mode;
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
 import org.neo4j.logging.Log;
@@ -38,41 +36,36 @@ import static org.neo4j.causalclustering.core.CausalClusteringSettings.initial_d
 public class CausalClusterConfigurationValidator implements ConfigurationValidator
 {
     @Override
-    @Nonnull
-    public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-            @Nonnull Map<String,String> rawConfig, @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
+    public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
     {
         // Make sure mode is CC
-        Mode mode = ClusterSettings.mode.apply( rawConfig::get );
-        if ( !mode.equals( Mode.CORE ) && !mode.equals( Mode.READ_REPLICA ) )
+        Mode mode = config.get( ClusterSettings.mode );
+        if ( mode.equals( Mode.CORE ) || mode.equals( Mode.READ_REPLICA ) )
         {
-            // Nothing to validate
-            return rawConfig;
+            validateInitialDiscoveryMembers( config );
+            validateBoltConnector( config );
+            validateLoadBalancing( config, log );
         }
 
-        validateInitialDiscoveryMembers( rawConfig::get );
-        validateBoltConnector( rawConfig );
-        validateLoadBalancing( rawConfig, log );
-
-        return rawConfig;
+        return Collections.emptyMap();
     }
 
-    private static void validateLoadBalancing( Map<String,String> rawConfig, Log log )
+    private static void validateLoadBalancing( Config config, Log log )
     {
-        LoadBalancingPluginLoader.validate( Config.defaults().augment( rawConfig ), log );
+        LoadBalancingPluginLoader.validate( config, log );
     }
 
-    private static void validateBoltConnector( Map<String,String> rawConfig )
+    private static void validateBoltConnector( Config config )
     {
-        if ( Config.enabledBoltConnectors( rawConfig ).isEmpty() )
+        if ( config.enabledBoltConnectors().isEmpty() )
         {
             throw new InvalidSettingException( "A Bolt connector must be configured to run a cluster" );
         }
     }
 
-    private static void validateInitialDiscoveryMembers( Function<String,String> provider )
+    private static void validateInitialDiscoveryMembers( Config config )
     {
-        if ( initial_discovery_members.apply( provider ) == null )
+        if ( !config.isConfigured( initial_discovery_members ) )
         {
             throw new InvalidSettingException(
                     String.format( "Missing mandatory non-empty value for '%s'", initial_discovery_members.name() ) );

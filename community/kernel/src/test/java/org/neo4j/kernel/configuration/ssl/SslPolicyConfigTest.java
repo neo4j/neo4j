@@ -48,7 +48,6 @@ public class SslPolicyConfigTest
     public void shouldFindPolicyDefaults() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
@@ -58,7 +57,7 @@ public class SslPolicyConfigTest
 
         params.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/XYZ" );
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         // derived defaults
         File privateKey = new File( homeDir, "certificates/XYZ/private.key" );
@@ -67,16 +66,16 @@ public class SslPolicyConfigTest
         File revokedDir = new File( homeDir, "certificates/XYZ/revoked" );
 
         // when
-        File privateKeyFromConfig = policyConfig.private_key.from( config );
-        File publicCertificateFromConfig = policyConfig.public_certificate.from( config );
-        File trustedDirFromConfig = policyConfig.trusted_dir.from( config );
-        File revokedDirFromConfig = policyConfig.revoked_dir.from( config );
-        String privateKeyPassword = policyConfig.private_key_password.from( config );
-        boolean allowKeyGeneration = policyConfig.allow_key_generation.from( config );
-        boolean trustAll = policyConfig.trust_all.from( config );
-        List<String> tlsVersions = policyConfig.tls_versions.from( config );
-        List<String> ciphers = policyConfig.ciphers.from( config );
-        ClientAuth clientAuth = policyConfig.client_auth.from( config );
+        File privateKeyFromConfig = config.get( policyConfig.private_key );
+        File publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        File trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        File revokedDirFromConfig = config.get( policyConfig.revoked_dir );
+        String privateKeyPassword = config.get( policyConfig.private_key_password );
+        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
+        boolean trustAll = config.get( policyConfig.trust_all );
+        List<String> tlsVersions = config.get( policyConfig.tls_versions );
+        List<String> ciphers = config.get( policyConfig.ciphers );
+        ClientAuth clientAuth = config.get( policyConfig.client_auth );
 
         // then
         assertEquals( privateKey, privateKeyFromConfig );
@@ -95,7 +94,6 @@ public class SslPolicyConfigTest
     public void shouldFindPolicyOverrides() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
@@ -124,20 +122,20 @@ public class SslPolicyConfigTest
         params.put( policyConfig.ciphers.name(), "TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384,TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384" );
         params.put( policyConfig.client_auth.name(), "optional" );
 
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         // when
-        File privateKeyFromConfig = policyConfig.private_key.from( config );
-        File publicCertificateFromConfig = policyConfig.public_certificate.from( config );
-        File trustedDirFromConfig = policyConfig.trusted_dir.from( config );
-        File revokedDirFromConfig = policyConfig.revoked_dir.from( config );
+        File privateKeyFromConfig = config.get( policyConfig.private_key );
+        File publicCertificateFromConfig = config.get( policyConfig.public_certificate );
+        File trustedDirFromConfig = config.get( policyConfig.trusted_dir );
+        File revokedDirFromConfig = config.get( policyConfig.revoked_dir );
 
-        String privateKeyPassword = policyConfig.private_key_password.from( config );
-        boolean allowKeyGeneration = policyConfig.allow_key_generation.from( config );
-        boolean trustAll = policyConfig.trust_all.from( config );
-        List<String> tlsVersions = policyConfig.tls_versions.from( config );
-        List<String> ciphers = policyConfig.ciphers.from( config );
-        ClientAuth clientAuth = policyConfig.client_auth.from( config );
+        String privateKeyPassword = config.get( policyConfig.private_key_password );
+        boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
+        boolean trustAll = config.get( policyConfig.trust_all );
+        List<String> tlsVersions = config.get( policyConfig.tls_versions );
+        List<String> ciphers = config.get( policyConfig.ciphers );
+        ClientAuth clientAuth = config.get( policyConfig.client_auth );
 
         // then
         assertEquals( privateKey, privateKeyFromConfig );
@@ -157,7 +155,6 @@ public class SslPolicyConfigTest
     public void shouldFailWithIncompletePathOverrides() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         String policyName = "XYZ";
@@ -171,12 +168,12 @@ public class SslPolicyConfigTest
         params.put( policyConfig.private_key.name(), "my.key" );
         params.put( policyConfig.public_certificate.name(), "path/to/my.crt" );
 
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         // when/then
         try
         {
-            policyConfig.private_key.from( config );
+            config.get( policyConfig.private_key );
             fail();
         }
         catch ( IllegalArgumentException e )
@@ -186,7 +183,7 @@ public class SslPolicyConfigTest
 
         try
         {
-            policyConfig.public_certificate.from( config );
+            config.get( policyConfig.public_certificate );
             fail();
         }
         catch ( IllegalArgumentException e )

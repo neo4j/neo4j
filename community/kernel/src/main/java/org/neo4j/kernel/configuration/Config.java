@@ -26,14 +26,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -51,12 +49,14 @@ import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
+import static java.util.Collections.singletonMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
@@ -77,13 +77,13 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private final List<ConfigOptions> configOptions;
 
-    private final Map<String,String> params = new ConcurrentHashMap<>();
+    private final Map<String,String> params = new CopyOnWriteHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
-    private File configFile;
+    private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>(); // TODO : has bo be reapplied every update
+
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
-    private ConfigValues settingsFunction;
 
     /**
      * Builder class for a configuration.
@@ -127,12 +127,12 @@ public class Config implements DiagnosticsProvider, Configuration
         /**
          * Augment the configuration with the passed setting.
          *
-         * @param key The setting to set.
+         * @param setting The setting to set.
          * @param value The value of the setting, pre parsed.
          */
-        public Builder withSetting( final String key, final String value )
+        public Builder withSetting( final String setting, final String value )
         {
-            initialSettings.put( key, value );
+            initialSettings.put( setting, value );
             return this;
         }
 
@@ -285,19 +285,13 @@ public class Config implements DiagnosticsProvider, Configuration
             List<LoadableConfig> loadableConfigs =
                     Optional.ofNullable( settingsClasses ).orElse( LoadableConfig.allConfigClasses() );
 
-            Config config;
-            if ( configFile != null )
+            // If reading from a file, make sure we always have a neo4j_home
+            if ( configFile != null && !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
             {
-                if ( !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
-                {
-                    initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
-                }
-                config =  new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
+                initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
             }
-            else
-            {
-                config = new Config( initialSettings, overriddenDefaults, validators, loadableConfigs );
-            }
+
+            Config config = new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
 
             if ( connectorsDisabled )
             {
@@ -363,13 +357,13 @@ public class Config implements DiagnosticsProvider, Configuration
 
     /**
      * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
-     * @param key The initial setting to use.
+     * @param setting The initial setting to use.
      * @param value The initial value to give the setting.
      */
     @Nonnull
-    public static Config defaults( @Nonnull final String key, @Nonnull final String value )
+    public static Config defaults( @Nonnull final String setting, @Nonnull final String value )
     {
-        return builder().withSetting( key, value ).build();
+        return builder().withSetting( setting, value ).build();
     }
 
     /**
@@ -383,48 +377,11 @@ public class Config implements DiagnosticsProvider, Configuration
         return builder().withSetting( setting, value ).build();
     }
 
-    private Config( Map<String,String> initialSettings,
-            Map<String,String> overriddenDefaults,
-            Collection<ConfigurationValidator> additionalValidators,
-            List<LoadableConfig> settingsClasses )
-    {
-        this( settingsClasses, additionalValidators );
-        this.configFile = null;
-
-        overriddenDefaults.forEach( initialSettings::putIfAbsent );
-
-        Map<String,String> validSettings = migrateAndValidateSettings( initialSettings, false );
-
-        overriddenDefaults.forEach( validSettings::putIfAbsent );
-
-        replaceSettings( validSettings );
-    }
-
     private Config( File configFile,
-            Map<String,String> overriddenSettings,
+            Map<String,String> initialSettings,
             Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
             List<LoadableConfig> settingsClasses )
-    {
-        this( settingsClasses, additionalValidators );
-        this.configFile = configFile;
-
-        // Read file and override with provided settings
-        Map<String,String> settings = readConfigFile();
-        settings.putAll( overriddenSettings );
-        overriddenDefaults.forEach( settings::putIfAbsent );
-
-        Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
-
-        warnAboutDeprecations( validSettings );
-
-        replaceSettings( validSettings );
-    }
-
-    /**
-     * Common base setup for constructor
-     */
-    private Config( List<LoadableConfig> settingsClasses, Collection<ConfigurationValidator> additionalValidators )
     {
         configOptions = settingsClasses.stream()
                 .map( LoadableConfig::getConfigOptions )
@@ -433,10 +390,32 @@ public class Config implements DiagnosticsProvider, Configuration
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        this.overriddenDefaults.putAll( overriddenDefaults );
+
+        boolean fromFile = configFile != null;
+        if ( fromFile )
+        {
+            loadFromFile( configFile, log ).forEach( initialSettings::putIfAbsent );
+        }
+
+        overriddenDefaults.forEach( initialSettings::putIfAbsent );
+
+        migrateAndValidateAndUpdateSettings( initialSettings, fromFile );
+
+        // Only warn for deprecations if red from a file
+        if ( fromFile )
+        {
+            warnAboutDeprecations( params );
+        }
     }
 
     /**
-     * Retrieve a configuration property.
+     * Retrieves a configuration value. If no value is configured, a default value will be returned instead. Note that
+     * {@code null} is a valid value.
+     *
+     * @param setting The configuration property.
+     * @param <T> the underlying type of the setting.
+     * @return the value of the given setting, {@code null} can be returned.
      */
     @Override
     public <T> T get( Setting<T> setting )
@@ -445,44 +424,80 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * Unlike the public {@link Setting} instances, the function passed in here has access to
-     * the raw setting data, meaning it can provide functionality that cross multiple settings
-     * and other more advanced use cases.
+     * Test whether a setting is configured or not. Can be used to check if default value will be returned or not.
+     *
+     * @param setting The setting to check.
+     * @return {@code true} if the setting is configures, {@code false} otherwise implying that the default value will
+     * be returned if applicable.
      */
-    public <T> T view( Function<ConfigValues,T> projection )
+    public boolean isConfigured( Setting<?> setting )
     {
-        return projection.apply( settingsFunction );
+        return params.containsKey( setting.name() );
+    }
+
+    /**
+     * Extract all identifiers within a group, e.g. giving that prefix is {@code "dbms.ssl.policy"}), the
+     * setting {@code "dbms.ssl.policy.default.base_directory"} will return {@code "default"}.
+     *
+     * @param prefix group prefix for the settings interested in
+     * @return A set of uniquely and sorted group keys.
+     */
+    public Set<String> identifiersFromPrefix( String prefix )
+    {
+        Pattern pattern = Pattern.compile( Pattern.quote( prefix ) + "\\.([^.]+)\\.(.+)" );
+
+        Set<String> identifiers = new TreeSet<>();
+        for ( String setting : params.keySet() )
+        {
+            Matcher matcher = pattern.matcher( setting );
+            if ( matcher.matches() )
+            {
+                identifiers.add( matcher.group( 1 ) );
+            }
+        }
+        return identifiers;
     }
 
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
      *
-     * @param changes settings to add and override
+     * @param settings to add and override.
      * @throws InvalidSettingException when and invalid setting is found and {@link
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public Config augment( Map<String,String> changes ) throws InvalidSettingException
+    public void augment( Map<String,String> settings ) throws InvalidSettingException
     {
-        Map<String,String> params = new HashMap<>( this.params );
-        params.putAll( changes );
-        Map<String,String> validSettings = migrateAndValidateSettings( params, false );
-        replaceSettings( validSettings );
-        return this;
+        migrateAndValidateAndUpdateSettings( settings, false );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( String setting, String value ) throws InvalidSettingException
+    {
+        augment( singletonMap( setting, value ) );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( Setting<?> setting, String value )
+    {
+        augment( setting.name(), value );
     }
 
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
      *
-     * @param config config to add and override with
-     * @return combined config
+     * @param config config to add and override with.
      * @throws InvalidSettingException when and invalid setting is found and {@link
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public Config augment( Config config ) throws InvalidSettingException
+    public void augment( Config config ) throws InvalidSettingException
     {
-        return augment( config.params );
+        augment( config.params );
     }
 
     /**
@@ -492,19 +507,33 @@ public class Config implements DiagnosticsProvider, Configuration
      * @throws InvalidSettingException when and invalid setting is found and {@link
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public Config augmentDefaults( Map<String,String> additionalDefaults ) throws InvalidSettingException
+    public void augmentDefaults( Map<String,String> additionalDefaults ) throws InvalidSettingException
     {
-        Map<String,String> params = new HashMap<>( this.params );
-        additionalDefaults.forEach( params::putIfAbsent );
-        Map<String,String> validSettings = migrateAndValidateSettings( params, false );
-        replaceSettings( validSettings );
-        return this;
+        additionalDefaults.forEach( this::augmentDefaults );
     }
 
     /**
-     * Specify a log where errors and warnings will be reported.
+     * @see Config#augmentDefaults(Map)
+     */
+    public void augmentDefaults( String setting, String value ) throws InvalidSettingException
+    {
+        overriddenDefaults.put( setting, value );
+        params.putIfAbsent( setting, value );
+    }
+
+    /**
+     * @see Config#augmentDefaults(Map)
+     */
+    public void augmentDefaults( Setting<?> setting, String value ) throws InvalidSettingException
+    {
+        augmentDefaults( setting.name(), value );
+    }
+
+    /**
+     * Specify a log where errors and warnings will be reported. Log messages that happens prior to setting a logger
+     * will be buffered and replayed onto the first logger that is set.
      *
-     * @param log to use
+     * @param log to use.
      */
     public void setLogger( Log log )
     {
@@ -513,16 +542,6 @@ public class Config implements DiagnosticsProvider, Configuration
             ((BufferingLog) this.log).replayInto( log );
         }
         this.log = log;
-    }
-
-    /**
-     * Return the keys of settings which have been configured (via a file or code).
-     *
-     * @return setting keys
-     */
-    public Set<String> getConfiguredSettingKeys()
-    {
-        return new HashSet<>( params.keySet() );
     }
 
     /**
@@ -535,7 +554,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * @return a map of raw  configuration keys and values
+     * @return a copy of the raw configuration map
      */
     public Map<String,String> getRaw()
     {
@@ -595,61 +614,36 @@ public class Config implements DiagnosticsProvider, Configuration
         }
     }
 
-    public Optional<Path> getConfigFile()
-    {
-        return Optional.ofNullable( configFile).map( File::toPath );
-    }
-
-    @Override
-    public String toString()
-    {
-        List<String> keys = new ArrayList<>( params.keySet() );
-        Collections.sort( keys );
-        LinkedHashMap<String,String> output = new LinkedHashMap<>();
-        for ( String key : keys )
-        {
-            output.put( key, params.get( key ) );
-        }
-
-        return output.toString();
-    }
-
-    private void replaceSettings( Map<String,String> validSettings )
-    {
-        params.clear();
-        params.putAll( validSettings );
-        settingsFunction = new ConfigValues( params );
-
-        // We only warn when parsing the file so we don't warn about the same setting more than once
-
-    }
-
     /**
      * Migrates and validates all string values in the provided <code>settings</code> map.
      *
+     * This will update the configuration with the provided values regardless whether errors are encountered or not.
+     *
      * @param settings the settings to migrate and validate.
      * @param warnOnUnknownSettings if true method log messages to {@link Config#log}.
-     * @return a map of migrated and valid settings.
      * @throws InvalidSettingException when and invalid setting is found and {@link
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    @Nonnull
-    private Map<String,String> migrateAndValidateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
+    private void migrateAndValidateAndUpdateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
             throws InvalidSettingException
     {
-        Map<String,String> validSettings = migrator.apply( settings, log );
+        Map<String,String> migratedSettings = migrator.apply( settings, log );
+        params.putAll( migratedSettings );
+
         List<SettingValidator> settingValidators = configOptions.stream()
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
 
         // Validate settings
-        validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
-                .validate( settingValidators, validSettings, log, warnOnUnknownSettings );
+        Map<String,String> additionalSettings =
+                new IndividualSettingsValidator( settingValidators, warnOnUnknownSettings ).validate( this, log );
+        params.putAll( additionalSettings );
+
+        // Validate configuration
         for ( ConfigurationValidator validator : validators )
         {
-            validSettings = validator.validate( settingValidators, validSettings, log, warnOnUnknownSettings );
+            validator.validate( this, log );
         }
-        return validSettings;
     }
 
     private void warnAboutDeprecations( Map<String,String> userSettings )
@@ -668,11 +662,6 @@ public class Config implements DiagnosticsProvider, Configuration
                         log.warn( "%s is deprecated.", c.name() );
                     }
                 } );
-    }
-
-    private Map<String,String> readConfigFile()
-    {
-        return loadFromFile( configFile, log );
     }
 
     @Nonnull
@@ -698,7 +687,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
      */
     @Nonnull
-    public List<String> allConnectorIdentifiers()
+    public Set<String> allConnectorIdentifiers()
     {
         return allConnectorIdentifiers( params );
     }
@@ -707,17 +696,9 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
      */
     @Nonnull
-    public static List<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
+    public Set<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
     {
-        Pattern pattern = Pattern.compile(
-                Pattern.quote( "dbms.connector." ) + "([^\\.]+)\\.(.+)" );
-
-        return params.keySet().stream()
-                .map( pattern::matcher )
-                .filter( Matcher::matches )
-                .map( match -> match.group( 1 ) )
-                .distinct()
-                .collect( Collectors.toList() );
+        return identifiersFromPrefix("dbms.connector");
     }
 
     /**
@@ -733,7 +714,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return stream of all configured bolt connectors
      */
     @Nonnull
-    private static Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
+    private Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
                 c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) );
@@ -752,7 +733,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return list of all configured bolt connectors which are enabled
      */
     @Nonnull
-    public static List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
+    public List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
     {
         return boltConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
@@ -772,7 +753,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return stream of all configured http connectors
      */
     @Nonnull
-    private static Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
+    private Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream()
                 .map( Connector::new )
@@ -812,92 +793,25 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return list of all configured http connectors which are enabled
      */
     @Nonnull
-    private static List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
+    private List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
     {
         return httpConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
     }
 
-    /**
-     * Reloads the configuration from the config file used to initiate this instance.
-     *
-     * @param consumer a consumer of all the detected changes
-     * @param dryRun if true, the changes will be reported but not applied
-     */
-    public void reload( ChangeConsumer consumer, boolean dryRun )
+    @Override
+    public String toString()
     {
-        if ( configFile == null )
+        List<String> keys = new ArrayList<>( params.keySet() );
+        Collections.sort( keys );
+        LinkedHashMap<String,String> output = new LinkedHashMap<>();
+        for ( String key : keys )
         {
-            return;
+            output.put( key, params.get( key ) );
         }
 
-        Map<String,String> settings = readConfigFile();
-        Map<String,String> validSettings = migrateAndValidateSettings( settings, true );
-        performReload( validSettings, consumer, dryRun );
+        return output.toString();
     }
 
-    /**
-     * Calculates the changes to the config and applies them if <code>dryRun</code> is false.
-     *
-     * @param newRaw to compare with.
-     * @param consumer that gets all the changes.
-     * @param dryRun if true the changes will not be applied.
-     */
-    private void performReload( Map<String,String> newRaw, ChangeConsumer consumer, boolean dryRun )
-    {
-        Map<String,String> oldRaw = this.getRaw();
-        Map<String,String> onlyInNew = new LinkedHashMap<>( newRaw );
-
-        for ( Map.Entry<String,String> oldEntry : oldRaw.entrySet() )
-        {
-            String oldKey = oldEntry.getKey();
-            String oldValue = oldEntry.getValue();
-            if ( newRaw.containsKey( oldKey ) )
-            {
-                String newValue = onlyInNew.remove( oldKey );
-                if ( !oldValue.equals( newValue ) )
-                {
-                    // Changed
-                    consumer.apply( oldKey, oldValue, newValue );
-                    if ( !dryRun )
-                    {
-                        params.put( oldKey, newValue );
-                    }
-                }
-            }
-            else
-            {
-                // Deleted
-                consumer.apply( oldKey, oldValue, null );
-                if ( !dryRun )
-                {
-                    params.remove( oldKey );
-                }
-            }
-        }
-        for ( Map.Entry<String,String> newEntry : onlyInNew.entrySet() )
-        {
-            // Added
-            String newKey = newEntry.getKey();
-            String newValue = newEntry.getValue();
-            consumer.apply( newKey, null, newValue );
-            if ( !dryRun )
-            {
-                params.put( newKey, newValue );
-            }
-        }
-    }
-
-    public interface ChangeConsumer
-    {
-        /**
-         * Called when a difference is found.
-         *
-         * @param key that this difference applies to.
-         * @param oldValue of the property, {@link null} if value was created.
-         * @param newValue of the property, {@link null} if value was deleted.
-         */
-        void apply( String key, String oldValue, String newValue );
-    }
 }

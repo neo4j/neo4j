@@ -162,7 +162,6 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler.STRICT;
 import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFactory.fromConfigValue;
 
@@ -629,7 +628,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         if ( config.get( GraphDatabaseFacadeFactory.Configuration.ephemeral ) )
         {
-            config = config.augmentDefaults( stringMap( GraphDatabaseSettings.keep_logical_logs.name(), "1 files" ) );
+            config.augmentDefaults( GraphDatabaseSettings.keep_logical_logs, "1 files" );
         }
         String pruningConf = config.get( GraphDatabaseSettings.keep_logical_logs );
 

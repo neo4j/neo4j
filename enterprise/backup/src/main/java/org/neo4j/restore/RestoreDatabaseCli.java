@@ -34,8 +34,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 public class RestoreDatabaseCli implements AdminCommand
 {
     private static final Arguments arguments = new Arguments()
@@ -53,11 +51,10 @@ public class RestoreDatabaseCli implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        Config config = Config.fromFile( configDir.resolve( "neo4j.conf" ) )
+        return Config.fromFile( configDir.resolve( "neo4j.conf" ) )
                 .withHome( homeDir )
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
                 .withConnectorsDisabled().build();
-
-        return config.augment( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) );
     }
 
     @Override

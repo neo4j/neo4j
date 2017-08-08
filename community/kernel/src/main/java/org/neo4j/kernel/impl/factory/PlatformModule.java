@@ -68,7 +68,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Platform module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. This creates
@@ -140,8 +139,8 @@ public class PlatformModule
         this.graphDatabaseFacade = dependencies.satisfyDependency( graphDatabaseFacade );
 
         // SPI - provided services
-        this.config = dependencies.satisfyDependency( config.augmentDefaults(
-                stringMap( GraphDatabaseSettings.neo4j_home.name(), providedStoreDir.getAbsolutePath() ) ) );
+        config.augmentDefaults( GraphDatabaseSettings.neo4j_home, providedStoreDir.getAbsolutePath() );
+        this.config = dependencies.satisfyDependency( config );
 
         this.storeDir = providedStoreDir.getAbsoluteFile();
 

@@ -43,14 +43,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
-import java.util.stream.Stream;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.ConfigValues;
-import org.neo4j.kernel.configuration.GroupSettingSupport;
+import org.neo4j.kernel.configuration.Group;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.ClientAuth;
@@ -58,7 +55,6 @@ import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
 
 import static java.lang.String.format;
-import static java.util.stream.Collectors.toSet;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_advertised_address;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
 
@@ -165,8 +161,7 @@ public class SslPolicyLoader
 
     private void load( Config config, Log log )
     {
-        Function<ConfigValues,Stream<String>> enumeration = GroupSettingSupport.enumerate( SslPolicyConfig.class );
-        Set<String> policyNames = config.view( enumeration ).collect( toSet() );
+        Set<String> policyNames = config.identifiersFromPrefix( SslPolicyConfig.class.getAnnotation( Group.class ).value() );
 
         for ( String policyName : policyNames )
         {
@@ -177,9 +172,9 @@ public class SslPolicyLoader
             }
 
             SslPolicyConfig policyConfig = new SslPolicyConfig( policyName );
-            File baseDirectory = policyConfig.base_directory.from( config );
-            File trustedCertificatesDir = policyConfig.trusted_dir.from( config );
-            File revokedCertificatesDir = policyConfig.revoked_dir.from( config );
+            File baseDirectory = config.get( policyConfig.base_directory );
+            File trustedCertificatesDir = config.get( policyConfig.trusted_dir );
+            File revokedCertificatesDir = config.get( policyConfig.revoked_dir );
 
             if ( !baseDirectory.exists() )
             {
@@ -187,14 +182,14 @@ public class SslPolicyLoader
                         format( "Base directory '%s' for SSL policy with name '%s' does not exist.", baseDirectory, policyName ) );
             }
 
-            boolean allowKeyGeneration = policyConfig.allow_key_generation.from( config );
+            boolean allowKeyGeneration = config.get( policyConfig.allow_key_generation );
 
-            File privateKeyFile = policyConfig.private_key.from( config );
-            String privateKeyPassword = policyConfig.private_key_password.from( config );
+            File privateKeyFile = config.get( policyConfig.private_key );
+            String privateKeyPassword = config.get( policyConfig.private_key_password );
             PrivateKey privateKey;
 
             X509Certificate[] keyCertChain;
-            File keyCertChainFile = policyConfig.public_certificate.from( config );
+            File keyCertChainFile = config.get( policyConfig.public_certificate );
 
             if ( !privateKeyFile.exists() && !keyCertChainFile.exists() && allowKeyGeneration )
             {
@@ -217,8 +212,8 @@ public class SslPolicyLoader
             privateKey = loadPrivateKey( privateKeyFile, privateKeyPassword );
             keyCertChain = loadCertificateChain( keyCertChainFile );
 
-            ClientAuth clientAuth = policyConfig.client_auth.from( config );
-            boolean trustAll = policyConfig.trust_all.from( config );
+            ClientAuth clientAuth = config.get( policyConfig.client_auth );
+            boolean trustAll = config.get( policyConfig.trust_all );
             TrustManagerFactory trustManagerFactory;
 
             Collection<X509CRL> crls = getCRLs( revokedCertificatesDir );
@@ -232,8 +227,8 @@ public class SslPolicyLoader
                 throw new RuntimeException( "Failed to create trust manager based on: " + trustedCertificatesDir, e );
             }
 
-            List<String> tlsVersions = policyConfig.tls_versions.from( config );
-            List<String> ciphers = policyConfig.ciphers.from( config );
+            List<String> tlsVersions = config.get( policyConfig.tls_versions );
+            List<String> ciphers = config.get( policyConfig.ciphers );
 
             SslPolicy sslPolicy = new SslPolicy( privateKey, keyCertChain, tlsVersions, ciphers, clientAuth, trustManagerFactory );
             log.info( format( "Loaded SSL policy '%s' = %s", policyName, sslPolicy ) );

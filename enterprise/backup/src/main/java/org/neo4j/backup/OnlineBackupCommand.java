@@ -161,7 +161,7 @@ public class OnlineBackupCommand implements AdminCommand
             }
             else
             {
-                checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
+                checkGraph = config.get( ConsistencyCheckSettings.consistency_check_graph );
             }
             if ( arguments.has( "cc-indexes" ) )
             {
@@ -169,7 +169,7 @@ public class OnlineBackupCommand implements AdminCommand
             }
             else
             {
-                checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
+                checkIndexes = config.get( ConsistencyCheckSettings.consistency_check_indexes );
             }
             if ( arguments.has( "cc-label-scan-store" ) )
             {
@@ -177,7 +177,7 @@ public class OnlineBackupCommand implements AdminCommand
             }
             else
             {
-                checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
+                checkLabelScanStore = config.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
             }
             if ( arguments.has( "cc-property-owners" ) )
             {
@@ -185,7 +185,7 @@ public class OnlineBackupCommand implements AdminCommand
             }
             else
             {
-                checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
+                checkPropertyOwners = config.get( ConsistencyCheckSettings.consistency_check_property_owners );
             }
         }
         catch ( IllegalArgumentException e )
@@ -306,7 +306,7 @@ public class OnlineBackupCommand implements AdminCommand
         {
             try
             {
-                return config.augment( MapUtil.load( additionalConfig.get().toFile() ) );
+                config.augment( MapUtil.load( additionalConfig.get().toFile() ) );
             }
             catch ( IOException e )
             {

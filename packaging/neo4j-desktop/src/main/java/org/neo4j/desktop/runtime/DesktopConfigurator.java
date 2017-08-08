@@ -80,9 +80,9 @@ public class DesktopConfigurator
 
     public ListenSocketAddress getServerAddress()
     {
-        return config.httpConnectors().stream()
+        return config.get( config.httpConnectors().stream()
                 .findFirst()
                 .orElse( new HttpConnector( "http" ) )
-                .listen_address.from( config );
+                .listen_address );
     }
 }

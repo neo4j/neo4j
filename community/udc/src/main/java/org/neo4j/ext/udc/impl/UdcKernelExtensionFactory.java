@@ -73,8 +73,10 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     public Lifecycle newInstance( KernelContext kernelContext, UdcKernelExtensionFactory.Dependencies dependencies )
             throws Throwable
     {
+        Config config = dependencies.config();
+        config.augment( loadUdcProperties() );
         return new UdcKernelExtension(
-                dependencies.config().augment( loadUdcProperties() ),
+                config,
                 dependencies.dataSourceManager(),
                 dependencies.idGeneratorFactory(),
                 dependencies.startupStats(),

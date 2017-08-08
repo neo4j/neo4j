@@ -73,8 +73,6 @@ public class DiscoveryServiceTest
 
     private Config mockConfig() throws URISyntaxException
     {
-        Config config = Config.defaults();
-
         HashMap<String,String> settings = new HashMap<>();
         settings.put( GraphDatabaseSettings.auth_enabled.name(), "false" );
         settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
@@ -84,8 +82,7 @@ public class DiscoveryServiceTest
         settings.put( ServerSettings.management_api_path.name(), managementUri.toString() );
         settings.put( ServerSettings.rest_api_path.name(), dataUri.toString() );
 
-        config.augment( settings );
-        return config;
+        return Config.defaults( settings );
     }
 
     private DiscoveryService testDiscoveryService() throws URISyntaxException

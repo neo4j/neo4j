@@ -286,11 +286,10 @@ public class ImportCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        Config config = Config.fromFile( configDir.resolve( "neo4j.conf" ) )
+        return Config.fromFile( configDir.resolve( "neo4j.conf" ) )
                 .withHome( homeDir )
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSettings( additionalConfig )
                 .withConnectorsDisabled().build();
-
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.augment( additionalConfig );
     }
 }

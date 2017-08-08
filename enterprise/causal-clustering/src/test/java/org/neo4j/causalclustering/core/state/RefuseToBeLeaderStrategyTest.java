@@ -22,7 +22,6 @@ package org.neo4j.causalclustering.core.state;
 import org.junit.Test;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.Log;
 
@@ -46,8 +45,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsUnsetAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
+        Config config = Config.defaults( CausalClusteringSettings.refuse_to_be_leader, "true" );
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }
@@ -55,8 +53,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldLogWarningIfLicenseIsUnsetAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
+        Config config = Config.defaults( CausalClusteringSettings.refuse_to_be_leader, "true" );
 
         Log logMock = mock( Log.class );
 
@@ -68,9 +65,9 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsFalseAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "false" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.refuse_to_be_leader, "true" )
+                .withSetting( CausalClusteringSettings.multi_dc_license, "false" ).build();
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }
@@ -78,9 +75,9 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsFalseAndRefuseToBeLeaderIsFalse() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "false" ) );
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "false" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.refuse_to_be_leader, "false" )
+                .withSetting( CausalClusteringSettings.multi_dc_license, "false" ).build();
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }
@@ -88,9 +85,9 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnTrueIfLicenseIsTrueAndRefuseToBeLeaderIsTrue() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.refuse_to_be_leader.name(), "true" ) );
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "true" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.refuse_to_be_leader, "true" )
+                .withSetting( CausalClusteringSettings.multi_dc_license, "true" ).build();
 
         assertTrue( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }
@@ -98,8 +95,7 @@ public class RefuseToBeLeaderStrategyTest
     @Test
     public void shouldReturnFalseIfLicenseIsTrueAndRefuseToBeLeaderIsUnset() throws Exception
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( CausalClusteringSettings.multi_dc_license.name(), "true" ) );
+        Config config = Config.defaults( CausalClusteringSettings.multi_dc_license, "true" );
 
         assertFalse( RefuseToBeLeaderStrategy.shouldRefuseToBeLeader( config ) );
     }

@@ -27,7 +27,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 
 /**
@@ -52,8 +51,9 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
+                config.augment( "unsupported.dbms.ephemeral", FALSE );
                 return new EnterpriseGraphDatabase( storeDir,
-                        config.augment( stringMap( "unsupported.dbms.ephemeral", FALSE ) ),
+                        config,
                         state.databaseDependencies() );
             }
         };

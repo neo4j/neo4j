@@ -32,7 +32,6 @@ import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -236,7 +235,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 }
 
                 @Override
-                public GraphDatabaseService newDatabase( @Nonnull Config config )
+                public GraphDatabaseService newDatabase( Config config )
                 {
                     return customFacadeFactory.newFacade( storeDir, config,
                             GraphDatabaseDependencies.newDependencies( state.databaseDependencies() ) );

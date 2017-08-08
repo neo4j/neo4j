@@ -79,8 +79,7 @@ public class StoreUpgraderInterruptionTestIT
     @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private static final Config CONFIG = Config.defaults().augment(
-            stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Parameters( name = "{0}" )
     public static Collection<String> versions()

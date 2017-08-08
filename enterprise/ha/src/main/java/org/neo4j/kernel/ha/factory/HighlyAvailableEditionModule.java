@@ -58,7 +58,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -528,7 +527,7 @@ public class HighlyAvailableEditionModule
             }
         };
 
-        config.augment( MapUtil.stringMap( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.FALSE ) );
+        config.augment( GraphDatabaseSettings.allow_store_upgrade, Settings.FALSE );
 
         constraintSemantics = new EnterpriseConstraintSemantics();
 

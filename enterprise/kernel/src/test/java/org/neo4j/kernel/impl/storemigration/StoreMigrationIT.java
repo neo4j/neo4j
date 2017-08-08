@@ -44,7 +44,6 @@ import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -284,8 +283,7 @@ public class StoreMigrationIT
             ConsistencyCheckService consistencyCheckService, String storeVersion )
             throws ConsistencyCheckIncompleteException, IOException
     {
-        Config config = Config.defaults();
-        config.augment( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), storeVersion ) );
+        Config config = Config.defaults( GraphDatabaseSettings.record_format, storeVersion );
         return consistencyCheckService.runFullConsistencyCheck( db, config, ProgressMonitorFactory.NONE,
                 NullLogProvider.getInstance(), fs, false );
     }

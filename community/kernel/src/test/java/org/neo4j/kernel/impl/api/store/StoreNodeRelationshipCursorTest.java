@@ -56,7 +56,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -102,7 +101,7 @@ public class StoreNodeRelationshipCursorTest
         File storeDir = directory.absolutePath();
         fs = new DefaultFileSystemAbstraction();
         pageCache = new ConfiguringPageCacheFactory( fs,
-                Config.defaults().augment( stringMap( pagecache_memory.name(), "8m" ) ), NULL,
+                Config.defaults( pagecache_memory, "8m" ), NULL,
                 PageCursorTracerSupplier.NULL, NullLog.getInstance() )
                 .getOrCreatePageCache();
         StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, fs, NullLogProvider.getInstance() );

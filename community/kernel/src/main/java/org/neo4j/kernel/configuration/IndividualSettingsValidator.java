@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
@@ -40,36 +41,27 @@ public class IndividualSettingsValidator implements ConfigurationValidator
 {
     private static final List<String> reservedPrefixes =
             Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools.", "unsupported." );
+
+    private final Collection<SettingValidator> settingValidators;
     private final boolean warnOnUnknownSettings;
 
-    /**
-     *
-     * @param warnOnUnknownSettings if unknown options should be logged when strict validation is disabled
-     */
-    public IndividualSettingsValidator( boolean warnOnUnknownSettings )
+    IndividualSettingsValidator( Collection<SettingValidator> settingValidators, boolean warnOnUnknownSettings )
     {
+        this.settingValidators = settingValidators;
         this.warnOnUnknownSettings = warnOnUnknownSettings;
     }
 
     @Override
-    @Nonnull
-    public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-            @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
+    public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
     {
+        Map<String,String> rawConfig = config.getRaw();
         Map<String,String> validConfig = stringMap();
         for ( SettingValidator validator : settingValidators )
         {
-            validConfig.putAll( validator.validate( rawConfig, msg ->
-            {
-                if ( parsingFile )
-                {
-                    log.warn( msg );
-                }
-            } ) );
+            validConfig.putAll( validator.validate( rawConfig, log::warn ) );
         }
 
-        final boolean strictValidation = strict_config_validation.apply( validConfig::get );
+        final Boolean strictValidation = config.get( strict_config_validation );
 
         rawConfig.forEach( ( key, value ) ->
         {
@@ -84,7 +76,7 @@ public class IndividualSettingsValidator implements ConfigurationValidator
                         log.warn( "Unknown config option: %s", key );
                     }
 
-                    if ( strictValidation )
+                    if ( strictValidation != null && strictValidation )
                     {
                         throw new InvalidSettingException( String.format(
                                 "Unknown config option '%s'. To resolve either remove it from your configuration " +
@@ -102,6 +94,6 @@ public class IndividualSettingsValidator implements ConfigurationValidator
             }
         } );
 
-        return validConfig;
+        return Collections.emptyMap();
     }
 }

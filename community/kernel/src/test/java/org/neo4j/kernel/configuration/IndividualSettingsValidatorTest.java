@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.Map;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+
+import java.util.Map;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -54,17 +55,16 @@ public class IndividualSettingsValidatorTest
     @Test
     public void nonStrictRetainsSettings() throws Exception
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String,String> fullConfig = stringMap( strict_config_validation.name(), FALSE,
+        final Map<String,String> rawConfig = stringMap( strict_config_validation.name(), FALSE,
                 "dbms.jibber.jabber", "bla",
                 "external_plugin.foo", "bar" );
 
-        final Map<String,String> result = iv.validate( singletonList( strict_config_validation ),
-                fullConfig,
-                log, false );
+        Config config = mockConfig( rawConfig );
 
-        assertEquals( fullConfig, result );
+        iv.validate( config, log );
+
         verify( log ).warn( "Unknown config option: %s", "dbms.jibber.jabber" );
         verifyNoMoreInteractions( log );
     }
@@ -72,34 +72,43 @@ public class IndividualSettingsValidatorTest
     @Test
     public void strictErrorsOnUnknownSettingsInOurNamespace() throws Exception
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String,String> fullConfig = stringMap( strict_config_validation.name(), TRUE,
+        final Map<String,String> rawConfig = stringMap( strict_config_validation.name(), TRUE,
                 "dbms.jibber.jabber", "bla",
                 "external_plugin.foo", "bar" );
+
+        Config config = mockConfig( rawConfig );
 
         expected.expect( InvalidSettingException.class );
         expected.expectMessage( String.format( "Unknown config option 'dbms.jibber.jabber'. To resolve either remove" +
                 " it from your configuration or set '%s' to false.", strict_config_validation.name() ) );
 
-        iv.validate( singletonList( strict_config_validation ),
-                fullConfig,
-                log, false );
+        iv.validate( config, log );
     }
 
     @Test
     public void strictAllowsStuffOutsideOurNamespace() throws Exception
     {
-        IndividualSettingsValidator iv = new IndividualSettingsValidator( true );
+        IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
-        final Map<String,String> fullConfig = stringMap( strict_config_validation.name(), TRUE,
+        final Map<String,String> rawConfig = stringMap( strict_config_validation.name(), TRUE,
                 "external_plugin.foo", "bar" );
 
-        final Map<String,String> result = iv.validate( singletonList( strict_config_validation ),
-                fullConfig,
-                log, false );
+        Config config = mockConfig( rawConfig );
 
-        assertEquals( fullConfig, result );
+        iv.validate( config, log );
         verifyNoMoreInteractions( log );
+    }
+
+    private Config mockConfig( Map<String,String> rawConfig )
+    {
+        Config config = Mockito.mock( Config.class );
+
+        when( config.getRaw() ).thenReturn( rawConfig );
+        when( config.get( strict_config_validation ) )
+                .thenReturn( Boolean.valueOf( rawConfig.get( strict_config_validation.name() ) ) );
+
+        return config;
     }
 }

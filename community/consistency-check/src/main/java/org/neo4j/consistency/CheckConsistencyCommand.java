@@ -144,7 +144,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
+                checkGraph = config.get( ConsistencyCheckSettings.consistency_check_graph );
             }
             if ( arguments.has( CHECK_INDEXES ) )
             {
@@ -152,7 +152,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
+                checkIndexes = config.get( ConsistencyCheckSettings.consistency_check_indexes );
             }
             if ( arguments.has( CHECK_LABEL_SCAN_STORE ) )
             {
@@ -160,7 +160,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
+                checkLabelScanStore = config.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
             }
             if ( arguments.has( CHECK_PROPERTY_OWNERS ) )
             {
@@ -168,7 +168,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
+                checkPropertyOwners = config.get( ConsistencyCheckSettings.consistency_check_property_owners );
             }
         }
         catch ( IllegalArgumentException e )

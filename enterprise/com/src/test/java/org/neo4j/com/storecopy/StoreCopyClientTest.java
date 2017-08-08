@@ -74,7 +74,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreCopyClientTest
 {
@@ -170,7 +169,7 @@ public class StoreCopyClientTest
         final File copyDir = new File( testDir.directory(), "copy" );
         final File originalDir = new File( testDir.directory(), "original" );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config config = Config.defaults().augment( stringMap( record_format.name(), recordFormatsName ) );
+        Config config = Config.defaults( record_format, recordFormatsName );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClient.Monitor.Adapter(), false );

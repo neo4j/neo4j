@@ -188,11 +188,6 @@ public class BuiltInProceduresTest
                         "value" +
                         " :: STRING?)",
                         "List the currently active config of Neo4j." ),
-                record( "dbms.reloadConfig",
-                        "dbms.reloadConfig(dryRun = false :: BOOLEAN?) :: (type :: STRING?, key :: STRING?, oldValue " +
-                                ":: STRING?, newValue :: STRING?)",
-                        "Reload the active config file of Neo4j. If testRun is true the config will be parsed and validated" +
-                                " and the changes will be listed."),
                 record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." ),
                 record( "db.awaitIndexes", "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID",

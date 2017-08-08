@@ -81,7 +81,7 @@ public class FilteringPolicyLoaderTest
         {
             String policyName = (String) row[0];
             String filterSpec = (String) row[1];
-            config = config.augment( stringMap( configNameFor( pluginName, policyName ), filterSpec ) );
+            config.augment( configNameFor( pluginName, policyName ), filterSpec );
         }
 
         // when

@@ -71,14 +71,13 @@ public class SslPolicyLoaderTest
     public void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         // when
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
@@ -109,14 +108,14 @@ public class SslPolicyLoaderTest
         // given
         FileUtils.deleteFile( file );
 
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        config.augment( params );
+
+        Config config = Config.defaults( params );
 
         // when
         try
@@ -134,14 +133,13 @@ public class SslPolicyLoaderTest
     public void shouldThrowIfPolicyNameDoesNotExist() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( "default" );
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
@@ -174,14 +172,13 @@ public class SslPolicyLoaderTest
     public void shouldNotAllowLegacyPolicyToBeConfigured() throws Exception
     {
         // given
-        Config config = Config.defaults();
         Map<String,String> params = stringMap();
 
         SslPolicyConfig policyConfig = new SslPolicyConfig( LegacySslPolicyConfig.LEGACY_POLICY_NAME );
 
         params.put( neo4j_home.name(), home.getAbsolutePath() );
         params.put( policyConfig.base_directory.name(), "certificates/default" );
-        config.augment( params );
+        Config config = Config.defaults( params );
 
         try
         {

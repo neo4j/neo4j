@@ -37,7 +37,6 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerManagementIT
 {
@@ -75,7 +74,7 @@ public class ServerManagementIT
                 server.getDatabase().getLocation().getAbsolutePath() );
 
         // Change the database location
-        config.augment( stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory2 ) );
+        config.augment( DatabaseManagementSystemSettings.data_directory, dataDirectory2 );
         ServerManagement bean = new ServerManagement( server );
         bean.restartServer();
 

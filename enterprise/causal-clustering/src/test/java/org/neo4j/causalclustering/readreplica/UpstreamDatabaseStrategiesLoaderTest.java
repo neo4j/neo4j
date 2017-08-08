@@ -31,8 +31,8 @@ import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.causalclustering.core.CausalClusteringSettings.upstream_selection_strategy;
 import static org.neo4j.helpers.collection.Iterators.asSet;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class UpstreamDatabaseStrategiesLoaderTest
 {
@@ -43,8 +43,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
     public void shouldReturnConfiguredClassesOnly() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment( stringMap( "causal_clustering.upstream_selection_strategy", "dummy" ) );
+        Config config = Config.defaults( upstream_selection_strategy, "dummy" );
 
         UpstreamDatabaseStrategiesLoader strategies =
                 new UpstreamDatabaseStrategiesLoader( mock( TopologyService.class ), config,
@@ -63,9 +62,7 @@ public class UpstreamDatabaseStrategiesLoaderTest
     public void shouldReturnTheFirstStrategyThatWorksFromThoseConfigured() throws Exception
     {
         // given
-        Config config = Config.defaults();
-        config.augment(
-                stringMap( "causal_clustering.upstream_selection_strategy", "yet-another-dummy,dummy,another-dummy" ) );
+        Config config = Config.defaults( upstream_selection_strategy, "yet-another-dummy,dummy,another-dummy" );
 
         // when
         UpstreamDatabaseStrategiesLoader strategies =

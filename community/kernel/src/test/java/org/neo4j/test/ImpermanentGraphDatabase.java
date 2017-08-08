@@ -44,7 +44,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
@@ -184,8 +183,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
 
     private static Config withForcedInMemoryConfiguration( Config config )
     {
-        return config.augment( stringMap( ephemeral.name(), TRUE ) )
-                .augmentDefaults( stringMap( pagecache_memory.name(), "8M" ) );
+        config.augment( ephemeral, TRUE );
+        config.augmentDefaults( pagecache_memory, "8M" );
+        return config;
     }
 
     protected static class ImpermanentPlatformModule extends PlatformModule

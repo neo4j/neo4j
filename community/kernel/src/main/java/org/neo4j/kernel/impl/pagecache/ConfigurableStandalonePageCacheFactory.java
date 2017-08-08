@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.pagecache;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -65,11 +64,10 @@ public final class ConfigurableStandalonePageCacheFactory
     public static PageCache createPageCache( FileSystemAbstraction fileSystem, PageCacheTracer pageCacheTracer,
             PageCursorTracerSupplier pageCursorTracerSupplier, Config config )
     {
-        Config finalConfig =
-                config.augmentDefaults( MapUtil.stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+        config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, finalConfig, pageCacheTracer, pageCursorTracerSupplier,
+                fileSystem, config, pageCacheTracer, pageCursorTracerSupplier,
                 logProvider.getLog( PageCache.class ) );
         return pageCacheFactory.getOrCreatePageCache();
     }

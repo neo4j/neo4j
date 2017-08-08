@@ -58,7 +58,7 @@ public class RestoreDatabaseCommandTest
     public void forceShouldRespectStoreLock() throws Exception
     {
         String databaseName = "to";
-        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -87,7 +87,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -115,7 +115,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -141,7 +141,7 @@ public class RestoreDatabaseCommandTest
     {
         // given
         String databaseName = "to";
-        Config config = configWith( Config.defaults(), databaseName, directory.absolutePath().getAbsolutePath() );
+        Config config = configWith( databaseName, directory.absolutePath().getAbsolutePath() );
 
         File fromPath = new File( directory.absolutePath(), "from" );
         File toPath = config.get( DatabaseManagementSystemSettings.database_path );
@@ -196,9 +196,9 @@ public class RestoreDatabaseCommandTest
         }
     }
 
-    private static Config configWith( Config config, String databaseName, String dataDirectory )
+    private static Config configWith( String databaseName, String dataDirectory )
     {
-        return config.augment( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
+        return Config.defaults( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName,
                 DatabaseManagementSystemSettings.data_directory.name(), dataDirectory ) );
     }
 

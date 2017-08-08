@@ -62,6 +62,7 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
      */
     String getDefaultValue();
 
+    @Deprecated
     T from( Configuration config );
 
     @Override

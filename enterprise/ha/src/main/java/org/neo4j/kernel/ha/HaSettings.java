@@ -49,7 +49,7 @@ public class HaSettings implements LoadableConfig
 {
     @SuppressWarnings( "unused" ) // accessed by reflection
     @Migrator
-    public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
+    private static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
     public static final Setting<Duration> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" ).build();

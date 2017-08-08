@@ -39,7 +39,7 @@ public class SlaveStatementLocksFactoryTest
     {
         StatementLocksFactory delegate = mock( StatementLocksFactory.class );
         Locks locks = mock( Locks.class );
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         SlaveStatementLocksFactory slaveStatementLocksFactory = new SlaveStatementLocksFactory( delegate );
         slaveStatementLocksFactory.initialize( locks, config );

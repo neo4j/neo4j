@@ -30,6 +30,8 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelis
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
+import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.default_allowed;
+import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.procedure_roles;
 
 public class ProcedureConfigTest
 {
@@ -51,7 +53,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithDefaultProcedureAllowed()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1" );
+        Config config = Config.defaults( default_allowed, "role1" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "x" ), equalTo( arrayOf( "role1" ) ) );
     }
@@ -69,21 +71,21 @@ public class ProcedureConfigTest
     @Test
     public void shouldNotFailOnEmptyStringDefaultName()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_DEFAULT_NAME, "" );
+        Config config = Config.defaults( default_allowed, "" );
         new ProcedureConfig( config );
     }
 
     @Test
     public void shouldNotFailOnEmptyStringRoles()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_ROLES, "" );
+        Config config = Config.defaults( procedure_roles, "" );
         new ProcedureConfig( config );
     }
 
     @Test
     public void shouldNotFailOnBadStringRoles()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_ROLES, "matrix" );
+        Config config = Config.defaults( procedure_roles, "matrix" );
         new ProcedureConfig( config );
     }
 
@@ -108,7 +110,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithWildcardProcedureAllowedAndNoDefault()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" );
+        Config config = Config.defaults( procedure_roles, "xyz*:anotherRole" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abcxyz" ), equalTo( EMPTY ) );
@@ -117,7 +119,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithMultipleWildcardProcedureAllowedAndNoDefault()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_ROLES,
+        Config config = Config.defaults( procedure_roles,
                 "apoc.convert.*:apoc_reader;apoc.load.json:apoc_writer;apoc.trigger.add:TriggerHappy" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( EMPTY ) );
@@ -149,7 +151,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldSupportSeveralRolesPerPattern()
     {
-        Config config = Config.defaults( PROC_ALLOWED_SETTING_ROLES,
+        Config config = Config.defaults( procedure_roles,
                 "xyz*:role1,role2,  role3  ,    role4   ;    abc:  role3   ,role1" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "role1", "role2", "role3", "role4" ) ) );

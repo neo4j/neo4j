@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedList;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
@@ -63,19 +61,6 @@ public class BuiltInDbmsProcedures
                 .map( ConfigResult::new )
                 .filter( c -> c.name.toLowerCase().contains( searchString.toLowerCase() ) )
                 .sorted( Comparator.comparing( c -> c.name ) );
-    }
-
-    @Description( "Reload the active config file of Neo4j. If testRun is true the config will be parsed and validated" +
-            " and the changes will be listed." )
-    @Procedure( name = "dbms.reloadConfig", mode = DBMS )
-    public Stream<ConfigChangeResult> reloadConfig( @Name( value = "dryRun", defaultValue = "false" ) boolean dryRun )
-    {
-        Collection<ConfigChangeResult> result = new LinkedList<>();
-
-        Config currentConfig = graph.getDependencyResolver().resolveDependency( Config.class );
-        currentConfig.reload( ( key, oldValue, newValue ) -> result.add( new ConfigChangeResult( key, oldValue, newValue ) ), dryRun );
-
-        return result.stream();
     }
 
     @Description( "List all procedures in the DBMS." )
