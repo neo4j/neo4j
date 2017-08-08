@@ -178,12 +178,6 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         tx.closeAndAssertSuccess();
     }
 
-    private Object metadata( Map<String,Object> map )
-    {
-        return AnyValues.asMapValue( map );
-    }
-
-
     @SuppressWarnings( "unchecked" )
     @Test
     public void shouldListAllQueriesWhenRunningAsAdmin() throws Throwable

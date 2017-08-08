@@ -51,7 +51,7 @@ public class CypherRESTAuthScenariosInteractionIT extends AuthScenariosInteracti
     @Override
     protected Object valueOf( Object obj )
     {
-        if (obj instanceof Long)
+        if ( obj instanceof Long )
         {
             return ((Long) obj).intValue();
         }

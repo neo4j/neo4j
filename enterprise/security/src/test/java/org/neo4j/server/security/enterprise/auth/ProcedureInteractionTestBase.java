@@ -471,15 +471,15 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
-           Object expected )
+            Object expected )
     {
-        if (expected instanceof MapValue)
+        if ( expected instanceof MapValue )
         {
             assertKeyIsMap( r, keyKey, valueKey, (MapValue) expected );
         }
         else
         {
-            assertKeyIsMap( r, keyKey, valueKey, (Map<String, Object>) expected );
+            assertKeyIsMap( r, keyKey, valueKey, (Map<String,Object>) expected );
         }
     }
 
@@ -533,7 +533,7 @@ public abstract class ProcedureInteractionTestBase<S>
             if ( objectValue instanceof ListValue )
             {
                 ListValue value = (ListValue) objectValue;
-                ListValue expectedValues = ((ListValue) expected.get( key.stringValue() ));
+                ListValue expectedValues = (ListValue) expected.get( key.stringValue() );
                 assertEquals( "sizes", value.size(), expectedValues.size() );
                 assertThat( Arrays.asList( value.asArray() ), containsInAnyOrder( expectedValues.asArray() ) );
             }
@@ -546,9 +546,7 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-
     // --------------------- helpers -----------------------
-
     void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
