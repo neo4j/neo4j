@@ -33,7 +33,10 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps = when(mock[Operations[Relationship]].getById(17)).thenReturn(rel).getMock[Operations[Relationship]]
+    val relOps= mock[Operations[Relationship]]
+    when(relOps.exists(17)).thenReturn(true)
+    when(relOps.getById(17)).thenReturn(rel)
+
     val to = "to"
     val from = "from"
     val queryState = QueryStateHelper.emptyWith(
@@ -57,7 +60,9 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val from = "from"
 
     when(relationshipOps.getById(42)).thenReturn(r1)
+    when(relationshipOps.exists(42)).thenReturn(true)
     when(relationshipOps.getById(21)).thenReturn(r2)
+    when(relationshipOps.exists(21)).thenReturn(true)
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
     )

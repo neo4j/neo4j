@@ -263,6 +263,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+
+  override def exists(id: Long): Boolean = singleDbHit(inner.exists(id))
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
