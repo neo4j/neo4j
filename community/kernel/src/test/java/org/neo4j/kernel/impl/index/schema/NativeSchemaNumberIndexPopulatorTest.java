@@ -177,14 +177,14 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
     {
         // given
         populator.create();
-        IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
-        @SuppressWarnings( "unchecked" )
         IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
-
-        // when
-        for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+        try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
-            updater.process( update );
+            // when
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            {
+                updater.process( update );
+            }
         }
 
         // then
