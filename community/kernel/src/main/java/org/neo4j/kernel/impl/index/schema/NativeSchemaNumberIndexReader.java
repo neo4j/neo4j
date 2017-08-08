@@ -48,7 +48,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     private final Layout<KEY,VALUE> layout;
     private final KEY treeKeyFrom;
     private final KEY treeKeyTo;
-    private Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
+    private final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
 
     NativeSchemaNumberIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
     {
@@ -141,7 +141,7 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
     }
 
     @Override
-    public boolean hasFullNumberPrecision()
+    public boolean hasFullNumberPrecision( IndexQuery... predicates )
     {
         return true;
     }
