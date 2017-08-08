@@ -105,7 +105,6 @@ public class CompatibilitySpecSuiteTest
                     HTML_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
                     JSON_REPORT + SUITE_NAME + "/cost-interpreted-enterprise",
                     BLACKLIST_PLUGIN + "cost-interpreted-enterprise.txt",
-                    CYPHER_OPTION_PLUGIN + "cost-interpreted-enterprise.txt"
             },
             glue = { GLUE_PATH },
             features = { FEATURE_PATH + FEATURE_TO_RUN },
