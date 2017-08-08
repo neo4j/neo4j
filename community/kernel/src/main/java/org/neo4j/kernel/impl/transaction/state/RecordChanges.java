@@ -31,11 +31,8 @@ import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
  * deciding when to make a record heavy and when to consider it changed for inclusion in the
  * transaction as a command.
  *
- * @author Mattias Persson
- *
- * @param <KEY>
- * @param <RECORD>
- * @param <ADDITIONAL>
+ * @param <RECORD> type of record
+ * @param <ADDITIONAL> additional payload
  */
 public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {

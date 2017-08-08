@@ -17,10 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.unsafe.batchinsert.internal;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -234,7 +233,7 @@ public class DirectRecordAccess<RECORD extends AbstractBaseRecord,ADDITIONAL>
         }
 
         List<DirectRecordProxy> directRecordProxies = new ArrayList<>( batch.values() );
-        Collections.sort(directRecordProxies, ( o1, o2 ) -> Long.compare( -o1.getKey(), o2.getKey() ) );
+        directRecordProxies.sort( ( o1, o2 ) -> Long.compare( -o1.getKey(), o2.getKey() ) );
         for ( DirectRecordProxy proxy : directRecordProxies )
         {
             proxy.store();

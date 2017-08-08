@@ -145,6 +145,7 @@ the relevant Commercial Agreement.
           </includes>
           <excludes>
             <exclude>org/neo4j/unsafe/batchinsert/DirectRecordAccess</exclude>
+            <exclude>org/neo4j/unsafe/batchinsert/DirectRecordAccessSet</exclude>
           </excludes>
         </configuration>
       </plugin>
