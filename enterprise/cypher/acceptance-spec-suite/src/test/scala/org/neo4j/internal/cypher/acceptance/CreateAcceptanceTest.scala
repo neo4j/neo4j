@@ -73,7 +73,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
     val result = succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
     result.toList should equal(List(Map("type(r)" -> typ)))
   }
-  
+
   test("should create nodes with label and property with enterprise interpreted") {
     //TODO: Remove this test once we can create relationships in enterprise interpreted
     val createdNumber = 1
