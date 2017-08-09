@@ -71,6 +71,9 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
+      case SingleRow() =>
+        SingleRowPipe()(id)
+
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
 
