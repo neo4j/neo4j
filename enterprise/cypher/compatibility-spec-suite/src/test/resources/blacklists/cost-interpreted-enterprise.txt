@@ -20,6 +20,10 @@ Distinct on null
 Double unwinding a list of lists
 Get rows in the middle by param
 Get rows in the middle
+Run coalesce
+Handling long chains of operators
+
+handling long chanins of operators
 Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
 Honour the column name for RETURN items
@@ -150,6 +154,7 @@ Fail at runtime when trying to index into a list with a list
 Fail at runtime when trying to index something which is not a map or collection
 Functions should return null if they get path containing unbound
 `split()`
+`properties()` on a node
 `properties()` on a relationship
 `properties()` on a map
 `properties()` on null
@@ -164,12 +169,14 @@ IS NOT NULL with literal maps
 `percentileDisc()` failing in more involved query
 `type()` handling Any type
 `type()` failing on invalid arguments
+`labels()` in return clauses
 `labels()` should accept type Any
 `labels()` should accept type Any
 `labels()` should accept type Any
 `exists()` is case insensitive
 Find friends of others
 Should only join when matching
+Using `labels()` in return clauses
 Using `keys()` on a single node, non-empty result
 Using `keys()` on multiple nodes, non-empty result
 Using `keys()` on a single node, empty result
@@ -227,7 +234,6 @@ ORDER BY with LIMIT
 Handling direction of named paths
 `collect()` filtering nulls
 Handling fixed-length variable length pattern
-Optionally matching from null nodes should return null
 Zero-length named path
 Variable-length named path
 Matching using a relationship that is already bound
@@ -286,8 +292,6 @@ Variable length optional relationships with bound nodes
 Variable length optional relationships with bound nodes, no matches
 Longer pattern with bound nodes
 Longer pattern with bound nodes without matches
-Handling optional matches between optionally matched entities
-Handling optional matches between nulls
 OPTIONAL MATCH and `collect()`
 ORDER BY of a column introduced in RETURN should return salient results in ascending order
 Pattern comprehension and ORDER BY
@@ -392,6 +396,7 @@ Handling triadic friend of a friend that is a friend with implicit superset of l
 `toFloat()` on a list of strings
 `toFloat()` failing on invalid arguments
 `toString()`
+`toString()` handling boolean properties
 `toString()` handling inlined boolean
 `toString()` handling boolean literal
 `toString()` should work on Any type
@@ -618,11 +623,9 @@ Returning label predicate on null node
 `type()` on mixed null and non-null relationships
 `type()` on mixed null and non-null relationships
 `type()` on null relationship
-Return two subgraphs with bound undirected relationship and optional relationship
 Respect predicates on the OPTIONAL MATCH
 Optionally matching self-loops
 Optionally matching self-loops without matches
-OPTIONAL MATCH with previously bound nodes
 OPTIONAL MATCH with labels on the optional end node
 OPTIONAL MATCH and bound nodes
 MATCH and OPTIONAL MATCH on same pattern

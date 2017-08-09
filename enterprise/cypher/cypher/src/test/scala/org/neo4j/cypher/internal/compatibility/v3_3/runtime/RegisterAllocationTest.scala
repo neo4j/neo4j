@@ -242,7 +242,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(leaf) shouldNot be theSameInstanceAs allocations(distinct)
   }
 
-  test("optional travels through aggregation used for distinct") {
+  ignore("optional travels through aggregation used for distinct") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
     val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val optional = Optional(leaf)(solved)
@@ -264,7 +264,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     )))
   }
 
-  test("optional travels through aggregation") {
+  ignore("optional travels through aggregation") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
     val leaf = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val optional = Optional(leaf)(solved)

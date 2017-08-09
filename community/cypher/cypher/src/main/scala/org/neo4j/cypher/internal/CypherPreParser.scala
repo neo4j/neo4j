@@ -38,7 +38,7 @@ case object CypherPreParser extends Parser with Base {
 
   def AnySomething: Rule1[String] = rule("Query") { oneOrMore(org.parboiled.scala.ANY) ~> identity }
 
-  def Cypher = rule("CYPHER options") {
+  def Cypher: Rule1[ConfigurationOptions] = rule("CYPHER options") {
     keyword("CYPHER") ~~
       optional(VersionNumber) ~~
       zeroOrMore(PlannerOption | RuntimeOption | StrategyOption | DebugFlag, WS) ~~> ConfigurationOptions
@@ -52,16 +52,17 @@ case object CypherPreParser extends Parser with Base {
     | option("planner", "dp") ~ push(DPPlannerOption)
   )
 
-  def RuntimeOption = rule("runtime option")(
+  def RuntimeOption: Rule1[RuntimePreParserOption] = rule("runtime option")(
     option("runtime", "interpreted") ~ push(InterpretedRuntimeOption)
       | option("runtime", "compiled") ~ push(CompiledRuntimeOption)
+      | option("runtime", "enterprise-interpreted") ~ push(RegisterInterpretedRuntimeOption)
   )
 
-  def StrategyOption = rule("strategy option")(
+  def StrategyOption: Rule1[UpdateStrategyOption] = rule("strategy option")(
     option("updateStrategy", "eager") ~ push(EagerOption)
   )
 
-  def VersionNumber = rule("Version") {
+  def VersionNumber: Rule1[VersionOption] = rule("Version") {
     group(Digits ~ "." ~ Digits) ~> VersionOption
   }
 
@@ -69,11 +70,11 @@ case object CypherPreParser extends Parser with Base {
     keyword("debug") ~~ "=" ~~ SymbolicNameString ~~> DebugOption
   }
 
-  def Digits = oneOrMore("0" - "9")
+  def Digits: Rule0 = oneOrMore("0" - "9")
 
-  def Profile = keyword("PROFILE") ~ push(ProfileOption)
+  def Profile: Rule1[ExecutionModePreParserOption] = keyword("PROFILE") ~ push(ProfileOption)
 
-  def Explain = keyword("EXPLAIN") ~ push(ExplainOption)
+  def Explain: Rule1[ExecutionModePreParserOption] = keyword("EXPLAIN") ~ push(ExplainOption)
 
   def option(key: String, value: String): Rule0 = {
     keyword(key) ~~ "=" ~~ keyword(value)

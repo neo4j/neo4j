@@ -38,6 +38,8 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
         val lhs = self.toCommandExpression(a)
         val rhs = self.toCommandExpression(b)
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
+      case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
+        Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
 
       case _ =>
         None

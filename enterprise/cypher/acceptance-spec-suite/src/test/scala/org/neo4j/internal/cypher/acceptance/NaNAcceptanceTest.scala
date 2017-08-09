@@ -61,6 +61,17 @@ class NaNAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     createNode(Map("x" -> Double.NaN))
 
     // When
+    val result = execute("MATCH (n) RETURN n.x IS NULL AS nu")
+
+    // Then
+    result.toList should equal(List(Map("nu" -> false)))
+  }
+
+  test("should handle NaN null and not null checks correctly") {
+    // Given
+    createNode(Map("x" -> Double.NaN))
+
+    // When
     val result = execute("MATCH (n) RETURN n.x IS NULL AS nu, n.x IS NOT NULL AS nnu")
 
     // Then
