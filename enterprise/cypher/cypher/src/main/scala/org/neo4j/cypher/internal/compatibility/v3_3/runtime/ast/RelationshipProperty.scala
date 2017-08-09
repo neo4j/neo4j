@@ -19,5 +19,10 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-case class RelationshipProperty(offset: Int, propToken: Int) extends RuntimeExpression
-case class RelationshipPropertyLate(offset: Int, propKey: String) extends RuntimeExpression
+case class RelationshipProperty(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}
+
+case class RelationshipPropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}
