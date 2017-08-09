@@ -271,6 +271,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   override def nodeIsDense(node: Long): Boolean = tc.statement.readOperations().nodeIsDense(node)
 
+  private def kernelStatement = statement.asInstanceOf[KernelStatement]
+
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
       try {
