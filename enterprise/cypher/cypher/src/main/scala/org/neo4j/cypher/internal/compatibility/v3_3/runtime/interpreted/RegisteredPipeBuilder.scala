@@ -21,28 +21,32 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class RegisteredPipeBuilder(fallback: PipeBuilder,
-                            expressionConverter: ExpressionConverters,
+                            expressionConverters: ExpressionConverters,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
                             pipelines: Map[LogicalPlan, PipelineInformation],
                             readOnly : Boolean,
-                            buildExpression: (frontEndAst.Expression) => frontEndAst.Expression)
+                            rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
-  private val convertExpressions = buildExpression andThen expressionConverter.toCommandExpression
+  private val convertExpressions = rewriteAstExpression andThen expressionConverters.toCommandExpression
 
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
@@ -67,7 +71,9 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
-      case _ => fallback.build(plan)
+      case _ =>
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+
     }
   }
 
@@ -94,6 +100,21 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         val toSlot = pipeline(to)
         ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(id)
 
+
+      case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
+        val fromOffset = pipeline(fromName).offset
+        val relOffset = pipeline(relName).offset
+        val toOffset = pipeline(toName).offset
+        val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+
+      case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
+        val fromOffset = pipeline(fromName).offset
+        val relOffset = pipeline(relName).offset
+        val toOffset = pipeline(toName).offset
+        val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
@@ -114,6 +135,19 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         EmptyResultPipe(source)(id = id)
 
       case _ => fallback.build(plan, source)
+      
+        // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
+      case _: Selection =>  // selection relies on inner expressions to interact with variables
+        fallback.build(plan, source)
+
+      case _: OptionalExpand =>
+        fallback.build(plan, source)
+
+      case _: Skip =>
+        fallback.build(plan, source)
+
+      case _ =>
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
 
@@ -134,10 +168,16 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
             k -> runtimeExpressions.ReferenceFromRegister(offset)
 
           case _ =>
-            throw new InternalException("Did not find `" + k + "` in the pipeline information1")
+            throw new InternalException(s"Did not find `$k` in the pipeline information")
         }
     }
     runtimeColumns
+  }
+
+  private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Predicate = {
+    val rewrittenExpr: Expression = rewriteAstExpression(expr)
+
+    expressionConverters.toCommandPredicate(rewrittenExpr).rewrite(KeyTokenResolver.resolveExpressions(_, planContext)).asInstanceOf[Predicate]
   }
 
   override def build(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe = {
@@ -147,7 +187,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
-      case _ => fallback.build(plan, lhs, rhs)
+      case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
+      case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
 }
