@@ -45,8 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexProvider;
+import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionSchemaIndexProviderFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
@@ -115,13 +114,13 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
      */
     private String formatName = StringUtils.EMPTY;
 
-    public GraphStoreFixture( boolean keepStatistics, String formatName )
+    private GraphStoreFixture( boolean keepStatistics, String formatName )
     {
         this.keepStatistics = keepStatistics;
         this.formatName = formatName;
     }
 
-    public GraphStoreFixture( String formatName )
+    protected GraphStoreFixture( String formatName )
     {
         this( false, formatName );
     }
@@ -176,11 +175,10 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             OperationalMode operationalMode = OperationalMode.single;
             IndexStoreView indexStoreView =
                     new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores() );
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.IMMEDIATE;
 
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView );
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, createIndexes( fileSystem,
-                    config, operationalMode ) );
+            SchemaIndexProvider indexes = createIndexes( pageCache, fileSystem, directory, config, operationalMode );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
         }
         return directStoreAccess;
     }
@@ -202,10 +200,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return labelScanStore;
     }
 
-    private SchemaIndexProvider createIndexes( FileSystemAbstraction fileSystem, Config config, OperationalMode operationalMode )
+    private SchemaIndexProvider createIndexes( PageCache pageCache, FileSystemAbstraction fileSystem, File storeDir, Config config,
+            OperationalMode operationalMode )
     {
-        return new LuceneSchemaIndexProvider( fileSystem, DirectoryFactory.PERSISTENT, directory,
-                FormattedLogProvider.toOutputStream( System.out ), config, operationalMode );
+        FormattedLogProvider logging = FormattedLogProvider.toOutputStream( System.out );
+        return NativeLuceneFusionSchemaIndexProviderFactory
+                .newInstance( pageCache, storeDir, fileSystem, logging, config, operationalMode, RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 
     public File directory()
@@ -220,7 +220,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     public abstract static class Transaction
     {
-        public final long startTimestamp = currentTimeMillis();
+        final long startTimestamp = currentTimeMillis();
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
@@ -297,7 +297,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             return propKeyId++;
         }
 
-        public void updateCorrespondingIdGenerators( NeoStores neoStores )
+        void updateCorrespondingIdGenerators( NeoStores neoStores )
         {
             neoStores.getNodeStore().setHighestPossibleIdInUse( nodeId );
             neoStores.getRelationshipStore().setHighestPossibleIdInUse( relId );
@@ -310,7 +310,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         private final TransactionWriter writer;
         private final NodeStore nodes;
 
-        public TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
+        TransactionDataBuilder( TransactionWriter writer, NodeStore nodes )
         {
             this.writer = writer;
             this.nodes = nodes;
@@ -446,12 +446,12 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         }
     }
 
-    protected int myId()
+    private int myId()
     {
         return 1;
     }
 
-    protected int masterId()
+    private int masterId()
     {
         return -1;
     }
@@ -463,7 +463,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         private final TransactionIdStore transactionIdStore;
         private final NeoStores neoStores;
 
-        public Applier()
+        Applier()
         {
             database = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newEmbeddedDatabase( directory );
             DependencyResolver dependencyResolver = database.getDependencyResolver();
@@ -498,7 +498,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
         return new Applier();
     }
 
-    protected void applyTransaction( Transaction transaction ) throws TransactionFailureException
+    private void applyTransaction( Transaction transaction ) throws TransactionFailureException
     {
         // TODO you know... we could have just appended the transaction representation to the log
         // and the next startup of the store would do recovery where the transaction would have been

@@ -37,7 +37,6 @@ public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
         NullLogProvider logging = NullLogProvider.getInstance();
         Config config = Config.defaults();
         OperationalMode mode = OperationalMode.single;
-        return new LuceneSchemaIndexProvider( fs, directoryFactory, graphDbDir, logging, config, mode );
-
+        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, logging, config, mode );
     }
 }

@@ -19,9 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.schema;
 
+import java.io.File;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
@@ -56,24 +59,26 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     @Override
     public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        NativeSchemaNumberIndexProvider nativeProvider = nativeSchemaNumberIndexProvider( context, dependencies );
-        LuceneSchemaIndexProvider luceneProvider = luceneSchemaIndexProvider( context, dependencies );
+        PageCache pageCache = dependencies.pageCache();
+        File storeDir = context.storeDir();
+        FileSystemAbstraction fs = dependencies.fileSystem();
+        LogProvider logProvider = dependencies.getLogging().getInternalLogProvider();
+        Config config = dependencies.getConfig();
+        OperationalMode operationalMode = context.databaseInfo().operationalMode;
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = dependencies.recoveryCleanupWorkCollector();
+        return newInstance( pageCache, storeDir, fs, logProvider, config, operationalMode, recoveryCleanupWorkCollector );
+    }
+
+    public static FusionSchemaIndexProvider newInstance( PageCache pageCache, File storeDir, FileSystemAbstraction fs,
+            LogProvider logProvider, Config config, OperationalMode operationalMode,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    {
+        boolean readOnly = isReadOnly( config, operationalMode );
+        NativeSchemaNumberIndexProvider nativeProvider =
+                new NativeSchemaNumberIndexProvider( pageCache, storeDir, logProvider, recoveryCleanupWorkCollector, readOnly );
+        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config,
+                operationalMode );
         return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 50 );
-    }
-
-    private LuceneSchemaIndexProvider luceneSchemaIndexProvider( KernelContext context,
-            Dependencies dependencies ) throws Throwable
-    {
-        return LuceneSchemaIndexProviderFactory.create( context, dependencies );
-    }
-
-    private NativeSchemaNumberIndexProvider nativeSchemaNumberIndexProvider( KernelContext context,
-            Dependencies dependencies )
-    {
-        boolean readOnly = isReadOnly( dependencies.getConfig(), context.databaseInfo().operationalMode );
-        LogProvider logging = dependencies.getLogging().getInternalLogProvider();
-        return new NativeSchemaNumberIndexProvider( dependencies.pageCache(),
-                context.storeDir(), logging, dependencies.recoveryCleanupWorkCollector(), readOnly );
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )
