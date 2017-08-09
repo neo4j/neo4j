@@ -56,16 +56,24 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
     @Override
     public FusionSchemaIndexProvider newInstance( KernelContext context, Dependencies dependencies ) throws Throwable
     {
-        // create native schema index provider
+        NativeSchemaNumberIndexProvider nativeProvider = nativeSchemaNumberIndexProvider( context, dependencies );
+        LuceneSchemaIndexProvider luceneProvider = luceneSchemaIndexProvider( context, dependencies );
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 50 );
+    }
+
+    private LuceneSchemaIndexProvider luceneSchemaIndexProvider( KernelContext context,
+            Dependencies dependencies ) throws Throwable
+    {
+        return LuceneSchemaIndexProviderFactory.create( context, dependencies );
+    }
+
+    private NativeSchemaNumberIndexProvider nativeSchemaNumberIndexProvider( KernelContext context,
+            Dependencies dependencies )
+    {
         boolean readOnly = isReadOnly( dependencies.getConfig(), context.databaseInfo().operationalMode );
         LogProvider logging = dependencies.getLogging().getInternalLogProvider();
-        NativeSchemaNumberIndexProvider nativeProvider = new NativeSchemaNumberIndexProvider( dependencies.pageCache(),
+        return new NativeSchemaNumberIndexProvider( dependencies.pageCache(),
                 context.storeDir(), logging, dependencies.recoveryCleanupWorkCollector(), readOnly );
-
-        // create lucene schema index provider
-        LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( context, dependencies );
-
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 50 );
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )
