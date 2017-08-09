@@ -56,8 +56,8 @@ public class PropertyCreator
     }
 
     public <P extends PrimitiveRecord> void primitiveSetProperty(
-            RecordProxy<Long, P, Void> primitiveRecordChange, int propertyKey, Value value,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordProxy<P, Void> primitiveRecordChange, int propertyKey, Value value,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         PropertyBlock block = encodePropertyValue( propertyKey, value );
         P primitive = primitiveRecordChange.forReadingLinkage();
@@ -72,12 +72,12 @@ public class PropertyCreator
         // - (2) (a) occurs and (b) has occurred, but new property block didn't fit
         // - (3) (b) occurs and (a) has occurred
         // - (4) Chain ends
-        RecordProxy<Long, PropertyRecord, PrimitiveRecord> freeHostProxy = null;
-        RecordProxy<Long, PropertyRecord, PrimitiveRecord> existingHostProxy = null;
+        RecordProxy<PropertyRecord, PrimitiveRecord> freeHostProxy = null;
+        RecordProxy<PropertyRecord, PrimitiveRecord> existingHostProxy = null;
         long prop = primitive.getNextProp();
         while ( prop != Record.NO_NEXT_PROPERTY.intValue() ) // <-- (4)
         {
-            RecordProxy<Long, PropertyRecord, PrimitiveRecord> proxy =
+            RecordProxy<PropertyRecord, PrimitiveRecord> proxy =
                     propertyRecords.getOrLoad( prop, primitive );
             PropertyRecord propRecord = proxy.forReadingLinkage();
             assert propRecord.inUse() : propRecord;
@@ -197,13 +197,13 @@ public class PropertyCreator
     }
 
     public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         return createPropertyChain( owner, properties, propertyRecords, p -> {} );
     }
 
     public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords,
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords,
             Consumer<PropertyRecord> createdPropertyRecords )
     {
         if ( properties == null || !properties.hasNext() )

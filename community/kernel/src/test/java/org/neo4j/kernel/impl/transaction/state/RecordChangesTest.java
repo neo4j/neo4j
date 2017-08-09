@@ -28,17 +28,16 @@ import static org.junit.Assert.assertThat;
 
 public class RecordChangesTest
 {
-
-    private final RecordAccess.Loader<Object, Object, Object> loader = new RecordAccess.Loader<Object, Object, Object>()
+    private final RecordAccess.Loader<Object, Object> loader = new RecordAccess.Loader<Object, Object>()
     {
         @Override
-        public Object newUnused( Object o, Object additionalData )
+        public Object newUnused( long o, Object additionalData )
         {
             return o;
         }
 
         @Override
-        public Object load( Object o, Object additionalData )
+        public Object load( long o, Object additionalData )
         {
             return o;
         }
@@ -60,16 +59,15 @@ public class RecordChangesTest
     public void shouldCountChanges() throws Exception
     {
         // Given
-        RecordChanges<Object, Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
+        RecordChanges<Object, Object> change = new RecordChanges<>( loader, new IntCounter() );
 
         // When
-        change.getOrLoad( "K1", null ).forChangingData();
-        change.getOrLoad( "K1", null ).forChangingData();
-        change.getOrLoad( "K2", null ).forChangingData();
-        change.getOrLoad( "K3", null ).forReadingData();
+        change.getOrLoad( 1, null ).forChangingData();
+        change.getOrLoad( 1, null ).forChangingData();
+        change.getOrLoad( 2, null ).forChangingData();
+        change.getOrLoad( 3, null ).forReadingData();
 
         // Then
-        assertThat(change.changeSize(), equalTo(2));
+        assertThat( change.changeSize(), equalTo( 2 ) );
     }
-
 }

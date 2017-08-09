@@ -34,14 +34,14 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class RecordChangeSet implements RecordAccessSet
 {
-    private final RecordAccess<Long, NodeRecord, Void> nodeRecords;
-    private final RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
-    private final RecordAccess<Long, RelationshipRecord, Void> relRecords;
-    private final RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords;
-    private final RecordAccess<Long, SchemaRecord, SchemaRule> schemaRuleChanges;
-    private final RecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
-    private final RecordAccess<Integer, LabelTokenRecord, Void> labelTokenChanges;
-    private final RecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
+    private final RecordAccess<NodeRecord, Void> nodeRecords;
+    private final RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords;
+    private final RecordAccess<RelationshipRecord, Void> relRecords;
+    private final RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords;
+    private final RecordAccess<SchemaRecord, SchemaRule> schemaRuleChanges;
+    private final RecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
+    private final RecordAccess<LabelTokenRecord, Void> labelTokenChanges;
+    private final RecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
     private final IntCounter changeCounter = new IntCounter();
 
     public RecordChangeSet( Loaders loaders )
@@ -57,14 +57,14 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     public RecordChangeSet(
-            Loader<Long,NodeRecord,Void> nodeLoader,
-            Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader,
-            Loader<Long,RelationshipRecord,Void> relationshipLoader,
-            Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader,
-            Loader<Long,SchemaRecord,SchemaRule> schemaRuleLoader,
-            Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
-            Loader<Integer,LabelTokenRecord,Void> labelTokenLoader,
-            Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
+            Loader<NodeRecord,Void> nodeLoader,
+            Loader<PropertyRecord,PrimitiveRecord> propertyLoader,
+            Loader<RelationshipRecord,Void> relationshipLoader,
+            Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader,
+            Loader<SchemaRecord,SchemaRule> schemaRuleLoader,
+            Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader,
+            Loader<LabelTokenRecord,Void> labelTokenLoader,
+            Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader )
     {
         this.nodeRecords = new RecordChanges<>( nodeLoader, changeCounter );
         this.propertyRecords = new RecordChanges<>( propertyLoader, changeCounter );
@@ -77,49 +77,49 @@ public class RecordChangeSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+    public RecordAccess<NodeRecord, Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<RelationshipRecord, Void> getRelRecords()
     {
         return relRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return relGroupRecords;
     }
 
     @Override
-    public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         return schemaRuleChanges;
     }
 
     @Override
-    public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenChanges;
     }
 
     @Override
-    public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+    public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenChanges;
     }
 
     @Override
-    public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenChanges;
     }

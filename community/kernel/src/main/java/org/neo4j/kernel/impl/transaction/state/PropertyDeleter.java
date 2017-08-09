@@ -36,12 +36,12 @@ public class PropertyDeleter
     }
 
     public void deletePropertyChain( PrimitiveRecord primitive,
-            RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
+            RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         long nextProp = primitive.getNextProp();
         while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
         {
-            RecordProxy<Long, PropertyRecord, PrimitiveRecord> propertyChange =
+            RecordProxy<PropertyRecord, PrimitiveRecord> propertyChange =
                     propertyRecords.getOrLoad( nextProp, primitive );
 
             // TODO forChanging/forReading piggy-backing
@@ -73,8 +73,8 @@ public class PropertyDeleter
      * @param propertyRecords access to records.
      * @return {@code true} if the property was found and removed, otherwise {@code false}.
      */
-    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<Long,P,Void> primitiveProxy,
-            int propertyKey, RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
+    public <P extends PrimitiveRecord> boolean removePropertyIfExists( RecordProxy<P,Void> primitiveProxy,
+            int propertyKey, RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
         long propertyId = // propertyData.getId();
@@ -96,8 +96,8 @@ public class PropertyDeleter
      * @param propertyRecords access to records.
      * @throws IllegalStateException if property key was not found in the property chain.
      */
-    public <P extends PrimitiveRecord> void removeProperty( RecordProxy<Long,P,Void> primitiveProxy, int propertyKey,
-            RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords )
+    public <P extends PrimitiveRecord> void removeProperty( RecordProxy<P,Void> primitiveProxy, int propertyKey,
+            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords )
     {
         PrimitiveRecord primitive = primitiveProxy.forReadingData();
         long propertyId = // propertyData.getId();
@@ -105,11 +105,11 @@ public class PropertyDeleter
         removeProperty( primitiveProxy, propertyKey, propertyRecords, primitive, propertyId );
     }
 
-    private <P extends PrimitiveRecord> void removeProperty( RecordProxy<Long,P,Void> primitiveProxy, int propertyKey,
-            RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords, PrimitiveRecord primitive,
+    private <P extends PrimitiveRecord> void removeProperty( RecordProxy<P,Void> primitiveProxy, int propertyKey,
+            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords, PrimitiveRecord primitive,
             long propertyId )
     {
-        RecordProxy<Long, PropertyRecord, PrimitiveRecord> recordChange =
+        RecordProxy<PropertyRecord, PrimitiveRecord> recordChange =
                 propertyRecords.getOrLoad( propertyId, primitive );
         PropertyRecord propRecord = recordChange.forChangingData();
         if ( !propRecord.inUse() )
@@ -148,8 +148,8 @@ public class PropertyDeleter
     }
 
     private <P extends PrimitiveRecord> void unlinkPropertyRecord( PropertyRecord propRecord,
-            RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords,
-            RecordProxy<Long, P, Void> primitiveRecordChange )
+            RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords,
+            RecordProxy<P, Void> primitiveRecordChange )
     {
         P primitive = primitiveRecordChange.forReadingLinkage();
         assert traverser.assertPropertyChain( primitive, propertyRecords );

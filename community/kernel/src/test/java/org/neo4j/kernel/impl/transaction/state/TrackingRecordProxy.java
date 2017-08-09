@@ -22,14 +22,14 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RelationshipCreatorTest.Tracker;
 
-public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long, RECORD, ADDITIONAL>
+public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
 {
-    private final RecordProxy<Long, RECORD, ADDITIONAL> delegate;
+    private final RecordProxy<RECORD, ADDITIONAL> delegate;
     private final Tracker tracker;
     private final boolean created;
     private boolean changed;
 
-    public TrackingRecordProxy( RecordProxy<Long, RECORD, ADDITIONAL> delegate, boolean created, Tracker tracker )
+    public TrackingRecordProxy( RecordProxy<RECORD, ADDITIONAL> delegate, boolean created, Tracker tracker )
     {
         this.delegate = delegate;
         this.created = created;
@@ -38,7 +38,7 @@ public class TrackingRecordProxy<RECORD, ADDITIONAL> implements RecordProxy<Long
     }
 
     @Override
-    public Long getKey()
+    public long getKey()
     {
         return delegate.getKey();
     }

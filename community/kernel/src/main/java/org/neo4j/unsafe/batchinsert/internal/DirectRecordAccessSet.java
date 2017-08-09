@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.unsafe.batchinsert;
+package org.neo4j.unsafe.batchinsert.internal;
 
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -39,13 +39,13 @@ import org.neo4j.storageengine.api.schema.SchemaRule;
 
 public class DirectRecordAccessSet implements RecordAccessSet
 {
-    private final DirectRecordAccess<Long, NodeRecord, Void> nodeRecords;
-    private final DirectRecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords;
-    private final DirectRecordAccess<Long, RelationshipRecord, Void> relationshipRecords;
-    private final DirectRecordAccess<Long, RelationshipGroupRecord, Integer> relationshipGroupRecords;
-    private final DirectRecordAccess<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
-    private final DirectRecordAccess<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
-    private final DirectRecordAccess<Integer, LabelTokenRecord, Void> labelTokenRecords;
+    private final DirectRecordAccess<NodeRecord, Void> nodeRecords;
+    private final DirectRecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords;
+    private final DirectRecordAccess<RelationshipRecord, Void> relationshipRecords;
+    private final DirectRecordAccess<RelationshipGroupRecord, Integer> relationshipGroupRecords;
+    private final DirectRecordAccess<PropertyKeyTokenRecord, Void> propertyKeyTokenRecords;
+    private final DirectRecordAccess<RelationshipTypeTokenRecord, Void> relationshipTypeTokenRecords;
+    private final DirectRecordAccess<LabelTokenRecord, Void> labelTokenRecords;
     private final DirectRecordAccess[] all;
 
     public DirectRecordAccessSet( NeoStores neoStores )
@@ -89,49 +89,49 @@ public class DirectRecordAccessSet implements RecordAccessSet
     }
 
     @Override
-    public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+    public RecordAccess<NodeRecord, Void> getNodeRecords()
     {
         return nodeRecords;
     }
 
     @Override
-    public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+    public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
     {
         return propertyRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+    public RecordAccess<RelationshipRecord, Void> getRelRecords()
     {
         return relationshipRecords;
     }
 
     @Override
-    public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+    public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
     {
         return relationshipGroupRecords;
     }
 
     @Override
-    public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
+    public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
     {
         throw new UnsupportedOperationException( "Not needed. Implement if needed" );
     }
 
     @Override
-    public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
     {
         return propertyKeyTokenRecords;
     }
 
     @Override
-    public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+    public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
     {
         return labelTokenRecords;
     }
 
     @Override
-    public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
     {
         return relationshipTypeTokenRecords;
     }
