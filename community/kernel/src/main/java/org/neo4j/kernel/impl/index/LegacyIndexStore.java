@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -126,7 +125,7 @@ public class LegacyIndexStore
         return Collections.unmodifiableMap( configToUse );
     }
 
-    private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
+    public static void assertConfigMatches( IndexImplementation indexProvider, String indexName,
                                       Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )

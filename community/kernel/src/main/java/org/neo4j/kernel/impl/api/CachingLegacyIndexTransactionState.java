@@ -94,4 +94,10 @@ public class CachingLegacyIndexTransactionState implements LegacyIndexTransactio
     {
         txState.extractCommands( target );
     }
+
+    @Override
+    public boolean checkIndexExistence( IndexEntityType entityType, String indexName, Map<String,String> config )
+    {
+        return txState.checkIndexExistence( entityType, indexName, config );
+    }
 }

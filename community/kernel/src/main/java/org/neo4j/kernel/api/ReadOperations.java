@@ -291,6 +291,24 @@ public interface ReadOperations
     //== LEGACY INDEX OPERATIONS ================
     //===========================================
 
+    /**
+     * @param indexName name of node index to check for existence.
+     * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
+     * be matched and a mismatch will throw {@link IllegalArgumentException}.
+     * @return whether or not node legacy index with name {@code indexName} exists.
+     * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
+     */
+    boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+
+    /**
+     * @param indexName name of relationship index to check for existence.
+     * @param customConfiguration if {@code null} the configuration of existing won't be matched, otherwise it will
+     * be matched and a mismatch will throw {@link IllegalArgumentException}.
+     * @return whether or not relationship legacy index with name {@code indexName} exists.
+     * @throws IllegalArgumentException on index existence with provided mismatching {@code customConfiguration}.
+     */
+    boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration );
+
     Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
             throws LegacyIndexNotFoundKernelException;
 
