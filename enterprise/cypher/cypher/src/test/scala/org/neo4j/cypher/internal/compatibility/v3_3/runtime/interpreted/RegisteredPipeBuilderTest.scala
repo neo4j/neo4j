@@ -93,7 +93,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     pipe should equal(
       CreateNodeRegisterPipe(
-        SingleRowPipe()(),
+        SingleRowRegisterPipe(PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode, "z")), 1, 0))(),
         "z",
         PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode, "z")), 1, 0),
         Seq(LazyLabel(label)),

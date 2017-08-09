@@ -72,7 +72,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
 
       case SingleRow() =>
-        SingleRowPipe()(id)
+        SingleRowRegisterPipe(pipelineInformation)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
