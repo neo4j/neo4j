@@ -314,11 +314,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   override def nodeIsDense(node: Long): Boolean = statement.readOperations().nodeIsDense(node)
 
-  private def kernelStatement: KernelStatement =
-    txBridge
-      .getKernelTransactionBoundToThisThread(true)
-      .acquireStatement()
-      .asInstanceOf[KernelStatement]
+  private def kernelStatement = statement.asInstanceOf[KernelStatement]
 
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
