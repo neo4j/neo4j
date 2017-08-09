@@ -1183,6 +1183,20 @@ public class OperationsFacade
 
     // <Legacy index>
     @Override
+    public boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        statement.assertOpen();
+        return legacyIndexRead().nodeLegacyIndexExists( statement, indexName, customConfiguration );
+    }
+
+    @Override
+    public boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+    {
+        statement.assertOpen();
+        return legacyIndexRead().relationshipLegacyIndexExists( statement, indexName, customConfiguration );
+    }
+
+    @Override
     public LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
             throws LegacyIndexNotFoundKernelException
     {
