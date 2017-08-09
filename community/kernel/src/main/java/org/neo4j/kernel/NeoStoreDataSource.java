@@ -409,10 +409,9 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
 
         life.add( recoveryCleanupWorkCollector );
 
-        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection =
-                new AllByPrioritySelectionStrategy<>();
-        SchemaIndexProvider defaultIndexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                indexProviderSelection );
+        AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+        SchemaIndexProvider defaultIndexProvider =
+                dependencyResolver.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
 
         // todo do we really need to have this dependency?
         dependencies.satisfyDependency( defaultIndexProvider );

@@ -35,7 +35,8 @@ import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensions;
-import org.neo4j.kernel.extension.dependency.HighestSelectionStrategy;
+import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -121,11 +123,15 @@ public class StoreMigration
             // Add the kernel store migrator
             life.start();
 
-            SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
-                    HighestSelectionStrategy.getInstance() );
+            AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
+            SchemaIndexProvider defaultIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+                    indexProviderSelection );
+            SchemaIndexProviderMap schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( defaultIndexProvider,
+                    indexProviderSelection.lowerPrioritizedCandidates() );
+
             long startTime = System.currentTimeMillis();
             DatabaseMigrator migrator = new DatabaseMigrator( progressMonitor, fs, config, logService,
-                    schemaIndexProvider, legacyIndexProvider.getIndexProviders(),
+                    schemaIndexProviderMap, legacyIndexProvider.getIndexProviders(),
                     pageCache, RecordFormatSelector.selectForConfig( config, userLogProvider ) );
             migrator.migrate( storeDirectory );
             long duration = System.currentTimeMillis() - startTime;
