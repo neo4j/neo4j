@@ -62,6 +62,8 @@ trait QueryContext extends TokenContext {
 
   def createNode(): Node
 
+  def createNodeId(): Long
+
   def createRelationship(start: Node, end: Node, relType: String): Relationship
 
   def createRelationship(start: Long, end: Long, relType: Int): Relationship

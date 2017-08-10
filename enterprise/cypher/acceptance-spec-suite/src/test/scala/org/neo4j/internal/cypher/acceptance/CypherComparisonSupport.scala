@@ -70,7 +70,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
         case m => m
       }
 
-
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
       })
@@ -98,9 +97,19 @@ trait CypherComparisonSupport extends CypherTestSupport {
   protected def testWithUpdate(expectedSuccessFrom: TestConfiguration,
                                query: String,
                                params: (String, Any)*): InternalExecutionResult = {
+    testWithUpdate(expectedSuccessFrom,Configs.Empty,query,params:_*)
+  }
+
+  protected def testWithUpdate(expectedSuccessFrom: TestConfiguration,
+                               ignoreScenarios : TestConfiguration,
+                               query: String,
+                               params: (String, Any)*): InternalExecutionResult = {
+    assertHasNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
+
     val firstScenario = extractFirstScenario(expectedSuccessFrom)
 
-    val positiveResults = (Configs.AbsolutelyAll.scenarios - firstScenario).flatMap {
+    val positiveResults = (runAgainstScenarios.scenarios - firstScenario).flatMap {
       thisScenario =>
         thisScenario.prepare()
 
@@ -134,10 +143,22 @@ trait CypherComparisonSupport extends CypherTestSupport {
     lastResult
   }
 
+  def assertHasNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios : TestConfiguration) = {
+    val hasOverlap = expectedSuccessFrom.scenarios.exists(ignoreScenarios.scenarios.contains(_))
+    if (hasOverlap)
+      fail("Set of configurations that were expected to succeed and the set of configs that should be ignored are overlapping")
+  }
+
   protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*):
+  InternalExecutionResult =
+    succeedWith(expectedSuccessFrom,Configs.Empty,query,params:_*)
+
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration, ignoreScenarios : TestConfiguration, query: String, params: (String, Any)*):
   InternalExecutionResult = {
+    assertHasNoOverlap(expectedSuccessFrom, ignoreScenarios)
+    val runAgainstScenarios = Configs.AbsolutelyAll - ignoreScenarios
     if (expectedSuccessFrom.scenarios.isEmpty) {
-      for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
+      for (thisScenario <- runAgainstScenarios.scenarios) {
         thisScenario.prepare()
         val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
         thisScenario.checkStateForFailure(query)
@@ -150,7 +171,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       val firstResult: InternalExecutionResult = innerExecute(s"CYPHER ${firstScenario.preparserOptions} $query", params.toMap)
       firstScenario.checkStateForSuccess(query)
 
-      for (thisScenario <- Configs.AbsolutelyAll.scenarios if thisScenario != firstScenario) {
+      for (thisScenario <- runAgainstScenarios.scenarios if thisScenario != firstScenario) {
         thisScenario.prepare()
         val tryResult = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap))
 
@@ -218,6 +239,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
     def EnterpriseInterpreted: TestConfiguration = Scenarios.EnterpriseInterpreted
 
     def Cost2_3: TestConfiguration = Scenarios.Compatibility2_3Cost
+
+    def Cost3_1: TestConfiguration = Scenarios.Compatibility3_1Cost
+
+    def Rule2_3: TestConfiguration = Scenarios.Compatibility2_3Rule
+
+    def Rule3_1: TestConfiguration = Scenarios.Compatibility3_1Rule
+
+    def CurrentRulePlanner: TestConfiguration = Scenarios.RulePlannerOnLatestVersion
 
     def Version2_3: TestConfiguration = Scenarios.Compatibility2_3Rule + Cost2_3
 

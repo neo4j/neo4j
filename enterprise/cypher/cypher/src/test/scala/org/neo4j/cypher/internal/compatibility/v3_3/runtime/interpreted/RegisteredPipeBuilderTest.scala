@@ -81,6 +81,51 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     )
   }
 
+  test("eagerize before create node") {
+    // given
+    val label = LabelName("label")(pos)
+    val allNodeScan: AllNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val eager = Eager(allNodeScan)(solved)
+    val createNode = CreateNode(eager, z, Seq(label), None)(solved)
+
+    // when
+    val pipe = build(createNode)
+
+    // then
+    val pipelineInformation = PipelineInformation.empty
+      .newLong("x", false, CTNode)
+      .newLong("z", false, CTNode)
+
+    pipe should equal(
+      CreateNodeRegisterPipe(
+        EagerRegisterPipe(
+          AllNodesScanRegisterPipe("x", pipelineInformation)(),
+          pipelineInformation)(),
+        "z", pipelineInformation, Seq(LazyLabel(label)), None)()
+    )
+  }
+
+  test("create node") {
+    // given
+    val label = LabelName("label")(pos)
+    val singleRow = SingleRow()(solved)
+    val createNode = CreateNode(singleRow, z, Seq(label), None)(solved)
+
+    // when
+    val pipe = build(createNode)
+
+    // then
+    pipe should equal(
+      CreateNodeRegisterPipe(
+        SingleRowPipe()(),
+        "z",
+        PipelineInformation(Map("z" -> LongSlot(0, nullable = false, CTNode, "z")), 1, 0),
+        Seq(LazyLabel(label)),
+        None
+      )()
+    )
+  }
+
   test("single labelscan scan") {
     // given
     val label = LabelName("label")(pos)

@@ -64,6 +64,11 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createNode()
   }
 
+  override def createNodeId() = {
+    nodesCreated.increase()
+    inner.createNodeId()
+  }
+
   override def nodeOps: Operations[Node] =
     new CountingOps[Node](inner.nodeOps, nodesDeleted)
 

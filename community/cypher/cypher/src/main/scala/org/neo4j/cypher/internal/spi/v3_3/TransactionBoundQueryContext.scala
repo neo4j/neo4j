@@ -96,6 +96,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def createNode(): Node =
     transactionalContext.graph.createNode()
 
+  override def createNodeId(): Long =
+    transactionalContext.graph.createNodeId()
+
   override def createRelationship(start: Node, end: Node, relType: String) =
     start.createRelationshipTo(end, withName(relType))
 

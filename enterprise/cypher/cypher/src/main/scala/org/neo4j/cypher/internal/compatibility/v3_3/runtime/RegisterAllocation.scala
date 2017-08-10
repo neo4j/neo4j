@@ -144,6 +144,26 @@ object RegisterAllocation {
         result += (lp -> cartesianProductPipeline)
         cartesianProductPipeline
 
+      case CreateNode(source, IdName(name), labels, properties) =>
+        val pipeline = allocate(source, nullable, argument)
+        pipeline.newLong(name,false,CTNode)
+        result += (lp -> pipeline)
+        pipeline
+
+      case SingleRow() =>
+        val pipeline = argument.getOrElse(PipelineInformation.empty)
+        result += (lp -> pipeline)
+        pipeline
+
+      case EmptyResult(source) =>
+        val pipeline = allocate(source, nullable, argument)
+        result += (lp -> pipeline)
+        pipeline
+
+      case Eager(source) =>
+        val pipeline = allocate(source,nullable,argument)
+        result += (lp -> pipeline)
+        pipeline
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
