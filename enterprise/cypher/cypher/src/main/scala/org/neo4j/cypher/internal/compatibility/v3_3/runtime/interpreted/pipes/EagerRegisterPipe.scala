@@ -22,72 +22,83 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
-import scala.collection.mutable
-
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
 case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val columnCount = pipelineInformation.numberOfLongs
-    val arrayBuilder = new mutable.ArrayBuilder.ofLong
+    val primitiveColumnCount = pipelineInformation.numberOfLongs
+    val primitiveRows: ArrayBuffer[Long] = new ArrayBuffer[Long]()
+    if (primitiveColumnCount > 0) {
+      input.foreach(ctx => primitiveRows ++= ctx.longs())
+    }
 
-    input.foreach( ctx =>
-      // TODO find way to copy from ctx to array in 1 operation, e.g., using arraycopy
-      ctx.longs().foreach(l => arrayBuilder += l)
-    )
-
-    val rows: Array[Long] = arrayBuilder.result()
+    val refColumnCount = pipelineInformation.numberOfReferences
+    val refsBuilder = new ListBuffer[Any]
+    if (refColumnCount > 0) {
+      input.foreach(ctx => refsBuilder.appendAll(ctx.refs()))
+    }
+    val refRows: List[Any] = refsBuilder.result()
 
     new Iterator[ExecutionContext] {
-      var index = 0
-      val arrayLength = rows.length
+      private var primitiveIndex = 0
+      private var refIndex = 0
+      private val primitiveArrayLength = primitiveRows.length
+      private val refArrayLength = refRows.length
 
-      override def hasNext: Boolean = index < arrayLength
+      override def hasNext: Boolean = primitiveIndex < primitiveArrayLength || refIndex < refArrayLength
 
       override def next(): ExecutionContext = {
         val row = new ExecutionContext {
-          override def setLongAt(offset: Int, value: Long): Unit = ???
+          private val globalRefOffset = refIndex
+          private val globalPrimitiveOffset = primitiveIndex
 
-          override def setRefAt(offset: Int, value: Any): Unit = ???
+          override def setLongAt(offset: Int, value: Long): Unit = fail()
 
-          override def longs(): Array[Long] = ???
+          override def setRefAt(offset: Int, value: Any): Unit = fail()
 
-          override def getRefAt(offset: Int): Any = ???
+          override def longs(): Array[Long] = fail()
 
-          override def copyFrom(input: ExecutionContext): Unit = ???
+          override def refs(): Array[Any] = fail()
 
-          override def getLongAt(offset: Int): Long = rows(offset + index)
+          override def getRefAt(offset: Int): Any = refRows(offset + globalRefOffset)
 
-          override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = ???
+          override def copyFrom(input: ExecutionContext): Unit = fail()
 
-          override def createClone(): ExecutionContext = ???
+          override def getLongAt(offset: Int): Long = primitiveRows(offset + globalPrimitiveOffset)
 
-          override def newWith1(key1: String, value1: Any): ExecutionContext = ???
+          override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = fail()
 
-          override def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext = ???
+          override def createClone(): ExecutionContext = fail()
 
-          override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext = ???
+          override def newWith1(key1: String, value1: Any): ExecutionContext = fail()
 
-          override def mergeWith(other: ExecutionContext): ExecutionContext = ???
+          override def newWith2(key1: String, value1: Any, key2: String, value2: Any): ExecutionContext = fail()
 
-          override def +=(kv: (String, Any)): this.type = ???
+          override def newWith3(key1: String, value1: Any, key2: String, value2: Any, key3: String, value3: Any): ExecutionContext = fail()
 
-          override def -=(key: String): this.type = ???
+          override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
 
-          override def iterator: Iterator[(String, Any)] = ???
+          override def +=(kv: (String, Any)): this.type = fail()
 
-          override def get(key: String): Option[Any] = ???
+          override def -=(key: String): this.type = fail()
+
+          override def iterator: Iterator[(String, Any)] = fail()
+
+          override def get(key: String): Option[Any] = fail()
+
+          private def fail(): Nothing =
+            throw new InternalException(s"Not supported in anonymous ${classOf[EagerRegisterPipe]} execution context")
         }
-        index += columnCount
+        primitiveIndex += primitiveColumnCount
+        refIndex += refColumnCount
 
         row
       }
     }
-
-   //     System.arraycopy(currentRow.rows, 0, currentBucket.rows, currentIndex * columnCount, columnCount)
-
   }
 
 }
