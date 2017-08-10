@@ -80,7 +80,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(createdNumber)("(:Bar{prop: 1})").mkString(", ")
 
-    val result = testWithUpdate(Configs.All - Configs.Compiled - Configs.Cost2_3, query)
+    val result = testWithUpdate(Configs.Interpreted - Configs.Cost2_3, query)
 
     assertStats(result, nodesCreated = createdNumber, labelsAdded = createdNumber, propertiesWritten = createdNumber)
 
