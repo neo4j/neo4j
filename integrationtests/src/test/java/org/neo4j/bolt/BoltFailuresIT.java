@@ -19,12 +19,12 @@
  */
 package org.neo4j.bolt;
 
+import java.time.Clock;
+import java.util.function.Consumer;
+
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
-import java.time.Clock;
-import java.util.function.Consumer;
 
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.runtime.MonitoredWorkerFactory.SessionMonitor;
@@ -52,6 +52,7 @@ import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.boltConnector;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
@@ -87,15 +88,11 @@ public class BoltFailuresIT
         BoltKernelExtension extension = new BoltKernelExtensionWithWorkerFactory( workerFactory );
 
         db = startDbWithBolt( new GraphDatabaseFactoryWithCustomBoltKernelExtension( extension ) );
-        driver = createDriver();
-        // creating a session does not force driver to open a new connection, it opens connections
-        // lazily either when transaction is started or when query is executed via #run()
-        session = driver.session();
 
         try
         {
-            // attempt to begin a transaction to make driver create new socket connection
-            session.beginTransaction();
+            // attempt to create a driver when server is unavailable
+            driver = createDriver();
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -112,15 +109,10 @@ public class BoltFailuresIT
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
         db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
-        driver = createDriver();
-        // creating a session does not force driver to open a new connection, it opens connections
-        // lazily either when transaction is started or when query is executed via #run()
-        session = driver.session();
-
         try
         {
-            // attempt to begin a transaction to make driver create new socket connection
-            session.beginTransaction();
+            // attempt to create a driver when server is unavailable
+            driver = createDriver();
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -173,14 +165,17 @@ public class BoltFailuresIT
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
         db = startTestDb( monitors );
-        driver = createDriver();
 
-        try ( Session session = driver.session();
-              Transaction tx = session.beginTransaction() )
+        try
         {
+            driver = GraphDatabase.driver( "bolt://localhost", Config.build().withoutEncryption().toConfig() );
             if ( shouldBeAbleToBeginTransaction )
             {
-                tx.run( "CREATE ()" ).consume();
+                try ( Session session = driver.session();
+                      Transaction tx = session.beginTransaction() )
+                {
+                    tx.run( "CREATE ()" ).consume();
+                }
             }
             else
             {
@@ -238,8 +233,7 @@ public class BoltFailuresIT
 
     private static Driver createDriver()
     {
-        return GraphDatabase.driver( "bolt://localhost" ,
-                Config.build().withEncryptionLevel( Config.EncryptionLevel.NONE ).toConfig());
+        return GraphDatabase.driver( "bolt://localhost", Config.build().withoutEncryption().toConfig() );
     }
 
     private static Monitors newMonitorsSpy( ThrowingSessionMonitor sessionMonitor )
