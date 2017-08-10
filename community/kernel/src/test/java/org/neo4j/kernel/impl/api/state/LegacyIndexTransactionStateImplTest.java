@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -39,6 +40,11 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -46,6 +52,11 @@ import static org.mockito.Mockito.when;
 
 public class LegacyIndexTransactionStateImplTest
 {
+    private final Map<String,String> config = singletonMap( IndexManager.PROVIDER, "test" );
+    private final IndexImplementation provider = mock( IndexImplementation.class );
+    private Function<String,IndexImplementation> providerLookup;
+    private IndexConfigStore indexConfigStore;
+
     @Test
     public void tracksNodeCommands()
     {
@@ -194,6 +205,77 @@ public class LegacyIndexTransactionStateImplTest
         assertEquals( expectedCommands, extractCommands( state ) );
     }
 
+    @Test
+    public void shouldReportIndexExists() throws Exception
+    {
+        // given
+        LegacyIndexTransactionStateImpl state = newLegacyIndexTxState();
+
+        // when
+        boolean nodeExists = state.checkIndexExistence( IndexEntityType.Node, "name", null );
+        boolean relExists = state.checkIndexExistence( IndexEntityType.Relationship, "name", null );
+
+        // then
+        assertTrue( nodeExists );
+        assertTrue( relExists );
+    }
+
+    @Test
+    public void shouldReportIndexExistsWithMatchingConfiguration() throws Exception
+    {
+        // given
+        LegacyIndexTransactionStateImpl state = newLegacyIndexTxState();
+        when( provider.configMatches( anyMap(), anyMap() ) ).thenReturn( true );
+
+        // when
+        boolean nodeExists = state.checkIndexExistence( IndexEntityType.Node, "name", config );
+        boolean relExists = state.checkIndexExistence( IndexEntityType.Node, "name", config );
+
+        // then
+        assertTrue( nodeExists );
+        assertTrue( relExists );
+    }
+
+    @Test
+    public void shouldThrowOnIndexExistsWithMismatchingConfiguration() throws Exception
+    {
+        // given
+        LegacyIndexTransactionStateImpl state = newLegacyIndexTxState();
+        when( provider.configMatches( anyMap(), anyMap() ) ).thenReturn( false );
+
+        // when
+        try
+        {
+            state.checkIndexExistence( IndexEntityType.Node, "name", config );
+            fail( "Should've failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // then good
+        }
+        try
+        {
+            state.checkIndexExistence( IndexEntityType.Node, "name", config );
+            fail( "Should have failed" );
+        }
+        catch ( IllegalArgumentException e )
+        {   // then good
+        }
+    }
+
+    @Test
+    public void shouldReportIndexDoesNotExist() throws Exception
+    {
+        // given
+        LegacyIndexTransactionStateImpl state = newLegacyIndexTxState();
+        when( indexConfigStore.get( any( Class.class ), anyString() ) ).thenReturn( null );
+
+        // when
+        boolean exists = state.checkIndexExistence( IndexEntityType.Relationship, "name", null );
+
+        // then
+        assertFalse( exists );
+    }
+
     private static Set<StorageCommand> extractCommands( LegacyIndexTransactionStateImpl state )
     {
         Set<StorageCommand> commands = new HashSet<>();
@@ -229,15 +311,13 @@ public class LegacyIndexTransactionStateImplTest
         return command;
     }
 
-    private static LegacyIndexTransactionStateImpl newLegacyIndexTxState()
+    private LegacyIndexTransactionStateImpl newLegacyIndexTxState()
     {
-        IndexConfigStore indexConfigStore = mock( IndexConfigStore.class );
-        when( indexConfigStore.get( eq( Node.class ), anyString() ) )
-                .thenReturn( singletonMap( IndexManager.PROVIDER, "test" ) );
-        when( indexConfigStore.get( eq( Relationship.class ), anyString() ) )
-                .thenReturn( singletonMap( IndexManager.PROVIDER, "test" ) );
+        indexConfigStore = mock( IndexConfigStore.class );
+        when( indexConfigStore.get( eq( Node.class ), anyString() ) ).thenReturn( config );
+        when( indexConfigStore.get( eq( Relationship.class ), anyString() ) ).thenReturn( config );
 
-        Function<String,IndexImplementation> providerLookup = s -> mock( IndexImplementation.class );
+        providerLookup = s -> provider;
 
         return new LegacyIndexTransactionStateImpl( indexConfigStore, providerLookup );
     }

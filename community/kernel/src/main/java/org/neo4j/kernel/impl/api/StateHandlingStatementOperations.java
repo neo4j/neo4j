@@ -1431,7 +1431,6 @@ public class StateHandlingStatementOperations implements
         return storeLayer.relationshipTypeCount();
     }
 
-    // <Legacy index>
     @Override
     public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement,
             long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION
@@ -1444,6 +1443,19 @@ public class StateHandlingStatementOperations implements
             }
         }
         storeLayer.relationshipVisit( relId, visitor );
+    }
+
+    // <Legacy index>
+    @Override
+    public boolean nodeLegacyIndexExists( KernelStatement statement, String indexName, Map<String,String> customConfiguration )
+    {
+        return statement.legacyIndexTxState().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration );
+    }
+
+    @Override
+    public boolean relationshipLegacyIndexExists( KernelStatement statement, String indexName, Map<String,String> customConfiguration )
+    {
+        return statement.legacyIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration );
     }
 
     @Override

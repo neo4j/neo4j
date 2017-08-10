@@ -46,10 +46,13 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            // There's a sub-o-meta thing here where we create index config,
-            // and the index will itself share the same IndexConfigStore as us and pick up and use
-            // that. We should pass along config somehow with calls.
-            statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
+            if ( !statement.readOperations().nodeLegacyIndexExists( indexName, customConfiguration ) )
+            {
+                // There's a sub-o-meta thing here where we create index config,
+                // and the index will itself share the same IndexConfigStore as us and pick up and use
+                // that. We should pass along config somehow with calls.
+                statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
+            }
             return new LegacyIndexProxy<>( indexName, LegacyIndexProxy.Type.NODE, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )
@@ -64,10 +67,13 @@ public class IndexProviderImpl implements IndexProvider
     {
         try ( Statement statement = transactionBridge.get() )
         {
-            // There's a sub-o-meta thing here where we create index config,
-            // and the index will itself share the same IndexConfigStore as us and pick up and use
-            // that. We should pass along config somehow with calls.
-            statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
+            if ( !statement.readOperations().relationshipLegacyIndexExists( indexName, customConfiguration ) )
+            {
+                // There's a sub-o-meta thing here where we create index config,
+                // and the index will itself share the same IndexConfigStore as us and pick up and use
+                // that. We should pass along config somehow with calls.
+                statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
+            }
             return new RelationshipLegacyIndexProxy( indexName, gds, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )

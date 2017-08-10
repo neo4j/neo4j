@@ -47,6 +47,8 @@ import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
 import org.neo4j.kernel.spi.legacyindex.LegacyIndexProviderTransaction;
 import org.neo4j.storageengine.api.StorageCommand;
 
+import static org.neo4j.kernel.impl.index.LegacyIndexStore.assertConfigMatches;
+
 /**
  * Provides access to {@link LegacyIndex indexes}. Holds transaction state for all providers in a transaction.
  * A equivalent to TransactionRecordState, but for legacy indexes.
@@ -240,5 +242,20 @@ public class LegacyIndexTransactionStateImpl implements LegacyIndexTransactionSt
     public boolean hasChanges()
     {
         return defineCommand != null;
+    }
+
+    @Override
+    public boolean checkIndexExistence( IndexEntityType entityType, String indexName, Map<String,String> config )
+    {
+        Map<String, String> configuration = indexConfigStore.get( entityType.entityClass(), indexName );
+        if ( configuration == null )
+        {
+            return false;
+        }
+
+        String providerName = configuration.get( IndexManager.PROVIDER );
+        IndexImplementation provider = providerLookup.apply( providerName );
+        assertConfigMatches( provider, indexName, configuration, config );
+        return true;
     }
 }

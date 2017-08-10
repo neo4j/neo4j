@@ -772,6 +772,18 @@ public class QueryExecutionLocks
         }
 
         @Override
+        public boolean nodeLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+        {
+            return readOperations.nodeLegacyIndexExists( indexName, customConfiguration );
+        }
+
+        @Override
+        public boolean relationshipLegacyIndexExists( String indexName, Map<String,String> customConfiguration )
+        {
+            return readOperations.relationshipLegacyIndexExists( indexName, customConfiguration );
+        }
+
+        @Override
         public Map<String,String> nodeLegacyIndexGetConfiguration( String indexName )
                 throws LegacyIndexNotFoundKernelException
         {
@@ -924,10 +936,10 @@ public class QueryExecutionLocks
 
     private static class LockOperationRecord
     {
-        private boolean exclusive;
-        private boolean acquisition;
-        private ResourceType resourceType;
-        private long[] ids;
+        private final boolean exclusive;
+        private final boolean acquisition;
+        private final ResourceType resourceType;
+        private final long[] ids;
 
         LockOperationRecord( boolean exclusive, boolean acquisition, ResourceType resourceType, long[] ids )
         {
