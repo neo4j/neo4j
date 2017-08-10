@@ -31,6 +31,7 @@ import java.util.Map;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -43,7 +44,7 @@ public class IndexAccessors implements Closeable
     private final List<IndexRule> onlineIndexRules = new ArrayList<>();
     private final List<IndexRule> notOnlineIndexRules = new ArrayList<>();
 
-    public IndexAccessors( SchemaIndexProvider provider,
+    public IndexAccessors( SchemaIndexProviderMap providers,
                            RecordStore<DynamicRecord> schemaStore,
                            IndexSamplingConfig samplingConfig ) throws IOException
     {
@@ -58,7 +59,8 @@ public class IndexAccessors implements Closeable
                     // - populating indexes will be rebuilt on next startup
                     // - failed indexes have to be dropped by the user anyways
                     IndexRule indexRule = rules.next();
-                    if ( InternalIndexState.ONLINE == provider.getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() ) )
+                    if ( InternalIndexState.ONLINE == provider( providers, indexRule )
+                            .getInitialState( indexRule.getId(), indexRule.getIndexDescriptor() ) )
                     {
                         onlineIndexRules.add( indexRule );
                     }
@@ -81,8 +83,14 @@ public class IndexAccessors implements Closeable
         for ( IndexRule indexRule : onlineIndexRules )
         {
             long indexId = indexRule.getId();
-            accessors.put( indexId, provider.getOnlineAccessor( indexId, indexRule.getIndexDescriptor(), samplingConfig ) );
+            accessors.put( indexId, provider( providers, indexRule )
+                    .getOnlineAccessor( indexId, indexRule.getIndexDescriptor(), samplingConfig ) );
         }
+    }
+
+    private SchemaIndexProvider provider( SchemaIndexProviderMap providers, IndexRule indexRule )
+    {
+        return providers.apply( indexRule.getProviderDescriptor() );
     }
 
     public Collection<IndexRule> notOnlineRules()
