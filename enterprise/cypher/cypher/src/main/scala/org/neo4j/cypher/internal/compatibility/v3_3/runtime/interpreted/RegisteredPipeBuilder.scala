@@ -42,7 +42,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
                             pipelines: Map[LogicalPlan, PipelineInformation],
-                            readOnly : Boolean,
+                            readOnly: Boolean,
                             rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
@@ -60,10 +60,10 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case p@NodeIndexScan(IdName(column), label, propertyKeys, _ /*TODO*/) =>
         NodeIndexScanRegisterPipe(column, label, propertyKeys, pipelineInformation)(id)
 
-      case NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _) =>
+      case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
       case Argument(_) =>
         ArgumentRegisterPipe(pipelineInformation)(id)
@@ -138,9 +138,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         EmptyResultPipe(source)(id = id)
 
       case _ => fallback.build(plan, source)
-      
-        // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
-      case _: Selection =>  // selection relies on inner expressions to interact with variables
+      // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
+      case _: Selection => // selection relies on inner expressions to interact with variables
         fallback.build(plan, source)
 
       case _: OptionalExpand =>
@@ -189,7 +188,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val id = idMap.getOrElse(plan, new Id)
 
     plan match {
-      case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
+      case Apply(_, _) => ApplyRegisterPipe(lhs, rhs)(id)
       case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
