@@ -21,7 +21,9 @@ package org.neo4j.graphdb.config;
 
 /**
  * Provide the basic operation that one could perform on a set of configurations.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public interface Configuration
 {
     /**

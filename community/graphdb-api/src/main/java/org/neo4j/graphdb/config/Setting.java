@@ -33,12 +33,14 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 /**
  * Settings that can be provided in configurations are represented by instances of this interface, and are available
  * as static fields in various *Settings classes.
- *
+ * <p>
  * This interface is available only for use, not for implementing. Implementing this interface is not expected, and
  * backwards compatibility is not guaranteed for implementors.
  *
  * @param <T> type of value this setting will parse input string into and return.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public interface Setting<T> extends Function<Function<String,String>,T>, SettingValidator, SettingGroup<T>
 {
     /**
@@ -106,13 +108,8 @@ public interface Setting<T> extends Function<Function<String,String>,T>, Setting
      *
      * @return the parser function
      */
-    default Optional<Function<String, T>> getParser()
+    default Optional<Function<String,T>> getParser()
     {
         return Optional.empty();
-    }
-
-    default boolean isReloadable()
-    {
-        return false;
     }
 }

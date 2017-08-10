@@ -41,9 +41,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
@@ -344,15 +342,6 @@ public class SettingsTest
 
         // When && then
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
-    }
-
-    @Test
-    public void settingsShouldNotBeReloadableByDefault() throws Exception
-    {
-        Setting<String> notReloadable = setting( "mySetting", STRING, "d" ).build();
-        assertFalse( notReloadable.isReloadable() );
-        Setting<String> reloadable = setting( "mySetting", STRING, "d" ).isReloadable().build();
-        assertTrue( reloadable.isReloadable() );
     }
 
     @Test

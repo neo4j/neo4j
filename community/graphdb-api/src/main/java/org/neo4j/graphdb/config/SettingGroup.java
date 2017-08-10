@@ -26,55 +26,60 @@ import java.util.Optional;
 /**
  * This interface represents a setting group. One example can be group defined by a common prefix, such as
  * `dbms.connector.*`. The important aspect is that config keys can only be known after a config has been parsed.
+ *
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public interface SettingGroup<T> extends SettingValidator
 {
     /**
      * Apply this setting group to the config and return all of its configured keys and their corresponding values.
      *
-     * @param validConfig which can be examined
-     * @return the map of this group's configured keys and values
+     * @param validConfig which can be examined.
+     * @return the map of this group's configured keys and values.
      */
     Map<String,T> values( Map<String,String> validConfig );
 
     /**
-     * @return a list of the settings this group contains
+     * @return a list of the settings this group contains.
      */
     List<Setting<T>> settings( Map<String,String> params );
 
     /**
-     *
-     * @return true if this setting is deprecated, false otherwise
+     * @return {@code true} if this setting is deprecated, false otherwise.
      */
     boolean deprecated();
 
     /**
-     *
-     * @return the key of the setting which replaces this when its deprecated, empty if not depricated
+     * @return the key of the setting which replaces this when its deprecated, empty if not deprecated.
      */
     Optional<String> replacement();
 
     /**
-     *
-     * @return true if internal setting, false otherwise
+     * @return {@code true} if internal setting, false otherwise.
      */
     boolean internal();
 
     /**
-     *
-     * @return the documented default value if it needs special documentation, empty if default value is good as is
+     * @return the documented default value if it needs special documentation, empty if default value is good as is.
      */
     Optional<String> documentedDefaultValue();
 
     /**
-     *
      * @return description of which values are good
      */
     String valueDescription();
 
     /**
-     *
-     * @return description of setting, empty in case no description exists
+     * @return description of setting, empty in case no description exists.
      */
     Optional<String> description();
+
+    /**
+     * @return {@code true} if the setting can be changed at runtime.
+     */
+    default boolean dynamic()
+    {
+        return false;
+    }
 }

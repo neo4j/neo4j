@@ -120,7 +120,6 @@ public class Settings
         private final String defaultValue;
         private Setting<T> inheritedSetting;
         private List<BiFunction<T, Function<String,String>,T>> valueConstraints;
-        private boolean isReloadable;
 
         private SettingBuilder( @Nonnull final String name, @Nonnull final Function<String,T> parser, @Nullable final String defaultValue )
         {
@@ -167,19 +166,6 @@ public class Settings
             return this;
         }
 
-        /**
-         * Marks the setting as reloadable.
-         *
-         * @apiNote If called, consumer of this setting should be able to handle this. We should probably find a way to
-         * enforce this other than by documentation.
-         */
-        @Nonnull
-        public SettingBuilder<T> isReloadable()
-        {
-            isReloadable = true;
-            return this;
-        }
-
         @Nonnull
         public Setting<T> build()
         {
@@ -191,7 +177,7 @@ public class Settings
                 defaultLookup = inheritedDefault( defaultLookup, inheritedSetting );
             }
 
-            return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, isReloadable, valueConstraints );
+            return new DefaultSetting<>( name, parser, valueLookup, defaultLookup, valueConstraints );
         }
     }
 
@@ -1158,6 +1144,12 @@ public class Settings
             }
 
             @Override
+            public boolean dynamic()
+            {
+                return newSetting.dynamic();
+            }
+
+            @Override
             public boolean deprecated()
             {
                 return newSetting.deprecated();
@@ -1194,20 +1186,17 @@ public class Settings
         private final Function<String, T> parser;
         private final BiFunction<String,Function<String,String>,String> valueLookup;
         private final BiFunction<String,Function<String,String>,String> defaultLookup;
-        private final boolean isReloadable;
         private final List<BiFunction<T,Function<String,String>,T>> valueConverters;
 
         protected DefaultSetting( String name, Function<String,T> parser,
                 BiFunction<String,Function<String,String>,String> valueLookup,
                 BiFunction<String,Function<String,String>,String> defaultLookup,
-                boolean isReloadable,
                 List<BiFunction<T,Function<String,String>,T>> valueConverters )
         {
             this.name = name;
             this.parser = parser;
             this.valueLookup = valueLookup;
             this.defaultLookup = defaultLookup;
-            this.isReloadable = isReloadable;
             this.valueConverters = valueConverters;
         }
 
@@ -1245,12 +1234,6 @@ public class Settings
         public String defaultLookup( Function<String, String> settings )
         {
             return defaultLookup.apply( name(), settings );
-        }
-
-        @Override
-        public boolean isReloadable()
-        {
-            return isReloadable;
         }
 
         @Override

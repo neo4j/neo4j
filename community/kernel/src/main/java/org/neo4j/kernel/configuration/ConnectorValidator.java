@@ -246,4 +246,10 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     {
         return Optional.empty();
     }
+
+    @Override
+    public boolean dynamic()
+    {
+        return false;
+    }
 }

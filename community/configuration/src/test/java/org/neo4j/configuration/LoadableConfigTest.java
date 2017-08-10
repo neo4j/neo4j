@@ -29,48 +29,66 @@ import java.util.function.Function;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.graphdb.config.SettingGroup;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LoadableConfigTest
 {
     @Test
     public void getConfigOptions() throws Exception
     {
-        Map<String,String> config = MapUtil.stringMap( "myInt", "123", "myString", "bah", "myOldString", "moo" );
+        Map<String,String> config = stringMap(
+                TestConfig.integer.name(), "123",
+                TestConfig.string.name(), "bah",
+                TestConfig.oldString.name(), "moo",
+                TestConfig.dynamic.name(), "foo" );
 
         TestConfig testSettings = new TestConfig();
 
         List<ConfigOptions> options = testSettings.getConfigOptions();
 
-        assertEquals( 3, options.size() );
+        assertEquals( 4, options.size() );
 
-        assertEquals( 1, options.get( 0 ).settingGroup().values( emptyMap() ).get( "myInt" ) );
-        assertEquals( 123, options.get( 0 ).settingGroup().values( config ).get( "myInt" ) );
-        assertEquals( Optional.empty(), options.get( 0 ).settingGroup().description() );
-        assertFalse( options.get(0).settingGroup().deprecated() );
-        assertEquals( Optional.empty(), options.get( 0 ).settingGroup().replacement() );
+        SettingGroup<?> integerSetting = options.get( 0 ).settingGroup();
+        assertEquals( 1, integerSetting.values( emptyMap() ).get( TestConfig.integer.name() ) );
+        assertEquals( 123, integerSetting.values( config ).get( TestConfig.integer.name() ) );
+        assertEquals( Optional.empty(), integerSetting.description() );
+        assertFalse( integerSetting.deprecated() );
+        assertFalse( integerSetting.dynamic() );
+        assertEquals( Optional.empty(), integerSetting.replacement() );
 
-        assertEquals( "bob", options.get( 1 ).settingGroup().values( emptyMap() ).get( "myString" ) );
-        assertEquals( "bah", options.get( 1 ).settingGroup().values( config ).get( "myString" ) );
-        assertEquals( "A string setting", options.get( 1 ).settingGroup().description().get() );
-        assertFalse( options.get(1).settingGroup().deprecated() );
-        assertEquals( Optional.empty(), options.get( 1 ).settingGroup().replacement() );
+        SettingGroup<?> stringSetting = options.get( 1 ).settingGroup();
+        assertEquals( "bob", stringSetting.values( emptyMap() ).get( TestConfig.string.name() ) );
+        assertEquals( "bah", stringSetting.values( config ).get( TestConfig.string.name() ) );
+        assertEquals( "A string setting", stringSetting.description().get() );
+        assertFalse( stringSetting.deprecated() );
+        assertFalse( stringSetting.dynamic() );
+        assertEquals( Optional.empty(), stringSetting.replacement() );
 
-        assertEquals( "tim", options.get( 2 ).settingGroup().values( emptyMap() ).get( "myOldString" ) );
-        assertEquals( "moo", options.get( 2 ).settingGroup().values( config ).get( "myOldString" ) );
-        assertEquals( "A deprecated string setting", options.get( 2 ).settingGroup().description().get() );
-        assertTrue( options.get(2).settingGroup().deprecated() );
-        assertEquals( "myString", options.get( 2 ).settingGroup().replacement().get() );
+        SettingGroup<?> oldStringSetting = options.get( 2 ).settingGroup();
+        assertEquals( "tim", oldStringSetting.values( emptyMap() ).get( TestConfig.oldString.name() ) );
+        assertEquals( "moo", oldStringSetting.values( config ).get( TestConfig.oldString.name() ) );
+        assertEquals( "A deprecated string setting", oldStringSetting.description().get() );
+        assertTrue( oldStringSetting.deprecated() );
+        assertFalse( oldStringSetting.dynamic() );
+        assertEquals( TestConfig.string.name(), oldStringSetting.replacement().get() );
+
+        SettingGroup<?> dynamicSetting = options.get( 3 ).settingGroup();
+        assertEquals( "defaultDynamic", dynamicSetting.values( emptyMap() ).get( TestConfig.dynamic.name() ) );
+        assertEquals( "foo", dynamicSetting.values( config ).get( TestConfig.dynamic.name() ) );
+        assertEquals( "A dynamic string setting", dynamicSetting.description().get() );
+        assertFalse( dynamicSetting.deprecated() );
+        assertTrue( dynamicSetting.dynamic() );
+        assertEquals( Optional.empty(), dynamicSetting.replacement() );
     }
 
     private static class TestConfig implements LoadableConfig
     {
-        @SuppressWarnings( "unused" )
         public static final Setting<Integer> integer = new BaseSetting<Integer>()
         {
             @Override
@@ -116,7 +134,6 @@ public class LoadableConfigTest
 
         };
 
-        @SuppressWarnings( "unused" )
         @Description( "A string setting" )
         public static final Setting<String> string = new StringSetting()
         {
@@ -156,7 +173,6 @@ public class LoadableConfigTest
             }
         };
 
-        @SuppressWarnings( "unused" )
         @Description( "A deprecated string setting" )
         @Deprecated
         @ReplacedBy( "myString" )
@@ -232,16 +248,50 @@ public class LoadableConfigTest
                 return configuration.get( this );
             }
         };
+
+        @Description( "A dynamic string setting" )
+        @Dynamic
+        public static final Setting<String> dynamic = new StringSetting()
+        {
+            @Override
+            public String apply( Function<String,String> provider )
+            {
+                String val = provider.apply( name() );
+                if ( val == null )
+                {
+                    val = getDefaultValue();
+                }
+                return val;
+            }
+
+            @Override
+            public String name()
+            {
+                return "myDynamicProperty";
+            }
+
+            @Override
+            public void withScope( Function<String,String> scopingRule )
+            {
+
+            }
+
+            @Override
+            public String getDefaultValue()
+            {
+                return "defaultDynamic";
+            }
+
+            @Override
+            public String from( Configuration configuration )
+            {
+                return configuration.get( this );
+            }
+        };
     }
 
     private abstract static class StringSetting extends BaseSetting<String>
     {
-        @Override
-        public boolean isReloadable()
-        {
-            return false;
-        }
-
         @Override
         public String valueDescription()
         {

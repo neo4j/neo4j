@@ -17,29 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.config;
+package org.neo4j.configuration;
 
-import java.util.function.Function;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
- * @deprecated The settings API will be completely rewritten in 4.0
+ * Dynamic properties can be changed at runtime.
  */
-@Deprecated
-public abstract class ScopeAwareSetting<T> extends BaseSetting<T>
+@Retention( RetentionPolicy.RUNTIME )
+@Target( {ElementType.TYPE, ElementType.FIELD} )
+public @interface Dynamic
 {
-    private Function<String,String> scopingRule = Function.identity();
-
-    @Override
-    public final String name()
-    {
-        return scopingRule.apply( provideName() );
-    }
-
-    protected abstract String provideName();
-
-    @Override
-    public void withScope( Function<String,String> scopingRule )
-    {
-        this.scopingRule = scopingRule;
-    }
 }

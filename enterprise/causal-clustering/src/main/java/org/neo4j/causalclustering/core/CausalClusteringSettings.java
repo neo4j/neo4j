@@ -371,7 +371,7 @@ public class CausalClusteringSettings implements LoadableConfig
         BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
                 valueLookup );
 
-        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, false, Collections.emptyList() )
+        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
         {
             @Override
             public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )

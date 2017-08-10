@@ -24,6 +24,7 @@ import java.time.Duration;
 import java.util.List;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Dynamic;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
@@ -250,8 +251,9 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE ).build();
 
     @Description( "The maximum time interval of a transaction within which it should be completed." )
+    @Dynamic
     public static final Setting<Duration> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String
-            .valueOf( UNSPECIFIED_TIMEOUT ) ).isReloadable().build();
+            .valueOf( UNSPECIFIED_TIMEOUT ) ).build();
 
     @Description( "The maximum time interval within which lock should be acquired." )
     public static final Setting<Duration> lock_acquisition_timeout = setting( "dbms.lock.acquisition.timeout", DURATION,
@@ -498,8 +500,9 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Log entries are by default written to the file _query.log_ located in the Logs directory. " +
             "For location of the Logs directory, see <<file-locations>>. " +
             "This feature is available in the Neo4j Enterprise Edition." )
+    @Dynamic
     public static final Setting<Boolean> log_queries =
-            setting( "dbms.logs.query.enabled", BOOLEAN, FALSE ).isReloadable().build();
+            setting( "dbms.logs.query.enabled", BOOLEAN, FALSE ).build();
 
     @Description( "Path of the logs directory." )
     public static final Setting<File> logs_directory = pathSetting( "dbms.directories.logs", "logs" );
@@ -534,8 +537,9 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "If the execution of query takes more time than this threshold, the query is logged - " +
                  "provided query logging is enabled. Defaults to 0 seconds, that is all queries are logged." )
+    @Dynamic
     public static final Setting<Duration> log_queries_threshold =
-            setting( "dbms.logs.query.threshold", DURATION, "0s" ).isReloadable().build();
+            setting( "dbms.logs.query.threshold", DURATION, "0s" ).build();
 
     @Description( "The file size in bytes at which the query log will auto-rotate. If set to zero then no rotation " +
             "will occur. Accepts a binary suffix `k`, `m` or `g`." )
