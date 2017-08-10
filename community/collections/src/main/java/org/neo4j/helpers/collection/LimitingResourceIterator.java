@@ -21,6 +21,8 @@ package org.neo4j.helpers.collection;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.ResourceIterator;
+
 /**
  * Limits the amount of items returned by an {@link Iterator}.
  *
@@ -28,10 +30,10 @@ import java.util.Iterator;
  *
  * @param <T> the type of items in this {@link Iterator}.
  */
-public class LimitingIterator<T> extends PrefetchingIterator<T>
+public class LimitingResourceIterator<T> extends PrefetchingResourceIterator<T>
 {
     private int returned;
-    private final Iterator<T> source;
+    private final ResourceIterator<T> source;
     private final int limit;
 
     /**
@@ -42,7 +44,7 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
      * @param source the source of items.
      * @param limit the limit, i.e. the max number of items to return.
      */
-    public LimitingIterator( Iterator<T> source, int limit )
+    public LimitingResourceIterator( ResourceIterator<T> source, int limit )
     {
         this.source = source;
         this.limit = limit;
@@ -72,5 +74,11 @@ public class LimitingIterator<T> extends PrefetchingIterator<T>
     public boolean limitReached()
     {
         return returned == limit;
+    }
+
+    @Override
+    public void close()
+    {
+        source.close();
     }
 }

@@ -62,7 +62,14 @@ public class StatementLifecycleTest
         statement.acquire();
 
         // when
-        statement.forceClose();
+        try
+        {
+            statement.forceClose();
+        }
+        catch ( KernelStatement.StatementNotClosedException ignored )
+        {
+            //ignored
+        }
 
         // then
         verify( storageStatement ).release();

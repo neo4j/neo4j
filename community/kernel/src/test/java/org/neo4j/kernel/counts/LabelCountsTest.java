@@ -44,6 +44,15 @@ public class LabelCountsTest
     @Rule
     public final DatabaseRule db = new ImpermanentDatabaseRule();
 
+    private Supplier<Statement> statementSupplier;
+
+    @Before
+    public void exposeGuts()
+    {
+        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
+                .resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
     @Test
     public void shouldGetNumberOfNodesWithLabel() throws Exception
     {
@@ -206,28 +215,23 @@ public class LabelCountsTest
     /** @param label the label to get the number of nodes of, or {@code null} to get the total number of nodes. */
     private long countsForNode( Label label )
     {
-        ReadOperations read = statementSupplier.get().readOperations();
-        int labelId;
-        if ( label == null )
+        try ( Statement statement = statementSupplier.get() )
         {
-            labelId = ReadOperations.ANY_LABEL;
-        }
-        else
-        {
-            if ( KeyReadOperations.NO_SUCH_LABEL == (labelId = read.labelGetForName( label.name() )) )
+            ReadOperations read = statement.readOperations();
+            int labelId;
+            if ( label == null )
             {
-                return 0;
+                labelId = ReadOperations.ANY_LABEL;
             }
+            else
+            {
+                if ( KeyReadOperations.NO_SUCH_LABEL == (labelId = read.labelGetForName( label.name() )) )
+                {
+                    return 0;
+                }
+            }
+            return read.countsForNode( labelId );
         }
-        return read.countsForNode( labelId );
     }
 
-    private Supplier<Statement> statementSupplier;
-
-    @Before
-    public void exposeGuts()
-    {
-        statementSupplier = db.getGraphDatabaseAPI().getDependencyResolver()
-                              .resolveDependency( ThreadToStatementContextBridge.class );
-    }
 }

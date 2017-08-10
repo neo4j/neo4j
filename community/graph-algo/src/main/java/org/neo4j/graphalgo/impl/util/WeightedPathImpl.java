@@ -108,4 +108,10 @@ public class WeightedPathImpl implements WeightedPath
     {
         return path.iterator();
     }
+
+    @Override
+    public void close()
+    {
+        path.close();
+    }
 }

@@ -138,17 +138,19 @@ public class IndexStatisticsIT
 
     private int labelId( Label alien )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = statement() )
         {
-            return statement().readOperations().labelGetForName( alien.name() );
+            return statement.readOperations().labelGetForName( alien.name() );
         }
     }
 
     private int pkId( String propertyName )
     {
-        try ( Transaction ignore = db.beginTx() )
+        try ( Transaction ignore = db.beginTx();
+              Statement statement = statement() )
         {
-            return statement().readOperations().propertyKeyGetForName( propertyName );
+            return statement.readOperations().propertyKeyGetForName( propertyName );
         }
     }
 

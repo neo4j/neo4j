@@ -133,7 +133,7 @@ public abstract class TokenAccess<R>
         final TokenAccess<T> access;
         final Iterator<Token> tokens;
 
-        TokenIterator( Statement statement, TokenAccess<T> access )
+        private TokenIterator( Statement statement, TokenAccess<T> access )
         {
             this.statement = statement;
             this.access = access;
@@ -161,6 +161,7 @@ public abstract class TokenAccess<R>
                             return access.token( token );
                         }
                     }
+                    close();
                     return null;
                 }
             };
@@ -173,7 +174,15 @@ public abstract class TokenAccess<R>
                 @Override
                 protected T fetchNextOrNull()
                 {
-                    return tokens.hasNext() ? access.token( tokens.next() ) : null;
+                    if ( tokens.hasNext() )
+                    {
+                        return access.token( tokens.next() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
                 }
             };
         }

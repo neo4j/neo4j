@@ -34,12 +34,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -410,11 +412,14 @@ public class TransactionGuardIntegrationTest
         try ( Transaction transaction = database.beginTx() )
         {
             database.execute( "CALL dbms.setConfigValue('" + transaction_timeout.name() + "', '" + DEFAULT_TIMEOUT + "')" );
-            database.getAllNodes().stream().findFirst().map( node ->
+            try ( Stream<Node> stream = database.getAllNodes().stream() )
             {
-                node.delete();
-                return node;
-            } );
+                stream.findFirst().map( node ->
+                {
+                    node.delete();
+                    return node;
+                } );
+            }
             transaction.success();
         }
     }

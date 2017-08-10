@@ -36,8 +36,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.traversal.Evaluation.INCLUDE_AND_CONTINUE;
+import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 
 public class TraversalBranchImplTest
 {
@@ -51,7 +51,8 @@ public class TraversalBranchImplTest
         TraversalBranchImpl branch = new TraversalBranchImpl( parent, source );
         @SuppressWarnings( "rawtypes" )
         PathExpander expander = mock( PathExpander.class );
-        when( expander.expand( eq( branch ), any( BranchState.class ) ) ).thenReturn( Collections.emptySet() );
+        when( expander.expand( eq( branch ), any( BranchState.class ) ) )
+                .thenReturn( asResourceIterable( Collections.emptySet() ) );
         TraversalContext context = mock( TraversalContext.class );
         when( context.evaluate( eq( branch ), any( BranchState.class ) ) ).thenReturn( INCLUDE_AND_CONTINUE );
 

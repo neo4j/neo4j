@@ -73,9 +73,16 @@ public class ExecutionEngineTest
             String query = "RETURN { key : 'Value' , collectionKey: [{ inner: 'Map1' }, { inner: 'Map2' }]}";
             TransactionalContext tc = createTransactionContext( graph, tx, query );
             result = executionEngine.executeQuery( query, NO_PARAMS, tc );
+
+            verifyResult( result );
+
+            result.close();
             tx.success();
         }
+    }
 
+    private void verifyResult( Result result )
+    {
         Map firstRowValue = (Map) result.next().values().iterator().next();
         assertThat( firstRowValue.get( "key" ), is( "Value" ) );
         List theList = (List) firstRowValue.get( "collectionKey" );

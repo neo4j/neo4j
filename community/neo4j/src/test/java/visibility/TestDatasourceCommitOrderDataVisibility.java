@@ -29,6 +29,7 @@ import java.util.HashSet;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.core.Is.is;
@@ -91,11 +92,11 @@ public class TestDatasourceCommitOrderDataVisibility
 
         Thread thread = new Thread( () ->
         {
-            try ( Transaction ignored = graphDatabaseService.beginTx() )
+            try ( Transaction ignored = graphDatabaseService.beginTx();
+                  IndexHits<Node> indexHits = graphDatabaseService.index()
+                          .forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ); )
             {
-                assertThat(
-                        graphDatabaseService.index().forNodes( INDEX_NAME ).get( INDEX_KEY, INDEX_VALUE ).size(),
-                        is( 0 ) );
+                assertThat( indexHits.size(), is( 0 ) );
             }
             catch ( Throwable t )
             {

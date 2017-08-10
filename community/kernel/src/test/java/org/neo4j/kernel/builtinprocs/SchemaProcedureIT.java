@@ -64,6 +64,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{new ArrayList<>(), new ArrayList<>()} ) ) );
+        commit();
     }
 
     @Test
@@ -102,6 +103,7 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             assertEquals( Arrays.asList( "CONSTRAINT ON ( person:Person ) ASSERT person.age IS UNIQUE" ),
                     nodes.get( 0 ).getAllProperties().get( "constraints" ) );
         }
+        commit();
     }
 
     @Test
@@ -136,5 +138,6 @@ public class SchemaProcedureIT extends KernelIntegrationTest
             assertThat( relationships.get( 0 ).getEndNode().getLabels(),
                     contains( equalTo( Label.label( "Location" ) ) ) );
         }
+        commit();
     }
 }

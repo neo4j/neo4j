@@ -110,6 +110,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
                                                     noTracing, Set.empty)
       val context = TransactionalContextWrapper(graph.transactionalContext(query = query -> Map.empty))
       parsedQuery.plan(context, noTracing)
+      context.close(true)
     }
   }
 

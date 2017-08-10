@@ -64,7 +64,14 @@ public class KernelStatementTest
         statement.acquire();
 
         // when
-        statement.forceClose();
+        try
+        {
+            statement.forceClose();
+        }
+        catch ( KernelStatement.StatementNotClosedException ignored )
+        {
+            // ignore
+        }
 
         // then
         verify( storeStatement ).release();

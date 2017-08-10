@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.Iterables;
@@ -210,7 +211,9 @@ public class ClusterLocksIT
 
     private Node getNode( HighlyAvailableGraphDatabase db, Label testLabel ) throws EntityNotFoundException
     {
-        return db.findNodes( testLabel ).stream().findFirst()
-                .orElseThrow( () -> new EntityNotFoundException( EntityType.NODE, 0L ) );
+        try ( ResourceIterator<Node> nodes = db.findNodes( testLabel ) )
+        {
+            return nodes.stream().findFirst().orElseThrow( () -> new EntityNotFoundException( EntityType.NODE, 0L ) );
+        }
     }
 }

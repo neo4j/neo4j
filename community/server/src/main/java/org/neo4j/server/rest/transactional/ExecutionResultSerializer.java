@@ -448,7 +448,10 @@ public class ExecutionResultSerializer
                 out.writeStartObject();
                 try
                 {
-                    writer.write( out, columns, row, TransactionStateChecker.create( container ) );
+                    try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+                    {
+                        writer.write( out, columns, row, txStateChecker );
+                    }
                 }
                 finally
                 {

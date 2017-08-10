@@ -73,10 +73,9 @@ public class ConstraintIndexConcurrencyTest
         }
 
         // When
-        try ( Transaction tx = graphDb.beginTx() )
+        try ( Transaction tx = graphDb.beginTx();
+              Statement statement = statementSupplier.get() )
         {
-            // create a statement and perform a lookup
-            Statement statement = statementSupplier.get();
             int labelId = statement.readOperations().labelGetForName( label.name() );
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( propertyKey );
             IndexDescriptor index = IndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );

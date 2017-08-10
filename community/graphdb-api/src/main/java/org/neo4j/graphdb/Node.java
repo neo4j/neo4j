@@ -78,7 +78,9 @@ public interface Node extends Entity
      * are attached to this node, an empty iterable will be returned.
      *
      * @return all relationships attached to this node
+     * @deprecated this method should return {@link ResourceIterable} instead
      */
+    @Deprecated
     Iterable<Relationship> getRelationships();
 
     /**
@@ -99,7 +101,9 @@ public interface Node extends Entity
      * @param types the given relationship type(s)
      * @return all relationships of the given type(s) that are attached to this
      *         node
+     * @deprecated this method should return {@link ResourceIterable} instead
      */
+    @Deprecated
     Iterable<Relationship> getRelationships( RelationshipType... types );
 
     /**
@@ -112,7 +116,9 @@ public interface Node extends Entity
      * @param direction the direction of the relationships to return.
      * @return all relationships of the given type(s) that are attached to this
      *         node
+     * @deprecated this method should return {@link ResourceIterable} instead
      */
+    @Deprecated
     Iterable<Relationship> getRelationships( Direction direction, RelationshipType... types );
 
     /**
@@ -156,7 +162,9 @@ public interface Node extends Entity
      *            {@link Relationship#getEndNode() end node}
      * @return all relationships with the given direction that are attached to
      *         this node
+     * @deprecated this method should return {@link ResourceIterable} instead
      */
+    @Deprecated
     Iterable<Relationship> getRelationships( Direction dir );
 
     /**
@@ -191,7 +199,9 @@ public interface Node extends Entity
      *            {@link Relationship#getEndNode() end node}
      * @return all relationships attached to this node that match the given type
      *         and direction
+     * @deprecated this method should return {@link ResourceIterable} instead
      */
+    @Deprecated
     Iterable<Relationship> getRelationships( RelationshipType type, Direction dir );
 
     /**

@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.function.Predicate;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
@@ -32,19 +30,20 @@ import org.neo4j.graphdb.PathExpanderBuilder;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.traversal.StandardBranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
-import org.neo4j.graphdb.traversal.BranchCollisionDetector;
 import org.neo4j.graphdb.traversal.BranchCollisionPolicy;
-import org.neo4j.graphdb.traversal.Evaluator;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.InitialBranchState;
 import org.neo4j.graphdb.traversal.SideSelectorPolicies;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.graphdb.traversal.Uniqueness;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.Iterators;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
@@ -76,10 +75,14 @@ public class TestBidirectionalTraversal extends TraversalTestBase
     {
         createGraph( "A TO B" );
 
-        Iterables.count( getGraphDb().bidirectionalTraversalDescription()
-            .startSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_GLOBAL ) )
-            .endSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
-            .traverse( getNodeWithName( "A" ), getNodeWithName( "B" ) ) );
+        Traverser traverse = getGraphDb().bidirectionalTraversalDescription()
+                .startSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.NODE_GLOBAL ) )
+                .endSide( getGraphDb().traversalDescription().uniqueness( Uniqueness.RELATIONSHIP_GLOBAL ) )
+                .traverse( getNodeWithName( "A" ), getNodeWithName( "B" ) );
+        try ( ResourceIterator<Path> iterator = traverse.iterator() )
+        {
+            Iterators.count( iterator );
+        }
     }
 
     @Test

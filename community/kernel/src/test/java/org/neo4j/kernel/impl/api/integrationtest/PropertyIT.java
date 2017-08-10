@@ -37,8 +37,6 @@ import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -66,6 +64,8 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         readOperations.nodeGetProperty( nodeId, propertyKeyId );
+
+        commit();
     }
 
     @Test
@@ -90,6 +90,7 @@ public class PropertyIT extends KernelIntegrationTest
 
         // THEN
         assertEquals( value, readOperations.nodeGetProperty( nodeId, propertyKeyId ) );
+        commit();
     }
 
     @Test
@@ -114,6 +115,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 
     @Test
@@ -146,6 +148,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 
     @Test
@@ -186,6 +189,7 @@ public class PropertyIT extends KernelIntegrationTest
             assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( newValue ) );
             assertThat( toList( readOperations.nodeGetPropertyKeys( nodeId ) ),
                     equalTo( Collections.singletonList( propertyKeyId ) ) );
+            commit();
         }
     }
 
@@ -209,6 +213,7 @@ public class PropertyIT extends KernelIntegrationTest
 
             // THEN
             assertTrue( "Return no property if removing missing", result == NO_VALUE );
+            commit();
         }
     }
 
@@ -235,6 +240,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( true ) );
         assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), not( equalTo( Values.NO_VALUE ) ) );
+        commit();
     }
 
     @Test
@@ -259,6 +265,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
         assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 
     @Test
@@ -279,6 +286,7 @@ public class PropertyIT extends KernelIntegrationTest
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.nodeHasProperty( nodeId, propertyKeyId ), is( false ) );
         assertThat( readOperations.nodeGetProperty( nodeId, propertyKeyId ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 
     @Test
@@ -299,6 +307,7 @@ public class PropertyIT extends KernelIntegrationTest
         // THEN
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertEquals( 42, readOperations.nodeGetProperty( nodeId, propertyId ).asObject() );
+        commit();
     }
 
     @Test
@@ -326,6 +335,7 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         assertThat( asCollection( propIdsAfterCommit ),
                 hasItems( new Token( "prop1", prop1 ), new Token( "prop2", prop2 ) ) );
+        commit();
     }
 
     @Test
@@ -349,6 +359,7 @@ public class PropertyIT extends KernelIntegrationTest
         {
             assertThat( e.getMessage(), equalTo( "Unable to load NODE with id " + node + "." ) );
         }
+        commit();
     }
 
     @Test
@@ -375,6 +386,7 @@ public class PropertyIT extends KernelIntegrationTest
         {
             assertThat( e.getMessage(), equalTo( "Unable to load RELATIONSHIP with id " + rel + "." ) );
         }
+        commit();
     }
 
     @Test
@@ -401,6 +413,7 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.nodeGetProperty( node, prop ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 
     @Test
@@ -430,6 +443,7 @@ public class PropertyIT extends KernelIntegrationTest
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertThat( readOperations.relationshipGetProperty( rel, prop ), equalTo( Values.NO_VALUE ) );
+        commit();
     }
 }
 

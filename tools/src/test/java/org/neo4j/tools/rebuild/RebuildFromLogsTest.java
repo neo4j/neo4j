@@ -38,6 +38,8 @@ import org.neo4j.consistency.checking.InconsistentStoreException;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -189,12 +191,17 @@ public class RebuildFromLogsTest
                     @Override
                     void applyTx( GraphDatabaseService graphDb )
                     {
-                        for ( Node node : graphDb.getAllNodes() )
+                        ResourceIterable<Node> nodes = graphDb.getAllNodes();
+                        try ( ResourceIterator<Node> iterator = nodes.iterator() )
                         {
-                            if ( "value".equals( node.getProperty( CREATE_NODE_WITH_PROPERTY.name(), null ) ) )
+                            while ( iterator.hasNext() )
                             {
-                                node.setProperty( CREATE_NODE_WITH_PROPERTY.name(), "other" );
-                                break;
+                                Node node = iterator.next();
+                                if ( "value".equals( node.getProperty( CREATE_NODE_WITH_PROPERTY.name(), null ) ) )
+                                {
+                                    node.setProperty( CREATE_NODE_WITH_PROPERTY.name(), "other" );
+                                    break;
+                                }
                             }
                         }
                     }

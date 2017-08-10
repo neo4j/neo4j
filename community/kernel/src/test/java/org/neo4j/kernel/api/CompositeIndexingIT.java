@@ -83,20 +83,24 @@ public class CompositeIndexingIT
         graphDatabaseAPI = dbRule.getGraphDatabaseAPI();
         try ( Transaction tx = graphDatabaseAPI.beginTx() )
         {
-            if ( index.type() == UNIQUE )
+            try ( Statement statement = statement() )
             {
-                statement().schemaWriteOperations().uniquePropertyConstraintCreate( index.schema() );
-            }
-            else
-            {
-                statement().schemaWriteOperations().indexCreate( index.schema() );
+                if ( index.type() == UNIQUE )
+                {
+                    statement.schemaWriteOperations().uniquePropertyConstraintCreate( index.schema() );
+                }
+                else
+                {
+                    statement.schemaWriteOperations().indexCreate( index.schema() );
+                }
             }
             tx.success();
         }
 
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
-            while ( statement().readOperations().indexGetState( index ) != InternalIndexState.ONLINE )
+            while ( statement.readOperations().indexGetState( index ) != InternalIndexState.ONLINE )
             {
                 Thread.sleep( 10 );
             } // Will break loop on test timeout
@@ -106,16 +110,17 @@ public class CompositeIndexingIT
     @After
     public void clean() throws Exception
     {
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
             if ( index.type() == UNIQUE )
             {
-                statement().schemaWriteOperations().constraintDrop(
+                statement.schemaWriteOperations().constraintDrop(
                         ConstraintDescriptorFactory.uniqueForSchema( index.schema() ) );
             }
             else
             {
-                statement().schemaWriteOperations().indexDrop( index );
+                statement.schemaWriteOperations().indexDrop( index );
             }
             tx.success();
         }
@@ -151,16 +156,17 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeNodeAddedByPropertyToIndexInTranslation() throws Exception
     {
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
-            DataWriteOperations writeOperations = statement().dataWriteOperations();
+            DataWriteOperations writeOperations = statement.dataWriteOperations();
             long nodeID = writeOperations.nodeCreate();
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
             {
                 writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
-            PrimitiveLongIterator resultIterator = seek();
+            PrimitiveLongIterator resultIterator = seek( statement );
             assertThat( resultIterator.next(), equalTo( nodeID ) );
             assertFalse( resultIterator.hasNext() );
         }
@@ -169,16 +175,17 @@ public class CompositeIndexingIT
     @Test
     public void shouldSeeNodeAddedToByLabelIndexInTransaction() throws Exception
     {
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
-            DataWriteOperations writeOperations = statement().dataWriteOperations();
+            DataWriteOperations writeOperations = statement.dataWriteOperations();
             long nodeID = writeOperations.nodeCreate();
             for ( int propID : index.schema().getPropertyIds() )
             {
                 writeOperations.nodeSetProperty( nodeID, propID, Values.intValue( propID ) );
             }
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
-            PrimitiveLongIterator resultIterator = seek();
+            PrimitiveLongIterator resultIterator = seek( statement );
             assertThat( resultIterator.next(), equalTo( nodeID ) );
             assertFalse( resultIterator.hasNext() );
         }
@@ -188,10 +195,11 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatWasDeletedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+              Statement statement = statement() )
         {
-            statement().dataWriteOperations().nodeDelete( nodeID );
-            assertFalse( seek().hasNext() );
+            statement.dataWriteOperations().nodeDelete( nodeID );
+            assertFalse( seek( statement ).hasNext() );
         }
     }
 
@@ -199,10 +207,11 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasItsLabelRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
-            statement().dataWriteOperations().nodeRemoveLabel( nodeID, LABEL_ID );
-            assertFalse( seek().hasNext() );
+            statement.dataWriteOperations().nodeRemoveLabel( nodeID, LABEL_ID );
+            assertFalse( seek( statement ).hasNext() );
         }
     }
 
@@ -210,10 +219,11 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodeThatHasAPropertyRemovedInTransaction() throws Exception
     {
         long nodeID = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+              Statement statement = statement() )
         {
-            statement().dataWriteOperations().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
-            assertFalse( seek().hasNext() );
+            statement.dataWriteOperations().nodeRemoveProperty( nodeID, index.schema().getPropertyIds()[0] );
+            assertFalse( seek( statement ).hasNext() );
         }
     }
 
@@ -222,12 +232,13 @@ public class CompositeIndexingIT
     {
         if ( index.type() != UNIQUE ) // this test does not make any sense for UNIQUE indexes
         {
-            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                    Statement statement = statement() )
             {
                 long nodeID1 = createNode();
                 long nodeID2 = createNode();
                 long nodeID3 = createNode();
-                PrimitiveLongIterator resultIterator = seek();
+                PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
                 assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
             }
@@ -242,9 +253,10 @@ public class CompositeIndexingIT
             long nodeID1 = createNode();
             long nodeID2 = createNode();
             long nodeID3 = createNode();
-            try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+            try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                  Statement statement = statement() )
             {
-                PrimitiveLongIterator resultIterator = seek();
+                PrimitiveLongIterator resultIterator = seek( statement );
                 Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
                 assertThat( result, contains( nodeID1, nodeID2, nodeID3 ) );
             }
@@ -255,9 +267,10 @@ public class CompositeIndexingIT
     public void shouldNotSeeNodesLackingOneProperty() throws Exception
     {
         long nodeID1 = createNode();
-        try ( Transaction ignore = graphDatabaseAPI.beginTx() )
+        try ( Transaction ignore = graphDatabaseAPI.beginTx();
+                Statement statement = statement() )
         {
-            DataWriteOperations writeOperations = statement().dataWriteOperations();
+            DataWriteOperations writeOperations = statement.dataWriteOperations();
             long irrelevantNodeID = writeOperations.nodeCreate();
             writeOperations.nodeAddLabel( irrelevantNodeID, LABEL_ID );
             for ( int i = 0; i < index.schema().getPropertyIds().length - 1; i++ )
@@ -265,7 +278,7 @@ public class CompositeIndexingIT
                 int propID = index.schema().getPropertyIds()[i];
                 writeOperations.nodeSetProperty( irrelevantNodeID, propID, Values.intValue( propID ) );
             }
-            PrimitiveLongIterator resultIterator = seek();
+            PrimitiveLongIterator resultIterator = seek( statement );
             Set<Long> result = PrimitiveLongCollections.toSet( resultIterator );
             assertThat( result, contains( nodeID1 ) );
         }
@@ -276,9 +289,10 @@ public class CompositeIndexingIT
             AutoIndexingKernelException
     {
         long nodeID;
-        try ( Transaction tx = graphDatabaseAPI.beginTx() )
+        try ( Transaction tx = graphDatabaseAPI.beginTx() ;
+              Statement statement = statement() )
         {
-            DataWriteOperations writeOperations = statement().dataWriteOperations();
+            DataWriteOperations writeOperations = statement.dataWriteOperations();
             nodeID = writeOperations.nodeCreate();
             writeOperations.nodeAddLabel( nodeID, LABEL_ID );
             for ( int propID : index.schema().getPropertyIds() )
@@ -290,9 +304,10 @@ public class CompositeIndexingIT
         return nodeID;
     }
 
-    private PrimitiveLongIterator seek() throws IndexNotFoundKernelException, IndexNotApplicableKernelException
+    private PrimitiveLongIterator seek( Statement statement ) throws IndexNotFoundKernelException,
+            IndexNotApplicableKernelException
     {
-        return statement().readOperations().indexQuery( index, exactQuery() );
+        return statement.readOperations().indexQuery( index, exactQuery() );
     }
 
     private IndexQuery[] exactQuery()

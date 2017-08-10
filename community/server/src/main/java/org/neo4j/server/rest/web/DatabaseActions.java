@@ -107,6 +107,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 import static org.neo4j.server.rest.repr.RepresentationType.CONSTRAINT_DEFINITION;
 
 public class DatabaseActions
@@ -426,8 +427,10 @@ public class DatabaseActions
     {
         Index<Node> index = graphDb.index().forNodes( indexName );
         Node expectedNode = graphDb.getNodeById( nodeId );
-        IndexHits<Node> hits = index.get( key, value );
-        return iterableContains( hits, expectedNode );
+        try ( IndexHits<Node> hits = index.get( key, value ) )
+        {
+            return iterableContains( hits, expectedNode );
+        }
     }
 
     public boolean relationshipIsIndexed( String indexName, String key, Object value, long relationshipId )
@@ -435,8 +438,10 @@ public class DatabaseActions
 
         Index<Relationship> index = graphDb.index().forRelationships( indexName );
         Relationship expectedNode = graphDb.getRelationshipById( relationshipId );
-        IndexHits<Relationship> hits = index.get( key, value );
-        return iterableContains( hits, expectedNode );
+        try ( IndexHits<Relationship> hits = index.get( key, value ) )
+        {
+            return iterableContains( hits, expectedNode );
+        }
     }
 
     private <T> boolean iterableContains( Iterable<T> iterable,
@@ -1090,12 +1095,18 @@ public class DatabaseActions
     private ListRepresentation toListPathRepresentation( final Iterable<Path> paths,
             final TraverserReturnType returnType )
     {
-        final IterableWrapper<Representation,Path> result = new IterableWrapper<Representation,Path>( paths )
+        IterableWrapper<Representation,Path> result = new IterableWrapper<Representation,Path>( paths )
         {
             @Override
             protected Representation underlyingObjectToObject( Path position )
             {
                 return returnType.toRepresentation( position );
+            }
+
+            @Override
+            public Iterator<Representation> iterator()
+            {
+                return newResourceIterator( () -> paths.forEach( Path::close ), super.iterator() );
             }
         };
         return new ListRepresentation( returnType.repType, result );

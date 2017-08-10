@@ -266,11 +266,13 @@ public class DeferringLocksIT
 
     private void assertNodeWith( Label label, String key, Object value )
     {
-        ResourceIterator<Node> nodes = db.findNodes( label, key, value );
-        assertTrue( nodes.hasNext() );
-        Node foundNode = nodes.next();
-        assertTrue( foundNode.hasLabel( label ) );
-        assertEquals( value, foundNode.getProperty( key ) );
+        try ( ResourceIterator<Node> nodes = db.findNodes( label, key, value ) )
+        {
+            assertTrue( nodes.hasNext() );
+            Node foundNode = nodes.next();
+            assertTrue( foundNode.hasLabel( label ) );
+            assertEquals( value, foundNode.getProperty( key ) );
+        }
     }
 
     private Node createNodeWithProperty( Label label, String key, Object value )

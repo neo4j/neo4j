@@ -27,12 +27,12 @@ import org.neo4j.graphdb.ResourceIterator;
 
 public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V>
 {
-    public static <T> ResourceIterator<T> newResourceIterator( Resource resource, Iterator<T> iterator )
+    public static <R> ResourceIterator<R> newResourceIterator( Resource resource, Iterator<R> iterator )
     {
-        return new ResourceClosingIterator<T,T>( resource, iterator )
+        return new ResourceClosingIterator<R,R>( resource, iterator )
         {
             @Override
-            public T map( T elem )
+            public R map( R elem )
             {
                 return elem;
             }

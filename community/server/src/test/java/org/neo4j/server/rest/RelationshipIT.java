@@ -30,6 +30,8 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.annotations.Documented;
@@ -246,7 +248,11 @@ public class RelationshipIT extends AbstractRestFunctionalDocTestBase
 
         try ( Transaction transaction = romeo.getGraphDatabase().beginTx() )
         {
-            return romeo.getRelationships().iterator().next();
+            ResourceIterable<Relationship> relationships = (ResourceIterable<Relationship>) romeo.getRelationships();
+            try ( ResourceIterator<Relationship> iterator = relationships.iterator() )
+            {
+                return iterator.next();
+            }
         }
     }
 

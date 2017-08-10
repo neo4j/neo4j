@@ -151,7 +151,7 @@ public class MetricsKernelExtensionFactoryIT
         // GIVEN
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
+            db.execute( "match (n:Label {name: 'Pontus'}) return n.name" ).close();
             tx.success();
         }
 
@@ -163,7 +163,7 @@ public class MetricsKernelExtensionFactoryIT
         {
             try ( Transaction tx = db.beginTx() )
             {
-                db.execute( "match (n:Label {name: 'Pontus'}) return n.name" );
+                db.execute( "match (n:Label {name: 'Pontus'}) return n.name" ).close();
                 tx.success();
             }
             addNodes( 1 );

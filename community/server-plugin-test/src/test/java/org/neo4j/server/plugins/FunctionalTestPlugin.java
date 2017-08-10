@@ -33,6 +33,8 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
 @Description( "Here you can describe your plugin. It will show up in the description of the methods." )
@@ -244,10 +246,12 @@ public class FunctionalTestPlugin extends ServerPlugin
             Node other;
             if ( me.hasRelationship( RelationshipType.withName( "friend" ) ) )
             {
-                other = me.getRelationships( RelationshipType.withName( "friend" ) )
-                        .iterator()
-                        .next()
-                        .getOtherNode( me );
+                ResourceIterable<Relationship> relationships =
+                        (ResourceIterable<Relationship>) me.getRelationships( RelationshipType.withName( "friend" ) );
+                try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
+                {
+                    other = resourceIterator.next().getOtherNode( me );
+                }
             }
             else
             {

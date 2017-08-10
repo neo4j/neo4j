@@ -31,9 +31,8 @@ import org.neo4j.cypher.internal.spi.v3_3.{TransactionBoundPlanContext, Transact
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
-import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.proc._
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.api.{KernelAPI, Statement}
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -258,13 +257,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
     func
   }
 
-  def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-
   def kernelMonitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
 
   def kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
 
-  def planContext: PlanContext = {
+  def planContext(statement: Statement): PlanContext = {
     val tc = mock[TransactionalContextWrapper]
     when(tc.statement).thenReturn(statement)
     when(tc.readOperations).thenReturn(statement.readOperations())

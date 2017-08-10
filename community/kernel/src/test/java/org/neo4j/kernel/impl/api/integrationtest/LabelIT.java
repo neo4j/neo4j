@@ -60,6 +60,7 @@ public class LabelIT extends KernelIntegrationTest
         // then
         assertThat( asCollection( labelIdsAfterCommit ),
                 hasItems( new Token( "label1", label1Id ), new Token( "label2", label2Id ) ) );
+        commit();
     }
 
     @Test
@@ -82,5 +83,6 @@ public class LabelIT extends KernelIntegrationTest
 
         // And then the node should have the label
         assertTrue( readOperationsInNewTransaction().nodeHasLabel( node, label ) );
+        commit();
     }
 }

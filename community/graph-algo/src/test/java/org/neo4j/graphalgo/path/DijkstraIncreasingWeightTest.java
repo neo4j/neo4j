@@ -36,9 +36,12 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.InitialBranchState;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.NoneStrictMath;
 
 import static org.junit.Assert.assertEquals;
@@ -294,12 +297,17 @@ public class DijkstraIncreasingWeightTest extends Neo4jAlgoTestCase
     {
         Node startNode = graph.getNode( start );
         Node endNode = graph.getNode( end );
-        for ( Relationship rel : startNode.getRelationships() )
+        ResourceIterable<Relationship> relationships = Iterables.asResourceIterable( startNode.getRelationships() );
+        try ( ResourceIterator<Relationship> resourceIterator = relationships.iterator() )
         {
-            if ( rel.getOtherNode( startNode ).equals( endNode ) )
+            while ( resourceIterator.hasNext() )
             {
-                rel.setProperty( "weight", weight );
-                return;
+                Relationship rel = resourceIterator.next();
+                if ( rel.getOtherNode( startNode ).equals( endNode ) )
+                {
+                    rel.setProperty( "weight", weight );
+                    return;
+                }
             }
         }
         throw new RuntimeException( "No relationship between nodes " + start + " and " + end );

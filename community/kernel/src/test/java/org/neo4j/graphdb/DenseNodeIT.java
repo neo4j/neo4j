@@ -30,6 +30,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 public class DenseNodeIT
 {
@@ -246,13 +247,17 @@ public class DenseNodeIT
     private void deleteRelationshipsFromNode( Node root, int numberOfRelationships )
     {
         int deleted = 0;
-        for ( Relationship relationship : root.getRelationships() )
+        try ( ResourceIterator<Relationship> iterator = asResourceIterator( root.getRelationships().iterator() ) )
         {
-            relationship.delete();
-            deleted++;
-            if ( deleted == numberOfRelationships )
+            while ( iterator.hasNext() )
             {
-                break;
+                Relationship relationship = iterator.next();
+                relationship.delete();
+                deleted++;
+                if ( deleted == numberOfRelationships )
+                {
+                    break;
+                }
             }
         }
     }

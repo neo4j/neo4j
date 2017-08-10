@@ -41,6 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.AuthSubject;
@@ -205,10 +206,10 @@ public class TransactionEventsIT
 
     private void runTransaction( SecurityContext securityContext, Map<String,Object> metaData )
     {
-        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext ) )
+        try ( Transaction transaction = db.beginTransaction( KernelTransaction.Type.explicit, securityContext );
+              Statement statement = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get() )
         {
-            db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class ).get()
-                    .queryRegistration().setMetaData( metaData );
+            statement.queryRegistration().setMetaData( metaData );
             db.createNode();
             transaction.success();
         }

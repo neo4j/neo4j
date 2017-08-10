@@ -181,11 +181,7 @@ public class FullCheckIntegrationTest
             {
                 if ( method.getAnnotation( Documented.class ) != null )
                 {
-                    Set<String> types = allReports.get( cls );
-                    if ( types == null )
-                    {
-                        allReports.put( cls, types = new HashSet<>() );
-                    }
+                    Set<String> types = allReports.computeIfAbsent( cls, k -> new HashSet<>() );
                     types.add( method.getName() );
                 }
             }
@@ -220,12 +216,16 @@ public class FullCheckIntegrationTest
             {
                 db.schema().indexFor( label( "label3" ) ).on( PROP1 ).create();
 
-                // the Core API for composite index creation is not quite merged yet
-                key1 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP1 );
-                key2 = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( PROP2 );
-                label3 = readOperationsOn( db ).labelGetForName( "label3" );
-                statementOn( db ).schemaWriteOperations().indexCreate(
-                        SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                try ( KernelStatement statement = statementOn( db ) )
+                {
+                    // the Core API for composite index creation is not quite merged yet
+                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+                    key1 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP1 );
+                    key2 = tokenWriteOperations.propertyKeyGetOrCreateForName( PROP2 );
+                    label3 = statement.readOperations().labelGetForName( "label3" );
+                    statement.schemaWriteOperations()
+                            .indexCreate( SchemaDescriptorFactory.forLabel( label3, key1, key2 ) );
+                }
 
                 db.schema().constraintFor( label( "label4" ) ).assertPropertyIsUnique( PROP1 ).create();
                 tx.success();
@@ -254,16 +254,21 @@ public class FullCheckIntegrationTest
                 set( db.createNode( label( "label4" ) ), property( PROP1, VALUE1 ) );
                 tx.success();
 
-                label1 = readOperationsOn( db ).labelGetForName( "label1" );
-                label2 = readOperationsOn( db ).labelGetForName( "label2" );
-                label3 = readOperationsOn( db ).labelGetForName( "label3" );
-                label4 = readOperationsOn( db ).labelGetForName( "label4" );
-                draconian = tokenWriteOperationsOn( db ).labelGetOrCreateForName( "draconian" );
-                key1 = readOperationsOn( db ).propertyKeyGetForName( PROP1 );
-                mandatory = tokenWriteOperationsOn( db ).propertyKeyGetOrCreateForName( "mandatory" );
-                C = readOperationsOn( db ).relationshipTypeGetForName( "C" );
-                T = readOperationsOn( db ).relationshipTypeGetForName( "T" );
-                M = tokenWriteOperationsOn( db ).relationshipTypeGetOrCreateForName( "M" );
+                try ( KernelStatement statement = statementOn( db ) )
+                {
+                    ReadOperations readOperations = statement.readOperations();
+                    TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+                    label1 = readOperations.labelGetForName( "label1" );
+                    label2 = readOperations.labelGetForName( "label2" );
+                    label3 = readOperations.labelGetForName( "label3" );
+                    label4 = readOperations.labelGetForName( "label4" );
+                    draconian = tokenWriteOperations.labelGetOrCreateForName( "draconian" );
+                    key1 = readOperations.propertyKeyGetForName( PROP1 );
+                    mandatory = tokenWriteOperations.propertyKeyGetOrCreateForName( "mandatory" );
+                    C = readOperations.relationshipTypeGetForName( "C" );
+                    T = readOperations.relationshipTypeGetForName( "T" );
+                    M = tokenWriteOperations.relationshipTypeGetOrCreateForName( "M" );
+                }
             }
             catch ( KernelException e )
             {
@@ -2295,16 +2300,6 @@ public class FullCheckIntegrationTest
         {
             schemaStore.updateRecord( record );
         }
-    }
-
-    private static ReadOperations readOperationsOn( GraphDatabaseService db )
-    {
-        return statementOn( db ).readOperations();
-    }
-
-    private static TokenWriteOperations tokenWriteOperationsOn( GraphDatabaseService db )
-    {
-        return statementOn( db ).tokenWriteOperations();
     }
 
     private static KernelStatement statementOn( GraphDatabaseService db )

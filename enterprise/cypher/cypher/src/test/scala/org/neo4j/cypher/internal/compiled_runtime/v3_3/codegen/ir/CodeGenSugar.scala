@@ -75,6 +75,7 @@ trait CodeGenSugar extends MockitoSugar {
                       graphDb: GraphDatabaseQueryService,
                       mode: ExecutionMode = NormalMode): InternalExecutionResult = {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
+    var transactionalContext: TransactionalContextWrapper = null
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
@@ -88,6 +89,7 @@ trait CodeGenSugar extends MockitoSugar {
       result.size
       result
     } finally {
+      transactionalContext.close(true)
       tx.close()
     }
   }

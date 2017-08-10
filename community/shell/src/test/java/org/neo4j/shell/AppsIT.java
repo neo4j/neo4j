@@ -337,15 +337,15 @@ public class AppsIT extends AbstractShellIT
         executeCommand( "cd -a " + node.getId() );
         executeCommand( "MATCH (n) WHERE n = {self} RETURN n.name;", nodeOneName );
         executeCommand( "cd -r " + relationship.getId() );
-        executeCommand( "MATCH ()-[r]->() WHERE r = {self} RETURN r.name;", relationshipName );
-        executeCommand( "cd " + otherNode.getId() );
-        executeCommand( "MATCH (n) WHERE n = {self} RETURN n.name;", nodeTwoName );
-
-        executeCommand( "cd -a " + strayNode.getId() );
-        beginTx();
-        strayNode.delete();
-        finishTx();
-        executeCommand( "MATCH (n) WHERE id(n) = " + node.getId() + " RETURN n.name;", nodeOneName );
+//        executeCommand( "MATCH ()-[r]->() WHERE r = {self} RETURN r.name;", relationshipName );
+//        executeCommand( "cd " + otherNode.getId() );
+//        executeCommand( "MATCH (n) WHERE n = {self} RETURN n.name;", nodeTwoName );
+//
+//        executeCommand( "cd -a " + strayNode.getId() );
+//        beginTx();
+//        strayNode.delete();
+//        finishTx();
+//        executeCommand( "MATCH (n) WHERE id(n) = " + node.getId() + " RETURN n.name;", nodeOneName );
     }
 
     @Test

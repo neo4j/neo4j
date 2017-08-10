@@ -475,7 +475,15 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
                 @Override
                 protected Relationship fetchNextOrNull()
                 {
-                    return ids.hasNext() ? new RelationshipProxy( relActions, ids.next() ) : null;
+                    if ( ids.hasNext() )
+                    {
+                        return new RelationshipProxy( relActions, ids.next() );
+                    }
+                    else
+                    {
+                        close();
+                        return null;
+                    }
                 }
             };
         };

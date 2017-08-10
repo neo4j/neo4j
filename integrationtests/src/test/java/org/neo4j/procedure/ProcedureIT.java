@@ -541,7 +541,7 @@ public class ProcedureIT
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "CALL org.neo4j.procedure.writingProcedure()" );
+            db.execute( "CALL org.neo4j.procedure.writingProcedure()" ).close();
             tx.success();
         }
 
@@ -637,7 +637,7 @@ public class ProcedureIT
         // When
         try ( Transaction tx = db.beginTx() )
         {
-            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingWriteProcedure()" );
+            db.execute( "CALL org.neo4j.procedure.writeProcedureCallingWriteProcedure()" ).close();
             tx.success();
         }
 
@@ -883,7 +883,7 @@ public class ProcedureIT
     {
         try ( Transaction ignore = db.beginTx() )
         {
-            db.execute( "CALL org.neo4j.procedure.simpleArgument(12)" );
+            db.execute( "CALL org.neo4j.procedure.simpleArgument(12)" ).close();
             db.createNode();
         }
     }
@@ -952,6 +952,7 @@ public class ProcedureIT
         {
             assertThat( result.next().get( "n.prop" ), equalTo( Integer.toString( i ) ) );
         }
+        result.close();
 
         //Make sure all the lines has been properly commited to the database.
         String[] dbContents = db.execute( "MATCH (n) return n.prop" ).stream().map( m -> (String) m.get( "n.prop" ) )

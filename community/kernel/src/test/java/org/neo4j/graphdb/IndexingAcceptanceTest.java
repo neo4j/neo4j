@@ -489,9 +489,9 @@ public class IndexingAcceptanceTest
 
         // WHEN
         PrimitiveLongSet found = Primitive.longSet();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = getStatement( (GraphDatabaseAPI) db ) )
         {
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
             ReadOperations ops = statement.readOperations();
             IndexDescriptor descriptor = indexDescriptor( ops, index );
             int propertyKeyId = descriptor.schema().getPropertyId();
@@ -517,11 +517,13 @@ public class IndexingAcceptanceTest
         {
             expected.add( createNode( db, map( "name", "Carlchen" ), LABEL1 ).getId() );
             createNode( db, map( "name", "Karla" ), LABEL1 );
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            int propertyKeyId = descriptor.schema().getPropertyId();
-            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Carl" ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -548,11 +550,13 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).delete();
                 expected.remove( id );
             }
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            int propertyKeyId = descriptor.schema().getPropertyId();
-            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, "Karl" ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );
@@ -588,11 +592,13 @@ public class IndexingAcceptanceTest
                 db.getNodeById( id ).setProperty( "name", "X" + id );
                 expected.remove( id );
             }
-            Statement statement = getStatement( (GraphDatabaseAPI) db );
-            ReadOperations readOperations = statement.readOperations();
-            IndexDescriptor descriptor = indexDescriptor( readOperations, index );
-            int propertyKeyId = descriptor.schema().getPropertyId();
-            found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
+            try ( Statement statement = getStatement( (GraphDatabaseAPI) db ) )
+            {
+                ReadOperations readOperations = statement.readOperations();
+                IndexDescriptor descriptor = indexDescriptor( readOperations, index );
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                found.addAll( readOperations.indexQuery( descriptor, stringPrefix( propertyKeyId, prefix ) ) );
+            }
         }
         // THEN
         assertThat( found, equalTo( expected ) );

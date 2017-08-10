@@ -26,40 +26,23 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.traversal.BranchState;
 import org.neo4j.graphdb.traversal.Evaluation;
 import org.neo4j.graphdb.traversal.Paths;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
+import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 
 class TraversalBranchImpl implements TraversalBranch
 {
-    private static final Iterator<Relationship> PRUNED_ITERATOR = new Iterator<Relationship>()
-    {
-        @Override
-        public boolean hasNext()
-        {
-            return false;
-        }
-
-        @Override
-        public Relationship next()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public void remove()
-        {
-            throw new UnsupportedOperationException();
-        }
-    };
-
     final TraversalBranch parent;
     private final Relationship howIGotHere;
     private final Node source;
-    private Iterator<Relationship> relationships;
+    private ResourceIterator<Relationship> relationships;
     // high bit here [cidd,dddd][dddd,dddd][dddd,dddd][dddd,dddd]
     private int depthAndEvaluationBits;
     private int expandedCount;
@@ -105,14 +88,14 @@ class TraversalBranchImpl implements TraversalBranch
         }
         else
         {
-            relationships = PRUNED_ITERATOR;
+            closeRelationships();
+            relationships = Iterators.emptyResourceIterator();
         }
     }
 
-    protected Iterator<Relationship> expandRelationshipsWithoutChecks( PathExpander expander )
+    protected ResourceIterator expandRelationshipsWithoutChecks( PathExpander expander )
     {
-        Iterable<Relationship> iterable = expander.expand( this, BranchState.NO_STATE );
-        return iterable.iterator();
+        return asResourceIterator( expander.expand( this, BranchState.NO_STATE ).iterator() );
     }
 
     protected boolean hasExpandedRelationships()
@@ -161,8 +144,8 @@ class TraversalBranchImpl implements TraversalBranch
                 context.unnecessaryRelationshipTraversed();
             }
         }
-        // Just to help GC
-        relationships = PRUNED_ITERATOR;
+        relationships.close();
+        relationships = Iterators.emptyResourceIterator();
         return null;
     }
 
@@ -174,7 +157,24 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public void prune()
     {
-        relationships = PRUNED_ITERATOR;
+        closeRelationships();
+        relationships = Iterators.emptyResourceIterator();
+    }
+
+    @Override
+    public void close()
+    {
+        //TODO: not sure its a right place to close parent
+        parent.close();
+        closeRelationships();
+    }
+
+    private void closeRelationships()
+    {
+        if ( relationships != null )
+        {
+            relationships.close();
+        }
     }
 
     @Override

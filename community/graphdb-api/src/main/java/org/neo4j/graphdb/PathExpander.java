@@ -39,7 +39,9 @@ public interface PathExpander<STATE>
      * the children of this branch. If state isn't altered the children
      * of this path will see the state of the parent.
      * @return the relationships to return for the {@code path}.
+     * @deprecated should return {@link ResourceIterable}
      */
+    @Deprecated
     Iterable<Relationship> expand( Path path, BranchState<STATE> state );
 
     /**

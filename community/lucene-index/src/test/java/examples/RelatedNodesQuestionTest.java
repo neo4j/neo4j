@@ -53,8 +53,10 @@ public class RelatedNodesQuestionTest
             Relationship relationship = node1.createRelationshipTo( node2, RelationshipType.withName( "related" ) );
             index.add( relationship, "uuid", a_uuid );
             // query
-            IndexHits<Relationship> hits = index.get( "uuid", a_uuid, node1, node2 );
-            assertEquals( 1, hits.size() );
+            try ( IndexHits<Relationship> hits = index.get( "uuid", a_uuid, node1, node2 ) )
+            {
+                assertEquals( 1, hits.size() );
+            }
             tx.success();
         }
         service.shutdown();

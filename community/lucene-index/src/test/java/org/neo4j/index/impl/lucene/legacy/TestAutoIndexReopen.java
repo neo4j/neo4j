@@ -29,6 +29,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -110,18 +111,27 @@ public class TestAutoIndexReopen
             node1.getRelationships( RelationshipType.withName( "FOO" ) ).forEach( Relationship::delete );
 
             // check first node
-            assertEquals(0, relationShipAutoIndex().get("type", "FOO", node1, node3).size());
+            Relationship rel;
+            try ( IndexHits<Relationship> hits = relationShipAutoIndex().get( "type", "FOO", node1, node3 ) )
+            {
+                assertEquals( 0, hits.size() );
+            }
             // create second relation ship
-            Relationship rel = node1.createRelationshipTo(node3,
-                    RelationshipType.withName("FOO"));
+            rel = node1.createRelationshipTo( node3, RelationshipType.withName( "FOO" ) );
             rel.setProperty("type", "FOO");
 
             // check second node -> crashs with old FullTxData
-            assertEquals(0, relationShipAutoIndex().get("type", "FOO", node1, node2).size());
+            try ( IndexHits<Relationship> indexHits = relationShipAutoIndex().get( "type", "FOO", node1, node2 ) )
+            {
+                assertEquals( 0, indexHits.size() );
+            }
             // create second relation ship
             rel = node1.createRelationshipTo(node2, RelationshipType.withName("FOO"));
             rel.setProperty("type", "FOO");
-            assertEquals(1, relationShipAutoIndex().get("type", "FOO", node1, node2).size());
+            try ( IndexHits<Relationship> relationships = relationShipAutoIndex().get( "type", "FOO", node1, node2 ) )
+            {
+                assertEquals( 1, relationships.size() );
+            }
 
             tx.success();
         }

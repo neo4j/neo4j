@@ -32,6 +32,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.Iterables;
@@ -86,12 +88,19 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     protected Node getNodeWithName( String name )
     {
-        for ( Node node : getGraphDb().getAllNodes() )
+        ResourceIterable<Node> allNodes = getGraphDb().getAllNodes();
+        try ( ResourceIterator<Node> nodeIterator = allNodes.iterator() )
         {
-            String nodeName = (String) node.getProperty( "name", null );
-            if ( nodeName != null && nodeName.equals( name ) )
+            while ( nodeIterator.hasNext() )
             {
-                return node;
+                Node node = nodeIterator.next();
+                {
+                    String nodeName = (String) node.getProperty( "name", null );
+                    if ( nodeName != null && nodeName.equals( name ) )
+                    {
+                        return node;
+                    }
+                }
             }
         }
 

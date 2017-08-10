@@ -60,11 +60,17 @@ public class Neo4jJsonCodec extends ObjectMapper
     {
         if ( value instanceof PropertyContainer )
         {
-            writePropertyContainer( out, (PropertyContainer) value, TransactionStateChecker.create( container ) );
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writePropertyContainer( out, (PropertyContainer) value, txStateChecker );
+            }
         }
         else if ( value instanceof Path )
         {
-            writePath( out, ((Path) value).iterator(), TransactionStateChecker.create( container ) );
+            try ( TransactionStateChecker txStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writePath( out, ((Path) value).iterator(), txStateChecker );
+            }
         }
         else if ( value instanceof Iterable )
         {
@@ -215,15 +221,19 @@ public class Neo4jJsonCodec extends ObjectMapper
         if ( value instanceof Node )
         {
             Node node = (Node) value;
-            writeNodeOrRelationshipMeta( out, node.getId(), "node",
-                    TransactionStateChecker.create( container ).isNodeDeletedInCurrentTx( node.getId() ) );
+            try ( TransactionStateChecker stateChecker = TransactionStateChecker.create( container ) )
+            {
+                writeNodeOrRelationshipMeta( out, node.getId(), "node", stateChecker.isNodeDeletedInCurrentTx( node.getId() ) );
+            }
         }
         else if ( value instanceof Relationship )
         {
             Relationship relationship = (Relationship) value;
-            writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
-                    TransactionStateChecker.create( container )
-                            .isRelationshipDeletedInCurrentTx( relationship.getId() ) );
+            try ( TransactionStateChecker transactionStateChecker = TransactionStateChecker.create( container ) )
+            {
+                writeNodeOrRelationshipMeta( out, relationship.getId(), "relationship",
+                        transactionStateChecker.isRelationshipDeletedInCurrentTx( relationship.getId() ) );
+            }
         }
         else if ( value instanceof Path )
         {

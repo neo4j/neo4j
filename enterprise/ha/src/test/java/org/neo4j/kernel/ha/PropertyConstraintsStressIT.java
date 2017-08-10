@@ -41,6 +41,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
@@ -430,14 +431,17 @@ public class PropertyConstraintsStressIT
             try ( Transaction tx = db.beginTx() )
             {
                 Set<Object> values = new HashSet<>();
-                for ( Node node : loop( db.findNodes( label( type ) ) ) )
+                try ( ResourceIterator<Node> nodes = db.findNodes( label( type ) ) )
                 {
-                    Object value = node.getProperty( property );
-                    if ( values.contains( value ) )
+                    for ( Node node : loop( nodes ) )
                     {
-                        return false;
+                        Object value = node.getProperty( property );
+                        if ( values.contains( value ) )
+                        {
+                            return false;
+                        }
+                        values.add( value );
                     }
-                    values.add( value );
                 }
 
                 tx.success();

@@ -35,6 +35,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
@@ -126,8 +127,10 @@ public class TestGraphDescription implements GraphHolder
 
         try ( Transaction ignored = graphdb.beginTx() )
         {
-            assertTrue( "can't look up node.",
-                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ).hasNext() );
+            try ( IndexHits<Node> indexHits = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
+            {
+                assertTrue( "can't look up node.", indexHits.hasNext() );
+            }
         }
     }
 
@@ -138,10 +141,10 @@ public class TestGraphDescription implements GraphHolder
     {
         data.get();
 
-        try ( Transaction ignored = graphdb.beginTx() )
+        try ( Transaction ignored = graphdb.beginTx();
+              IndexHits<Node> nodes = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
         {
-            assertTrue( "can't look up node.",
-                    graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ).hasNext() );
+            assertTrue( "can't look up node.", nodes.hasNext() );
         }
     }
 
@@ -165,8 +168,11 @@ public class TestGraphDescription implements GraphHolder
         {
             assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
             assertFalse( "node autoindex enabled.", graphdb().index().getNodeAutoIndexer().isEnabled() );
-            assertTrue( "can't look up rel.",
-                    graphdb().index().getRelationshipAutoIndexer().getAutoIndex().get( "name", "relProp" ).hasNext() );
+            try ( IndexHits<Relationship> relationships = graphdb().index()
+                    .getRelationshipAutoIndexer().getAutoIndex().get( "name", "relProp" ) )
+            {
+                assertTrue( "can't look up rel.", relationships.hasNext() );
+            }
             assertTrue( "relationship autoindex enabled.", graphdb().index().getRelationshipAutoIndexer().isEnabled() );
         }
     }

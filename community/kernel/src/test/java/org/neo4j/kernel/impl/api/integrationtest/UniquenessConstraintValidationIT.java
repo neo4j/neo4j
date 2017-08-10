@@ -68,6 +68,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
         }
+        commit();
     }
 
     @Test
@@ -120,6 +121,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 1" ) );
         }
+        commit();
     }
 
     @Test
@@ -144,6 +146,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value1'" ) );
         }
+        commit();
     }
 
     @Test
@@ -226,6 +229,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         {
             assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "`key1` = 'value2'" ) );
         }
+        commit();
     }
 
     @Test
@@ -241,6 +245,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeSetProperty( node, key, Values.of( "value1" ) );
 
         // then should not throw exception
+        commit();
     }
 
     @Test
@@ -256,6 +261,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         statement.dataWriteOperations().nodeAddLabel( node, label );
 
         // then should not throw exception
+        commit();
     }
 
     @Test
@@ -305,6 +311,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // then I should find the original node
         assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ) );
+        commit();
     }
 
     @Test
@@ -331,6 +338,7 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 
         // then I should find the original node
         assertThat( readOps.nodeGetFromUniqueIndexSeek( idx, exact( propId, Values.of( 1 ) ) ), equalTo( ourNode ));
+        commit();
     }
 
     private TokenNameLookup tokenLookup( Statement statement )

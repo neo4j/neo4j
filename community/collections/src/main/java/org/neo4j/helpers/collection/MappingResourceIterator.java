@@ -17,31 +17,39 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.shell.impl;
+package org.neo4j.helpers.collection;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterable;
-import org.neo4j.helpers.collection.MappingResourceIterator;
+import org.neo4j.graphdb.ResourceIterator;
 
-public class RelationshipToNodeIterable extends MappingResourceIterator<Node, Relationship>
+public abstract class MappingResourceIterator<T, S> implements ResourceIterator<T>
 {
-    private final Node fromNode;
+    private ResourceIterator<S> sourceIterator;
 
-    private RelationshipToNodeIterable( ResourceIterable<Relationship> iterableToWrap, Node fromNode )
+    public MappingResourceIterator( ResourceIterator<S> sourceResourceIterator )
     {
-        super( iterableToWrap.iterator() );
-        this.fromNode = fromNode;
+        this.sourceIterator = sourceResourceIterator;
+    }
+
+    protected abstract T map( S object );
+
+    public boolean hasNext()
+    {
+        return sourceIterator.hasNext();
+    }
+
+    public T next()
+    {
+        return map( sourceIterator.next() );
+    }
+
+    public void remove()
+    {
+        sourceIterator.remove();
     }
 
     @Override
-    protected Node map( Relationship rel )
+    public void close()
     {
-        return rel.getOtherNode( fromNode );
-    }
-
-    public static MappingResourceIterator<Node,Relationship> wrap( ResourceIterable<Relationship> relationships, Node fromNode )
-    {
-        return new RelationshipToNodeIterable( relationships, fromNode );
+        sourceIterator.close();
     }
 }

@@ -98,9 +98,11 @@ public class MandatoryTransactionsForIndexHitsFacadeTest
     private IndexHits<Node> queryIndex( Index<Node> index )
     {
         GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseAPI();
-        try ( Transaction transaction = graphDatabaseService.beginTx() )
+        try ( Transaction ignored = graphDatabaseService.beginTx() )
         {
-            return index.get( "foo", 42 );
+            IndexHits<Node> hits = index.get( "foo", 42 );
+            hits.close();
+            return hits;
         }
     }
 }

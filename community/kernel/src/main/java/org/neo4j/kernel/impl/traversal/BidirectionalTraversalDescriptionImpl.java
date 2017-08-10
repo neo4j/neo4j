@@ -143,9 +143,20 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
     @Override
     public Traverser traverse( final Iterable<Node> startNodes, final Iterable<Node> endNodes )
     {
-        return new DefaultTraverser( () -> new BidirectionalTraverserIterator(
-                statementFactory.get(), start, end, sideSelector, collisionPolicy, collisionEvaluator, maxDepth,
-                startNodes, endNodes ) );
+        return new DefaultTraverser( () ->
+        {
+            Resource resource = statementFactory.get();
+            try
+            {
+                return new BidirectionalTraverserIterator( resource, start, end, sideSelector, collisionPolicy,
+                        collisionEvaluator, maxDepth, startNodes, endNodes );
+            }
+            catch ( Exception e )
+            {
+                resource.close();
+                throw e;
+            }
+        } );
     }
 
     /**

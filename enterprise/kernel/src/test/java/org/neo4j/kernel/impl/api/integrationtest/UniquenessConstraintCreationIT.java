@@ -181,6 +181,7 @@ public class UniquenessConstraintCreationIT
         // then
         ReadOperations readOperations = readOperationsInNewTransaction();
         assertEquals( asSet( uniqueIndex ), asSet( readOperations.indexesGetAll() ) );
+        commit();
     }
 
     @Test
@@ -234,6 +235,7 @@ public class UniquenessConstraintCreationIT
             Iterator<ConstraintDescriptor> constraints = statement.constraintsGetForSchema( descriptor );
 
             assertEquals( ConstraintDescriptorFactory.existsForSchema( descriptor ), single( constraints ) );
+            commit();
         }
     }
 

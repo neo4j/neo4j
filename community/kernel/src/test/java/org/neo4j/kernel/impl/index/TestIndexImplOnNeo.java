@@ -31,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -87,7 +88,10 @@ public class TestIndexImplOnNeo
         {
             assertTrue( indexExists( indexName ) );
             assertEquals( config, db.index().getConfiguration( index ) );
-            assertEquals( 0, Iterables.count( index.get( "key", "something else" ) ) );
+            try ( IndexHits<Node> indexHits = index.get( "key", "something else" ) )
+            {
+                assertEquals( 0, Iterables.count( indexHits ) );
+            }
             tx.success();
         }
 
