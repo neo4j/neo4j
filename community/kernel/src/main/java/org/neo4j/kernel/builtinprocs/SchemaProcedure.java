@@ -112,34 +112,36 @@ public class SchemaProcedure
                         RelationshipType relationshipType = relationshipTypeIterator.next();
                         String relationshipTypeGetName = relationshipType.name();
                         int relId = readOperations.relationshipTypeGetForName( relationshipTypeGetName );
-                        ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator();
 
-                        List<NodeImpl> startNodes = new LinkedList<>();
-                        List<NodeImpl> endNodes = new LinkedList<>();
-
-                        while ( labelsInUse.hasNext() )
+                        try ( ResourceIterator<Label> labelsInUse = graphDatabaseAPI.getAllLabelsInUse().iterator() )
                         {
-                            Label labelToken = labelsInUse.next();
-                            String labelName = labelToken.name();
-                            Map<String,Object> properties = new HashMap<>();
-                            NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
-                            int labelId = readOperations.labelGetForName( labelName );
+                            List<NodeImpl> startNodes = new LinkedList<>();
+                            List<NodeImpl> endNodes = new LinkedList<>();
 
-                            if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
+                            while ( labelsInUse.hasNext() )
                             {
-                                startNodes.add( node );
+                                Label labelToken = labelsInUse.next();
+                                String labelName = labelToken.name();
+                                Map<String,Object> properties = new HashMap<>();
+                                NodeImpl node = getOrCreateLabel( labelName, properties, nodes );
+                                int labelId = readOperations.labelGetForName( labelName );
+
+                                if ( readOperations.countsForRelationship( labelId, relId, ReadOperations.ANY_LABEL ) > 0 )
+                                {
+                                    startNodes.add( node );
+                                }
+                                if ( readOperations.countsForRelationship( ReadOperations.ANY_LABEL, relId, labelId ) > 0 )
+                                {
+                                    endNodes.add( node );
+                                }
                             }
-                            if ( readOperations.countsForRelationship( ReadOperations.ANY_LABEL, relId, labelId ) > 0 )
+                            for ( NodeImpl startNode : startNodes )
                             {
-                                endNodes.add( node );
-                            }
-                        }
-                        for ( NodeImpl startNode : startNodes )
-                        {
-                            for ( NodeImpl endNode : endNodes )
-                            {
-                                RelationshipImpl relationship =
-                                        addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                                for ( NodeImpl endNode : endNodes )
+                                {
+                                    RelationshipImpl relationship =
+                                            addRelationship( startNode, endNode, relationshipTypeGetName, relationships );
+                                }
                             }
                         }
                     }

@@ -28,12 +28,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.api.proc.ProcedureSignature;
@@ -70,8 +74,25 @@ public class ProcedureResourcesIT
         for ( Map.Entry<String,List<Object>> procedureWithParams : allProceduresWithParameters.entrySet() )
         {
             // then
+            initialData();
             verifyProcedureCloseAllAcquiredKernelStatements( procedureWithParams.getKey(), procedureWithParams.getValue() );
             clearDb();
+        }
+    }
+
+    private void initialData()
+    {
+        Label unusedLabel = Label.label( "unusedLabel" );
+        RelationshipType unusedRelType = RelationshipType.withName( "unusedRelType" );
+        String unusedPropKey = "unusedPropKey";
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node1 = db.createNode( unusedLabel );
+            node1.setProperty( unusedPropKey, "value" );
+            Node node2 = db.createNode( unusedLabel );
+            node2.setProperty( unusedPropKey, 1 );
+            node1.createRelationshipTo( node2, unusedRelType );
+            tx.success();
         }
     }
 
@@ -113,7 +134,7 @@ public class ProcedureResourcesIT
         }
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 1, TimeUnit.SECONDS );
+            db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
             tx.success();
         }
     }
@@ -121,18 +142,15 @@ public class ProcedureResourcesIT
     private String buildProcedureQuery( String procedureName, List<Object> parameters )
     {
         StringBuilder sb = new StringBuilder();
+        StringJoiner joiner = new StringJoiner( "," );
         sb.append( "CALL " ).append( procedureName ).append( "(" );
-        boolean first = true;
         for ( Object parameter : parameters )
         {
-            if ( !first )
-            {
-                sb.append( "," );
-            }
-            sb.append( parameter );
-            first = false;
+            joiner.add( parameter.toString() );
         }
+        sb.append( joiner.toString() );
         sb.append( ")" );
+        System.out.println( sb.toString() );
         return sb.toString();
     }
 
