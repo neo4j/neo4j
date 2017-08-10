@@ -30,6 +30,7 @@ import org.junit.Test;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -52,6 +53,7 @@ import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 import static java.util.Collections.emptyMap;
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.Matchers.allOf;
@@ -420,7 +422,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     public void shouldGiveNiceMessageAtFailWhenTryingToKill() throws Throwable
     {
         String query = "CALL dbms.killQuery('query-9999999999')";
-        Map<String,String> expected = new HashMap<String,String>();
+        Map<String,String> expected = new HashMap<>();
         expected.put( "queryId",  "query-9999999999" );
         expected.put( "username",  "n/a" );
         expected.put( "message",  "No Query found with this id" );
@@ -430,20 +432,27 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldGiveNiceMessageAtFailWhenTryingToKillMoreThenOne() throws Throwable
     {
+        //Given
         String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
 
-        assertSuccess( adminSubject, query, r -> {
-            Map<String,String> expected = new HashMap<String,String>();
-            expected.put( "queryId",  "query-9999999989" );
-            expected.put( "username",  "n/a" );
-            expected.put( "message",  "No Query found with this id" );
-            assertThat(r.next(), equalTo( expected ));
-            expected.put( "queryId",  "query-9999999999" );
-            expected.put( "username",  "n/a" );
-            expected.put( "message",  "No Query found with this id" );
-            assertThat(r.next(), equalTo( expected ));
-        });
+        //Expect
+        Set<Map<String,String>> expected = new HashSet<>();
+        Map<String,String> firstResultExpected = new HashMap<>();
+        firstResultExpected.put( "queryId", "query-9999999989" );
+        firstResultExpected.put( "username", "n/a" );
+        firstResultExpected.put( "message", "No Query found with this id" );
+        Map<String,String> secoundResultExpected = new HashMap<>();
+        secoundResultExpected.put( "queryId", "query-9999999999" );
+        secoundResultExpected.put( "username", "n/a" );
+        secoundResultExpected.put( "message", "No Query found with this id" );
+        expected.add( firstResultExpected );
+        expected.add( secoundResultExpected );
 
+        //Then
+        assertSuccess( adminSubject, query, r -> {
+            Set<Map<String,Object>> actual = r.stream().collect( toSet() );
+            assertThat( actual, equalTo( expected ) );
+        } );
     }
 
     @Test
