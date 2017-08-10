@@ -320,9 +320,15 @@ public class EnterpriseBuiltInDbmsProcedures
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            return getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
-         }
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys =
+                    getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
+            if ( querys.isEmpty() )
+            {
+                return Stream.<QueryTerminationResult>builder()
+                        .add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
+            }
+            return querys.stream().map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+        }
         catch ( UncaughtCheckedException uncaught )
         {
             throwIfPresent( uncaught.getCauseIfOfType( InvalidArgumentsException.class ) );
@@ -338,14 +344,24 @@ public class EnterpriseBuiltInDbmsProcedures
         securityContext.assertCredentialsNotExpired();
         try
         {
-            Set<Long> queryIds = idTexts
-                .stream()
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) )
-                .map( catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) )
-                .collect( toSet() );
 
-            return getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) )
-                .map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
+            Set<Long> queryIds = idTexts.stream().map( catchThrown( InvalidArgumentsException.class, QueryId::fromExternalString ) ).map(
+                    catchThrown( InvalidArgumentsException.class, QueryId::kernelQueryId ) ).collect( toSet() );
+
+            Set<QueryTerminationResult> terminatedQuerys = getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) ).map(
+                    catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) ).collect( toSet() );
+
+            if ( terminatedQuerys.size() != idTexts.size() )
+            {
+                for ( String id : idTexts )
+                {
+                    if ( !terminatedQuerys.stream().anyMatch( query -> query.queryId.equals( id ) ) )
+                    {
+                        terminatedQuerys.add( new QueryFailedTerminationResult( fromExternalString( id ) ) );
+                    }
+                }
+            }
+            return terminatedQuerys.stream();
         }
         catch ( UncaughtCheckedException uncaught )
         {
@@ -495,11 +511,21 @@ public class EnterpriseBuiltInDbmsProcedures
     {
         public final String queryId;
         public final String username;
+        public String message = "Query found";
 
         public QueryTerminationResult( QueryId queryId, String username )
         {
             this.queryId = queryId.toString();
             this.username = username;
+        }
+    }
+
+    public static class QueryFailedTerminationResult extends QueryTerminationResult
+    {
+        public QueryFailedTerminationResult( QueryId queryId )
+        {
+            super( queryId, "n/a" );
+            super.message = "No Query found with this id";
         }
     }
 

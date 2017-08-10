@@ -29,6 +29,7 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -413,6 +414,36 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         // allow query1 to exit procedure and finish
         ClassWithProcedures.doubleLatch.finish();
         tx1.closeAndAssertSuccess();
+    }
+
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKill() throws Throwable
+    {
+        String query = "CALL dbms.killQuery('query-9999999999')";
+        Map<String,String> expected = new HashMap<String,String>();
+        expected.put( "queryId",  "query-9999999999" );
+        expected.put( "username",  "n/a" );
+        expected.put( "message",  "No Query found with this id" );
+        assertSuccess( adminSubject, query, r -> assertThat(r.next(), equalTo( expected )));
+    }
+
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKillMoreThenOne() throws Throwable
+    {
+        String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
+
+        assertSuccess( adminSubject, query, r -> {
+            Map<String,String> expected = new HashMap<String,String>();
+            expected.put( "queryId",  "query-9999999989" );
+            expected.put( "username",  "n/a" );
+            expected.put( "message",  "No Query found with this id" );
+            assertThat(r.next(), equalTo( expected ));
+            expected.put( "queryId",  "query-9999999999" );
+            expected.put( "username",  "n/a" );
+            expected.put( "message",  "No Query found with this id" );
+            assertThat(r.next(), equalTo( expected ));
+        });
+
     }
 
     @Test
