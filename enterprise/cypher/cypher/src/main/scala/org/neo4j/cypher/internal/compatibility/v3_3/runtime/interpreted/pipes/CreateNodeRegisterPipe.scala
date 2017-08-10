@@ -42,13 +42,10 @@ case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformati
     input.map {
       row =>
         val nodeId = state.query.createNodeId()
-        val context = PrimitiveExecutionContext(pipelineInformation)
-        setProperties(context, state, nodeId)
-        setLabels(context, state, nodeId)
-
-        state.copyArgumentStateTo(context)
-        context.setLongAt(offset, nodeId)
-        context
+        setProperties(row, state, nodeId)
+        setLabels(row, state, nodeId)
+        row.setLongAt(offset, nodeId)
+        row
     }
   }
 
