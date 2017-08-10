@@ -30,7 +30,7 @@ object PrimitiveExecutionContext {
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
 
   val longs = new Array[Long](pipeline.numberOfLongs)
-  private val refs = new Array[AnyValue](pipeline.numberOfReferences)
+  val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
   override def copyTo(target: ExecutionContext, longOffset: Int = 0, refOffset: Int = 0): Unit = target match {
     case other@PrimitiveExecutionContext(otherPipeline) =>

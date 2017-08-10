@@ -43,6 +43,7 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
 
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
+  def refs(): Array[AnyValue]
 
   def newWith(newEntries: Seq[(String, AnyValue)]): ExecutionContext
   def newWith1(key1: String, value1: AnyValue): ExecutionContext
@@ -61,6 +62,11 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
   override def getLongAt(offset: Int): Long = fail()
+  override def longs(): Array[Long] = fail()
+
+  override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
+  override def getRefAt(offset: Int): AnyValue = fail()
+  override def refs(): Array[AnyValue] = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
 
@@ -122,10 +128,4 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue])
     m.remove(key)
     this
   }
-
-  override def setRefAt(offset: Int, value: AnyValue): Unit = fail()
-
-  override def getRefAt(offset: Int): AnyValue = fail()
-
-  override def longs(): Array[Long] = fail()
 }
