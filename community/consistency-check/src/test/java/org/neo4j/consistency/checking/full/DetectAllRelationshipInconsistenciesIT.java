@@ -38,10 +38,10 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
-import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -125,7 +125,7 @@ public class DetectAllRelationshipInconsistenciesIT
                 StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
                 DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
                         db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
-                        db.getDependencyResolver().resolveDependency( SchemaIndexProvider.class ) );
+                        db.getDependencyResolver().resolveDependency( SchemaIndexProviderMap.class ) );
 
                 int threads = random.intBetween( 2, 10 );
                 FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE,
