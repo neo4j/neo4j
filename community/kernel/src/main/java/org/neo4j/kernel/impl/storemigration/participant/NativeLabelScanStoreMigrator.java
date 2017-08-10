@@ -113,16 +113,9 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
 
     private boolean isNativeLabelScanStoreMigrationRequired( File storeDir ) throws IOException
     {
-        try
-        {
-            return pageCache.getCachedFileSystem()
-                    .streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
-                    .noneMatch( Predicates.alwaysTrue() );
-        }
-        catch ( Exception e )
-        {
-            return true;
-        }
+        return pageCache.getCachedFileSystem()
+                .streamFilesRecursive( new File( storeDir, NativeLabelScanStore.FILE_NAME ) )
+                .noneMatch( Predicates.alwaysTrue() );
     }
 
     private void deleteLuceneLabelIndex( File indexRootDirectory ) throws IOException
