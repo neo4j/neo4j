@@ -242,7 +242,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
 
-  override def getById(id: Long): T = singleDbHit(inner.getById(id))
+  override def getById(id: Long): T = inner.getById(id)
 
   override def getProperty(obj: Long, propertyKeyId: Int): Any = singleDbHit(inner.getProperty(obj, propertyKeyId))
 

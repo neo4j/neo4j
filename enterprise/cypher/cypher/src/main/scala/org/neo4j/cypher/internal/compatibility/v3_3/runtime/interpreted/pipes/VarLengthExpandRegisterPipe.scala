@@ -46,28 +46,33 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
   /*  Since Long is used for both edges and nodes, the "why" of these aliases is to make the code a easier to read.*/
 
   type LNode = Long
-  type LRelationship = Long
+
+  case class PrimitiveRelationship(relationshipId: Long, typeId: Int, startNodeId: LNode, endNodeId: LNode) {
+    def otherSide(fromNode: LNode) = if (fromNode == startNodeId)
+      endNodeId
+    else
+      startNodeId
+  }
 
   private def varLengthExpand(node: LNode,
                               state: QueryState,
-                              row: ExecutionContext): Iterator[(LNode, Seq[LRelationship])] = {
-    val stack = new mutable.Stack[(LNode, Seq[LRelationship])]
+                              row: ExecutionContext): Iterator[(LNode, Seq[PrimitiveRelationship])] = {
+    val stack = new mutable.Stack[(LNode, Seq[PrimitiveRelationship])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(LNode, Seq[LRelationship])] {
-      override def next(): (LNode, Seq[LRelationship]) = {
+    new Iterator[(LNode, Seq[PrimitiveRelationship])] {
+      override def next(): (LNode, Seq[PrimitiveRelationship]) = {
         val (fromNode, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(fromNode)) {
           val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
 
-          var otherSide = 0l
+          var relationship: PrimitiveRelationship = null
 
           val relVisitor = new RelationshipVisitor[InternalException] {
-            override def visit(relationshipId: LRelationship, typeId: Int, startNodeId: LNode, endNodeId: LNode): Unit =
-              if (fromNode == startNodeId)
-                otherSide = endNodeId
-              else
-                otherSide = startNodeId
+            override def visit(relationshipId: Long, typeId: Int, startNodeId: LNode, endNodeId: LNode): Unit = {
+
+              relationship = PrimitiveRelationship(relationshipId, typeId, startNodeId, endNodeId)
+            }
           }
 
 
@@ -75,9 +80,9 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
             val relId = relationships.next()
             relationships.relationshipVisit(relId, relVisitor)
 
-            val relationshipIsUniqueInPath = !rels.contains(relId)
+            val relationshipIsUniqueInPath = !rels.contains(relationship)
             if (relationshipIsUniqueInPath) {
-              stack.push((otherSide, rels :+ relId))
+              stack.push((relationship.otherSide(fromNode), rels :+ relationship))
             }
           }
         }
@@ -102,14 +107,13 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
     input.flatMap {
       inputRowWithFromNode =>
         val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
-        val paths: Iterator[(LNode, Seq[LRelationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
+        val paths: Iterator[(LNode, Seq[PrimitiveRelationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
         paths collect {
-          case (toNode: LNode, relIds: Seq[LRelationship])
-            if relIds.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
+          case (toNode: LNode, rels: Seq[PrimitiveRelationship])
+            if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
             val resultRow = PrimitiveExecutionContext(pipeline)
             resultRow.copyFrom(inputRowWithFromNode)
             resultRow.setLongAt(toOffset, toNode)
-            val rels = relIds.map(state.query.relationshipOps.getById)
             resultRow.setRefAt(relOffset, rels)
             resultRow
         }
