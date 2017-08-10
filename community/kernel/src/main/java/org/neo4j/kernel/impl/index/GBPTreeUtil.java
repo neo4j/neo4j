@@ -27,6 +27,8 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.io.fs.FileHandle;
 import org.neo4j.io.pagecache.PageCache;
 
+import static org.neo4j.function.Predicates.alwaysTrue;
+
 /**
  * Utilities for common operations around a {@link GBPTree}.
  */
@@ -76,8 +78,7 @@ public class GBPTreeUtil
     {
         try
         {
-            storeFileHandle( pageCache, storeFile );
-            return true;
+            return pageCache.getCachedFileSystem().streamFilesRecursive( storeFile ).anyMatch( alwaysTrue() );
         }
         catch ( IOException e )
         {
@@ -87,6 +88,9 @@ public class GBPTreeUtil
 
     private static FileHandle storeFileHandle( PageCache pageCache, File storeFile ) throws IOException
     {
-        return pageCache.getCachedFileSystem().streamFilesRecursive( storeFile ).findFirst().get();
+        return pageCache.getCachedFileSystem()
+                .streamFilesRecursive( storeFile )
+                .findFirst()
+                .orElseThrow( () -> new NoSuchFileException( storeFile.getPath() ) );
     }
 }
