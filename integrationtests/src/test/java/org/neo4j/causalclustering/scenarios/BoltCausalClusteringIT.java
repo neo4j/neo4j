@@ -365,7 +365,7 @@ public class BoltCausalClusteringIT
         catch ( ServiceUnavailableException ex )
         {
             // then
-            assertThat(ex.getMessage(), startsWith( "Failed to call 'dbms.cluster.routing.getServers' procedure on server" ));
+            assertThat(ex.getMessage(), startsWith( "Failed to run"));
         }
     }
 
