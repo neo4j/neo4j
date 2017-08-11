@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
@@ -36,12 +37,14 @@ import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_
 public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<InputRelationship,RelationshipRecord>>
 {
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
+    private final Collector badCollector;
 
     public RelationshipRecordPreparationStep( StageControl control, Configuration config,
-            BatchingRelationshipTypeTokenRepository relationshipTypeRepository )
+            BatchingRelationshipTypeTokenRepository relationshipTypeRepository, Collector badCollector )
     {
         super( control, "RECORDS", config, 0 );
         this.relationshipTypeRepository = relationshipTypeRepository;
+        this.badCollector = badCollector;
     }
 
     @Override
@@ -57,7 +60,14 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
             long endNodeId = batch.ids[idIndex++];
             if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND )
             {
-                relationship.setInUse( false );
+                if ( startNodeId == ID_NOT_FOUND )
+                {
+                    badCollector.collectBadRelationship( batchRelationship, batchRelationship.startNode() );
+                }
+                if ( endNodeId == ID_NOT_FOUND )
+                {
+                    badCollector.collectBadRelationship( batchRelationship, batchRelationship.endNode() );
+                }
             }
             else
             {

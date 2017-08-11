@@ -76,7 +76,7 @@ public class BadCollector implements Collector
     }
 
     @Override
-    public void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
+    public synchronized void collectBadRelationship( final InputRelationship relationship, final Object specificValue )
     {
         checkTolerance( BAD_RELATIONSHIPS, new RelationshipsProblemReporter( relationship, specificValue ) );
     }
