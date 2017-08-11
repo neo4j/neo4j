@@ -52,7 +52,7 @@ import static java.util.UUID.randomUUID;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
-public class CoreBootstrapperTest
+public class CoreBootstrapperIT
 {
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
