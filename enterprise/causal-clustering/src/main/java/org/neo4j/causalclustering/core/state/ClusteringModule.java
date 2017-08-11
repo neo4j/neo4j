@@ -23,10 +23,13 @@ import java.io.File;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.state.storage.SimpleFileStorage;
 import org.neo4j.causalclustering.core.state.storage.SimpleStorage;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
+import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
+import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.identity.ClusterBinder;
 import org.neo4j.causalclustering.identity.ClusterId;
@@ -62,7 +65,7 @@ public class ClusteringModule
 
         topologyService = discoveryServiceFactory
                 .coreTopologyService( config, sslPolicy, myself, platformModule.jobScheduler, logProvider,
-                        userLogProvider, hostnameResolver );
+                        userLogProvider, hostnameResolver, resolveStrategy( config ) );
 
         life.add( topologyService );
 
@@ -77,6 +80,15 @@ public class ClusteringModule
 
         clusterBinder = new ClusterBinder( clusterIdStorage, topologyService, logProvider, Clocks.systemClock(),
                 () -> sleep( 100 ), 300_000, coreBootstrapper );
+    }
+
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    {
+        long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        int pollingFrequencyWithinRefreshWindow = 2;
+        int numberOfRetries =
+                pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
     }
 
     public CoreTopologyService topologyService()

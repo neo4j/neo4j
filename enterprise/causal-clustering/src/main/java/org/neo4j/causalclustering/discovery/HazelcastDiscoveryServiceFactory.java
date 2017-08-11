@@ -32,18 +32,28 @@ public class HazelcastDiscoveryServiceFactory implements DiscoveryServiceFactory
 {
     @Override
     public CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         configureHazelcast( config );
-        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver );
+        return new HazelcastCoreTopologyService( config, sslPolicy, myself, jobScheduler, logProvider, userLogProvider, hostnameResolver, topologyServiceRetryStrategy );
     }
 
     @Override
     public TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-                                            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver )
+                                            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         configureHazelcast( config );
-        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy, hostnameResolver ), jobScheduler, logProvider, config, myself );
+        return new HazelcastClient( new HazelcastClientConnector( config, logProvider, sslPolicy, hostnameResolver ), jobScheduler, logProvider, config, myself,
+                resolveStrategy( config ) );
+    }
+
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    {
+        long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        int pollingFrequencyWithinRefreshWindow = 2;
+        int numberOfRetries =
+                pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
     }
 
     private static void configureHazelcast( Config config )

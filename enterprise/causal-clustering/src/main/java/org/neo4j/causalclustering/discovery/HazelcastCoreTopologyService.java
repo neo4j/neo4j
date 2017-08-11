@@ -79,6 +79,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private final long refreshPeriod;
     private final LogProvider logProvider;
     private final HostnameResolver hostnameResolver;
+    private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
     private String membershipRegistrationId;
     private JobScheduler.JobHandle refreshJob;
@@ -92,7 +93,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
     private volatile boolean stopped;
 
     HazelcastCoreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself, JobScheduler jobScheduler,
-            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver )
+            LogProvider logProvider, LogProvider userLogProvider, HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.config = config;
         this.sslPolicy = sslPolicy;
@@ -104,6 +105,7 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
         this.userLog = userLogProvider.getLog( getClass() );
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.hostnameResolver = hostnameResolver;
+        this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
     }
 
     @Override
@@ -309,6 +311,11 @@ class HazelcastCoreTopologyService extends LifecycleAdapter implements CoreTopol
 
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
+    {
+        return topologyServiceRetryStrategy.apply( memberId, this::retrieveSocketAddress, Optional::isPresent );
+    }
+
+    private Optional<AdvertisedSocketAddress> retrieveSocketAddress( MemberId memberId )
     {
         return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }

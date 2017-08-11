@@ -31,8 +31,6 @@ import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-import org.neo4j.causalclustering.discovery.TopologyService;
-import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -42,13 +40,13 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.SslPolicy;
 
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
 
 public class CatchUpClient extends LifecycleAdapter
 {
     private final LogProvider logProvider;
-    private final TopologyService topologyService;
     private final Log log;
     private final Clock clock;
     private final Monitors monitors;
@@ -58,11 +56,9 @@ public class CatchUpClient extends LifecycleAdapter
 
     private NioEventLoopGroup eventLoopGroup;
 
-    public CatchUpClient( TopologyService topologyService, LogProvider logProvider, Clock clock,
-            long inactivityTimeoutMillis, Monitors monitors, SslPolicy sslPolicy )
+    public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis, Monitors monitors, SslPolicy sslPolicy )
     {
         this.logProvider = logProvider;
-        this.topologyService = topologyService;
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
@@ -70,18 +66,12 @@ public class CatchUpClient extends LifecycleAdapter
         this.sslPolicy = sslPolicy;
     }
 
-    public <T> T makeBlockingRequest( MemberId upstream, CatchUpRequest request,
+    public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request,
             CatchUpResponseCallback<T> responseHandler ) throws CatchUpClientException
     {
         CompletableFuture<T> future = new CompletableFuture<>();
-        Optional<AdvertisedSocketAddress> catchUpAddress = topologyService.findCatchupAddress( upstream );
 
-        if ( !catchUpAddress.isPresent() )
-        {
-            throw new CatchUpClientException( "Cannot find the target member socket address" );
-        }
-
-        CatchUpChannel channel = pool.acquire( catchUpAddress.get() );
+        CatchUpChannel channel = pool.acquire( upstream );
 
         future.whenComplete( ( result, e ) ->
         {
@@ -98,8 +88,7 @@ public class CatchUpClient extends LifecycleAdapter
         channel.setResponseHandler( responseHandler, future );
         channel.send( request );
 
-        String operation = String.format( "Timed out executing operation %s on %s (%s)",
-                request, upstream, catchUpAddress.get() );
+        String operation = format( "Timed out executing operation %s on %s", request, upstream );
 
         return waitForCompletion( future, operation, channel::millisSinceLastResponse, inactivityTimeoutMillis, log );
     }

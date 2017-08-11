@@ -45,6 +45,8 @@ import org.neo4j.causalclustering.core.consensus.schedule.DelayedRenewableTimeou
 import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.HostnameResolver;
 import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.discovery.TopologyServiceMultiRetryStrategy;
+import org.neo4j.causalclustering.discovery.TopologyServiceRetryStrategy;
 import org.neo4j.causalclustering.discovery.procedures.ReadReplicaRoleProcedure;
 import org.neo4j.causalclustering.helper.ExponentialBackoffStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -189,14 +191,13 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         HostnameResolver hostnameResolver = chooseResolver( config, logProvider, userLogProvider );
 
         TopologyService topologyService = discoveryServiceFactory.topologyService( config, clusterSslPolicy,
-                logProvider, platformModule.jobScheduler, myself, hostnameResolver );
+                logProvider, platformModule.jobScheduler, myself, hostnameResolver, resolveStrategy( config ) );
 
         life.add( dependencies.satisfyDependency( topologyService ) );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
         CatchUpClient catchUpClient = life.add(
-                new CatchUpClient( topologyService, logProvider, Clocks.systemClock(),
-                        inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
+                new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, clusterSslPolicy ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier = dependencies.provideDependency( DatabaseHealth.class );
 
@@ -283,7 +284,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                 new CatchupPollingProcess( logProvider, localDatabase, servicesToStopOnStoreCopy, catchUpClient,
                         upstreamDatabaseStrategySelector, catchupTimeoutService,
                         config.get( CausalClusteringSettings.pull_interval ).toMillis(), batchingTxApplier,
-                        platformModule.monitors, storeCopyProcess, databaseHealthSupplier );
+                        platformModule.monitors, storeCopyProcess, databaseHealthSupplier, topologyService );
         dependencies.satisfyDependencies( catchupProcess );
 
         txPulling.add( batchingTxApplier );
@@ -294,7 +295,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         ExponentialBackoffStrategy retryStrategy = new ExponentialBackoffStrategy( 1, 30, TimeUnit.SECONDS );
         life.add(
                 new ReadReplicaStartupProcess( remoteStore, localDatabase, txPulling, upstreamDatabaseStrategySelector,
-                        retryStrategy, logProvider, platformModule.logging.getUserLogProvider(), storeCopyProcess ) );
+                        retryStrategy, logProvider, platformModule.logging.getUserLogProvider(), storeCopyProcess, topologyService ) );
 
         CatchupServer catchupServer = new CatchupServer( platformModule.logging.getInternalLogProvider(),
                 platformModule.logging.getUserLogProvider(), localDatabase::storeId,
@@ -309,6 +310,15 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
         dependencies.satisfyDependency( createSessionTracker() );
 
         life.add( catchupServer ); // must start last and stop first, since it handles external requests
+    }
+
+    private static TopologyServiceRetryStrategy resolveStrategy( Config config )
+    {
+        long refreshPeriodMillis = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
+        int pollingFrequencyWithinRefreshWindow = 2;
+        int numberOfRetries =
+                pollingFrequencyWithinRefreshWindow + 1; // we want to have more retries at the given frequency than there is time in a refresh period
+        return new TopologyServiceMultiRetryStrategy( refreshPeriodMillis / pollingFrequencyWithinRefreshWindow, numberOfRetries );
     }
 
     static Predicate<String> fileWatcherFileNameFilter()
