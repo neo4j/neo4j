@@ -96,6 +96,15 @@ public class InputRelationship extends InputEntity
         return typeId.intValue();
     }
 
+    /**
+     * @return whether or not this relationship has a type assigned to it, whether via {@link #typeId()}
+     * (where {@link #hasTypeId()} is {@code true}), or via {@link #type()}.
+     */
+    public boolean hasType()
+    {
+        return hasTypeId() || type() != null;
+    }
+
     public void setType( String type )
     {
         this.type = type;

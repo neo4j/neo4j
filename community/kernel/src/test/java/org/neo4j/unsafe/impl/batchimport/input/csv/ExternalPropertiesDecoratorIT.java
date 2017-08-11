@@ -74,7 +74,7 @@ public class ExternalPropertiesDecoratorIT
                 nodeData( data( decorator, () -> mainData( count ) ) ), defaultFormatNodeFileHeader(),
                 null, null,
                 idType, config,
-                collector, processors );
+                collector, processors, true );
 
         // WHEN/THEN
         try ( InputIterator<InputNode> nodes = input.nodes().iterator() )

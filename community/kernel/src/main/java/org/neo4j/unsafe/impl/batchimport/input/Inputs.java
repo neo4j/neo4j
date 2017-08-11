@@ -19,24 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
-import java.io.File;
-
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerator;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
-import org.neo4j.unsafe.impl.batchimport.input.csv.Configuration;
-import org.neo4j.unsafe.impl.batchimport.input.csv.CsvInput;
-import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
-
-import static java.nio.charset.Charset.defaultCharset;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_RELATIONSHIP_DECORATOR;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
-import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 
 public class Inputs
 {
@@ -76,15 +62,5 @@ public class Inputs
                 return badCollector;
             }
         };
-    }
-
-    public static Input csv( File nodes, File relationships, IdType idType,
-            Configuration configuration, Collector badCollector, int maxProcessors )
-    {
-        return new CsvInput(
-                nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
-                relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
-                defaultFormatRelationshipFileHeader(), idType, configuration,
-                badCollector, maxProcessors );
     }
 }

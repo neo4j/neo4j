@@ -115,7 +115,7 @@ class CsvImporter implements Importer
                 idType,
                 new WrappedCsvInputConfigurationForNeo4jAdmin( csvConfiguration( args, false ) ),
                 badCollector,
-                configuration.maxNumberOfProcessors() );
+                configuration.maxNumberOfProcessors(), !ignoreBadRelationships );
 
         ImportTool.doImport( outsideWorld.errorStream(), outsideWorld.errorStream(), storeDir, logsDir, reportFile, fs,
                 nodesFiles, relationshipsFiles, false, input, this.databaseConfig, badOutput, configuration );
