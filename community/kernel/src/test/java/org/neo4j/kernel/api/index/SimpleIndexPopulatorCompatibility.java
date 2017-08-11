@@ -136,6 +136,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         accessor.close();
     }
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends SimpleIndexPopulatorCompatibility
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
@@ -165,6 +166,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         }
     }
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends SimpleIndexPopulatorCompatibility
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )
