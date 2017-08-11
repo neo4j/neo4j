@@ -147,7 +147,7 @@ public class CommunityServerBuilder
         return this;
     }
 
-    private Map<String, String> createConfiguration( File temporaryFolder )
+    public Map<String, String> createConfiguration( File temporaryFolder )
     {
         Map<String, String> properties = stringMap(
                 ServerSettings.management_api_path.name(), managementUri,

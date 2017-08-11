@@ -217,122 +217,31 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
+  
   <build>
-    <resources>
-      <resource>
-        <directory>src/main/resources</directory>
-      </resource>
-      <resource>
-        <directory>${project.build.directory}/generated-sources</directory>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <targetPath>META-INF</targetPath>
-        <includes>
-          <include>NOTICE.txt</include>
-          <include>LICENSE.txt</include>
-          <include>CHANGES.txt</include>
-          <include>LICENSES.txt</include>
-        </includes>
-      </resource>
-    </resources>
-
-
     <plugins>
-      <!-- Development execution -->
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-          </execution>
-        </executions>
-        <configuration>
-          <mainClass>${neo4j-server.mainClass}</mainClass>
-          <classpathScope>test</classpathScope>
-          <arguments>
-            <argument>--config-dir=${basedir}/neo4j-home/conf</argument>
-            <argument>--home-dir=${basedir}/neo4j-home</argument>
-          </arguments>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>default-jar</id>
-            <goals>
-              <goal>jar</goal>
-            </goals>
-            <configuration>
-              <archive>
-                <manifest>
-                  <mainClass>${neo4j-server.mainClass}</mainClass>
-                </manifest>
-              </archive>
-              <excludes>
-                <exclude>lib/**</exclude>
-              </excludes>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
+        <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
+          <!-- Integration tests spend significant time waiting, so we can run more things in parallel here-->
+          <forkCount>2C</forkCount>
+          <!-- Misha says it is not safe to run tests with more than one thread per JVM -->
+          <!-- He also said he'd fix that! -->
+          <threadCount>1</threadCount>
+          <reuseForks>true</reuseForks>
+          <runOrder>random</runOrder>
+          <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->
+          <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
+          <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
+          <workingDirectory>${project.build.directory}/FORK_DIRECTORY_${surefire.forkNumber}</workingDirectory>
           <systemPropertyVariables>
-            <java.io.tmpdir>${project.build.directory}</java.io.tmpdir>
+            <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
           </systemPropertyVariables>
-          <useManifestOnlyJar>false</useManifestOnlyJar>
         </configuration>
       </plugin>
     </plugins>
   </build>
-
-  <profiles>
-    <profile>
-      <id>initial-build</id>
-      <repositories>
-        <repository>
-          <id>neo4j-dev</id>
-          <name>Neo4j Developer Repository</name>
-          <url>http://m2.neo4j.org/content/groups/everything/</url>
-        </repository>
-      </repositories>
-    </profile>
-  </profiles>
-
-  <repositories>
-    <repository>
-      <id>neo4j-release-repository</id>
-      <name>Neo4j Maven 2 release repository</name>
-      <url>http://m2.neo4j.org/content/repositories/releases</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-    <repository>
-      <id>neo4j-snapshot-repository</id>
-      <name>Neo4j Maven 2 snapshot repository</name>
-      <url>http://m2.neo4j.org/content/repositories/snapshots</url>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <releases>
-        <enabled>false</enabled>
-      </releases>
-    </repository>
-  </repositories>
 
 </project>
 

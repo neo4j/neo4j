@@ -19,8 +19,11 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
+import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.backup.OnlineBackupSettings;
@@ -107,5 +110,15 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
             super.stop();
             configFile.ifPresent( File::delete );
         }
+    }
+
+    @Override
+    public Map<String, String> createConfiguration( File temporaryFolder )
+    {
+        Map<String, String> configuration = super.createConfiguration( temporaryFolder );
+
+        configuration.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
+
+        return configuration;
     }
 }
