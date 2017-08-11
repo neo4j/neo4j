@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.backup;
+package org.neo4j.backup.causalclustering;
 
 import org.junit.After;
 import org.junit.Before;
@@ -44,10 +44,10 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
+import static org.neo4j.backup.causalclustering.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
+import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
 
 public class ClusterSeedingIT
 {

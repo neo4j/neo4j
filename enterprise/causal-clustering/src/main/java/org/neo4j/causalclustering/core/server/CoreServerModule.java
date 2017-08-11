@@ -22,8 +22,6 @@ package org.neo4j.causalclustering.core.server;
 import java.io.File;
 import java.util.function.Supplier;
 
-import org.neo4j.backup.OnlineBackupKernelExtension;
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.ReplicationModule;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchupServer;
@@ -62,13 +60,11 @@ import org.neo4j.causalclustering.logging.MessageLogger;
 import org.neo4j.causalclustering.messaging.CoreReplicatedContentMarshal;
 import org.neo4j.causalclustering.messaging.LoggingInbound;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.PlatformModule;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -135,29 +131,6 @@ public class CoreServerModule
                 copiedStoreRecovery, remoteStore, logProvider );
 
         LifeSupport servicesToStopOnStoreCopy = new LifeSupport();
-
-        if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
-        {
-            platformModule.dataSourceManager.addListener( new DataSourceManager.Listener()
-            {
-                @Override
-                public void registered( NeoStoreDataSource dataSource )
-                {
-                    servicesToStopOnStoreCopy.add( pickBackupExtension( dataSource ) );
-                }
-
-                @Override
-                public void unregistered( NeoStoreDataSource dataSource )
-                {
-                    servicesToStopOnStoreCopy.remove( pickBackupExtension( dataSource ) );
-                }
-
-                private OnlineBackupKernelExtension pickBackupExtension( NeoStoreDataSource dataSource )
-                {
-                    return dataSource.getDependencyResolver().resolveDependency( OnlineBackupKernelExtension.class );
-                }
-            } );
-        }
 
         CoreState coreState = new CoreState( coreStateMachinesModule.coreStateMachines,
                 replicationModule.getSessionTracker(), lastFlushedStorage );
