@@ -123,6 +123,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
 
     // This behaviour is expected by General indexes
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends SimpleIndexAccessorCompatibility
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
@@ -241,6 +242,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
 
     // This behaviour is expected by Unique indexes
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends SimpleIndexAccessorCompatibility
     {
         public Unique( IndexProviderCompatibilityTestSuite testSuite )

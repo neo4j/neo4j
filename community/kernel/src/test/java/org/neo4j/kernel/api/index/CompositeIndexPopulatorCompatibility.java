@@ -55,6 +55,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         super( testSuite, descriptor );
     }
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class General extends CompositeIndexPopulatorCompatibility
     {
         public General( IndexProviderCompatibilityTestSuite testSuite )
@@ -85,6 +86,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         }
     }
 
+    @Ignore( "Not a test. This is a compatibility suite" )
     public static class Unique extends CompositeIndexPopulatorCompatibility
     {
         Value value1 = Values.of( "value1" );
