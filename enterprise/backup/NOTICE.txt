@@ -27,6 +27,10 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Compress
   Apache Commons Lang
+  Apache Shiro :: Core
+  Caffeine cache
+  Commons BeanUtils
+  hazelcast-all
   Lucene Core
   Lucene Memory
   Netty
@@ -35,4 +39,8 @@ Apache Software License, Version 2.0
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
+
+MIT License
+  SLF4J API Module
+  SLF4J NOP Binding
 

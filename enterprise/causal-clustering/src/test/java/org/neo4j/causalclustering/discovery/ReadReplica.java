@@ -26,7 +26,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.IntFunction;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.catchup.tx.CatchupPollingProcess;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -96,7 +95,6 @@ public class ReadReplica implements ClusterMember
         config.put( GraphDatabaseSettings.neo4j_home.name(), neo4jHome.getAbsolutePath() );
 
         config.put( CausalClusteringSettings.transaction_listen_address.name(), listenAddress( listenAddress, txPort ) );
-        config.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( listenAddress, backupPort ) );
         config.put( GraphDatabaseSettings.logs_directory.name(), new File( neo4jHome, "logs" ).getAbsolutePath() );
 
         this.discoveryServiceFactory = discoveryServiceFactory;

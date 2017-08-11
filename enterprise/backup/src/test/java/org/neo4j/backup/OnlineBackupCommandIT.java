@@ -52,12 +52,12 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.util.JvmRunner.testDirectory;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandIT
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
@@ -152,26 +152,6 @@ public class OnlineBackupCommandIT
         }
         db.ensureStarted();
         createSomeData( db );
-    }
-
-    private static int runBackupToolFromOtherJvmToGetExitCode( String... args )
-            throws Exception
-    {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
-    }
-
-    public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args )
-            throws Exception
-    {
-        List<String> allArgs = new ArrayList<>( Arrays.asList(
-                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
-                AdminTool.class.getName() ) );
-        allArgs.add( "backup" );
-        allArgs.addAll( Arrays.asList( args ) );
-
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
-                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()

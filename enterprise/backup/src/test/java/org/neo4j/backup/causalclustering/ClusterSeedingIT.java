@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.backup;
+package org.neo4j.backup.causalclustering;
 
 import org.junit.After;
 import org.junit.Before;
@@ -40,10 +40,10 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
+import static org.neo4j.backup.causalclustering.BackupCoreIT.backupAddress;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.causalclustering.helpers.DataCreator.createEmptyNodes;
+import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
 
 public class ClusterSeedingIT
 {
@@ -62,11 +62,12 @@ public class ClusterSeedingIT
     {
         fsa = fileSystemRule.get();
 
-        backupCluster = new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+        backupCluster =
+                new Cluster( testDir.directory( "cluster-for-backup" ), 3, 0, new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
+                        Standard.LATEST_NAME, IpFamily.IPV4, false );
 
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
+                Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         baseBackupDir = testDir.directory( "backups" );
     }
@@ -123,8 +124,8 @@ public class ClusterSeedingIT
     public void shouldSeedNewMemberFromEmptyIdleCluster() throws Throwable
     {
         // given
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
+                Standard.LATEST_NAME, IpFamily.IPV4, false );
         cluster.start();
 
         // when: creating a backup
@@ -143,8 +144,8 @@ public class ClusterSeedingIT
     public void shouldSeedNewMemberFromNonEmptyIdleCluster() throws Throwable
     {
         // given
-        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0,
-                new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(), Standard.LATEST_NAME, IpFamily.IPV4, false );
+        cluster = new Cluster( testDir.directory( "cluster-b" ), 3, 0, new SharedDiscoveryService(), emptyMap(), emptyMap(), emptyMap(), emptyMap(),
+                Standard.LATEST_NAME, IpFamily.IPV4, false );
 
         cluster.start();
         createEmptyNodes( cluster, 100 );
@@ -180,3 +181,4 @@ public class ClusterSeedingIT
         dataMatchesEventually( before, cluster.coreMembers() );
     }
 }
+
