@@ -24,56 +24,63 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, P
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
-import scala.collection.mutable.ArrayBuffer
-
 case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    val primitiveColumnCount = pipelineInformation.numberOfLongs
-    val primitiveRows: ArrayBuffer[Long] = new ArrayBuffer[Long]()
+    val longColumnCount = pipelineInformation.numberOfLongs
+    val longRowsBuilder = new ResizableLongArray(longColumnCount * 64, 2)
     val refColumnCount = pipelineInformation.numberOfReferences
-    val refRows = new ArrayBuffer[Any]()
+    val refRowsBuilder = new ResizableRefArray(refColumnCount * 64, 2)
     input.foreach(ctx => {
-      if (primitiveColumnCount > 0) {
-        primitiveRows ++= ctx.longs()
+      if (longColumnCount > 0) {
+        longRowsBuilder ++= ctx.longs()
       }
       if (refColumnCount > 0) {
-        refRows ++= ctx.refs()
+        refRowsBuilder ++= ctx.refs()
       }
     })
 
     new Iterator[ExecutionContext] {
-      private var primitiveIndex = 0
+      private var longIndex = 0
       private var refIndex = 0
-      private val primitiveArrayLength = primitiveRows.length
-      private val refArrayLength = refRows.length
+      private val longRows = longRowsBuilder.array
+      private val longRowsLength = longRowsBuilder.length
+      private val refRows = refRowsBuilder.array
+      private val refRowsLength = refRowsBuilder.length
 
-      override def hasNext: Boolean = primitiveIndex < primitiveArrayLength || refIndex < refArrayLength
+      override def hasNext: Boolean = longIndex < longRowsLength || refIndex < refRowsLength
 
       override def next(): ExecutionContext = {
         val row = new ExecutionContext {
-          private val globalRefOffset = refIndex
-          private val globalPrimitiveOffset = primitiveIndex
+          private val refIndexSnapshot = refIndex
+          private val longIndexSnapshot = longIndex
 
-          override def setLongAt(offset: Int, value: Long): Unit = primitiveRows(offset + globalPrimitiveOffset) = value
+          override def setLongAt(offset: Int, value: Long): Unit = longRows(offset + longIndexSnapshot) = value
 
-          override def setRefAt(offset: Int, value: Any): Unit = refRows(offset + globalRefOffset) = value
+          override def setRefAt(offset: Int, value: Any): Unit = refRows(offset + refIndexSnapshot) = value
 
-          // if this is called from somewhere like PrimitiveExecutionContext#copyFrom the array copy is redundant
-          // adding something like the following would result in 1 fewer array copies per row:
-          //  > fillLongs(to: Array[Long]) = primitiveRows.copyToArray(to, globalPrimitiveOffset, primitiveColumnCount)
-          override def longs(): Array[Long] =
-            primitiveRows.view(globalPrimitiveOffset, globalPrimitiveOffset + primitiveColumnCount).toArray
+          // when called from PrimitiveExecutionContext#copyFrom the array creation is redundant, it occurs again in
+          // PrimitiveExecutionContext#copyFrom
+          // adding something like the following would result in fewer array creations:
+          //  > fillLongs(to: Array[Long]) = System.arraycopy(longRows, longIndexSnapshot, to, 0, longColumnCount)
+          override def longs(): Array[Long] = {
+            val longs = new Array[Long](longColumnCount)
+            System.arraycopy(longRows, longIndexSnapshot, longs, 0, longColumnCount)
+            longs
+          }
 
-          override def refs(): Array[Any] =
-            refRows.view(globalRefOffset, globalRefOffset + refColumnCount).toArray
+          override def refs(): Array[Any] = {
+            val refs = new Array[Any](refColumnCount)
+            System.arraycopy(refRows, refIndexSnapshot, refs, 0, refColumnCount)
+            refs
+          }
 
-          override def getRefAt(offset: Int): Any = refRows(offset + globalRefOffset)
+          override def getRefAt(offset: Int): Any = refRows(offset + refIndexSnapshot)
 
           override def copyFrom(input: ExecutionContext): Unit = fail()
 
-          override def getLongAt(offset: Int): Long = primitiveRows(offset + globalPrimitiveOffset)
+          override def getLongAt(offset: Int): Long = longRows(offset + longIndexSnapshot)
 
           override def newWith(newEntries: Seq[(String, Any)]): ExecutionContext = fail()
 
@@ -98,11 +105,41 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
           private def fail(): Nothing =
             throw new InternalException(s"Not supported in anonymous ${classOf[EagerRegisterPipe]} execution context")
         }
-        primitiveIndex += primitiveColumnCount
+        longIndex += longColumnCount
         refIndex += refColumnCount
 
         row
       }
+    }
+  }
+
+  private class ResizableLongArray(initialSize: Int, growth: Int) extends ResizableArray[Long](initialSize, growth) {
+    override protected def newArray(size: Int): Array[Long] = new Array[Long](size)
+  }
+
+  private class ResizableRefArray(initialSize: Int, growth: Int) extends ResizableArray[Any](initialSize, growth) {
+    override protected def newArray(size: Int): Array[Any] = new Array[Any](size)
+  }
+
+  private abstract class ResizableArray[T](initialSize: Int, growth: Int) {
+    var array: Array[T] = newArray(initialSize)
+
+    var length: Int = 0
+
+    def ++=(elements: Array[T]): Unit = {
+      while (length + elements.length > array.length)
+        grow()
+      System.arraycopy(elements, 0, array, length, elements.length)
+      length = length + elements.length
+    }
+
+    protected def newArray(size: Int): Array[T]
+
+    // NOTE: current impl doesn't reuse space of old array. Instead, it creates bigger array & copies old elements to it
+    private def grow(): Unit = {
+      val largerArray = newArray(array.length * growth)
+      System.arraycopy(array, 0, largerArray, 0, array.length)
+      array = largerArray
     }
   }
 
