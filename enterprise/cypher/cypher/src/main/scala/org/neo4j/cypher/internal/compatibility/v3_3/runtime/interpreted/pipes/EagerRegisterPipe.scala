@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, P
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable.ArrayBuffer
 
 case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformation)(val id: Id = new Id)
   extends PipeWithSource(source) {
@@ -32,16 +32,18 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val primitiveColumnCount = pipelineInformation.numberOfLongs
     val primitiveRows: ArrayBuffer[Long] = new ArrayBuffer[Long]()
-    if (primitiveColumnCount > 0) {
-      input.foreach(ctx => primitiveRows ++= ctx.longs())
-    }
-
     val refColumnCount = pipelineInformation.numberOfReferences
-    val refsBuilder = new ListBuffer[Any]
-    if (refColumnCount > 0) {
-      input.foreach(ctx => refsBuilder.appendAll(ctx.refs()))
+    val refRows = new ArrayBuffer[Any]()
+    if (primitiveColumnCount > 0) {
+      input.foreach(ctx => {
+        if (primitiveColumnCount > 0) {
+          primitiveRows ++= ctx.longs()
+        }
+        if (refColumnCount > 0) {
+          refRows ++= ctx.refs()
+        }
+      })
     }
-    val refRows: List[Any] = refsBuilder.result()
 
     new Iterator[ExecutionContext] {
       private var primitiveIndex = 0
@@ -56,13 +58,24 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
           private val globalRefOffset = refIndex
           private val globalPrimitiveOffset = primitiveIndex
 
-          override def setLongAt(offset: Int, value: Long): Unit = fail()
+          override def setLongAt(offset: Int, value: Long): Unit = primitiveRows(offset + globalPrimitiveOffset) = value
 
-          override def setRefAt(offset: Int, value: Any): Unit = fail()
+          override def setRefAt(offset: Int, value: Any): Unit = refRows(offset + globalRefOffset) = value
 
-          override def longs(): Array[Long] = fail()
+          // if this is called from somewhere like PrimitiveExecutionContext#copyFrom the array copy is redundant
+          // adding something like the following would result in 1 fewer array copies per row:
+          //  > fillLongs(to: Array[Long]) = primitiveRows.copyToArray(to, globalPrimitiveOffset, primitiveColumnCount)
+          override def longs(): Array[Long] = {
+            val longsArray = new Array[Long](primitiveColumnCount)
+            primitiveRows.copyToArray(longsArray, globalPrimitiveOffset, primitiveColumnCount)
+            longsArray
+          }
 
-          override def refs(): Array[Any] = fail()
+          override def refs(): Array[Any] = {
+            val refsArray = new Array[Any](refColumnCount)
+            refRows.copyToArray(refsArray, globalRefOffset, refColumnCount)
+            refsArray
+          }
 
           override def getRefAt(offset: Int): Any = refRows(offset + globalRefOffset)
 
