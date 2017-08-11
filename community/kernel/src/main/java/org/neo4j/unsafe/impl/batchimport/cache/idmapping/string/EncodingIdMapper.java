@@ -43,6 +43,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
+import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
 import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.Utils.unsignedCompare;
@@ -131,7 +132,7 @@ public class EncodingIdMapper implements IdMapper
     private Tracker trackerCache;
     private final Encoder encoder;
     private final Radix radix;
-    private final int processorsForSorting;
+    private final int processorsForParallelWork;
     private final Comparator comparator;
 
     private final List<Object> collisionValues = new ArrayList<>();
@@ -157,14 +158,14 @@ public class EncodingIdMapper implements IdMapper
     }
 
     public EncodingIdMapper( NumberArrayFactory cacheFactory, Encoder encoder, Factory<Radix> radixFactory,
-            Monitor monitor, TrackerFactory trackerFactory, int chunkSize, int processorsForSorting,
+            Monitor monitor, TrackerFactory trackerFactory, int chunkSize, int processorsForParallelWork,
             Comparator comparator )
     {
         this.monitor = monitor;
         this.cacheFactory = cacheFactory;
         this.trackerFactory = trackerFactory;
         this.comparator = comparator;
-        this.processorsForSorting = max( processorsForSorting, 1 );
+        this.processorsForParallelWork = max( processorsForParallelWork, 1 );
         this.dataCache = cacheFactory.newDynamicLongArray( chunkSize, GAP_VALUE );
         this.encoder = encoder;
         this.radixFactory = radixFactory;
@@ -272,7 +273,7 @@ public class EncodingIdMapper implements IdMapper
         try
         {
             sortBuckets = new ParallelSort( radix, dataCache, highestSetIndex, trackerCache,
-                    processorsForSorting, progress, comparator ).run();
+                    processorsForParallelWork, progress, comparator ).run();
 
             int numberOfCollisions = detectAndMarkCollisions( progress );
             if ( numberOfCollisions > 0 )
@@ -339,6 +340,98 @@ public class EncodingIdMapper implements IdMapper
         return COLLISION_BIT.get( eId, 1 ) != 0;
     }
 
+    private class DetectWorker implements Runnable
+    {
+        private final long fromInclusive;
+        private final long toExclusive;
+        private final boolean last;
+        private final ProgressListener progress;
+
+        private int numberOfCollisions;
+        private int localProgress;
+
+        DetectWorker( long fromInclusive, long toExclusive, boolean last, ProgressListener progress )
+        {
+            this.fromInclusive = fromInclusive;
+            this.toExclusive = toExclusive;
+            this.last = last;
+            this.progress = progress;
+        }
+
+        @Override
+        public void run()
+        {
+            SameGroupDetector sameGroupDetector = new SameGroupDetector();
+
+            // In all chunks except the last this chunk also takes care of the detection in the seam,
+            // but for the last one there's no seam at the end.
+            long end = last ? toExclusive - 1 : toExclusive;
+
+            for ( long i = fromInclusive; i < end; i++ )
+            {
+                detect( sameGroupDetector, i );
+                if ( ++localProgress == 1000 )
+                {
+                    progress.add( localProgress );
+                    localProgress = 0;
+                }
+            }
+            progress.add( localProgress );
+        }
+
+        private void detect( SameGroupDetector sameGroupDetector, long i )
+        {
+            long dataIndexA = trackerCache.get( i );
+            long dataIndexB = trackerCache.get( i + 1 );
+            if ( dataIndexA == ID_NOT_FOUND || dataIndexB == ID_NOT_FOUND )
+            {
+                sameGroupDetector.reset();
+                return;
+            }
+
+            long eIdA = clearCollision( dataCache.get( dataIndexA ) );
+            long eIdB = clearCollision( dataCache.get( dataIndexB ) );
+            if ( eIdA == GAP_VALUE || eIdB == GAP_VALUE )
+            {
+                sameGroupDetector.reset();
+                return;
+            }
+
+            switch ( unsignedDifference( eIdA, eIdB ) )
+            {
+            case GT: throw new IllegalStateException( "Unsorted data, a > b Failure:[" + i + "] " +
+                    Long.toHexString( eIdA ) + " > " + Long.toHexString( eIdB ) + " | " +
+                    radixOf( eIdA ) + ":" + radixOf( eIdB ) );
+            case EQ:
+                // Here we have two equal encoded values. First let's check if they are in the same id space.
+                long collision = sameGroupDetector.collisionWithinSameGroup(
+                        dataIndexA, groupOf( dataIndexA ).id(),
+                        dataIndexB, groupOf( dataIndexB ).id() );
+
+                if ( dataIndexA > dataIndexB )
+                {
+                    // Swap so that lower tracker index means lower data index. TODO Why do we do this?
+                    trackerCache.swap( i, i + 1 );
+                }
+
+                if ( collision != ID_NOT_FOUND )
+                {
+                    if ( markAsCollision( collision ) )
+                    {
+                        numberOfCollisions++;
+                    }
+                    if ( markAsCollision( dataIndexB ) )
+                    {
+                        numberOfCollisions++;
+                    }
+                }
+                break;
+            default:
+                sameGroupDetector.reset();
+            }
+        }
+    }
+
     /**
      * There are two types of collisions:
      * - actual: collisions coming from equal input value. These might however not impose
@@ -359,74 +452,43 @@ public class EncodingIdMapper implements IdMapper
     private int detectAndMarkCollisions( ProgressListener progress )
     {
         progress.started( "DETECT" );
-        long max = highestSetIndex; // excluding the last one because we compare i w/ i+1
-        long numberOfCollisions = 0;
-        SameGroupDetector sameGroupDetector = new SameGroupDetector();
-        for ( long i = 0; i < max; )
+        long totalCount = highestSetIndex + 1;
+
+        Workers<DetectWorker> workers = new Workers<>( "DETECT" );
+        int processors = processorsForParallelWork;
+        long stride = totalCount / processorsForParallelWork;
+        if ( stride < 10 )
         {
-            int batch = (int) min( max - i, COUNTING_BATCH_SIZE );
-            for ( int j = 0; j < batch; j++, i++ )
-            {
-                long dataIndexA = trackerCache.get( i );
-                long dataIndexB = trackerCache.get( i + 1 );
-                if ( dataIndexA == ID_NOT_FOUND || dataIndexB == ID_NOT_FOUND )
-                {
-                    sameGroupDetector.reset();
-                    continue;
-                }
-
-                long eIdA = clearCollision( dataCache.get( dataIndexA ) );
-                long eIdB = clearCollision( dataCache.get( dataIndexB ) );
-                if ( eIdA == GAP_VALUE || eIdB == GAP_VALUE )
-                {
-                    sameGroupDetector.reset();
-                    continue;
-                }
-
-                switch ( unsignedDifference( eIdA, eIdB ) )
-                {
-                case GT: throw new IllegalStateException( "Unsorted data, a > b Failure:[" + i + "] " +
-                            Long.toHexString( eIdA ) + " > " + Long.toHexString( eIdB ) + " | " +
-                            radixOf( eIdA ) + ":" + radixOf( eIdB ) );
-                case EQ:
-                    // Here we have two equal encoded values. First let's check if they are in the same id space.
-                    long collision = sameGroupDetector.collisionWithinSameGroup(
-                            dataIndexA, groupOf( dataIndexA ).id(),
-                            dataIndexB, groupOf( dataIndexB ).id() );
-
-                    if ( dataIndexA > dataIndexB )
-                    {
-                        // Swap so that lower tracker index means lower data index. TODO Why do we do this?
-                        trackerCache.swap( i, i + 1 );
-                    }
-
-                    if ( collision != ID_NOT_FOUND )
-                    {
-                        if ( markAsCollision( collision ) )
-                        {
-                            numberOfCollisions++;
-                        }
-                        if ( markAsCollision( dataIndexB ) )
-                        {
-                            numberOfCollisions++;
-                        }
-                    }
-                    break;
-                default:
-                    sameGroupDetector.reset();
-                }
-            }
-            progress.add( batch );
+            // Multi-threading would be overhead
+            processors = 1;
+            stride = totalCount;
         }
-        progress.done();
+        long fromInclusive = 0;
+        long toExclusive = 0;
+        for ( int i = 0; i < processors; i++ )
+        {
+            boolean last = i == processors - 1;
+            fromInclusive = toExclusive;
+            toExclusive = last ? totalCount : toExclusive + stride;
+            workers.start( new DetectWorker( fromInclusive, toExclusive, last, progress ) );
+        }
+        workers.awaitAndThrowOnErrorStrict( RuntimeException.class );
 
+        int numberOfCollisions = 0;
+        for ( DetectWorker detectWorker : workers )
+        {
+            numberOfCollisions += detectWorker.numberOfCollisions;
+        }
+
+        progress.done();
         if ( numberOfCollisions > Integer.MAX_VALUE )
         {
             throw new InputException( "Too many collisions: " + numberOfCollisions );
         }
 
-        monitor.numberOfCollisions( (int) numberOfCollisions );
-        return (int) numberOfCollisions;
+        int intNumberOfCollisions = toIntExact( numberOfCollisions );
+        monitor.numberOfCollisions( intNumberOfCollisions );
+        return intNumberOfCollisions;
     }
 
     /**
@@ -549,7 +611,7 @@ public class EncodingIdMapper implements IdMapper
         };
 
         new ParallelSort( radix, collisionNodeIdCache, numberOfCollisions - 1,
-                collisionTrackerCache, processorsForSorting, progress, duplicateComparator ).run();
+                collisionTrackerCache, processorsForParallelWork, progress, duplicateComparator ).run();
 
         // Here we have a populated C
         // We want to detect duplicate input ids within the
