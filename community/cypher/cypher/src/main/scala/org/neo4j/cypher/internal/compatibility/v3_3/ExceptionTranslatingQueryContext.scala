@@ -47,6 +47,9 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createNode(): Node =
     translateException(inner.createNode())
 
+  override def createNodeId(): Long =
+    translateException(inner.createNodeId())
+
   override def createRelationship(start: Node, end: Node, relType: String): Relationship =
     translateException(inner.createRelationship(start, end, relType))
 

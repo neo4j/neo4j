@@ -1,9 +1,4 @@
-Accept valid Unicode literal
-Appending lists of same type
-Arithmetic precedence test
-Arithmetic precedence with parenthesis test
 Combining string operators' was blacklisted, but succeeded
-Concatenating lists of same type
 Cope with shadowed variables
 Count non-null values
 Counting directed self-relationships
@@ -27,8 +22,6 @@ handling long chanins of operators
 Handle ORDER BY with LIMIT 1
 Handle projections with ORDER BY - GH#4937
 Honour the column name for RETURN items
-It is unknown - i.e. null - if a null is equal to a null
-It is unknown - i.e. null - if a null is not equal to a null
 Keeping used expression 1
 LIMIT 0 should return an empty result
 Limit to two hits
@@ -57,19 +50,7 @@ Projecting an arithmetic expression with aggregation
 Projecting nodes and relationships
 Rel type function works as expected
 Renaming columns before ORDER BY should return results in ascending order
-Return a boolean
-Return a double-quoted string
-Return a float in exponent form
-Return a float
-Return a nonempty list
-Return a nonempty map
-Return a single-quoted string
-Return an empty list
-Return an empty map
-Return an integer
-Return null
 Returned columns do not change from using ORDER BY
-Returning a projected map
 Returning all variables with ordering
 Simple counting of nodes
 Start the result from the second row by param
@@ -78,7 +59,6 @@ Support column renaming for aggregates as well
 Support column renaming
 Support ordering by a property after being distinct-ified
 Support sort and distinct
-The inverse of a null is a null
 Unwind does not prune context
 Unwinding a concatenation of lists
 Unwinding a list
@@ -136,13 +116,8 @@ Any-typed string comparison
 Comparing nodes to nodes
 Comparing relationships to relationships
 IN should work with nested list subscripting
-IN should work with nested literal list subscripting
 IN should work with list slices
-IN should work with literal list slices
-Execute n[0]
-Execute n['name'] in update queries
 Use dynamic property lookup based on parameters when there is no type information
-Use dynamic property lookup based on parameters when there is lhs type information
 Use dynamic property lookup based on parameters when there is rhs type information
 Use collection lookup based on parameters when there is no type information
 Use collection lookup based on parameters when there is lhs type information
@@ -339,8 +314,6 @@ Returning an expression
 Concatenating and returning the size of literal lists
 Concatenating and returning the size of literal lists
 `substring()` with default second argument
-Arithmetic expressions should propagate null values
-Indexing into nested literal lists
 Multiple aliasing and backreferencing
 Aggregating by a list property has a correct definition of equality
 Reusing variable names
@@ -352,12 +325,6 @@ Bad arguments for `range()`
 SKIP with an expression that does not depend on variables
 LIMIT with an expression that does not depend on variables
 Using `rand()` in aggregations
-A literal null IS null
-A literal null is not IS NOT null
-Using null in AND
-Using null in OR
-Using null in XOR
-Using null in IN
 Handling triadic friend of a friend that is not a friend
 Handling triadic friend of a friend that is not a friend with different relationship type
 Handling triadic friend of a friend that is not a friend with superset of relationship type
@@ -478,17 +445,8 @@ Failing when using a variable that is already bound in CREATE
 
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
-Creating a node
-Creating two nodes
 Creating two nodes and a relationship
-Creating a node with a label
-Creating a node with a property
-Create a single node with multiple labels
-Combine MATCH and CREATE
 Combine MATCH, WITH and CREATE
-Newly-created nodes not visible to preceding MATCH
-Create a single node with properties
-Creating a node with null properties should not return those properties
 Creating a relationship with null properties should not return those properties
 Create a simple pattern
 Create a self loop
@@ -497,7 +455,6 @@ Create nodes and relationships
 Create a relationship with a property
 Create a relationship with the correct direction
 Create a relationship and an end node from a matched starting node
-Create a single node after a WITH
 Create a relationship with a reversed direction
 Create a pattern with multiple hops
 Create a pattern with multiple hops in the reverse direction

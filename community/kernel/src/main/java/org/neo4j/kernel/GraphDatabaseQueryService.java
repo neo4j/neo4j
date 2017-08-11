@@ -42,6 +42,8 @@ public interface GraphDatabaseQueryService
 
     Node createNode();
 
+    Long createNodeId();
+
     Node createNode( Label... labels );
 
     Node getNodeById( long id );

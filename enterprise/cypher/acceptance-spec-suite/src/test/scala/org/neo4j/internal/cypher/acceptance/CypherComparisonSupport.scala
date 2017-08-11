@@ -70,7 +70,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
         case m => m
       }
 
-
       res.map((map: Map[String, Any]) => map.map {
         case (k, v) => k -> convert(v)
       })

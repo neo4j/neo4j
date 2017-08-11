@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes.{AllNodesScanRegisterPipe, ExpandAllRegisterPipe, NodeIndexSeekRegisterPipe, ProduceResultRegisterPipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -42,7 +42,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
                             pipelines: Map[LogicalPlan, PipelineInformation],
-                            readOnly : Boolean,
+                            readOnly: Boolean,
                             rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
@@ -60,16 +60,19 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case p@NodeIndexScan(IdName(column), label, propertyKeys, _ /*TODO*/) =>
         NodeIndexScanRegisterPipe(column, label, propertyKeys, pipelineInformation)(id)
 
-      case NodeIndexSeek(IdName(column),label,propertyKeys,valueExpr, _) =>
+      case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
       case Argument(_) =>
         ArgumentRegisterPipe(pipelineInformation)(id)
 
       case NodeByLabelScan(IdName(column), label, _) =>
         NodesByLabelScanRegisterPipe(column, LazyLabel(label), pipelineInformation)(id)
+
+      case SingleRow() =>
+        SingleRowRegisterPipe(pipelineInformation)(id)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
@@ -128,8 +131,15 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         }
         ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
 
-        // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
-      case _: Selection =>  // selection relies on inner expressions to interact with variables
+      case CreateNode(_, idName, labels, props) =>
+        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
+
+      case EmptyResult(_) =>
+        EmptyResultPipe(source)(id = id)
+
+      case _ => fallback.build(plan, source)
+      // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
+      case _: Selection => // selection relies on inner expressions to interact with variables
         fallback.build(plan, source)
 
       case _: OptionalExpand =>
@@ -178,7 +188,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val id = idMap.getOrElse(plan, new Id)
 
     plan match {
-      case Apply(_,_) => ApplyRegisterPipe(lhs, rhs)(id)
+      case Apply(_, _) => ApplyRegisterPipe(lhs, rhs)(id)
       case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
