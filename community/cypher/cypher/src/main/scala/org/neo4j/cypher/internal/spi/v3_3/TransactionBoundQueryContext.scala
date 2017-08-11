@@ -54,8 +54,9 @@ import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
 import org.neo4j.kernel.api.proc.{QualifiedName => KernelQualifiedName}
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
+import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.storable.Values
 
@@ -128,15 +129,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
-    val relationships = types match {
-      case None =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir))
-      case Some(typeIds) =>
-        transactionalContext.statement.readOperations().nodeGetRelationships(node.getId, toGraphDb(dir), typeIds.toArray)
-    }
-    new BeansAPIRelationshipIterator(relationships, entityAccessor)
-  }
+  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
+    new BeansAPIRelationshipIterator(getRelationshipsForIdsPrimitive(node.getId, dir, types), entityAccessor)
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
     types match {
@@ -273,7 +267,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def indexScan(index: IndexDescriptor) =
-    mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property)))(nodeOps.getById)
+    mapToScalaENFXSafe(indexScanPrimitive(index))(nodeOps.getById)
+
+  override def indexScanPrimitive(index: IndexDescriptor) =
+    transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.exists(index.property))
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
     mapToScalaENFXSafe(transactionalContext.statement.readOperations().indexQuery(index, IndexQuery.stringContains(index.property, value)))(nodeOps.getById)
@@ -294,7 +291,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   override def getNodesByLabel(id: Int): Iterator[Node] =
-    JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodesGetForLabel(id))(nodeOps.getById)
+    JavaConversionSupport.mapToScalaENFXSafe(getNodesByLabelPrimitive(id))(nodeOps.getById)
 
   override def getNodesByLabelPrimitive(id: Int): PrimitiveLongIterator =
     transactionalContext.statement.readOperations().nodesGetForLabel(id)
@@ -355,7 +352,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     override def getById(id: Long) = try {
-      transactionalContext.graph.getNodeById(id)
+      entityAccessor.newNodeProxyById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
     }
@@ -381,6 +378,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().releaseExclusive(ResourceTypes.NODE, obj)
+
+    override def exists(id: Long): Boolean =
+      transactionalContext.statement.readOperations().nodeExists(id)
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -431,8 +431,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def getById(id: Long) = try {
-      transactionalContext.graph.getRelationshipById(id)
+    override def getById(id: Long): RelationshipProxy = try {
+      entityAccessor.newRelationshipProxyById(id)
     } catch {
       case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
     }
@@ -461,6 +461,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
     override def releaseExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, obj)
+
+    override def exists(id: Long): Boolean = {
+      try {
+        transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
+        true
+      } catch {
+        case e: EntityNotFoundException =>
+          false
+      }
+    }
   }
 
   override def getOrCreatePropertyKeyId(propertyKey: String) =
@@ -766,4 +776,9 @@ object TransactionBoundQueryContext {
 
     def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Unit
   }
+}
+
+object NoopVisitor extends RelationshipVisitor[RuntimeException] {
+  // should just throw if the relationship is missing
+  override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit = {}
 }

@@ -38,7 +38,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccess;
+import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -80,7 +80,7 @@ public class RelationshipGroupGetterTest
             NodeRecord node = new NodeRecord( 0, true, group_2.getId(), -1 );
 
             // WHEN trying to find relationship group 7
-            RecordAccess<Long, RelationshipGroupRecord, Integer> access =
+            RecordAccess<RelationshipGroupRecord, Integer> access =
                     new DirectRecordAccess<>( store, Loaders.relationshipGroupLoader( store ) );
             RelationshipGroupPosition result = groupGetter.getRelationshipGroup( node, 7, access );
 

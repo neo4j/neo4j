@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -43,7 +44,9 @@ object RegisterAllocation {
               val slotInfo = oldPipeline(ident)
               newPipeline.add(ident, slotInfo)
             case (key, exp) =>
-              newPipeline.newReference(key, nullable = true, CTAny)
+              // TODO: Support this properly. Requires actually using the expression and supporting aggregation
+              //newPipeline.newReference(key, nullable = true, CTAny)
+            throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
           }
         }
 
@@ -51,6 +54,11 @@ object RegisterAllocation {
         addExpressions(aggregationExpressions)
         result += (lp -> newPipeline)
         newPipeline
+
+      case Argument(_) =>
+        val pipeline = argument.getOrElse(throw new InternalException("Found argument without Apply"))
+        result += (lp -> pipeline)
+        pipeline
 
       case Projection(source, expressions) =>
         val pipeline = allocate(source, nullable, argument)

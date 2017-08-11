@@ -39,8 +39,8 @@ import org.neo4j.kernel.impl.util.collection.ContinuableArrayCursor;
 import org.neo4j.unsafe.impl.batchimport.InputIterator;
 import org.neo4j.unsafe.impl.batchimport.staging.TicketedProcessing;
 
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_ENTITIES;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.END_OF_HEADER;
 import static org.neo4j.unsafe.impl.batchimport.input.InputCache.GROUP_TOKEN;

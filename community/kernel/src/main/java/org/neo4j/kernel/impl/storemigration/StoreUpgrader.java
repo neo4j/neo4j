@@ -39,8 +39,6 @@ import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
-import static java.lang.String.format;
-
 /**
  * A migration process to migrate {@link StoreMigrationParticipant migration participants}, if there's
  * need for it, before the database fully starts. Participants can
@@ -203,14 +201,12 @@ public class StoreUpgrader
     {
         try
         {
-            int index = 1;
             for ( StoreMigrationParticipant participant : participants )
             {
                 Section section = progressMonitor.startSection( participant.getName() );
                 participant.migrate( storeDir, migrationDirectory, section, versionToMigrateFrom,
                         upgradableDatabase.currentVersion() );
                 section.completed();
-                index++;
             }
         }
         catch ( IOException | UncheckedIOException e )

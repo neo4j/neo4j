@@ -35,6 +35,7 @@ import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.test.rule.CleanupRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -47,10 +48,10 @@ public class ServerManagementIT
 
     private final CleanupRule cleanup = new CleanupRule();
     private final TestDirectory baseDir = TestDirectory.testDirectory();
+    private final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( baseDir )
-            .around( cleanup );
+    public RuleChain ruleChain = RuleChain.outerRule( suppressOutput ).around( baseDir ).around( cleanup );
 
     @Test
     public void shouldBeAbleToRestartServer() throws Exception

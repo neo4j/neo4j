@@ -52,7 +52,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
+import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccessSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -147,49 +147,49 @@ public class RelationshipCreatorTest
         }
 
         @Override
-        public RecordAccess<Long, NodeRecord, Void> getNodeRecords()
+        public RecordAccess<NodeRecord, Void> getNodeRecords()
         {
             return delegate.getNodeRecords();
         }
 
         @Override
-        public RecordAccess<Long, PropertyRecord, PrimitiveRecord> getPropertyRecords()
+        public RecordAccess<PropertyRecord, PrimitiveRecord> getPropertyRecords()
         {
             return delegate.getPropertyRecords();
         }
 
         @Override
-        public RecordAccess<Long, RelationshipRecord, Void> getRelRecords()
+        public RecordAccess<RelationshipRecord, Void> getRelRecords()
         {
             return relRecords;
         }
 
         @Override
-        public RecordAccess<Long, RelationshipGroupRecord, Integer> getRelGroupRecords()
+        public RecordAccess<RelationshipGroupRecord, Integer> getRelGroupRecords()
         {
             return delegate.getRelGroupRecords();
         }
 
         @Override
-        public RecordAccess<Long, SchemaRecord, SchemaRule> getSchemaRuleChanges()
+        public RecordAccess<SchemaRecord, SchemaRule> getSchemaRuleChanges()
         {
             return delegate.getSchemaRuleChanges();
         }
 
         @Override
-        public RecordAccess<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+        public RecordAccess<PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
         {
             return delegate.getPropertyKeyTokenChanges();
         }
 
         @Override
-        public RecordAccess<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+        public RecordAccess<LabelTokenRecord, Void> getLabelTokenChanges()
         {
             return delegate.getLabelTokenChanges();
         }
 
         @Override
-        public RecordAccess<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+        public RecordAccess<RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
         {
             return delegate.getRelationshipTypeTokenChanges();
         }

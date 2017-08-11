@@ -42,6 +42,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
 import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.test.rule.TestDirectory;
@@ -382,11 +383,10 @@ public abstract class FileSystemAbstractionTest
     }
 
     @Test
-    public void streamFilesRecursiveMustThrowOnNonExistingBasePath() throws Exception
+    public void streamFilesRecursiveMustReturnEmptyStreamForNonExistingBasePath() throws Exception
     {
         File nonExisting = new File( "nonExisting" );
-        expectedException.expect( NoSuchFileException.class );
-        fsa.streamFilesRecursive( nonExisting );
+        assertFalse( fsa.streamFilesRecursive( nonExisting ).anyMatch( Predicates.alwaysTrue() ) );
     }
 
     @Test

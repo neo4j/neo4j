@@ -52,7 +52,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (single :: Nil) = result
-    single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
   }
 
   test("should return no relationships for types that have not been defined yet") {
@@ -97,8 +97,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -114,8 +114,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (first :: second :: Nil) = result
-    first.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.m should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
+    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    second.toMap should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
   }
 
   test("given empty input, should return empty output") {

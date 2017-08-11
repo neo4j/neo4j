@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory
+import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.graphdb.{Notification, ResourceIterator}
 
@@ -48,7 +50,8 @@ object ExecutionResultWrapper {
 }
 
 class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: PlannerName, val runtime: RuntimeName,
-                             preParsingNotifications: Set[org.neo4j.graphdb.Notification]) extends ExecutionResult {
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification],
+                             offset: Option[frontend.v3_3.InputPosition]) extends ExecutionResult {
 
   override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
@@ -113,51 +116,62 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult, val planner: Pl
 
   private def asKernelNotification(notification: InternalNotification) = notification match {
     case DeprecatedStartNotification(pos, message) =>
-      NotificationCode.START_DEPRECATED.notification(pos.asInputPosition, NotificationDetail.Factory.startDeprecated(message))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.START_DEPRECATED.notification(position, NotificationDetail.Factory.startDeprecated(message))
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.CARTESIAN_PRODUCT.notification(position, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
-      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.asInputPosition)
+      NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case PlannerUnsupportedNotification =>
       NotificationCode.PLANNER_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKeys) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
+      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, index(label, propertyKeys: _*))
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, joinKey(variables.asJava))
     case JoinHintUnsupportedNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(graphdb.InputPosition.empty, joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, indexSeekOrScan(labels.asJava))
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.asInputPosition, NotificationDetail.Factory.label(label))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.MISSING_LABEL.notification(position, Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.MISSING_REL_TYPE.notification(position, relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.asInputPosition, NotificationDetail.Factory.propertyName(name))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.MISSING_PROPERTY_NAME.notification(position, propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
-      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.asInputPosition)
+      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
-      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.asInputPosition)
+      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.DEPRECATED_FUNCTION.notification(position, deprecatedName(oldName, newName))
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.DEPRECATED_PROCEDURE.notification(position, deprecatedName(oldName, newName))
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(position, deprecatedField(procedure, field))
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
-      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(position, bindingVarLengthRelationship(variable))
     case DeprecatedRelTypeSeparatorNotification(pos) =>
-      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.asInputPosition)
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(position)
     case DeprecatedPlannerNotification =>
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCode.PROCEDURE_WARNING.notification(pos.asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
+      val position = pos.withOffset(offset).asInputPosition
+      NotificationCode.PROCEDURE_WARNING.notification(position, procedureWarning(name, warning))
   }
 
   override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = inner.accept(wrapVisitor(visitor))

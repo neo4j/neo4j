@@ -57,7 +57,7 @@ public class ByteArrayTest extends NumberArrayPageCacheTestSupport
         fixture = prepareDirectoryAndPageCache( ByteArrayTest.class );
         PageCache pageCache = fixture.pageCache;
         File dir = fixture.directory;
-        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir );
+        NumberArrayFactory autoWithPageCacheFallback = auto( pageCache, dir, true );
         NumberArrayFactory pageCacheArrayFactory = new PageCachedNumberArrayFactory( pageCache, dir );
         int chunkSize = LENGTH / ChunkedNumberArrayFactory.MAGIC_CHUNK_COUNT;
         return Arrays.asList(

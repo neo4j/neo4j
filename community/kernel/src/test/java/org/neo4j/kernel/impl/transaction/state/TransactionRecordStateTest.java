@@ -158,14 +158,14 @@ public class TransactionRecordStateTest
         }
     }
 
-    private static RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup(
+    private static RecordProxy<RelationshipGroupRecord, Integer> getRelationshipGroup(
             RecordChangeSet recordChangeSet, NodeRecord node, int type )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
         while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            RecordProxy<Long, RelationshipGroupRecord, Integer> change =
+            RecordProxy<RelationshipGroupRecord, Integer> change =
                     recordChangeSet.getRelGroupRecords().getOrLoad( groupId, type );
             RelationshipGroupRecord record = change.forReadingData();
             record.setPrev( previousGroupId ); // not persistent so not a "change"

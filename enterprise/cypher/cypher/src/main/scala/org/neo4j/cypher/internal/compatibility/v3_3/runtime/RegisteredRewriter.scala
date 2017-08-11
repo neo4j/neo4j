@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast.{IdFromSlot, NodeProperty, PrimitiveEquals}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
+import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, bottomUp, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, topDown}
 
 import scala.collection.mutable
 
@@ -39,6 +41,25 @@ class RegisteredRewriter(tokenContext: TokenContext) {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithRegisters = topDown(Rewriter.lift {
+      /*
+      Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
+      would just write to the row the data that is already in it, we can just skip them
+       */
+      case oldPlan@Projection(_, expressions) =>
+        val information = pipelineInformation(oldPlan)
+        val rewriter = rewriteCreator(information, oldPlan)
+
+        val newExpressions = expressions collect {
+          case (column, expression) if !expression.isInstanceOf[Variable] => column -> expression.endoRewrite(rewriter)
+        }
+
+        val newPlan = oldPlan.copy(expressions = newExpressions)(oldPlan.solved)
+        newPipelineInfo += (newPlan -> information)
+
+        rewrites += (oldPlan -> newPlan)
+
+        newPlan
+
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
         val rewriter = rewriteCreator(information, oldPlan)
@@ -73,24 +94,62 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
   private def rewriteCreator(pipelineInformation: PipelineInformation, thisPlan: LogicalPlan): Rewriter = {
     val innerRewriter = Rewriter.lift {
-      case Property(Variable(key), PropertyKeyName(prop)) =>
-        val token: Int = tokenContext.getOptPropertyKeyId(prop).get
+      case Property(Variable(key), PropertyKeyName(propKey)) =>
+        val maybeToken: Option[Int] = tokenContext.getOptPropertyKeyId(propKey)
 
         val slot = pipelineInformation(key)
-        slot match {
-          case LongSlot(offset, _, typ, _) if typ == CTNode =>
-            NodeProperty(offset, token)
+        val propExpression = (slot, maybeToken) match {
+          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTNode => NodeProperty(offset, token)
+          case (LongSlot(offset, _, typ, _), None) if typ == CTNode => NodePropertyLate(offset, propKey)
+          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token)
+          case (LongSlot(offset, _, typ, _), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey)
         }
 
-      case e@Equals(Variable(k1), Variable(k2)) =>
+        if (slot.nullable)
+          NullCheck(slot.offset, propExpression)
+        else
+          propExpression
+
+      case e@Equals(Variable(k1), Variable(k2)) => // TODO: Handle nullability
         val slot1 = pipelineInformation(k1)
         val slot2 = pipelineInformation(k2)
         if (slot1.typ == slot2.typ)
           PrimitiveEquals(IdFromSlot(slot1.offset), IdFromSlot(slot2.offset))
         else
           e
+
+      case GetDegree(Variable(n), typ, direction) =>
+        val maybeToken: Option[String] = typ.map(r => r.name)
+        pipelineInformation(n) match {
+          case LongSlot(offset, false, CTNode, _) => GetDegreePrimitive(offset, maybeToken, direction)
+          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, GetDegreePrimitive(offset, maybeToken, direction))
+          case _ => throw new InternalException(s"Invalid slot for GetDegree: $n")
+        }
+
+      case Variable(k) =>
+        pipelineInformation(k) match {
+          case LongSlot(offset, false, CTNode, _) => NodeFromRegister(offset)
+          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, NodeFromRegister(offset))
+          case LongSlot(offset, false, CTRelationship, _) => RelationshipFromRegister(offset)
+          case LongSlot(offset, true, CTRelationship, _) => NullCheck(offset, RelationshipFromRegister(offset))
+          case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
+          case _ =>
+            throw new InternalException("Did not find `" + k + "` in the pipeline information")
+        }
+
+      case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
+        idFunction
+
+      case _: FunctionInvocation =>
+        throw new CantCompileQueryException(s"Expressions with functions not yet supported in register allocation")
+
+      case _: ShortestPathExpression =>
+        throw new CantCompileQueryException(s"Expressions with shortestPath functions not yet supported in register allocation")
+
+      case _: ScopeExpression | _: NestedPlanExpression =>
+        throw new CantCompileQueryException(s"Expressions with inner scope are not yet supported in register allocation")
     }
-    bottomUp(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
+    topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
 
   private def stopAtOtherLogicalPlans(thisPlan: LogicalPlan): (AnyRef) => Boolean = {

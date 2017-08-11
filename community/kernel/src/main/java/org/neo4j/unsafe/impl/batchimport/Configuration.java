@@ -162,6 +162,17 @@ public interface Configuration
         return false;
     }
 
+    /**
+     * Whether or not to allocate memory for holding the cache on heap. The first alternative is to allocate
+     * off-heap, but if there's no more available memory, but there might be in the heap the importer will
+     * try to allocate chunks of the cache on heap instead. This config control whether or not to allow
+     * this allocation to happen on heap.
+     */
+    default boolean allowCacheAllocationOnHeap()
+    {
+        return false;
+    }
+
     Configuration DEFAULT = new Configuration()
     {
     };

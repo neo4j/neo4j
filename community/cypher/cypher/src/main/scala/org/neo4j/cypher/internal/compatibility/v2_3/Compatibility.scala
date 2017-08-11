@@ -78,14 +78,14 @@ trait Compatibility {
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-        (new ExecutionPlanWrapper(planImpl, preParsingNotifications), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
       }
 
       override protected val trier = preparedQueryForV_2_3
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v2_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v2_3.InputPosition)
     extends org.neo4j.cypher.internal.ExecutionPlan {
 
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
@@ -104,7 +104,7 @@ trait Compatibility {
         val innerResult = inner.run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
         new ClosingExecutionResult(
           query,
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
           exceptionHandler.runSafely
         )
       }

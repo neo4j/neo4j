@@ -25,13 +25,13 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 /**
  * {@link BatchingRecordAccess} for {@link PropertyRecord property records}.
  */
-public class BatchingPropertyRecordAccess extends BatchingRecordAccess<Long,PropertyRecord, PrimitiveRecord>
+public class BatchingPropertyRecordAccess extends BatchingRecordAccess<PropertyRecord, PrimitiveRecord>
 {
     @Override
-    protected PropertyRecord createRecord( Long key, PrimitiveRecord additionalData )
+    protected PropertyRecord createRecord( long key, PrimitiveRecord additionalData )
     {
         return additionalData != null
-                ? new PropertyRecord( key.longValue(), additionalData )
-                : new PropertyRecord( key.longValue() );
+                ? new PropertyRecord( key, additionalData )
+                : new PropertyRecord( key );
     }
 }

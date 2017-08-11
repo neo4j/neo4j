@@ -86,6 +86,7 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.kernel.configuration.Settings.parseLongWithUnit;
 import static org.neo4j.kernel.impl.util.Converters.withDefault;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.BAD_FILE_NAME;
+import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.calculateMaxMemoryFromPercent;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.canDetectFreeMemory;
@@ -240,6 +241,13 @@ public class ImportTool
                 "to improve performance. If left as unspecified (null) it is set to " + DEFAULT_MAX_MEMORY_PERCENT +
                 "% of (free memory on machine - max JVM memory). " +
                 "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%." ),
+        CACHE_ON_HEAP( "cache-on-heap",
+                DEFAULT.allowCacheAllocationOnHeap(),
+                "Whether or not to allow allocating memory for the cache on heap",
+                "(advanced) Whether or not to allow allocating memory for the cache on heap. " +
+                "If 'false' then caches will still be allocated off-heap, but the additional free memory " +
+                "inside the JVM will not be allocated for the caches. This to be able to have better control " +
+                "over the heap memory" ),
         HIGH_IO( "high-io", null, "Assume a high-throughput storage subsystem",
                 "(advanced) Ignore environment-based heuristics, and assume that the target storage subsystem can " +
                 "support parallel IO with high throughput." );
@@ -446,8 +454,11 @@ public class ImportTool
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) );
             dbConfig = dbConfig.augment( loadDbConfig( args.interpretOption( Options.ADDITIONAL_CONFIG.key(), Converters.optional(),
                     Converters.toFile(), Validators.REGEX_FILE_EXISTS ) ) );
+            boolean allowCacheOnHeap = args.getBoolean( Options.CACHE_ON_HEAP.key(),
+                    (Boolean) Options.CACHE_ON_HEAP.defaultValue() );
             configuration = importConfiguration(
-                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir, defaultHighIO );
+                    processors, defaultSettingsSuitableForTests, dbConfig, maxMemory, storeDir,
+                    allowCacheOnHeap, defaultHighIO );
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
@@ -677,12 +688,12 @@ public class ImportTool
     {
         return importConfiguration(
                 processors, defaultSettingsSuitableForTests, dbConfig, null, storeDir,
-                (Boolean)Options.HIGH_IO.defaultValue() );
+                DEFAULT.allowCacheAllocationOnHeap(), (Boolean)Options.HIGH_IO.defaultValue() );
     }
 
     public static org.neo4j.unsafe.impl.batchimport.Configuration importConfiguration(
             Number processors, boolean defaultSettingsSuitableForTests, Config dbConfig, Long maxMemory, File storeDir,
-            Boolean defaultHighIO )
+            boolean allowCacheOnHeap, Boolean defaultHighIO )
     {
         return new org.neo4j.unsafe.impl.batchimport.Configuration()
         {
@@ -714,6 +725,12 @@ public class ImportTool
             public boolean parallelRecordReadsWhenWriting()
             {
                 return defaultHighIO != null ? defaultHighIO : FileUtils.highIODevice( storeDir.toPath(), false );
+            }
+
+            @Override
+            public boolean allowCacheAllocationOnHeap()
+            {
+                return allowCacheOnHeap;
             }
         };
     }

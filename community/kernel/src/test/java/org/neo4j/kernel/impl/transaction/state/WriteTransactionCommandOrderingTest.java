@@ -135,15 +135,15 @@ public class WriteTransactionCommandOrderingTest
     {
         RecordChangeSet recordChangeSet = mock( RecordChangeSet.class );
 
-        RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
-        RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
+        RecordChanges<LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges =
                 mock( RecordChanges.class );
-        RecordChanges<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
-        RecordChanges<Long,NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
-        RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<Long,SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class );
+        RecordChanges<NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
+        RecordChanges<PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
+        RecordChanges<RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
+        RecordChanges<SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
         when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
         when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );
@@ -154,19 +154,19 @@ public class WriteTransactionCommandOrderingTest
         when( recordChangeSet.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
         when( recordChangeSet.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
 
-        List<RecordProxy<Long,NodeRecord,Void>> nodeChanges = new LinkedList<>();
+        List<RecordProxy<NodeRecord,Void>> nodeChanges = new LinkedList<>();
 
-        RecordChange<Long,NodeRecord,Void> deletedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> deletedNode = mock( RecordChange.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
         when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
         nodeChanges.add( deletedNode );
 
-        RecordChange<Long,NodeRecord,Void> createdNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> createdNode = mock( RecordChange.class );
         when( createdNode.getBefore() ).thenReturn( missingNode() );
         when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
         nodeChanges.add( createdNode );
 
-        RecordChange<Long,NodeRecord,Void> updatedNode = mock( RecordChange.class );
+        RecordChange<NodeRecord,Void> updatedNode = mock( RecordChange.class );
         when( updatedNode.getBefore() ).thenReturn( inUseNode() );
         when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
         nodeChanges.add( updatedNode );

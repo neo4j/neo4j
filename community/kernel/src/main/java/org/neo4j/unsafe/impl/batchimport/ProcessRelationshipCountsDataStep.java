@@ -63,9 +63,8 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
     protected void process( RelationshipRecord[] batch, BatchSender sender )
     {
         RelationshipCountsProcessor processor = processor();
-        for ( int i = 0; i < batch.length; i++ )
+        for ( RelationshipRecord relationship : batch )
         {
-            RelationshipRecord relationship = batch[i];
             processor.process( relationship.getFirstNode(), relationship.getType(), relationship.getSecondNode() );
         }
         progressMonitor.progress( batch.length );

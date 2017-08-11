@@ -69,7 +69,7 @@ public class RelationshipDeleter
     }
 
     private void disconnect( RelationshipRecord rel, RelationshipConnection pointer,
-            RecordAccess<Long, RelationshipRecord, Void> relChanges, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relChanges, ResourceLocker locks )
     {
         long otherRelId = pointer.otherSide().get( rel );
         if ( otherRelId == Record.NO_NEXT_RELATIONSHIP.intValue() )
@@ -101,9 +101,9 @@ public class RelationshipDeleter
     private void updateNodesForDeletedRelationship( RelationshipRecord rel, RecordAccessSet recordChanges,
             ResourceLocker locks )
     {
-        RecordProxy<Long, NodeRecord, Void> startNodeChange =
+        RecordProxy<NodeRecord, Void> startNodeChange =
                 recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null );
-        RecordProxy<Long, NodeRecord, Void> endNodeChange =
+        RecordProxy<NodeRecord, Void> endNodeChange =
                 recordChanges.getNodeRecords().getOrLoad( rel.getSecondNode(), null );
 
         NodeRecord startNode = recordChanges.getNodeRecords().getOrLoad( rel.getFirstNode(), null ).forReadingLinkage();
@@ -122,7 +122,7 @@ public class RelationshipDeleter
         }
         else
         {
-            RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( startNode, rel.getType(),
                             recordChanges.getRelGroupRecords() ).group();
             assert groupChange != null : "Relationship group " + rel.getType() + " should have existed here";
@@ -156,7 +156,7 @@ public class RelationshipDeleter
         }
         else
         {
-            RecordProxy<Long, RelationshipGroupRecord, Integer> groupChange =
+            RecordProxy<RelationshipGroupRecord, Integer> groupChange =
                     relGroupGetter.getRelationshipGroup( endNode, rel.getType(),
                             recordChanges.getRelGroupRecords() ).group();
             DirectionWrapper dir = DirectionIdentifier.wrapDirection( rel, endNode );
@@ -183,7 +183,7 @@ public class RelationshipDeleter
     }
 
     private boolean decrementTotalRelationshipCount( long nodeId, RelationshipRecord rel, long firstRelId,
-            RecordAccess<Long, RelationshipRecord, Void> relRecords, ResourceLocker locks )
+            RecordAccess<RelationshipRecord, Void> relRecords, ResourceLocker locks )
     {
         if ( firstRelId == Record.NO_PREV_RELATIONSHIP.intValue() )
         {
@@ -208,9 +208,9 @@ public class RelationshipDeleter
         return false;
     }
 
-    private void deleteGroup( RecordProxy<Long, NodeRecord, Void> nodeChange,
+    private void deleteGroup( RecordProxy<NodeRecord, Void> nodeChange,
                               RelationshipGroupRecord group,
-                              RecordAccess<Long, RelationshipGroupRecord, Integer> relGroupRecords )
+                              RecordAccess<RelationshipGroupRecord, Integer> relGroupRecords )
     {
         long previous = group.getPrev();
         long next = group.getNext();

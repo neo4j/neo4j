@@ -126,7 +126,7 @@ public class LegacyIndexStore
         return Collections.unmodifiableMap( configToUse );
     }
 
-    private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
+    public static void assertConfigMatches( IndexImplementation indexProvider, String indexName,
                                       Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )

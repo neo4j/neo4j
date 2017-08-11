@@ -67,7 +67,6 @@ object StatementConverters {
         //UNION requires all queries to return the same variables
         assert(plannedQueries.nonEmpty)
         val returns = plannedQueries.head.returns
-        assert(plannedQueries.forall(_.returns == returns))
 
         UnionQuery(plannedQueries.map(_.build()), distinct, returns, PeriodicCommit(periodicCommitHint))
 

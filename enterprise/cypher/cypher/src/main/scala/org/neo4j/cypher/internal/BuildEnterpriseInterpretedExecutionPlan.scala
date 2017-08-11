@@ -30,10 +30,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilationContains, LogicalPlanState}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Phase}
@@ -47,29 +48,34 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
   override def postConditions = Set(CompilationContains[ExecutionPlan])
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
-    if (context.debugOptions.contains("sleipnir"))
-      createRegisteredRuntimeExecPlan(from, context)
-    else
-      BuildInterpretedExecutionPlan.process(from, context)
+    createRegisteredRuntimeExecPlan(from, context)
   }
 
   private def createRegisteredRuntimeExecPlan(from: LogicalPlanState, context: EnterpriseRuntimeContext) = {
-    val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
-    val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-    val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-      expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
-    val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
-    val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
-    val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-    val columns = from.statement().returnColumns
-    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
-    val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
-    val fingerprint = context.createFingerprintReference(fp)
-    val periodicCommig = periodicCommitInfo.isDefined
-    val indexes = logicalPlan.indexUsage
-    val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommig, planner, indexes, func, pipe, context.config)
-    new CompilationState(from, Some(execPlan))
+    val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
+    try {
+      val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
+      val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
+      val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+      val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
+        expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
+      val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
+      val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
+      val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
+      val columns = from.statement().returnColumns
+      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
+      val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
+      val fingerprint = context.createFingerprintReference(fp)
+      val periodicCommig = periodicCommitInfo.isDefined
+      val indexes = logicalPlan.indexUsage
+      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommig, planner, indexes, func, pipe, context.config)
+      runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
+      new CompilationState(from, Some(execPlan))
+    } catch {
+      case e : CypherException =>
+        runtimeSuccessRateMonitor.unableToHandlePlan(from.logicalPlan, new CantCompileQueryException(cause = e))
+        new CompilationState(from, None)
+    }
   }
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {

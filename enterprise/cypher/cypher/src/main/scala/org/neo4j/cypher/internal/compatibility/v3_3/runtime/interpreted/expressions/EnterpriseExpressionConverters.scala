@@ -30,11 +30,16 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
     expression match {
       case runtimeAst.NodeFromRegister(offset) => Some(runtimeExpression.NodeFromRegister(offset))
       case runtimeAst.NodeProperty(offset, token) => Some(runtimeExpression.NodeProperty(offset, token))
+      case runtimeAst.RelationshipProperty(offset, token) => Some(runtimeExpression.RelationshipProperty(offset, token))
       case runtimeAst.IdFromSlot(offset) => Some(runtimeExpression.IdFromSlot(offset))
+      case runtimeAst.NodePropertyLate(offset, propKey) => Some(runtimeExpression.NodePropertyLate(offset, propKey))
+      case runtimeAst.RelationshipPropertyLate(offset, propKey) => Some(runtimeExpression.RelationshipPropertyLate(offset, propKey))
       case runtimeAst.PrimitiveEquals(a, b) =>
         val lhs = self.toCommandExpression(a)
         val rhs = self.toCommandExpression(b)
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
+      case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
+        Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
 
       case _ =>
         None

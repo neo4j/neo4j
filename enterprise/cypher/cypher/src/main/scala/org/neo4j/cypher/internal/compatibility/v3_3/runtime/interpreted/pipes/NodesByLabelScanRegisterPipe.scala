@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -30,12 +31,11 @@ case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelin
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    // TODO         val baseContext = state.createOrGetInitialContext()
-
     label.getOptId(state.query) match {
       case Some(labelId) =>
         PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
-          val context = ExecutionContext(pipelineInformation.numberOfLongs)
+          val context = PrimitiveExecutionContext(pipelineInformation)
+          state.copyArgumentStateTo(context)
           context.setLongAt(offset, nodeId)
           context
         })

@@ -33,6 +33,7 @@ import org.neo4j.metrics.source.server.ServerMetrics;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
+import org.neo4j.test.rule.SuppressOutput;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.hamcrest.Matchers.greaterThan;
@@ -44,7 +45,9 @@ import static org.neo4j.metrics.MetricsTestHelper.readLongValue;
 public class ServerMetricsIT
 {
     @Rule
-    public TemporaryFolder folder = new TemporaryFolder();
+    public final TemporaryFolder folder = new TemporaryFolder();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Test
     public void shouldShowServerMetrics() throws Throwable

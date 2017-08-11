@@ -91,7 +91,6 @@ import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.InputIterable;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
-import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdGenerators;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMappers;
 import org.neo4j.unsafe.impl.batchimport.input.Collectors;
@@ -129,10 +128,6 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.wit
  */
 public class StoreMigrator extends AbstractStoreMigrationParticipant
 {
-    // Developers: There is a benchmark, storemigrator-benchmark, that generates large stores and benchmarks
-    // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
-    // complete upgrades in a reasonable time period.
-
     private static final char TX_LOG_COUNTERS_SEPARATOR = 'A';
     public static final String CUSTOM_IO_EXCEPTION_MESSAGE =
             "Migrating this version is not supported for custom IO configurations.";

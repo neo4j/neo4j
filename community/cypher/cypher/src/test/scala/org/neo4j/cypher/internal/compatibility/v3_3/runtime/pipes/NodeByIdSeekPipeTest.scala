@@ -32,7 +32,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
   test("should seek node by id") {
     // given
     val node = mock[Node]
-    val nodeOps = when(mock[Operations[Node]].getById(17)).thenReturn(node).getMock[Operations[Node]]
+    val nodeOps = mock[Operations[Node]]
+    when(nodeOps.exists(17)).thenReturn(true)
+    when(nodeOps.getById(17)).thenReturn(node)
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
@@ -52,8 +54,12 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val nodeOps = mock[Operations[Node]]
 
     when(nodeOps.getById(42)).thenReturn(node1)
+    when(nodeOps.exists(42)).thenReturn(true)
     when(nodeOps.getById(21)).thenReturn(node2)
+    when(nodeOps.exists(21)).thenReturn(true)
     when(nodeOps.getById(11)).thenReturn(node3)
+    when(nodeOps.exists(11)).thenReturn(true)
+
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )

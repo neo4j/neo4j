@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Exponential backoff strategy helper class. Exponent is always 2.
  */
-public class ExponentialBackoffStrategy implements RetryStrategy
+public class ExponentialBackoffStrategy implements TimeoutStrategy
 {
     private final long initialBackoffTimeMillis;
     private final long upperBoundBackoffTimeMillis;

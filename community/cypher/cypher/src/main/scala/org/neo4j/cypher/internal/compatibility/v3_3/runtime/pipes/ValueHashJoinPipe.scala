@@ -50,7 +50,7 @@ case class ValueHashJoinPipe(lhsExpression: Expression, rhsExpression: Expressio
       yield {
         val equiKey = Equivalent(joinKey)
         val seq = table.getOrElse(equiKey, mutable.MutableList.empty)
-        seq.map(context ++ _)
+        seq.map(context.mergeWith)
       }
     result.flatten
   }

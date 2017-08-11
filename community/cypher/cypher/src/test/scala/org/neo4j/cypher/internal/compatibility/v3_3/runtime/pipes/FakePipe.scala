@@ -30,7 +30,8 @@ class FakePipe(val data: Iterator[Map[String, Any]], newVariables: (String, Cyph
 
   def this(data: Traversable[Map[String, Any]], variables: (String, CypherType)*) = this(data.toIterator, variables:_*)
 
-  def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
+  def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    data.map(m => ExecutionContext.empty.newWith(m.toSeq))
 
   var id = new Id
 }

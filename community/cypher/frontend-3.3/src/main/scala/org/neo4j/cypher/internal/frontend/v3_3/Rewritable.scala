@@ -58,6 +58,8 @@ object Rewritable {
           children
         case _: Set[_] =>
           children.toSet
+        case _: Map[_, _] =>
+          children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
         case t =>
           t
       }

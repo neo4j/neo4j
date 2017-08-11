@@ -21,10 +21,11 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 
-class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
+class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
+
   test("normal query is marked as such") {
     createNode()
-    val result = execute("match (n) return n")
+    val result = succeedWith(Configs.All, "match (n) return n")
 
     result.planDescriptionRequested should equal(false)
     result shouldNot be(empty)
@@ -32,18 +33,17 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("explain query is marked as such") {
     createNode()
-    val result = execute("explain match (n) return n")
+    val result = succeedWith(Configs.All, "explain match (n) return n")
 
     result.planDescriptionRequested should equal(true)
     result should be(empty)
   }
 
-  test("EXPLAIN for Cypher 3.1") {
-    val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
+  test("EXPLAIN query plan description contains estimated rows") {
+    val result = succeedWith(Configs.All, "explain match (n) return n")
     result.toList
     assert(result.planDescriptionRequested, "result not marked with planDescriptionRequested")
     result.executionPlanDescription().toString should include("Estimated Rows")
-    result.executionPlanDescription().asJava.toString should include("Estimated Rows")
   }
 
   test("should handle query with nested expression") {
@@ -67,7 +67,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite {
                   |
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
-    val result = execute(query)
+    val result = succeedWith(Configs.CommunityInterpreted, query)
     val plan = result.executionPlanDescription().toString
     result.close()
 

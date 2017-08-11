@@ -258,15 +258,9 @@
                     <!-- Misha says it is not safe to run tests with more than one thread per JVM -->
                     <!-- He also said he'd fix that! -->
                     <threadCount>1</threadCount>
-                    <reuseForks>true</reuseForks>
-                    <runOrder>random</runOrder>
                     <!-- slowest test class takes up to 10 minutes, so let's cater for that, with contingency -->
                     <parallelTestsTimeoutInSeconds>1200</parallelTestsTimeoutInSeconds>
                     <parallelTestsTimeoutForcedInSeconds>1800</parallelTestsTimeoutForcedInSeconds>
-                    <workingDirectory>${project.build.directory}/FORK_DIRECTORY_${surefire.forkNumber}</workingDirectory>
-                    <systemPropertyVariables>
-                        <port.authority.directory>${user.dir}/target/port-authority-${maven.build.timestamp}</port.authority.directory>
-                    </systemPropertyVariables>
                 </configuration>
             </plugin>
         </plugins>

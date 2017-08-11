@@ -441,7 +441,7 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   private var matchingContext: MatchingContext = null
 
   private def getMatches(params: (String, Any)*) = withQueryState { queryState =>
-    val ctx = ExecutionContext().newWith(params.toMap)
+    val ctx = ExecutionContext().newWith(params)
     matchingContext.getMatches(ctx, queryState).toList
   }
 

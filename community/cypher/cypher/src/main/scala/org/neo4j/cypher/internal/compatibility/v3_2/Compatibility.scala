@@ -71,22 +71,24 @@ trait Compatibility[C <: CompilerContext] {
         val tc = TransactionalContextWrapperV3_2(transactionalContext.tc)
         val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
         val syntacticQuery = preparedSyntacticQueryForV_3_2.get
+        val pos3_2 = helpers.as3_2(preParsedQuery.offset)
         val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery, notificationLogger, planContext,
                                                                          preParsedQuery.debugOptions,
-                                                                         Some(helpers.as3_2(preParsedQuery.offset)),
+                                                                         Some(pos3_2),
                                                                          helpers.as3_2(tracer))
 
         // Log notifications/warnings from planning
         planImpl.notifications(planContext).foreach(notificationLogger.log)
 
-        (new ExecutionPlanWrapper(planImpl, transactionalContext, preParsingNotifications ), extractedParameters)
+        (new ExecutionPlanWrapper(planImpl, transactionalContext,preParsingNotifications, pos3_2), extractedParameters)
       }
 
       override protected val trier: Try[BaseState] = preparedSyntacticQueryForV_3_2
     }
   }
 
-  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, transactionalContext: TransactionalContextWrapperV3_3, preParsingNotifications: Set[org.neo4j.graphdb.Notification])
+  class ExecutionPlanWrapper(inner: ExecutionPlan_v3_2, transactionalContext: TransactionalContextWrapperV3_3,
+                             preParsingNotifications: Set[org.neo4j.graphdb.Notification], offSet: frontend.v3_2.InputPosition)
     extends ExecutionPlan {
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
@@ -107,7 +109,7 @@ trait Compatibility[C <: CompilerContext] {
         val innerResult = inner.run(queryContext(transactionalContext), innerExecutionMode, innerParams)
         new ClosingExecutionResult(
           transactionalContext.tc.executingQuery(),
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications),
+          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
           exceptionHandler.runSafely
         )
       }

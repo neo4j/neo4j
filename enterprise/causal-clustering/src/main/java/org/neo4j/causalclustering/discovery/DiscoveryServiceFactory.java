@@ -29,8 +29,9 @@ public interface DiscoveryServiceFactory
 {
     CoreTopologyService coreTopologyService( Config config, SslPolicy sslPolicy, MemberId myself,
             JobScheduler jobScheduler, LogProvider logProvider, LogProvider userLogProvider,
-            HostnameResolver hostnameResolver );
+            HostnameResolver hostnameResolver, TopologyServiceRetryStrategy topologyServiceRetryStrategy );
 
     TopologyService topologyService( Config config, SslPolicy sslPolicy, LogProvider logProvider,
-            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver );
+            JobScheduler jobScheduler, MemberId myself, HostnameResolver hostnameResolver,
+            TopologyServiceRetryStrategy topologyServiceRetryStrategy );
 }

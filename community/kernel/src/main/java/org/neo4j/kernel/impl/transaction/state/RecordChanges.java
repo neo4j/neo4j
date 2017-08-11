@@ -31,19 +31,16 @@ import org.neo4j.kernel.impl.util.statistics.LocalIntCounter;
  * deciding when to make a record heavy and when to consider it changed for inclusion in the
  * transaction as a command.
  *
- * @author Mattias Persson
- *
- * @param <KEY>
- * @param <RECORD>
- * @param <ADDITIONAL>
+ * @param <RECORD> type of record
+ * @param <ADDITIONAL> additional payload
  */
-public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RECORD,ADDITIONAL>
+public class RecordChanges<RECORD,ADDITIONAL> implements RecordAccess<RECORD,ADDITIONAL>
 {
-    private Map<KEY, RecordProxy<KEY,RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
-    private final Loader<KEY,RECORD,ADDITIONAL> loader;
+    private Map<Long, RecordProxy<RECORD,ADDITIONAL>> recordChanges = new HashMap<>();
+    private final Loader<RECORD,ADDITIONAL> loader;
     private final IntCounter changeCounter;
 
-    public RecordChanges( Loader<KEY,RECORD,ADDITIONAL> loader, IntCounter globalCounter )
+    public RecordChanges( Loader<RECORD,ADDITIONAL> loader, IntCounter globalCounter )
     {
         this.loader = loader;
         this.changeCounter = new LocalIntCounter( globalCounter );
@@ -58,15 +55,15 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> getIfLoaded( KEY key )
+    public RecordProxy<RECORD, ADDITIONAL> getIfLoaded( long key )
     {
         return recordChanges.get( key );
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> getOrLoad( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD, ADDITIONAL> getOrLoad( long key, ADDITIONAL additionalData )
     {
-        RecordProxy<KEY, RECORD, ADDITIONAL> result = recordChanges.get( key );
+        RecordProxy<RECORD, ADDITIONAL> result = recordChanges.get( key );
         if ( result == null )
         {
             RECORD record = loader.load( key, additionalData );
@@ -76,15 +73,15 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     }
 
     @Override
-    public void setTo( KEY key, RECORD newRecord, ADDITIONAL additionalData )
+    public void setTo( long key, RECORD newRecord, ADDITIONAL additionalData )
     {
         setRecord( key, newRecord, additionalData );
     }
 
     @Override
-    public RecordProxy<KEY,RECORD,ADDITIONAL> setRecord( KEY key, RECORD record, ADDITIONAL additionalData )
+    public RecordProxy<RECORD,ADDITIONAL> setRecord( long key, RECORD record, ADDITIONAL additionalData )
     {
-        RecordChange<KEY, RECORD, ADDITIONAL> recordChange =
+        RecordChange<RECORD, ADDITIONAL> recordChange =
                 new RecordChange<>( recordChanges, changeCounter, key, record, loader, false, additionalData );
         recordChanges.put( key, recordChange );
         return recordChange;
@@ -112,7 +109,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
     }
 
     @Override
-    public RecordProxy<KEY, RECORD, ADDITIONAL> create( KEY key, ADDITIONAL additionalData )
+    public RecordProxy<RECORD, ADDITIONAL> create( long key, ADDITIONAL additionalData )
     {
         if ( recordChanges.containsKey( key ) )
         {
@@ -120,34 +117,34 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         }
 
         RECORD record = loader.newUnused( key, additionalData );
-        RecordChange<KEY,RECORD,ADDITIONAL> change =
+        RecordChange<RECORD,ADDITIONAL> change =
                 new RecordChange<>( recordChanges, changeCounter, key, record, loader, true, additionalData );
         recordChanges.put( key, change );
         return change;
     }
 
     @Override
-    public Iterable<RecordProxy<KEY,RECORD,ADDITIONAL>> changes()
+    public Iterable<RecordProxy<RECORD,ADDITIONAL>> changes()
     {
         return Iterables.filter( RecordProxy::isChanged, recordChanges.values() );
     }
 
-    public static class RecordChange<KEY,RECORD,ADDITIONAL> implements RecordProxy<KEY, RECORD, ADDITIONAL>
+    public static class RecordChange<RECORD,ADDITIONAL> implements RecordProxy<RECORD, ADDITIONAL>
     {
-        private final Map<KEY,RecordProxy<KEY,RECORD,ADDITIONAL>> allChanges;
+        private final Map<Long,RecordProxy<RECORD,ADDITIONAL>> allChanges;
         private final IntCounter changeCounter;
-        private final Loader<KEY,RECORD,ADDITIONAL> loader;
+        private final Loader<RECORD,ADDITIONAL> loader;
 
         private final ADDITIONAL additionalData;
         private final RECORD record;
         private final boolean created;
-        private final KEY key;
+        private final long key;
 
         private RECORD before;
         private boolean changed;
 
-        public RecordChange( Map<KEY,RecordProxy<KEY,RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter, KEY key,
-                RECORD record, Loader<KEY,RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
+        public RecordChange( Map<Long,RecordProxy<RECORD,ADDITIONAL>> allChanges, IntCounter changeCounter, long key,
+                RECORD record, Loader<RECORD,ADDITIONAL> loader, boolean created, ADDITIONAL additionalData )
         {
             this.allChanges = allChanges;
             this.changeCounter = changeCounter;
@@ -165,7 +162,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
         }
 
         @Override
-        public KEY getKey()
+        public long getKey()
         {
             return key;
         }
@@ -188,7 +185,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             ensureHasBeforeRecordImage();
             if ( !this.changed )
             {
-                RecordProxy<KEY,RECORD,ADDITIONAL> previous = this.allChanges.put( key, this );
+                RecordProxy<RECORD,ADDITIONAL> previous = this.allChanges.put( key, this );
 
                 if ( previous == null || !previous.isChanged() )
                 {
@@ -246,6 +243,7 @@ public class RecordChanges<KEY,RECORD,ADDITIONAL> implements RecordAccess<KEY,RE
             }
         }
 
+        @Override
         public boolean isCreated()
         {
             return created;

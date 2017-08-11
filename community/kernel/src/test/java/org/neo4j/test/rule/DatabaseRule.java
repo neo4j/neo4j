@@ -61,6 +61,8 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.store.StoreId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
     private GraphDatabaseBuilder databaseBuilder;
@@ -329,10 +331,11 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         return database;
     }
 
-    public synchronized void ensureStarted()
+    public synchronized void ensureStarted( String... additionalConfig )
     {
         if ( database == null )
         {
+            applyConfigChanges( additionalConfig );
             database = (GraphDatabaseAPI) databaseBuilder.newGraphDatabase();
             storeDir = database.getStoreDir();
             statementSupplier = resolveDependency( ThreadToStatementContextBridge.class );
@@ -369,18 +372,24 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
         };
     }
 
-    public GraphDatabaseAPI restartDatabase() throws IOException
+    public GraphDatabaseAPI restartDatabase( String... configChanges ) throws IOException
     {
-        return restartDatabase( RestartAction.EMPTY );
+        return restartDatabase( RestartAction.EMPTY, configChanges );
     }
 
-    public GraphDatabaseAPI restartDatabase( RestartAction action ) throws IOException
+    public GraphDatabaseAPI restartDatabase( RestartAction action, String... configChanges ) throws IOException
     {
         FileSystemAbstraction fs = resolveDependency( FileSystemAbstraction.class );
         database.shutdown();
         action.run( fs, storeDir );
         database = null;
+        applyConfigChanges( configChanges );
         return getGraphDatabaseAPI();
+    }
+
+    private void applyConfigChanges( String[] configChanges )
+    {
+        databaseBuilder.setConfig( stringMap( configChanges ) );
     }
 
     @Override

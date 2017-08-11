@@ -167,7 +167,8 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
                 int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
                 int highRelationshipTypeId = (int) neoStores.getRelationshipTypeTokenStore().getHighId();
                 CountsComputer initializer = new CountsComputer( lastTxId, nodeStore, relationshipStore, highLabelId,
-                        highRelationshipTypeId, NumberArrayFactory.auto( pageCache, migrationDir ), progressMonitor );
+                        highRelationshipTypeId, NumberArrayFactory.auto( pageCache, migrationDir, true ),
+                        progressMonitor );
                 life.add( new CountsTracker( logProvider, fileSystem, pageCache, config,
                         storeFileBase ).setInitializer( initializer ) );
             }

@@ -48,7 +48,7 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
                       joinKey <- computeKey(context)}
     yield {
       val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
+      seq.map(context.mergeWith)
     }
 
     result.flatten

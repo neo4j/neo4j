@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.indexQuery
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -48,11 +49,11 @@ case class NodeIndexSeekRegisterPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val index = indexFactory(state)
-    val baseContext = state.createOrGetInitialContext()
+    val baseContext = state.initialContext.getOrElse(PrimitiveExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>
-      val context = ExecutionContext(pipelineInformation.numberOfLongs)
-      context.copyFrom(baseContext)
+      val context = PrimitiveExecutionContext(pipelineInformation)
+      state.copyArgumentStateTo(context)
       context.setLongAt(offset, node.getId)
       context
     }

@@ -77,7 +77,7 @@ public class NumberArrayTest extends NumberArrayPageCacheTestSupport
         factories.put( "OFF_HEAP", OFF_HEAP );
         factories.put( "AUTO_WITHOUT_PAGECACHE", AUTO_WITHOUT_PAGECACHE );
         factories.put( "CHUNKED_FIXED_SIZE", CHUNKED_FIXED_SIZE );
-        factories.put( "autoWithPageCacheFallback", auto( pageCache, dir ) );
+        factories.put( "autoWithPageCacheFallback", auto( pageCache, dir, true ) );
         factories.put( "PageCachedNumberArrayFactory", new PageCachedNumberArrayFactory( pageCache, dir ) );
         for ( Map.Entry<String,NumberArrayFactory> entry : factories.entrySet() )
         {

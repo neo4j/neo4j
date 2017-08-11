@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.locking;
 import java.util.concurrent.Future;
 
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.OtherThreadExecutor;
 
@@ -108,19 +107,6 @@ public class LockWorker extends OtherThreadExecutor<LockWorkerState>
     public boolean isLastGetLockDeadLock()
     {
         return state.deadlockOnLastWait;
-    }
-
-    @Override
-    public void dump( Logger logger )
-    {
-        super.dump( logger );
-        logger.log( "What have I done up until now?" );
-        for ( String op : state.completedOperations )
-        {
-            logger.log( op );
-        }
-        logger.log( "Doing right now:" );
-        logger.log( state.doing == null ? "???" : state.doing );
     }
 
     private abstract static class AcquireLockCommand implements WorkerCommand<LockWorkerState, Void>

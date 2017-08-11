@@ -48,10 +48,10 @@ extends PipeWithSource(left) {
 
     // 2. pass through 'right'
     }.flatMap { (outerContext) =>
-      val original = outerContext.clone()
+      val original = outerContext.createClone()
       val innerState = state.withInitialContext(outerContext)
       val innerResults = right.createResults(innerState)
-      innerResults.map { context => context ++ original }
+      innerResults.map { context => context mergeWith original }
 
     // 3. Probe
     }.filter { ctx =>

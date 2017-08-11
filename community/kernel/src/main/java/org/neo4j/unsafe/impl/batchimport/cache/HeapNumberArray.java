@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 /**
  * Base class for common functionality for any {@link NumberArray} where the data lives inside heap.

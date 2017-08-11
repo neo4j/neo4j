@@ -58,7 +58,7 @@ import static org.neo4j.helpers.collection.Iterables.asArray;
  */
 public class Monitors
 {
-    public static final AtomicBoolean FALSE = new AtomicBoolean( false );
+    private static final AtomicBoolean FALSE = new AtomicBoolean( false );
 
     public interface Monitor
     {

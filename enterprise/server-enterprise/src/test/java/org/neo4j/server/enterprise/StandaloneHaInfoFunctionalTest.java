@@ -31,6 +31,7 @@ import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
 import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
@@ -45,7 +46,9 @@ public class StandaloneHaInfoFunctionalTest
     private static EnterpriseNeoServer server;
 
     @Rule
-    public TestDirectory target = TestDirectory.testDirectory();
+    public final TestDirectory target = TestDirectory.testDirectory();
+    @Rule
+    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     @Before
     public void before() throws IOException

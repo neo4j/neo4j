@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.function.Suppliers.singleton;
-import static org.neo4j.unsafe.impl.batchimport.Utils.safeCastLongToInt;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 
 public class DelayedBufferTest
 {

@@ -152,6 +152,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   }
 
   override protected def manyDbHits[A](inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
+    increment()
     override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
       inner.relationshipVisit(relationshipId, visitor)
 

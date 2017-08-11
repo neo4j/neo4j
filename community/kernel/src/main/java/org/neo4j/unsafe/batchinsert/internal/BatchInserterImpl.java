@@ -160,7 +160,6 @@ import org.neo4j.storageengine.api.Token;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
-import org.neo4j.unsafe.batchinsert.DirectRecordAccessSet;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -170,10 +169,10 @@ import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
+import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvider
 {
@@ -363,7 +362,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public void setNodeProperty( long node, String propertyName, Object propertyValue )
     {
-        RecordProxy<Long,NodeRecord,Void> nodeRecord = getNodeRecord( node );
+        RecordProxy<NodeRecord,Void> nodeRecord = getNodeRecord( node );
         setPrimitiveProperty( nodeRecord, propertyName, propertyValue );
 
         flushStrategy.flush();
@@ -372,7 +371,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     @Override
     public void setRelationshipProperty( long relationship, String propertyName, Object propertyValue )
     {
-        RecordProxy<Long,RelationshipRecord,Void> relationshipRecord = getRelationshipRecord( relationship );
+        RecordProxy<RelationshipRecord,Void> relationshipRecord = getRelationshipRecord( relationship );
         setPrimitiveProperty( relationshipRecord, propertyName, propertyValue );
 
         flushStrategy.flush();
@@ -402,11 +401,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return new IndexCreatorImpl( actions, label );
     }
 
-    private void setPrimitiveProperty( RecordProxy<Long,? extends PrimitiveRecord,Void> primitiveRecord,
+    private void setPrimitiveProperty( RecordProxy<? extends PrimitiveRecord,Void> primitiveRecord,
             String propertyName, Object propertyValue )
     {
         int propertyKey = getOrCreatePropertyKeyId( propertyName );
-        RecordAccess<Long,PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
+        RecordAccess<PropertyRecord,PrimitiveRecord> propertyRecords = recordAccess.getPropertyRecords();
 
         propertyCreator.primitiveSetProperty( primitiveRecord, propertyKey, Values.of( propertyValue ), propertyRecords );
     }
@@ -1083,7 +1082,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return id;
     }
 
-    private RecordProxy<Long,NodeRecord,Void> getNodeRecord( long id )
+    private RecordProxy<NodeRecord,Void> getNodeRecord( long id )
     {
         if ( id < 0 || id >= nodeStore.getHighId() )
         {
@@ -1092,7 +1091,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         return recordAccess.getNodeRecords().getOrLoad( id, null );
     }
 
-    private RecordProxy<Long,RelationshipRecord,Void> getRelationshipRecord( long id )
+    private RecordProxy<RelationshipRecord,Void> getRelationshipRecord( long id )
     {
         if ( id < 0 || id >= relationshipStore.getHighId() )
         {

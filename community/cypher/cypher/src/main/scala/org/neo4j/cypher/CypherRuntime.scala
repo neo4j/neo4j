@@ -25,7 +25,8 @@ case object CypherRuntime extends CypherOptionCompanion[CypherRuntime] {
 
   case object default extends CypherRuntime("default")
   case object interpreted extends CypherRuntime("interpreted")
+  case object registerInterpreted extends CypherRuntime("enterprise-interpreted")
   case object compiled extends CypherRuntime("compiled")
 
-  val all: Set[CypherRuntime] = Set(interpreted, compiled)
+  val all: Set[CypherRuntime] = Set(interpreted, compiled, registerInterpreted)
 }

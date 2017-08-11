@@ -82,10 +82,8 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         }
 
         int skipped = 0;
-        for ( int i = 0; i < records.length; i++ )
+        for ( RECORD record : records )
         {
-            RECORD record = records[i];
-
             if ( record != null )
             {
                 highestId = max( highestId, record.getId() );

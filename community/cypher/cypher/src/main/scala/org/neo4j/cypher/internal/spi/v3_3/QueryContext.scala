@@ -102,6 +102,8 @@ trait QueryContext extends TokenContext {
 
   def indexScan(index: IndexDescriptor): Iterator[Node]
 
+  def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator
+
   def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node]
 
   def getNodesByLabel(id: Int): Iterator[Node]
@@ -221,6 +223,8 @@ trait Operations[T <: PropertyContainer] {
   def acquireExclusiveLock(obj: Long): Unit
 
   def releaseExclusiveLock(obj: Long): Unit
+
+  def exists(id: Long): Boolean
 }
 
 trait QueryTransactionalContext {

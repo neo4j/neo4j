@@ -97,7 +97,8 @@ public class SharedDiscoveryServiceIT
         HostnameResolver hostnameResolver = new NoOpHostnameResolver();
 
         CoreTopologyService topologyService = disoveryServiceFactory
-                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver );
+                .coreTopologyService( config(), null, member, jobScheduler, logProvider, userLogProvider, hostnameResolver,
+                        new TopologyServiceNoRetriesStrategy() );
         return sharedClientStarter( topologyService, expectedTargetSet );
     }
 

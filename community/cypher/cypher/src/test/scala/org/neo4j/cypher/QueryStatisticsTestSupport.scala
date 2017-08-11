@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.ExecutionResultWrapper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.scalatest.Assertions
@@ -45,7 +46,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
 
         override def endFailure(query: ExecutingQuery, throwable: Throwable){}
       }
-      val r = new ExecutionResultWrapper(actual, CostBasedPlannerName.default, CompiledRuntimeName, Set.empty)
+      val r = new ExecutionResultWrapper(actual, CostBasedPlannerName.default, CompiledRuntimeName, Set.empty, Some(InputPosition.NONE))
       apply(r.queryStatistics())
     }
   }

@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
   * If you only want to verify that plans using indexes are actually planned, please use
   * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
   */
-class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with LernaeanTestSupport {
+class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should succeed in creating and deleting composite index") {
     // When
@@ -43,7 +43,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    testWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
+    succeedWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -58,7 +58,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should use("NodeIndexSeek")
@@ -77,7 +77,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result = succeedWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
@@ -98,7 +98,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should useIndex(":User(firstname,lastname)")
@@ -121,7 +121,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.All,
+    val result = succeedWith(Configs.All,
       """
         |MATCH (n:User)
         |USING INDEX n:User(lastname)
@@ -150,7 +150,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
@@ -163,17 +163,17 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     graph.createIndex("Person", "firstname", "lastname")
     val n = graph.execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").next().asInstanceOf[Node]
     graph.execute("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = testWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
   test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
-    testWith(Configs.Interpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
-    testWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
+    succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
+    succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = testWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
+    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
     result should useIndex(":Person(firstname,lastname)")
   }
 
@@ -188,7 +188,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.Interpreted,
+    val result = succeedWith(Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
@@ -209,7 +209,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.Interpreted,
+    val result = succeedWith(Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.bar = 1
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
@@ -230,7 +230,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     }
 
     // When
-    val result = testWith(Configs.Interpreted,
+    val result = succeedWith(Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.baz = 1
         |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
@@ -252,7 +252,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = testWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz")
   }
@@ -267,15 +267,15 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = testWith(Configs.Interpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz)")
   }
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
-    testWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
-    testWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
+    succeedWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
+    succeedWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
   }
 
   test("should not use range queries against a composite index") {
@@ -284,7 +284,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     val n = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // When
-    val result = testWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
+    val result = succeedWith(Configs.Interpreted, "match (n:X) where n.p1 = 1 AND n.p2 > 0 return n;")
 
     // Then
     result.toComparableResult should equal(Seq(Map("n" -> n)))
@@ -297,36 +297,43 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     val n = createLabeledNode(Map("name" -> "joe", "surname" -> "soap", "age" -> 25, "active" -> true), "User")
 
     // For all combinations
-    Map(
-      "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> true,         // all equality
-      "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'" -> true,         // different order
-      "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)" -> false,       // exists()
-      "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true" -> false,        // inequality
-      "n.name = 'joe' AND n.surname STARTS WITH 's' AND n.age = 25 AND n.active = true" -> false, // prefix
-      "n.name = 'joe' AND n.surname ENDS WITH 'p' AND n.age = 25 AND n.active = true" -> false,   // suffix
-      "n.name >= 'i' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,         // inequality first
-      "n.name STARTS WITH 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,// prefix first
-      "n.name CONTAINS 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true" -> false,   // contains first
-      "n.name = 'joe' AND n.surname STARTS WITH 'soap' AND n.age <= 25 AND exists(n.active)" -> false  // combination: equality, prefix, inequality, exists()
-    ).foreach { case (predicates, valid) =>
+    Seq(
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", true),         // all equality
+      (Configs.Interpreted, "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'", true),         // different order
+      (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)", false),       // exists()
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true", false),       // inequality
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname STARTS WITH 's' AND n.age = 25 AND n.active = true", false), // prefix
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname ENDS WITH 'p' AND n.age = 25 AND n.active = true", false),   // suffix
+      (Configs.Interpreted, "n.name >= 'i' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),         // inequality first
+      (Configs.Interpreted, "n.name STARTS WITH 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),// prefix first
+      (Configs.Interpreted, "n.name CONTAINS 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),   // contains first
+      (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname STARTS WITH 'soap' AND n.age <= 25 AND exists(n.active)", false) // combination: equality, prefix, inequality, exists()
+    ).foreach {
+      case (testConfig, predicates, valid) =>
 
-      // When
-      val query = s"MATCH (n:User) WHERE ${predicates} RETURN n"
-      val result = testWith(Configs.Interpreted, query)
-      try {
+        // When
+        val query = s"MATCH (n:User) WHERE $predicates RETURN n"
+        val result = try {
+          succeedWith(testConfig, query)
+        } catch {
+          case e: Exception =>
+            System.err.println(query)
+            throw e
+        }
+        try {
 
-        // Then
-        result.toComparableResult should equal(Seq(Map("n" -> n)))
-        if (valid)
-          result should useIndex(":User(name,surname,age,active)")
-        else
-          result shouldNot useIndex(":User(name,surname,age,active)")
-      } catch {
-        case e: Exception =>
-          System.err.println(s"Failed for predicates: $predicates")
-          System.err.println(result.executionPlanDescription())
-          throw e
-      }
+          // Then
+          result.toComparableResult should equal(Seq(Map("n" -> n)))
+          if (valid)
+            result should useIndex(":User(name,surname,age,active)")
+          else
+            result shouldNot useIndex(":User(name,surname,age,active)")
+        } catch {
+          case e: Exception =>
+            System.err.println(s"Failed for predicates: $predicates")
+            System.err.println(result.executionPlanDescription())
+            throw e
+        }
     }
   }
 
@@ -340,7 +347,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with Lernaean
     val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // 2.3 excluded because the params syntax was not supported in that version
-    val result = testWith(Configs.Interpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
       "id" -> a.getId)
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))

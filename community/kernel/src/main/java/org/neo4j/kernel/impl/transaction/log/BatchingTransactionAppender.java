@@ -93,11 +93,6 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
     @Override
     public long append( TransactionToApply batch, LogAppendEvent logAppendEvent ) throws IOException
     {
-        // We put log rotation check outside the private append method since it must happen before
-        // we generate the next transaction id
-        boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
-        logAppendEvent.setLogRotated( logRotated );
-
         // Assigned base tx id just to make compiler happy
         long lastTransactionId = TransactionIdStore.BASE_TX_ID;
         // Synchronized with logFile to get absolute control over concurrent rotations happening
@@ -132,7 +127,13 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
         // as committed since they haven't been forced to disk yet. So here we force, or potentially
         // piggy-back on another force, but anyway after this call below we can be sure that all our transactions
         // in this batch exist durably on disk.
-        forceAfterAppend( logAppendEvent );
+        if ( forceAfterAppend( logAppendEvent ) )
+        {
+            // We got lucky and were the one forcing the log. It's enough if ones of all doing concurrent committerss
+            // checks the need for log rotation.
+            boolean logRotated = logRotation.rotateLogIfNeeded( logAppendEvent );
+            logAppendEvent.setLogRotated( logRotated );
+        }
 
         // Mark all transactions as committed
         publishAsCommitted( batch );
@@ -236,8 +237,9 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
      * Called by the appender that just appended a transaction to the log.
      *
      * @param logForceEvents A trace event for the given log append operation.
+     * @return {@code true} if we got lucky and were the ones forcing the log.
      */
-    protected void forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
+    protected boolean forceAfterAppend( LogForceEvents logForceEvents ) throws IOException
     {
         // There's a benign race here, where we add our link before we update our next pointer.
         // This is okay, however, because unparkAll() spins when it sees a null next pointer.
@@ -284,6 +286,7 @@ public class BatchingTransactionAppender extends LifecycleAdapter implements Tra
                 databaseHealth.assertHealthy( IOException.class );
             }
         }
+        return attemptedForce;
     }
 
     private void forceLog( LogForceEvents logForceEvents ) throws IOException

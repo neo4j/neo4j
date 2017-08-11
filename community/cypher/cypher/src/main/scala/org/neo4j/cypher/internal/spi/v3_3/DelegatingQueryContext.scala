@@ -109,6 +109,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
+  override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator = manyDbHits(inner.indexScanPrimitive(index))
+
   override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] =
     manyDbHits(inner.indexScanByContains(index, value))
 
@@ -261,6 +263,8 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 
   override def releaseExclusiveLock(obj: Long): Unit = inner.releaseExclusiveLock(obj)
+
+  override def exists(id: Long): Boolean = singleDbHit(inner.exists(id))
 }
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
