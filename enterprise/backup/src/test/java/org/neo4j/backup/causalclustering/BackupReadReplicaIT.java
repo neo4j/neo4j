@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.causalclustering.backup;
+package org.neo4j.backup.causalclustering;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,11 +42,11 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.backupArguments;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.createSomeData;
-import static org.neo4j.causalclustering.backup.BackupCoreIT.getConfig;
+import static org.neo4j.backup.causalclustering.BackupCoreIT.backupArguments;
+import static org.neo4j.backup.causalclustering.BackupCoreIT.createSomeData;
+import static org.neo4j.backup.causalclustering.BackupCoreIT.getConfig;
 import static org.neo4j.function.Predicates.awaitEx;
+import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupReadReplicaIT
 {

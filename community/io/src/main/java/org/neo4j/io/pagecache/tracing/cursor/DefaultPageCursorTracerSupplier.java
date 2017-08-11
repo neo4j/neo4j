@@ -25,7 +25,7 @@ public class DefaultPageCursorTracerSupplier implements PageCursorTracerSupplier
 
     public static final DefaultPageCursorTracerSupplier INSTANCE = new DefaultPageCursorTracerSupplier();
 
-    private DefaultPageCursorTracerSupplier()
+    public DefaultPageCursorTracerSupplier()
     {
     }
 

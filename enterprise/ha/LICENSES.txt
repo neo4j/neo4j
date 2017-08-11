@@ -17,6 +17,8 @@ Apache Software License, Version 2.0
   Apache Shiro :: Event
   Apache Shiro :: Lang
   Caffeine cache
+  Commons BeanUtils
+  hazelcast-all
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core

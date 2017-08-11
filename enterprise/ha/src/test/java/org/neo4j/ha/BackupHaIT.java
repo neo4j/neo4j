@@ -37,7 +37,7 @@ import org.neo4j.test.rule.SuppressOutput;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.createSomeData;
-import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
+import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
 
 public class BackupHaIT
 {

@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import org.apache.commons.lang3.SystemUtils;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -30,36 +29,29 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.proc.ProcessUtil;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
-import org.neo4j.test.ProcessStreamHandler;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.SuppressOutput;
-import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.util.JvmRunner;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeFalse;
 
 @RunWith( Parameterized.class )
-public class OnlineBackupCommandIT
+public class OnlineBackupCommandIT extends JvmRunner
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule( testDirectory.directory( "db" ) ).startLazily();
+    private final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
@@ -152,26 +144,6 @@ public class OnlineBackupCommandIT
         }
         db.ensureStarted();
         createSomeData( db );
-    }
-
-    private static int runBackupToolFromOtherJvmToGetExitCode( String... args )
-            throws Exception
-    {
-        return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
-    }
-
-    public static int runBackupToolFromOtherJvmToGetExitCode( File neo4jHome, String... args )
-            throws Exception
-    {
-        List<String> allArgs = new ArrayList<>( Arrays.asList(
-                ProcessUtil.getJavaExecutable().toString(), "-cp", ProcessUtil.getClassPath(),
-                AdminTool.class.getName() ) );
-        allArgs.add( "backup" );
-        allArgs.addAll( Arrays.asList( args ) );
-
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ),
-                new String[] {"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, true ).waitForResult();
     }
 
     private DbRepresentation getDbRepresentation()
