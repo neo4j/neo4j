@@ -34,16 +34,14 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
     val primitiveRows: ArrayBuffer[Long] = new ArrayBuffer[Long]()
     val refColumnCount = pipelineInformation.numberOfReferences
     val refRows = new ArrayBuffer[Any]()
-    if (primitiveColumnCount > 0) {
-      input.foreach(ctx => {
-        if (primitiveColumnCount > 0) {
-          primitiveRows ++= ctx.longs()
-        }
-        if (refColumnCount > 0) {
-          refRows ++= ctx.refs()
-        }
-      })
-    }
+    input.foreach(ctx => {
+      if (primitiveColumnCount > 0) {
+        primitiveRows ++= ctx.longs()
+      }
+      if (refColumnCount > 0) {
+        refRows ++= ctx.refs()
+      }
+    })
 
     new Iterator[ExecutionContext] {
       private var primitiveIndex = 0
@@ -65,17 +63,11 @@ case class EagerRegisterPipe(source: Pipe, pipelineInformation: PipelineInformat
           // if this is called from somewhere like PrimitiveExecutionContext#copyFrom the array copy is redundant
           // adding something like the following would result in 1 fewer array copies per row:
           //  > fillLongs(to: Array[Long]) = primitiveRows.copyToArray(to, globalPrimitiveOffset, primitiveColumnCount)
-          override def longs(): Array[Long] = {
-            val longsArray = new Array[Long](primitiveColumnCount)
-            primitiveRows.copyToArray(longsArray, globalPrimitiveOffset, primitiveColumnCount)
-            longsArray
-          }
+          override def longs(): Array[Long] =
+            primitiveRows.view(globalPrimitiveOffset, globalPrimitiveOffset + primitiveColumnCount).toArray
 
-          override def refs(): Array[Any] = {
-            val refsArray = new Array[Any](refColumnCount)
-            refRows.copyToArray(refsArray, globalRefOffset, refColumnCount)
-            refsArray
-          }
+          override def refs(): Array[Any] =
+            refRows.view(globalRefOffset, globalRefOffset + refColumnCount).toArray
 
           override def getRefAt(offset: Int): Any = refRows(offset + globalRefOffset)
 
