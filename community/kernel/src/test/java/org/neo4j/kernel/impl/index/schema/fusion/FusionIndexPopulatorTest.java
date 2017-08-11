@@ -40,6 +40,7 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -375,7 +376,44 @@ public class FusionIndexPopulatorTest
         } );
     }
 
-    // includeSample
+    @Test
+    public void shouldIncludeSampleOnCorrectPopulator() throws Exception
+    {
+        // given
+        Value[] numberValues = FusionIndexTestHelp.valuesSupportedByNative();
+        Value[] otherValues = FusionIndexTestHelp.valuesNotSupportedByNative();
 
-    // configureSample
+        for ( Value value : numberValues )
+        {
+            // when
+            IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
+            fusionIndexPopulator.includeSample( update );
+
+            // then
+            verify( nativePopulator ).includeSample( update );
+            reset( nativePopulator );
+        }
+
+        for ( Value value : otherValues )
+        {
+            // when
+            IndexEntryUpdate<LabelSchemaDescriptor> update = add( value );
+            fusionIndexPopulator.includeSample( update );
+
+            // then
+            verify( lucenePopulator ).includeSample( update );
+            reset( lucenePopulator );
+        }
+    }
+
+    @Test
+    public void shouldConfigureSamplingOnBothPopulators() throws Exception
+    {
+        // when
+        fusionIndexPopulator.configureSampling( true );
+
+        // then
+        verify( nativePopulator ).configureSampling( true );
+        verify( lucenePopulator ).configureSampling( true );
+    }
 }
