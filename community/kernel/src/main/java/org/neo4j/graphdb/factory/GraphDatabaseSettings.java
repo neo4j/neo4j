@@ -235,6 +235,11 @@ public class GraphDatabaseSettings implements LoadableConfig
             setting( "dbms.import.csv.legacy_quote_escaping", BOOLEAN,
                     Boolean.toString( Configuration.DEFAULT_LEGACY_STYLE_QUOTING ) );
 
+    @Description( "Enables or disables tracking of how much time a query spends actively executing on the CPU." )
+    public static Setting<Boolean> track_query_cpu_time = setting( "dbms.track_query_cpu_time", BOOLEAN, TRUE );
+    @Description( "Enables or disables tracking of how many bytes are allocated by the execution of a query." )
+    public static Setting<Boolean> track_query_allocation = setting( "dbms.track_query_allocation", BOOLEAN, TRUE );
+
     @Description( "The maximum amount of time to wait for the database to become available, when " +
                   "starting a new transaction." )
     @Internal

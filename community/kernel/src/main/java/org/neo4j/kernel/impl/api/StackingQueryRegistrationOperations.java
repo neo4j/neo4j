@@ -34,10 +34,17 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
 {
     private final MonotonicCounter lastQueryId = MonotonicCounter.newAtomicMonotonicCounter();
     private final SystemNanoClock clock;
+    private final CpuClock cpuClock;
+    private final HeapAllocation heapAllocation;
 
-    public StackingQueryRegistrationOperations( SystemNanoClock clock )
+    public StackingQueryRegistrationOperations(
+            SystemNanoClock clock,
+            CpuClock cpuClock,
+            HeapAllocation heapAllocation )
     {
         this.clock = clock;
+        this.cpuClock = cpuClock;
+        this.heapAllocation = heapAllocation;
     }
 
     @Override
@@ -66,7 +73,7 @@ public class StackingQueryRegistrationOperations implements QueryRegistrationOpe
                 new ExecutingQuery( queryId, clientConnection, statement.username(), queryText, queryParameters,
                         statement.getTransaction().getMetaData(), statement.locks()::activeLockCount,
                         statement.getPageCursorTracer(),
-                        thread, clock, CpuClock.CPU_CLOCK, HeapAllocation.HEAP_ALLOCATION );
+                        thread, clock, cpuClock, heapAllocation );
         registerExecutingQuery( statement, executingQuery );
         return executingQuery;
     }
