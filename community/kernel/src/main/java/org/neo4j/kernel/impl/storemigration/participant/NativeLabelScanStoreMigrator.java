@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration.participant;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.NoSuchFileException;
 import java.util.Optional;
 
 import org.neo4j.function.Predicates;
@@ -66,6 +67,9 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
             try ( NeoStores neoStores = storeFactory.openAllNeoStores();
                     Lifespan lifespan = new Lifespan() )
             {
+                // Remove any existing file to ensure we always do migration
+                deleteNativeIndexFile( migrationDir );
+
                 progressMonitor.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
                 NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationDir, progressMonitor, neoStores );
                 lifespan.add( nativeLabelScanStore );
@@ -83,6 +87,24 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
             File nativeLabelIndex = new File( migrationDir, NativeLabelScanStore.FILE_NAME );
             moveNativeIndexFile( storeDir, nativeLabelIndex );
             deleteLuceneLabelIndex( getLuceneStoreDirectory( storeDir ) );
+        }
+    }
+
+    private void deleteNativeIndexFile( File storeDir ) throws IOException
+    {
+        Optional<FileHandle> indexFile = pageCache.getCachedFileSystem()
+                .streamFilesRecursive( NativeLabelScanStore.getLabelScanStoreFile( storeDir ) ).findFirst();
+
+        if ( indexFile.isPresent() )
+        {
+            try
+            {
+                indexFile.get().delete();
+            }
+            catch ( NoSuchFileException e )
+            {
+                // Already deleted, ignore
+            }
         }
     }
 

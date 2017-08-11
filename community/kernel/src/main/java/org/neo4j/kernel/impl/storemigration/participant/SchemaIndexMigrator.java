@@ -76,5 +76,4 @@ public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
     {
         fileSystem.deleteRecursively( indexRootDirectory );
     }
-
 }
