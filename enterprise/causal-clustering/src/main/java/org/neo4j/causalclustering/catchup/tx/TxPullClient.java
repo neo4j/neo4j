@@ -41,7 +41,8 @@ public class TxPullClient
     }
 
     public TxPullRequestResult pullTransactions( AdvertisedSocketAddress fromAddress, StoreId storeId, long previousTxId,
-            TxPullResponseListener txPullResponseListener ) throws CatchUpClientException
+                                                 TxPullResponseListener txPullResponseListener )
+            throws CatchUpClientException
     {
         pullRequestMonitor.txPullRequest( previousTxId );
         return catchUpClient.makeBlockingRequest( fromAddress, new TxPullRequest( previousTxId, storeId ), new CatchUpResponseAdaptor<TxPullRequestResult>()

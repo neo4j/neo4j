@@ -114,13 +114,14 @@ public class CoreServerModule
         LoggingInbound<RaftMessages.ClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer, messageLogger, identityModule.myself() );
 
         long inactivityTimeoutMillis = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
-        CatchUpClient catchUpClient = life.add(
-               new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMillis, monitors, sslPolicy ) );
+        CatchUpClient catchUpClient = life
+                .add( new CatchUpClient(  logProvider, Clocks.systemClock(),
+                        inactivityTimeoutMillis, monitors, sslPolicy ) );
 
-        RemoteStore remoteStore =
-                new RemoteStore( logProvider, fileSystem, platformModule.pageCache, new StoreCopyClient( catchUpClient, logProvider ),
-                        new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
-                        platformModule.monitors );
+        RemoteStore remoteStore = new RemoteStore( logProvider, fileSystem, platformModule.pageCache,
+                new StoreCopyClient( catchUpClient, logProvider ),
+                new TxPullClient( catchUpClient, platformModule.monitors ), new TransactionLogCatchUpFactory(),
+                platformModule.monitors );
 
         CopiedStoreRecovery copiedStoreRecovery = new CopiedStoreRecovery( config, platformModule.kernelExtensions.listFactories(), platformModule.pageCache );
         life.add( copiedStoreRecovery );
