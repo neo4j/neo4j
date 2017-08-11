@@ -30,6 +30,7 @@ import org.neo4j.causalclustering.catchup.tx.TransactionLogCatchUpWriter;
 import org.neo4j.causalclustering.catchup.tx.TxPullClient;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -132,13 +133,13 @@ public class RemoteStore
         }
     }
 
-    public CatchupResult tryCatchingUp( MemberId from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
+    public CatchupResult tryCatchingUp( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir ) throws StoreCopyFailedException, IOException
     {
         long pullIndex = getPullIndex( storeDir );
         return pullTransactions( from, expectedStoreId, storeDir, pullIndex, false );
     }
 
-    public void copy( MemberId from, StoreId expectedStoreId, File destDir )
+    public void copy( AdvertisedSocketAddress from, StoreId expectedStoreId, File destDir )
             throws StoreCopyFailedException, StreamingTransactionsFailedException
     {
         try
@@ -164,7 +165,7 @@ public class RemoteStore
         }
     }
 
-    private CatchupResult pullTransactions( MemberId from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
+    private CatchupResult pullTransactions( AdvertisedSocketAddress from, StoreId expectedStoreId, File storeDir, long fromTxId, boolean asPartOfStoreCopy ) throws IOException, StoreCopyFailedException
     {
         try ( TransactionLogCatchUpWriter writer = transactionLogFactory.create( storeDir, fs, pageCache, logProvider, fromTxId, asPartOfStoreCopy ) )
         {
@@ -189,7 +190,7 @@ public class RemoteStore
         }
     }
 
-    public StoreId getStoreId( MemberId from ) throws StoreIdDownloadFailedException
+    public StoreId getStoreId( AdvertisedSocketAddress from ) throws StoreIdDownloadFailedException
     {
         return storeCopyClient.fetchStoreId( from );
     }

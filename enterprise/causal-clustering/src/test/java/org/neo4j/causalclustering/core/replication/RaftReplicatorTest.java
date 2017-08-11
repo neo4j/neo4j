@@ -35,8 +35,8 @@ import org.neo4j.causalclustering.core.consensus.ReplicatedInteger;
 import org.neo4j.causalclustering.core.replication.session.GlobalSession;
 import org.neo4j.causalclustering.core.replication.session.LocalSessionPool;
 import org.neo4j.causalclustering.core.state.Result;
-import org.neo4j.causalclustering.helper.ConstantTimeRetryStrategy;
-import org.neo4j.causalclustering.helper.RetryStrategy;
+import org.neo4j.causalclustering.helper.ConstantTimeTimeoutStrategy;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.messaging.Message;
 import org.neo4j.causalclustering.messaging.Outbound;
@@ -68,7 +68,7 @@ public class RaftReplicatorTest
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private GlobalSession session = new GlobalSession( UUID.randomUUID(), myself );
     private LocalSessionPool sessionPool = new LocalSessionPool( session );
-    private RetryStrategy retryStrategy = new ConstantTimeRetryStrategy( 0, MILLISECONDS );
+    private TimeoutStrategy timeoutStrategy = new ConstantTimeTimeoutStrategy( 0, MILLISECONDS );
     private AvailabilityGuard availabilityGuard = new AvailabilityGuard( Clocks.systemClock(), NullLog.getInstance() );
 
     @Test
@@ -81,7 +81,7 @@ public class RaftReplicatorTest
 
         RaftReplicator replicator =
                 new RaftReplicator( leaderLocator, myself, outbound, sessionPool,
-                        capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                        capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -108,7 +108,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, false );
@@ -132,7 +132,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator = new RaftReplicator( leaderLocator, myself, outbound,
-                sessionPool, capturedProgress, retryStrategy, availabilityGuard, NullLogProvider.getInstance() );
+                sessionPool, capturedProgress, timeoutStrategy, availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );
         Thread replicatingThread = replicatingThread( replicator, content, true );
@@ -162,7 +162,7 @@ public class RaftReplicatorTest
         CapturingOutbound outbound = new CapturingOutbound();
 
         RaftReplicator replicator =
-                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, retryStrategy,
+                new RaftReplicator( leaderLocator, myself, outbound, sessionPool, capturedProgress, timeoutStrategy,
                         availabilityGuard, NullLogProvider.getInstance() );
 
         ReplicatedInteger content = ReplicatedInteger.valueOf( 5 );

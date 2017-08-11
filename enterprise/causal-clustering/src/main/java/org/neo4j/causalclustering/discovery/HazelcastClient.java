@@ -57,6 +57,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private final AdvertisedSocketAddress transactionSource;
     private final MemberId myself;
     private final List<String> groups;
+    private final TopologyServiceRetryStrategy topologyServiceRetryStrategy;
 
     private JobScheduler.JobHandle keepAliveJob;
     private JobScheduler.JobHandle refreshTopologyJob;
@@ -66,7 +67,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
     private volatile ReadReplicaTopology rrTopology = ReadReplicaTopology.EMPTY;
 
     HazelcastClient( HazelcastConnector connector, JobScheduler scheduler, LogProvider logProvider, Config config,
-                     MemberId myself )
+                     MemberId myself, TopologyServiceRetryStrategy topologyServiceRetryStrategy )
     {
         this.hzInstance = new RobustHazelcastWrapper( connector );
         this.config = config;
@@ -78,6 +79,7 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
         this.refreshPeriod = config.get( CausalClusteringSettings.cluster_topology_refresh ).toMillis();
         this.myself = myself;
         this.groups = config.get( CausalClusteringSettings.server_groups );
+        this.topologyServiceRetryStrategy = topologyServiceRetryStrategy;
     }
 
     @Override
@@ -94,6 +96,11 @@ class HazelcastClient extends LifecycleAdapter implements TopologyService
 
     @Override
     public Optional<AdvertisedSocketAddress> findCatchupAddress( MemberId memberId )
+    {
+        return topologyServiceRetryStrategy.apply( memberId, this::retrieveSocketAddress, Optional::isPresent );
+    }
+
+    private Optional<AdvertisedSocketAddress> retrieveSocketAddress( MemberId memberId )
     {
         return Optional.ofNullable( catchupAddressMap.get( memberId ) );
     }

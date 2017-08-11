@@ -27,9 +27,12 @@ import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.catchup.storecopy.StoreIdDownloadFailedException;
 import org.neo4j.causalclustering.catchup.storecopy.StreamingTransactionsFailedException;
-import org.neo4j.causalclustering.helper.RetryStrategy;
+import org.neo4j.causalclustering.core.state.snapshot.TopologyLookupException;
+import org.neo4j.causalclustering.discovery.TopologyService;
+import org.neo4j.causalclustering.helper.TimeoutStrategy;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -44,24 +47,27 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final Log debugLog;
     private final Log userLog;
 
-    private final RetryStrategy retryStrategy;
+    private final TimeoutStrategy timeoutStrategy;
     private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+    private final TopologyService topologyService;
 
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase,
-            Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, RetryStrategy retryStrategy,
-            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess )
+            Lifecycle txPulling, UpstreamDatabaseStrategySelector selectionStrategyPipeline, TimeoutStrategy timeoutStrategy,
+            LogProvider debugLogProvider, LogProvider userLogProvider, StoreCopyProcess storeCopyProcess,
+            TopologyService topologyService )
     {
         this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
         this.selectionStrategyPipeline = selectionStrategyPipeline;
-        this.retryStrategy = retryStrategy;
+        this.timeoutStrategy = timeoutStrategy;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
         this.storeCopyProcess = storeCopyProcess;
+        this.topologyService = topologyService;
     }
 
     @Override
@@ -80,7 +86,7 @@ class ReadReplicaStartupProcess implements Lifecycle
     public void start() throws IOException
     {
         boolean syncedWithUpstream = false;
-        RetryStrategy.Timeout timeout = retryStrategy.newTimeout();
+        TimeoutStrategy.Timeout timeout = timeoutStrategy.newTimeout();
         int attempt = 0;
         while ( !syncedWithUpstream )
         {
@@ -153,11 +159,12 @@ class ReadReplicaStartupProcess implements Lifecycle
             debugLog.info( "Local database is empty, attempting to replace with copy from upstream server %s", source );
 
             debugLog.info( "Finding store id of upstream server %s", source );
-            StoreId storeId = remoteStore.getStoreId( source );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
+            StoreId storeId = remoteStore.getStoreId( fromAddress );
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            storeCopyProcess.replaceWithStoreFrom( source, storeId );
+            storeCopyProcess.replaceWithStoreFrom( fromAddress, storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }
@@ -170,7 +177,8 @@ class ReadReplicaStartupProcess implements Lifecycle
     private void ensureSameStoreIdAs( MemberId upstream ) throws StoreIdDownloadFailedException
     {
         StoreId localStoreId = localDatabase.storeId();
-        StoreId remoteStoreId = remoteStore.getStoreId( upstream );
+        AdvertisedSocketAddress advertisedSocketAddress = topologyService.findCatchupAddress( upstream ).orElseThrow( () -> new TopologyLookupException( upstream ) );
+        StoreId remoteStoreId = remoteStore.getStoreId( advertisedSocketAddress );
         if ( !localStoreId.equals( remoteStoreId ) )
         {
             throw new IllegalStateException( format( "This read replica cannot join the cluster. " +

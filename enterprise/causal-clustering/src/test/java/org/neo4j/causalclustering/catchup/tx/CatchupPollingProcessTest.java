@@ -22,6 +22,7 @@ package org.neo4j.causalclustering.catchup.tx;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
 
@@ -31,9 +32,11 @@ import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyProcess;
 import org.neo4j.causalclustering.core.consensus.schedule.ControlledRenewableTimeoutService;
+import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.causalclustering.readreplica.UpstreamDatabaseStrategySelector;
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -61,6 +64,7 @@ public class CatchupPollingProcessTest
     private final CatchUpClient catchUpClient = mock( CatchUpClient.class );
     private final UpstreamDatabaseStrategySelector strategyPipeline = mock( UpstreamDatabaseStrategySelector.class );
     private final MemberId coreMemberId = mock( MemberId.class );
+    private final AdvertisedSocketAddress coreMemberAddress = new AdvertisedSocketAddress( "127.0.0.1", 1234 );
     private final TransactionIdStore idStore = mock( TransactionIdStore.class );
 
     private final BatchingTxApplier txApplier = mock( BatchingTxApplier.class );
@@ -70,17 +74,19 @@ public class CatchupPollingProcessTest
     private final StoreCopyProcess storeCopyProcess = mock( StoreCopyProcess.class );
     private final StoreId storeId = new StoreId( 1, 2, 3, 4 );
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
+    private final TopologyService topologyService = mock( TopologyService.class );
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
+        when( topologyService.findCatchupAddress( coreMemberId ) ).thenReturn( Optional.of( coreMemberAddress ) );
     }
 
     private final Lifecycle startStopOnStoreCopy = mock( Lifecycle.class );
 
     private final CatchupPollingProcess txPuller =
             new CatchupPollingProcess( NullLogProvider.getInstance(), localDatabase, startStopOnStoreCopy,
-                    catchUpClient, strategyPipeline, timeoutService, txPullIntervalMillis, txApplier, new Monitors(),
-                    storeCopyProcess, () -> mock( DatabaseHealth.class ) );
+                    catchUpClient, strategyPipeline, timeoutService, txPullIntervalMillis, txApplier, new Monitors(), storeCopyProcess,
+                    () -> mock( DatabaseHealth.class ), topologyService );
 
     @Before
     public void before() throws Throwable
@@ -101,7 +107,7 @@ public class CatchupPollingProcessTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( catchUpClient ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        verify( catchUpClient ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) );
     }
 
@@ -114,7 +120,7 @@ public class CatchupPollingProcessTest
         when( txApplier.lastQueuedTxId() ).thenReturn( lastAppliedTxId );
 
         // when
-        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) )
                 .thenReturn(
                         new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
@@ -123,7 +129,7 @@ public class CatchupPollingProcessTest
         timeoutService.invokeTimeout( TX_PULLER_TIMEOUT );
 
         // then
-        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) );
     }
 
@@ -132,7 +138,7 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn(
                 new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 0 ) );
 
@@ -147,7 +153,7 @@ public class CatchupPollingProcessTest
     {
         // when
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn(
                         new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
@@ -162,7 +168,7 @@ public class CatchupPollingProcessTest
     {
         // given
         txPuller.start();
-        when( catchUpClient.makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        when( catchUpClient.makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn(
                         new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ) );
 
@@ -175,7 +181,7 @@ public class CatchupPollingProcessTest
         // then
         verify( localDatabase ).stopForStoreCopy();
         verify( startStopOnStoreCopy ).stop();
-        verify( storeCopyProcess ).replaceWithStoreFrom( any( MemberId.class ), eq( storeId ) );
+        verify( storeCopyProcess ).replaceWithStoreFrom( any( AdvertisedSocketAddress.class ), eq( storeId ) );
         verify( localDatabase ).start();
         verify( startStopOnStoreCopy ).start();
         verify( txApplier ).refreshFromNewStore();
@@ -206,7 +212,7 @@ public class CatchupPollingProcessTest
     public void shouldNotSignalOperationalUntilPulling() throws Throwable
     {
         // given
-        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( MemberId.class ), any( TxPullRequest.class ),
+        when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) )
                 .thenReturn(
                         new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0),
