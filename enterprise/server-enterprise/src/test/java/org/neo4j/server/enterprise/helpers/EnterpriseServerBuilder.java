@@ -38,8 +38,6 @@ import org.neo4j.server.enterprise.EnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
 
-import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
-
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
     protected EnterpriseServerBuilder( LogProvider logProvider )
