@@ -27,18 +27,21 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.backup.OnlineBackupCommandIT.runBackupToolFromOtherJvmToGetExitCode;
 import static org.neo4j.causalclustering.backup.BackupCoreIT.backupAddress;
@@ -107,7 +110,8 @@ public class ClusterSeedingIT
     {
         // given
         File backupDir = createBackupUsingAnotherCluster();
-        DbRepresentation before = DbRepresentation.of( backupDir );
+        Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() );
+        DbRepresentation before = DbRepresentation.of( backupDir, config );
 
         // when
         fsa.copyRecursively( backupDir, cluster.getCoreMemberById( 0 ).storeDir() );

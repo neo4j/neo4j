@@ -28,7 +28,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Settings;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterRule;
@@ -44,7 +47,7 @@ public class BackupHaIT
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
             .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
-            .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> ":" + (4444 + serverId) );
+            .withInstanceSetting( OnlineBackupSettings.online_backup_server, serverId -> ":" + PortAuthority.allocatePort() );
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
@@ -63,7 +66,9 @@ public class BackupHaIT
         // Run backup
         ManagedCluster cluster = clusterRule.startCluster();
         DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( "localhost:4445",
+        HighlyAvailableGraphDatabase hagdb = cluster.getAllMembers().iterator().next();
+        HostnamePort address = cluster.getBackupAddress(hagdb);
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( address.toString(),
                 backupPath, "basic" ) ) );
 
         // Add some new data
@@ -80,13 +85,14 @@ public class BackupHaIT
     public void makeSureBackupCanBePerformedFromAnyInstance() throws Throwable
     {
         ManagedCluster cluster = clusterRule.startCluster();
-        Integer[] backupPorts = {4445, 4446, 4447};
 
-        for ( Integer port : backupPorts )
+        for ( HighlyAvailableGraphDatabase hagdb : cluster.getAllMembers() )
         {
+            HostnamePort address = cluster.getBackupAddress(hagdb);
+
             // Run backup
             DbRepresentation beforeChange = DbRepresentation.of( cluster.getMaster() );
-            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( "localhost:" + port,
+            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupPath, backupArguments( address.toString(),
                     backupPath, "anyinstance" ) ) );
 
             // Add some new data

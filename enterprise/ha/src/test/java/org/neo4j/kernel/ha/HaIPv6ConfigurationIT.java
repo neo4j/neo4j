@@ -28,7 +28,9 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
@@ -37,7 +39,7 @@ import org.neo4j.test.rule.TestDirectory;
 /**
  * Test various IPv6 configuration options on a single HA instance.
  */
-public class HaIPv6ConfigurationTest
+public class HaIPv6ConfigurationIT
 {
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory();
@@ -45,12 +47,14 @@ public class HaIPv6ConfigurationTest
     @Test
     public void testClusterWithLocalhostAddresses() throws Throwable
     {
+        int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
-                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::1", 5000 ) )
-                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", 5000 ) )
-                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::1", 6000 ) )
+                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::1", clusterPort ) )
+                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", clusterPort ) )
+                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::1", PortAuthority.allocatePort() ) )
                 .setConfig( ClusterSettings.server_id, "1" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -95,12 +99,14 @@ public class HaIPv6ConfigurationTest
 
     private void testWithAddress( InetAddress inetAddress ) throws Exception
     {
+        int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
-                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( inetAddress.getHostAddress(), 5000 ) )
-                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( inetAddress.getHostAddress(), 5000 ) )
-                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", 6000 ) )
+                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( inetAddress.getHostAddress(), clusterPort ) )
+                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( inetAddress.getHostAddress(), clusterPort ) )
+                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", PortAuthority.allocatePort() ) )
                 .setConfig( ClusterSettings.server_id, "1" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
@@ -115,12 +121,14 @@ public class HaIPv6ConfigurationTest
     @Test
     public void testClusterWithWildcardAddresses() throws Throwable
     {
+        int clusterPort = PortAuthority.allocatePort();
         GraphDatabaseService db = new HighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( dir.makeGraphDbDir() )
-                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::", 5000 ) )
-                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", 5000 ) )
-                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", 6000 ) )
+                .setConfig( ClusterSettings.cluster_server, ipv6HostPortSetting( "::", clusterPort ) )
+                .setConfig( ClusterSettings.initial_hosts, ipv6HostPortSetting( "::1", clusterPort ) )
+                .setConfig( HaSettings.ha_server, ipv6HostPortSetting( "::", PortAuthority.allocatePort() ) )
                 .setConfig( ClusterSettings.server_id, "1" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )

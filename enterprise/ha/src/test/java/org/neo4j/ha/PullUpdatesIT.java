@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -42,6 +43,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -70,7 +72,6 @@ import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailabl
 public class PullUpdatesIT
 {
     private static final int PULL_INTERVAL = 100;
-    private static final int SHELL_PORT = 6370;
 
     @Rule
     public final ClusterRule clusterRule = new ClusterRule( getClass() );
@@ -172,15 +173,19 @@ public class PullUpdatesIT
                 withSharedSetting( HaSettings.pull_interval, "0" ).
                 withSharedSetting( HaSettings.tx_push_factor, "0" ).
                 withSharedSetting( ShellSettings.remote_shell_enabled, Settings.TRUE ).
-                withInstanceSetting( ShellSettings.remote_shell_port,
-                        oneBasedServerId -> oneBasedServerId >= 1 && oneBasedServerId <= 2 ?
-                                            "" + (SHELL_PORT + oneBasedServerId) : null ).
+                withInstanceSetting( ShellSettings.remote_shell_port, i -> String.valueOf( PortAuthority.allocatePort() ) ).
                 startCluster();
 
         long commonNodeId = createNodeOnMaster( cluster );
 
         setProperty( cluster.getMaster(), commonNodeId, 1 );
-        callPullUpdatesViaShell( 2 );
+
+        int shellPort = cluster.getAnySlave()
+                .getDependencyResolver().resolveDependency( Config.class )
+                .get( ShellSettings.remote_shell_port );
+
+        callPullUpdatesViaShell( shellPort );
+
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
         try ( Transaction tx = slave.beginTx() )
         {
@@ -205,6 +210,7 @@ public class PullUpdatesIT
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + masterClusterPort )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
                     .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
@@ -215,6 +221,7 @@ public class PullUpdatesIT
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
                     .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                     .newGraphDatabase();
 
             // Required to block until the slave has left for sure
@@ -256,6 +263,7 @@ public class PullUpdatesIT
                     .setConfig( ClusterSettings.initial_hosts, "localhost:" + masterClusterPort )
                     .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( HaSettings.pull_interval, "0" ) // no pull updates, should pull on startup
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                     .newGraphDatabase();
 
             slave.beginTx().close(); // Make sure switch to slave completes and so does the update pulling on startup
@@ -302,9 +310,9 @@ public class PullUpdatesIT
         }
     }
 
-    private void callPullUpdatesViaShell( int i ) throws ShellException
+    private void callPullUpdatesViaShell( int port ) throws ShellException
     {
-        ShellClient client = ShellLobby.newClient( SHELL_PORT + i );
+        ShellClient client = ShellLobby.newClient( port );
         client.evaluate( "pullupdates" );
     }
 

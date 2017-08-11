@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Transaction;
@@ -56,7 +57,8 @@ public class ConflictingServerIdIT
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + masterClusterPort )
                 .setConfig( ClusterSettings.server_id, "" + 1 )
                 .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
-                .setConfig( HaSettings.tx_push_factor, "0" );
+                .setConfig( HaSettings.tx_push_factor, "0" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() );
             master = (HighlyAvailableGraphDatabase) masterBuilder.newGraphDatabase();
 
             GraphDatabaseBuilder db21Builder = new TestHighlyAvailableGraphDatabaseFactory()
@@ -65,7 +67,8 @@ public class ConflictingServerIdIT
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( ClusterSettings.server_id, "" + 2 )
                     .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
-                    .setConfig( HaSettings.tx_push_factor, "0" );
+                    .setConfig( HaSettings.tx_push_factor, "0" )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() );
             dbWithId21 = (HighlyAvailableGraphDatabase) db21Builder.newGraphDatabase();
 
             GraphDatabaseBuilder db22Builder = new TestHighlyAvailableGraphDatabaseFactory()
@@ -74,7 +77,8 @@ public class ConflictingServerIdIT
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                     .setConfig( ClusterSettings.server_id, "" + 2 ) // Conflicting with the above
                     .setConfig( HaSettings.ha_server, ":" + PortAuthority.allocatePort() )
-                    .setConfig( HaSettings.tx_push_factor, "0" );
+                    .setConfig( HaSettings.tx_push_factor, "0" )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() );
 
             try
             {

@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreUtil;
@@ -101,6 +102,7 @@ public class BranchedDataIT
                 .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 .setConfig( ClusterSettings.initial_hosts, "localhost:" + clusterPort )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase().shutdown();
         // It should have migrated those to the new location. Verify that.
         for ( long timestamp : timestamps )

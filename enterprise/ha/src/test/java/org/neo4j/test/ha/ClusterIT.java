@@ -30,6 +30,7 @@ import java.nio.file.DirectoryNotEmptyException;
 import java.util.logging.Level;
 
 import org.junit.rules.TestName;
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.DependencyResolver;
@@ -86,7 +87,8 @@ public class ClusterIT
                     .withSharedConfig(
                             stringMap(
                                 HaSettings.ha_server.name(), "localhost:6001-9999",
-                                HaSettings.tx_push_factor.name(), "2" ) )
+                                HaSettings.tx_push_factor.name(), "2",
+                                OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
 
                     .build();
             createClusterWithNode( clusterManager );
@@ -105,7 +107,8 @@ public class ClusterIT
                 .withCluster( clusterOfSize( "localhost", 3 ) )
                 .withSharedConfig( stringMap(
                         HaSettings.ha_server.name(), "localhost:6001-9999",
-                        HaSettings.tx_push_factor.name(), "2" ) )
+                        HaSettings.tx_push_factor.name(), "2",
+                        OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
                 .build();
         createClusterWithNode( clusterManager );
     }
@@ -118,7 +121,10 @@ public class ClusterIT
                 .withSharedConfig(
                         stringMap(
                                 HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
-                                HaSettings.tx_push_factor.name(), "2" ) )
+                                HaSettings.tx_push_factor.name(), "2",
+                                OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()
+                        )
+                )
                 .build();
         createClusterWithNode( clusterManager );
     }
@@ -140,6 +146,7 @@ public class ClusterIT
                     .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                     .setConfig( ClusterSettings.server_id, "1" )
                     .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                     .newGraphDatabase();
 
             try
@@ -152,6 +159,7 @@ public class ClusterIT
                         .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                         .setConfig( ClusterSettings.server_id, "2" )
                         .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                        .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                         .newGraphDatabase();
                 failed.shutdown();
                 fail("Should not start when ports conflict");
@@ -211,7 +219,10 @@ public class ClusterIT
         HighlyAvailableGraphDatabase db = (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                 newEmbeddedDatabaseBuilder( testDirectory.directory( testName.getMethodName() ) ).
                 setConfig( ClusterSettings.server_id, "1" ).
+                setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() ).
                 setConfig( ClusterSettings.initial_hosts, "" ).
+                setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() ).
+                setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() ).
                 newGraphDatabase();
 
         try

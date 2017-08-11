@@ -40,6 +40,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -258,6 +259,7 @@ public class PullUpdatesAppliedIT
                 .setConfig( ClusterSettings.server_id, Integer.toString( serverId ) )
                 .setConfig( HaSettings.ha_server, "localhost:" + haPort )
                 .setConfig( HaSettings.pull_interval, "0ms" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
     }
 

@@ -25,12 +25,14 @@ import org.junit.Test;
 
 import java.io.File;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -73,6 +75,7 @@ public class ForeignStoreIdIT
                 .setConfig( cluster_server, "127.0.0.1:" + firstInstanceClusterPort )
                 .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         // -- another instance preparing to join with a store with a different store ID
         File foreignDbStoreDir = createAnotherStore( testDirectory.directory( "2" ), 0 );
@@ -85,6 +88,7 @@ public class ForeignStoreIdIT
                 .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
                 .setConfig( cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         // -- and creates a node
         long foreignNode = createNode( foreignInstance, "foreigner" );
@@ -106,6 +110,7 @@ public class ForeignStoreIdIT
                 .setConfig( initial_hosts, "127.0.0.1:" + firstInstanceClusterPort )
                 .setConfig( cluster_server, "127.0.0.1:" + firstInstanceClusterPort )
                 .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
         createNodes( firstInstance, 3, "first" );
         // -- another instance preparing to join with a store with a different store ID
@@ -120,6 +125,7 @@ public class ForeignStoreIdIT
                 .setConfig( cluster_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .setConfig( ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
                 .setConfig( state_switch_timeout, "5s" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
 
         try
@@ -153,7 +159,10 @@ public class ForeignStoreIdIT
 
     private File createAnotherStore( File directory, int transactions )
     {
-        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabase( directory );
+        GraphDatabaseService db = new EnterpriseGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
         createNodes( db, transactions, "node" );
         db.shutdown();
         return directory;
