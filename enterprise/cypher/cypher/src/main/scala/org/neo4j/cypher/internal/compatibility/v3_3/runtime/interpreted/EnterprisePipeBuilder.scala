@@ -176,6 +176,17 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val offset = pipeline.getReferenceOffsetFor(name)
         UnwindRegisterPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
 
+      case CreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
+        val fromOffset = pipeline(startNode).offset
+        val endOffset = pipeline(endNode).offset
+        CreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,pipeline, props.map(convertExpressions))(id = id)
+
+      case MergeCreateRelationship(_, idName, IdName(startNode), typ, IdName(endNode), props) =>
+        val fromOffset = pipeline(startNode).offset
+        val endOffset = pipeline(endNode).offset
+        MergeCreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,pipeline, props.map(convertExpressions))(id = id)
+
+
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection |
            _: Limit |

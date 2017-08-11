@@ -29,6 +29,16 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
+  test("apa") {
+    createLabeledNode(Map("name" -> "a"), "Person")
+    createLabeledNode(Map("name" -> "b"), "Person")
+    val result = graph.execute("CYPHER runtime=enterprise-interpreted PROFILE CREATE (a)-[r:Rel]->(b) RETURN r")
+    println(result.resultAsString())
+    println(result.getExecutionPlanDescription)
+  }
+
+
+
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")

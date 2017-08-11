@@ -399,30 +399,13 @@ Failing when using a variable that is already bound in CREATE
 
 // Updating queries
 Fail when imposing new predicates on a variable that is already bound
-Creating two nodes and a relationship
 Combine MATCH, WITH and CREATE
-Creating a relationship with null properties should not return those properties
-Create a simple pattern
-Create a self loop
-Create a self loop using MATCH
-Create nodes and relationships
-Create a relationship with a property
 Create a relationship with the correct direction
-Create a relationship and an end node from a matched starting node
-Create a relationship with a reversed direction
-Create a pattern with multiple hops
-Create a pattern with multiple hops in the reverse direction
-Create a pattern with multiple hops in varying directions
-Create a pattern with multiple hops with multiple types and varying directions
-Nodes are not created when aliases are applied to variable names
-Only a single node is created when an alias is applied to a variable name
 Nodes are not created when aliases are applied to variable names multiple times
 Only a single node is created when an alias is applied to a variable name multiple times
-A bound node should be recognized after projection with WITH + WITH
 A bound node should be recognized after projection with WITH + UNWIND
 A bound node should be recognized after projection with WITH + MERGE node
 A bound node should be recognized after projection with WITH + MERGE pattern
-Creating a pattern with multiple hops and changing directions
 Delete nodes
 Detach delete node
 Delete relationships
@@ -445,7 +428,6 @@ Detach delete nodes from nested map/list
 Delete relationships from nested map/list
 Delete paths from nested map/list
 Delete relationship with bidirectional matching
-Generate the movie graph correctly
 Updating one property with ON CREATE
 Null-setting one property with ON CREATE
 Copying properties from node with ON CREATE
