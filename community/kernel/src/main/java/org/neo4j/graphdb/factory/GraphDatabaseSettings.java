@@ -240,6 +240,10 @@ public abstract class GraphDatabaseSettings
     @Description("The maximum time interval of a transaction within which it should be completed.")
     public static final Setting<Long> transaction_timeout = setting( "dbms.transaction.timeout", DURATION, String.valueOf( UNSPECIFIED_TIMEOUT ) );
 
+    @Description("Configures the time interval between transaction monitor checks. Determines how often " +
+            "monitor thread will check transaction for timeout.")
+    public static final Setting<Long> transaction_monitor_check_interval = setting( "dbms.transaction.monitor.check.interval", DURATION, "5s" );
+
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )
     @Internal

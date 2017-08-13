@@ -171,6 +171,11 @@ public interface JobScheduler extends Lifecycle
          * Native security.
          */
         public static Group nativeSecurity = new Group( "NativeSecurity", POOLED );
+
+        /**
+         * Kernel transaction timeout monitor.
+         */
+        public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor", POOLED );
     }
 
     interface JobHandle
