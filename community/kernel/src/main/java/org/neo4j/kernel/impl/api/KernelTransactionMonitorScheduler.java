@@ -44,7 +44,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        if (checkIntervalMillis > 0)
+        if ( checkIntervalMillis > 0 )
         {
             monitorJobHandle = scheduler.scheduleRecurring( transactionTimeoutMonitor, kernelTransactionTimeoutMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
