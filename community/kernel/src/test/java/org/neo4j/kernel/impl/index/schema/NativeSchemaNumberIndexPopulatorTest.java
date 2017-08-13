@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Test;
@@ -35,7 +34,6 @@ import java.util.Optional;
 import java.util.Random;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.StoreChannel;
@@ -568,25 +566,6 @@ public abstract class NativeSchemaNumberIndexPopulatorTest<KEY extends SchemaNum
             updates[i] = indexEntryUpdateIterator.next();
         }
         verifyUpdates( updates );
-    }
-
-    private static class NativeSchemaIndexHeaderReader implements Header.Reader
-    {
-        private byte state;
-        private String failureMessage;
-
-        @Override
-        public void read( ByteBuffer headerData )
-        {
-            state = headerData.get();
-            if ( state == BYTE_FAILED )
-            {
-                short messageLength = headerData.getShort();
-                byte[] failureMessageBytes = new byte[messageLength];
-                headerData.get( failureMessageBytes );
-                failureMessage = new String( failureMessageBytes, Charsets.UTF_8 );
-            }
-        }
     }
 
     private byte[] fileWithContent() throws IOException

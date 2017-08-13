@@ -17,11 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.impl.index.schema;
 
-public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
+import org.neo4j.kernel.impl.index.schema.fusion.FusionSchemaIndexProvider;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+
+public class NativeSelector implements FusionSchemaIndexProvider.Selector
 {
-    long UNKNOWN_MAX_COUNT = -1;
+    @Override
+    public <T> T select( T nativeInstance, T luceneInstance, Value... values )
+    {
+        if ( values.length > 1 )
+        {
+            // Multiple values must be handled by lucene
+            return luceneInstance;
+        }
 
-    long maxCount();
+        Value singleValue = values[0];
+        if ( singleValue.valueGroup() == ValueGroup.NUMBER )
+        {
+            // It's a number, the native can handle this
+            return nativeInstance;
+        }
+        return luceneInstance;
+    }
 }

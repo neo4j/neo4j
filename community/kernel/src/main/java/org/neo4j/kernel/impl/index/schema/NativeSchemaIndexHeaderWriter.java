@@ -17,11 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.impl.index.schema;
 
-public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
+import java.util.function.Consumer;
+
+import org.neo4j.index.internal.gbptree.GBPTree;
+import org.neo4j.io.pagecache.PageCursor;
+
+/**
+ * Writes index state in the {@link GBPTree} header.
+ */
+class NativeSchemaIndexHeaderWriter implements Consumer<PageCursor>
 {
-    long UNKNOWN_MAX_COUNT = -1;
+    private final byte state;
 
-    long maxCount();
+    NativeSchemaIndexHeaderWriter( byte state )
+    {
+        this.state = state;
+    }
+
+    @Override
+    public void accept( PageCursor cursor )
+    {
+        cursor.putByte( state );
+    }
 }

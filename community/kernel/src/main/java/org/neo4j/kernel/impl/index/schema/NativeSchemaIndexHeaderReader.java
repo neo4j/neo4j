@@ -17,11 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers.collection;
+package org.neo4j.kernel.impl.index.schema;
 
-public interface BoundedIterable<RECORD> extends Iterable<RECORD>, AutoCloseable
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+import org.neo4j.index.internal.gbptree.Header;
+
+import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulator.BYTE_FAILED;
+
+class NativeSchemaIndexHeaderReader implements Header.Reader
 {
-    long UNKNOWN_MAX_COUNT = -1;
+    byte state;
+    String failureMessage;
 
-    long maxCount();
+    @Override
+    public void read( ByteBuffer headerData )
+    {
+        state = headerData.get();
+        if ( state == BYTE_FAILED )
+        {
+            short messageLength = headerData.getShort();
+            byte[] failureMessageBytes = new byte[messageLength];
+            headerData.get( failureMessageBytes );
+            failureMessage = new String( failureMessageBytes, StandardCharsets.UTF_8 );
+        }
+    }
 }

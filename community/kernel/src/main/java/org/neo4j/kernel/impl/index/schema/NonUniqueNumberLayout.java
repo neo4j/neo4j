@@ -24,11 +24,26 @@ import org.neo4j.index.internal.gbptree.Layout;
 public class NonUniqueNumberLayout extends NumberLayout
 {
     private static final String IDENTIFIER_NAME = "NUNI";
+    static final int MAJOR_VERSION = 0;
+    static final int MINOR_VERSION = 1;
+    static long IDENTIFIER = Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
 
     @Override
     public long identifier()
     {
-        return Layout.namedIdentifier( IDENTIFIER_NAME, SchemaNumberValue.SIZE );
+        return IDENTIFIER;
+    }
+
+    @Override
+    public int majorVersion()
+    {
+        return MAJOR_VERSION;
+    }
+
+    @Override
+    public int minorVersion()
+    {
+        return MINOR_VERSION;
     }
 
     @Override

@@ -19,8 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import java.io.File;
 import java.util.Comparator;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -161,8 +163,30 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
             upperInt |= byteValue & 0xFF;
         }
 
-        return upperInt << Integer.SIZE | (checksum & 0xFFFFFFFF);
+        return (upperInt << Integer.SIZE) | checksum;
     }
+
+    /**
+     * Typically, a layout is compatible with given identifier, major and minor version if
+     * <ul>
+     * <li>{@code layoutIdentifier == this.identifier()}</li>
+     * <li>{@code majorVersion == this.majorVersion()}</li>
+     * <li>{@code minorVersion == this.minorVersion()}</li>
+     * </ul>
+     * <p>
+     * When opening a {@link GBPTree tree} to 'use' it, read and write to it, providing a layout with the right compatibility is
+     * important because it decides how to read and write entries in the tree.
+     * A layout also needs to be provided when only {@link GBPTree#readHeader(PageCache, File, Layout, Header.Reader)} reading header}
+     * of tree. In this case there is no intention of reading or writing entries in the tree. If multiple layout implementations share
+     * the same header layout (but have different structure for entries) then a layout that is compatible with either of those layouts
+     * can be provided for the read header operation.
+     *
+     * @param layoutIdentifier the stored layout identifier we want to check compatibility against.
+     * @param majorVersion the stored major version we want to check compatibility against.
+     * @param minorVersion the stored minor version we want to check compatibility against.
+     * @return true if this layout is compatible with combination of identifier, major and minor version, false otherwise.
+     */
+    boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion );
 
     /**
      * Adapter for {@link Layout}, which contains convenient standard implementations of some methods.
@@ -170,7 +194,7 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
      * @param <KEY> type of key
      * @param <VALUE> type of value
      */
-    abstract class Adapter<KEY,VALUE> implements Layout<KEY,VALUE>
+    abstract class Adapter<KEY, VALUE> implements Layout<KEY,VALUE>
     {
         @Override
         public String toString()
@@ -178,6 +202,98 @@ public interface Layout<KEY, VALUE> extends Comparator<KEY>
             return format( "%s[version:%d.%d, identifier:%d, keySize:%d, valueSize:%d]",
                     getClass().getSimpleName(), majorVersion(), minorVersion(), identifier(),
                     keySize(), valueSize() );
+        }
+
+        @Override
+        public boolean compatibleWith( long layoutIdentifier, int majorVersion, int minorVersion )
+        {
+            return layoutIdentifier == identifier() && majorVersion == majorVersion() && minorVersion == minorVersion();
+        }
+    }
+
+    /**
+     * Abstract {@link Layout} for read-only scenarios. Mainly used for reading header off of a closed
+     * {@link GBPTree}.
+     */
+    @SuppressWarnings( "rawtypes" )
+    abstract class ReadOnlyMetaLayout implements Layout
+    {
+        @Override
+        public Object newKey()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public Object copyKey( Object key, Object into )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public Object newValue()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public int keySize()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public int valueSize()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public void writeKey( PageCursor cursor, Object key )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public void writeValue( PageCursor cursor, Object value )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public void readKey( PageCursor cursor, Object into )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public void readValue( PageCursor cursor, Object into )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public long identifier()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public int majorVersion()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public int minorVersion()
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
+        }
+
+        @Override
+        public int compare( Object o1, Object o2 )
+        {
+            throw new UnsupportedOperationException( "Not allowed with read only layout" );
         }
     }
 }

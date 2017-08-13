@@ -125,6 +125,7 @@ public class LuceneIndexAccessor implements IndexAccessor
     {
         private final boolean isRecovery;
         private final LuceneIndexWriter writer;
+        private boolean hasChanges;
 
         private LuceneIndexUpdater( LuceneIndexWriter indexWriter, boolean isRecovery )
         {
@@ -159,12 +160,16 @@ public class LuceneIndexAccessor implements IndexAccessor
             default:
                 throw new UnsupportedOperationException();
             }
+            hasChanges = true;
         }
 
         @Override
         public void close() throws IOException, IndexEntryConflictException
         {
-            luceneIndex.maybeRefreshBlocking();
+            if ( hasChanges )
+            {
+                luceneIndex.maybeRefreshBlocking();
+            }
         }
 
         @Override
@@ -179,7 +184,6 @@ public class LuceneIndexAccessor implements IndexAccessor
 
         private void addRecovered( long nodeId, Value[] values ) throws IOException
         {
-
             writer.updateDocument( LuceneDocumentStructure.newTermForChangeOrRemove( nodeId ),
                     LuceneDocumentStructure.documentRepresentingProperties( nodeId, values ) );
         }
@@ -201,4 +205,3 @@ public class LuceneIndexAccessor implements IndexAccessor
         }
     }
 }
-

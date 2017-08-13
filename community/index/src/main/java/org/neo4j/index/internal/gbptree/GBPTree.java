@@ -391,6 +391,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try
         {
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
+            this.pageSize = pagedFile.pageSize();
             closed = false;
             this.bTreeNode = new TreeNode<>( pageSize, layout );
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
@@ -462,46 +463,57 @@ public class GBPTree<KEY,VALUE> implements Closeable
     {
         try
         {
-            PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
-            // This index already exists, verify the header with what we got passed into the constructor this time
-
-            try
-            {
-                readMeta( layout, pagedFile );
-                pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile );
-                return pagedFile;
-            }
-            catch ( Throwable t )
-            {
-                try
-                {
-                    pagedFile.close();
-                }
-                catch ( IOException e )
-                {
-                    t.addSuppressed( e );
-                }
-                throw t;
-            }
+            return openExistingIndexFile( pageCache, indexFile, layout );
         }
         catch ( NoSuchFileException e )
         {
-            // First time
-            monitor.noStoreFile();
-            pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
-            if ( pageSize > pageCache.pageSize() )
-            {
-                throw new MetadataMismatchException(
-                        "Tried to create tree with page size %d" +
-                        ", but page cache used to create it has a smaller page size %d" +
-                        " so cannot be created", pageSize, pageCache.pageSize() );
-            }
+            return createNewIndexFile( pageCache, indexFile, pageSizeForCreation );
+        }
+    }
 
-            // We need to create this index
-            PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
-            created = true;
+    private static <KEY, VALUE> PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout )
+            throws IOException
+    {
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+        // This index already exists, verify meta data aligns with expectations
+
+        try
+        {
+            int pageSize = readMeta( layout, pagedFile );
+            pagedFile = mapWithCorrectPageSize( pageCache, indexFile, pagedFile, pageSize );
             return pagedFile;
         }
+        catch ( Throwable t )
+        {
+            try
+            {
+                pagedFile.close();
+            }
+            catch ( IOException e )
+            {
+                t.addSuppressed( e );
+            }
+            throw t;
+        }
+    }
+
+    private PagedFile createNewIndexFile( PageCache pageCache, File indexFile, int pageSizeForCreation ) throws IOException
+    {
+        // First time
+        monitor.noStoreFile();
+        int pageSize = pageSizeForCreation == 0 ? pageCache.pageSize() : pageSizeForCreation;
+        if ( pageSize > pageCache.pageSize() )
+        {
+            throw new MetadataMismatchException(
+                    "Tried to create tree with page size %d" +
+                    ", but page cache used to create it has a smaller page size %d" +
+                    " so cannot be created", pageSize, pageCache.pageSize() );
+        }
+
+        // We need to create this index
+        PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
+        created = true;
+        return pagedFile;
     }
 
     private void loadState( PagedFile pagedFile, Header.Reader headerReader ) throws IOException
@@ -511,7 +523,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
         {
             PageCursorUtil.goTo( cursor, "header data", state.pageId() );
-            readHeader( headerReader, cursor );
+            doReadHeader( headerReader, cursor );
         }
         generation = Generation.generation( state.stableGeneration(), state.unstableGeneration() );
         setRoot( state.rootId(), state.rootGeneration() );
@@ -525,7 +537,32 @@ public class GBPTree<KEY,VALUE> implements Closeable
         clean = state.isClean();
     }
 
-    private static void readHeader( Header.Reader headerReader, PageCursor cursor ) throws IOException
+    /**
+     * Use when you are only interested in reading the header of existing index file without opening the index for writes.
+     * Useful when reading header and the demands on matching layout can be relaxed a bit.
+     *
+     * @param pageCache {@link PageCache} to use to map index file
+     * @param indexFile {@link File} containing the actual index
+     * @param layout {@link Layout} only used to verify compatibility with stored identifier and version. Can be 'dummy' implementation.
+     * @param headerReader reads header data, previously written using {@link #checkpoint(IOLimiter, Consumer)}
+     * or {@link #close()}
+     * @throws IOException On page cache error
+     */
+    public static void readHeader( PageCache pageCache, File indexFile, Layout<?,?> layout, Header.Reader headerReader ) throws IOException
+    {
+        try ( PagedFile pagedFile = openExistingIndexFile( pageCache, indexFile, layout ) )
+        {
+            Pair<TreeState,TreeState> states = readStatePages( pagedFile );
+            TreeState state = TreeStatePair.selectNewestValidState( states );
+            try ( PageCursor cursor = pagedFile.io( state.pageId(), PagedFile.PF_SHARED_READ_LOCK ) )
+            {
+                PageCursorUtil.goTo( cursor, "header data", state.pageId() );
+                doReadHeader( headerReader, cursor );
+            }
+        }
+    }
+
+    private static void doReadHeader( Header.Reader headerReader, PageCursor cursor ) throws IOException
     {
         int headerDataLength;
         do
@@ -623,10 +660,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
         return metaCursor;
     }
 
-    private void readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
+    private static <KEY,VALUE> int readMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile )
+            throws IOException
     {
         // Read meta
         int formatVersion;
+        int pageSize;
         long layoutIdentifier;
         int majorVersion;
         int minorVersion;
@@ -659,20 +698,15 @@ public class GBPTree<KEY,VALUE> implements Closeable
                     "what it was created with. Created with %d, opened with %d",
                     formatVersion, FORMAT_VERSION );
         }
-        if ( layoutIdentifier != layout.identifier() )
+        if ( !layout.compatibleWith( layoutIdentifier, majorVersion, minorVersion ) )
         {
             throw new MetadataMismatchException(
-                    "Tried to open using different layout identifier " +
-                    "than what it was created with. Created with %d, opened with %d",
-                    layoutIdentifier, layout.identifier() );
+                    "Tried to open using layout not compatible with " +
+                    "what the index was created with. Created with: layoutIdentifier=%d,majorVersion=%d,minorVersion=%d. " +
+                    "Opened with layoutIdentifier=%d,majorVersion=%d,minorVersion=%d",
+                    layoutIdentifier, majorVersion, minorVersion, layout.identifier(), layout.majorVersion(), layout.minorVersion() );
         }
-        if ( majorVersion != layout.majorVersion() || minorVersion != layout.minorVersion() )
-        {
-            throw new MetadataMismatchException(
-                    "Tried to open using different layout version " +
-                    "than what it was created with. Created with %d.%d, opened with %d.%d",
-                    majorVersion, minorVersion, layout.majorVersion(), layout.minorVersion() );
-        }
+        return pageSize;
     }
 
     private void writeMeta( Layout<KEY,VALUE> layout, PagedFile pagedFile ) throws IOException
@@ -689,7 +723,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile )
+    private static PagedFile mapWithCorrectPageSize( PageCache pageCache, File indexFile, PagedFile pagedFile, int pageSize )
             throws IOException
     {
         // This index was created with another page size, re-open with that actual page size

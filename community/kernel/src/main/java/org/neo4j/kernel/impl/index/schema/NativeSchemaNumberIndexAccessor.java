@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.schema.IndexReader;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 
 public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         extends NativeSchemaNumberIndex<KEY,VALUE> implements IndexAccessor
@@ -50,7 +51,7 @@ public class NativeSchemaNumberIndexAccessor<KEY extends SchemaNumberKey, VALUE 
     {
         super( pageCache, storeFile, layout );
         singleUpdater = new NativeSchemaNumberIndexUpdater<>( layout.newKey(), layout.newValue() );
-        instantiateTree( recoveryCleanupWorkCollector );
+        instantiateTree( recoveryCleanupWorkCollector, NO_HEADER_WRITER );
     }
 
     @Override
