@@ -82,7 +82,8 @@ public class KernelTransactionTimeoutMonitorIT
 
     private Runnable startAnotherTransaction()
     {
-        return () -> {
+        return () ->
+        {
             try ( InternalTransaction transaction = database
                     .beginTransaction( KernelTransaction.Type.implicit, SecurityContext.AUTH_DISABLED, 1,
                             TimeUnit.SECONDS ) )

@@ -257,7 +257,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description("Configures the time interval between transaction monitor checks. Determines how often " +
             "monitor thread will check transaction for timeout.")
-    public static final Setting<Long> transaction_monitor_check_interval = setting( "dbms.transaction.monitor.check.interval", DURATION, "5s" );
+    public static final Setting<Duration> transaction_monitor_check_interval = setting( "dbms.transaction.monitor.check.interval", DURATION, "5s" );
 
     @Description( "The maximum amount of time to wait for running transactions to complete before allowing "
                   + "initiated database shutdown to continue" )

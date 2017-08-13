@@ -755,7 +755,7 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
-                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ) );
+                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
         life.add( transactionMonitorScheduler );
     }
 
