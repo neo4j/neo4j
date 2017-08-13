@@ -22,7 +22,6 @@ package org.neo4j.kernel.api.impl.schema.verification;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -30,18 +29,15 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.api.schema.OrderedPropertyValues;
 
 public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollector
 {
     private final int[] propertyKeyIds;
-    private CompositeEntrySet actualValues;
 
-    public CompositeDuplicateCheckingCollector( PropertyAccessor accessor, int[] propertyKeyIds )
+    CompositeDuplicateCheckingCollector( PropertyAccessor accessor, int[] propertyKeyIds )
     {
-        super(accessor, -1);
+        super( accessor, StatementConstants.NO_SUCH_PROPERTY_KEY);
         this.propertyKeyIds = propertyKeyIds;
-        actualValues = new CompositeEntrySet();
     }
 
     @Override
@@ -56,82 +52,6 @@ public class CompositeDuplicateCheckingCollector extends DuplicateCheckingCollec
             properties[i] = accessor.getProperty( nodeId, propertyKeyIds[i] );
             values[i] = properties[i].value();
         }
-
-        // We either have to find the first conflicting entry set element,
-        // or append one for the property we just fetched:
-        CompositeEntrySet current = actualValues;
-        scan:
-        do
-        {
-            for ( int i = 0; i < CompositeEntrySet.INCREMENT; i++ )
-            {
-                Object[] currentValues = current.values[i];
-
-                if ( current.nodeId[i] == StatementConstants.NO_SUCH_NODE )
-                {
-                    current.values[i] = values;
-                    current.nodeId[i] = nodeId;
-                    if ( i == CompositeEntrySet.INCREMENT - 1 )
-                    {
-                        current.next = new CompositeEntrySet();
-                    }
-                    break scan;
-                }
-                else if ( propertyValuesEqual( properties, currentValues ) )
-                {
-                    throw new IndexEntryConflictException( current.nodeId[i], nodeId,
-                            OrderedPropertyValues.ofUndefined( currentValues ) );
-                }
-            }
-            current = current.next;
-        }
-        while ( current != null );
-    }
-
-    private boolean propertyValuesEqual( Property[] properties, Object[] values )
-    {
-        if ( properties.length != values.length )
-        {
-            return false;
-        }
-        for ( int i = 0; i < properties.length; i++ )
-        {
-            if ( !properties[i].valueEquals( values[i] ) )
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    @Override
-    public boolean needsScores()
-    {
-        return false;
-    }
-
-    public void reset()
-    {
-        actualValues = new CompositeEntrySet();
-    }
-
-    /**
-     * A small struct of arrays of nodeId + array of property values, with a next pointer.
-     * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
-     * <p>
-     * NOTE: Must always call reset() before use!
-     */
-    private static class CompositeEntrySet
-    {
-        static final int INCREMENT = 10000;
-
-        Object[][] values = new Object[INCREMENT][];
-        long[] nodeId = new long[INCREMENT];
-        CompositeEntrySet next;
-
-        CompositeEntrySet()
-        {
-            Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
-        }
+        duplicateCheckStrategy.checkForDuplicate( properties, values, nodeId );
     }
 }
