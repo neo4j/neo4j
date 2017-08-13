@@ -28,19 +28,24 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast
 object EnterpriseExpressionConverters extends ExpressionConverter {
   override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
     expression match {
-      case runtimeAst.NodeFromRegister(offset) => Some(runtimeExpression.NodeFromRegister(offset))
-      case runtimeAst.NodeProperty(offset, token) => Some(runtimeExpression.NodeProperty(offset, token))
-      case runtimeAst.RelationshipProperty(offset, token) => Some(runtimeExpression.RelationshipProperty(offset, token))
-      case runtimeAst.IdFromSlot(offset) => Some(runtimeExpression.IdFromSlot(offset))
-      case runtimeAst.NodePropertyLate(offset, propKey) => Some(runtimeExpression.NodePropertyLate(offset, propKey))
-      case runtimeAst.RelationshipPropertyLate(offset, propKey) => Some(runtimeExpression.RelationshipPropertyLate(offset, propKey))
+      case runtimeAst.NodeFromRegister(offset, _) =>
+        Some(runtimeExpression.NodeFromRegister(offset))
+      case runtimeAst.NodeProperty(offset, token, _) =>
+        Some(runtimeExpression.NodeProperty(offset, token))
+      case runtimeAst.RelationshipProperty(offset, token, _) =>
+        Some(runtimeExpression.RelationshipProperty(offset, token))
+      case runtimeAst.IdFromSlot(offset) =>
+        Some(runtimeExpression.IdFromSlot(offset))
+      case runtimeAst.NodePropertyLate(offset, propKey, _) =>
+        Some(runtimeExpression.NodePropertyLate(offset, propKey))
+      case runtimeAst.RelationshipPropertyLate(offset, propKey, _) =>
+        Some(runtimeExpression.RelationshipPropertyLate(offset, propKey))
       case runtimeAst.PrimitiveEquals(a, b) =>
         val lhs = self.toCommandExpression(a)
         val rhs = self.toCommandExpression(b)
         Some(runtimeExpression.PrimitiveEquals(lhs, rhs))
       case runtimeAst.GetDegreePrimitive(offset, typ, direction) =>
         Some(runtimeExpression.GetDegreePrimitive(offset, typ, direction))
-
       case _ =>
         None
     }
