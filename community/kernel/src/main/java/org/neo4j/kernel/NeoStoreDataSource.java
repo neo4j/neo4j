@@ -54,6 +54,8 @@ import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
 import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
+import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
+import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.LegacyIndexProviderLookup;
@@ -734,6 +736,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 transactionCommitProcess, indexConfigStore, legacyIndexProviderLookup, hooks, transactionMonitor,
                 availabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, accessCapability ) );
 
+        buildTransactionMonitor( kernelTransactions, clock, config );
+
         final Kernel kernel = new Kernel( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
                 config );
 
@@ -743,6 +747,16 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 legacyIndexProviderLookup, storageEngine );
 
         return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+    }
+
+    private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
+    {
+        KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor =
+                new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );
+        KernelTransactionMonitorScheduler transactionMonitorScheduler =
+                new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
+                        config.get( GraphDatabaseSettings.transaction_monitor_check_interval ) );
+        life.add( transactionMonitorScheduler );
     }
 
     @Override

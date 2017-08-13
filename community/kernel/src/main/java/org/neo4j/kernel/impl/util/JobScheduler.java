@@ -176,6 +176,11 @@ public interface JobScheduler extends Lifecycle
          * File watch service group
          */
         public static Group fileWatch = new Group( "FileWatcher", NEW_THREAD );
+
+        /**
+         * Kernel transaction timeout monitor.
+         */
+        public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor", POOLED );
     }
 
     interface JobHandle

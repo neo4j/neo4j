@@ -61,6 +61,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     }
 
     @Override
+    public long timeoutMillis()
+    {
+        return tx.timeout();
+    }
+
+    @Override
     public boolean isOpen()
     {
         return tx.isOpen();

@@ -56,6 +56,12 @@ public interface KernelTransactionHandle
     long startTime();
 
     /**
+     * Underlying transaction specific timeout. In case if timeout is 0 - transaction does not have a timeout.
+     * @return transaction timeout in milliseconds, <b>0 in case if transaction does not have a timeout<b/>
+     */
+    long timeoutMillis();
+
+    /**
      * Check if the underlying transaction is open.
      *
      * @return {@code true} if the underlying transaction ({@link KernelTransaction#close()} was not called),
