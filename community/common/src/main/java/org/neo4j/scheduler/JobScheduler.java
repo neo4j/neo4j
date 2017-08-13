@@ -164,6 +164,11 @@ public interface JobScheduler extends Lifecycle
          */
         public static Group recoveryCleanup = new Group( "RecoveryCleanup" );
 
+        /**
+         * Kernel transaction timeout monitor.
+         */
+        public static Group transactionTimeoutMonitor = new Group( "TransactionTimeoutMonitor" );
+
         private Groups()
         {
         }

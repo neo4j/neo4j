@@ -41,6 +41,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long lastTransactionIdWhenStarted;
     private final long lastTransactionTimestampWhenStarted;
     private final long startTime;
+    private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SecurityContext securityContext;
     private final Optional<Status> terminationReason;
@@ -52,6 +53,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.lastTransactionIdWhenStarted = tx.lastTransactionIdWhenStarted();
         this.lastTransactionTimestampWhenStarted = tx.lastTransactionTimestampWhenStarted();
         this.startTime = tx.startTime();
+        this.timeoutMillis = tx.timeout();
         this.securityContext = tx.securityContext();
         this.terminationReason = tx.getReasonIfTerminated();
         this.executingQueries = tx.executingQueries();
@@ -74,6 +76,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public long startTime()
     {
         return startTime;
+    }
+
+    @Override
+    public long timeoutMillis()
+    {
+        return timeoutMillis;
     }
 
     @Override
