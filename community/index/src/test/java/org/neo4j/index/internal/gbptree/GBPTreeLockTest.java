@@ -196,7 +196,7 @@ public class GBPTreeLockTest
         race.addContestant( c1 );
         race.addContestant( c2 );
 
-        race.go( 10, TimeUnit.MILLISECONDS );
+        race.go( 1, TimeUnit.SECONDS );
 
         // then
         assertTrue( c1.lockAcquired );
