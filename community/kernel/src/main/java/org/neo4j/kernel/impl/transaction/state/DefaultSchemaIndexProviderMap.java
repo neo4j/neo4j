@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 
 public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
@@ -42,8 +43,16 @@ public class DefaultSchemaIndexProviderMap implements SchemaIndexProviderMap
     {
         this.defaultIndexProvider = defaultIndexProvider;
         indexProviders.put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
-        additionalIndexProviders.forEach(
-                provider -> indexProviders.put( provider.getProviderDescriptor(), provider ) );
+        for ( SchemaIndexProvider provider : additionalIndexProviders )
+        {
+            Descriptor providerDescriptor = provider.getProviderDescriptor();
+            SchemaIndexProvider existing = indexProviders.putIfAbsent( providerDescriptor, provider );
+            if ( existing != null )
+            {
+                throw new IllegalArgumentException( "Tried to load multiple schema index providers with the same provider descriptor " +
+                        providerDescriptor + ". First loaded " + existing + " then " + provider );
+            }
+        }
     }
 
     @Override

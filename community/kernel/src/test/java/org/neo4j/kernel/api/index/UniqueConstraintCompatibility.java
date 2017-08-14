@@ -59,6 +59,9 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+
+import static java.util.Arrays.asList;
+
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -676,8 +679,8 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     private static final long COLLISION_Y = 4611686018427387907L;
     private static final ExecutorService executor = Executors.newCachedThreadPool();
 
-    private Label label = Label.label( "Cybermen" );
-    private String property = "name";
+    private final Label label = Label.label( "Cybermen" );
+    private final String property = "name";
     private Node a;
     private Node b;
     private Node c;
@@ -989,7 +992,7 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         File storeDir = testDirectory.graphDbDir();
         TestGraphDatabaseFactory dbfactory = new TestGraphDatabaseFactory();
-        dbfactory.addKernelExtension( new PredefinedSchemaIndexProviderFactory( indexProvider ) );
+        dbfactory.setKernelExtensions( asList( new PredefinedSchemaIndexProviderFactory( indexProvider ) ) );
         db = dbfactory.newImpermanentDatabase( storeDir );
     }
 
