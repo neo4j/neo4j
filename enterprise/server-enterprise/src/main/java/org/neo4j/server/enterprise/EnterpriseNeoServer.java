@@ -31,13 +31,14 @@ import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.ClusterSettings.Mode;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
@@ -93,7 +94,7 @@ public class EnterpriseNeoServer extends CommunityNeoServer
 
     protected static Database.Factory createDbFactory( Config config )
     {
-        final Mode mode = config.get( ClusterSettings.mode );
+        final Mode mode = config.get( EnterpriseEditionSettings.mode );
 
         switch ( mode )
         {

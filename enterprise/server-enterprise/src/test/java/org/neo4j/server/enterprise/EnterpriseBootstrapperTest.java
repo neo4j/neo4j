@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.server.BaseBootstrapperTest;
 import org.neo4j.server.NeoServer;
@@ -76,7 +77,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( ClusterSettings.mode, "SINGLE" ),
+                "-c", configOption( EnterpriseEditionSettings.mode, "SINGLE" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( certificates_directory, getRelativePath( folder.getRoot(), certificates_directory ) ),
@@ -95,7 +96,7 @@ public class EnterpriseBootstrapperTest extends BaseBootstrapperTest
         // When
         int resultCode = ServerBootstrapper.start( bootstrapper,
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
-                "-c", configOption( ClusterSettings.mode, "HA" ),
+                "-c", configOption( EnterpriseEditionSettings.mode, "HA" ),
                 "-c", configOption( ClusterSettings.server_id, "1" ),
                 "-c", configOption( ClusterSettings.initial_hosts, "127.0.0.1:5001" ),
                 "-c", configOption( data_directory, getRelativePath( folder.getRoot(), data_directory ) ),
