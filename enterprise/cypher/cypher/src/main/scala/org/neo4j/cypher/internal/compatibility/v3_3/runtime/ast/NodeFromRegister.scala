@@ -19,4 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-case class NodeFromRegister(offset: Int) extends RuntimeExpression
+case class NodeFromRegister(offset: Int, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}

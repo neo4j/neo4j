@@ -122,6 +122,14 @@ object RegisterAllocation {
         result += (lp -> newPipeline)
         newPipeline
 
+      case VarExpand(source, IdName(from), dir, projectedDir, types, IdName(to), IdName(edge), length, ExpandAll, predicates) =>
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newLong(to, nullable, CTNode)
+        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+        result += (lp -> newPipeline)
+        newPipeline
+
       case Skip(source, _) =>
         val pipeline = allocate(source, nullable, argument)
         result += (lp -> pipeline)

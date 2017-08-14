@@ -26,12 +26,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
 class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val x = IdName("x")
   private val y = IdName("y")
+  private val z = IdName("z")
   private val LABEL = LabelName("label")(pos)
   private val r = IdName("r")
 
@@ -76,7 +77,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("single node with expand") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, IdName("z"), r, ExpandAll)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -133,7 +134,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
   test("single node with optionalExpand ExpandAll") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, IdName("z"), r, ExpandAll)(solved)
+    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     // when
     val allocations = RegisterAllocation.allocateRegisters(expand)
@@ -177,6 +178,30 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
       ), numberOfLongs = 2, numberOfReferences = 0))
   }
 
+  test("single node with var length expand") {
+    // given
+    val allNodesScan = AllNodesScan(x, Set.empty)(solved)
+    val varLength = VarPatternLength(1, Some(15))
+    val expand = VarExpand(allNodesScan, x, SemanticDirection.INCOMING, SemanticDirection.INCOMING, Seq.empty, z, r, varLength, ExpandAll)(solved)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(expand)
+
+    // then we'll end up with two pipelines
+    allocations should have size 2
+    val labelScanAllocations = allocations(allNodesScan)
+    labelScanAllocations should equal(
+      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
+        0))
+
+    val expandAllocations = allocations(expand)
+    expandAllocations should equal(
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r" -> RefSlot(0, nullable = false, CTList(CTRelationship), "r"),
+        "z" -> LongSlot(1, nullable = false, CTNode, "z")), numberOfLongs = 2, numberOfReferences = 1))
+  }
+
   test("let's skip this one") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
@@ -201,7 +226,7 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs = NodeIndexSeek(IdName("z"), label, Seq.empty, seekExpression, Set(x))(solved)
+    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
     val apply = Apply(lhs, rhs)(solved)
 
     // when

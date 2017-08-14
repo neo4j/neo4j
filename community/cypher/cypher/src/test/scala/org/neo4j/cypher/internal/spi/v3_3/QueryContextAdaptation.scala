@@ -83,6 +83,8 @@ trait QueryContextAdaptation {
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator = ???
 
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship = ???
+
   override def relationshipStartNode(rel: Relationship): Node = ???
 
   override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???

@@ -19,7 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast
 
-case class NodeProperty(offset: Int, propToken: Int) extends RuntimeExpression
+case class NodeProperty(offset: Int, propToken: Int, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}
 
 // Token did not exist at plan time, so we'll need to look it up at runtime
-case class NodePropertyLate(offset: Int, propKey: String) extends RuntimeExpression
+case class NodePropertyLate(offset: Int, propKey: String, name: String) extends RuntimeExpression {
+  override def asCanonicalStringVal: String = name
+}

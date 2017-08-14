@@ -33,7 +33,7 @@ trait VarLengthPredicate {
 
 object VarLengthPredicate {
 
-  val NONE = new VarLengthPredicate {
+  val NONE: VarLengthPredicate = new VarLengthPredicate {
 
     override def filterNode(row: ExecutionContext, state:QueryState)(node: Node): Boolean = true
 

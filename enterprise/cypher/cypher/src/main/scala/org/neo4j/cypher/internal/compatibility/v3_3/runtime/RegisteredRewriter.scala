@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ast._
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Projection, VarExpand}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
@@ -59,6 +59,13 @@ class RegisteredRewriter(tokenContext: TokenContext) {
         rewrites += (oldPlan -> newPlan)
 
         newPlan
+
+        // Temporary until we actually handle predicates on varlength paths
+      case varExpand: VarExpand =>
+        val information = pipelineInformation(varExpand)
+        newPipelineInfo += (varExpand -> information)
+
+        varExpand
 
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
@@ -99,10 +106,10 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
         val slot = pipelineInformation(key)
         val propExpression = (slot, maybeToken) match {
-          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTNode => NodeProperty(offset, token)
-          case (LongSlot(offset, _, typ, _), None) if typ == CTNode => NodePropertyLate(offset, propKey)
-          case (LongSlot(offset, _, typ, _), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token)
-          case (LongSlot(offset, _, typ, _), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey)
+          case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTNode => NodeProperty(offset, token, s"$name.$propKey")
+          case (LongSlot(offset, _, typ, name), None) if typ == CTNode => NodePropertyLate(offset, propKey, s"$name.$propKey")
+          case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token, s"$name.$propKey")
+          case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
         }
 
         if (slot.nullable)
@@ -128,10 +135,10 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
       case Variable(k) =>
         pipelineInformation(k) match {
-          case LongSlot(offset, false, CTNode, _) => NodeFromRegister(offset)
-          case LongSlot(offset, true, CTNode, _) => NullCheck(offset, NodeFromRegister(offset))
-          case LongSlot(offset, false, CTRelationship, _) => RelationshipFromRegister(offset)
-          case LongSlot(offset, true, CTRelationship, _) => NullCheck(offset, RelationshipFromRegister(offset))
+          case LongSlot(offset, false, CTNode, name) => NodeFromRegister(offset, name)
+          case LongSlot(offset, true, CTNode, name) => NullCheck(offset, NodeFromRegister(offset, name))
+          case LongSlot(offset, false, CTRelationship, name) => RelationshipFromRegister(offset, name)
+          case LongSlot(offset, true, CTRelationship, name) => NullCheck(offset, RelationshipFromRegister(offset, name))
           case RefSlot(offset, _, _, _) => ReferenceFromRegister(offset)
           case _ =>
             throw new InternalException("Did not find `" + k + "` in the pipeline information")

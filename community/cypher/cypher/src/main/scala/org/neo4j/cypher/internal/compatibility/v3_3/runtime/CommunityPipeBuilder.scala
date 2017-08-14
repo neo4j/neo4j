@@ -290,11 +290,11 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     }
   }
 
-  private def varLengthPredicate(predicates: Seq[(Variable, Expression)]) = {
+  private def varLengthPredicate(predicates: Seq[(Variable, Expression)]): VarLengthPredicate  = {
     //Creates commands out of the predicates
     def asCommand(predicates: Seq[(Variable, Expression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
-      val commands = exprs.map(buildPredicate)
+      val commands: Seq[Predicate] = exprs.map(buildPredicate)
       (context: ExecutionContext, state: QueryState, entity: PropertyContainer) => {
         keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
           context(variable.name) = entity

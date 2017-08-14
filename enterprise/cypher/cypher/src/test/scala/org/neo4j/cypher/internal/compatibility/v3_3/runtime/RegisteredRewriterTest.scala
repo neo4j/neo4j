@@ -51,7 +51,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val rewriter = new RegisteredRewriter(tokenContext)
     val (result, newLookup) = rewriter(produceResult, lookup)
 
-    val newPredicate = GreaterThan(NodeProperty(offset, tokenId), literalInt(42))(pos)
+    val newPredicate = GreaterThan(NodeProperty(offset, tokenId, "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
     newLookup(result) should equal(pipeline)
@@ -115,7 +115,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val (result, newLookup) = rewriter(selection, lookup)
 
     // then
-    val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666)), literalInt(42))(pos)
+    val expectedPredicate = Equals(NullCheck(0, NodeProperty(0, 666, "a.prop")), literalInt(42))(pos)
     result should equal(Selection(Seq(expectedPredicate), argument)(solved))
     newLookup(result) should equal(pipelineInformation)
   }
@@ -136,7 +136,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val rewriter = new RegisteredRewriter(tokenContext)
     val (result, newLookup) = rewriter(produceResult, lookup)
 
-    val newPredicate = GreaterThan(NodePropertyLate(offset, "prop"), literalInt(42))(pos)
+    val newPredicate = GreaterThan(NodePropertyLate(offset, "prop", "x.prop"), literalInt(42))(pos)
 
     result should equal(ProduceResult(Seq("x"), Selection(Seq(newPredicate), allNodes)(solved)))
     newLookup(result) should equal(pipeline)
@@ -168,7 +168,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     // when
     val (result, newLookup) = rewriter(selection, lookup)
 
-    result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop"), literalInt(42))(pos)), argument)(solved))
+    result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop", "r.prop"), literalInt(42))(pos)), argument)(solved))
     newLookup(result) should equal(pipelineInformation)
   }
 
@@ -196,7 +196,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val (result, newLookup) = rewriter(produceResult, lookup)
 
     //then
-    val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop")))(solved)
+    val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")))(solved)
     result should equal(
       ProduceResult(Seq("n.prop"), newProjection))
     newLookup(result) should equal(pipeline)
@@ -221,7 +221,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     // then
     resultPlan should equal(
       Projection(leaf, Map(
-        "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId)
+        "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId, "x.propertyKey")
       ))(solved)
     )
   }
@@ -245,7 +245,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val nodeOffset = pipeline.getLongOffsetFor("x")
     resultPlan should equal(
       Projection(leaf, Map(
-        "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId))
+        "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId, "x.propertyKey"))
       ))(solved)
     )
   }
