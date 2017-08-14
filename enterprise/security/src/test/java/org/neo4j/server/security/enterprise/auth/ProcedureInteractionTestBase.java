@@ -602,7 +602,6 @@ public abstract class ProcedureInteractionTestBase<S>
         ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
     }
 
-
     @SuppressWarnings( "unchecked" )
     TransportConnection startBoltSession( String username, String password ) throws Exception
     {
