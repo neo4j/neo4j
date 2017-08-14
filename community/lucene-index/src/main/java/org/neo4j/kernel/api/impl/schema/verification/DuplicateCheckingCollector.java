@@ -25,12 +25,11 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.SimpleCollector;
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
+import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckStrategy.BucketsDuplicateCheckStrategy;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.values.storable.Value;
 
@@ -38,20 +37,19 @@ public class DuplicateCheckingCollector extends SimpleCollector
 {
     protected final PropertyAccessor accessor;
     private final int propertyKeyId;
-    private EntrySet actualValues;
     protected LeafReader reader;
+    DuplicateCheckStrategy duplicateCheckStrategy;
 
-    public static DuplicateCheckingCollector forProperties( PropertyAccessor accessor, int[] propertyKeyIds )
+    static DuplicateCheckingCollector forProperties( PropertyAccessor accessor, int[] propertyKeyIds )
     {
         return (propertyKeyIds.length == 1) ? new DuplicateCheckingCollector( accessor, propertyKeyIds[0] )
                                             : new CompositeDuplicateCheckingCollector( accessor, propertyKeyIds );
     }
 
-    public DuplicateCheckingCollector( PropertyAccessor accessor, int propertyKeyId )
+    DuplicateCheckingCollector( PropertyAccessor accessor, int propertyKeyId )
     {
         this.accessor = accessor;
         this.propertyKeyId = propertyKeyId;
-        actualValues = new EntrySet();
     }
 
     @Override
@@ -75,36 +73,8 @@ public class DuplicateCheckingCollector extends SimpleCollector
     {
         Document document = reader.document( doc );
         long nodeId = LuceneDocumentStructure.getNodeId( document );
-        Value reference = accessor.getPropertyValue( nodeId, propertyKeyId );
-
-        // We either have to find the first conflicting entry set element,
-        // or append one for the property we just fetched:
-        EntrySet currentEntrySet = actualValues;
-        scan:
-        do
-        {
-            for ( int i = 0; i < EntrySet.INCREMENT; i++ )
-            {
-                Value value = currentEntrySet.value[i];
-
-                if ( currentEntrySet.nodeId[i] == StatementConstants.NO_SUCH_NODE )
-                {
-                    currentEntrySet.value[i] = reference;
-                    currentEntrySet.nodeId[i] = nodeId;
-                    if ( i == EntrySet.INCREMENT - 1 )
-                    {
-                        currentEntrySet.next = new EntrySet();
-                    }
-                    break scan;
-                }
-                else if ( reference.equals( value ) )
-                {
-                    throw new IndexEntryConflictException( currentEntrySet.nodeId[i], nodeId, value );
-                }
-            }
-            currentEntrySet = currentEntrySet.next;
-        }
-        while ( currentEntrySet != null );
+        Value value = accessor.getPropertyValue( nodeId, propertyKeyId );
+        duplicateCheckStrategy.checkForDuplicate( value, nodeId );
     }
 
     @Override
@@ -119,28 +89,32 @@ public class DuplicateCheckingCollector extends SimpleCollector
         return false;
     }
 
-    public void reset()
+    /**
+     * Initialise collector for unknown number of entries that are suspected to be duplicates.
+     */
+    public void init()
     {
-        actualValues = new EntrySet();
+        duplicateCheckStrategy = new BucketsDuplicateCheckStrategy();
     }
 
     /**
-     * A small struct of arrays of nodeId + property values, with a next pointer.
-     * Should exhibit fairly fast linear iteration, small memory overhead and dynamic growth.
-     * <p>
-     * NOTE: Must always call reset() before use!
+     * Initialize collector for some known and expected number of entries that are suspected to be duplicates.
+     * @param expectedNumberOfEntries expected number entries
      */
-    private static class EntrySet
+    public void init( int expectedNumberOfEntries )
     {
-        static final int INCREMENT = 10000;
-
-        Value[] value = new Value[INCREMENT];
-        long[] nodeId = new long[INCREMENT];
-        EntrySet next;
-
-        EntrySet()
+        if ( useFastCheck( expectedNumberOfEntries ) )
         {
-            Arrays.fill( nodeId, StatementConstants.NO_SUCH_NODE );
+            duplicateCheckStrategy = new DuplicateCheckStrategy.MapDuplicateCheckStrategy( expectedNumberOfEntries );
         }
+        else
+        {
+            duplicateCheckStrategy = new BucketsDuplicateCheckStrategy( expectedNumberOfEntries );
+        }
+    }
+
+    private boolean useFastCheck( int expectedNumberOfEntries )
+    {
+        return expectedNumberOfEntries <= BucketsDuplicateCheckStrategy.BUCKET_STRATEGY_ENTRIES_THRESHOLD;
     }
 }

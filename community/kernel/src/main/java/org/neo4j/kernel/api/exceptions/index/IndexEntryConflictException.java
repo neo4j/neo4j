@@ -28,7 +28,6 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static java.lang.String.format;
-import static java.lang.String.valueOf;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
@@ -40,7 +39,7 @@ public class IndexEntryConflictException extends Exception
     private final long addedNodeId;
     private final long existingNodeId;
 
-    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value propertyValue )
+    public IndexEntryConflictException( long existingNodeId, long addedNodeId, Value... propertyValue )
     {
         this( existingNodeId, addedNodeId, ValueTuple.of( propertyValue ) );
     }
