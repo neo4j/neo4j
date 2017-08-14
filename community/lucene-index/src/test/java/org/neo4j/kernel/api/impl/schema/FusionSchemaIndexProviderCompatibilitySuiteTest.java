@@ -22,10 +22,11 @@ package org.neo4j.kernel.api.impl.schema;
 import java.io.File;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.OperationalMode;
@@ -34,15 +35,15 @@ import org.neo4j.logging.NullLogProvider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Config.embeddedDefaults;
 
-public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
+public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
     @Override
-    protected LuceneSchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
+    protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
-        DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
-        NullLogProvider logging = NullLogProvider.getInstance();
-        Config config = embeddedDefaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
-        OperationalMode mode = OperationalMode.single;
-        return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, logging, config, mode );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        Config config = embeddedDefaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
+        return NativeLuceneFusionSchemaIndexProviderFactory
+                .newInstance( pageCache, graphDbDir, fs, logProvider, config, OperationalMode.single,
+                        RecoveryCleanupWorkCollector.IMMEDIATE );
     }
 }
