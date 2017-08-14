@@ -47,34 +47,26 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
 
   type LNode = Long
 
-  case class PrimitiveRelationship(relationshipId: Long, typeId: Int, startNodeId: LNode, endNodeId: LNode) {
-    def otherSide(fromNode: LNode) = if (fromNode == startNodeId)
-      endNodeId
-    else
-      startNodeId
-  }
-
   private def varLengthExpand(node: LNode,
                               state: QueryState,
-                              row: ExecutionContext): Iterator[(LNode, Seq[PrimitiveRelationship])] = {
-    val stack = new mutable.Stack[(LNode, Seq[PrimitiveRelationship])]
+                              row: ExecutionContext): Iterator[(LNode, Seq[Relationship])] = {
+    val stack = new mutable.Stack[(LNode, Seq[Relationship])]
     stack.push((node, Seq.empty))
 
-    new Iterator[(LNode, Seq[PrimitiveRelationship])] {
-      override def next(): (LNode, Seq[PrimitiveRelationship]) = {
+    new Iterator[(LNode, Seq[Relationship])] {
+      override def next(): (LNode, Seq[Relationship]) = {
         val (fromNode, rels) = stack.pop()
         if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(fromNode)) {
           val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
 
-          var relationship: PrimitiveRelationship = null
+          var relationship: Relationship = null
 
           val relVisitor = new RelationshipVisitor[InternalException] {
             override def visit(relationshipId: Long, typeId: Int, startNodeId: LNode, endNodeId: LNode): Unit = {
 
-              relationship = PrimitiveRelationship(relationshipId, typeId, startNodeId, endNodeId)
+              relationship = state.query.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
             }
           }
-
 
           while (relationships.hasNext) {
             val relId = relationships.next()
@@ -82,7 +74,8 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
 
             val relationshipIsUniqueInPath = !rels.contains(relationship)
             if (relationshipIsUniqueInPath) {
-              stack.push((relationship.otherSide(fromNode), rels :+ relationship))
+              // TODO: This call creates an intermediate NodeProxy which should not be necessary
+              stack.push((relationship.getOtherNodeId(fromNode), rels :+ relationship))
             }
           }
         }
@@ -107,9 +100,9 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
     input.flatMap {
       inputRowWithFromNode =>
         val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
-        val paths: Iterator[(LNode, Seq[PrimitiveRelationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
+        val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
         paths collect {
-          case (toNode: LNode, rels: Seq[PrimitiveRelationship])
+          case (toNode: LNode, rels: Seq[Relationship])
             if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
             val resultRow = PrimitiveExecutionContext(pipeline)
             resultRow.copyFrom(inputRowWithFromNode)

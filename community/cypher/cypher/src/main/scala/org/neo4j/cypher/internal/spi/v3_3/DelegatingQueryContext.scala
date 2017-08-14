@@ -78,6 +78,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
   manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =
+    inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
+
   override def nodeOps = inner.nodeOps
 
   override def relationshipOps = inner.relationshipOps

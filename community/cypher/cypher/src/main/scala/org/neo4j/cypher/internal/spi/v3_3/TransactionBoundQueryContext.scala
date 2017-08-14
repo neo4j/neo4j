@@ -143,6 +143,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds.toArray)
     }
 
+  override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipProxy = try {
+    entityAccessor.newRelationshipProxy(relationshipId, startNodeId, typeId, endNodeId)
+  } catch {
+    case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $relationshipId", e)
+  }
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {
     indexSearchMonitor.indexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
