@@ -41,6 +41,13 @@ abstract class TreeNode<KEY,VALUE>
         return cursor.getByte( BYTE_POS_NODE_TYPE );
     }
 
+    static boolean isNode( long node )
+    {
+        return GenerationSafePointerPair.pointer( node ) != NO_NODE_FLAG;
+    }
+
+    // HEADER AND POINTERS
+
     abstract void initialize( PageCursor cursor, byte type, long stableGeneration, long unstableGeneration );
 
     abstract void initializeLeaf( PageCursor cursor, long stableGeneration, long unstableGeneration );
@@ -53,8 +60,6 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract long generation( PageCursor cursor );
 
-    abstract int keyCount( PageCursor cursor );
-
     abstract long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration );
 
     abstract long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration );
@@ -62,8 +67,6 @@ abstract class TreeNode<KEY,VALUE>
     abstract long successor( PageCursor cursor, long stableGeneration, long unstableGeneration );
 
     abstract void setGeneration( PageCursor cursor, long generation );
-
-    abstract void setKeyCount( PageCursor cursor, int count );
 
     abstract void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration, long unstableGeneration );
 
@@ -73,34 +76,7 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract long pointerGeneration( PageCursor cursor, long readResult );
 
-    abstract KEY keyAt( PageCursor cursor, KEY into, int pos );
-
-    abstract void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount );
-
-    abstract void removeKeyAt( PageCursor cursor, int pos, int keyCount );
-
-    abstract void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize );
-
-    abstract void setKeyAt( PageCursor cursor, KEY key, int pos );
-
-    abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
-
-    abstract void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount );
-
-    abstract void removeValueAt( PageCursor cursor, int pos, int keyCount );
-
-    abstract void setValueAt( PageCursor cursor, VALUE value, int pos );
-
-    abstract long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration );
-
-    abstract void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, long stableGeneration,
-            long unstableGeneration );
-
-    abstract void removeChildAt( PageCursor cursor, int pos, int keyCount );
-
-    abstract void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration );
-
-    abstract void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration );
+    // LEAKED INTERNALS FOR EFFICIENT SPLIT/MERGE REALLY
 
     abstract void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount );
 
@@ -108,20 +84,11 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount );
 
-    abstract int internalMaxKeyCount();
-
-    abstract int leafMaxKeyCount();
-
     abstract int keyOffset( int pos );
 
     abstract int valueOffset( int pos );
 
     abstract int childOffset( int pos );
-
-    static boolean isNode( long node )
-    {
-        return GenerationSafePointerPair.pointer( node ) != NO_NODE_FLAG;
-    }
 
     abstract int keySize();
 
@@ -132,4 +99,50 @@ abstract class TreeNode<KEY,VALUE>
     abstract Comparator<KEY> keyComparator();
 
     abstract void goTo( PageCursor cursor, String messageOnError, long nodeId ) throws IOException;
+
+    // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
+
+    static abstract class Content<KEY,VALUE>
+    {
+        abstract Comparator<KEY> keyComparator();
+
+        abstract int keyCount( PageCursor cursor );
+
+        abstract void setKeyCount( PageCursor cursor, int count );
+
+        abstract KEY keyAt( PageCursor cursor, KEY into, int pos );
+
+        abstract void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount );
+
+        abstract void removeKeyAt( PageCursor cursor, int pos, int keyCount );
+
+        abstract void setKeyAt( PageCursor cursor, KEY key, int pos );
+
+        abstract VALUE valueAt( PageCursor cursor, VALUE value, int pos );
+
+        abstract void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount );
+
+        abstract void removeValueAt( PageCursor cursor, int pos, int keyCount );
+
+        abstract void setValueAt( PageCursor cursor, VALUE value, int pos );
+
+        abstract long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration );
+
+        abstract void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, long stableGeneration,
+                long unstableGeneration );
+
+        abstract void removeChildAt( PageCursor cursor, int pos, int keyCount );
+
+        abstract void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration );
+
+        abstract void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration );
+
+        abstract int internalMaxKeyCount();
+
+        abstract int leafMaxKeyCount();
+    }
+
+    abstract Content<KEY,VALUE> main();
+
+    abstract Content<KEY,VALUE> delta();
 }

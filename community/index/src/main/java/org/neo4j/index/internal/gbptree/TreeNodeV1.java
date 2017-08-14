@@ -79,6 +79,8 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
     private final Layout<KEY,VALUE> layout;
+    private final Content<KEY,VALUE> mainContent;
+    private final Content<KEY,VALUE> deltaContent;
 
     private final int keySize;
     private final int valueSize;
@@ -104,6 +106,9 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
             throw new MetadataMismatchException( "A page size of %d would only fit leaf keys, minimum is 2",
                     pageSize, leafMaxKeyCount );
         }
+
+        this.mainContent = new MainContentV1();
+        this.deltaContent = new DeltaContentV1();
     }
 
     @Override
@@ -112,7 +117,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
         cursor.putByte( BYTE_POS_NODE_TYPE, NODE_TYPE_TREE_NODE );
         cursor.putByte( BYTE_POS_TYPE, type );
         setGeneration( cursor, unstableGeneration );
-        setKeyCount( cursor, 0 );
+        main().setKeyCount( cursor, 0 );
         setRightSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setLeftSibling( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
         setSuccessor( cursor, NO_NODE_FLAG, stableGeneration, unstableGeneration );
@@ -148,11 +153,6 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {
         return cursor.getInt( BYTE_POS_GENERATION ) & GenerationSafePointer.GENERATION_MASK;
     }
-    @Override
-    public int keyCount( PageCursor cursor )
-    {
-        return cursor.getInt( BYTE_POS_KEYCOUNT );
-    }
 
     @Override
     public long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
@@ -183,12 +183,6 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    public void setKeyCount( PageCursor cursor, int count )
-    {
-        cursor.putInt( BYTE_POS_KEYCOUNT, count );
-    }
-
-    @Override
     public void setRightSibling( PageCursor cursor, long rightSiblingId, long stableGeneration,
             long unstableGeneration )
     {
@@ -206,8 +200,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
     @Override
     public void setSuccessor( PageCursor cursor, long successorId, long stableGeneration, long unstableGeneration )
-    {
-        cursor.setOffset( BYTE_POS_SUCCESSOR );
+    {        cursor.setOffset( BYTE_POS_SUCCESSOR );
         long result = GenerationSafePointerPair.write( cursor, successorId, stableGeneration, unstableGeneration );
         GenerationSafePointerPair.assertSuccess( result );
     }
@@ -229,105 +222,6 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     // BODY METHODS
 
-    @Override
-    public KEY keyAt( PageCursor cursor, KEY into, int pos )
-    {
-        cursor.setOffset( keyOffset( pos ) );
-        layout.readKey( cursor, into );
-        return into;
-    }
-
-    @Override
-    public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
-    {
-        insertKeySlotsAt( cursor, pos, 1, keyCount );
-        cursor.setOffset( keyOffset( pos ) );
-        layout.writeKey( cursor, key );
-    }
-
-    @Override
-    public void removeKeyAt( PageCursor cursor, int pos, int keyCount )
-    {
-        removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
-    }
-
-    @Override
-    public void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
-    {
-        for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
-                posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
-        {
-            cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
-        }
-    }
-    @Override
-    public void setKeyAt( PageCursor cursor, KEY key, int pos )
-    {
-        cursor.setOffset( keyOffset( pos ) );
-        layout.writeKey( cursor, key );
-    }
-
-    @Override
-    public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
-    {
-        cursor.setOffset( valueOffset( pos ) );
-        layout.readValue( cursor, value );
-        return value;
-    }
-
-    @Override
-    public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
-    {
-        insertValueSlotsAt( cursor, pos, 1, keyCount );
-        setValueAt( cursor, value, pos );
-    }
-
-    @Override
-    public void removeValueAt( PageCursor cursor, int pos, int keyCount )
-    {
-        removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
-    }
-
-    @Override
-    public void setValueAt( PageCursor cursor, VALUE value, int pos )
-    {
-        cursor.setOffset( valueOffset( pos ) );
-        layout.writeValue( cursor, value );
-    }
-
-    @Override
-    public long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-    {
-        cursor.setOffset( childOffset( pos ) );
-        return read( cursor, stableGeneration, unstableGeneration, pos );
-    }
-
-    @Override
-    public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
-            long stableGeneration, long unstableGeneration )
-    {
-        insertChildSlotsAt( cursor, pos, 1, keyCount );
-        setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
-    }
-
-    @Override
-    public void removeChildAt( PageCursor cursor, int pos, int keyCount )
-    {
-        removeSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), childSize() );
-    }
-
-    @Override
-    public void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
-    {
-        cursor.setOffset( childOffset( pos ) );
-        writeChild( cursor, child, stableGeneration, unstableGeneration );
-    }
-
-    @Override
-    void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
-    {
-        GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
-    }
 
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
@@ -360,17 +254,6 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
         insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, childOffset( 0 ), childSize() );
-    }
-    @Override
-    public int internalMaxKeyCount()
-    {
-        return internalMaxKeyCount;
-    }
-
-    @Override
-    public int leafMaxKeyCount()
-    {
-        return leafMaxKeyCount;
     }
 
     // HELPERS
@@ -429,5 +312,261 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     {
         return "TreeNode[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount +
                 ", leafMax:" + leafMaxKeyCount + ", keySize:" + keySize + ", valueSize:" + valueSize + "]";
+    }
+
+    @Override
+    Content<KEY,VALUE> main()
+    {
+        return mainContent;
+    }
+
+    @Override
+    Content<KEY,VALUE> delta()
+    {
+        return deltaContent;
+    }
+
+    private class MainContentV1 extends Content<KEY,VALUE>
+    {
+        @Override
+        public Comparator<KEY> keyComparator()
+        {
+            return layout;
+        }
+
+        @Override
+        public int keyCount( PageCursor cursor )
+        {
+            return cursor.getInt( BYTE_POS_KEYCOUNT );
+        }
+
+        @Override
+        public void setKeyCount( PageCursor cursor, int count )
+        {
+            cursor.putInt( BYTE_POS_KEYCOUNT, count );
+        }
+
+        @Override
+        public KEY keyAt( PageCursor cursor, KEY into, int pos )
+        {
+            cursor.setOffset( keyOffset( pos ) );
+            layout.readKey( cursor, into );
+            return into;
+        }
+
+        @Override
+        public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+        {
+            insertKeySlotsAt( cursor, pos, 1, keyCount );
+            cursor.setOffset( keyOffset( pos ) );
+            layout.writeKey( cursor, key );
+        }
+
+        @Override
+        public void removeKeyAt( PageCursor cursor, int pos, int keyCount )
+        {
+            removeSlotAt( cursor, pos, keyCount, keyOffset( 0 ), keySize );
+        }
+
+        private void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+        {
+            for ( int posToMoveLeft = pos + 1, offset = baseOffset + posToMoveLeft * itemSize;
+                    posToMoveLeft < itemCount; posToMoveLeft++, offset += itemSize )
+            {
+                cursor.copyTo( offset, cursor, offset - itemSize, itemSize );
+            }
+        }
+        @Override
+        public void setKeyAt( PageCursor cursor, KEY key, int pos )
+        {
+            cursor.setOffset( keyOffset( pos ) );
+            layout.writeKey( cursor, key );
+        }
+
+        @Override
+        public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            cursor.setOffset( valueOffset( pos ) );
+            layout.readValue( cursor, value );
+            return value;
+        }
+
+        @Override
+        public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
+        {
+            insertValueSlotsAt( cursor, pos, 1, keyCount );
+            setValueAt( cursor, value, pos );
+        }
+
+        @Override
+        public void removeValueAt( PageCursor cursor, int pos, int keyCount )
+        {
+            removeSlotAt( cursor, pos, keyCount, valueOffset( 0 ), valueSize );
+        }
+
+        @Override
+        public void setValueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            cursor.setOffset( valueOffset( pos ) );
+            layout.writeValue( cursor, value );
+        }
+
+        @Override
+        public long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
+        {
+            cursor.setOffset( childOffset( pos ) );
+            return read( cursor, stableGeneration, unstableGeneration, pos );
+        }
+
+        @Override
+        public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
+                long stableGeneration, long unstableGeneration )
+        {
+            insertChildSlotsAt( cursor, pos, 1, keyCount );
+            setChildAt( cursor, child, pos, stableGeneration, unstableGeneration );
+        }
+
+        @Override
+        public void removeChildAt( PageCursor cursor, int pos, int keyCount )
+        {
+            removeSlotAt( cursor, pos, keyCount + 1, childOffset( 0 ), childSize() );
+        }
+
+        @Override
+        public void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
+        {
+            cursor.setOffset( childOffset( pos ) );
+            writeChild( cursor, child, stableGeneration, unstableGeneration );
+        }
+
+        @Override
+        void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
+        {
+            GenerationSafePointerPair.write( cursor, child, stableGeneration, unstableGeneration );
+        }
+
+        @Override
+        public int internalMaxKeyCount()
+        {
+            return internalMaxKeyCount;
+        }
+
+        @Override
+        public int leafMaxKeyCount()
+        {
+            return leafMaxKeyCount;
+        }
+    }
+
+    private class DeltaContentV1 extends Content<KEY,VALUE>
+    {
+        @Override
+        Comparator<KEY> keyComparator()
+        {
+            return layout;
+        }
+
+        @Override
+        int keyCount( PageCursor cursor )
+        {
+            return 0;
+        }
+
+        @Override
+        void setKeyCount( PageCursor cursor, int count )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        KEY keyAt( PageCursor cursor, KEY into, int pos )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void removeKeyAt( PageCursor cursor, int pos, int keyCount )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void setKeyAt( PageCursor cursor, KEY key, int pos )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        VALUE valueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void removeValueAt( PageCursor cursor, int pos, int keyCount )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void setValueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, long stableGeneration,
+                long unstableGeneration )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void removeChildAt( PageCursor cursor, int pos, int keyCount )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        void writeChild( PageCursor cursor, long child, long stableGeneration, long unstableGeneration )
+        {
+            throw new UnsupportedOperationException( "Not supported a.t.m." );
+        }
+
+        @Override
+        int internalMaxKeyCount()
+        {
+            return 0;
+        }
+
+        @Override
+        int leafMaxKeyCount()
+        {
+            return 0;
+        }
     }
 }

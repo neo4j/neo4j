@@ -67,8 +67,8 @@ public class CrashGenerationCleanerTest
     private final int unstableGeneration = 12;
     private final int crashGeneration = 11;
     private final int firstChildPos = 0;
-    private final int middleChildPos = corruptableTreeNode.internalMaxKeyCount() / 2;
-    private final int lastChildPos = corruptableTreeNode.internalMaxKeyCount();
+    private final int middleChildPos = corruptableTreeNode.main().internalMaxKeyCount() / 2;
+    private final int lastChildPos = corruptableTreeNode.main().internalMaxKeyCount();
     private final List<PageCorruption> possibleCorruptionsInInternal = Arrays.asList(
             crashed( leftSibling() ),
             crashed( rightSibling() ),
@@ -344,14 +344,14 @@ public class CrashGenerationCleanerTest
                             int unstableGeneration )
                     {
                         corruptableTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                        int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
+                        int maxKeyCount = corruptableTreeNode.main().internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         for ( int i = 0; i <= maxKeyCount; i++ )
                         {
                             long child = base + i;
-                            corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
+                            corruptableTreeNode.main().setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
                         }
-                        corruptableTreeNode.setKeyCount( cursor, maxKeyCount );
+                        corruptableTreeNode.main().setKeyCount( cursor, maxKeyCount );
                     }
                 };
 

@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -102,10 +103,11 @@ public class ConsistencyCheckerTest
                     goTo( cursor, "new root",
                             idProvider.acquireNewId( stableGeneration, unstableGeneration ) );
                     node.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                    node.insertKeyAt( cursor, structure.rightKey, 0, 0 );
-                    node.setKeyCount( cursor, 1 );
-                    node.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
-                    node.setChildAt( cursor, structure.rightChild, 1,
+                    Content<MutableLong,MutableLong> mainContent = node.main();
+                    mainContent.insertKeyAt( cursor, structure.rightKey, 0, 0 );
+                    mainContent.setKeyCount( cursor, 1 );
+                    mainContent.setChildAt( cursor, structure.midChild, 0, stableGeneration, unstableGeneration );
+                    mainContent.setChildAt( cursor, structure.rightChild, 1,
                             stableGeneration, unstableGeneration );
                     logic.initialize( cursor );
                 }

@@ -24,6 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -39,10 +40,12 @@ class TreePrinter<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final long stableGeneration;
     private final long unstableGeneration;
+    private final Content<KEY,VALUE> mainContent;
 
     TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
+        this.mainContent = node.main();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -99,8 +102,8 @@ class TreePrinter<KEY,VALUE>
         do
         {
             isLeaf = node.isLeaf( cursor );
-            keyCount = node.keyCount( cursor );
-            if ( keyCount < 0 || (keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount()) )
+            keyCount = mainContent.keyCount( cursor );
+            if ( keyCount < 0 || (keyCount > mainContent.internalMaxKeyCount() && keyCount > mainContent.leafMaxKeyCount()) )
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
@@ -130,14 +133,14 @@ class TreePrinter<KEY,VALUE>
             long child = -1;
             do
             {
-                node.keyAt( cursor, key, i );
+                mainContent.keyAt( cursor, key, i );
                 if ( isLeaf )
                 {
-                    node.valueAt( cursor, value, i );
+                    mainContent.valueAt( cursor, value, i );
                 }
                 else
                 {
-                    child = pointer( node.childAt( cursor, i, stableGeneration, unstableGeneration ) );
+                    child = pointer( mainContent.childAt( cursor, i, stableGeneration, unstableGeneration ) );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -166,7 +169,7 @@ class TreePrinter<KEY,VALUE>
             long child;
             do
             {
-                child = pointer( node.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
+                child = pointer( mainContent.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
             }
             while ( cursor.shouldRetry() );
 
@@ -188,7 +191,7 @@ class TreePrinter<KEY,VALUE>
             isInternal = node.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = mainContent.childAt( cursor, 0, stableGeneration, unstableGeneration );
             }
         }
         while ( cursor.shouldRetry() );

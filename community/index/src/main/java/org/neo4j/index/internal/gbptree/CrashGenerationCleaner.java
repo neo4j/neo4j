@@ -27,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -43,6 +44,7 @@ class CrashGenerationCleaner
 {
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
+    private final Content<?,?> mainContent;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
     private final int availableProcessors;
@@ -57,6 +59,7 @@ class CrashGenerationCleaner
     {
         this.pagedFile = pagedFile;
         this.treeNode = treeNode;
+        this.mainContent = treeNode.main();
         this.lowTreeNodeId = lowTreeNodeId;
         this.highTreeNodeId = highTreeNodeId;
         this.availableProcessors = Runtime.getRuntime().availableProcessors();
@@ -65,7 +68,7 @@ class CrashGenerationCleaner
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.monitor = monitor;
-        this.internalMaxKeyCount = treeNode.internalMaxKeyCount();
+        this.internalMaxKeyCount = mainContent.internalMaxKeyCount();
     }
 
     // === Methods about the execution and threading ===
@@ -161,8 +164,8 @@ class CrashGenerationCleaner
         int keyCount;
         do
         {
-            isTreeNode = treeNode.nodeType( cursor ) == TreeNodeV1.NODE_TYPE_TREE_NODE;
-            keyCount = treeNode.keyCount( cursor );
+            isTreeNode = TreeNode.nodeType( cursor ) == TreeNode.NODE_TYPE_TREE_NODE;
+            keyCount = mainContent.keyCount( cursor );
         }
         while ( cursor.shouldRetry() );
         PageCursorUtil.checkOutOfBounds( cursor );
@@ -215,7 +218,7 @@ class CrashGenerationCleaner
 
         if ( treeNode.isInternal( cursor ) )
         {
-            int keyCount = treeNode.keyCount( cursor );
+            int keyCount = mainContent.keyCount( cursor );
             for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount; i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );

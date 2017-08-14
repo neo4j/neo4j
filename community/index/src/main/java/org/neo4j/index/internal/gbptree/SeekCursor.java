@@ -25,6 +25,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
@@ -182,6 +183,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * Logic for reading data from tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
+    private final Content<KEY,VALUE> mainContent;
 
     /**
      * Contains the highest returned key, i.e. from the last call to {@link #next()} returning {@code true}.
@@ -202,7 +204,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Max of leaf/internal key count that a tree node can have at most. This is used to sanity check
-     * key counts read from {@link TreeNodeV1#keyCount(PageCursor)}.
+     * key counts read from {@link Content#keyCount(PageCursor)}.
      */
     private final int maxKeyCount;
 
@@ -249,9 +251,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Generation of the pointer which was last followed, either a
-     * {@link TreeNodeV1#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
-     * {@link TreeNodeV1#successor(PageCursor, long, long) successor} or
-     * {@link TreeNodeV1#childAt(PageCursor, int, long, long) child}.
+     * {@link TreeNode#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
+     * {@link TreeNode#successor(PageCursor, long, long) successor} or
+     * {@link Content#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
 
@@ -317,7 +319,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long pointerGeneration;
 
     /**
-     * Result from {@link KeySearch#search(PageCursor, TreeNode, Object, Object, int)}.
+     * Result from {@link KeySearch#search(PageCursor, Content, Object, Object, int)}.
      */
     private int searchResult;
 
@@ -383,12 +385,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.unstableGeneration = unstableGeneration;
         this.generationSupplier = generationSupplier;
         this.bTreeNode = bTreeNode;
+        this.mainContent = bTreeNode.main();
         this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGeneration = lastFollowedPointerGeneration;
         this.mutableKey = layout.newKey();
         this.mutableValue = layout.newValue();
         this.prevKey = layout.newKey();
-        this.maxKeyCount = max( bTreeNode.internalMaxKeyCount(), bTreeNode.leafMaxKeyCount() );
+        this.maxKeyCount = max( mainContent.internalMaxKeyCount(), mainContent.leafMaxKeyCount() );
         this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
         this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
@@ -441,7 +444,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                 if ( isInternal )
                 {
-                    pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
+                    pointerId = mainContent.childAt( cursor, pos, stableGeneration, unstableGeneration );
                     pointerGeneration = readPointerGenerationOnSuccess( pointerId );
                 }
             }
@@ -518,7 +521,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( cursor,firstKeyInNode, pos );
+                    mainContent.keyAt( cursor,firstKeyInNode, pos );
                 }
 
                 if ( concurrentWriteHappened )
@@ -550,8 +553,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( 0 <= pos && pos < keyCount )
                 {
                     // Read the next value in this leaf
-                    bTreeNode.keyAt( cursor, mutableKey, pos );
-                    bTreeNode.valueAt( cursor, mutableValue, pos );
+                    mainContent.keyAt( cursor, mutableKey, pos );
+                    mainContent.valueAt( cursor, mutableValue, pos );
                 }
             }
             while ( concurrentWriteHappened = cursor.shouldRetry() );
@@ -774,7 +777,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private int searchKey( KEY key )
     {
-        return KeySearch.search( cursor, bTreeNode, key, mutableKey, keyCount );
+        return KeySearch.search( cursor, mainContent, key, mutableKey, keyCount );
     }
 
     private int positionOf( int searchResult )
@@ -812,7 +815,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         isInternal = bTreeNode.isInternal( cursor );
         // Find the left-most key within from-range
-        keyCount = bTreeNode.keyCount( cursor );
+        keyCount = mainContent.keyCount( cursor );
 
         return keyCountIsSane( keyCount );
     }
@@ -925,11 +928,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             nodeType = TreeNode.nodeType( scout );
             if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
             {
-                keyCount = bTreeNode.keyCount( scout );
+                keyCount = mainContent.keyCount( scout );
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
-                    bTreeNode.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
+                    mainContent.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
                 }
             }
 
@@ -980,7 +983,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * {@link TreeNodeV1#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * {@link Content#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
      * which is used as data fed into another read. Because of that extra assertions are made around
      * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
      * (calling this method, which may throw exception).

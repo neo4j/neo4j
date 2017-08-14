@@ -36,6 +36,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -237,6 +238,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Instance of {@link TreeNodeV1} which handles reading/writing physical bytes from pages representing tree nodes.
      */
     private final TreeNodeV1<KEY,VALUE> bTreeNode;
+    private final Content<KEY,VALUE> mainContent;
 
     /**
      * A free-list of released ids. Acquiring new ids involves first trying out the free-list and then,
@@ -396,6 +398,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.pageSize = pagedFile.pageSize();
             closed = false;
             this.bTreeNode = new TreeNodeV1<>( pageSize, layout );
+            this.mainContent = bTreeNode.main();
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );
 
@@ -1165,11 +1168,11 @@ public class GBPTree<KEY,VALUE> implements Closeable
                 PageCursorUtil.goTo( cursor, "new root", newRootId );
 
                 bTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
-                bTreeNode.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
-                bTreeNode.setKeyCount( cursor, 1 );
-                bTreeNode.setChildAt( cursor, structurePropagation.midChild, 0,
+                mainContent.insertKeyAt( cursor, structurePropagation.rightKey, 0, 0 );
+                mainContent.setKeyCount( cursor, 1 );
+                mainContent.setChildAt( cursor, structurePropagation.midChild, 0,
                         stableGeneration, unstableGeneration );
-                bTreeNode.setChildAt( cursor, structurePropagation.rightChild, 1,
+                mainContent.setChildAt( cursor, structurePropagation.rightChild, 1,
                         stableGeneration, unstableGeneration );
                 setRoot( newRootId );
             }

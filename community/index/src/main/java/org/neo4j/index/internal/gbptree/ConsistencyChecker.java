@@ -26,6 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -47,6 +48,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 class ConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
+    private final Content<KEY,?> mainContent;
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
@@ -57,8 +59,9 @@ class ConsistencyChecker<KEY>
     ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
+        this.mainContent = node.main();
         this.readKey = layout.newKey();
-        this.comparator = node.keyComparator();
+        this.comparator = mainContent.keyComparator();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -127,7 +130,7 @@ class ConsistencyChecker<KEY>
             isInternal = node.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = node.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = mainContent.childAt( cursor, 0, stableGeneration, unstableGeneration );
             }
         }
         while ( cursor.shouldRetry() );
@@ -261,8 +264,8 @@ class ConsistencyChecker<KEY>
             successor = node.successor( cursor, stableGeneration, unstableGeneration );
             successorGeneration = node.pointerGeneration( cursor, successor );
 
-            keyCount = node.keyCount( cursor );
-            if ( keyCount > node.internalMaxKeyCount() && keyCount > node.leafMaxKeyCount() )
+            keyCount = mainContent.keyCount( cursor );
+            if ( keyCount > mainContent.internalMaxKeyCount() && keyCount > mainContent.leafMaxKeyCount() )
             {
                 cursor.setCursorException( "Unexpected keyCount:" + keyCount );
                 continue;
@@ -358,7 +361,7 @@ class ConsistencyChecker<KEY>
             {
                 child = childAt( cursor, pos );
                 childGeneration = node.pointerGeneration( cursor, child );
-                node.keyAt( cursor, readKey, pos );
+                mainContent.keyAt( cursor, readKey, pos );
             }
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
@@ -405,7 +408,7 @@ class ConsistencyChecker<KEY>
     {
         assertNoCrashOrBrokenPointerInGSPP(
                 node, cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
-        return node.childAt( cursor, pos, stableGeneration, unstableGeneration );
+        return mainContent.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
     private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount )
@@ -414,7 +417,7 @@ class ConsistencyChecker<KEY>
         boolean first = true;
         for ( int pos = 0; pos < keyCount; pos++ )
         {
-            node.keyAt( cursor, readKey, pos );
+            mainContent.keyAt( cursor, readKey, pos );
             if ( !range.inRange( readKey ) )
             {
                 cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +

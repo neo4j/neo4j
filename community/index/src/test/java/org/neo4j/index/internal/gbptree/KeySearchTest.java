@@ -23,6 +23,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -43,6 +44,7 @@ public class KeySearchTest
     private final PageCursor cursor = wrap( new byte[PAGE_SIZE], 0, PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV1<>( PAGE_SIZE, layout );
+    private final Content<MutableLong,MutableLong> mainContent = node.main();
     private final MutableLong readKey = layout.newKey();
     private final MutableLong searchKey = layout.newKey();
     private final MutableLong insertKey = layout.newKey();
@@ -55,10 +57,10 @@ public class KeySearchTest
     {
         // given
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        int keyCount = node.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
 
         // then
-        int result = search( cursor, node, searchKey, readKey, keyCount );
+        int result = search( cursor, mainContent, searchKey, readKey, keyCount );
         assertSearchResult( false, 0, result );
     }
 
@@ -67,10 +69,10 @@ public class KeySearchTest
     {
         // given
         node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        int keyCount = node.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
 
         // then
-        final int result = search( cursor, node, searchKey, readKey, keyCount );
+        final int result = search( cursor, mainContent, searchKey, readKey, keyCount );
         assertSearchResult( false, 0, result );
     }
 
@@ -419,7 +421,7 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            int result = search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, mainContent, key, readKey, KEY_COUNT );
 
             // THEN
             assertSearchResult( true, i, result );
@@ -437,7 +439,7 @@ public class KeySearchTest
         for ( int i = 1; i < KEY_COUNT - 1; i++ )
         {
             key.setValue( key( i ) - 1 );
-            int result = search( cursor, node, key, readKey, KEY_COUNT );
+            int result = search( cursor, mainContent, key, readKey, KEY_COUNT );
 
             // THEN
             assertSearchResult( false, i, result );
@@ -449,7 +451,7 @@ public class KeySearchTest
     {
         // GIVEN a leaf node with random, although sorted (as of course it must be to binary-search), data
         node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        int internalMaxKeyCount = node.internalMaxKeyCount();
+        int internalMaxKeyCount = mainContent.internalMaxKeyCount();
         int half = internalMaxKeyCount / 2;
         int keyCount = random.nextInt( half ) + half;
         long[] keys = new long[keyCount];
@@ -459,17 +461,17 @@ public class KeySearchTest
         {
             keys[i] = currentKey;
             key.setValue( currentKey );
-            node.insertKeyAt( cursor, key, i, i );
+            mainContent.insertKeyAt( cursor, key, i, i );
             currentKey += random.nextInt( 100 ) + 10;
         }
-        node.setKeyCount( cursor, keyCount );
+        mainContent.setKeyCount( cursor, keyCount );
 
         // WHEN searching for random keys within that general range
         for ( int i = 0; i < 1_000; i++ )
         {
             long searchKey = random.nextInt( currentKey + 10 );
             key.setValue( searchKey );
-            int searchResult = search( cursor, node, key, readKey, keyCount );
+            int searchResult = search( cursor, mainContent, key, readKey, keyCount );
 
             // THEN position should be as expected
             boolean exists = contains( keys, searchKey );
@@ -501,17 +503,17 @@ public class KeySearchTest
 
     private int searchKey( long key )
     {
-        int keyCount = node.keyCount( cursor );
+        int keyCount = mainContent.keyCount( cursor );
         searchKey.setValue( key );
-        return search( cursor, node, searchKey, readKey, keyCount );
+        return search( cursor, mainContent, searchKey, readKey, keyCount );
     }
 
     private void appendKey( long key )
     {
         insertKey.setValue( key );
-        int keyCount = node.keyCount( cursor );
-        node.insertKeyAt( cursor, insertKey, keyCount, keyCount );
-        node.setKeyCount( cursor, keyCount + 1 );
+        int keyCount = mainContent.keyCount( cursor );
+        mainContent.insertKeyAt( cursor, insertKey, keyCount, keyCount );
+        mainContent.setKeyCount( cursor, keyCount + 1 );
     }
 
     private void assertSearchResult( boolean hit, int position, int searchResult )
@@ -528,9 +530,9 @@ public class KeySearchTest
         for ( int i = 0; i < KEY_COUNT; i++ )
         {
             key.setValue( key( i ) );
-            node.insertKeyAt( cursor, key, i, i );
+            mainContent.insertKeyAt( cursor, key, i, i );
         }
-        node.setKeyCount( cursor, KEY_COUNT );
+        mainContent.setKeyCount( cursor, KEY_COUNT );
     }
 
     private int key( int i )
