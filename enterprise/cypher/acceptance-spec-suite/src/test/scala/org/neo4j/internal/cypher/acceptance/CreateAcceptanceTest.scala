@@ -27,11 +27,11 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
   //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {
-    val url = createCSVTempFileURL( writer => writer.println("Foo") )
+    val url = createCSVTempFileURL(writer => writer.println("Foo"))
 
     val query = s"CREATE (a) WITH a LOAD CSV FROM '$url' AS line CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = testWithUpdate(Configs.CommunityInterpreted- Configs.Cost2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -49,7 +49,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should have bound node recognized after projection with WITH + FOREACH") {
     val query = "CREATE (a) WITH a FOREACH (i in [] | SET a.prop = 1) CREATE (b) CREATE (a)<-[:T]-(b)"
 
-    val result = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1)
   }
@@ -59,7 +59,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(500)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
 
-    val result = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
 
     assertStats(result, nodesCreated = 1000, relationshipsCreated = 500, labelsAdded = 1000)
 
@@ -80,7 +80,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
 
     val query = "CREATE" + List.fill(createdNumber)("(:Bar{prop: 1})").mkString(", ")
 
-    val result = testWithUpdate(Configs.All - Configs.Compiled - Configs.Cost2_3, query)
+    val result = updateWith(Configs.All - Configs.Compiled - Configs.Cost2_3, query)
 
     assertStats(result, nodesCreated = createdNumber, labelsAdded = createdNumber, propertiesWritten = createdNumber)
 
