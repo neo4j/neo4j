@@ -82,10 +82,16 @@ class InternalTreeLogic<KEY,VALUE>
     private final IdProvider idProvider;
     private final TreeNodeV1<KEY,VALUE> bTreeNode;
     private final Content<KEY,VALUE> mainContent;
+    private final Content<KEY,VALUE> deltaContent;
     private final Layout<KEY,VALUE> layout;
     private final KEY newKeyPlaceHolder;
     private final KEY readKey;
     private final VALUE readValue;
+    private final int leafMaxKeyCount;
+    private final int deltaLeafMaxKeyCount;
+    private final int totalLeafMaxKeyCount;
+    private final KEY[] deltaKeys;
+    private final VALUE[] deltaValues;
 
     /**
      * Current path down the tree
@@ -148,15 +154,27 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
+    @SuppressWarnings( "unchecked" )
     InternalTreeLogic( IdProvider idProvider, TreeNodeV1<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;
         this.mainContent = bTreeNode.main();
+        this.deltaContent = bTreeNode.delta();
         this.layout = layout;
         this.newKeyPlaceHolder = layout.newKey();
         this.readKey = layout.newKey();
         this.readValue = layout.newValue();
+        this.leafMaxKeyCount = mainContent.leafMaxKeyCount();
+        this.deltaLeafMaxKeyCount = deltaContent.leafMaxKeyCount();
+        this.totalLeafMaxKeyCount = leafMaxKeyCount + deltaLeafMaxKeyCount;
+        this.deltaKeys = (KEY[]) new Object[deltaLeafMaxKeyCount];
+        this.deltaValues = (VALUE[]) new Object[deltaLeafMaxKeyCount];
+        for ( int i = 0; i < deltaLeafMaxKeyCount; i++ )
+        {
+            deltaKeys[i] = layout.newKey();
+            deltaValues[i] = layout.newValue();
+        }
 
         // an arbitrary depth slightly bigger than an unimaginably big tree
         ensureStackCapacity( 10 );
@@ -257,7 +275,7 @@ class InternalTreeLogic<KEY,VALUE>
         {
             // We still need to go down further, but we're on the right path
             int keyCount = mainContent.keyCount( cursor );
-            int searchResult = search( cursor, key, readKey, keyCount );
+            int searchResult = search( cursor, key, readKey, mainContent, keyCount );
             int childPos = positionOf( searchResult );
             if ( isHit( searchResult ) )
             {
@@ -374,9 +392,9 @@ class InternalTreeLogic<KEY,VALUE>
         }
     }
 
-    private int search( PageCursor cursor, KEY key, KEY readKey, int keyCount )
+    private int search( PageCursor cursor, KEY key, KEY readKey, Content<KEY,VALUE> section, int keyCount )
     {
-        int searchResult = KeySearch.search( cursor, mainContent, key, readKey, keyCount );
+        int searchResult = KeySearch.search( cursor, section, key, readKey, keyCount );
         KeySearch.assertSuccess( searchResult );
         return searchResult;
     }
@@ -420,7 +438,7 @@ class InternalTreeLogic<KEY,VALUE>
         if ( keyCount < mainContent.internalMaxKeyCount() )
         {
             // No overflow
-            int pos = positionOf( search( cursor, primKey, readKey, keyCount ) );
+            int pos = positionOf( search( cursor, primKey, readKey, mainContent, keyCount ) );
 
             mainContent.insertKeyAt( cursor, primKey, pos, keyCount );
             // NOTE pos+1 since we never insert a new child before child(0) because its key is really
@@ -461,7 +479,7 @@ class InternalTreeLogic<KEY,VALUE>
         long newRight = idProvider.acquireNewId( stableGeneration, unstableGeneration );
 
         // Find position to insert new key
-        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, newKey, readKey, mainContent, keyCount ) );
 
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
@@ -608,38 +626,138 @@ class InternalTreeLogic<KEY,VALUE>
             KEY key, VALUE value, ValueMerger<KEY,VALUE> valueMerger,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
+        int deltaKeyCount = deltaContent.keyCount( cursor );
+        int deltaSearch = search( cursor, key, readKey, deltaContent, deltaKeyCount );
+        int deltaPos = positionOf( deltaSearch );
+        if ( isHit( deltaSearch ) )
+        {
+            // this key already exists in the delta section so overwrite its value there
+            overwriteKeyValue( cursor, structurePropagation, key, value, valueMerger,
+                    stableGeneration, unstableGeneration, deltaPos, deltaContent );
+            return; // No split has occurred
+        }
+
         int keyCount = mainContent.keyCount( cursor );
-        int search = search( cursor, key, readKey, keyCount );
+        int search = search( cursor, key, readKey, mainContent, keyCount );
         int pos = positionOf( search );
         if ( isHit( search ) )
         {
-            // this key already exists, what shall we do? ask the valueMerger
-            mainContent.valueAt( cursor, readValue, pos );
-            VALUE mergedValue = valueMerger.merge( readKey, key, readValue, value );
-            if ( mergedValue != null )
-            {
-                createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                        stableGeneration, unstableGeneration );
-                // simple, just write the merged value right in there
-                mainContent.setValueAt( cursor, mergedValue, pos );
-            }
+            // this key already exists in the main section so overwrite its value there
+            overwriteKeyValue( cursor, structurePropagation, key, value, valueMerger, stableGeneration,
+                    unstableGeneration, pos, mainContent );
             return; // No split has occurred
         }
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        if ( keyCount < mainContent.leafMaxKeyCount() )
+        Content<KEY,VALUE> section = selectSection( cursor, keyCount, pos, deltaKeyCount );
+        if ( section != null )
         {
+            int thePos = section == mainContent ? pos : deltaPos;
+            int theKeyCount = section == mainContent ? keyCount : deltaKeyCount;
+
             // No overflow, insert key and value
-            mainContent.insertKeyAt( cursor, key, pos, keyCount );
-            mainContent.insertValueAt( cursor, value, pos, keyCount );
-            mainContent.setKeyCount( cursor, keyCount + 1 );
+            section.insertKeyAt( cursor, key, thePos, theKeyCount );
+            section.insertValueAt( cursor, value, thePos, theKeyCount );
+            section.setKeyCount( cursor, theKeyCount + 1 );
 
             return; // No split has occurred
         }
         // Overflow, split leaf
-        splitLeaf( cursor, structurePropagation, key, value, keyCount, stableGeneration, unstableGeneration );
+        splitLeaf( cursor, structurePropagation, key, value, keyCount, deltaKeyCount,
+                stableGeneration, unstableGeneration );
+    }
+
+    private Content<KEY,VALUE> selectSection( PageCursor cursor, int keyCount, int pos, int deltaKeyCount )
+    {
+        int totalKeyCount = keyCount + deltaKeyCount;
+        if ( totalKeyCount < totalLeafMaxKeyCount )
+        {
+            // There's room in this leaf
+            if ( deltaLeafMaxKeyCount > 0 && keyCount - pos > deltaLeafMaxKeyCount * 2 )
+            {
+                // It seems to be quite a bit to the left, therefore it's better to put it in the delta section
+                consolidateDeltasIfNecessary( cursor, keyCount, deltaKeyCount );
+                System.out.println( "Selected delta" );
+                return deltaContent;
+            }
+            // It's to the far right in this leaf, just insert it right in to the main section
+            System.out.println( "Selected main" );
+            return mainContent;
+        }
+        System.out.println( "Selected null" );
+        return null;
+    }
+
+    private void consolidateDeltasIfNecessary( PageCursor cursor, int keyCount, int deltaKeyCount )
+    {
+        if ( deltaKeyCount < deltaLeafMaxKeyCount )
+        {
+            // No need to consolidate
+            return;
+        }
+        consolidateDeltas( cursor, keyCount, deltaKeyCount );
+    }
+
+    private void consolidateDeltas( PageCursor cursor, int keyCount, int deltaKeyCount )
+    {
+        System.out.println( "Consolidating deltas" );
+
+        // read in delta section into memory
+        for ( int i = 0; i < deltaKeyCount; i++ )
+        {
+            deltaContent.keyAt( cursor, deltaKeys[i], i );
+        }
+        for ( int i = 0; i < deltaKeyCount; i++ )
+        {
+            deltaContent.valueAt( cursor, deltaValues[i], i );
+        }
+
+        // merge delta section into main
+        for ( int main = keyCount - 1, delta = deltaKeyCount - 1, target = keyCount + deltaKeyCount - 1;
+                target >= 0 && delta > 0; target-- )
+        {
+            mainContent.keyAt( cursor, readKey, main );
+            int compare = layout.compare( deltaKeys[delta], readKey );
+            System.out.println( "Compare " + readKey + " vs " + deltaKeys[delta] + " = " + compare );
+            if ( compare > 0 )
+            {
+                // pick from delta
+                mainContent.setKeyAt( cursor, deltaKeys[delta], target );
+                mainContent.setValueAt( cursor, deltaValues[delta], target );
+                System.out.println( "Picked delta " + deltaKeys[delta] + " into slot " + target );
+                delta--;
+            }
+            else
+            {
+                // pick from main
+                mainContent.setKeyAt( cursor, readKey, target );
+                cursor.copyTo( bTreeNode.valueOffset( main ), cursor, bTreeNode.valueOffset( target ), bTreeNode.valueSize() );
+                System.out.println( "Picked main " + readKey + " into slot " + target );
+                main--;
+            }
+        }
+
+        // set key counts
+        mainContent.setKeyCount( cursor, keyCount + deltaKeyCount );
+        deltaContent.setKeyCount( cursor, 0 );
+    }
+
+    private void overwriteKeyValue( PageCursor cursor, StructurePropagation<KEY> structurePropagation, KEY key,
+            VALUE value, ValueMerger<KEY,VALUE> valueMerger, long stableGeneration, long unstableGeneration, int pos,
+            Content<KEY,VALUE> section )
+            throws IOException
+    {
+        section.valueAt( cursor, readValue, pos );
+        VALUE mergedValue = valueMerger.merge( readKey, key, readValue, value );
+        if ( mergedValue != null )
+        {
+            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    stableGeneration, unstableGeneration );
+            // simple, just write the merged value right in there
+            section.setValueAt( cursor, mergedValue, pos );
+        }
     }
 
     /**
@@ -654,9 +772,12 @@ class InternalTreeLogic<KEY,VALUE>
      * @throws IOException on cursor failure
      */
     private void splitLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
-            KEY newKey, VALUE newValue, int keyCount, long stableGeneration, long unstableGeneration )
+            KEY newKey, VALUE newValue, int keyCount, int deltaKeyCount,
+            long stableGeneration, long unstableGeneration )
                     throws IOException
     {
+        consolidateDeltasIfNecessary( cursor, keyCount, deltaKeyCount );
+
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
 
@@ -717,7 +838,7 @@ class InternalTreeLogic<KEY,VALUE>
         // 5. Write new key/values into L
 
         // Position where newKey / newValue is to be inserted
-        int pos = positionOf( search( cursor, newKey, readKey, keyCount ) );
+        int pos = positionOf( search( cursor, newKey, readKey, mainContent, keyCount ) );
         int keyCountAfterInsert = keyCount + 1;
         int middlePos = middle( keyCountAfterInsert );
 
@@ -1131,9 +1252,18 @@ class InternalTreeLogic<KEY,VALUE>
     private boolean removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             KEY key, VALUE into, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        int keyCount = mainContent.keyCount( cursor );
+        // check delta section
+        int deltaKeyCount = deltaContent.keyCount( cursor );
+        int deltaSearch = search( cursor, key, readKey, deltaContent, deltaKeyCount );
+        int deltaPos = positionOf( deltaSearch );
+        if ( isHit( deltaSearch ) )
+        {
+            simplyRemoveFromLeaf( cursor, into, deltaKeyCount, deltaPos, deltaContent );
+            return true;
+        }
 
-        int search = search( cursor, key, readKey, keyCount );
+        int keyCount = mainContent.keyCount( cursor );
+        int search = search( cursor, key, readKey, mainContent, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
         if ( !hit )
@@ -1143,9 +1273,9 @@ class InternalTreeLogic<KEY,VALUE>
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
-        keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos );
+        keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos, mainContent );
 
-        if ( keyCount < (mainContent.leafMaxKeyCount() + 1) / 2 )
+        if ( keyCount < (leafMaxKeyCount + 1) / 2 )
         {
             // Underflow
             underflowInLeaf( cursor, structurePropagation, keyCount, stableGeneration, unstableGeneration );
@@ -1170,7 +1300,7 @@ class InternalTreeLogic<KEY,VALUE>
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = mainContent.keyCount( leftSiblingCursor );
 
-                if ( keyCount + leftSiblingKeyCount >= mainContent.leafMaxKeyCount() )
+                if ( keyCount + leftSiblingKeyCount >= leafMaxKeyCount )
                 {
                     createSuccessorIfNeeded( leftSiblingCursor, structurePropagation,
                             StructurePropagation.UPDATE_LEFT_CHILD, stableGeneration, unstableGeneration );
@@ -1193,7 +1323,7 @@ class InternalTreeLogic<KEY,VALUE>
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = mainContent.keyCount( rightSiblingCursor );
 
-                if ( keyCount + rightSiblingKeyCount <= mainContent.leafMaxKeyCount() )
+                if ( keyCount + rightSiblingKeyCount <= leafMaxKeyCount )
                 {
                     createSuccessorIfNeeded( rightSiblingCursor, structurePropagation, UPDATE_RIGHT_CHILD,
                             stableGeneration, unstableGeneration );
@@ -1230,6 +1360,8 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int rightSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
+        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+
         merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration );
 
         // Propagate change
@@ -1246,6 +1378,8 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
+        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+
         // Move stuff and update key count
         merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration );
 
@@ -1282,6 +1416,8 @@ class InternalTreeLogic<KEY,VALUE>
     private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount )
     {
+        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+
         int totalKeyCount = keyCount + leftSiblingKeyCount;
         int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
         int numberOfKeysToMove = leftSiblingKeyCount - keyCountInLeftSiblingAfterRebalance;
@@ -1311,16 +1447,16 @@ class InternalTreeLogic<KEY,VALUE>
      * @param pos Position to remove from
      * @return keyCount after remove
      */
-    private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos )
+    private int simplyRemoveFromLeaf( PageCursor cursor, VALUE into, int keyCount, int pos, Content<KEY,VALUE> section )
     {
         // Remove key/value
-        mainContent.removeKeyAt( cursor, pos, keyCount );
-        mainContent.valueAt( cursor, into, pos );
-        mainContent.removeValueAt( cursor, pos, keyCount );
+        section.removeKeyAt( cursor, pos, keyCount );
+        section.valueAt( cursor, into, pos );
+        section.removeValueAt( cursor, pos, keyCount );
 
         // Decrease key count
         int newKeyCount = keyCount - 1;
-        mainContent.setKeyCount( cursor, newKeyCount );
+        section.setKeyCount( cursor, newKeyCount );
         return newKeyCount;
     }
 
@@ -1362,7 +1498,7 @@ class InternalTreeLogic<KEY,VALUE>
             bTreeNode.goTo( successorCursor, "successor", successorId );
             cursor.copyTo( 0, successorCursor, 0, cursor.getCurrentPageSize() );
             bTreeNode.setGeneration( successorCursor, unstableGeneration );
-            bTreeNode.setSuccessor( successorCursor, TreeNodeV1.NO_NODE_FLAG, stableGeneration, unstableGeneration );
+            bTreeNode.setSuccessor( successorCursor, TreeNode.NO_NODE_FLAG, stableGeneration, unstableGeneration );
         }
 
         // Insert successor pointer in old stable version

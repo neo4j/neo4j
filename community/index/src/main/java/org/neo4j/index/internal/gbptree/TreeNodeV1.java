@@ -106,7 +106,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.valueSize = layout.valueSize();
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
-        int leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
+        int totalLeafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -114,15 +114,15 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     "For layout %s a page size of %d would only fit %d internal keys, minimum is 2",
                     layout, pageSize, internalMaxKeyCount );
         }
-        if ( leafMaxKeyCount < 2 )
+        if ( totalLeafMaxKeyCount < 2 )
         {
             throw new MetadataMismatchException( "A page size of %d would only fit leaf keys, minimum is 2",
-                    pageSize, leafMaxKeyCount );
+                    pageSize, totalLeafMaxKeyCount );
         }
 
         int desiredDeltaSize = 10;
-        this.deltaLeafMaxKeyCount = leafMaxKeyCount < desiredDeltaSize * 3 ? 0 : desiredDeltaSize;
-        this.leafMaxKeyCount = leafMaxKeyCount - deltaLeafMaxKeyCount;
+        this.deltaLeafMaxKeyCount = totalLeafMaxKeyCount < desiredDeltaSize * 3 ? 0 : desiredDeltaSize;
+        this.leafMaxKeyCount = totalLeafMaxKeyCount - deltaLeafMaxKeyCount;
 
         this.mainContent = new MainContentV1();
         this.deltaContent = new DeltaContentV1();
