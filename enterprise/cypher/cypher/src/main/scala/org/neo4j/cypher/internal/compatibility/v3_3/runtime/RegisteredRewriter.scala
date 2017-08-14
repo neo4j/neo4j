@@ -110,6 +110,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
           case (LongSlot(offset, _, typ, name), None) if typ == CTNode => NodePropertyLate(offset, propKey, s"$name.$propKey")
           case (LongSlot(offset, _, typ, name), Some(token)) if typ == CTRelationship => RelationshipProperty(offset, token, s"$name.$propKey")
           case (LongSlot(offset, _, typ, name), None) if typ == CTRelationship => RelationshipPropertyLate(offset, propKey, s"$name.$propKey")
+          case _ => throw new CantCompileQueryException(s"Expressions with on object other then nodes and relationships are not yet supported")
         }
 
         if (slot.nullable)
