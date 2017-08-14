@@ -186,7 +186,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     public void shouldSetAllMatchingWildcardRoleConfigsWithDefaultForUDFs() throws Throwable
     {
         configuredSetup( stringMap( SecuritySettings.procedure_roles.name(), "test.*:tester;test.create*:other",
-                                    SecuritySettings.default_allowed.name(), "default" ) );
+                SecuritySettings.default_allowed.name(), "default" ) );
 
         userManager.newRole( "tester", "noneSubject" );
         userManager.newRole( "default", "noneSubject" );
@@ -254,7 +254,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.security.removeRoleFromUser", newSet( ADMIN ),
                 "dbms.security.showCurrentUser", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.suspendUser", newSet( ADMIN ),
-                "dbms.setTXMetaData", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ));
+                "dbms.setTXMetaData", newSet( READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         assertListProceduresHasRoles( readSubject, expected, "CALL dbms.procedures" );
     }
@@ -277,7 +277,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
                 "dbms.procedures", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.listQueries", newSet( "default", READER, EDITOR, PUBLISHER, ARCHITECT, ADMIN ),
                 "dbms.security.createUser", newSet( ADMIN ),
-                "db.createLabel", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ));
+                "db.createLabel", newSet( "default", EDITOR, PUBLISHER, ARCHITECT, ADMIN ) );
 
         String call = "CALL dbms.procedures";
         assertListProceduresHasRoles( adminSubject, expected, call );
@@ -311,12 +311,12 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         {
             List<String> failures = itr.stream().filter( record ->
             {
-                String name = record.get( "name" ).toString();
-                List<?> roles = (List<?>) record.get( "roles" );
+                String name = toRawValue( record.get( "name" ) ).toString();
+                List<?> roles = (List<?>) toRawValue( record.get( "roles" ) );
                 return expected.containsKey( name ) && !expected.get( name ).equals( new HashSet<>( roles ) );
             } ).map( record ->
             {
-                String name = record.get( "name" ).toString();
+                String name = toRawValue( record.get( "name" ) ).toString();
                 return name + ": expected '" + expected.get( name ) + "' but was '" + record.get( "roles" ) + "'";
             } ).collect( toList() );
 

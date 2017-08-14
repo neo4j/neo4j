@@ -56,6 +56,13 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       converter: ExpressionConverters)
   extends ExecutionPlan {
 
+    assert(resultSymbols.size == resultIndices.size)
+
+  private val resultMappings = resultSymbols.indices.map(i => {
+      val r = resultIndices(i)
+      (r._1, r._2, resultSymbols(i)._2)
+    })
+
     private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(converter.toCommandExpression) ++
       signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
@@ -76,9 +83,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                             input: Seq[Any], planType: ExecutionMode) = {
       val descriptionGenerator = () => createNormalPlan
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val array = signature.outputSignature.map(_.map(_.typ)).getOrElse(IndexedSeq.empty).toArray
       new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   array, resultIndices, descriptionGenerator, planType)
+                                   resultMappings, descriptionGenerator, planType)
     }
 
     private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
@@ -95,10 +101,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       val rowCounter = Counter()
       val descriptionGenerator = createProfilePlanGenerator(rowCounter)
       val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val array = signature.outputSignature.map(_.map(_.typ)).getOrElse(IndexedSeq.empty).toArray
       new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   array, resultIndices,
-                                   descriptionGenerator, planType) {
+                                   resultMappings, descriptionGenerator, planType) {
         override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
       }
     }

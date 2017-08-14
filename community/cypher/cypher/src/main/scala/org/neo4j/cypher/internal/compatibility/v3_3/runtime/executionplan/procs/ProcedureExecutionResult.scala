@@ -56,8 +56,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                name: QualifiedName,
                                                callMode: ProcedureCallMode,
                                                args: Seq[Any],
-                                               resultTypes: Array[CypherType],
-                                               indexResultNameMappings: Seq[(Int, String)],
+                                               indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
   extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
@@ -95,24 +94,25 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     executionResults.foreach { res =>
-      assert(res.length == resultTypes.length)
       val fieldArray = new Array[AnyValue](res.length)
-      for (i <- resultTypes.indices) {
-        fieldArray(i) = resultTypes(i) match {
-          case CTNode => transform(res(i), fromNodeProxy)
-          case CTRelationship => transform(res(i), fromRelationshipProxy)
-          case CTPath => transform(res(i), asPathValue)
-          case CTInteger => transform(res(i), longValue)
-          case CTFloat => transform(res(i), doubleValue)
-          case CTNumber => transform(res(i), numberValue)
-          case CTString => transform(res(i), stringValue)
-          case CTBoolean => transform(res(i), booleanValue)
-          case CTPoint => transform(res(i), (p: Point) => asPointValue(p))
-          case CTGeometry => transform(res(i), (g: Geometry) => asPointValue(g))
-          case CTMap => transform(res(i), asMapValue)
-          case ListType(_) => transform(res(i), asListValue)
-          case CTAny => transform(res(i), AnyValues.of)
+      var i = 0
+      for ((pos, _, typ) <- indexResultNameMappings) {
+        fieldArray(i) = typ match {
+          case CTNode => transform(res(pos), fromNodeProxy)
+          case CTRelationship => transform(res(pos), fromRelationshipProxy)
+          case CTPath => transform(res(pos), asPathValue)
+          case CTInteger => transform(res(pos), longValue)
+          case CTFloat => transform(res(pos), doubleValue)
+          case CTNumber => transform(res(pos), numberValue)
+          case CTString => transform(res(pos), stringValue)
+          case CTBoolean => transform(res(pos), booleanValue)
+          case CTPoint => transform(res(pos), (p: Point) => asPointValue(p))
+          case CTGeometry => transform(res(pos), (g: Geometry) => asPointValue(g))
+          case CTMap => transform(res(pos), asMapValue)
+          case ListType(_) => transform(res(pos), asListValue)
+          case CTAny => transform(res(pos), AnyValues.of)
         }
+        i += 1
       }
       visitor.visit(new Record {
         override def fields(): Array[AnyValue] = fieldArray

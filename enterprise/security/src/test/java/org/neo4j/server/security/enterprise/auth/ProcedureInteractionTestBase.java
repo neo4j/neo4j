@@ -32,7 +32,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -576,16 +575,18 @@ public abstract class ProcedureInteractionTestBase<S>
         ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 
-    private static Map<String,Object> toRawMap( MapValue mapValue )
+    protected Object toRawValue( Object value )
     {
-        BaseToObjectValueWriter writer = writer();
-        HashMap<String,Object> raw = new HashMap<>( mapValue.size() );
-        for ( Map.Entry<String,AnyValue> entry : mapValue.entrySet() )
+        if ( value instanceof AnyValue )
         {
-            entry.getValue().writeTo( writer );
-            raw.put( entry.getKey(), writer.value() );
+            BaseToObjectValueWriter<RuntimeException> writer = writer();
+            ((AnyValue) value).writeTo( writer );
+            return writer.value();
         }
-        return raw;
+        else
+        {
+            return value;
+        }
     }
 
     Map<String,Long> countBoltConnectionsByUsername()
@@ -601,35 +602,6 @@ public abstract class ProcedureInteractionTestBase<S>
         ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
     }
 
-    private static BaseToObjectValueWriter writer()
-    {
-        return new BaseToObjectValueWriter<RuntimeException>()
-        {
-            @Override
-            protected Node newNodeProxyById( long id )
-            {
-                return null;
-            }
-
-            @Override
-            protected Relationship newRelationshipProxyById( long id )
-            {
-                return null;
-            }
-
-            @Override
-            protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
-            {
-                return null;
-            }
-
-            @Override
-            protected Point newCartesianPoint( double x, double y, String name, int code, String href )
-            {
-                return null;
-            }
-        };
-    }
 
     @SuppressWarnings( "unchecked" )
     TransportConnection startBoltSession( String username, String password ) throws Exception
@@ -933,4 +905,34 @@ public abstract class ProcedureInteractionTestBase<S>
     }
 
     protected abstract Object valueOf( Object obj );
+
+    private BaseToObjectValueWriter<RuntimeException> writer()
+    {
+        return new BaseToObjectValueWriter<RuntimeException>()
+        {
+            @Override
+            protected Node newNodeProxyById( long id )
+            {
+                return null;
+            }
+
+            @Override
+            protected Relationship newRelationshipProxyById( long id )
+            {
+                return null;
+            }
+
+            @Override
+            protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+            {
+                return null;
+            }
+
+            @Override
+            protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+            {
+                return null;
+            }
+        };
+    }
 }

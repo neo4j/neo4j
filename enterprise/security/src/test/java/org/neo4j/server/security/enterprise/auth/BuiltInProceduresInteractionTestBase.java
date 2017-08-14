@@ -29,15 +29,17 @@ import org.junit.Test;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.enterprise.builtinprocs.QueryId;
@@ -46,7 +48,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
-import org.neo4j.values.AnyValues;
 
 import static java.lang.String.format;
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
@@ -164,8 +165,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
         assertSuccess( adminSubject, listQueriesQuery, r ->
         {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
-
+            List<Map<String,Object>> maps = collectResults( r );
             Matcher<Map<String,Object>> thisQuery =
                     listedQueryOfInteractionLevel( startTime, "adminSubject", listQueriesQuery );
             Matcher<Map<String,Object>> matchQueryMatcher =
@@ -196,7 +196,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String query = "CALL dbms.listQueries()";
         assertSuccess( adminSubject, query, r ->
         {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+            List<Map<String,Object>> maps = collectResults( r );
 
             Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "adminSubject", query );
             Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "readSubject", q1 );
@@ -227,7 +227,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         String query = "CALL dbms.listQueries()";
         assertSuccess( readSubject, query, r ->
         {
-            Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+            List<Map<String,Object>> maps = collectResults( r );
 
             Matcher<Map<String,Object>> thisQuery = listedQuery( startTime, "readSubject", query );
             Matcher<Map<String,Object>> queryMatcher = listedQuery( startTime, "readSubject", q1 );
@@ -276,7 +276,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 String query = "CALL dbms.listQueries()";
                 assertSuccess( adminSubject, query, r ->
                 {
-                    Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+                    List<Map<String,Object>> maps = collectResults( r );
 
                     Matcher<Map<String,Object>> thisMatcher = listedQuery( startTime, "adminSubject", query );
                     Matcher<Map<String,Object>> writeMatcher = listedQuery( startTime, "writeSubject", writeQuery );
@@ -318,7 +318,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         {
             assertSuccess( neo.login( "admin", "" ), query, r ->
             {
-                Set<Map<String,Object>> maps = r.stream().collect( Collectors.toSet() );
+                List<Map<String,Object>> maps = collectResults( r );
 
                 Matcher<Map<String,Object>> thisQuery = listedQueryOfInteractionLevel( startTime, "", query ); // admin
                 Matcher<Map<String,Object>> matcher1 = listedQuery( startTime, "", q ); // user1
@@ -447,7 +447,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "CALL dbms.killQuery('" + id1 + "') YIELD username " +
                 "RETURN count(username) AS count, username", r ->
                 {
-                    List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    List<Map<String,Object>> actual = collectResults( r );
                     @SuppressWarnings( "unchecked" )
                     Matcher<Map<String,Object>> mapMatcher = allOf(
                             (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
@@ -555,7 +555,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                         "CALL dbms.killQuery('" + writeQueryId + "') YIELD username " +
                         "RETURN count(username) AS count, username", r ->
                         {
-                            List<Map<String,Object>> actual = r.stream().collect( toList() );
+                            List<Map<String,Object>> actual = collectResults( r );
                             Matcher<Map<String,Object>> mapMatcher = allOf(
                                     (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
                                     (Matcher) hasEntry( equalTo( "username" ), equalTo( "writeSubject" ) )
@@ -607,7 +607,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                 "CALL dbms.killQueries(" + idParam + ") YIELD username " +
                 "RETURN count(username) AS count, username", r ->
                 {
-                    List<Map<String,Object>> actual = r.stream().collect( toList() );
+                    List<Map<String,Object>> actual = collectResults( r );
                     Matcher<Map<String,Object>> mapMatcher = allOf(
                             (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 2 ), equalTo( 2L ) ) ),
                             (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
@@ -629,11 +629,11 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
 
     String extractQueryId( String writeQuery )
     {
-        return single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )
+        return toRawValue( single( collectSuccessResult( adminSubject, "CALL dbms.listQueries()" )
                 .stream()
-                .filter( m -> m.get( "query" ).equals( writeQuery ) )
+                .filter( m -> m.get( "query" ).equals( valueOf( writeQuery ) ) )
                 .collect( toList() ) )
-                .get( "queryId" )
+                .get( "queryId" ) )
                 .toString();
     }
 
@@ -711,7 +711,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
                     "CALL dbms.killQuery('" + loopId + "') YIELD username " +
                     "RETURN count(username) AS count, username", r ->
                     {
-                        List<Map<String,Object>> actual = r.stream().collect( toList() );
+                        List<Map<String,Object>> actual = collectResults( r );
                         Matcher<Map<String,Object>> mapMatcher = allOf(
                                 (Matcher) hasEntry( equalTo( "count" ), anyOf( equalTo( 1 ), equalTo( 1L ) ) ),
                                 (Matcher) hasEntry( equalTo( "username" ), equalTo( "readSubject" ) )
@@ -1226,5 +1226,21 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
             Matcher valueMatcher = equalTo( entry.getValue() );
             return hasEntry( keyMatcher, valueMatcher );
         };
+    }
+
+    private List<Map<String,Object>> collectResults( ResourceIterator<Map<String,Object>> results )
+    {
+        List<Map<String,Object>> maps = results.stream().collect( Collectors.toList() );
+        List<Map<String,Object>> transformed = new ArrayList<>( maps.size() );
+        for ( Map<String,Object> map : maps )
+        {
+            Map<String,Object> transformedMap = new HashMap<>( map.size() );
+            for ( Entry<String,Object> entry : map.entrySet() )
+            {
+                transformedMap.put( entry.getKey(), toRawValue( entry.getValue() ) );
+            }
+            transformed.add( transformedMap );
+        }
+        return transformed;
     }
 }
