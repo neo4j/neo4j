@@ -47,6 +47,7 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.helper.RepeatUntilCallable;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -54,6 +55,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.id.IdContainer;
+import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.test.causalclustering.ClusterRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -180,16 +182,23 @@ public class IdReusabilityStressTesting
     {
         for ( int i = 0; i < 1_000; i++ )
         {
-            cluster.coreTx( ( db, tx ) ->
+            try
             {
-                for ( int j = 0; j < 1_000; j++ )
+                cluster.coreTx( ( db, tx ) ->
                 {
-                    Node start = db.createNode();
-                    Node end = db.createNode();
-                    start.createRelationshipTo( end, RELATIONSHIP_TYPE );
-                }
-                tx.success();
-            } );
+                    for ( int j = 0; j < 1_000; j++ )
+                    {
+                        Node start = db.createNode();
+                        Node end = db.createNode();
+                        start.createRelationshipTo( end, RELATIONSHIP_TYPE );
+                    }
+                    tx.success();
+                } );
+            }
+            catch ( WriteOperationsNotAllowedException e )
+            {
+                // skip
+            }
         }
     }
 
@@ -201,7 +210,7 @@ public class IdReusabilityStressTesting
         }
 
         if ( e instanceof  TimeoutException || e instanceof DatabaseShutdownException ||
-                e instanceof TransactionFailureException )
+                e instanceof TransactionFailureException || e instanceof AcquireLockTimeoutException )
         {
             return true;
         }
