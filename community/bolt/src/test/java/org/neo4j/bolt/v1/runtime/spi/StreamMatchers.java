@@ -39,7 +39,8 @@ public class StreamMatchers
     {
     }
 
-    public static Matcher<AnyValue> greaterThanOrEqualTo(long input) {
+    public static Matcher<AnyValue> greaterThanOrEqualTo( long input )
+    {
         return new TypeSafeMatcher<AnyValue>()
         {
             @Override
@@ -56,6 +57,7 @@ public class StreamMatchers
             }
         };
     }
+
     public static Matcher<QueryResult.Record> eqRecord( final Matcher<?>... expectedFieldValues )
     {
         return new TypeSafeMatcher<QueryResult.Record>()
@@ -82,13 +84,13 @@ public class StreamMatchers
             public void describeTo( Description description )
             {
                 description.appendText( "Record[" )
-                           .appendList( ", fields=[", ",", "]", asList(expectedFieldValues) );
+                        .appendList( ", fields=[", ",", "]", asList( expectedFieldValues ) );
 
             }
         };
     }
 
-    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher ... records )
+    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher... records )
     {
         return new TypeSafeMatcher<BoltResult>()
         {
@@ -135,7 +137,7 @@ public class StreamMatchers
             {
                 description
                         .appendText( "Stream[" )
-                        .appendValueList( " fieldNames=[",",","]", fieldNames )
+                        .appendValueList( " fieldNames=[", ",", "]", fieldNames )
                         .appendList( ", records=[", ",", "]", asList( records ) );
             }
         };

@@ -66,6 +66,7 @@ import static org.neo4j.causalclustering.discovery.TestTopology.readReplicaInfoM
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
+import static org.neo4j.kernel.api.proc.Neo4jTypes.NTList;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
 
@@ -131,7 +132,7 @@ public class GetServersProcedureV1Test
         // then
         assertThat( signature.outputSignature(), containsInAnyOrder(
                 FieldSignature.outputField( "ttl", NTInteger ),
-                FieldSignature.outputField( "servers", NTMap ) ) );
+                FieldSignature.outputField( "servers", NTList( NTMap ) ) ) );
     }
 
     @Test
