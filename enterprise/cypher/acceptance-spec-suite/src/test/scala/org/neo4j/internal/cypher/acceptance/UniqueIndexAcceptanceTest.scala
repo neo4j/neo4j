@@ -28,7 +28,7 @@ import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import scala.collection.Map
 import scala.collection.JavaConverters._
 
-class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   override protected def createGraphDatabase(config: Map[Setting[_], String] = databaseConfig()): GraphDatabaseCypherService = {
     new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
@@ -48,8 +48,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
-
+      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
     }
@@ -66,7 +65,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
 
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
@@ -84,7 +83,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
 
       //THEN
       result.toList should equal(List())
@@ -102,7 +101,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
+      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
       //THEN
       result.toList should equal(List(Map("n" -> jake)))
@@ -120,7 +119,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = executeWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
+      val result = succeedWithAndExpectPlansToBeSimilar(Configs.All, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n", "coll" -> List("Jacob"))
 
       //THEN
       result should use("NodeUniqueIndexSeek")
@@ -135,7 +134,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithCompatibilityAndAssertSimilarPlans("MERGE (n:Person {name: 'Andres'}) RETURN n.name")
+      val result = updateWithAndExpectPlansToBeSimilar(Configs.Interpreted - Configs.Cost2_3 - Configs.EnterpriseInterpreted, "MERGE (n:Person {name: 'Andres'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")
@@ -150,7 +149,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
+      val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name")
 
       //THEN
       result shouldNot use("NodeIndexSeek")
@@ -166,7 +165,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      val result = updateWithCompatibilityAndAssertSimilarPlans("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name", "coll" -> List("Jacob"))
+      val result = updateWithAndExpectPlansToBeSimilar(Configs.CommunityInterpreted - Configs.Cost2_3, "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name", "coll" -> List("Jacob"))
 
       //THEN
       result shouldNot use("NodeIndexSeek")

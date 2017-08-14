@@ -65,6 +65,11 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
           valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
+      case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
+        val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
+        NodeIndexSeekRegisterPipe(column, label, propertyKeys,
+          valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
+
       case Argument(_) =>
         ArgumentRegisterPipe(pipelineInformation)(id)
 

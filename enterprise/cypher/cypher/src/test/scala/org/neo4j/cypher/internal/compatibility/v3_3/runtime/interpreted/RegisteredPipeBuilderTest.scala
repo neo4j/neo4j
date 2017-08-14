@@ -478,4 +478,22 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
         PipelineInformation(Map("n" ->  LongSlot(0, nullable = false, CTNode, "n")),1, 0))())
   }
 
+  test("Should use NodeIndexUniqeSeek") {
+    // given
+    val label = LabelToken("label2", LabelId(0))
+    val seekExpression = SingleQueryExpression(literalInt(42))
+    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
+
+    // when
+    val pipe = build(seek)
+
+    // then
+    pipe should equal(
+      NodeIndexSeekRegisterPipe("z", label, Seq.empty, SingleQueryExpression(commands.expressions.Literal(42)), UniqueIndexSeek,
+        PipelineInformation(Map(
+          "z" -> LongSlot(0, nullable = false, CTNode, "z")
+        ), numberOfLongs = 1, numberOfReferences = 0))()
+    )
+  }
+
 }

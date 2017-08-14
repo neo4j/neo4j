@@ -73,7 +73,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("OPTIONAL MATCH, DISTINCT and DELETE in an unfortunate combination") {
     val start = createLabeledNode("Start")
     createLabeledNode("End")
-    val result = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3,
+    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3,
       """
         |MATCH (start:Start),(end:End)
         |OPTIONAL MATCH (start)-[rel]->(end)
@@ -529,8 +529,8 @@ return p""")
                   |RETURN project.p""".stripMargin
 
     //WHEN
-    val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
@@ -563,8 +563,8 @@ return p""")
 
     //WHEN
 
-    val first = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val second = testWithUpdate(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
