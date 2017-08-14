@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.LongFunction;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.primitive.Primitive;
@@ -69,8 +70,6 @@ import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
-import static org.neo4j.unsafe.impl.batchimport.SourceOrCachedInputIterable.cachedForSure;
-import static org.neo4j.unsafe.impl.batchimport.input.InputCache.MAIN;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.superviseExecution;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.withDynamicProcessorAssignment;
 
@@ -160,7 +159,6 @@ public class ParallelBatchImporter implements BatchImporter
             StatsProvider memoryUsageStats = new MemoryUsageStatsProvider( nodeRelationshipCache, idMapper );
             InputIterable<InputNode> nodes = input.nodes();
             InputIterable<InputRelationship> relationships = input.relationships();
-            InputIterable<InputNode> cachedNodes = cachedForSure( nodes, inputCache.nodes( MAIN, true ) );
 
             RelationshipStore relationshipStore = neoStore.getRelationshipStore();
 
@@ -174,7 +172,8 @@ public class ParallelBatchImporter implements BatchImporter
             neoStore.stopFlushingPageCache();
             if ( idMapper.needsPreparation() )
             {
-                executeStage( new IdMapperPreparationStage( config, idMapper, cachedNodes,
+                LongFunction<Object> inputIdLookup = new StoredInputIdLookup( neoStore.getInputIdValueStore() );
+                executeStage( new IdMapperPreparationStage( config, idMapper, inputIdLookup,
                         badCollector, memoryUsageStats ) );
                 PrimitiveLongIterator duplicateNodeIds = badCollector.leftOverDuplicateNodesIds();
                 if ( duplicateNodeIds.hasNext() )

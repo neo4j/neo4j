@@ -29,7 +29,7 @@ import org.neo4j.io.NullOutputStream;
  */
 public class Collectors
 {
-    public static Collector silentBadCollector( int tolerance )
+    public static Collector silentBadCollector( long tolerance )
     {
         return silentBadCollector( tolerance, BadCollector.COLLECT_ALL );
     }
@@ -39,7 +39,7 @@ public class Collectors
         return badCollector( NullOutputStream.NULL_OUTPUT_STREAM, tolerance, collect );
     }
 
-    public static Collector badCollector( OutputStream out, int tolerance )
+    public static Collector badCollector( OutputStream out, long tolerance )
     {
         return badCollector( out, tolerance, BadCollector.COLLECT_ALL, false );
     }
@@ -49,17 +49,17 @@ public class Collectors
         return new BadCollector( out, tolerance, collect, false );
     }
 
-    public static Collector badCollector( OutputStream out, int tolerance, int collect, boolean skipBadEntriesLogging )
+    public static Collector badCollector( OutputStream out, long tolerance, int collect, boolean skipBadEntriesLogging )
     {
         return new BadCollector( out, tolerance, collect, skipBadEntriesLogging );
     }
 
-    public static Function<OutputStream,Collector> badCollector( final int tolerance )
+    public static Function<OutputStream,Collector> badCollector( final long tolerance )
     {
         return badCollector( tolerance, BadCollector.COLLECT_ALL );
     }
 
-    public static Function<OutputStream,Collector> badCollector( final int tolerance, final int collect )
+    public static Function<OutputStream,Collector> badCollector( final long tolerance, final int collect )
     {
         return out -> badCollector( out, tolerance, collect, false );
     }

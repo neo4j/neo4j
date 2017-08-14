@@ -56,15 +56,17 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
     private final IoMonitor ioMonitor;
     private final Monitor monitor;
     private final HighestId highestId = new HighestId();
+    private final PropertyStore inputIdPropertyStore;
 
     EntityStoreUpdaterStep( StageControl control, Configuration config,
             CommonAbstractStore<RECORD,? extends StoreHeader> entityStore,
-            PropertyStore propertyStore, IoMonitor ioMonitor,
+            PropertyStore propertyStore, PropertyStore inputIdPropertyStore, IoMonitor ioMonitor,
             Monitor monitor )
     {
         super( control, "v", config, config.parallelRecordWrites() ? 0 : 1, ioMonitor );
         this.entityStore = entityStore;
         this.propertyStore = propertyStore;
+        this.inputIdPropertyStore = inputIdPropertyStore;
         this.monitor = monitor;
         this.ioMonitor = ioMonitor;
         this.ioMonitor.reset();
@@ -101,6 +103,10 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
 
         this.highestId.offer( highestId );
         writePropertyRecords( batch.propertyRecords, propertyStore );
+        if ( batch.inputIdPropertyRecords != null )
+        {
+            writePropertyRecords( batch.inputIdPropertyRecords, inputIdPropertyStore );
+        }
 
         monitor.entitiesWritten( records[0].getClass(), records.length - skipped );
         monitor.propertiesWritten( batch.numberOfProperties );
@@ -113,11 +119,19 @@ public class EntityStoreUpdaterStep<RECORD extends PrimitiveRecord,INPUT extends
         {
             if ( propertyRecords != null )
             {
-                for ( PropertyRecord propertyRecord : propertyRecords )
-                {
-                    propertyStore.prepareForCommit( propertyRecord );
-                    propertyStore.updateRecord( propertyRecord );
-                }
+                writePropertyRecords( propertyRecords, propertyStore );
+            }
+        }
+    }
+
+    private static void writePropertyRecords( PropertyRecord[] batch, PropertyStore propertyStore )
+    {
+        for ( PropertyRecord propertyRecord : batch )
+        {
+            if ( propertyRecord != null )
+            {
+                propertyStore.prepareForCommit( propertyRecord );
+                propertyStore.updateRecord( propertyRecord );
             }
         }
     }

@@ -41,6 +41,8 @@ public class Batch<INPUT,RECORD extends PrimitiveRecord>
     public RECORD[] records;
 
     public PropertyRecord[][] propertyRecords;
+    // Property records which contain the node input ids
+    public PropertyRecord[] inputIdPropertyRecords;
     public int numberOfProperties;
 
     // Used by relationship stages to query idMapper and store ids here

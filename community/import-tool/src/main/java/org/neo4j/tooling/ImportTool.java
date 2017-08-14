@@ -220,6 +220,7 @@ public class ImportTool
                         + "manual about available configuration options for a neo4j configuration file. "
                         + "Only configuration affecting store at time of creation will be read. "
                         + "Examples of supported config are:\n"
+                        + GraphDatabaseSettings.pagecache_memory.name() + "\n"
                         + GraphDatabaseSettings.dense_node_threshold.name() + "\n"
                         + GraphDatabaseSettings.string_block_size.name() + "\n"
                         + GraphDatabaseSettings.array_block_size.name(), true ),
@@ -616,6 +617,7 @@ public class ImportTool
         printIndented( "Max heap memory : " + bytes( Runtime.getRuntime().maxMemory() ), out );
         printIndented( "Processors: " + configuration.maxNumberOfProcessors(), out );
         printIndented( "Configured max memory: " + bytes( configuration.maxMemoryUsage() ), out );
+        printIndented( "Page cache memory: " + bytes( configuration.pageCacheMemory() ), out );
         out.println();
     }
 
@@ -679,6 +681,12 @@ public class ImportTool
             @Override
             public long pageCacheMemory()
             {
+                // If a specific page cache memory setting exists, then use it.
+                if ( dbConfig.getRaw( GraphDatabaseSettings.pagecache_memory.name() ).isPresent() )
+                {
+                    return dbConfig.get( GraphDatabaseSettings.pagecache_memory );
+                }
+
                 return defaultSettingsSuitableForTests ? mebiBytes( 8 ) : DEFAULT.pageCacheMemory();
             }
 

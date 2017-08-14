@@ -29,7 +29,7 @@ public interface Collector extends AutoCloseable
 {
     void collectBadRelationship( InputRelationship relationship, Object specificValue );
 
-    void collectDuplicateNode( Object id, long actualId, String group, String firstSource, String otherSource );
+    void collectDuplicateNode( Object id, long actualId, String group );
 
     void collectExtraColumns( String source, long row, String value );
 

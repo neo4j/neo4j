@@ -82,10 +82,9 @@ public class BadCollector implements Collector
     }
 
     @Override
-    public void collectDuplicateNode( final Object id, long actualId, final String group,
-            final String firstSource, final String otherSource )
+    public void collectDuplicateNode( final Object id, long actualId, final String group )
     {
-        checkTolerance( DUPLICATE_NODES, new NodesProblemReporter( id, group, firstSource, otherSource ) );
+        checkTolerance( DUPLICATE_NODES, new NodesProblemReporter( id, group ) );
 
         if ( leftOverDuplicateNodeIdsCursor == leftOverDuplicateNodeIds.length )
         {
@@ -183,27 +182,23 @@ public class BadCollector implements Collector
     {
         private final Object id;
         private final String group;
-        private final String firstSource;
-        private final String otherSource;
 
-        NodesProblemReporter( Object id, String group, String firstSource, String otherSource )
+        NodesProblemReporter( Object id, String group )
         {
             this.id = id;
             this.group = group;
-            this.firstSource = firstSource;
-            this.otherSource = otherSource;
         }
 
         @Override
         public String message()
         {
-            return DuplicateInputIdException.message( id, group, firstSource, otherSource );
+            return DuplicateInputIdException.message( id, group );
         }
 
         @Override
         public InputException exception()
         {
-            return new DuplicateInputIdException( id, group, firstSource, otherSource );
+            return new DuplicateInputIdException( id, group );
         }
     }
 
