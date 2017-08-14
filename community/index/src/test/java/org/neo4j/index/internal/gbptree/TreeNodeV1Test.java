@@ -51,6 +51,7 @@ public class TreeNodeV1Test
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV1<>( PAGE_SIZE, layout );
     private final Content<MutableLong,MutableLong> mainContent = node.main();
+    private final Content<MutableLong,MutableLong> deltaContent = node.delta();
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -684,6 +685,100 @@ public class TreeNodeV1Test
 
         // THEN
         assertTrue( GenerationSafePointerPair.isLogicalPos( result ) );
+    }
+
+    @Test
+    public void shouldInsertDeltaKeys() throws Exception
+    {
+        // GIVEN
+        MutableLong key = new MutableLong();
+        key.setValue( 4 );
+        deltaContent.insertKeyAt( cursor, key, 0, 0 );
+        key.setValue( 7 );
+        deltaContent.insertKeyAt( cursor, key, 1, 1 );
+        key.setValue( 10 );
+        deltaContent.insertKeyAt( cursor, key, 2, 2 );
+        deltaContent.setKeyCount( cursor, 3 );
+
+        // WHEN
+        key.setValue( 5 );
+        deltaContent.insertKeyAt( cursor, key, 1, 3 );
+        deltaContent.setKeyCount( cursor, 4 );
+
+        // THEN
+        assertEquals( 4, deltaContent.keyAt( cursor, key, 0 ).longValue() );
+        assertEquals( 5, deltaContent.keyAt( cursor, key, 1 ).longValue() );
+        assertEquals( 7, deltaContent.keyAt( cursor, key, 2 ).longValue() );
+        assertEquals( 10, deltaContent.keyAt( cursor, key, 3 ).longValue() );
+    }
+
+    @Test
+    public void shouldRemoveDeltaKeys() throws Exception
+    {
+        // GIVEN
+        MutableLong key = new MutableLong();
+        key.setValue( 4 );
+        deltaContent.insertKeyAt( cursor, key, 0, 0 );
+        key.setValue( 7 );
+        deltaContent.insertKeyAt( cursor, key, 1, 1 );
+        key.setValue( 10 );
+        deltaContent.insertKeyAt( cursor, key, 2, 2 );
+        deltaContent.setKeyCount( cursor, 3 );
+
+        // WHEN
+        deltaContent.removeKeyAt( cursor, 1, 3 );
+        deltaContent.setKeyCount( cursor, 2 );
+
+        // THEN
+        assertEquals( 4, deltaContent.keyAt( cursor, key, 0 ).longValue() );
+        assertEquals( 10, deltaContent.keyAt( cursor, key, 1 ).longValue() );
+    }
+
+    @Test
+    public void shouldInsertDeltaValues() throws Exception
+    {
+        // GIVEN
+        MutableLong value = new MutableLong();
+        value.setValue( 4 );
+        deltaContent.insertValueAt( cursor, value, 0, 0 );
+        value.setValue( 7 );
+        deltaContent.insertValueAt( cursor, value, 1, 1 );
+        value.setValue( 10 );
+        deltaContent.insertValueAt( cursor, value, 2, 2 );
+        deltaContent.setKeyCount( cursor, 3 );
+
+        // WHEN
+        value.setValue( 5 );
+        deltaContent.insertValueAt( cursor, value, 1, 3 );
+        deltaContent.setKeyCount( cursor, 4 );
+
+        // THEN
+        assertEquals( 4, deltaContent.valueAt( cursor, value, 0 ).longValue() );
+        assertEquals( 5, deltaContent.valueAt( cursor, value, 1 ).longValue() );
+        assertEquals( 7, deltaContent.valueAt( cursor, value, 2 ).longValue() );
+        assertEquals( 10, deltaContent.valueAt( cursor, value, 3 ).longValue() );
+    }
+
+    @Test
+    public void shouldRemoveDeltaValues() throws Exception
+    {
+        // GIVEN
+        MutableLong value = new MutableLong();
+        value.setValue( 4 );
+        deltaContent.insertValueAt( cursor, value, 0, 0 );
+        value.setValue( 7 );
+        deltaContent.insertValueAt( cursor, value, 1, 1 );
+        value.setValue( 10 );
+        deltaContent.insertValueAt( cursor, value, 2, 2 );
+        deltaContent.setKeyCount( cursor, 3 );
+
+        // WHEN
+        deltaContent.removeValueAt( cursor, 1, 3 );
+        deltaContent.setKeyCount( cursor, 2 );
+
+        // THEN
+        assertEquals( 4, deltaContent.valueAt( cursor, value, 0 ).longValue() );
+        assertEquals( 10, deltaContent.valueAt( cursor, value, 1 ).longValue() );
     }
 
     private static long remove( long[] from, int length, int position )

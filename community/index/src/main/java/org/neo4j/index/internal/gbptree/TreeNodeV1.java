@@ -21,6 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -67,17 +68,29 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
     static final int SIZE_PAGE_REFERENCE = GenerationSafePointerPair.SIZE;
-    static final int BYTE_POS_TYPE = BYTE_POS_NODE_TYPE + Byte.BYTES;
-    static final int BYTE_POS_GENERATION = BYTE_POS_TYPE + Byte.BYTES;
-    static final int BYTE_POS_KEYCOUNT = BYTE_POS_GENERATION + Integer.BYTES;
-    static final int BYTE_POS_RIGHTSIBLING = BYTE_POS_KEYCOUNT + Integer.BYTES;
-    static final int BYTE_POS_LEFTSIBLING = BYTE_POS_RIGHTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int BYTE_POS_SUCCESSOR = BYTE_POS_LEFTSIBLING + SIZE_PAGE_REFERENCE;
-    static final int HEADER_LENGTH = BYTE_POS_SUCCESSOR + SIZE_PAGE_REFERENCE;
+
+    private static final AtomicInteger OFFSET = new AtomicInteger( BYTE_POS_NODE_TYPE + Byte.BYTES );
+    static final int BYTE_POS_TYPE = OFFSET.getAndAdd( Byte.BYTES );
+    static final int BYTE_POS_GENERATION = OFFSET.getAndAdd( Integer.BYTES );
+    // TODO Could be short instead
+    static final int BYTE_POS_KEYCOUNT = OFFSET.getAndAdd( Integer.BYTES );
+    static final int BYTE_POS_RIGHTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    static final int BYTE_POS_LEFTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    static final int BYTE_POS_SUCCESSOR = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    // TODO Put this on the high bits of the shorter keyCount instead
+    static final int BYTE_POS_DELTA_KEY_COUNT = OFFSET.getAndAdd( Byte.BYTES );
+
+    static final int HEADER_LENGTH = OFFSET.get();
 
     private final int pageSize;
     private final int internalMaxKeyCount;
+    private final int deltaLeafMaxKeyCount;
     private final int leafMaxKeyCount;
+    private final int offsetKeyStart;
+    private final int offsetKeyEnd;
+    private final int offsetValueStart;
+    private final int offsetValueEnd;
+    private final int offsetChildStart;
     private final Layout<KEY,VALUE> layout;
     private final Content<KEY,VALUE> mainContent;
     private final Content<KEY,VALUE> deltaContent;
@@ -93,7 +106,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.valueSize = layout.valueSize();
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
-        this.leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
+        int leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -107,8 +120,18 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     pageSize, leafMaxKeyCount );
         }
 
+        int desiredDeltaSize = 10;
+        this.deltaLeafMaxKeyCount = leafMaxKeyCount < desiredDeltaSize * 3 ? 0 : desiredDeltaSize;
+        this.leafMaxKeyCount = leafMaxKeyCount - deltaLeafMaxKeyCount;
+
         this.mainContent = new MainContentV1();
         this.deltaContent = new DeltaContentV1();
+
+        this.offsetKeyStart = HEADER_LENGTH;
+        this.offsetKeyEnd = HEADER_LENGTH + (leafMaxKeyCount + deltaLeafMaxKeyCount) * keySize;
+        this.offsetValueStart = offsetKeyEnd;
+        this.offsetValueEnd = offsetValueStart + (leafMaxKeyCount + deltaLeafMaxKeyCount) * valueSize;
+        this.offsetChildStart = HEADER_LENGTH + internalMaxKeyCount * keySize;
     }
 
     @Override
@@ -241,19 +264,19 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     void insertKeySlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
-        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, keyOffset( 0 ), keySize );
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, offsetKeyStart, keySize );
     }
 
     @Override
     void insertValueSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
-        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, valueOffset( 0 ), valueSize );
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount, offsetValueStart, valueSize );
     }
 
     @Override
     void insertChildSlotsAt( PageCursor cursor, int pos, int numberOfSlots, int keyCount )
     {
-        insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, childOffset( 0 ), childSize() );
+        insertSlotsAt( cursor, pos, numberOfSlots, keyCount + 1, offsetChildStart, childSize() );
     }
 
     // HELPERS
@@ -261,19 +284,19 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     @Override
     public int keyOffset( int pos )
     {
-        return HEADER_LENGTH + pos * keySize;
+        return offsetKeyStart + pos * keySize;
     }
 
     @Override
     public int valueOffset( int pos )
     {
-        return HEADER_LENGTH + leafMaxKeyCount * keySize + pos * valueSize;
+        return offsetValueStart + pos * valueSize;
     }
 
     @Override
     public int childOffset( int pos )
     {
-        return HEADER_LENGTH + internalMaxKeyCount * keySize + pos * SIZE_PAGE_REFERENCE;
+        return offsetChildStart + pos * SIZE_PAGE_REFERENCE;
     }
 
     @Override
@@ -461,92 +484,105 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private class DeltaContentV1 extends Content<KEY,VALUE>
     {
         @Override
-        Comparator<KEY> keyComparator()
+        public Comparator<KEY> keyComparator()
         {
             return layout;
         }
 
         @Override
-        int keyCount( PageCursor cursor )
+        public int keyCount( PageCursor cursor )
         {
-            return 0;
+            return cursor.getByte( BYTE_POS_DELTA_KEY_COUNT ) & 0xFF;
         }
 
         @Override
-        void setKeyCount( PageCursor cursor, int count )
+        public void setKeyCount( PageCursor cursor, int count )
+        {
+            if ( (count & ~0xFF) != 0 )
+            {
+                throw new IllegalArgumentException( "Key count must fit in byte" );
+            }
+            cursor.putByte( BYTE_POS_DELTA_KEY_COUNT, (byte) count );
+        }
+
+        @Override
+        public KEY keyAt( PageCursor cursor, KEY into, int pos )
+        {
+            cursor.setOffset( keyOffset( pos ) );
+            layout.readKey( cursor, into );
+            return into;
+        }
+
+        @Override
+        public void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+        {
+            deltaInsertSlotsAt( cursor, pos, keyCount, offsetKeyEnd, keySize );
+            cursor.setOffset( keyOffset( pos ) );
+            layout.writeKey( cursor, key );
+        }
+
+        @Override
+        public void removeKeyAt( PageCursor cursor, int pos, int keyCount )
+        {
+            removeSlotAt( cursor, pos, keyCount, offsetKeyEnd, keySize );
+        }
+
+        @Override
+        public void setKeyAt( PageCursor cursor, KEY key, int pos )
+        {
+            cursor.setOffset( keyOffset( pos ) );
+            layout.writeKey( cursor, key );
+        }
+
+        @Override
+        public VALUE valueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            cursor.setOffset( valueOffset( pos ) );
+            layout.readValue( cursor, value );
+            return value;
+        }
+
+        @Override
+        public void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
+        {
+            deltaInsertSlotsAt( cursor, pos, keyCount, offsetValueEnd, valueSize );
+            setValueAt( cursor, value, pos );
+        }
+
+        @Override
+        public void removeValueAt( PageCursor cursor, int pos, int keyCount )
+        {
+            removeSlotAt( cursor, pos, keyCount, offsetValueEnd, valueSize );
+        }
+
+        @Override
+        public void setValueAt( PageCursor cursor, VALUE value, int pos )
+        {
+            cursor.setOffset( valueOffset( pos ) );
+            layout.writeValue( cursor, value );
+        }
+
+        @Override
+        public long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
         {
             throw new UnsupportedOperationException( "Not supported a.t.m." );
         }
 
         @Override
-        KEY keyAt( PageCursor cursor, KEY into, int pos )
+        public void insertChildAt( PageCursor cursor, long child, int pos, int keyCount,
+                long stableGeneration, long unstableGeneration )
         {
             throw new UnsupportedOperationException( "Not supported a.t.m." );
         }
 
         @Override
-        void insertKeyAt( PageCursor cursor, KEY key, int pos, int keyCount )
+        public void removeChildAt( PageCursor cursor, int pos, int keyCount )
         {
             throw new UnsupportedOperationException( "Not supported a.t.m." );
         }
 
         @Override
-        void removeKeyAt( PageCursor cursor, int pos, int keyCount )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void setKeyAt( PageCursor cursor, KEY key, int pos )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        VALUE valueAt( PageCursor cursor, VALUE value, int pos )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void insertValueAt( PageCursor cursor, VALUE value, int pos, int keyCount )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void removeValueAt( PageCursor cursor, int pos, int keyCount )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void setValueAt( PageCursor cursor, VALUE value, int pos )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void insertChildAt( PageCursor cursor, long child, int pos, int keyCount, long stableGeneration,
-                long unstableGeneration )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void removeChildAt( PageCursor cursor, int pos, int keyCount )
-        {
-            throw new UnsupportedOperationException( "Not supported a.t.m." );
-        }
-
-        @Override
-        void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
+        public void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration )
         {
             throw new UnsupportedOperationException( "Not supported a.t.m." );
         }
@@ -558,15 +594,54 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
 
         @Override
-        int internalMaxKeyCount()
+        public int internalMaxKeyCount()
         {
             return 0;
         }
 
         @Override
-        int leafMaxKeyCount()
+        public int leafMaxKeyCount()
         {
-            return 0;
+            return deltaLeafMaxKeyCount;
+        }
+
+        // Delta keys start from the end and go backwards
+        private int keyOffset( int pos )
+        {
+            return offsetKeyEnd - keySize - pos * keySize;
+        }
+
+        // Delta values start from the end and go backwards
+        private int valueOffset( int pos )
+        {
+            return offsetValueEnd - valueSize - pos * valueSize;
+        }
+
+        // ,,,,,,,,,,|,,,G,D,A
+        // POS           2 1 0
+        private void deltaInsertSlotsAt( PageCursor cursor, int pos, int itemCount, int baseOffset,
+                int itemSize )
+        {
+            // TODO optimize
+            int itemsToMove = itemCount - pos;
+            for ( int i = 0; i < itemsToMove; i++ )
+            {
+                int sourceOffset = baseOffset - (itemCount - i) * itemSize;
+                cursor.copyTo( sourceOffset, cursor, sourceOffset - itemSize, itemSize );
+            }
+        }
+
+        // ,,,,,,,,,,|,,,G,D,A
+        // POS           2 1 0
+        private void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+        {
+            // TODO optimize
+            int itemsToMove = itemCount - pos - 1;
+            for ( int i = 0; i < itemsToMove; i++ )
+            {
+                int sourceOffset = baseOffset - (pos + 2) * itemSize;
+                cursor.copyTo( sourceOffset, cursor, sourceOffset + itemSize, itemSize );
+            }
         }
     }
 }
