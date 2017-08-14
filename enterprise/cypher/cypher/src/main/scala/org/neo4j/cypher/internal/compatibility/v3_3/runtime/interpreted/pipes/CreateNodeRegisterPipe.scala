@@ -19,16 +19,19 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 import scala.collection.Map
 
@@ -54,20 +57,19 @@ case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformati
       expr(context)(state) match {
         case _: Node | _: Relationship =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
-        case IsMap(f) =>
-          val propertiesMap: Map[String, Any] = f(state.query)
-          propertiesMap.foreach {
-            case (k, v) => setProperty(nodeId, k, v, state.query)
-          }
+        case IsMap(m) =>
+          m.foreach(new BiConsumer[String, AnyValue] {
+            override def accept(k: String, v: AnyValue): Unit = setProperty(nodeId, k, v, state.query)
+          })
         case _ =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
       }
     }
   }
 
-  private def setProperty(nodeId: Long, key: String, value: Any, qtx: QueryContext) {
+  private def setProperty(nodeId: Long, key: String, value: AnyValue, qtx: QueryContext) {
     //do not set properties for null values
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       handleNull(key)
     } else {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)
