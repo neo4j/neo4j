@@ -216,19 +216,9 @@ public class ConsistencyCheckServiceIntegrationTest
         File storeDir = testDirectory.absolutePath();
         GraphDatabaseService gds = getGraphDatabaseService( storeDir );
 
-        IndexDefinition indexDefinition;
-
-        try ( Transaction tx = gds.beginTx() )
-        {
-            indexDefinition = gds.schema().indexFor( Label.label( "label" ) ).on( "propKey" ).create();
-            tx.success();
-        }
-
-        try ( Transaction tx = gds.beginTx() )
-        {
-            gds.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
-            tx.success();
-        }
+        Label label = Label.label( "label" );
+        String propKey = "propKey";
+        createIndex( gds, label, propKey );
 
         gds.shutdown();
 
@@ -251,6 +241,49 @@ public class ConsistencyCheckServiceIntegrationTest
                 ) );
     }
 
+    @Test
+    public void oldLuceneSchemaIndexShouldBeConsideredConsistentWithFusionProvider() throws Exception
+    {
+        File storeDir = testDirectory.graphDbDir();
+        String enableNativeIndex = GraphDatabaseSettings.enable_native_schema_index.name();
+        Label label = Label.label( "label" );
+        String propKey = "propKey";
+
+        // Given a lucene index
+        GraphDatabaseService db = getGraphDatabaseService( storeDir, enableNativeIndex, Settings.FALSE );
+        createIndex( db, label, propKey );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode( label ).setProperty( propKey, 1 );
+            db.createNode( label ).setProperty( propKey, "string" );
+            tx.success();
+        }
+        db.shutdown();
+
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        Config configuration =
+                Config.embeddedDefaults( settings( enableNativeIndex, Settings.TRUE ) );
+        Result result = runFullConsistencyCheck( service, configuration, storeDir );
+        assertTrue( result.isSuccessful() );
+    }
+
+    private void createIndex( GraphDatabaseService gds, Label label, String propKey )
+    {
+        IndexDefinition indexDefinition;
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            indexDefinition = gds.schema().indexFor( label ).on( propKey ).create();
+            tx.success();
+        }
+
+        try ( Transaction tx = gds.beginTx() )
+        {
+            gds.schema().awaitIndexOnline( indexDefinition, 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+    }
+
     private File findFile( String targetFile, File directory )
     {
         File file = new File( directory, targetFile );
@@ -268,8 +301,13 @@ public class ConsistencyCheckServiceIntegrationTest
 
     private GraphDatabaseService getGraphDatabaseService( File storeDir )
     {
+        return getGraphDatabaseService( storeDir, new String[0] );
+    }
+
+    private GraphDatabaseService getGraphDatabaseService( File storeDir, String... settings )
+    {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
-        builder.setConfig( settings() );
+        builder.setConfig( settings( settings ) );
 
         return builder.newGraphDatabase();
     }
