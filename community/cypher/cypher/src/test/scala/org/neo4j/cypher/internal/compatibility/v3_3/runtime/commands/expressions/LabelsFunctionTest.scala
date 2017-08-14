@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import java.util
-
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.list
@@ -37,8 +34,10 @@ class LabelsFunctionTest extends CypherFunSuite {
   test("testIdLookup") {
     // GIVEN
     val node = mock[Node]
-    when(node.getLabels).thenReturn(util.Arrays.asList(label("bambi")))
+    when(node.getId).thenReturn(1337L)
     val queryContext = mock[QueryContext]
+    when(queryContext.getLabelsForNode(1337L)).thenReturn(Iterator(42))
+    when(queryContext.getLabelName(42)).thenReturn("bambi")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
