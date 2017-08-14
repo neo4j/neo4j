@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -46,7 +47,7 @@ import static org.neo4j.kernel.impl.index.schema.NativeSchemaNumberIndexPopulato
 public class NativeSchemaNumberIndexProvider extends SchemaIndexProvider
 {
     public static final String KEY = "native";
-    private static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
+    public static final Descriptor NATIVE_PROVIDER_DESCRIPTOR = new Descriptor( KEY, "1.0" );
     private final PageCache pageCache;
     private final File nativeSchemaIndexBaseDir;
     private final Log log;
