@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.storable.NumberValue;
 
 import static java.util.Arrays.asList;
 
@@ -38,6 +39,23 @@ public class StreamMatchers
     {
     }
 
+    public static Matcher<AnyValue> greaterThanOrEqualTo(long input) {
+        return new TypeSafeMatcher<AnyValue>()
+        {
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "Value = " + input );
+
+            }
+
+            @Override
+            protected boolean matchesSafely( AnyValue value )
+            {
+                return value instanceof NumberValue && ((NumberValue) value).longValue() >= input;
+            }
+        };
+    }
     public static Matcher<QueryResult.Record> eqRecord( final Matcher<?>... expectedFieldValues )
     {
         return new TypeSafeMatcher<QueryResult.Record>()
