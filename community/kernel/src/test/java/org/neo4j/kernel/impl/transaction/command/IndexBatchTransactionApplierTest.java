@@ -77,7 +77,7 @@ public class IndexBatchTransactionApplierTest
             }
         }
         // THEN all assertions happen inside the LabelScanWriter#write and #close
-        verify( labelScanSync ).apply( any() );
+        verify( labelScanSync ).applyAsync( any() );
     }
 
     private Supplier<LabelScanWriter> singletonProvider( final LabelScanWriter writer )
