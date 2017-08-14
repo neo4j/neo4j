@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
@@ -546,7 +547,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit();
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
-                Locks.Client commitLocks = statementLocks.pessimistic();
+                Locks.Client commitLocks = statementLocks.explicit();
 
                 // Gather up commands from the various sources
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
@@ -786,11 +787,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        StatementLocks locks = this.statementLocks;
+        if ( locks != null )
+        {
+            locks.setIsolationLevel( isolationLevel );
+        }
+    }
+
+    @Override
     public String toString()
     {
         String lockSessionId = statementLocks == null
                                ? "statementLocks == null"
-                               : String.valueOf( statementLocks.pessimistic().getLockSessionId() );
+                               : String.valueOf( statementLocks.explicit().getLockSessionId() );
 
         return "KernelTransaction[" + lockSessionId + "]";
     }

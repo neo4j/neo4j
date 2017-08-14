@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 
 public class StubKernelTransaction implements KernelTransaction
 {
@@ -135,6 +136,12 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Revertable overrideWith( SecurityContext context )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

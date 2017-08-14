@@ -21,9 +21,11 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
- * {@link #optimistic() optimistic} and {@link #pessimistic() pessimistic} locks.
+ * {@link #optimistic() optimistic} and {@link #explicit() pessimistic} locks.
  */
 public class SimpleStatementLocks implements StatementLocks
 {
@@ -35,7 +37,7 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client pessimistic()
+    public Locks.Client explicit()
     {
         return client;
     }
@@ -74,5 +76,14 @@ public class SimpleStatementLocks implements StatementLocks
     public long activeLockCount()
     {
         return client.activeLockCount();
+    }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        if ( !isolationLevel.isSupported() )
+        {
+            throw new IllegalStateException( "The isolation level " + isolationLevel + " is not supported." );
+        }
     }
 }

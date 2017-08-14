@@ -93,7 +93,7 @@ public class KernelTransactionFactory
                 PageCursorTracerSupplier.NULL,
                 storageEngine, new CanWrite() );
 
-        StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
+        StatementLocks statementLocks = new SimpleStatementLocks( NoOpClient.INSTANCE );
 
         transaction.initialize( 0, 0, statementLocks, KernelTransaction.Type.implicit, securityContext, 0L );
 

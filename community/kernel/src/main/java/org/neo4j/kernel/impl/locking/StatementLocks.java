@@ -22,19 +22,20 @@ package org.neo4j.kernel.impl.locking;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 
 /**
- * Component used by {@link KernelStatement} to acquire {@link #pessimistic() pessimistic} and
+ * Component used by {@link KernelStatement} to acquire {@link #explicit() pessimistic} and
  * {@link #optimistic() optimistic} locks.
  */
 public interface StatementLocks extends AutoCloseable
 {
     /**
-     * Get {@link Locks.Client} responsible for pessimistic locks. Such locks will be grabbed right away.
+     * Get {@link Locks.Client} responsible for explicit locks. Such locks will be grabbed right away.
      *
-     * @return the locks client to serve pessimistic locks.
+     * @return the locks client to serve explicit locks.
      */
-    Locks.Client pessimistic();
+    Locks.Client explicit();
 
     /**
      * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
@@ -79,4 +80,9 @@ public interface StatementLocks extends AutoCloseable
      * @return the number of active locks in this transaction.
      */
     long activeLockCount();
+
+    /**
+     * @see org.neo4j.kernel.impl.coreapi.InternalTransaction#setIsolationLevel(IsolationLevel)
+     */
+    void setIsolationLevel( IsolationLevel isolationLevel );
 }

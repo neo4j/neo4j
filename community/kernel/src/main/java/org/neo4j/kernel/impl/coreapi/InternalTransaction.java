@@ -35,4 +35,14 @@ public interface InternalTransaction extends Transaction
     KernelTransaction.Revertable overrideWith( SecurityContext context );
 
     Optional<Status> terminationReason();
+
+    /**
+     * Set the isolation level of this transaction.
+     * @param isolationLevel The isolation level desired for this transaction.
+     * @throws IllegalStateException if the given isolation level is not supported, if modification of isolation level
+     * is not support in the given database configuration, if an isolation level has already been set on this
+     * transaction, or if it is too late to modify the isolation level on this transaction e.g. if read or write
+     * operations have already occurred in the transaction.
+     */
+    void setIsolationLevel( IsolationLevel isolationLevel );
 }

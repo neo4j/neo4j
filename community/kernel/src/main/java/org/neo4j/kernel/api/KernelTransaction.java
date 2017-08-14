@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.Kernel;
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 
 /**
  * Represents a transaction of changes to the underlying graph.
@@ -223,4 +224,9 @@ public interface KernelTransaction extends AutoCloseable
         @Override
         void close();
     }
+
+    /**
+     * @see org.neo4j.kernel.impl.coreapi.InternalTransaction#setIsolationLevel(IsolationLevel)
+     */
+    void setIsolationLevel( IsolationLevel isolationLevel );
 }

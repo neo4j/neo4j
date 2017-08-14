@@ -113,7 +113,7 @@ public class ConstraintIndexCreator
 
         boolean success = false;
         boolean reacquiredSchemaLock = false;
-        Client locks = state.locks().pessimistic();
+        Client locks = state.locks().explicit();
         try
         {
             long indexId = schemaOps.indexGetCommittedId( state, index );

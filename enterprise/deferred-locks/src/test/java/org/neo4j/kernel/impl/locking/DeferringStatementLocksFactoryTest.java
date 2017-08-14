@@ -96,7 +96,7 @@ public class DeferringStatementLocksFactoryTest
 
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
         assertSame( client, statementLocks.optimistic() );
-        assertSame( client, statementLocks.pessimistic() );
+        assertSame( client, statementLocks.explicit() );
     }
 
     @Test
@@ -115,6 +115,6 @@ public class DeferringStatementLocksFactoryTest
 
         assertThat( statementLocks, instanceOf( DeferringStatementLocks.class ) );
         assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
-        assertSame( client, statementLocks.pessimistic() );
+        assertSame( client, statementLocks.explicit() );
     }
 }

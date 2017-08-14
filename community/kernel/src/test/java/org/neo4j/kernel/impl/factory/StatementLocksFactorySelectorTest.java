@@ -61,7 +61,7 @@ public class StatementLocksFactorySelectorTest
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
 
         assertSame( locksClient, statementLocks.optimistic() );
-        assertSame( locksClient, statementLocks.pessimistic() );
+        assertSame( locksClient, statementLocks.explicit() );
     }
 
     @Test

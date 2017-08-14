@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 
 import static org.junit.Assert.assertEquals;
@@ -203,10 +204,10 @@ public class ConstraintIndexCreatorTest
         creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
 
         // then
-        verify( state.locks().pessimistic() )
+        verify( state.locks().explicit() )
                 .releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
 
-        verify( state.locks().pessimistic() )
+        verify( state.locks().explicit() )
                 .acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
     }
 
@@ -445,6 +446,11 @@ public class ConstraintIndexCreatorTest
             public Revertable overrideWith( SecurityContext context )
             {
                 return null;
+            }
+
+            @Override
+            public void setIsolationLevel( IsolationLevel isolationLevel )
+            {
             }
 
             @Override

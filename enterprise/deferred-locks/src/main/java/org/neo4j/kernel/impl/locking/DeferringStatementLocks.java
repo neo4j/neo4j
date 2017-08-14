@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.locking;
 
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.
@@ -37,7 +39,7 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client pessimistic()
+    public Locks.Client explicit()
     {
         return explicit;
     }
@@ -76,5 +78,14 @@ public class DeferringStatementLocks implements StatementLocks
     public long activeLockCount()
     {
         return explicit.activeLockCount() + implicit.activeLockCount();
+    }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        throw new IllegalStateException(
+                "Isolation level cannot be changed when deferred locking is enabled. Unset or change the `" +
+                DeferringStatementLocksFactory.deferred_locks_enabled.name() + "` setting to `false`, to allow " +
+                "changing the isolation level on transactions." );
     }
 }

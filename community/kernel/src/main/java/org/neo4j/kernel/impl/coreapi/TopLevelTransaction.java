@@ -149,4 +149,10 @@ public class TopLevelTransaction implements InternalTransaction
     {
         return transaction.getReasonIfTerminated();
     }
+
+    @Override
+    public void setIsolationLevel( IsolationLevel isolationLevel )
+    {
+        transaction.setIsolationLevel( isolationLevel );
+    }
 }

@@ -44,7 +44,7 @@ public class DeferringStatementLocksTest
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
         // THEN
-        assertSame( client, statementLocks.pessimistic() );
+        assertSame( client, statementLocks.explicit() );
         assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
     }
 

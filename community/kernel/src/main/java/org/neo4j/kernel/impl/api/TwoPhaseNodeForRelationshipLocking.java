@@ -26,10 +26,11 @@ import org.neo4j.cursor.Cursor;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.Direction;
 import org.neo4j.storageengine.api.NodeItem;
 import org.neo4j.storageengine.api.RelationshipItem;
+
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 class TwoPhaseNodeForRelationshipLocking
 {
@@ -87,8 +88,7 @@ class TwoPhaseNodeForRelationshipLocking
         PrimitiveLongIterator nodeIdIterator = nodeIds.iterator();
         while ( nodeIdIterator.hasNext() )
         {
-            state.locks().optimistic()
-                    .acquireExclusive( state.lockTracer(), ResourceTypes.NODE, nodeIdIterator.next() );
+            state.locks().optimistic().acquireExclusive( state.lockTracer(), NODE, nodeIdIterator.next() );
         }
     }
 
@@ -97,7 +97,7 @@ class TwoPhaseNodeForRelationshipLocking
         PrimitiveLongIterator iterator = nodeIds.iterator();
         while ( iterator.hasNext() )
         {
-            state.locks().optimistic().releaseExclusive( ResourceTypes.NODE, iterator.next() );
+            state.locks().optimistic().releaseExclusive( NODE, iterator.next() );
         }
         nodeIds.clear();
     }

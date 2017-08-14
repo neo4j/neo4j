@@ -102,7 +102,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         StatementLocks statementLocks = mock( StatementLocks.class );
         Locks.Client locks = mock( Locks.Client.class );
         when( statementLocks.optimistic() ).thenReturn( locks );
-        when( statementLocks.pessimistic() ).thenReturn( locks );
+        when( statementLocks.explicit() ).thenReturn( locks );
         when( locksFactory.newInstance() ).thenReturn( statementLocks );
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );

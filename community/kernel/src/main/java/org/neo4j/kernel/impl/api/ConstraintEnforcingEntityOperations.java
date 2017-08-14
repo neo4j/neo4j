@@ -245,11 +245,8 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
             assertIndexOnline( state, index );
 
             int labelId = index.schema().getLabelId();
-            state.locks().optimistic().acquireExclusive(
-                    state.lockTracer(),
-                    INDEX_ENTRY,
-                    indexEntryResourceId( labelId, propertyValues )
-                );
+            long resourceId = indexEntryResourceId( labelId, propertyValues );
+            state.locks().optimistic().acquireExclusive( state.lockTracer(), INDEX_ENTRY, resourceId );
 
             long existing = entityReadOperations.nodeGetFromUniqueIndexSeek( state, index, propertyValues );
             if ( existing != NO_SUCH_NODE && existing != modifiedNode )
