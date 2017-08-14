@@ -32,4 +32,16 @@ public class EmbeddedConfiguredProceduresIT extends ConfiguredProceduresTestBase
         return new EmbeddedInteraction( config );
     }
 
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Integer )
+        {
+            return ((Integer) obj).longValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
 }

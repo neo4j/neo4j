@@ -38,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -72,10 +71,8 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.BaseToObjectValueWriter;
 import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
@@ -228,7 +225,7 @@ public abstract class ProcedureInteractionTestBase<S>
         {
             List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( toList() );
             assertThat( result.size(), equalTo( 1 ) );
-            assertThat( result.get( 0 ), equalTo( count ) );
+            assertThat( result.get( 0 ), equalTo( valueOf( count ) ) );
         } );
     }
 
@@ -364,14 +361,14 @@ public abstract class ProcedureInteractionTestBase<S>
         assertFail( subject, "CALL test.allowedSchemaProcedure()", SCHEMA_OPS_NOT_ALLOWED );
     }
 
-    void testSuccessfulTestProcs( S subject, Function<Object,Object> valueOf )
+    void testSuccessfulTestProcs( S subject )
     {
         assertSuccess( subject, "CALL test.allowedReadProcedure()",
-                r -> assertKeyIs( r, "value", valueOf.apply( "foo" ) ) );
+                r -> assertKeyIs( r, "value", "foo" ) );
         assertSuccess( subject, "CALL test.allowedWriteProcedure()",
-                r -> assertKeyIs( r, "value", valueOf.apply( "a" ), valueOf.apply( "a" ) ) );
+                r -> assertKeyIs( r, "value", "a", "a" ) );
         assertSuccess( subject, "CALL test.allowedSchemaProcedure()",
-                r -> assertKeyIs( r, "value", valueOf.apply( "OK" ) ) );
+                r -> assertKeyIs( r, "value", "OK" ) );
     }
 
     void assertPasswordChangeWhenPasswordChangeRequired( S subject, String newPassword )
@@ -467,7 +464,8 @@ public abstract class ProcedureInteractionTestBase<S>
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
-        Assert.assertThat( results, containsInAnyOrder( items ) );
+        Assert.assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
+        ) );
     }
 
     static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
@@ -933,4 +931,6 @@ public abstract class ProcedureInteractionTestBase<S>
             return result.next().get( "value" ).toString();
         }
     }
+
+    protected abstract Object valueOf( Object obj );
 }

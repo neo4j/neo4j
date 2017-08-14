@@ -43,6 +43,20 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 
 public class EmbeddedBuiltInProceduresInteractionIT extends BuiltInProceduresInteractionTestBase<EnterpriseSecurityContext>
 {
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Integer )
+        {
+            return ((Integer) obj).longValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
+
     @Override
     protected NeoInteractionLevel<EnterpriseSecurityContext> setUpNeoServer( Map<String, String> config ) throws Throwable
     {

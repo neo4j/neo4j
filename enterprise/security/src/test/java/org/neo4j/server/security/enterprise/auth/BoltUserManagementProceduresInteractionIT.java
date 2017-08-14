@@ -21,6 +21,8 @@ package org.neo4j.server.security.enterprise.auth;
 
 import java.util.Map;
 
+import org.neo4j.values.AnyValues;
+
 public class BoltUserManagementProceduresInteractionIT extends AuthProceduresInteractionTestBase<BoltInteraction.BoltSubject>
 {
 
@@ -36,5 +38,11 @@ public class BoltUserManagementProceduresInteractionIT extends AuthProceduresInt
             Throwable
     {
         return new BoltInteraction( config );
+    }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        return AnyValues.of( obj );
     }
 }

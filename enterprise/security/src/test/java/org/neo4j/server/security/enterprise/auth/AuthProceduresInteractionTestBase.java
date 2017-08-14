@@ -90,7 +90,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         // Because RESTSubject caches an auth token that is sent with every request
         neo.updateAuthToken( readSubject, "readSubject", "321" );
         neo.assertAuthenticated( readSubject );
-        testSuccessfulRead( readSubject, 3L );
+        testSuccessfulRead( readSubject, 3 );
     }
 
     @Test
@@ -158,13 +158,13 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         // Because RESTSubject caches an auth token that is sent with every request
         neo.updateAuthToken( readSubject, "readSubject", "321" );
         neo.assertAuthenticated( readSubject );
-        testSuccessfulRead( readSubject, 3L );
+        testSuccessfulRead( readSubject, 3 );
 
         assertEmpty( adminSubject, "CALL dbms.security.changeUserPassword( 'adminSubject', 'cba', false )" );
         // Because RESTSubject caches an auth token that is sent with every request
         neo.updateAuthToken( adminSubject, "adminSubject", "cba" );
         neo.assertAuthenticated( adminSubject );
-        testSuccessfulRead( adminSubject, 3L );
+        testSuccessfulRead( adminSubject, 3 );
     }
 
     // Should fail nicely to change own password for non-admin or admin subject if password invalid
@@ -987,7 +987,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldSetCorrectReaderPermissions() throws Exception
     {
-        testSuccessfulRead( readSubject, 3L );
+        testSuccessfulRead( readSubject, 3 );
         testFailWrite( readSubject );
         testFailTokenWrite( readSubject, WRITE_OPS_NOT_ALLOWED );
         testFailSchema( readSubject );
@@ -998,7 +998,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldSetCorrectEditorPermissions() throws Exception
     {
-        testSuccessfulRead( editorSubject, 3L );
+        testSuccessfulRead( editorSubject, 3 );
         testSuccessfulWrite( editorSubject );
         testFailTokenWrite( editorSubject );
         testFailSchema( editorSubject );
@@ -1009,7 +1009,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldSetCorrectPublisherPermissions() throws Exception
     {
-        testSuccessfulRead( writeSubject, 3L );
+        testSuccessfulRead( writeSubject, 3 );
         testSuccessfulWrite( writeSubject );
         testSuccessfulTokenWrite( writeSubject );
         testFailSchema( writeSubject );
@@ -1020,7 +1020,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldSetCorrectSchemaPermissions() throws Exception
     {
-        testSuccessfulRead( schemaSubject, 3L );
+        testSuccessfulRead( schemaSubject, 3 );
         testSuccessfulWrite( schemaSubject );
         testSuccessfulTokenWrite( schemaSubject );
         testSuccessfulSchema( schemaSubject );
@@ -1031,7 +1031,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldSetCorrectAdminPermissions() throws Exception
     {
-        testSuccessfulRead( adminSubject, 3L );
+        testSuccessfulRead( adminSubject, 3 );
         testSuccessfulWrite( adminSubject );
         testSuccessfulTokenWrite( adminSubject );
         testSuccessfulSchema( adminSubject );
@@ -1044,7 +1044,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         assertEmpty( adminSubject, "CALL dbms.security.addRoleToUser('" + READER + "', 'schemaSubject')" );
 
-        testSuccessfulRead( schemaSubject, 3L );
+        testSuccessfulRead( schemaSubject, 3 );
         testSuccessfulWrite( schemaSubject );
         testSuccessfulSchema( schemaSubject );
         testFailCreateUser( schemaSubject, PERMISSION_DENIED );
