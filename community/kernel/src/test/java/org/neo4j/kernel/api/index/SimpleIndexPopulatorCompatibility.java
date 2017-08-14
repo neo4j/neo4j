@@ -38,7 +38,9 @@ import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Collections.singletonList;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
@@ -62,15 +64,18 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-        String failure = "The contrived failure";
-        populator.create();
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            String failure = "The contrived failure";
+            p.create();
 
-        // WHEN
-        populator.markAsFailed( failure );
+            // WHEN
+            p.markAsFailed( failure );
+            p.close( false );
 
-        // THEN
-        assertEquals( failure, indexProvider.getPopulationFailure( 17 ) );
+            // THEN
+            assertThat( indexProvider.getPopulationFailure( 17 ), containsString( failure ) );
+        } );
     }
 
     @Test
@@ -78,15 +83,17 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-        String failure = "The contrived failure";
-        populator.create();
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            String failure = "The contrived failure";
+            p.create();
 
-        // WHEN
-        populator.markAsFailed( failure );
+            // WHEN
+            p.markAsFailed( failure );
 
-        // THEN
-        assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
+            // THEN
+            assertEquals( FAILED, indexProvider.getInitialState( 17, descriptor ) );
+        } );
     }
 
     @Test
@@ -94,13 +101,15 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-        populator.close( false );
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+        {
+            p.close( false );
 
-        // WHEN
-        populator.drop();
+            // WHEN
+            p.drop();
 
-        // THEN - no exception should be thrown (it's been known to!)
+            // THEN - no exception should be thrown (it's been known to!)
+        } );
     }
 
     @Test
@@ -108,33 +117,37 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-        IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-        populator.create();
-        populator.configureSampling( true );
-        long nodeId = 1;
         final Value propertyValue = Values.of( "value1" );
-        PropertyAccessor propertyAccessor =
-                ( nodeId1, propertyKeyId ) -> propertyValue;
-
-        // this update (using add())...
-        populator.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
-        // ...is the same as this update (using update())
-        try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+        withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
         {
-            updater.process( add( nodeId, descriptor.schema(), propertyValue ) );
-        }
+            p.create();
+            p.configureSampling( true );
+            long nodeId = 1;
+            PropertyAccessor propertyAccessor =
+                    ( nodeId1, propertyKeyId ) -> propertyValue;
 
-        populator.close( true );
+            // this update (using add())...
+            p.add( singletonList( IndexEntryUpdate.add( nodeId, descriptor.schema(), propertyValue ) ) );
+            // ...is the same as this update (using update())
+            try ( IndexUpdater updater = p.newPopulatingUpdater( propertyAccessor ) )
+            {
+                updater.process( add( nodeId, descriptor.schema(), propertyValue ) );
+            }
+
+            p.close( true );
+        } );
 
         // then
-        IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
-        try ( IndexReader reader = accessor.newReader() )
+        try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
         {
-            int propertyKeyId = descriptor.schema().getPropertyId();
-            PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
-            assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
+            try ( IndexReader reader = accessor.newReader() )
+            {
+                int propertyKeyId = descriptor.schema().getPropertyId();
+                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
+                assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
+            }
+            accessor.close();
         }
-        accessor.close();
     }
 
     @Ignore( "Not a test. This is a compatibility suite" )
@@ -150,22 +163,26 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         {
             // when
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-            populator.create();
             Value value = Values.of( "value1" );
-            populator.add( Arrays.asList(
-                    IndexEntryUpdate.add( 1, descriptor.schema(), value ),
-                    IndexEntryUpdate.add( 2, descriptor.schema(), value ) ) );
-            populator.close( true );
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
+            {
+                p.create();
+                p.add( Arrays.asList(
+                        IndexEntryUpdate.add( 1, descriptor.schema(), value ),
+                        IndexEntryUpdate.add( 2, descriptor.schema(), value ) ) );
+                p.close( true );
+            } );
 
             // then
-            IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig );
-            try ( IndexReader reader = accessor.newReader() )
+            try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( 17, descriptor, indexSamplingConfig ) )
             {
-                PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, value ) );
-                assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
+                try ( IndexReader reader = accessor.newReader() )
+                {
+                    PrimitiveLongIterator nodes = reader.query( IndexQuery.exact( 1, value ) );
+                    assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
+                }
+                accessor.close();
             }
-            accessor.close();
         }
     }
 
@@ -189,28 +206,29 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             int nodeId2 = 2;
 
             IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
-            IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
-
-            populator.create();
-            populator.add( Arrays.asList(
-                    IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
-                    IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
-            try
+            withPopulator( indexProvider.getPopulator( 17, descriptor, indexSamplingConfig ), p ->
             {
-                NodePropertyAccessor propertyAccessor =
-                        new NodePropertyAccessor( nodeId1, descriptor.schema(), value );
-                propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
-                populator.verifyDeferredConstraints( propertyAccessor );
+                p.create();
+                p.add( Arrays.asList(
+                        IndexEntryUpdate.add( nodeId1, descriptor.schema(), value ),
+                        IndexEntryUpdate.add( nodeId2, descriptor.schema(), value ) ) );
+                try
+                {
+                    NodePropertyAccessor propertyAccessor =
+                            new NodePropertyAccessor( nodeId1, descriptor.schema(), value );
+                    propertyAccessor.addNode( nodeId2, descriptor.schema(), value );
+                    p.verifyDeferredConstraints( propertyAccessor );
 
-                fail( "expected exception" );
-            }
-            // then
-            catch ( IndexEntryConflictException conflict )
-            {
-                assertEquals( nodeId1, conflict.getExistingNodeId() );
-                assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
-                assertEquals( nodeId2, conflict.getAddedNodeId() );
-            }
+                    fail( "expected exception" );
+                }
+                // then
+                catch ( IndexEntryConflictException conflict )
+                {
+                    assertEquals( nodeId1, conflict.getExistingNodeId() );
+                    assertEquals( ValueTuple.of( value ), conflict.getPropertyValues() );
+                    assertEquals( nodeId2, conflict.getAddedNodeId() );
+                }
+            } );
         }
     }
 }

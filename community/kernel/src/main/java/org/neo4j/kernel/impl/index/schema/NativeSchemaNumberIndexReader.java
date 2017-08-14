@@ -24,6 +24,7 @@ import java.io.UncheckedIOException;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -39,7 +40,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
+import org.neo4j.values.storable.ValueGroup;
 
 class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends SchemaNumberValue>
         implements IndexReader
@@ -121,22 +122,45 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
             return startSeekForInitializedRange();
         case exact:
             ExactPredicate exactPredicate = (ExactPredicate) predicate;
-            Value[] values = new Value[] {exactPredicate.value()};
-            treeKeyFrom.from( Long.MIN_VALUE, values );
-            treeKeyTo.from( Long.MAX_VALUE, values );
+            treeKeyFrom.from( Long.MIN_VALUE, exactPredicate.value() );
+            treeKeyTo.from( Long.MAX_VALUE, exactPredicate.value() );
             return startSeekForInitializedRange();
         case rangeNumeric:
             // todo: NumberRangePredicate should return NumberValue instead of Number
             NumberRangePredicate rangePredicate = (NumberRangePredicate) predicate;
-            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE,
-                    new Value[] {Values.of( rangePredicate.from() )} );
-            treeKeyFrom.entityIdIsSpecialTieBreaker = true;
-            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE,
-                    new Value[] {Values.of( rangePredicate.to() )} );
-            treeKeyTo.entityIdIsSpecialTieBreaker = true;
+            initFromForRange( rangePredicate );
+            initToForRange( rangePredicate );
             return startSeekForInitializedRange();
         default:
             throw new IllegalArgumentException( "IndexQuery of type " + predicate.type() + " is not supported." );
+        }
+    }
+
+    private void initToForRange( NumberRangePredicate rangePredicate )
+    {
+        Value toValue = rangePredicate.toAsValue();
+        if ( toValue.valueGroup() == ValueGroup.NO_VALUE )
+        {
+            treeKeyTo.initAsHighest();
+        }
+        else
+        {
+            treeKeyTo.from( rangePredicate.toInclusive() ? Long.MAX_VALUE : Long.MIN_VALUE, toValue );
+            treeKeyTo.entityIdIsSpecialTieBreaker = true;
+        }
+    }
+
+    private void initFromForRange( NumberRangePredicate rangePredicate )
+    {
+        Value fromValue = rangePredicate.fromAsValue();
+        if ( fromValue.valueGroup() == ValueGroup.NO_VALUE )
+        {
+            treeKeyFrom.initAsLowest();
+        }
+        else
+        {
+            treeKeyFrom.from( rangePredicate.fromInclusive() ? Long.MIN_VALUE : Long.MAX_VALUE, fromValue );
+            treeKeyFrom.entityIdIsSpecialTieBreaker = true;
         }
     }
 
@@ -148,6 +172,10 @@ class NativeSchemaNumberIndexReader<KEY extends SchemaNumberKey, VALUE extends S
 
     private PrimitiveLongIterator startSeekForInitializedRange()
     {
+        if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
+        {
+            return PrimitiveLongCollections.emptyIterator();
+        }
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
