@@ -48,9 +48,8 @@ public class SchemaIndexExtensionLoader
         AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
         SchemaIndexProvider defaultIndexProvider =
                 extensions.resolveDependency( SchemaIndexProvider.class, indexProviderSelection );
-        SchemaIndexProviderMap indexes = new DefaultSchemaIndexProviderMap( defaultIndexProvider,
+        return new DefaultSchemaIndexProviderMap( defaultIndexProvider,
                 indexProviderSelection.lowerPrioritizedCandidates() );
-        return indexes;
     }
 
     @SuppressWarnings( "unchecked" )

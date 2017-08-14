@@ -418,8 +418,8 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
         // todo do we really need to have this dependency?
         dependencies.satisfyDependency( defaultIndexProvider );
 
-        schemaIndexProviderMap = new DefaultSchemaIndexProviderMap( defaultIndexProvider,
-                indexProviderSelection.lowerPrioritizedCandidates() );
+        schemaIndexProviderMap =
+                new DefaultSchemaIndexProviderMap( defaultIndexProvider, indexProviderSelection.lowerPrioritizedCandidates() );
         dependencies.satisfyDependency( schemaIndexProviderMap );
 
         IndexConfigStore indexConfigStore = new IndexConfigStore( storeDir, fs );

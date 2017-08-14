@@ -41,8 +41,9 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
         extends KernelExtensionFactory<NativeLuceneFusionSchemaIndexProviderFactory.Dependencies>
 {
     public static final String KEY = LuceneSchemaIndexProviderFactory.KEY + "+" + NativeSchemaNumberIndexProvider.KEY;
+    private static final int PRIORITY = LuceneSchemaIndexProvider.PRIORITY + 1;
 
-    public static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "0.1" );
+    private static final SchemaIndexProvider.Descriptor DESCRIPTOR = new SchemaIndexProvider.Descriptor( KEY, "0.1" );
 
     public interface Dependencies extends LuceneSchemaIndexProviderFactory.Dependencies
     {
@@ -78,7 +79,9 @@ public class NativeLuceneFusionSchemaIndexProviderFactory
                 new NativeSchemaNumberIndexProvider( pageCache, storeDir, logProvider, recoveryCleanupWorkCollector, readOnly );
         LuceneSchemaIndexProvider luceneProvider = LuceneSchemaIndexProviderFactory.create( fs, storeDir, logProvider, config,
                 operationalMode );
-        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, 50 );
+        boolean useNativeIndex = config.get( GraphDatabaseSettings.enable_native_schema_index );
+        int priority = useNativeIndex ? PRIORITY : 0;
+        return new FusionSchemaIndexProvider( nativeProvider, luceneProvider, new NativeSelector(), DESCRIPTOR, priority );
     }
 
     private static boolean isReadOnly( Config config, OperationalMode operationalMode )
