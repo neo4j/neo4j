@@ -60,7 +60,9 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.EdgeValue.RelationshipProxyWrappingEdgeValue
+import org.neo4j.values.virtual.NodeValue.NodeProxyWrappingNodeValue
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -322,11 +324,17 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
 
   override def asObject(value: AnyValue): Any = {
-    val converter = new ValueToObjectSerializer(entityAccessor)
-    //TODO this is not very nice, but I need a transaction here and this is what
-    // I ended up with.
-    withAnyOpenQueryContext(_ => value.writeTo(converter))
-    converter.value()
+    value match {
+      case node: NodeProxyWrappingNodeValue => node.nodeProxy
+      case edge: RelationshipProxyWrappingEdgeValue => edge.relationshipProxy
+      case _ =>
+
+        val converter = new ValueToObjectSerializer(entityAccessor)
+        //TODO this is not very nice, but I need a transaction here and this is what
+        // I ended up with.
+        withAnyOpenQueryContext(_ => value.writeTo(converter))
+        converter.value()
+    }
   }
 
   class NodeOperations extends BaseOperations[Node] {
@@ -351,7 +359,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
-          null
+          Values.NO_VALUE
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
@@ -429,7 +437,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else
-          null
+          Values.NO_VALUE
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {

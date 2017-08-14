@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirec
 import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{NodeValue, VirtualValues}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
 
 case class ExpandAllPipe(source: Pipe,
                          fromName: String,
@@ -43,8 +44,7 @@ case class ExpandAllPipe(source: Pipe,
             val relationships: Iterator[Relationship] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
                 val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
-                row
-                  .newWith2(relName, VirtualValues.fromRelationshipProxy(r), toName, VirtualValues.fromNodeProxy(other))
+                row.newWith2(relName, fromRelationshipProxy(r), toName, fromNodeProxy(other))
             }
 
           case Values.NO_VALUE => None

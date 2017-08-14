@@ -111,7 +111,7 @@ public abstract class EdgeValue extends VirtualEdgeValue
         }
     }
 
-    static class RelationshipProxyWrappingEdgeValue extends EdgeValue
+    public static class RelationshipProxyWrappingEdgeValue extends EdgeValue
     {
         private final Relationship relationship;
         private volatile TextValue type;
@@ -123,6 +123,11 @@ public abstract class EdgeValue extends VirtualEdgeValue
         {
             super( relationship.getId() );
             this.relationship = relationship;
+        }
+
+        public Relationship relationshipProxy()
+        {
+            return relationship;
         }
 
         @Override

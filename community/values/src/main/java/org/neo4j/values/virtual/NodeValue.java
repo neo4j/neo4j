@@ -88,7 +88,7 @@ public abstract class NodeValue extends VirtualNodeValue
         }
     }
 
-    static class NodeProxyWrappingNodeValue extends NodeValue
+    public static class NodeProxyWrappingNodeValue extends NodeValue
     {
         private final Node node;
         private volatile TextArray labels;
@@ -98,6 +98,11 @@ public abstract class NodeValue extends VirtualNodeValue
         {
             super( node.getId() );
             this.node = node;
+        }
+
+        public Node nodeProxy()
+        {
+            return node;
         }
 
         @Override

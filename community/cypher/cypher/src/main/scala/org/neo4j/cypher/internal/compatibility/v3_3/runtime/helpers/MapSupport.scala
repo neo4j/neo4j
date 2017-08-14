@@ -38,7 +38,14 @@ trait MapSupport {
   def castToMap: PartialFunction[AnyValue, MapValue] = {
     case x: MapValue => x
     case x: NodeValue  => x.properties()
-    case x: EdgeValue  => x.properties()
+    case x: EdgeValue  =>
+      try {
+        x.properties()
+      } catch {
+        case e: Throwable =>
+          e.printStackTrace()
+          ???
+      }
   }
 }
 
