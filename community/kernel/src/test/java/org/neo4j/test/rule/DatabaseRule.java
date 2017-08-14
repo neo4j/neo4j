@@ -74,7 +74,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
 
     /**
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
-     * or {@link #ensureStarted()} call.
+     * or {@link #ensureStarted(String...)} call.
      */
     public DatabaseRule startLazily()
     {
