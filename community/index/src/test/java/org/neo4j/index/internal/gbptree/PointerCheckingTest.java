@@ -43,7 +43,7 @@ public class PointerCheckingTest
         // WHEN
         try
         {
-            PointerChecking.checkPointer( TreeNode.NO_NODE_FLAG, false );
+            PointerChecking.checkPointer( TreeNodeV1.NO_NODE_FLAG, false );
             fail( "Should have failed ");
         }
         catch ( TreeInconsistencyException e )
@@ -121,7 +121,7 @@ public class PointerCheckingTest
     public void checkSiblingShouldPassOnReadSuccessForNoNodePointer() throws Exception
     {
         // GIVEN
-        write( cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration );
+        write( cursor, TreeNodeV1.NO_NODE_FLAG, firstGeneration, secondGeneration );
         cursor.rewind();
 
         // WHEN

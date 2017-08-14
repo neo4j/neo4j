@@ -161,8 +161,8 @@ class CrashGenerationCleaner
         int keyCount;
         do
         {
-            isTreeNode = TreeNode.nodeType( cursor ) == TreeNode.NODE_TYPE_TREE_NODE;
-            keyCount = TreeNode.keyCount( cursor );
+            isTreeNode = treeNode.nodeType( cursor ) == TreeNodeV1.NODE_TYPE_TREE_NODE;
+            keyCount = treeNode.keyCount( cursor );
         }
         while ( cursor.shouldRetry() );
         PageCursorUtil.checkOutOfBounds( cursor );
@@ -176,11 +176,11 @@ class CrashGenerationCleaner
         do
         {
             hasCrashed =
-                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR ) ||
-                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING ) ||
-                    hasCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING );
+                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_SUCCESSOR ) ||
+                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_LEFTSIBLING ) ||
+                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_RIGHTSIBLING );
 
-            if ( !hasCrashed && TreeNode.isInternal( cursor ) )
+            if ( !hasCrashed && treeNode.isInternal( cursor ) )
             {
                 for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount && !hasCrashed; i++ )
                 {
@@ -209,13 +209,13 @@ class CrashGenerationCleaner
 
     private void cleanTreeNode( TreeNode<?,?> treeNode, PageCursor cursor, AtomicInteger cleanedPointers )
     {
-        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_SUCCESSOR, cleanedPointers );
-        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_LEFTSIBLING, cleanedPointers );
-        cleanCrashedGSPP( cursor, TreeNode.BYTE_POS_RIGHTSIBLING, cleanedPointers );
+        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_SUCCESSOR, cleanedPointers );
+        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_LEFTSIBLING, cleanedPointers );
+        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_RIGHTSIBLING, cleanedPointers );
 
-        if ( TreeNode.isInternal( cursor ) )
+        if ( treeNode.isInternal( cursor ) )
         {
-            int keyCount = TreeNode.keyCount( cursor );
+            int keyCount = treeNode.keyCount( cursor );
             for ( int i = 0; i <= keyCount && i <= internalMaxKeyCount; i++ )
             {
                 cleanCrashedGSPP( cursor, treeNode.childOffset( i ), cleanedPointers );

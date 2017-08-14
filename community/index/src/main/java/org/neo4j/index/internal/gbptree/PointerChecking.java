@@ -41,7 +41,7 @@ class PointerChecking
      *
      * @param result result from {@link GenerationSafePointerPair#FLAG_READ} or
      * {@link GenerationSafePointerPair#write(PageCursor, long, long, long)}.
-     * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
+     * @param allowNoNode If {@link TreeNodeV1#NO_NODE_FLAG} is allowed as pointer value.
      */
     static void checkPointer( long result, boolean allowNoNode )
     {
@@ -64,9 +64,9 @@ class PointerChecking
      * @param stableGeneration Current stable generation of tree.
      * @param unstableGeneration Current unstable generation of tree.
      */
-    static boolean assertNoSuccessor( PageCursor cursor, long stableGeneration, long unstableGeneration )
+    static boolean assertNoSuccessor( TreeNode<?,?> treeNode, PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        long successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
+        long successor = treeNode.successor( cursor, stableGeneration, unstableGeneration );
         if ( TreeNode.isNode( successor ) )
         {
             throw new TreeInconsistencyException( WRITER_TRAVERSE_OLD_STATE_MESSAGE );

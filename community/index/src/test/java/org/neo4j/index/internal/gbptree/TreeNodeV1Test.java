@@ -38,7 +38,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
-public class TreeNodeTest
+public class TreeNodeV1Test
 {
     private static final int STABLE_GENERATION = 1;
     private static final int CRASH_GENERATION = 2;
@@ -48,7 +48,7 @@ public class TreeNodeTest
     private static final int PAGE_SIZE = 512;
     private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNode<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV1<>( PAGE_SIZE, layout );
 
     @Rule
     public final RandomRule random = new RandomRule();
@@ -63,14 +63,14 @@ public class TreeNodeTest
     public void shouldInitializeLeaf() throws Exception
     {
         // WHEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType( cursor ) );
-        assertTrue( TreeNode.isLeaf( cursor ) );
-        assertFalse( TreeNode.isInternal( cursor ) );
-        assertEquals( UNSTABLE_GENERATION, TreeNode.generation( cursor ) );
-        assertEquals( 0, TreeNode.keyCount( cursor ) );
+        assertEquals( node.NODE_TYPE_TREE_NODE, node.nodeType( cursor ) );
+        assertTrue( node.isLeaf( cursor ) );
+        assertFalse( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.generation( cursor ) );
+        assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -80,14 +80,14 @@ public class TreeNodeTest
     public void shouldInitializeInternal() throws Exception
     {
         // WHEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
-        assertEquals( TreeNode.NODE_TYPE_TREE_NODE, TreeNode.nodeType( cursor ) );
-        assertFalse( TreeNode.isLeaf( cursor ) );
-        assertTrue( TreeNode.isInternal( cursor ) );
-        assertEquals( UNSTABLE_GENERATION, TreeNode.generation( cursor ) );
-        assertEquals( 0, TreeNode.keyCount( cursor ) );
+        assertEquals( node.NODE_TYPE_TREE_NODE, node.nodeType( cursor ) );
+        assertFalse( node.isLeaf( cursor ) );
+        assertTrue( node.isInternal( cursor ) );
+        assertEquals( UNSTABLE_GENERATION, node.generation( cursor ) );
+        assertEquals( 0, node.keyCount( cursor ) );
         assertEquals( NO_NODE_FLAG, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, rightSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
         assertEquals( NO_NODE_FLAG, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -97,13 +97,13 @@ public class TreeNodeTest
     public void shouldWriteAndReadMaxGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        TreeNode.setGeneration( cursor, GenerationSafePointer.MAX_GENERATION );
+        node.setGeneration( cursor, GenerationSafePointer.MAX_GENERATION );
 
         // THEN
-        long generation = TreeNode.generation( cursor );
+        long generation = node.generation( cursor );
         assertEquals( GenerationSafePointer.MAX_GENERATION, generation );
     }
 
@@ -111,12 +111,12 @@ public class TreeNodeTest
     public void shouldThrowIfWriteTooLargeGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         try
         {
-            TreeNode.setGeneration( cursor, GenerationSafePointer.MAX_GENERATION + 1 );
+            node.setGeneration( cursor, GenerationSafePointer.MAX_GENERATION + 1 );
             fail( "Expected throw" );
         }
         catch ( IllegalArgumentException e )
@@ -129,12 +129,12 @@ public class TreeNodeTest
     public void shouldThrowIfWriteTooSmallGeneration() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         try
         {
-            TreeNode.setGeneration( cursor, GenerationSafePointer.MIN_GENERATION - 1 );
+            node.setGeneration( cursor, GenerationSafePointer.MIN_GENERATION - 1 );
             fail( "Expected throw" );
         }
         catch ( IllegalArgumentException e )
@@ -166,7 +166,7 @@ public class TreeNodeTest
     public void shouldSetAndGetKeyInLeaf() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         shouldSetAndGetKey();
@@ -176,7 +176,7 @@ public class TreeNodeTest
     public void shouldSetAndGetKeyInInternal() throws Exception
     {
         // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         shouldSetAndGetKey();
@@ -208,7 +208,7 @@ public class TreeNodeTest
     public void shouldRemoveKeyInLeaf() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         shouldRemoveKey();
@@ -218,7 +218,7 @@ public class TreeNodeTest
     public void shouldRemoveKeyInInternal() throws Exception
     {
         // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         shouldRemoveKey();
@@ -228,7 +228,7 @@ public class TreeNodeTest
     public void shouldSetAndGetValue() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newKey();
 
         // WHEN
@@ -249,7 +249,7 @@ public class TreeNodeTest
     public void shouldRemoveValue() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newKey();
         long firstValue = 123456789;
         value.setValue( firstValue );
@@ -273,7 +273,7 @@ public class TreeNodeTest
     public void shouldOverwriteValue() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newValue();
         value.setValue( 1 );
         node.insertValueAt( cursor, value, 0, 0 );
@@ -291,7 +291,7 @@ public class TreeNodeTest
     public void shouldSetAndGetChild() throws Exception
     {
         // GIVEN
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
         long firstChild = 123456789;
@@ -310,7 +310,7 @@ public class TreeNodeTest
     {
         // GIVEN
         long child = GenerationSafePointer.MIN_POINTER;
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         node.insertChildAt( cursor, child, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
@@ -325,26 +325,26 @@ public class TreeNodeTest
     public void shouldSetAndGetKeyCount() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
-        assertEquals( 0, TreeNode.keyCount( cursor ) );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        assertEquals( 0, node.keyCount( cursor ) );
 
         // WHEN
         int keyCount = 5;
-        TreeNode.setKeyCount( cursor, keyCount );
+        node.setKeyCount( cursor, keyCount );
 
         // THEN
-        assertEquals( keyCount, TreeNode.keyCount( cursor ) );
+        assertEquals( keyCount, node.keyCount( cursor ) );
     }
 
     @Test
     public void shouldSetAndGetSiblings() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        TreeNode.setLeftSibling( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
-        TreeNode.setRightSibling( cursor, 456, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setLeftSibling( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setRightSibling( cursor, 456, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( 123, leftSibling( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -355,10 +355,10 @@ public class TreeNodeTest
     public void shouldSetAndGetSuccessor() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // WHEN
-        TreeNode.setSuccessor( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setSuccessor( cursor, 123, STABLE_GENERATION, UNSTABLE_GENERATION );
 
         // THEN
         assertEquals( 123, successor( cursor, STABLE_GENERATION, UNSTABLE_GENERATION ) );
@@ -368,7 +368,7 @@ public class TreeNodeTest
     public void shouldReadAndInsertKeys() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong key = layout.newKey();
         key.setValue( 1 );
         node.insertKeyAt( cursor, key, 0, 0 );
@@ -389,7 +389,7 @@ public class TreeNodeTest
     public void shouldReadAndInsertValues() throws Exception
     {
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         MutableLong value = layout.newKey();
         value.setValue( 1 );
         node.insertValueAt( cursor, value, 0, 0 );
@@ -413,7 +413,7 @@ public class TreeNodeTest
         long firstChild = GenerationSafePointer.MIN_POINTER;
         long secondChild = firstChild + 1;
         long thirdChild = secondChild + 1;
-        TreeNode.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeInternal( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         node.insertChildAt( cursor, firstChild, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION );
         node.insertChildAt( cursor, thirdChild, 1, 1, STABLE_GENERATION, UNSTABLE_GENERATION );
 
@@ -432,7 +432,7 @@ public class TreeNodeTest
         // This test doesn't care about sorting, that's an aspect that lies outside of TreeNode, really
 
         // GIVEN
-        TreeNode.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.initializeLeaf( cursor, STABLE_GENERATION, UNSTABLE_GENERATION );
         int maxKeyCount = node.leafMaxKeyCount();
         // add +1 to these to simplify some array logic in the test itself
         long[] expectedKeys = new long[maxKeyCount + 1];
@@ -463,7 +463,7 @@ public class TreeNodeTest
                     node.insertValueAt( cursor, value, position, expectedKeyCount );
                     insert( expectedValues, expectedKeyCount, value.longValue(), position );
 
-                    TreeNode.setKeyCount( cursor, ++expectedKeyCount );
+                    node.setKeyCount( cursor, ++expectedKeyCount );
                 }
             }
             else
@@ -481,13 +481,13 @@ public class TreeNodeTest
                     long expectedValue = remove( expectedValues, expectedKeyCount, position );
                     assertEquals( expectedValue, value.longValue() );
 
-                    TreeNode.setKeyCount( cursor, --expectedKeyCount );
+                    node.setKeyCount( cursor, --expectedKeyCount );
                 }
             }
         }
 
         // THEN
-        assertEquals( expectedKeyCount, TreeNode.keyCount( cursor ) );
+        assertEquals( expectedKeyCount, node.keyCount( cursor ) );
         for ( int i = 0; i < expectedKeyCount; i++ )
         {
             long expectedKey = expectedKeys[i];
@@ -506,7 +506,7 @@ public class TreeNodeTest
         // WHEN
         try
         {
-            new TreeNode<>( TreeNode.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
+            new TreeNodeV1<>( TreeNodeV1.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )
@@ -521,10 +521,10 @@ public class TreeNodeTest
         // GIVEN
         long generation = UNSTABLE_GENERATION;
         long pointer = 12;
-        TreeNode.setRightSibling( cursor, pointer, STABLE_GENERATION, generation );
+        node.setRightSibling( cursor, pointer, STABLE_GENERATION, generation );
 
         // WHEN
-        long readResult = TreeNode.rightSibling( cursor, STABLE_GENERATION, generation );
+        long readResult = node.rightSibling( cursor, STABLE_GENERATION, generation );
         long readGeneration = node.pointerGeneration( cursor, readResult );
 
         // THEN
@@ -540,11 +540,11 @@ public class TreeNodeTest
         long generation = HIGH_GENERATION;
         long oldPointer = 12;
         long pointer = 123;
-        TreeNode.setRightSibling( cursor, oldPointer, STABLE_GENERATION, UNSTABLE_GENERATION );
-        TreeNode.setRightSibling( cursor, pointer, UNSTABLE_GENERATION, generation );
+        node.setRightSibling( cursor, oldPointer, STABLE_GENERATION, UNSTABLE_GENERATION );
+        node.setRightSibling( cursor, pointer, UNSTABLE_GENERATION, generation );
 
         // WHEN
-        long readResult = TreeNode.rightSibling( cursor, UNSTABLE_GENERATION, generation );
+        long readResult = node.rightSibling( cursor, UNSTABLE_GENERATION, generation );
         long readGeneration = node.pointerGeneration( cursor, readResult );
 
         // THEN
@@ -722,16 +722,16 @@ public class TreeNodeTest
 
     private long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        return pointer( TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) );
+        return pointer( node.rightSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
     private long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        return pointer( TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) );
+        return pointer( node.leftSibling( cursor, stableGeneration, unstableGeneration ) );
     }
 
     private long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
-        return pointer( TreeNode.successor( cursor, stableGeneration, unstableGeneration ) );
+        return pointer( node.successor( cursor, stableGeneration, unstableGeneration ) );
     }
 }

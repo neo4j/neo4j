@@ -202,7 +202,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Max of leaf/internal key count that a tree node can have at most. This is used to sanity check
-     * key counts read from {@link TreeNode#keyCount(PageCursor)}.
+     * key counts read from {@link TreeNodeV1#keyCount(PageCursor)}.
      */
     private final int maxKeyCount;
 
@@ -243,20 +243,20 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private boolean concurrentWriteHappened;
 
     /**
-     * {@link TreeNode#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
+     * {@link TreeNodeV1#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
      */
     private long currentNodeGeneration;
 
     /**
      * Generation of the pointer which was last followed, either a
-     * {@link TreeNode#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
-     * {@link TreeNode#successor(PageCursor, long, long) successor} or
-     * {@link TreeNode#childAt(PageCursor, int, long, long) child}.
+     * {@link TreeNodeV1#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
+     * {@link TreeNodeV1#successor(PageCursor, long, long) successor} or
+     * {@link TreeNodeV1#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
 
     /**
-     * Cached {@link TreeNode#generation(PageCursor) generation} of the current leaf node, read every time a pointer
+     * Cached {@link TreeNodeV1#generation(PageCursor) generation} of the current leaf node, read every time a pointer
      * is followed to a new node. Used to ensure that a node hasn't been reused between two calls to {@link #next()}.
      */
     private long expectedCurrentNodeGeneration;
@@ -276,7 +276,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     /**
      * Set within should retry loop.
      * <p>
-     * Is node a {@link TreeNode#NODE_TYPE_TREE_NODE} or something else?
+     * Is node a {@link TreeNodeV1#NODE_TYPE_TREE_NODE} or something else?
      */
 
     private byte nodeType;
@@ -703,7 +703,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         else if ( !allowNoNode || TreeNode.isNode( pointerId ) )
         {
-            TreeNode.goTo( cursor, type, pointerId );
+            bTreeNode.goTo( cursor, type, pointerId );
             lastFollowedPointerGeneration = pointerGeneration;
             concurrentWriteHappened = true;
             return true;
@@ -753,8 +753,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readPrevSibling()
     {
         return seekForward ?
-               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
-               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
+               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -763,8 +763,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readNextSibling()
     {
         return seekForward ?
-               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
-               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+               bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
+               bTreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
     }
 
     /**
@@ -803,16 +803,16 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             return false;
         }
 
-        currentNodeGeneration = TreeNode.generation( cursor );
+        currentNodeGeneration = bTreeNode.generation( cursor );
 
-        successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
+        successor = bTreeNode.successor( cursor, stableGeneration, unstableGeneration );
         if ( GenerationSafePointerPair.isSuccess( successor ) )
         {
             successorGeneration = bTreeNode.pointerGeneration( cursor, successor );
         }
-        isInternal = TreeNode.isInternal( cursor );
+        isInternal = bTreeNode.isInternal( cursor );
         // Find the left-most key within from-range
-        keyCount = TreeNode.keyCount( cursor );
+        keyCount = bTreeNode.keyCount( cursor );
 
         return keyCountIsSane( keyCount );
     }
@@ -864,7 +864,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 // TODO: Check if rightSibling is within expected range before calling next.
                 // TODO: Possibly by getting highest expected from IdProvider
-                TreeNode.goTo( cursor, "sibling", pointerId );
+                bTreeNode.goTo( cursor, "sibling", pointerId );
                 lastFollowedPointerGeneration = pointerGeneration;
                 if ( first )
                 {
@@ -886,7 +886,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 // Need to scout next sibling because we are seeking backwards
                 if ( scoutNextSibling() )
                 {
-                    TreeNode.goTo( cursor, "sibling", pointerId );
+                    bTreeNode.goTo( cursor, "sibling", pointerId );
                     verifyExpectedFirstAfterGoToNext = true;
                     lastFollowedPointerGeneration = pointerGeneration;
                 }
@@ -925,7 +925,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             nodeType = TreeNode.nodeType( scout );
             if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
             {
-                keyCount = TreeNode.keyCount( scout );
+                keyCount = bTreeNode.keyCount( scout );
                 if ( keyCountIsSane( keyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
@@ -980,7 +980,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * {@link TreeNode#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * {@link TreeNodeV1#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
      * which is used as data fed into another read. Because of that extra assertions are made around
      * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
      * (calling this method, which may throw exception).

@@ -48,10 +48,10 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class CrashGenerationCleanerTest
 {
-    private FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private PageCacheRule pageCacheRule = new PageCacheRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private RandomRule randomRule = new RandomRule();
+    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
+    private final RandomRule randomRule = new RandomRule();
     @Rule
     public RuleChain ruleChain = RuleChain
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
@@ -334,7 +334,7 @@ public class CrashGenerationCleanerTest
                     void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
+                        corruptableTreeNode.initializeLeaf( cursor, stableGeneration, unstableGeneration );
                     }
                 },
         INTERNAL
@@ -343,7 +343,7 @@ public class CrashGenerationCleanerTest
                     void write( PageCursor cursor, CorruptableTreeNode corruptableTreeNode, int stableGeneration,
                             int unstableGeneration )
                     {
-                        TreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
+                        corruptableTreeNode.initializeInternal( cursor, stableGeneration, unstableGeneration );
                         int maxKeyCount = corruptableTreeNode.internalMaxKeyCount();
                         long base = IdSpace.MIN_TREE_NODE_ID;
                         for ( int i = 0; i <= maxKeyCount; i++ )
@@ -351,7 +351,7 @@ public class CrashGenerationCleanerTest
                             long child = base + i;
                             corruptableTreeNode.setChildAt( cursor, child, i, stableGeneration, unstableGeneration );
                         }
-                        TreeNode.setKeyCount( cursor, maxKeyCount );
+                        corruptableTreeNode.setKeyCount( cursor, maxKeyCount );
                     }
                 };
 
@@ -392,7 +392,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_LEFTSIBLING;
+                        return TreeNodeV1.BYTE_POS_LEFTSIBLING;
                     }
                 },
         RIGHT_SIBLING
@@ -400,7 +400,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_RIGHTSIBLING;
+                        return TreeNodeV1.BYTE_POS_RIGHTSIBLING;
                     }
                 },
         SUCCESSOR
@@ -408,7 +408,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNode.BYTE_POS_SUCCESSOR;
+                        return TreeNodeV1.BYTE_POS_SUCCESSOR;
                     }
                 }
     }
@@ -431,7 +431,7 @@ public class CrashGenerationCleanerTest
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNode<MutableLong,MutableLong>
+    class CorruptableTreeNode extends TreeNodeV1<MutableLong,MutableLong>
     {
         CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {
