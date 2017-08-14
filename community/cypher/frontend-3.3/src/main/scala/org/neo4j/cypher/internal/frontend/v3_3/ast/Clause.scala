@@ -64,19 +64,17 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
 
 sealed trait GraphSelectorClause extends Clause with SemanticChecking {
 
-  def specified: GraphSpecifier
-
-  def graph = specified.graph
+  def graph: GraphDef
 
   override def semanticCheck: SemanticCheck =
-    specified.semanticCheck chain ClauseError(name, position)
+    graph.semanticCheck chain ClauseError(name, position)
 }
 
-final case class FromGraph(specified: GraphSpecifier)(val position: InputPosition) extends GraphSelectorClause {
+final case class FromGraph(graph: GraphDef)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "FROM"
 }
 
-final case class IntoGraph(specified: GraphSpecifier)(val position: InputPosition) extends GraphSelectorClause {
+final case class IntoGraph(graph: GraphDef)(val position: InputPosition) extends GraphSelectorClause {
   override def name = "INTO"
 }
 

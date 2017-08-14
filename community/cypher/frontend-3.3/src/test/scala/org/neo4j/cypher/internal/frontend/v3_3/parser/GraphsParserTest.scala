@@ -6,15 +6,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, as
 import scala.language.implicitConversions
 
 class GraphsParserTest
-  extends ParserAstTest[ast.GraphSpecifier]
+  extends ParserAstTest[ast.GraphDef]
   with Graphs
   with Expressions {
 
-  implicit val parser = GraphSpecifier
-
-  test("-") {
-    yields(ast.NoGraph())
-  }
+  implicit val parser = GraphDef
 
   test("foo AS bar") {
     yields(ast.AliasGraph(ast.NamedGraph("foo")(pos), Some("bar")))

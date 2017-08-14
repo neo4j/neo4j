@@ -7,12 +7,6 @@ trait Graphs
   extends Parser
   with Expressions {
 
-  def GraphSpecifier: Rule1[ast.GraphSpecifier] = rule("-|GraphDef") {
-    NoGraph | GraphDef
-  }
-
-  def NoGraph: Rule1[ast.NoGraph] = "-" ~~ push(ast.NoGraph()(_))
-
   def GraphDef: Rule1[ast.GraphDef] = rule("GraphDef") {
    NewGraph | CopyGraph | LoadGraph | AliasGraph
   }

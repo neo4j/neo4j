@@ -2,16 +2,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult, SemanticCheckable, SemanticChecking}
 
-sealed trait GraphSpecifier extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
-  def graph: Option[GraphDef]
-}
-
-final case class NoGraph()(val position: InputPosition) extends GraphSpecifier {
-  override def semanticCheck: SemanticCheck = SemanticCheckResult.success
-  override def graph = None
-}
-
-sealed trait GraphDef extends GraphSpecifier {
+sealed trait GraphDef extends ASTNode with ASTParticle with SemanticCheckable with SemanticChecking {
 
   self =>
 
@@ -23,8 +14,6 @@ sealed trait GraphDef extends GraphSpecifier {
   override def semanticCheck: SemanticCheck = {
     inner chain alias.map(_.declareGraph: SemanticCheck).getOrElse(SemanticCheckResult.success)
   }
-
-  final override def graph = Some(self)
 
   protected def inner: SemanticCheck
 }
