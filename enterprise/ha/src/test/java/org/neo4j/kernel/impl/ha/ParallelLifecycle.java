@@ -87,7 +87,7 @@ class ParallelLifecycle extends LifecycleAdapter
         List<Future<?>> futures = new ArrayList<>();
         for ( Lifecycle lifecycle : lifecycles )
         {
-            service.submit( () ->
+            futures.add( service.submit( () ->
             {
                 try
                 {
@@ -97,7 +97,7 @@ class ParallelLifecycle extends LifecycleAdapter
                 {
                     throw launderedException( e );
                 }
-            } );
+            } ) );
         }
 
         service.shutdown();
