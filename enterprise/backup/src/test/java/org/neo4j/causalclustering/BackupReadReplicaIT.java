@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.backup.causalclustering;
+package org.neo4j.causalclustering;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -29,12 +29,12 @@ import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.readreplica.ReadReplicaGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.test.DbRepresentation;
@@ -42,9 +42,9 @@ import org.neo4j.test.causalclustering.ClusterRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.neo4j.backup.causalclustering.BackupCoreIT.backupArguments;
-import static org.neo4j.backup.causalclustering.BackupCoreIT.createSomeData;
-import static org.neo4j.backup.causalclustering.BackupCoreIT.getConfig;
+import static org.neo4j.causalclustering.BackupCoreIT.backupArguments;
+import static org.neo4j.causalclustering.BackupCoreIT.createSomeData;
+import static org.neo4j.causalclustering.BackupCoreIT.getConfig;
 import static org.neo4j.function.Predicates.awaitEx;
 import static org.neo4j.util.JvmRunner.runBackupToolFromOtherJvmToGetExitCode;
 

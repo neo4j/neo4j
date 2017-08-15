@@ -153,5 +153,4 @@ public class ConfiguringPageCacheFactoryTest
             assertThat( cache.pageSize(), is( cachePageSizeHint ) );
         }
     }
-
 }

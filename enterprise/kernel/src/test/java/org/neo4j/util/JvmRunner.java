@@ -19,7 +19,7 @@
  */
 package org.neo4j.util;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,10 +33,10 @@ import org.neo4j.test.rule.TestDirectory;
 
 public class JvmRunner
 {
-    @ClassRule
-    public static final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    public static int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
+    protected int runBackupToolFromOtherJvmToGetExitCode( String... args ) throws Exception
     {
         return runBackupToolFromOtherJvmToGetExitCode( testDirectory.absolutePath(), args );
     }
@@ -48,7 +48,10 @@ public class JvmRunner
         allArgs.add( "backup" );
         allArgs.addAll( Arrays.asList( args ) );
 
-        Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ), new String[]{"NEO4J_HOME=" + neo4jHome.getAbsolutePath()} );
-        return new ProcessStreamHandler( process, true ).waitForResult();
+        ProcessBuilder processBuilder = new ProcessBuilder().command( allArgs.toArray( new String[allArgs.size()]));
+        processBuilder.environment().put( "NEO4J_HOME", neo4jHome.getAbsolutePath() );
+        processBuilder.environment().put( "NEO4J_DEBUG", "anything_works" );
+        Process process = processBuilder.start();
+        return new ProcessStreamHandler( process, false ).waitForResult();
     }
 }

@@ -29,9 +29,9 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
-import org.neo4j.logging.Log;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings;
 import org.neo4j.kernel.impl.enterprise.configuration.EnterpriseEditionSettings.Mode;
+import org.neo4j.logging.Log;
 
 import static org.neo4j.cluster.ClusterSettings.initial_hosts;
 import static org.neo4j.cluster.ClusterSettings.server_id;

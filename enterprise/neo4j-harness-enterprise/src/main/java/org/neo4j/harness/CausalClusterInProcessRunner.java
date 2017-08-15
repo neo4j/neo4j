@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.internal.EnterpriseInProcessServerBuilder;
 import org.neo4j.kernel.configuration.BoltConnector;
