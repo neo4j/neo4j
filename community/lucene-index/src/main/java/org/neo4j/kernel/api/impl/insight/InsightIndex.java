@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
-public class InsightIndex
+public class InsightIndex implements AutoCloseable
 {
     private final InsightLuceneIndex nodeIndex;
 
@@ -59,5 +59,10 @@ public class InsightIndex
     public InsightIndexReader getReader() throws IOException
     {
         return nodeIndex.getIndexReader();
+    }
+
+    @Override
+    public void close() throws Exception {
+        nodeIndex.close();
     }
 }
