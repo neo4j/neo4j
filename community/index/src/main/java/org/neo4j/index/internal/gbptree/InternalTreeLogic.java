@@ -1290,6 +1290,8 @@ class InternalTreeLogic<KEY,VALUE>
         long rightSibling = bTreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
         PointerChecking.checkPointer( rightSibling, true );
 
+        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
+
         if ( TreeNode.isNode( leftSibling ) )
         {
             // Go to left sibling and read stuff
@@ -1297,6 +1299,7 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = mainContent.keyCount( leftSiblingCursor );
+                consolidateDeltas( leftSiblingCursor, leftSiblingKeyCount, deltaContent.keyCount( leftSiblingCursor ) );
 
                 if ( keyCount + leftSiblingKeyCount >= leafMaxKeyCount )
                 {
@@ -1320,6 +1323,7 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = mainContent.keyCount( rightSiblingCursor );
+                consolidateDeltas( rightSiblingCursor, rightSiblingKeyCount, deltaContent.keyCount( rightSiblingCursor ) );
 
                 if ( keyCount + rightSiblingKeyCount <= leafMaxKeyCount )
                 {
@@ -1358,8 +1362,6 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int rightSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
-
         merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration );
 
         // Propagate change
@@ -1376,8 +1378,6 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
-
         // Move stuff and update key count
         merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration );
 
@@ -1414,8 +1414,6 @@ class InternalTreeLogic<KEY,VALUE>
     private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount )
     {
-        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
-
         int totalKeyCount = keyCount + leftSiblingKeyCount;
         int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
         int numberOfKeysToMove = leftSiblingKeyCount - keyCountInLeftSiblingAfterRebalance;
