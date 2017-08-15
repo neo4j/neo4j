@@ -47,8 +47,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel)
@@ -67,8 +65,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel, "a" -> node2)
@@ -87,8 +83,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel, "a" -> 42)
@@ -108,10 +102,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     val rel1 = newMockedRelationship(12, node1, node2, Some("A"))
     val rel2 = newMockedRelationship(12, node3, node4, Some("B"))
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node3)
-    when(query.relationshipEndNode(rel2)).thenReturn(node4)
 
     val left = newMockedPipe("r",
       row("r" -> rel1),
@@ -131,8 +121,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel, "a" -> node1),
@@ -152,8 +140,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel, "b" -> node2),
@@ -173,8 +159,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel)
@@ -196,8 +180,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // given
 
     val rel = newMockedRelationship(12, node1, node2)
-    when(query.relationshipStartNode(rel)).thenReturn(node1)
-    when(query.relationshipEndNode(rel)).thenReturn(node2)
 
     val left = newMockedPipe("r",
       row("r" -> rel, "a" -> node1),
@@ -221,10 +203,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
 
     val rel1 = newMockedRelationship(12, node1, node2, Some("A"))
     val rel2 = newMockedRelationship(12, node3, node4, Some("B"))
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node3)
-    when(query.relationshipEndNode(rel2)).thenReturn(node4)
 
     val left = newMockedPipe("r",
       row("r" -> rel1),
@@ -250,13 +228,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
 
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
-
     val rels = Seq(rel1, rel2, rel3)
     val left = newMockedPipe("r",
       row("r" -> rels)
@@ -279,13 +250,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel1 = newMockedRelationship(12, node1, node2)
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
-
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
 
     val rels = Seq(rel1, rel2, rel3)
     val left = newMockedPipe("r",
@@ -310,13 +274,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3, Some("A"))
     val rel3 = newMockedRelationship(34, node3, node4, Some("A"))
 
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
-
     val rels = Seq(rel1, rel2, rel3)
     val left = newMockedPipe("r",
       row("r" -> rels)
@@ -340,13 +297,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3, Some("B"))
     val rel3 = newMockedRelationship(34, node3, node4, Some("A"))
 
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
-
     val rels = Seq(rel1, rel2, rel3)
     val left = newMockedPipe("r",
       row("r" -> rels)
@@ -367,13 +317,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel1 = newMockedRelationship(12, node1, node2)
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
-
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
 
     val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)
@@ -401,13 +344,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
 
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
-
     val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)
 
@@ -430,13 +366,6 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel1 = newMockedRelationship(12, node1, node2)
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
-
-    when(query.relationshipStartNode(rel1)).thenReturn(node1)
-    when(query.relationshipEndNode(rel1)).thenReturn(node2)
-    when(query.relationshipStartNode(rel2)).thenReturn(node2)
-    when(query.relationshipEndNode(rel2)).thenReturn(node3)
-    when(query.relationshipStartNode(rel3)).thenReturn(node3)
-    when(query.relationshipEndNode(rel3)).thenReturn(node4)
 
     val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)

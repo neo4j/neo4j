@@ -589,10 +589,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
   }
 
-  override def relationshipStartNode(rel: Relationship) = rel.getStartNode
-
-  override def relationshipEndNode(rel: Relationship) = rel.getEndNode
-
   private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
 
   // Legacy dependency between kernel and compiler

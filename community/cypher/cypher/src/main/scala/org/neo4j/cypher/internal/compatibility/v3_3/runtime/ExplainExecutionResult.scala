@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import java.io.PrintWriter
 import java.util
+import java.util.Collections
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
@@ -37,6 +38,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
   def columnAs[T](column: String) = Iterator.empty
+  override def javaColumns: util.List[String] = Collections.emptyList()
 
   def queryStatistics() = QueryStatistics()
 

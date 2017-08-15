@@ -148,10 +148,6 @@ trait QueryContext extends TokenContext {
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
-  def relationshipStartNode(rel: Relationship): Node
-
-  def relationshipEndNode(rel: Relationship): Node
-
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 
   def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int

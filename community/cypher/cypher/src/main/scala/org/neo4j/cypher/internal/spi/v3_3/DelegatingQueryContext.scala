@@ -168,10 +168,6 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
-  override def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
-
-  override def relationshipEndNode(rel: Relationship) = inner.relationshipEndNode(rel)
-
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int =

@@ -22,20 +22,17 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport.castOrFail
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.graphdb.Relationship
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipEndPoints(relExpression: Expression, start: Boolean) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = relExpression(ctx) match {
     case v if v == Values.NO_VALUE => Values.NO_VALUE
     case value =>
-      val rel = castOrFail[Relationship](value)
-
-      if (start)
-        AnyValues.asNodeValue(state.query.relationshipStartNode(rel))
-      else
-        AnyValues.asNodeValue(state.query.relationshipEndNode(rel))
+      val rel = castOrFail[EdgeValue](value)
+      if (start) rel.startNode()
+      else rel.endNode()
   }
 
   def arguments = Seq(relExpression)
