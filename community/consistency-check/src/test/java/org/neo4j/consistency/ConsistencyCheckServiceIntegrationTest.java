@@ -262,7 +262,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
-                Config.embeddedDefaults( settings( enableNativeIndex, Settings.TRUE ) );
+                Config.defaults( settings( enableNativeIndex, Settings.TRUE ) );
         Result result = runFullConsistencyCheck( service, configuration, storeDir );
         assertTrue( result.isSuccessful() );
     }

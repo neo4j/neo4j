@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.configuration.Config.embeddedDefaults;
 
 public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
@@ -41,7 +40,7 @@ public class LuceneSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
     {
         DirectoryFactory.InMemoryDirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
         NullLogProvider logging = NullLogProvider.getInstance();
-        Config config = embeddedDefaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
+        Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.FALSE ) );
         OperationalMode mode = OperationalMode.single;
         return LuceneSchemaIndexProviderFactory.create( fs, graphDbDir, logging, config, mode );
     }

@@ -33,7 +33,6 @@ import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.configuration.Config.embeddedDefaults;
 
 public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProviderCompatibilityTestSuite
 {
@@ -41,7 +40,7 @@ public class FusionSchemaIndexProviderCompatibilitySuiteTest extends IndexProvid
     protected SchemaIndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         NullLogProvider logProvider = NullLogProvider.getInstance();
-        Config config = embeddedDefaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
+        Config config = Config.defaults( stringMap( GraphDatabaseSettings.enable_native_schema_index.name(), Settings.TRUE ) );
         return NativeLuceneFusionSchemaIndexProviderFactory
                 .newInstance( pageCache, graphDbDir, fs, logProvider, config, OperationalMode.single,
                         RecoveryCleanupWorkCollector.IMMEDIATE );
