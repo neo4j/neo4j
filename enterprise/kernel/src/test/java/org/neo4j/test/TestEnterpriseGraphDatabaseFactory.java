@@ -50,7 +50,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
         {
             Config config = Config.builder()
                     .withSettings( params )
-                    .withSetting( "unsupported.dbms.ephemeral", "false" ).build();
+                    .withSetting( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" ).build();
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override

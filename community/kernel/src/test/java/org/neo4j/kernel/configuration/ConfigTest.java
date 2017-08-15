@@ -77,25 +77,25 @@ public class ConfigTest
             }
         };
 
-        public static Setting<String> newer = setting( "newer", STRING, "" ).build();
+        public static Setting<String> newer = setting( "newer", STRING, "" );
     }
 
     public static class MySettingsWithDefaults implements LoadableConfig
     {
-        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" ).build();
+        public static final Setting<String> hello = setting( "hello", STRING, "Hello, World!" );
 
-        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE ).build();
+        public static final Setting<Boolean> boolSetting = setting( "bool_setting", BOOLEAN, Settings.TRUE );
 
         @Internal
         @DocumentedDefaultValue( "<documented default value>" )
-        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE ).build();
+        public static final Setting<Boolean> secretSetting = setting( "secret_setting", BOOLEAN, Settings.TRUE );
 
         @Deprecated
         @ReplacedBy( "hello" )
-        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob" ).build();
+        public static final Setting<String> oldHello = setting( "old_hello", STRING, "Hello, Bob" );
 
         @Deprecated
-        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" ).build();
+        public static final Setting<String> oldSetting = setting( "some_setting", STRING, "Has no replacement" );
     }
 
     private static class HelloHasToBeNeo4jConfigurationValidator implements ConfigurationValidator
@@ -288,8 +288,13 @@ public class ConfigTest
                 .withConfigClasses( Arrays.asList( mySettingsWithDefaults, myMigratingSettings ) ).build();
     }
 
+    @Group( "a.b.c" )
+    private static class GroupedSetting
+    {
+    }
+
     @Test
-    public void identifiersFromPrefix() throws Exception
+    public void identifiersFromGroup() throws Exception
     {
         // Given
         File confFile = testDirectory.file( "test.conf" );
@@ -302,7 +307,7 @@ public class ConfigTest
                 .withSetting( "a.b.c.third.jibberish", "baah" )
                 .withSetting( "a.b.c.forth.jibberish", "baah" ).build();
 
-        Set<String> identifiers = config.identifiersFromPrefix( "a.b.c" );
+        Set<String> identifiers = config.identifiersFromGroup( GroupedSetting.class );
         Set<String> expectedIdentifiers = new HashSet<>( Arrays.asList( "first", "second", "third", "forth" ) );
 
         assertEquals( expectedIdentifiers, identifiers );

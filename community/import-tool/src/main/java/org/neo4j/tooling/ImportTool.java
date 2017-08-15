@@ -216,10 +216,10 @@ public class ImportTool
                         + "Skipped columns will be logged, containing at most number of entities specified by "
                         + BAD_TOLERANCE.key() + ", unless "
                         + "otherwise specified by " + SKIP_BAD_ENTRIES_LOGGING.key() + "option." ),
-        DATABASE_CONFIG( "db-config", null, "<path/to/neo4j.conf>",
+        DATABASE_CONFIG( "db-config", null, "<path/to/" + Config.DEFAULT_CONFIG_FILE_NAME + ">",
                 "(advanced) Option is deprecated and replaced by 'additional-config'. " ),
         ADDITIONAL_CONFIG( "additional-config", null,
-                "<path/to/neo4j.conf>",
+                "<path/to/" + Config.DEFAULT_CONFIG_FILE_NAME + ">",
                 "(advanced) File specifying database-specific configuration. For more information consult "
                         + "manual about available configuration options for a neo4j configuration file. "
                         + "Only configuration affecting store at time of creation will be read. "

@@ -296,7 +296,7 @@ public class OnlineBackupCommand implements AdminCommand
     private Config loadConfig( Optional<Path> additionalConfig ) throws CommandFailed
     {
         return withAdditionalConfig( additionalConfig,
-                Config.fromFile( configDir.resolve( "neo4j.conf" ) ).withHome( homeDir )
+                Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir )
                         .withConnectorsDisabled().build() );
     }
 

@@ -103,7 +103,7 @@ public class GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( @Nonnull Config config )
             {
-                config.augment( "unsupported.dbms.ephemeral", "false" );
+                config.augment( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" );
                 return GraphDatabaseFactory.this.newEmbeddedDatabase( storeDir, config, state.databaseDependencies() );
             }
         };

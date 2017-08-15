@@ -99,7 +99,7 @@ public class DumpCommand implements AdminCommand
 
     private Path toDatabaseDirectory( String databaseName )
     {
-        return Config.fromFile( configDir.resolve( "neo4j.conf" ) )
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
                 .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )

@@ -54,8 +54,8 @@ public class GroupConfigTest
         ConnectorExample( String key )
         {
             group = new GroupSettingSupport( ConnectorExample.class, key );
-            this.enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ).build() );
-            this.name = group.scope( setting( "name", STRING, "Bob Dylan" ).build() );
+            this.enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ) );
+            this.name = group.scope( setting( "name", STRING, "Bob Dylan" ) );
         }
     }
 }

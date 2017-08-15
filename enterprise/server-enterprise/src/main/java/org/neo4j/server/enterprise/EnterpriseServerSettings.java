@@ -27,7 +27,6 @@ import org.neo4j.graphdb.config.Setting;
 
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
-import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -38,15 +37,15 @@ public class EnterpriseServerSettings implements LoadableConfig
     @Description( "Configure the Neo4j Browser to time out logged in users after this idle period. " +
                   "Setting this to 0 indicates no limit." )
     public static final Setting<Duration> browser_credentialTimeout = setting( "browser.credential_timeout", DURATION,
-            "0" ).build();
+            "0" );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the Neo4j Browser to store or not store user credentials." )
     public static final Setting<Boolean> browser_retainConnectionCredentials =
-            setting( "browser.retain_connection_credentials", BOOLEAN, TRUE ).build();
+            setting( "browser.retain_connection_credentials", BOOLEAN, TRUE );
 
     @SuppressWarnings( "unused" ) // accessed from the browser
     @Description( "Configure the policy for outgoing Neo4j Browser connections." )
     public static final Setting<Boolean> browser_allowOutgoingBrowserConnections =
-            setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE ).build();
+            setting( "browser.allow_outgoing_connections", BOOLEAN, TRUE );
 }

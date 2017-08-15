@@ -43,6 +43,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
+import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.query.QueryEngineProvider.noEngine;
 
@@ -86,19 +88,19 @@ public class GraphDatabaseFacadeFactory
     {
         @Internal
         public static final Setting<Boolean> ephemeral =
-                setting( "unsupported.dbms.ephemeral", Settings.BOOLEAN, Settings.FALSE ).build();
+                setting( "unsupported.dbms.ephemeral", BOOLEAN, Settings.FALSE );
 
         @Internal
         public static final Setting<String> lock_manager =
-                setting( "unsupported.dbms.lock_manager", Settings.STRING, "" ).build();
+                setting( "unsupported.dbms.lock_manager", STRING, "" );
 
         @Internal
         public static final Setting<String> tracer =
-                setting( "unsupported.dbms.tracer", Settings.STRING ).build(); // 'null' default.
+                setting( "unsupported.dbms.tracer", STRING, Settings.NO_DEFAULT );
 
         @Internal
         public static final Setting<String> editionName =
-                setting( "unsupported.dbms.edition", Settings.STRING, Edition.unknown.toString() ).build();
+                setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
     }
 
     protected final DatabaseInfo databaseInfo;

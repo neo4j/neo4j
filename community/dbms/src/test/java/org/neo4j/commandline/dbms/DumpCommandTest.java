@@ -19,6 +19,12 @@
  */
 package org.neo4j.commandline.dbms;
 
+import org.apache.commons.lang3.SystemUtils;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -32,12 +38,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Predicate;
 
-import org.apache.commons.lang3.SystemUtils;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
@@ -45,6 +45,7 @@ import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreFileType;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -53,7 +54,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
@@ -66,7 +66,6 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.data_directory;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
 
@@ -107,7 +106,7 @@ public class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -129,7 +128,7 @@ public class DumpCommandTest
         Files.createDirectories( dataDir.resolve( "databases" ) );
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -265,7 +264,7 @@ public class DumpCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/graph.db" );
         putStoreInDirectory( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );

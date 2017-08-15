@@ -62,10 +62,9 @@ public class GraphDatabaseSettingsTest
     public void pageCacheSettingMustAcceptArbitraryUserSpecifiedValue() throws Exception
     {
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
-        String name = setting.name();
-        assertThat( Config.defaults( name, "245760" ).get( setting ),
+        assertThat( Config.defaults( setting, "245760" ).get( setting ),
                 is( ByteUnit.kibiBytes( 240 ) ) );
-        assertThat( Config.defaults( name, "2244g" ).get( setting ),
+        assertThat( Config.defaults( setting, "2244g" ).get( setting ),
                 is( ByteUnit.gibiBytes( 2244 ) ) );
     }
 
@@ -74,9 +73,8 @@ public class GraphDatabaseSettingsTest
     {
         long pageSize = Config.defaults().get( GraphDatabaseSettings.mapped_memory_page_size );
         Setting<Long> setting = GraphDatabaseSettings.pagecache_memory;
-        String name = setting.name();
         // We configure the page cache to have one byte less than two pages worth of memory. This must throw:
-        Config.defaults( name, "" + ( pageSize * 2 - 1 ) ).get( setting );
+        Config.defaults( setting, "" + ( pageSize * 2 - 1 ) ).get( setting );
     }
 
     @Test
@@ -137,7 +135,7 @@ public class GraphDatabaseSettingsTest
     public void shouldBeAbleToDisableBoltConnectorWithJustOneParameter() throws Exception
     {
         // given
-        Config config = Config.defaults( "dbms.connector.bolt.enabled", "false" );
+        Config config = Config.defaults( new BoltConnector( "bolt" ).enabled, "false" );
 
         // then
         assertThat( config.boltConnectors().size(), is( 1 ) );

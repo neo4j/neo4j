@@ -171,7 +171,7 @@ public class StoreUpgradeIntegrationTest
 
             store.prepareDirectory( storeDir );
 
-            File configFile = new File( rootDir, "neo4j.conf" );
+            File configFile = new File( rootDir, Config.DEFAULT_CONFIG_FILE_NAME );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );

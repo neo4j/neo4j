@@ -57,19 +57,19 @@ public class BoltConnectorValidator extends ConnectorValidator
         switch ( subsetting )
         {
         case "enabled":
-            setting = (BaseSetting) setting( settingName, BOOLEAN, "false" ).build();
+            setting = (BaseSetting) setting( settingName, BOOLEAN, "false" );
             setting.setDescription( "Enable this connector." );
             break;
         case "type":
             setting =
-                    (BaseSetting) setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT ).build();
+                    (BaseSetting) setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT );
             setting.setDeprecated( true );
             setting.setDescription( "Connector type. This setting is deprecated and its value will instead be " +
                     "inferred from the name of the connector." );
             break;
         case "tls_level":
             setting = (BaseSetting) setting( settingName, options( BoltConnector.EncryptionLevel.class ),
-                    OPTIONAL.name() ).build();
+                    OPTIONAL.name() );
             setting.setDescription( "Encryption level to require this connector to use." );
             break;
         case "address":

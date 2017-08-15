@@ -28,6 +28,7 @@ import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.STRING;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.port;
@@ -40,21 +41,21 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class ShellSettings implements LoadableConfig
 {
     @Description( "Enable a remote shell server which Neo4j Shell clients can log in to." )
-    public static final Setting<Boolean> remote_shell_enabled = setting( "dbms.shell.enabled", BOOLEAN, FALSE ).build();
+    public static final Setting<Boolean> remote_shell_enabled = setting( "dbms.shell.enabled", BOOLEAN, FALSE );
 
     @Description( "Remote host for shell. By default, the shell server listens only on the loopback interface, " +
             "but you can specify the IP address of any network interface or use `0.0.0.0` for all interfaces." )
-    public static final Setting<String> remote_shell_host = setting( "dbms.shell.host", STRING, "127.0.0.1" ).constraint(
+    public static final Setting<String> remote_shell_host = buildSetting( "dbms.shell.host", STRING, "127.0.0.1" ).constraint(
             illegalValueMessage( "must be a valid name", matches( ANY ) ) ).build();
 
     @Description( "The port the shell will listen on." )
     public static final Setting<Integer> remote_shell_port =
-            setting( "dbms.shell.port", INTEGER, "1337" ).constraint( port ).build();
+            buildSetting( "dbms.shell.port", INTEGER, "1337" ).constraint( port ).build();
 
     @Description( "Read only mode. Will only allow read operations." )
-    public static final Setting<Boolean> remote_shell_read_only = setting( "dbms.shell.read_only", BOOLEAN, FALSE ).build();
+    public static final Setting<Boolean> remote_shell_read_only = setting( "dbms.shell.read_only", BOOLEAN, FALSE );
 
     @Description( "The name of the shell." )
-    public static final Setting<String> remote_shell_name = setting( "dbms.shell.rmi_name", STRING, "shell" ).constraint(
+    public static final Setting<String> remote_shell_name = buildSetting( "dbms.shell.rmi_name", STRING, "shell" ).constraint(
             illegalValueMessage( "must be a valid name", matches( ANY ) ) ).build();
 }

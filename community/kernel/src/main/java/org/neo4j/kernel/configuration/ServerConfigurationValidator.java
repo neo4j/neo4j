@@ -42,7 +42,7 @@ public class ServerConfigurationValidator implements ConfigurationValidator
 
         // Add missing type info -- validation has succeeded so we can do this with confidence
         boolean hasEnabledConnector = false;
-        for ( String identifier : config.identifiersFromPrefix( "dbms.connector" ) )
+        for ( String identifier : config.identifiersFromGroup( Connector.class ) )
         {
             Connector connector = new Connector( identifier );
             if ( "http".equalsIgnoreCase( connector.group.groupKey ) || "https".equalsIgnoreCase( connector.group.groupKey ) )

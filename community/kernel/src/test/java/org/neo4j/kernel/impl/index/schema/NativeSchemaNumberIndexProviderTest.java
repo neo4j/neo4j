@@ -370,7 +370,7 @@ public class NativeSchemaNumberIndexProviderTest
 
     private IndexSamplingConfig samplingConfig()
     {
-        return new IndexSamplingConfig( Config.empty() );
+        return new IndexSamplingConfig( Config.defaults() );
     }
 
     private IndexDescriptor descriptor()

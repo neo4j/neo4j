@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -72,7 +73,8 @@ public class ServerSettingsTest
     @Test
     public void connectorSettingHasItsOwnValues() throws Exception
     {
-        Config config = Config.builder().withServerDefaults().withSetting( "dbms.connector.http.address", "localhost:123" ).build();
+        Config config = Config.builder().withServerDefaults()
+                .withSetting( new HttpConnector( "http" ).address, "localhost:123" ).build();
 
         ConfigValue address = config.getConfigValues().entrySet().stream()
                 .filter( c -> c.getKey().equals( "dbms.connector.http.address" ) )

@@ -86,7 +86,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
     public static class Settings implements LoadableConfig
     {
         @Description( "SSL policy to use" )
-        public static Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME ).build();
+        public static Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );
     }
 
     public interface Dependencies

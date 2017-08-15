@@ -45,9 +45,9 @@ public class EnterpriseEditionSettings implements LoadableConfig
                   "Currently only 'node' and 'relationship' types are supported. " )
     public static Setting<List<IdType>> idTypesToReuse = setting(
             "dbms.ids.reuse.types.override", list( ",", optionsIgnoreCase( NODE, RELATIONSHIP ) ),
-            String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) ).build();
+            String.join( ",", IdType.RELATIONSHIP.name(), IdType.NODE.name() ) );
 
     @Internal
     public static final Setting<String> security_module = setting( "unsupported.dbms.security.module", STRING,
-            ENTERPRISE_SECURITY_MODULE_ID ).build();
+            ENTERPRISE_SECURITY_MODULE_ID );
 }

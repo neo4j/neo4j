@@ -125,7 +125,7 @@ public class SetDefaultAdminCommand implements AdminCommand
 
     Config loadNeo4jConfig()
     {
-        return Config.fromFile( configDir.resolve( "neo4j.conf" ) )
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled().build();
     }

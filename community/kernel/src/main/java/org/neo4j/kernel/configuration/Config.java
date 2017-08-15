@@ -24,9 +24,8 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -77,7 +76,7 @@ public class Config implements DiagnosticsProvider, Configuration
 
     private final List<ConfigOptions> configOptions;
 
-    private final Map<String,String> params = new CopyOnWriteHashMap<>();
+    private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>(); // TODO : has bo be reapplied every update
@@ -361,17 +360,6 @@ public class Config implements DiagnosticsProvider, Configuration
      * @param value The initial value to give the setting.
      */
     @Nonnull
-    public static Config defaults( @Nonnull final String setting, @Nonnull final String value )
-    {
-        return builder().withSetting( setting, value ).build();
-    }
-
-    /**
-     * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
-     * @param setting The initial setting to use.
-     * @param value The initial value to give the setting.
-     */
-    @Nonnull
     public static Config defaults( @Nonnull final Setting<?> setting, @Nonnull final String value )
     {
         return builder().withSetting( setting, value ).build();
@@ -436,14 +424,31 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * Extract all identifiers within a group, e.g. giving that prefix is {@code "dbms.ssl.policy"}), the
-     * setting {@code "dbms.ssl.policy.default.base_directory"} will return {@code "default"}.
+     * Returns the currently configured identifiers for grouped settings.
      *
-     * @param prefix group prefix for the settings interested in
-     * @return A set of uniquely and sorted group keys.
+     * Identifiers for groups exists to allow multiple configured settings of the same setting type.
+     * E.g. giving that prefix of a group is {@code dbms.ssl.policy} and the following settings are configured:
+     * <ul>
+     * <li> {@code dbms.ssl.policy.default.base_directory}
+     * <li> {@code dbms.ssl.policy.other.base_directory}
+     * </ul>
+     * a call to this will method return {@code ["default", "other"]}.
+     * <p>
+     * The key difference to these identifiers are that they are only known at runtime after a valid configuration is
+     * parsed and validated.
+     *
+     * @param groupClass A class that represents a setting group. Must be annotated with {@link Group}
+     * @return A set of configured identifiers for the given group.
+     * @throws IllegalArgumentException if the provided class is not annotated with {@link Group}.
      */
-    public Set<String> identifiersFromPrefix( String prefix )
+    public Set<String> identifiersFromGroup( Class<?> groupClass )
     {
+        if ( !groupClass.isAnnotationPresent( Group.class ) )
+        {
+            throw new IllegalArgumentException( "Class must be annotated with @Group" );
+        }
+
+        String prefix = groupClass.getAnnotation( Group.class ).value();
         Pattern pattern = Pattern.compile( Pattern.quote( prefix ) + "\\.([^.]+)\\.(.+)" );
 
         Set<String> identifiers = new TreeSet<>();
@@ -503,30 +508,14 @@ public class Config implements DiagnosticsProvider, Configuration
     /**
      * Augment the existing config with new settings, ignoring any conflicting settings.
      *
-     * @param additionalDefaults settings to add and override
+     * @param setting settings to add and override
      * @throws InvalidSettingException when and invalid setting is found and {@link
      * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public void augmentDefaults( Map<String,String> additionalDefaults ) throws InvalidSettingException
-    {
-        additionalDefaults.forEach( this::augmentDefaults );
-    }
-
-    /**
-     * @see Config#augmentDefaults(Map)
-     */
-    public void augmentDefaults( String setting, String value ) throws InvalidSettingException
-    {
-        overriddenDefaults.put( setting, value );
-        params.putIfAbsent( setting, value );
-    }
-
-    /**
-     * @see Config#augmentDefaults(Map)
-     */
     public void augmentDefaults( Setting<?> setting, String value ) throws InvalidSettingException
     {
-        augmentDefaults( setting.name(), value );
+        overriddenDefaults.put( setting.name(), value );
+        params.putIfAbsent( setting.name(), value );
     }
 
     /**
@@ -698,7 +687,7 @@ public class Config implements DiagnosticsProvider, Configuration
     @Nonnull
     public Set<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
     {
-        return identifiersFromPrefix("dbms.connector");
+        return identifiersFromGroup( Connector.class );
     }
 
     /**
@@ -803,15 +792,9 @@ public class Config implements DiagnosticsProvider, Configuration
     @Override
     public String toString()
     {
-        List<String> keys = new ArrayList<>( params.keySet() );
-        Collections.sort( keys );
-        LinkedHashMap<String,String> output = new LinkedHashMap<>();
-        for ( String key : keys )
-        {
-            output.put( key, params.get( key ) );
-        }
-
-        return output.toString();
+        return params.entrySet().stream()
+                .sorted( Comparator.comparing( Map.Entry::getKey ) )
+                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .collect( Collectors.joining( ", ") );
     }
-
 }

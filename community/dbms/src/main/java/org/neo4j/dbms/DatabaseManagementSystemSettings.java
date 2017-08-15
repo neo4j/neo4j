@@ -35,7 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.setting;
 public class DatabaseManagementSystemSettings implements LoadableConfig
 {
     @Description( "Name of the database to load" )
-    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" ).build();
+    public static final Setting<String> active_database = setting( "dbms.active_database", STRING, "graph.db" );
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )

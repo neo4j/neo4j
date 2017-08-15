@@ -60,7 +60,7 @@ public class UnbindFromClusterCommand implements AdminCommand
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName )
     {
-        return fromFile( configDir.resolve( "neo4j.conf" ) )
+        return fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
                 .withHome( homeDir ).build();
     }

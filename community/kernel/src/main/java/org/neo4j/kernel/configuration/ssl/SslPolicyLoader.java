@@ -47,7 +47,6 @@ import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Group;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.ssl.ClientAuth;
@@ -161,7 +160,7 @@ public class SslPolicyLoader
 
     private void load( Config config, Log log )
     {
-        Set<String> policyNames = config.identifiersFromPrefix( SslPolicyConfig.class.getAnnotation( Group.class ).value() );
+        Set<String> policyNames = config.identifiersFromGroup( SslPolicyConfig.class );
 
         for ( String policyName : policyNames )
         {

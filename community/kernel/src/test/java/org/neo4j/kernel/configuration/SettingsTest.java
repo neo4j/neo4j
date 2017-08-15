@@ -51,6 +51,7 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.max;
@@ -109,7 +110,7 @@ public class SettingsTest
     @Test
     public void testInteger()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3" ).build();
+        Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
@@ -129,39 +130,39 @@ public class SettingsTest
     @Test
     public void testList()
     {
-        Setting<List<Integer>> setting = setting( "foo", list( ",", INTEGER ), "1,2,3,4" ).build();
+        Setting<List<Integer>> setting = setting( "foo", list( ",", INTEGER ), "1,2,3,4" );
         assertThat( setting.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
 
-        Setting<List<Integer>> setting2 = setting( "foo", list( ",", INTEGER ), "1,2,3,4," ).build();
+        Setting<List<Integer>> setting2 = setting( "foo", list( ",", INTEGER ), "1,2,3,4," );
         assertThat( setting2.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
 
-        Setting<List<Integer>> setting3 = setting( "foo", list( ",", INTEGER ), "" ).build();
+        Setting<List<Integer>> setting3 = setting( "foo", list( ",", INTEGER ), "" );
         assertThat( setting3.apply( map( stringMap() ) ).toString(), equalTo( "[]" ) );
 
-        Setting<List<Integer>> setting4 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   5  " ).build();
+        Setting<List<Integer>> setting4 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   5  " );
         assertThat( setting4.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4, 5]" ) );
 
-        Setting<List<Integer>> setting5 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   " ).build();
+        Setting<List<Integer>> setting5 = setting( "foo", list( ",", INTEGER ), "1,    2,3, 4,   " );
         assertThat( setting5.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
     }
 
     @Test
     public void testStringList()
     {
-        Setting<List<String>> setting1 = setting( "apa", STRING_LIST, "foo,bar,baz" ).build();
+        Setting<List<String>> setting1 = setting( "apa", STRING_LIST, "foo,bar,baz" );
         assertEquals( Arrays.asList( "foo", "bar", "baz" ), setting1.apply( map( stringMap() ) ) );
 
-        Setting<List<String>> setting2 = setting( "apa", STRING_LIST, "foo,  bar, BAZ   " ).build();
+        Setting<List<String>> setting2 = setting( "apa", STRING_LIST, "foo,  bar, BAZ   " );
         assertEquals( Arrays.asList( "foo", "bar", "BAZ" ), setting2.apply( map( stringMap() ) ) );
 
-        Setting<List<String>> setting3 = setting( "apa", STRING_LIST, "" ).build();
+        Setting<List<String>> setting3 = setting( "apa", STRING_LIST, "" );
         assertEquals( Collections.emptyList(), setting3.apply( map( stringMap() ) ) );
     }
 
     @Test
     public void testMin()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3" ).constraint( min( 2 ) ).build();
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( min( 2 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
@@ -181,7 +182,7 @@ public class SettingsTest
     @Test
     public void testMax()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3" ).constraint( max( 5 ) ).build();
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( max( 5 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
@@ -201,7 +202,7 @@ public class SettingsTest
     @Test
     public void testRange()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3" ).constraint( range( 2, 5 ) ).build();
+        Setting<Integer> setting = buildSetting( "foo", INTEGER, "3" ).constraint( range( 2, 5 ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "4" ) ) ), equalTo( 4 ) );
@@ -231,7 +232,7 @@ public class SettingsTest
     @Test
     public void testMatches()
     {
-        Setting<String> setting = setting( "foo", STRING, "abc" ).constraint(  matches( "a*b*c*" ) ).build();
+        Setting<String> setting = buildSetting( "foo", STRING, "abc" ).constraint(  matches( "a*b*c*" ) ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "aaabbbccc" ) ) ), equalTo( "aaabbbccc" ) );
@@ -252,28 +253,28 @@ public class SettingsTest
     public void testDurationWithBrokenDefault()
     {
         // Notice that the default value is less that the minimum
-        Setting<Duration> setting = setting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "1s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
         setting.apply( map( stringMap() ) );
     }
 
     @Test( expected = InvalidSettingException.class )
     public void testDurationWithValueNotWithinConstraint()
     {
-        Setting<Duration> setting = setting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s" ).constraint( min( DURATION.apply( "3s" ) ) ).build();
         setting.apply( map( stringMap( "foo.bar", "2s" ) ) );
     }
 
     @Test
     public void testDuration()
     {
-        Setting<Duration> setting = setting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
+        Setting<Duration> setting = buildSetting( "foo.bar", DURATION, "3s").constraint( min( DURATION.apply( "3s" ) ) ).build();
         assertThat( setting.apply( map( stringMap( "foo.bar", "4s" ) ) ), equalTo( Duration.ofSeconds( 4 ) ) );
     }
 
     @Test
     public void testDefault()
     {
-        Setting<Integer> setting = setting( "foo", INTEGER, "3" ).build();
+        Setting<Integer> setting = setting( "foo", INTEGER, "3" );
 
         // Ok
         assertThat( setting.apply( map( stringMap() ) ), equalTo( 3 ) );
@@ -283,7 +284,7 @@ public class SettingsTest
     public void testPaths()
     {
         File directory = new File( "myDirectory" );
-        Setting<File> config = setting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath() ).constraint(
+        Setting<File> config = buildSetting( "config", PATH, new File( directory, "config.properties" ).getAbsolutePath() ).constraint(
                 isFile ).build();
         assertThat( config.apply( map( stringMap() ) ).getAbsolutePath(),
                 equalTo( new File( directory, "config.properties" ).getAbsolutePath() ) );
@@ -292,8 +293,8 @@ public class SettingsTest
     @Test
     public void testInheritOneLevel()
     {
-        Setting<Integer> root = setting( "root", INTEGER, "4" ).build();
-        Setting<Integer> setting = setting( "foo", INTEGER ).inherits( root ).build();
+        Setting<Integer> root = setting( "root", INTEGER, "4" );
+        Setting<Integer> setting = buildSetting( "foo", INTEGER ).inherits( root ).build();
 
         // Ok
         assertThat( setting.apply( map( stringMap( "foo", "1" ) ) ), equalTo( 1 ) );
@@ -304,11 +305,11 @@ public class SettingsTest
     public void testInheritHierarchy()
     {
         // Test hierarchies
-        Setting<String> a = setting( "A", STRING, "A" ).build(); // A defaults to A
-        Setting<String> b = setting( "B", STRING, "B" ).inherits( a ).build(); // B defaults to B unless A is defined
-        Setting<String> c = setting( "C", STRING, "C" ).inherits( b ).build(); // C defaults to C unless B is defined
-        Setting<String> d = setting( "D", STRING ).inherits( b ).build(); // D defaults to B
-        Setting<String> e = setting( "E", STRING ).inherits( d ).build(); // E defaults to D (hence B)
+        Setting<String> a = setting( "A", STRING, "A" ); // A defaults to A
+        Setting<String> b = buildSetting( "B", STRING, "B" ).inherits( a ).build(); // B defaults to B unless A is defined
+        Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( b ).build(); // C defaults to C unless B is defined
+        Setting<String> d = buildSetting( "D", STRING ).inherits( b ).build(); // D defaults to B
+        Setting<String> e = buildSetting( "E", STRING ).inherits( d ).build(); // E defaults to D (hence B)
 
         assertThat( c.apply( map( stringMap( "C", "X" ) ) ), equalTo( "X" ) );
         assertThat( c.apply( map( stringMap( "B", "X" ) ) ), equalTo( "X" ) );
@@ -338,7 +339,7 @@ public class SettingsTest
     public void testNormalizedRelativeURI() throws Exception
     {
         // Given
-        Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" ).build();
+        Setting<URI> uri = setting( "mySetting", NORMALIZED_RELATIVE_URI, "http://localhost:7474///db///data///" );
 
         // When && then
         assertThat( uri.apply( always -> null ).toString(), equalTo( "/db/data" ) );
@@ -347,11 +348,11 @@ public class SettingsTest
     @Test
     public void onlySingleInheritanceShouldBeAllowed() throws Exception
     {
-        Setting<String> a = setting( "A", STRING, "A" ).build();
-        Setting<String> b = setting( "B", STRING, "B" ).build();
+        Setting<String> a = setting( "A", STRING, "A" );
+        Setting<String> b = setting( "B", STRING, "B" );
         try
         {
-            Setting<String> c = setting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
+            Setting<String> c = buildSetting( "C", STRING, "C" ).inherits( a ).inherits( b ).build();
             fail();
         }
         catch ( AssertionError e )

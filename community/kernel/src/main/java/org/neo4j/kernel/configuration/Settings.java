@@ -182,6 +182,21 @@ public class Settings
     }
 
     /**
+     * Constructs a {@link Setting} with a specified default value.
+     *
+     * @param name of the setting, e.g. "dbms.transaction.timeout".
+     * @param parser that will convert the string representation to the concrete type T.
+     * @param defaultValue the string representation of the default value.
+     * @param <T> the concrete type of the setting.
+     */
+    @Nonnull
+    public static <T> Setting<T> setting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
+            @Nullable final String defaultValue )
+    {
+        return new SettingBuilder<>( name, parser, defaultValue ).build();
+    }
+
+    /**
      * Start building a setting with default value set to {@link Settings#NO_DEFAULT}.
      *
      * @param name of the setting, e.g. "dbms.transaction.timeout".
@@ -189,20 +204,21 @@ public class Settings
      * @param <T> the concrete type of the setting.
      */
     @Nonnull
-    public static <T> SettingBuilder<T> setting( @Nonnull final String name, @Nonnull final Function<String, T> parser )
+    public static <T> SettingBuilder<T> buildSetting( @Nonnull final String name, @Nonnull final Function<String, T> parser )
     {
-        return setting( name, parser, NO_DEFAULT );
+        return buildSetting( name, parser, NO_DEFAULT );
     }
 
     /**
-     * Start building a setting.
+     * Start building a setting with a specified default value.
      *
      * @param name of the setting, e.g. "dbms.transaction.timeout".
      * @param parser that will convert the string representation to the concrete type T.
      * @param defaultValue the string representation of the default value.
      * @param <T> the concrete type of the setting.
      */
-    public static <T> SettingBuilder<T> setting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
+    @Nonnull
+    public static <T> SettingBuilder<T> buildSetting( @Nonnull final String name, @Nonnull final Function<String,T> parser,
             @Nullable final String defaultValue )
     {
         return new SettingBuilder<>( name, parser, defaultValue );

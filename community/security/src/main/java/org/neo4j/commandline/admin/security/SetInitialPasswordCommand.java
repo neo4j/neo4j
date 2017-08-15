@@ -112,7 +112,7 @@ public class SetInitialPasswordCommand implements AdminCommand
 
     Config loadNeo4jConfig()
     {
-        return Config.fromFile( configDir.resolve( "neo4j.conf" ).toFile() )
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile() )
                 .withHome( homeDir.toFile() )
                 .withConnectorsDisabled().build();
     }
