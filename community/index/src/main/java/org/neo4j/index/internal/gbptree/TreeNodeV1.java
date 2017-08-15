@@ -82,6 +82,8 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     static final int HEADER_LENGTH = OFFSET.get();
 
+    static final int DELTA_SECTION_SIZE = 32;
+
     private final int pageSize;
     private final int internalMaxKeyCount;
     private final int deltaLeafMaxKeyCount;
@@ -120,8 +122,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     pageSize, totalLeafMaxKeyCount );
         }
 
-        int desiredDeltaSize = 20;
-        this.deltaLeafMaxKeyCount = totalLeafMaxKeyCount < desiredDeltaSize * 3 ? 0 : desiredDeltaSize;
+        this.deltaLeafMaxKeyCount = totalLeafMaxKeyCount < DELTA_SECTION_SIZE * 3 ? 0 : DELTA_SECTION_SIZE;
         this.leafMaxKeyCount = totalLeafMaxKeyCount - deltaLeafMaxKeyCount;
 
         this.mainContent = new MainContentV1();

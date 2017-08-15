@@ -679,23 +679,16 @@ class InternalTreeLogic<KEY,VALUE>
             if ( deltaLeafMaxKeyCount > 0 && keyCount - pos > deltaLeafMaxKeyCount * 2 )
             {
                 // It seems to be quite a bit to the left, therefore it's better to put it in the delta section
-                consolidateDeltasIfDeltaSectionFull( cursor, keyCount, deltaKeyCount );
+                if ( deltaKeyCount == deltaLeafMaxKeyCount )
+                {
+                    consolidateDeltas( cursor, keyCount, deltaKeyCount );
+                }
                 return deltaContent;
             }
             // It's to the far right in this leaf, just insert it right in to the main section
             return mainContent;
         }
         return null;
-    }
-
-    private void consolidateDeltasIfDeltaSectionFull( PageCursor cursor, int keyCount, int deltaKeyCount )
-    {
-        if ( deltaKeyCount < deltaLeafMaxKeyCount )
-        {
-            // No need to consolidate
-            return;
-        }
-        consolidateDeltas( cursor, keyCount, deltaKeyCount );
     }
 
     private void consolidateDeltas( PageCursor cursor, int keyCount, int deltaKeyCount )
@@ -1414,7 +1407,7 @@ class InternalTreeLogic<KEY,VALUE>
     private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount )
     {
-        consolidateDeltasIfDeltaSectionFull( cursor, keyCount, deltaContent.keyCount( cursor ) );
+        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
 
         int totalKeyCount = keyCount + leftSiblingKeyCount;
         int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
