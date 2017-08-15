@@ -100,6 +100,14 @@ abstract class TreeNode<KEY,VALUE>
 
     abstract void goTo( PageCursor cursor, String messageOnError, long nodeId ) throws IOException;
 
+    abstract int leftSiblingOffset();
+
+    abstract int rightSiblingOffset();
+
+    abstract int successorOffset();
+
+    abstract int keyCountOffset();
+
     // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
 
     static abstract class Content<KEY,VALUE>

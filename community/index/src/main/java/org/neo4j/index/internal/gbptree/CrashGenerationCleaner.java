@@ -179,9 +179,9 @@ class CrashGenerationCleaner
         do
         {
             hasCrashed =
-                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_SUCCESSOR ) ||
-                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_LEFTSIBLING ) ||
-                    hasCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_RIGHTSIBLING );
+                    hasCrashedGSPP( cursor, treeNode.successorOffset() ) ||
+                    hasCrashedGSPP( cursor, treeNode.leftSiblingOffset() ) ||
+                    hasCrashedGSPP( cursor, treeNode.rightSiblingOffset() );
 
             if ( !hasCrashed && treeNode.isInternal( cursor ) )
             {
@@ -212,9 +212,9 @@ class CrashGenerationCleaner
 
     private void cleanTreeNode( TreeNode<?,?> treeNode, PageCursor cursor, AtomicInteger cleanedPointers )
     {
-        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_SUCCESSOR, cleanedPointers );
-        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_LEFTSIBLING, cleanedPointers );
-        cleanCrashedGSPP( cursor, TreeNodeV1.BYTE_POS_RIGHTSIBLING, cleanedPointers );
+        cleanCrashedGSPP( cursor, treeNode.successorOffset(), cleanedPointers );
+        cleanCrashedGSPP( cursor, treeNode.leftSiblingOffset(), cleanedPointers );
+        cleanCrashedGSPP( cursor, treeNode.rightSiblingOffset(), cleanedPointers );
 
         if ( treeNode.isInternal( cursor ) )
         {

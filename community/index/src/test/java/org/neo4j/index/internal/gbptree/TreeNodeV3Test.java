@@ -39,7 +39,7 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.resultIsFromSlotA;
 import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
-public class TreeNodeV1Test
+public class TreeNodeV3Test
 {
     private static final int STABLE_GENERATION = 1;
     private static final int CRASH_GENERATION = 2;
@@ -49,7 +49,7 @@ public class TreeNodeV1Test
     private static final int PAGE_SIZE = 512;
     private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV1<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV3<>( PAGE_SIZE, layout );
     private final Content<MutableLong,MutableLong> mainContent = node.main();
     private final Content<MutableLong,MutableLong> deltaContent = node.delta();
 
@@ -509,7 +509,7 @@ public class TreeNodeV1Test
         // WHEN
         try
         {
-            new TreeNodeV1<>( TreeNodeV1.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
+            TreeNodes.instantiateTreeNode( TreeNodeV3.HEADER_LENGTH + layout.keySize() + layout.valueSize(), layout );
             fail( "Should have failed" );
         }
         catch ( MetadataMismatchException e )

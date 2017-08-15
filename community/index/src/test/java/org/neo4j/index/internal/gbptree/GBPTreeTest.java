@@ -1473,7 +1473,7 @@ public class GBPTreeTest
             try ( PagedFile pagedFile = specificPageCache.map( indexFile, specificPageCache.pageSize() );
                   PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
             {
-                TreeNode<MutableLong,MutableLong> node = new TreeNodeV1<>( pageSize, new SimpleLongLayout() );
+                TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( pageSize, new SimpleLongLayout() );
                 Pair<TreeState,TreeState> treeStates =
                         TreeStatePair.readStatePages( cursor, IdSpace.STATE_PAGE_A, IdSpace.STATE_PAGE_B );
                 TreeState newestState = TreeStatePair.selectNewestValidState( treeStates );

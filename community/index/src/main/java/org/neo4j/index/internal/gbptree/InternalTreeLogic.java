@@ -79,7 +79,7 @@ import static org.neo4j.index.internal.gbptree.StructurePropagation.KeyReplaceSt
 class InternalTreeLogic<KEY,VALUE>
 {
     private final IdProvider idProvider;
-    private final TreeNodeV1<KEY,VALUE> bTreeNode;
+    private final TreeNode<KEY,VALUE> bTreeNode;
     private final Content<KEY,VALUE> mainContent;
     private final Content<KEY,VALUE> deltaContent;
     private final Layout<KEY,VALUE> layout;
@@ -154,7 +154,7 @@ class InternalTreeLogic<KEY,VALUE>
     }
 
     @SuppressWarnings( "unchecked" )
-    InternalTreeLogic( IdProvider idProvider, TreeNodeV1<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
+    InternalTreeLogic( IdProvider idProvider, TreeNode<KEY,VALUE> bTreeNode, Layout<KEY,VALUE> layout )
     {
         this.idProvider = idProvider;
         this.bTreeNode = bTreeNode;

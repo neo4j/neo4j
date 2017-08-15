@@ -127,7 +127,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     /**
      * Version of the format that makes up the tree. This includes:
      * <ul>
-     * <li>{@link TreeNodeV1} format, header, keys, children, values</li>
+     * <li>{@link TreeNodeV3} format, header, keys, children, values</li>
      * <li>{@link GenerationSafePointer} and {@link GenerationSafePointerPair}</li>
      * <li>{@link IdSpace} i.e. which pages are fixed</li>
      * <li>{@link TreeState} and {@link TreeStatePair}</li>
@@ -235,9 +235,9 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Layout<KEY,VALUE> layout;
 
     /**
-     * Instance of {@link TreeNodeV1} which handles reading/writing physical bytes from pages representing tree nodes.
+     * Instance of {@link TreeNodeV3} which handles reading/writing physical bytes from pages representing tree nodes.
      */
-    private final TreeNodeV1<KEY,VALUE> bTreeNode;
+    private final TreeNode<KEY,VALUE> bTreeNode;
     private final Content<KEY,VALUE> mainContent;
 
     /**
@@ -397,7 +397,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
             this.pagedFile = openOrCreate( pageCache, indexFile, tentativePageSize, layout );
             this.pageSize = pagedFile.pageSize();
             closed = false;
-            this.bTreeNode = new TreeNodeV1<>( pageSize, layout );
+            this.bTreeNode = TreeNodes.instantiateTreeNode( FORMAT_VERSION, pageSize, layout );
             this.mainContent = bTreeNode.main();
             this.freeList = new FreeListIdProvider( pagedFile, pageSize, rootId, FreeListIdProvider.NO_MONITOR );
             this.writer = new SingleWriter( new InternalTreeLogic<>( freeList, bTreeNode, layout ) );

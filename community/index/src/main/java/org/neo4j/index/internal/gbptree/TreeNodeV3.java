@@ -65,24 +65,24 @@ import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
  * @param <KEY> type of key
  * @param <VALUE> type of value
  */
-class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
+class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
 {
     static final int SIZE_PAGE_REFERENCE = GenerationSafePointerPair.SIZE;
 
     private static final AtomicInteger OFFSET = new AtomicInteger( BYTE_POS_NODE_TYPE + Byte.BYTES );
-    static final int BYTE_POS_TYPE = OFFSET.getAndAdd( Byte.BYTES );
-    static final int BYTE_POS_GENERATION = OFFSET.getAndAdd( Integer.BYTES );
+    private static final int BYTE_POS_TYPE = OFFSET.getAndAdd( Byte.BYTES );
+    private static final int BYTE_POS_GENERATION = OFFSET.getAndAdd( Integer.BYTES );
     // TODO Could be short instead
-    static final int BYTE_POS_KEYCOUNT = OFFSET.getAndAdd( Integer.BYTES );
-    static final int BYTE_POS_RIGHTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
-    static final int BYTE_POS_LEFTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
-    static final int BYTE_POS_SUCCESSOR = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    private static final int BYTE_POS_KEYCOUNT = OFFSET.getAndAdd( Integer.BYTES );
+    private static final int BYTE_POS_RIGHTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    private static final int BYTE_POS_LEFTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
+    private static final int BYTE_POS_SUCCESSOR = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
     // TODO Put this on the high bits of the shorter keyCount instead
-    static final int BYTE_POS_DELTA_KEY_COUNT = OFFSET.getAndAdd( Byte.BYTES );
+    private static final int BYTE_POS_DELTA_KEY_COUNT = OFFSET.getAndAdd( Byte.BYTES );
 
     static final int HEADER_LENGTH = OFFSET.get();
 
-    static final int DELTA_SECTION_SIZE = 32;
+    private static final int DELTA_SECTION_SIZE = 32;
 
     private final int pageSize;
     private final int internalMaxKeyCount;
@@ -100,7 +100,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int keySize;
     private final int valueSize;
 
-    TreeNodeV1( int pageSize, Layout<KEY,VALUE> layout )
+    TreeNodeV3( int pageSize, Layout<KEY,VALUE> layout )
     {
         this.pageSize = pageSize;
         this.layout = layout;
@@ -348,6 +348,30 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
     Content<KEY,VALUE> delta()
     {
         return deltaContent;
+    }
+
+    @Override
+    int leftSiblingOffset()
+    {
+        return BYTE_POS_LEFTSIBLING;
+    }
+
+    @Override
+    int rightSiblingOffset()
+    {
+        return BYTE_POS_RIGHTSIBLING;
+    }
+
+    @Override
+    int successorOffset()
+    {
+        return BYTE_POS_SUCCESSOR;
+    }
+
+    @Override
+    int keyCountOffset()
+    {
+        return BYTE_POS_KEYCOUNT;
     }
 
     private class MainContentV1 extends Content<KEY,VALUE>

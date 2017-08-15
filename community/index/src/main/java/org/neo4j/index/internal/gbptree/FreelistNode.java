@@ -35,15 +35,15 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
  * </pre>
  *
  * A free-list node is a page in the same {@link org.neo4j.io.pagecache.PagedFile mapped page cache file}
- * as a {@link TreeNodeV1}. They distinguish themselves from one another by a "node type" one-byte header.
+ * as a {@link TreeNodeV3}. They distinguish themselves from one another by a "node type" one-byte header.
  */
 class FreelistNode
 {
     private static final int PAGE_ID_SIZE = GenerationSafePointer.POINTER_SIZE;
-    private static final int BYTE_POS_NEXT = TreeNodeV1.BYTE_POS_NODE_TYPE + Byte.BYTES;
+    private static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
     private static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
     private static final int ENTRY_SIZE = GenerationSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
-    static final long NO_PAGE_ID = TreeNodeV1.NO_NODE_FLAG;
+    static final long NO_PAGE_ID = TreeNode.NO_NODE_FLAG;
 
     private final int maxEntries;
 
@@ -54,7 +54,7 @@ class FreelistNode
 
     static void initialize( PageCursor cursor )
     {
-        cursor.putByte( TreeNodeV1.BYTE_POS_NODE_TYPE, TreeNodeV1.NODE_TYPE_FREE_LIST_NODE );
+        cursor.putByte( TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE );
     }
 
     void write( PageCursor cursor, long unstableGeneration, long pageId, int pos )

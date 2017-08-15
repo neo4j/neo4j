@@ -68,7 +68,7 @@ public class SeekCursorTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNodeV1<MutableLong,MutableLong> node = new TreeNodeV1<>( PAGE_SIZE, layout );
+    private final TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( PAGE_SIZE, layout );
     private final Content<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
@@ -1607,7 +1607,7 @@ public class SeekCursorTest
             duplicate.next();
             long leftChild = childAt( duplicate, 0, stableGeneration, unstableGeneration );
             duplicate.next( leftChild );
-            corruptGSPP( duplicate, TreeNodeV1.BYTE_POS_RIGHTSIBLING );
+            corruptGSPP( duplicate, node.rightSiblingOffset() );
 
             // even if we DO have a checkpoint
             checkpoint();
@@ -1683,7 +1683,7 @@ public class SeekCursorTest
             insert( i, i * 10, duplicate ); // Create successor of leaf
 
             // and corrupt successor pointer
-            corruptGSPP( duplicate, TreeNodeV1.BYTE_POS_SUCCESSOR );
+            corruptGSPP( duplicate, node.successorOffset() );
 
             // then
             try
@@ -1787,7 +1787,7 @@ public class SeekCursorTest
 
         // and corrupt successor pointer
         cursor.next( rootId );
-        corruptGSPP( cursor, TreeNodeV1.BYTE_POS_SUCCESSOR );
+        corruptGSPP( cursor, node.successorOffset() );
 
         // when
         // starting a seek on the old root with generation that is not up to date, simulating a concurrent checkpoint
@@ -2033,7 +2033,7 @@ public class SeekCursorTest
         int keyCount = 10000;
 
         // WHEN
-        cursor.setOffset( TreeNodeV1.BYTE_POS_KEYCOUNT );
+        cursor.setOffset( node.keyCountOffset() );
         cursor.putInt( keyCount ); // Bad key count
 
         // THEN
@@ -2064,7 +2064,7 @@ public class SeekCursorTest
 
         // WHEN
         PageCursorUtil.goTo( cursor, "test", GenerationSafePointerPair.pointer( leftChild ) );
-        cursor.setOffset( TreeNodeV1.BYTE_POS_KEYCOUNT );
+        cursor.setOffset( node.keyCountOffset() );
         cursor.putInt( keyCount ); // Bad key count
         PageCursorUtil.goTo( cursor, "test", rootId );
 

@@ -392,7 +392,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNodeV1.BYTE_POS_LEFTSIBLING;
+                        return node.leftSiblingOffset();
                     }
                 },
         RIGHT_SIBLING
@@ -400,7 +400,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNodeV1.BYTE_POS_RIGHTSIBLING;
+                        return node.rightSiblingOffset();
                     }
                 },
         SUCCESSOR
@@ -408,7 +408,7 @@ public class CrashGenerationCleanerTest
                     @Override
                     public int offset( TreeNode node )
                     {
-                        return TreeNodeV1.BYTE_POS_SUCCESSOR;
+                        return node.successorOffset();
                     }
                 }
     }
@@ -431,7 +431,7 @@ public class CrashGenerationCleanerTest
                 int unstableGeneration, int crashGeneration );
     }
 
-    class CorruptableTreeNode extends TreeNodeV1<MutableLong,MutableLong>
+    class CorruptableTreeNode extends TreeNodeV3<MutableLong,MutableLong>
     {
         CorruptableTreeNode( int pageSize, Layout<MutableLong,MutableLong> layout )
         {

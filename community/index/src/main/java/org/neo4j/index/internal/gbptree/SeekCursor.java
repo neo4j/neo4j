@@ -245,7 +245,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private boolean concurrentWriteHappened;
 
     /**
-     * {@link TreeNodeV1#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
+     * {@link TreeNodeV3#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
      */
     private long currentNodeGeneration;
 
@@ -258,7 +258,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long lastFollowedPointerGeneration;
 
     /**
-     * Cached {@link TreeNodeV1#generation(PageCursor) generation} of the current leaf node, read every time a pointer
+     * Cached {@link TreeNodeV3#generation(PageCursor) generation} of the current leaf node, read every time a pointer
      * is followed to a new node. Used to ensure that a node hasn't been reused between two calls to {@link #next()}.
      */
     private long expectedCurrentNodeGeneration;
@@ -278,7 +278,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     /**
      * Set within should retry loop.
      * <p>
-     * Is node a {@link TreeNodeV1#NODE_TYPE_TREE_NODE} or something else?
+     * Is node a {@link TreeNodeV3#NODE_TYPE_TREE_NODE} or something else?
      */
 
     private byte nodeType;

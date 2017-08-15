@@ -63,7 +63,7 @@ public class InternalTreeLogicTest
 
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
-    private final TreeNodeV1<MutableLong,MutableLong> node = new TreeNodeV1<>( pageSize, layout );
+    private final TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( pageSize, layout );
     private final Content<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
 
@@ -681,7 +681,7 @@ public class InternalTreeLogicTest
         assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild );
 
         // new children are siblings
-        assertSiblings( newLeftChild, oldRightChild, TreeNodeV1.NO_NODE_FLAG );
+        assertSiblings( newLeftChild, oldRightChild, TreeNode.NO_NODE_FLAG );
     }
 
     @Test
@@ -757,7 +757,7 @@ public class InternalTreeLogicTest
         assertNodeContainsExpectedKeys( expectedKeysInNewLeftChild );
 
         // new children are siblings
-        assertSiblings( newLeftChild, oldRightChild, TreeNodeV1.NO_NODE_FLAG );
+        assertSiblings( newLeftChild, oldRightChild, TreeNode.NO_NODE_FLAG );
     }
 
     @Test
@@ -1218,7 +1218,7 @@ public class InternalTreeLogicTest
         assertEquals( 1, keyCount() );
         long leftChild = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightChild = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertSiblings( leftChild, rightChild, TreeNodeV1.NO_NODE_FLAG );
+        assertSiblings( leftChild, rightChild, TreeNode.NO_NODE_FLAG );
 
         // WHEN
         //                       root(successor)
@@ -1260,7 +1260,7 @@ public class InternalTreeLogicTest
         assertEquals( 1, keyCount() );
         long leftInternal = childAt( readCursor, 0, stableGeneration, unstableGeneration );
         long rightInternal = childAt( readCursor, 1, stableGeneration, unstableGeneration );
-        assertSiblings( leftInternal, rightInternal, TreeNodeV1.NO_NODE_FLAG );
+        assertSiblings( leftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
         goTo( readCursor, leftInternal );
         int leftInternalKeyCount = keyCount();
         assertTrue( node.isInternal( readCursor ) );
@@ -1292,7 +1292,7 @@ public class InternalTreeLogicTest
         // and left internal points to the successor
         goTo( readCursor, leftInternal );
         assertEquals( successorLeftInternal, successor( readCursor, stableGeneration, unstableGeneration ) );
-        assertSiblings( successorLeftInternal, rightInternal, TreeNodeV1.NO_NODE_FLAG );
+        assertSiblings( successorLeftInternal, rightInternal, TreeNode.NO_NODE_FLAG );
     }
 
     @Test
@@ -1488,7 +1488,7 @@ public class InternalTreeLogicTest
     private void assertSuccessorPointerNotCrashOrBroken()
     {
         assertNoCrashOrBrokenPointerInGSPP( node, readCursor, stableGeneration, unstableGeneration, "Successor",
-                TreeNodeV1.BYTE_POS_SUCCESSOR );
+                node.successorOffset() );
     }
 
     private void assertKeyAssociatedWithValue( long key, long expectedValue )
@@ -1514,12 +1514,12 @@ public class InternalTreeLogicTest
         goTo( readCursor, middle );
         assertEquals( right, rightSibling( readCursor, stableGeneration, unstableGeneration ) );
         assertEquals( left, leftSibling( readCursor, stableGeneration, unstableGeneration ) );
-        if ( left != TreeNodeV1.NO_NODE_FLAG )
+        if ( left != TreeNode.NO_NODE_FLAG )
         {
             goTo( readCursor, left );
             assertEquals( middle, rightSibling( readCursor, stableGeneration, unstableGeneration ) );
         }
-        if ( right != TreeNodeV1.NO_NODE_FLAG )
+        if ( right != TreeNode.NO_NODE_FLAG )
         {
             goTo( readCursor, right );
             assertEquals( middle, leftSibling( readCursor, stableGeneration, unstableGeneration ) );
@@ -1723,7 +1723,7 @@ public class InternalTreeLogicTest
             goTo( cursor, successor );
             successor = pointer( node.successor( cursor, stableGeneration, unstableGeneration ) );
         }
-        while ( successor != TreeNodeV1.NO_NODE_FLAG );
+        while ( successor != TreeNode.NO_NODE_FLAG );
         successor = cursor.getCurrentPageId();
         goTo( cursor, current );
         return successor;

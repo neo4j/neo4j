@@ -22,7 +22,7 @@ package org.neo4j.index.internal.gbptree;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.TreeNodeV1.NO_NODE_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
 
 /**
  * Used to verify a chain of siblings starting with leftmost node.
@@ -33,8 +33,8 @@ import static org.neo4j.index.internal.gbptree.TreeNodeV1.NO_NODE_FLAG;
  */
 class RightmostInChain
 {
-    private long currentRightmostNode = TreeNodeV1.NO_NODE_FLAG;
-    private long currentRightmostRightSiblingPointer = TreeNodeV1.NO_NODE_FLAG;
+    private long currentRightmostNode = NO_NODE_FLAG;
+    private long currentRightmostRightSiblingPointer = NO_NODE_FLAG;
     private long currentRightmostRightSiblingPointerGeneration;
     private long currentRightmostNodeGeneration;
 

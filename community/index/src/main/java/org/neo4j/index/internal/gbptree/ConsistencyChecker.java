@@ -179,13 +179,13 @@ class ConsistencyChecker<KEY>
             }
             while ( cursor.shouldRetry() );
 
-            if ( node.isNode( rightSibling ) )
+            if ( TreeNode.isNode( rightSibling ) )
             {
                 node.goTo( cursor, "right sibling", rightSibling );
                 addToSeenList( seenIds, pointer( rightSibling ), lastId );
             }
         }
-        while ( node.isNode( rightSibling ) );
+        while ( TreeNode.isNode( rightSibling ) );
     }
 
     private static void addToSeenList( BitSet target, long id, long lastId )
@@ -209,13 +209,13 @@ class ConsistencyChecker<KEY>
         boolean isLeaf;
         do
         {
-            nodeType = node.nodeType( cursor );
+            nodeType = TreeNode.nodeType( cursor );
             isInternal = node.isInternal( cursor );
             isLeaf = node.isLeaf( cursor );
         }
         while ( cursor.shouldRetry() );
 
-        if ( nodeType != TreeNodeV1.NODE_TYPE_TREE_NODE )
+        if ( nodeType != TreeNode.NODE_TYPE_TREE_NODE )
         {
             throw new IllegalArgumentException( "Cursor is not pinned to a tree node page. pageId:" +
                     cursor.getCurrentPageId() );
@@ -246,11 +246,11 @@ class ConsistencyChecker<KEY>
         {
             // check header pointers
             assertNoCrashOrBrokenPointerInGSPP(
-                    node, cursor, stableGeneration, unstableGeneration, "LeftSibling", TreeNodeV1.BYTE_POS_LEFTSIBLING );
+                    node, cursor, stableGeneration, unstableGeneration, "LeftSibling", node.leftSiblingOffset() );
             assertNoCrashOrBrokenPointerInGSPP(
-                    node, cursor, stableGeneration, unstableGeneration, "RightSibling", TreeNodeV1.BYTE_POS_RIGHTSIBLING );
+                    node, cursor, stableGeneration, unstableGeneration, "RightSibling", node.rightSiblingOffset() );
             assertNoCrashOrBrokenPointerInGSPP(
-                    node, cursor, stableGeneration, unstableGeneration, "Successor", TreeNodeV1.BYTE_POS_SUCCESSOR );
+                    node, cursor, stableGeneration, unstableGeneration, "Successor", node.successorOffset() );
 
             // for assertSiblings
             leftSiblingPointer = node.leftSibling( cursor, stableGeneration, unstableGeneration );
@@ -305,7 +305,7 @@ class ConsistencyChecker<KEY>
     private void checkSuccessorPointerGeneration( PageCursor cursor, long successor, long successorGeneration )
             throws IOException
     {
-        if ( node.isNode( successor ) )
+        if ( TreeNode.isNode( successor ) )
         {
             cursor.setCursorException( "WARNING: we ended up on an old generation " + cursor.getCurrentPageId() +
                     " which had successor:" + pointer( successor ) );
