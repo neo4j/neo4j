@@ -24,6 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 
 import java.util.Iterator;
 
@@ -114,4 +115,10 @@ class LuceneInsightDocumentStructure
         }
 
     }
+
+    public static Term newTermForChangeOrRemove( long nodeId )
+    {
+        return new Term( NODE_ID_KEY, "" + nodeId );
+    }
+
 }
