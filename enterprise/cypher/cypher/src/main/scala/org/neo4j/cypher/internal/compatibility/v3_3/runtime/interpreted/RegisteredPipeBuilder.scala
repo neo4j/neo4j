@@ -157,7 +157,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
 
-      case _ => fallback.build(plan, source)
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection => // selection relies on inner expressions to interact with variables
         fallback.build(plan, source)
