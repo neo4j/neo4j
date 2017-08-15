@@ -141,17 +141,12 @@ public class ProcedureResourcesIT
 
     private String buildProcedureQuery( String procedureName, List<Object> parameters )
     {
-        StringBuilder sb = new StringBuilder();
-        StringJoiner joiner = new StringJoiner( "," );
-        sb.append( "CALL " ).append( procedureName ).append( "(" );
+        StringJoiner stringJoiner = new StringJoiner( ",", "CALL " + procedureName + "(", ")" );
         for ( Object parameter : parameters )
         {
-            joiner.add( parameter.toString() );
+            stringJoiner.add( parameter.toString() );
         }
-        sb.append( joiner.toString() );
-        sb.append( ")" );
-        System.out.println( sb.toString() );
-        return sb.toString();
+        return stringJoiner.toString();
     }
 
     private void clearDb()
