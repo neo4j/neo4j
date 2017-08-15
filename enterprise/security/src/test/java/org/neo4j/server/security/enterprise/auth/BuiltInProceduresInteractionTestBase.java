@@ -675,7 +675,7 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
     @Test
     public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyIfKilled() throws Throwable
     {
-        final DoubleLatch latch = new DoubleLatch( 2 );
+        final DoubleLatch latch = new DoubleLatch( 2, true );
         ClassWithProcedures.volatileLatch = latch;
 
         String loopQuery = "CALL test.loop";
