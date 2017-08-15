@@ -127,6 +127,7 @@ case class RegularScenario(name: String, blacklisted: Boolean,
       init.foreach(f => f(db))
       procedureRegistration.foreach(f => f(db))
 
+      var seenBlackListedFail = false
       executions.zip(expectations).foreach {
         case (execute, expect) =>
           val tx = db.beginTx()
@@ -136,10 +137,9 @@ case class RegularScenario(name: String, blacklisted: Boolean,
               try {
                 expect(result)
                 println(s"Scenario '$name' was blacklisted, but succeeded")
-                throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
               } catch {
-                case x: BlacklistException => throw x // let's not swallow these
-                case t: Throwable => // failure is expected
+                case t: Throwable =>
+                  seenBlackListedFail = true
               }
             } else {
               try {
@@ -151,16 +151,18 @@ case class RegularScenario(name: String, blacklisted: Boolean,
               }
             }
           } catch {
-            case x: BlacklistException => throw x // let's not swallow these
-            case t: Throwable if blacklisted => // expected
+            case t: Throwable if blacklisted =>
+              seenBlackListedFail = true
+              // expected
           }
-
           finally {
-            tx.close()
+              tx.close()
           }
           if(name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the registered runtime, this should go away
             return
       }
+
+      if (blacklisted && !seenBlackListedFail) throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
     } finally {
       db.shutdown()
     }
