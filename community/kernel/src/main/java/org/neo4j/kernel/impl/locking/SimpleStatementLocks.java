@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
@@ -30,16 +32,48 @@ import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 public class SimpleStatementLocks implements StatementLocks
 {
     private final Locks.Client client;
+    private Supplier<LockTracer> lockTracerSupplier;
 
     public SimpleStatementLocks( Locks.Client client )
     {
         this.client = client;
+        lockTracerSupplier = DEFAULT_LOCK_TRACER_SUPPLIER;
     }
 
     @Override
     public Locks.Client explicit()
     {
         return client;
+    }
+
+    @Override
+    public void explicitAcquireExclusive( ResourceType type, long... resourceId )
+    {
+        client.acquireExclusive( lockTracerSupplier.get(), type, resourceId );
+    }
+
+    @Override
+    public void explicitReleaseExclusive( ResourceType type, long resourceId )
+    {
+        client.releaseExclusive( type, resourceId );
+    }
+
+    @Override
+    public void explicitAcquireShared( ResourceType type, long... resourceId )
+    {
+        client.acquireShared( lockTracerSupplier.get(), type, resourceId );
+    }
+
+    @Override
+    public void explicitReleaseShared( ResourceType type, long resourceId )
+    {
+        client.releaseShared( type, resourceId );
+    }
+
+    @Override
+    public int getLockSessionId()
+    {
+        return client.getLockSessionId();
     }
 
     @Override
@@ -85,5 +119,11 @@ public class SimpleStatementLocks implements StatementLocks
         {
             throw new IllegalStateException( "The isolation level " + isolationLevel + " is not supported." );
         }
+    }
+
+    @Override
+    public void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier )
+    {
+        this.lockTracerSupplier = lockTracerSupplier;
     }
 }

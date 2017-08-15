@@ -204,11 +204,11 @@ public class ConstraintIndexCreatorTest
         creator.createUniquenessConstraintIndex( state, constraintCreationContext.schemaReadOperations(), descriptor );
 
         // then
-        verify( state.locks().explicit() )
-                .releaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        verify( state.locks() )
+                .explicitReleaseExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
 
-        verify( state.locks().explicit() )
-                .acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
+        verify( state.locks() )
+                .explicitAcquireExclusive( ResourceTypes.SCHEMA, ResourceTypes.schemaResource() );
     }
 
     @Test

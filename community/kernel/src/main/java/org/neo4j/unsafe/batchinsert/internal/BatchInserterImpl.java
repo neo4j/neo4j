@@ -100,7 +100,6 @@ import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.logging.StoreLogService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -157,6 +156,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.Token;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
@@ -845,7 +845,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     {
         long id = relationshipStore.nextId();
         int typeId = getOrCreateRelationshipTypeToken( type );
-        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, NoOpClient.INSTANCE );
+        relationshipCreator.relationshipCreate( id, typeId, node1, node2, recordAccess, ResourceLocker.IGNORE );
         if ( properties != null && !properties.isEmpty() )
         {
             RelationshipRecord record = recordAccess.getRelRecords().getOrLoad( id, null ).forChangingData();

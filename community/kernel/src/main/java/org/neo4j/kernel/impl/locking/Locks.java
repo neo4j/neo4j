@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
-import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 
@@ -68,7 +67,7 @@ public interface Locks
                 long lockIdentityHashCode );
     }
 
-    interface Client extends ResourceLocker, AutoCloseable
+    interface Client extends AutoCloseable
     {
         /**
          * Represents the fact that no lock session is used because no locks are taken.
@@ -85,7 +84,6 @@ public interface Locks
          */
         void acquireShared( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
-        @Override
         void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
 
         /** Try grabbing exclusive lock, not waiting and returning a boolean indicating if we got the lock. */

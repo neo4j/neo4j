@@ -485,28 +485,28 @@ public class LockingStatementOperations implements
     @Override
     public void acquireExclusive( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().explicit().acquireExclusive( state.lockTracer(), resourceType, resourceId );
+        state.locks().explicitAcquireExclusive( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void acquireShared( KernelStatement state, ResourceType resourceType, long resourceId )
     {
-        state.locks().explicit().acquireShared( state.lockTracer(), resourceType, resourceId );
+        state.locks().explicitAcquireShared( resourceType, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseExclusive( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().explicit().releaseExclusive( type, resourceId );
+        state.locks().explicitReleaseExclusive( type, resourceId );
         state.assertOpen();
     }
 
     @Override
     public void releaseShared( KernelStatement state, ResourceType type, long resourceId )
     {
-        state.locks().explicit().releaseShared( type, resourceId );
+        state.locks().explicitReleaseShared( type, resourceId );
         state.assertOpen();
     }
 

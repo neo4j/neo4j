@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
@@ -115,7 +116,7 @@ public class RelationshipCreatorTest
         }
     }
 
-    static class Tracker extends NoOpClient implements RecordAccessSet
+    static class Tracker extends NoOpClient implements RecordAccessSet, ResourceLocker
     {
         private final RecordAccessSet delegate;
         private final TrackingRecordAccess<RelationshipRecord, Void> relRecords;
@@ -137,6 +138,13 @@ public class RelationshipCreatorTest
             {
                 relationshipLocksAcquired.add( resourceId );
             }
+        }
+
+        @Override
+        public void acquireExclusive( ResourceType resourceType, long... resourceIds )
+                throws AcquireLockTimeoutException
+        {
+            acquireExclusive( LockTracer.NONE, resourceType, resourceIds );
         }
 
         protected void changingRelationship( long relId )

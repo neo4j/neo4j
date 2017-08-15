@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -85,6 +84,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.NeoStoresRule;
 
@@ -1334,7 +1334,7 @@ public class TransactionRecordStateTest
                 new RelationshipGroupGetter( neoStores.getRelationshipGroupStore() );
         PropertyDeleter propertyDeleter = new PropertyDeleter( propertyTraverser );
         return new TransactionRecordState( neoStores, integrityValidator, recordChangeSet, 0,
-                new NoOpClient(),
+                ResourceLocker.IGNORE,
                 new RelationshipCreator( relationshipGroupGetter,
                         neoStores.getRelationshipGroupStore().getStoreHeaderInt() ),
                 new RelationshipDeleter( relationshipGroupGetter, propertyDeleter ),

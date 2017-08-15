@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.LockTracer;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
@@ -69,6 +68,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageStatement;
 import org.neo4j.storageengine.api.StoreReadLayer;
+import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
@@ -547,7 +547,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 // grab all optimistic locks now, locks can't be deferred any further
                 statementLocks.prepareForCommit();
                 // use pessimistic locks for the rest of the commit process, locks can't be deferred any further
-                Locks.Client commitLocks = statementLocks.explicit();
+                ResourceLocker commitLocks = statementLocks::explicitAcquireExclusive;
 
                 // Gather up commands from the various sources
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
@@ -582,7 +582,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                             headerInformation.getMasterId(),
                             headerInformation.getAuthorId(),
                             startTimeMillis, lastTransactionIdWhenStarted, timeCommitted,
-                            commitLocks.getLockSessionId() );
+                            statementLocks.getLockSessionId() );
 
                     // Commit the transaction
                     success = true;
@@ -801,7 +801,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         String lockSessionId = statementLocks == null
                                ? "statementLocks == null"
-                               : String.valueOf( statementLocks.explicit().getLockSessionId() );
+                               : String.valueOf( statementLocks.getLockSessionId() );
 
         return "KernelTransaction[" + lockSessionId + "]";
     }

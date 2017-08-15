@@ -30,14 +30,14 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
-import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory;
@@ -48,7 +48,7 @@ import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.StatementLocks;
 
 import static org.neo4j.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
 import static org.neo4j.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
@@ -113,7 +113,7 @@ public class ConstraintIndexCreator
 
         boolean success = false;
         boolean reacquiredSchemaLock = false;
-        Client locks = state.locks().explicit();
+        StatementLocks statementLocks = state.locks();
         try
         {
             long indexId = schemaOps.indexGetCommittedId( state, index );
@@ -122,7 +122,7 @@ public class ConstraintIndexCreator
             // At this point the integrity of the constraint to be created was checked
             // while holding the lock and the index rule backing the soon-to-be-created constraint
             // has been created. Now it's just the population left, which can take a long time
-            releaseSchemaLock( locks );
+            releaseSchemaLock( statementLocks );
 
             awaitConstrainIndexPopulation( constraint, indexId );
 
@@ -130,7 +130,7 @@ public class ConstraintIndexCreator
             // Acquire SCHEMA WRITE lock and verify the constraints here in this user transaction
             // and if everything checks out then it will be held until after the constraint has been
             // created and activated.
-            acquireSchemaLock( state, locks );
+            acquireSchemaLock( statementLocks );
             reacquiredSchemaLock = true;
             indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
             success = true;
@@ -155,26 +155,26 @@ public class ConstraintIndexCreator
             {
                 if ( !reacquiredSchemaLock )
                 {
-                    acquireSchemaLock( state, locks );
+                    acquireSchemaLock( statementLocks );
                 }
                 dropUniquenessConstraintIndex( index );
             }
         }
     }
 
-    private void acquireSchemaLock( KernelStatement state, Client locks )
+    private void acquireSchemaLock( StatementLocks statementLocks )
     {
         if ( releaseSchemaLockWhenCreatingConstraint )
         {
-            locks.acquireExclusive( state.lockTracer(), SCHEMA, schemaResource() );
+            statementLocks.explicitAcquireExclusive( SCHEMA, schemaResource() );
         }
     }
 
-    private void releaseSchemaLock( Client locks )
+    private void releaseSchemaLock( StatementLocks statementLocks )
     {
         if ( releaseSchemaLockWhenCreatingConstraint )
         {
-            locks.releaseExclusive( SCHEMA, schemaResource() );
+            statementLocks.explicitReleaseExclusive( SCHEMA, schemaResource() );
         }
     }
 

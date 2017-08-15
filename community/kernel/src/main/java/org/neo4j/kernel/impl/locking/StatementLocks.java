@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * Component used by {@link KernelStatement} to acquire {@link #explicit() pessimistic} and
@@ -30,12 +32,20 @@ import org.neo4j.kernel.impl.coreapi.IsolationLevel;
  */
 public interface StatementLocks extends AutoCloseable
 {
+    Supplier<LockTracer> DEFAULT_LOCK_TRACER_SUPPLIER = () -> LockTracer.NONE;
+
     /**
      * Get {@link Locks.Client} responsible for explicit locks. Such locks will be grabbed right away.
      *
      * @return the locks client to serve explicit locks.
      */
     Locks.Client explicit();
+
+    void explicitAcquireExclusive( ResourceType type, long... resourceId );
+    void explicitReleaseExclusive( ResourceType type, long resourceId );
+    void explicitAcquireShared( ResourceType type, long... resourceId );
+    void explicitReleaseShared( ResourceType type, long resourceId );
+    int getLockSessionId();
 
     /**
      * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
@@ -85,4 +95,10 @@ public interface StatementLocks extends AutoCloseable
      * @see org.neo4j.kernel.impl.coreapi.InternalTransaction#setIsolationLevel(IsolationLevel)
      */
     void setIsolationLevel( IsolationLevel isolationLevel );
+
+    /**
+     * Set the supplier of the tracers used to trace every lock acquire and release.
+     * @param lockTracerSupplier The supplier of lock tracers.
+     */
+    void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier );
 }

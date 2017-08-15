@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
+import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
@@ -31,17 +33,49 @@ public class DeferringStatementLocks implements StatementLocks
 {
     private final Locks.Client explicit;
     private final DeferringLockClient implicit;
+    private Supplier<LockTracer> lockTracerSupplier;
 
     public DeferringStatementLocks( Locks.Client explicit )
     {
         this.explicit = explicit;
         this.implicit = new DeferringLockClient( this.explicit );
+        lockTracerSupplier = DEFAULT_LOCK_TRACER_SUPPLIER;
     }
 
     @Override
     public Locks.Client explicit()
     {
         return explicit;
+    }
+
+    @Override
+    public void explicitAcquireExclusive( ResourceType type, long... resourceId )
+    {
+        explicit.acquireExclusive( lockTracerSupplier.get(), type, resourceId );
+    }
+
+    @Override
+    public void explicitReleaseExclusive( ResourceType type, long resourceId )
+    {
+        explicit.releaseExclusive( type, resourceId );
+    }
+
+    @Override
+    public void explicitAcquireShared( ResourceType type, long... resourceId )
+    {
+        explicit.acquireShared( lockTracerSupplier.get(), type, resourceId );
+    }
+
+    @Override
+    public void explicitReleaseShared( ResourceType type, long resourceId )
+    {
+        explicit.releaseShared( type, resourceId );
+    }
+
+    @Override
+    public int getLockSessionId()
+    {
+        return explicit.getLockSessionId();
     }
 
     @Override
@@ -87,5 +121,11 @@ public class DeferringStatementLocks implements StatementLocks
                 "Isolation level cannot be changed when deferred locking is enabled. Unset or change the `" +
                 DeferringStatementLocksFactory.deferred_locks_enabled.name() + "` setting to `false`, to allow " +
                 "changing the isolation level on transactions." );
+    }
+
+    @Override
+    public void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier )
+    {
+        this.lockTracerSupplier = lockTracerSupplier;
     }
 }
