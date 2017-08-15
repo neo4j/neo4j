@@ -379,7 +379,7 @@ public class NodeStoreTest
                 return spy( super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, highId ) );
             }
         } );
-        StoreFactory factory = new StoreFactory( storeDir, Config.empty(), idGeneratorFactory, pageCache, fs,
+        StoreFactory factory = new StoreFactory( storeDir, Config.defaults(), idGeneratorFactory, pageCache, fs,
                 NullLogProvider.getInstance() );
         neoStores = factory.openAllNeoStores( true );
         nodeStore = neoStores.getNodeStore();

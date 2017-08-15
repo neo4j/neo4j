@@ -28,9 +28,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
 import static java.util.Arrays.asList;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Factory for Neo4j database instances with Enterprise Edition and High-Availability features.
@@ -60,15 +60,14 @@ public class HighlyAvailableGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
-                return new HighlyAvailableGraphDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
-                        state.databaseDependencies() );
+                config.augment( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" );
+                return new HighlyAvailableGraphDatabase( storeDir, config, state.databaseDependencies() );
             }
         };
     }

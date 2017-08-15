@@ -40,8 +40,8 @@ public class ServerConfigurationValidatorTest
         expected.expectMessage( "Missing mandatory enabled connector of type 'HTTP'" );
 
         // when
-        Config.serverDefaults(
+        Config.fromSettings(
                 stringMap( "dbms.connector.http.enabled", "false",
-                        "dbms.connector.https.enabled", "false") );
+                        "dbms.connector.https.enabled", "false") ).withServerDefaults().build();
     }
 }

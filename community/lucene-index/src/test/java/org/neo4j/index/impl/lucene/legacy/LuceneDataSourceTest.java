@@ -76,7 +76,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
+        Config readOnlyConfig = Config.defaults( readOnlyConfig() );
         LuceneDataSource readOnlyDataSource = life.add( getLuceneDataSource( readOnlyConfig ) );
         assertNotNull( readOnlyDataSource.getIndexSearcher( indexIdentifier ) );
 
@@ -90,7 +90,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
+        Config readOnlyConfig = Config.defaults( readOnlyConfig() );
         dataSource = life.add( getLuceneDataSource( readOnlyConfig, OperationalMode.single ) );
         expectedException.expect( IllegalStateException.class );
         expectedException.expectMessage("Index deletion in read only mode is not supported.");
@@ -104,7 +104,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
+        Config readOnlyConfig = Config.defaults( readOnlyConfig() );
         dataSource = life.add( getLuceneDataSource( readOnlyConfig, OperationalMode.single ) );
 
         IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
@@ -119,7 +119,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
+        Config readOnlyConfig = Config.defaults( readOnlyConfig() );
         dataSource = life.add( getLuceneDataSource( readOnlyConfig, OperationalMode.ha ) );
 
         IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
@@ -134,7 +134,7 @@ public class LuceneDataSourceTest
         prepareIndexesByIdentifiers( indexIdentifier );
         stopDataSource();
 
-        Config readOnlyConfig = Config.embeddedDefaults( readOnlyConfig() );
+        Config readOnlyConfig = Config.defaults( readOnlyConfig() );
         dataSource = life.add( getLuceneDataSource( readOnlyConfig ) );
 
         IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
@@ -149,7 +149,7 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexWriterFromLRUCache() throws Throwable
     {
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         dataSource = life.add( getLuceneDataSource( config ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexWriter writer = dataSource.getIndexSearcher( identifier ).getWriter();
@@ -159,7 +159,7 @@ public class LuceneDataSourceTest
     @Test
     public void testShouldReturnIndexSearcherFromLRUCache() throws Throwable
     {
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         dataSource = life.add( getLuceneDataSource( config ) );
         IndexIdentifier identifier = identifier( "foo" );
         IndexReference searcher = dataSource.getIndexSearcher( identifier );
@@ -172,7 +172,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Config config = Config.embeddedDefaults( cacheSizeConfig() );
+        Config config = Config.defaults( cacheSizeConfig() );
         dataSource = life.add( getLuceneDataSource( config ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -189,7 +189,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Config config = Config.embeddedDefaults( cacheSizeConfig() );
+        Config config = Config.defaults( cacheSizeConfig() );
         dataSource = life.add( getLuceneDataSource( config )  );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -208,7 +208,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Config config = Config.embeddedDefaults( cacheSizeConfig() );
+        Config config = Config.defaults( cacheSizeConfig() );
         dataSource = life.add( getLuceneDataSource( config ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -230,7 +230,7 @@ public class LuceneDataSourceTest
     {
         addIndex( "bar" );
         addIndex( "baz" );
-        Config config = Config.embeddedDefaults( cacheSizeConfig() );
+        Config config = Config.defaults( cacheSizeConfig() );
         dataSource = life.add( getLuceneDataSource( config ) );
         IndexIdentifier fooIdentifier = identifier( "foo" );
         IndexIdentifier barIdentifier = identifier( "bar" );
@@ -255,7 +255,7 @@ public class LuceneDataSourceTest
 
     private void prepareIndexesByIdentifiers( IndexIdentifier indexIdentifier )
     {
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         dataSource = life.add( getLuceneDataSource( config ) );
         dataSource.getIndexSearcher( indexIdentifier );
         dataSource.force();

@@ -50,7 +50,6 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -65,8 +64,7 @@ public class CommonAbstractStoreBehaviourTest
      * Note that tests MUST use the non-modifying methods, to make alternate copies
      * of this settings class.
      */
-    private static final Config CONFIG = Config.empty().augment( stringMap(
-            GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8M" );
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final ConfigurablePageCacheRule pageCacheRule = new ConfigurablePageCacheRule();
@@ -317,8 +315,7 @@ public class CommonAbstractStoreBehaviourTest
     @Test
     public void rebuildIdGeneratorSlowMustThrowOnPageOverflow() throws Exception
     {
-        config = config.with( stringMap(
-                CommonAbstractStore.Configuration.rebuild_idgenerators_fast.name(), "false" ) );
+        config.augment( CommonAbstractStore.Configuration.rebuild_idgenerators_fast, "false" );
         createStore();
         store.setStoreNotOk( new Exception() );
         IntRecord record = new IntRecord( 200 );

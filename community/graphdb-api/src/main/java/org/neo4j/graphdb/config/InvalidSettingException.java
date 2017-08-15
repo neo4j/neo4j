@@ -21,7 +21,9 @@ package org.neo4j.graphdb.config;
 
 /**
  * Thrown when a configuration setting is, for one reason or another, invalid.
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public class InvalidSettingException extends RuntimeException
 {
 

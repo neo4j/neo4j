@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.query;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BooleanSupplier;
+import java.util.function.LongSupplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,11 +34,13 @@ import org.neo4j.logging.Log;
 class QueryLogger implements QueryExecutionMonitor
 {
     private final Log log;
-    private final long thresholdMillis;
+    private final BooleanSupplier queryLogEnabled;
+    private final LongSupplier thresholdMillis;
     private final boolean logQueryParameters;
     private final boolean logDetailedTime;
     private final boolean logAllocatedBytes;
     private final boolean logPageDetails;
+    private final EnumSet<QueryLogEntryContent> flags;
 
     private static final Pattern PASSWORD_PATTERN = Pattern.compile(
             // call signature
@@ -46,14 +50,16 @@ class QueryLogger implements QueryExecutionMonitor
             // password parameter, in single, double quotes, or parametrized
             "\\s*('(?:(?<=\\\\)'|[^'])*'|\"(?:(?<=\\\\)\"|[^\"])*\"|\\$\\w*|\\{\\w*\\})\\s*\\)" );
 
-    QueryLogger( Log log, long thresholdMillis, EnumSet<QueryLogEntryContent> flags )
+    QueryLogger( Log log, BooleanSupplier queryLogEnabled, LongSupplier thresholdMillis, EnumSet<QueryLogEntryContent> flags )
     {
         this.log = log;
+        this.queryLogEnabled = queryLogEnabled;
         this.thresholdMillis = thresholdMillis;
         this.logQueryParameters = flags.contains( QueryLogEntryContent.LOG_PARAMETERS );
         this.logDetailedTime = flags.contains( QueryLogEntryContent.LOG_DETAILED_TIME );
         this.logAllocatedBytes = flags.contains( QueryLogEntryContent.LOG_ALLOCATED_BYTES );
         this.logPageDetails = flags.contains( QueryLogEntryContent.LOG_PAGE_DETAILS );
+        this.flags = flags;
     }
 
     @Override
@@ -64,16 +70,22 @@ class QueryLogger implements QueryExecutionMonitor
     @Override
     public void endFailure( ExecutingQuery query, Throwable failure )
     {
-        log.error( logEntry( query.snapshot() ), failure );
+        if ( queryLogEnabled.getAsBoolean() )
+        {
+            log.error( logEntry( query.snapshot() ), failure );
+        }
     }
 
     @Override
     public void endSuccess( ExecutingQuery query )
     {
-        QuerySnapshot snapshot = query.snapshot();
-        if ( snapshot.elapsedTimeMillis() >= thresholdMillis )
+        if ( queryLogEnabled.getAsBoolean() )
         {
-            log.info( logEntry( snapshot ) );
+            QuerySnapshot snapshot = query.snapshot();
+            if ( snapshot.elapsedTimeMillis() >= thresholdMillis.getAsLong() )
+            {
+                log.info( logEntry( snapshot ) );
+            }
         }
     }
 
@@ -99,7 +111,6 @@ class QueryLogger implements QueryExecutionMonitor
             else
             {
                 queryText = queryText.replace( password, "******" );
-                password = "";
             }
         }
 

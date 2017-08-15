@@ -30,7 +30,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.locking.DeferringStatementLocksFactory.deferred_locks_enabled;
 
 public class DeferringStatementLocksFactoryTest
@@ -41,7 +40,7 @@ public class DeferringStatementLocksFactoryTest
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         try
         {
-            factory.initialize( null, Config.empty() );
+            factory.initialize( null, Config.defaults() );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -87,7 +86,7 @@ public class DeferringStatementLocksFactoryTest
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        Config config = Config.embeddedDefaults( stringMap( deferred_locks_enabled.name(), Settings.FALSE ) );
+        Config config = Config.defaults( deferred_locks_enabled, Settings.FALSE );
 
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         factory.initialize( locks, config );
@@ -106,7 +105,7 @@ public class DeferringStatementLocksFactoryTest
         Locks.Client client = mock( Locks.Client.class );
         when( locks.newClient() ).thenReturn( client );
 
-        Config config = Config.embeddedDefaults( stringMap( deferred_locks_enabled.name(), Settings.TRUE ) );
+        Config config = Config.defaults( deferred_locks_enabled, Settings.TRUE );
 
         DeferringStatementLocksFactory factory = new DeferringStatementLocksFactory();
         factory.initialize( locks, config );

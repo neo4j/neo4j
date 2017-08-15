@@ -30,6 +30,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -84,7 +85,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 
@@ -166,13 +166,12 @@ public class StoreUpgradeIntegrationTest
         public void serverDatabaseShouldStartOnOlderStoreWhenUpgradeIsEnabled() throws Throwable
         {
             File rootDir = testDir.directory();
-            File storeDir = Config.embeddedDefaults(
-                    stringMap( DatabaseManagementSystemSettings.data_directory.name(), rootDir.toString() ) )
+            File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, rootDir.toString() )
                     .get( DatabaseManagementSystemSettings.database_path );
 
             store.prepareDirectory( storeDir );
 
-            File configFile = new File( rootDir, "neo4j.conf" );
+            File configFile = new File( rootDir, Config.DEFAULT_CONFIG_FILE_NAME );
             Properties props = new Properties();
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
@@ -189,7 +188,7 @@ public class StoreUpgradeIntegrationTest
             ServerBootstrapper bootstrapper = new CommunityBootstrapper();
             try
             {
-                bootstrapper.start( rootDir.getAbsoluteFile(), Optional.of( configFile ) );
+                bootstrapper.start( rootDir.getAbsoluteFile(), Optional.of( configFile ), Collections.emptyMap() );
                 assertTrue( bootstrapper.isRunning() );
                 checkInstance( store, bootstrapper.getServer().getDatabase().getGraph() );
             }

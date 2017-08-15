@@ -42,7 +42,7 @@ public class AnnotationBasedConfigurationMigratorTest
     {
         @SuppressWarnings( "unused" )
         @Migrator
-        public static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
+        private static ConfigurationMigrator migrator = ( rawConfiguration, log ) ->
         {
             wasCalled.set( true );
             return rawConfiguration;

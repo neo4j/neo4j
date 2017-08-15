@@ -90,6 +90,6 @@ public class SlaveLockManagerTest
     private SlaveLockManager newSlaveLockManager( Locks localLocks )
     {
         return new SlaveLockManager( localLocks, requestContextFactory, master, availabilityGuard,
-                NullLogProvider.getInstance(), Config.empty() );
+                NullLogProvider.getInstance(), Config.defaults() );
     }
 }

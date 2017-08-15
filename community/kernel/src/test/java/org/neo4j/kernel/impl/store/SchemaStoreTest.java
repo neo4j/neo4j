@@ -67,7 +67,7 @@ public class SchemaStoreTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        config = Config.empty();
+        config = Config.defaults();
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs.get() );
         storeFactory = new StoreFactory( storeDir, config, idGeneratorFactory, pageCacheRule.getPageCache( fs.get() ),
                 fs.get(), NullLogProvider.getInstance() );

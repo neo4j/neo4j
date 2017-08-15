@@ -75,6 +75,9 @@ public interface LoadableConfig
 
                     final Internal internalAnnotation = f.getAnnotation( Internal.class );
                     setting.setInternal( internalAnnotation != null );
+
+                    final Dynamic dynamicAnnotation = f.getAnnotation( Dynamic.class );
+                    setting.setDynamic( dynamicAnnotation != null );
                 }
 
                 if ( publicSetting instanceof SettingGroup )

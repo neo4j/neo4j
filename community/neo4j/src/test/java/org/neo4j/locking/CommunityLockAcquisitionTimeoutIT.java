@@ -231,7 +231,7 @@ public class CommunityLockAcquisitionTimeoutIT
                 @Override
                 public GraphDatabaseService newDatabase( Map<String,String> config )
                 {
-                    return newDatabase( Config.embeddedDefaults( config ) );
+                    return newDatabase( Config.defaults( config ) );
                 }
 
                 @Override

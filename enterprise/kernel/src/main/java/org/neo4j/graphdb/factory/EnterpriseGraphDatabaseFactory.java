@@ -26,8 +26,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 
 /**
  * Factory for Neo4j database instances with Enterprise Edition features.
@@ -45,14 +46,15 @@ public class EnterpriseGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override
             public GraphDatabaseService newDatabase( Config config )
             {
+                config.augment( GraphDatabaseFacadeFactory.Configuration.ephemeral, FALSE );
                 return new EnterpriseGraphDatabase( storeDir,
-                        config.with( stringMap( "unsupported.dbms.ephemeral", "false" ) ),
+                        config,
                         state.databaseDependencies() );
             }
         };

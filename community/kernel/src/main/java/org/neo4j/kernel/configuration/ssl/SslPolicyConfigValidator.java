@@ -173,4 +173,10 @@ public class SslPolicyConfigValidator implements SettingGroup<Object>
     {
         return empty();
     }
+
+    @Override
+    public boolean dynamic()
+    {
+        return false;
+    }
 }

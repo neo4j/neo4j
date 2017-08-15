@@ -27,9 +27,11 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_unrestricted;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
+import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.default_allowed;
+import static org.neo4j.server.security.enterprise.configuration.SecuritySettings.procedure_roles;
 
 public class ProcedureConfigTest
 {
@@ -51,7 +53,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithDefaultProcedureAllowed()
     {
-        Config config = Config.defaults().with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1" ) );
+        Config config = Config.defaults( default_allowed, "role1" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "x" ), equalTo( arrayOf( "role1" ) ) );
     }
@@ -59,9 +61,8 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithExactMatchProcedureAllowed()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1", PROC_ALLOWED_SETTING_ROLES,
-                        "xyz:anotherRole" ) );
+        Config config = Config.defaults( stringMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1",
+                PROC_ALLOWED_SETTING_ROLES, "xyz:anotherRole" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abc" ), equalTo( arrayOf( "role1" ) ) );
@@ -70,32 +71,28 @@ public class ProcedureConfigTest
     @Test
     public void shouldNotFailOnEmptyStringDefaultName()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, ""));
+        Config config = Config.defaults( default_allowed, "" );
         new ProcedureConfig( config );
     }
 
     @Test
     public void shouldNotFailOnEmptyStringRoles()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "" ) );
+        Config config = Config.defaults( procedure_roles, "" );
         new ProcedureConfig( config );
     }
 
     @Test
     public void shouldNotFailOnBadStringRoles()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_ROLES, "matrix" ) );
+        Config config = Config.defaults( procedure_roles, "matrix" );
         new ProcedureConfig( config );
     }
 
     @Test
     public void shouldNotFailOnEmptyStringBoth()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "",
+        Config config = Config.defaults( stringMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "",
                         PROC_ALLOWED_SETTING_ROLES, "" ) );
         new ProcedureConfig( config );
     }
@@ -103,8 +100,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithWildcardProcedureAllowed()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1", PROC_ALLOWED_SETTING_ROLES,
+        Config config = Config.defaults( stringMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "role1", PROC_ALLOWED_SETTING_ROLES,
                         "xyz*:anotherRole" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "anotherRole" ) ) );
@@ -114,7 +110,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithWildcardProcedureAllowedAndNoDefault()
     {
-        Config config = Config.defaults().with( genericMap( PROC_ALLOWED_SETTING_ROLES, "xyz*:anotherRole" ) );
+        Config config = Config.defaults( procedure_roles, "xyz*:anotherRole" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "anotherRole" ) ) );
         assertThat( procConfig.rolesFor( "abcxyz" ), equalTo( EMPTY ) );
@@ -123,8 +119,8 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithMultipleWildcardProcedureAllowedAndNoDefault()
     {
-        Config config = Config.defaults().with( genericMap( PROC_ALLOWED_SETTING_ROLES,
-                "apoc.convert.*:apoc_reader;apoc.load.json:apoc_writer;apoc.trigger.add:TriggerHappy" ) );
+        Config config = Config.defaults( procedure_roles,
+                "apoc.convert.*:apoc_reader;apoc.load.json:apoc_writer;apoc.trigger.add:TriggerHappy" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( EMPTY ) );
         assertThat( procConfig.rolesFor( "apoc.convert.xml" ), equalTo( arrayOf( "apoc_reader" ) ) );
@@ -141,8 +137,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldHaveConfigsWithOverlappingMatchingWildcards()
     {
-        Config config = Config.defaults()
-                .with( genericMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "default", PROC_ALLOWED_SETTING_ROLES,
+        Config config = Config.defaults( stringMap( PROC_ALLOWED_SETTING_DEFAULT_NAME, "default", PROC_ALLOWED_SETTING_ROLES,
                         "apoc.*:apoc;apoc.load.*:loader;apoc.trigger.*:trigger;apoc.trigger.add:TriggerHappy" ) );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyz" ), equalTo( arrayOf( "default" ) ) );
@@ -156,8 +151,8 @@ public class ProcedureConfigTest
     @Test
     public void shouldSupportSeveralRolesPerPattern()
     {
-        Config config = Config.defaults().with( genericMap( PROC_ALLOWED_SETTING_ROLES,
-                "xyz*:role1,role2,  role3  ,    role4   ;    abc:  role3   ,role1" ) );
+        Config config = Config.defaults( procedure_roles,
+                "xyz*:role1,role2,  role3  ,    role4   ;    abc:  role3   ,role1" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.rolesFor( "xyzabc" ), equalTo( arrayOf( "role1", "role2", "role3", "role4" ) ) );
         assertThat( procConfig.rolesFor( "abc" ), equalTo( arrayOf( "role3", "role1" ) ) );
@@ -175,8 +170,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessForProcedures()
     {
-        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
-                "test.procedure.name" ) );
+        Config config = Config.defaults(procedure_unrestricted, "test.procedure.name" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
         assertThat( procConfig.fullAccessFor( "xyzabc" ), equalTo( false ) );
@@ -186,8 +180,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessForSeveralProcedures()
     {
-        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
-                "test.procedure.name, test.procedure.otherName" ) );
+        Config config = Config.defaults( procedure_unrestricted, "test.procedure.name, test.procedure.otherName" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
         assertThat( procConfig.fullAccessFor( "xyzabc" ), equalTo( false ) );
@@ -198,8 +191,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAcsessForSeveralProceduresOddNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
-                "test\\.procedure.name, test*rocedure.otherName" ) );
+        Config config = Config.defaults( procedure_unrestricted, "test\\.procedure.name, test*rocedure.otherName" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
         assertThat( procConfig.fullAccessFor( "xyzabc" ), equalTo( false ) );
@@ -210,8 +202,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowFullAccessWildcardProceduresNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
-                " test.procedure.*  ,     test.*.otherName" ) );
+        Config config = Config.defaults( procedure_unrestricted, " test.procedure.*  ,     test.*.otherName" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
         assertThat( procConfig.fullAccessFor( "xyzabc" ), equalTo( false ) );
@@ -225,7 +216,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldBlockWithWhiteListingForProcedures()
     {
-        Config config = Config.defaults().with( genericMap( procedure_unrestricted.name(),
+        Config config = Config.defaults( stringMap( procedure_unrestricted.name(),
                 "test.procedure.name, test.procedure.name2",  procedure_whitelist.name(),
                 "test.procedure.name") );
         ProcedureConfig procConfig = new ProcedureConfig( config );
@@ -238,8 +229,7 @@ public class ProcedureConfigTest
     @Test
     public void shouldAllowWhiteListsWildcardProceduresNames()
     {
-        Config config = Config.defaults().with( genericMap( procedure_whitelist.name(),
-                " test.procedure.* ,  test.*.otherName"  ));
+        Config config = Config.defaults( procedure_whitelist, " test.procedure.* ,  test.*.otherName" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
 
         assertThat( procConfig.isWhitelisted( "xyzabc" ), equalTo( false ) );
@@ -253,46 +243,46 @@ public class ProcedureConfigTest
     @Test
     public void shouldIgnoreOddRegex()
     {
-        Config config = Config.defaults().with( genericMap( procedure_whitelist.name(), "[\\db^a]*" ) );
+        Config config = Config.defaults( procedure_whitelist, "[\\db^a]*" );
         ProcedureConfig procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "123" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "(abc)" ) );
+        config = Config.defaults( procedure_whitelist, "(abc)" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "(abc)" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "^$" ) );
+        config = Config.defaults( procedure_whitelist, "^$" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "^$" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "\\" ) );
+        config = Config.defaults( procedure_whitelist, "\\" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "\\" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "&&" ) );
+        config = Config.defaults( procedure_whitelist, "&&" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "&&" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "\\p{Lower}" ) );
+        config = Config.defaults( procedure_whitelist, "\\p{Lower}" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "\\p{Lower}" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a+" ) );
+        config = Config.defaults( procedure_whitelist, "a+" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "aaaaaa" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "a+" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a|b" ) );
+        config = Config.defaults( procedure_whitelist, "a|b" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "|" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "a|b" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "[a-c]" ) );
+        config = Config.defaults( procedure_whitelist, "[a-c]" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "a" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "b" ), equalTo( false ) );
@@ -300,7 +290,7 @@ public class ProcedureConfigTest
         assertThat( procConfig.isWhitelisted( "-" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "[a-c]" ), equalTo( true ) );
 
-        config = Config.defaults().with( genericMap( procedure_whitelist.name(), "a\tb" ) );
+        config = Config.defaults( procedure_whitelist, "a\tb" );
         procConfig = new ProcedureConfig( config );
         assertThat( procConfig.isWhitelisted( "a    b" ), equalTo( false ) );
         assertThat( procConfig.isWhitelisted( "a\tb" ), equalTo( true ) );

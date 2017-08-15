@@ -22,8 +22,6 @@ package org.neo4j.kernel.ha.cluster;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,13 +73,13 @@ import org.neo4j.kernel.impl.transaction.TransactionStats;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.locker.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertNull;
@@ -100,7 +98,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.withSettings;
 import static org.neo4j.com.StoreIdTestFactory.newStoreIdForCurrentVersion;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class SwitchToSlaveCopyThenBranchTest
 {
@@ -403,7 +400,7 @@ public class SwitchToSlaveCopyThenBranchTest
 
     private Config configMock()
     {
-        return Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
     private <T> T mockWithLifecycle( Class<T> clazz )

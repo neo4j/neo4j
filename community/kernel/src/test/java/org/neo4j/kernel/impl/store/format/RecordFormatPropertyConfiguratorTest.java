@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.standard.NoRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -54,7 +53,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void keepUserDefinedFormatConfig() throws Exception
     {
-        Config config = Config.embeddedDefaults( MapUtil.stringMap( string_block_size.name(), "36" ) );
+        Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
         new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
         assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
@@ -63,7 +62,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void overrideDefaultValuesForCurrentFormat()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 17;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
@@ -77,7 +76,7 @@ public class RecordFormatPropertyConfiguratorTest
     @Test
     public void checkForMinimumBlockSize()
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         int testHeaderSize = 60;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 

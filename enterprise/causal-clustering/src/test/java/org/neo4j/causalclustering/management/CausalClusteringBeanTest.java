@@ -63,7 +63,7 @@ public class CausalClusteringBeanTest
     public void setUp() throws Exception
     {
         KernelData kernelData =
-                new DefaultKernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.empty(), db );
+                new DefaultKernelData( fs, mock( PageCache.class ), new File( "storeDir" ), Config.defaults(), db );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( clusterStateDirectory );

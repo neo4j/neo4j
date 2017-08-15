@@ -158,7 +158,7 @@ public class CommitContentionTest
                     }
                 };
             }
-        }.newFacade( storeLocation.graphDbDir(), Config.embeddedDefaults(), state.databaseDependencies() );
+        }.newFacade( storeLocation.graphDbDir(), Config.defaults(), state.databaseDependencies() );
     }
 
     private void waitForFirstTransactionToStartPushing() throws InterruptedException

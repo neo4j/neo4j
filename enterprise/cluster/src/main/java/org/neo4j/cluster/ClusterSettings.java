@@ -24,19 +24,22 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.configuration.Internal;
+import org.neo4j.kernel.configuration.Settings;
 
 import static org.neo4j.kernel.configuration.Settings.ANY;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.matches;
@@ -92,8 +95,8 @@ public class ClusterSettings implements LoadableConfig
 
     @Description( "The name of a cluster." )
     @Internal
-    public static final Setting<String> cluster_name = setting( "unsupported.ha.cluster_name", STRING, "neo4j.ha",
-            illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) );
+    public static final Setting<String> cluster_name = buildSetting( "unsupported.ha.cluster_name", STRING, "neo4j.ha" ).constraint(
+            illegalValueMessage( "must be a valid cluster name", matches( ANY ) ) ).build();
 
     @Description( "A comma-separated list of other members of the cluster to join." )
     public static final Setting<List<HostnamePort>> initial_hosts = setting( "ha.initial_hosts",
@@ -119,8 +122,8 @@ public class ClusterSettings implements LoadableConfig
     public static final Setting<Duration> default_timeout = setting( "ha.default_timeout", DURATION, "5s" );
 
     @Description( "How often heartbeat messages should be sent. Defaults to ha.default_timeout." )
-    public static final Setting<Duration> heartbeat_interval = setting( "ha.heartbeat_interval", DURATION,
-            default_timeout );
+    public static final Setting<Duration> heartbeat_interval = buildSetting( "ha.heartbeat_interval", DURATION ).inherits(
+            default_timeout ).build();
 
     @Description( "How long to wait for heartbeats from other instances before marking them as suspects for failure. " +
             "This value reflects considerations of network latency, expected duration of garbage collection pauses " +
@@ -140,13 +143,13 @@ public class ClusterSettings implements LoadableConfig
 
     @Description( "Timeout for joining a cluster. Defaults to ha.broadcast_timeout. " +
             "Note that if the timeout expires during cluster formation, the operator may have to restart the instance or instances." )
-    public static final Setting<Duration> join_timeout = setting( "ha.join_timeout", DURATION, broadcast_timeout );
+    public static final Setting<Duration> join_timeout = buildSetting( "ha.join_timeout", DURATION ).inherits( broadcast_timeout ).build();
 
     @Description( "Timeout for waiting for configuration from an existing cluster member during cluster join." )
     public static final Setting<Duration> configuration_timeout = setting( "ha.configuration_timeout", DURATION, "1s" );
 
     @Description( "Timeout for waiting for cluster leave to finish. Defaults to ha.broadcast_timeout." )
-    public static final Setting<Duration> leave_timeout = setting( "ha.leave_timeout", DURATION, broadcast_timeout );
+    public static final Setting<Duration> leave_timeout = buildSetting( "ha.leave_timeout", DURATION ).inherits( broadcast_timeout ).build();
 
     /*
      *  ha.phase1_timeout
@@ -157,33 +160,33 @@ public class ClusterSettings implements LoadableConfig
             "ha.phase2_timeout and ha.election_timeout settings. If it is not given a value it " +
             "defaults to ha.default_timeout and will implicitly change if ha.default_timeout changes. This is an " +
             "advanced parameter which should only be changed if specifically advised by Neo4j Professional Services." )
-    public static final Setting<Duration> paxos_timeout = setting( "ha.paxos_timeout", DURATION, default_timeout );
+    public static final Setting<Duration> paxos_timeout = buildSetting( "ha.paxos_timeout", DURATION ).inherits( default_timeout ).build();
 
     @Description( "Timeout for Paxos phase 1. If it is not given a value it defaults to ha.paxos_timeout and will " +
             "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
             "changed if specifically advised by Neo4j Professional Services. " )
-    public static final Setting<Duration> phase1_timeout = setting( "ha.phase1_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> phase1_timeout = buildSetting( "ha.phase1_timeout", DURATION ).inherits( paxos_timeout ).build();
 
     @Description( "Timeout for Paxos phase 2. If it is not given a value it defaults to ha.paxos_timeout and will " +
             "implicitly change if ha.paxos_timeout changes. This is an advanced parameter which should only be " +
             "changed if specifically advised by Neo4j Professional Services. " )
-    public static final Setting<Duration> phase2_timeout = setting( "ha.phase2_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> phase2_timeout = buildSetting( "ha.phase2_timeout", DURATION ).inherits( paxos_timeout ).build();
 
     @Description( "Timeout for learning values. Defaults to ha.default_timeout." )
-    public static final Setting<Duration> learn_timeout = setting( "ha.learn_timeout", DURATION, default_timeout );
+    public static final Setting<Duration> learn_timeout = buildSetting( "ha.learn_timeout", DURATION ).inherits( default_timeout ).build();
 
     @Description( "Timeout for waiting for other members to finish a role election. Defaults to ha.paxos_timeout." )
-    public static final Setting<Duration> election_timeout = setting( "ha.election_timeout", DURATION, paxos_timeout );
+    public static final Setting<Duration> election_timeout = buildSetting( "ha.election_timeout", DURATION ).inherits( paxos_timeout ).build();
 
     @Internal
-    public static final Setting<String> instance_name = setting("unsupported.ha.instance_name", STRING, (String) null);
+    public static final Setting<String> instance_name = setting("unsupported.ha.instance_name", STRING, Settings.NO_DEFAULT );
 
     @Description( "Maximum number of servers to involve when agreeing to membership changes. " +
             "In very large clusters, the probability of half the cluster failing is low, but protecting against " +
             "any arbitrary half failing is expensive. Therefore you may wish to set this parameter to a value less " +
             "than the cluster size." )
-    public static final Setting<Integer> max_acceptors = setting( "ha.max_acceptors", INTEGER, "21", min( 1 ) );
+    public static final Setting<Integer> max_acceptors = buildSetting( "ha.max_acceptors", INTEGER, "21" ).constraint( min( 1 ) ).build();
 
     @Internal
-    public static final Setting<Boolean> strict_initial_hosts = setting( "ha.strict_initial_hosts", BOOLEAN, "false");
+    public static final Setting<Boolean> strict_initial_hosts = setting( "ha.strict_initial_hosts", BOOLEAN, FALSE);
 }

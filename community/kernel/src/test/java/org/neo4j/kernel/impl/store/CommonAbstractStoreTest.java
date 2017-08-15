@@ -103,7 +103,7 @@ public class CommonAbstractStoreTest
     private final PageCursor pageCursor = mock( PageCursor.class );
     private final PagedFile pageFile = mock( PagedFile.class );
     private final PageCache pageCache = mock( PageCache.class );
-    private final Config config = Config.empty();
+    private final Config config = Config.defaults();
     private final File storeFile = new File( "store" );
     private final RecordFormat<TheRecord> recordFormat = mock( RecordFormat.class );
     private final IdType idType = IdType.RELATIONSHIP; // whatever
@@ -198,9 +198,9 @@ public class CommonAbstractStoreTest
         RecordingPageCursorTracer pageCursorTracer = new RecordingPageCursorTracer( Pin.class );
         PageCacheRule.PageCacheConfig pageCacheConfig = config().withTracer( tracer )
                                         .withCursorTracerSupplier( pageCursorTracerSupplier( pageCursorTracer ) );
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.empty() );
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get(), pageCacheConfig, Config.defaults() );
 
-        try ( NodeStore store = new NodeStore( storeFile, Config.empty(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
+        try ( NodeStore store = new NodeStore( storeFile, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
                 pageCache, NullLogProvider.getInstance(), null, Standard.LATEST_RECORD_FORMATS ) )
         {
             store.initialise( true );
@@ -312,7 +312,7 @@ public class CommonAbstractStoreTest
         File file = dir.file( "store" ).getAbsoluteFile();
         File idFile = new File( file.getParentFile(), StoreFileType.ID.augment( file.getName() ) );
         FileSystemAbstraction fs = fileSystemRule.get();
-        PageCache pageCache = pageCacheRule.getPageCache( fs, Config.empty() );
+        PageCache pageCache = pageCacheRule.getPageCache( fs, Config.defaults() );
         TheStore store = new TheStore( file, config, idType, new DefaultIdGeneratorFactory( fs ), pageCache,
                 NullLogProvider.getInstance(), recordFormat, DELETE_ON_CLOSE );
         store.initialise( true );

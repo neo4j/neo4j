@@ -25,7 +25,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.concurrent.Future;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -178,7 +177,7 @@ public class TestGraphProperties
         tx.close();
         db.shutdown();
 
-        Config config = Config.embeddedDefaults( Collections.emptyMap() );
+        Config config = Config.defaults();
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         NeoStores neoStores = storeFactory.openAllNeoStores();

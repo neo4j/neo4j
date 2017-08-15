@@ -70,8 +70,7 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
         @Override
         public Map<String,String> apply( Map<String,String> rawConfiguration )
         {
-            String value = rawConfiguration.get( propertyKey );
-            rawConfiguration.remove( propertyKey );
+            String value = rawConfiguration.remove( propertyKey );
             setValueWithOldSetting( value, rawConfiguration );
             return rawConfiguration;
         }

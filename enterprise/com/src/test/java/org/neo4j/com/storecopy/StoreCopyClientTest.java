@@ -74,7 +74,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.com.storecopy.StoreUtil.TEMP_COPY_DIRECTORY_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.record_format;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class StoreCopyClientTest
 {
@@ -116,7 +115,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier =
-                new StoreCopyClient( copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(),
+                new StoreCopyClient( copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(),
                         fileSystem,
                         pageCache, storeCopyMonitor, false );
 
@@ -170,7 +169,7 @@ public class StoreCopyClientTest
         final File copyDir = new File( testDir.directory(), "copy" );
         final File originalDir = new File( testDir.directory(), "original" );
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config config = Config.empty().augment( stringMap( record_format.name(), recordFormatsName ) );
+        Config config = Config.defaults( record_format, recordFormatsName );
         StoreCopyClient copier = new StoreCopyClient(
                 copyDir, config, loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 new StoreCopyClient.Monitor.Adapter(), false );
@@ -208,7 +207,7 @@ public class StoreCopyClientTest
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         StoreCopyClient copier = new StoreCopyClient(
-                copyDir, Config.empty(), loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
+                copyDir, Config.defaults(), loadKernelExtensions(), NullLogProvider.getInstance(), fileSystem, pageCache,
                 storeCopyMonitor, false );
 
         final GraphDatabaseAPI original = (GraphDatabaseAPI) startDatabase( originalDir );
@@ -256,7 +255,7 @@ public class StoreCopyClientTest
         GraphDatabaseService initialDatabase = startDatabase( initialStore );
 
         StoreCopyClient copier =
-                new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
+                new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
         StoreCopyClient.StoreCopyRequester storeCopyRequest =
@@ -284,7 +283,7 @@ public class StoreCopyClientTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         GraphDatabaseService initialDatabase = createInitialDatabase( initialStore );
         StoreCopyClient copier =
-                new StoreCopyClient( backupStore, Config.empty(), loadKernelExtensions(), NullLogProvider
+                new StoreCopyClient( backupStore, Config.defaults(), loadKernelExtensions(), NullLogProvider
                         .getInstance(), fileSystem, pageCache, new StoreCopyClient.Monitor.Adapter(), false );
         CancellationRequest falseCancellationRequest = () -> false;
 

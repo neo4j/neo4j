@@ -66,8 +66,6 @@ import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
-import static java.util.Collections.singletonMap;
-
 /**
  * Edition module for {@link org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory}. Implementations of this class
  * need to create all the services that would be specific for a particular edition of the database.
@@ -160,7 +158,7 @@ public abstract class EditionModule
     {
         sysInfo.set( UsageDataKeys.edition, databaseInfo.edition );
         sysInfo.set( UsageDataKeys.operationalMode, databaseInfo.operationalMode );
-        config.augment( singletonMap( Configuration.editionName.name(), databaseInfo.edition.toString() ) );
+        config.augment( Configuration.editionName, databaseInfo.edition.toString() );
     }
 
     public abstract void setupSecurityModule( PlatformModule platformModule, Procedures procedures );

@@ -262,7 +262,7 @@ public class ClusterTopologyChangesIT
 
     private ClusterClientModule newClusterClient( LifeSupport life, InstanceId id )
     {
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
+        Config config = Config.defaults( MapUtil.stringMap(
                 ClusterSettings.initial_hosts.name(), cluster.getInitialHostsConfigString(),
                 ClusterSettings.server_id.name(), String.valueOf( id.toIntegerIndex() ),
                 ClusterSettings.cluster_server.name(), "0.0.0.0:8888" ) );

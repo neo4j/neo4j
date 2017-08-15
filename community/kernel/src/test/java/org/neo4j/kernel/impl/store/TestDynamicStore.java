@@ -34,7 +34,6 @@ import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -84,7 +83,7 @@ public class TestDynamicStore
 
     private Config config()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap() );
+        return Config.defaults();
     }
 
     @Test

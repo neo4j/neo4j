@@ -50,7 +50,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Configuration.ephemeral;
@@ -222,7 +221,7 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override
@@ -258,14 +257,20 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         }
 
         @Override
-        protected PlatformModule createPlatform( File storeDir, Config config,
-                Dependencies dependencies, GraphDatabaseFacade graphDatabaseFacade )
+        protected PlatformModule createPlatform( File storeDir, Config config, Dependencies dependencies,
+                GraphDatabaseFacade graphDatabaseFacade )
         {
-            return impermanent ?
-                   new ImpermanentTestDatabasePlatformModule( storeDir, config.with( stringMap( ephemeral.name(), TRUE ) ),
-                           dependencies, graphDatabaseFacade, this.databaseInfo ) :
-                   new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade, this
-                           .databaseInfo );
+            if ( impermanent )
+            {
+                config.augment( ephemeral, TRUE );
+                return new ImpermanentTestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
+                        this.databaseInfo );
+            }
+            else
+            {
+                return new TestDatabasePlatformModule( storeDir, config, dependencies, graphDatabaseFacade,
+                        this.databaseInfo );
+            }
         }
 
         class TestDatabasePlatformModule extends PlatformModule

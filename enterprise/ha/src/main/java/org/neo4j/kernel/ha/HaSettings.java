@@ -35,6 +35,7 @@ import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
 import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -49,7 +50,7 @@ public class HaSettings implements LoadableConfig
 {
     @SuppressWarnings( "unused" ) // accessed by reflection
     @Migrator
-    public static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
+    private static final ConfigurationMigrator migrator = new EnterpriseConfigurationMigrator();
 
     @Description( "How long a slave will wait for response from master before giving up." )
     public static final Setting<Duration> read_timeout = setting( "ha.slave_read_timeout", DURATION, "20s" );
@@ -63,11 +64,11 @@ public class HaSettings implements LoadableConfig
             setting( "ha.internal_role_switch_timeout", DURATION, "10s" );
 
     @Description( "Timeout for taking remote (write) locks on slaves. Defaults to ha.slave_read_timeout." )
-    public static final Setting<Duration> lock_read_timeout = setting( "ha.slave_lock_timeout", DURATION, read_timeout );
+    public static final Setting<Duration> lock_read_timeout = buildSetting( "ha.slave_lock_timeout", DURATION ).inherits( read_timeout ).build();
 
     @Description( "Maximum number of connections a slave can have to the master." )
     public static final Setting<Integer> max_concurrent_channels_per_slave =
-            setting( "ha.max_channels_per_slave", INTEGER, "20", min( 1 ) );
+            buildSetting( "ha.max_channels_per_slave", INTEGER, "20" ).constraint( min( 1 ) ).build();
 
     @Description( "Hostname and port to bind the HA server." )
     public static final Setting<HostnamePort> ha_server = setting( "ha.host.data", HOSTNAME_PORT, "0.0.0.0:6001-6011" );
@@ -87,13 +88,13 @@ public class HaSettings implements LoadableConfig
     @Description( "Max size of the data chunks that flows between master and slaves in HA. Bigger size may increase " +
             "throughput, but may also be more sensitive to variations in bandwidth, whereas lower size increases " +
             "tolerance for bandwidth variations." )
-    public static final Setting<Long> com_chunk_size = setting( "ha.data_chunk_size", BYTES, "2M", min( 1024L ) );
+    public static final Setting<Long> com_chunk_size = buildSetting( "ha.data_chunk_size", BYTES, "2M" ).constraint( min( 1024L ) ).build();
 
     @Description( "Interval of pulling updates from master." )
     public static final Setting<Duration> pull_interval = setting( "ha.pull_interval", DURATION, "0s" );
 
     @Description( "The amount of slaves the master will ask to replicate a committed transaction. " )
-    public static final Setting<Integer> tx_push_factor = setting( "ha.tx_push_factor", INTEGER, "1", min( 0 ) );
+    public static final Setting<Integer> tx_push_factor = buildSetting( "ha.tx_push_factor", INTEGER, "1" ).constraint( min( 0 ) ).build();
 
     @Description( "Push strategy of a transaction to a slave during commit." )
     public static final Setting<TxPushStrategy> tx_push_strategy =

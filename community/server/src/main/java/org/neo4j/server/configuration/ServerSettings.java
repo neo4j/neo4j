@@ -47,9 +47,8 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
-import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -69,14 +68,15 @@ public class ServerSettings implements LoadableConfig
             setting( "unsupported.dbms.max_http_response_header_size", INTEGER, "20480" );
 
     @Description( "Comma-seperated list of custom security rules for Neo4j to use." )
-    public static final Setting<List<String>> security_rules = setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
+    public static final Setting<List<String>> security_rules =
+            setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
     @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
             "specified here." )
     @DocumentedDefaultValue( "Number of available processors (max 500)." )
-    public static final Setting<Integer> webserver_max_threads = setting( "dbms.threads.worker_count", INTEGER,
-            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ),
-            range( 1, JettyThreadCalculator.MAX_THREADS ) );
+    public static final Setting<Integer> webserver_max_threads = buildSetting( "dbms.threads.worker_count", INTEGER,
+            "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ) ).constraint(
+            range( 1, JettyThreadCalculator.MAX_THREADS ) ).build();
 
     @Description( "If execution time limiting is enabled in the database, this configures the maximum request execution time. " +
             "Please use dbms.transaction.timeout instead." )
@@ -143,8 +143,8 @@ public class ServerSettings implements LoadableConfig
             setting( "dbms.logs.http.rotation.keep_number", INTEGER, "5" );
 
     @Description( "Size of each HTTP log that is kept." )
-    public static final Setting<Long> http_logging_rotation_size = setting( "dbms.logs.http.rotation.size", BYTES,
-            "20m", min(0L), max( Long.MAX_VALUE ) );
+    public static final Setting<Long> http_logging_rotation_size = buildSetting( "dbms.logs.http.rotation.size", BYTES,
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Enable GC Logging" )
@@ -163,8 +163,8 @@ public class ServerSettings implements LoadableConfig
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Size of each GC log that is kept." )
-    public static final Setting<Long> gc_logging_rotation_size = setting( "dbms.logs.gc.rotation.size", BYTES,
-            "20m", min(0L), max( Long.MAX_VALUE ) );
+    public static final Setting<Long> gc_logging_rotation_size = buildSetting( "dbms.logs.gc.rotation.size", BYTES,
+            "20m" ).constraint( range(0L, Long.MAX_VALUE ) ).build();
 
     @SuppressWarnings( "unused" ) // used only in the startup scripts
     @Description( "Path of the run directory. This directory holds Neo4j's runtime state, such as a pidfile when it " +
@@ -212,7 +212,8 @@ public class ServerSettings implements LoadableConfig
             FALSE );
 
     @Internal
-    public static final Setting<Boolean> console_module_enabled = setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
+    public static final Setting<Boolean> console_module_enabled =
+            setting( "unsupported.dbms.console_module.enabled", BOOLEAN, TRUE );
 
     @Internal
     public static final Setting<Boolean> jmx_module_enabled = setting( "unsupported.dbms.jmx_module.enabled", BOOLEAN, TRUE );

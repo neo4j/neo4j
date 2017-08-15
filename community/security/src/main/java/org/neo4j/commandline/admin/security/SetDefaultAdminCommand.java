@@ -21,7 +21,6 @@ package org.neo4j.commandline.admin.security;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.Optional;
 import java.util.Set;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -29,15 +28,13 @@ import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
-import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.NullLogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
-import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.kernel.impl.security.Credential;
-import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.kernel.impl.security.User;
+import org.neo4j.logging.NullLogProvider;
+import org.neo4j.server.security.auth.CommunitySecurityModule;
+import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.UserRepository;
 
 public class SetDefaultAdminCommand implements AdminCommand
@@ -128,8 +125,8 @@ public class SetDefaultAdminCommand implements AdminCommand
 
     Config loadNeo4jConfig()
     {
-        return ConfigLoader.loadConfigWithConnectorsDisabled(
-                Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withConnectorsDisabled().build();
     }
 }

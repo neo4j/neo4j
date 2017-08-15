@@ -49,6 +49,6 @@ public class EnterpriseInProcessServerBuilder extends AbstractInProcessServerBui
     protected AbstractNeoServer createNeoServer( Map<String,String> config,
             GraphDatabaseFacadeFactory.Dependencies dependencies, FormattedLogProvider userLogProvider )
     {
-        return new EnterpriseNeoServer( Config.embeddedDefaults( config ), dependencies, userLogProvider );
+        return new EnterpriseNeoServer( Config.defaults( config ), dependencies, userLogProvider );
     }
 }

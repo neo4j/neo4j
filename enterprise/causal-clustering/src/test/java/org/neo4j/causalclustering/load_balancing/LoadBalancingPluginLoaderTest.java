@@ -40,7 +40,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LoadBalancingPluginLoaderTest
 {
@@ -51,9 +50,9 @@ public class LoadBalancingPluginLoaderTest
     public void shouldReturnSelectedPlugin() throws Throwable
     {
         // given
-        Config config = Config.empty();
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.load_balancing_plugin, DUMMY_PLUGIN_NAME )
+                .withSetting( CausalClusteringSettings.load_balancing_shuffle, "false" ).build();
 
         // when
         LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
@@ -72,9 +71,9 @@ public class LoadBalancingPluginLoaderTest
     public void shouldEnableShufflingOfDelegate() throws Throwable
     {
         // given
-        Config config = Config.empty();
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "true" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.load_balancing_plugin, DUMMY_PLUGIN_NAME )
+                .withSetting( CausalClusteringSettings.load_balancing_shuffle, "true" ).build();
 
         // when
         LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
@@ -92,9 +91,9 @@ public class LoadBalancingPluginLoaderTest
     public void shouldFindServerPoliciesPlugin() throws Throwable
     {
         // given
-        Config config = Config.empty();
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), ServerPoliciesPlugin.PLUGIN_NAME ) );
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_shuffle.name(), "false" ) );
+        Config config = Config.builder()
+                .withSetting( CausalClusteringSettings.load_balancing_plugin, ServerPoliciesPlugin.PLUGIN_NAME )
+                .withSetting( CausalClusteringSettings.load_balancing_shuffle, "false" ).build();
 
         // when
         LoadBalancingProcessor plugin = LoadBalancingPluginLoader.load(
@@ -112,8 +111,7 @@ public class LoadBalancingPluginLoaderTest
     public void shouldThrowOnInvalidPlugin()
     {
         // given
-        Config config = Config.empty();
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DOES_NOT_EXIST ) );
+        Config config = Config.defaults( CausalClusteringSettings.load_balancing_plugin, DOES_NOT_EXIST );
 
         try
         {
@@ -131,9 +129,9 @@ public class LoadBalancingPluginLoaderTest
     public void shouldNotAcceptInvalidSetting()
     {
         // given
-        Config config = Config.empty().augment( stringMap(
-                settingFor( DUMMY_PLUGIN_NAME, DummyLoadBalancingPlugin.DO_NOT_USE_THIS_CONFIG ), "true" ) );
-        config.augment( stringMap( CausalClusteringSettings.load_balancing_plugin.name(), DUMMY_PLUGIN_NAME ) );
+        Config config = Config.builder()
+                .withSetting( settingFor( DUMMY_PLUGIN_NAME, DummyLoadBalancingPlugin.DO_NOT_USE_THIS_CONFIG ), "true")
+                .withSetting( CausalClusteringSettings.load_balancing_plugin, DUMMY_PLUGIN_NAME ).build();
 
         try
         {

@@ -88,7 +88,7 @@ public class DumpCountsStore implements CountsVisitor, MetadataVisitor, UnknownK
             else
             {
                 VisitableCountsTracker tracker = new VisitableCountsTracker(
-                        NullLogProvider.getInstance(), fs, pages, Config.empty(), path );
+                        NullLogProvider.getInstance(), fs, pages, Config.defaults(), path );
                 if ( fs.fileExists( path ) )
                 {
                     tracker.visitFile( path, new DumpCountsStore( out ) );

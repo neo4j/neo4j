@@ -21,10 +21,9 @@ package org.neo4j.kernel.configuration;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.Log;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.strict_config_validation;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Validates individual settings by delegating to the settings themselves without taking other aspects into
@@ -41,35 +41,27 @@ public class IndividualSettingsValidator implements ConfigurationValidator
 {
     private static final List<String> reservedPrefixes =
             Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools.", "unsupported." );
+
+    private final Collection<SettingValidator> settingValidators;
     private final boolean warnOnUnknownSettings;
 
-    /**
-     *
-     * @param warnOnUnknownSettings if unknown options should be logged when strict validation is disabled
-     */
-    public IndividualSettingsValidator( boolean warnOnUnknownSettings )
+    IndividualSettingsValidator( Collection<SettingValidator> settingValidators, boolean warnOnUnknownSettings )
     {
+        this.settingValidators = settingValidators;
         this.warnOnUnknownSettings = warnOnUnknownSettings;
     }
 
     @Override
-    @Nonnull
-    public Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-            @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException
+    public Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException
     {
-        Map<String,String> validConfig = settingValidators.stream()
-                .map( it -> it.validate( rawConfig, msg ->
-                {
-                    if ( parsingFile )
-                    {
-                        log.warn( msg );
-                    }
-                } ) )
-                .flatMap( map -> map.entrySet().stream() )
-                .collect( Collectors.toMap( Entry::getKey, Entry::getValue ) );
+        Map<String,String> rawConfig = config.getRaw();
+        Map<String,String> validConfig = stringMap();
+        for ( SettingValidator validator : settingValidators )
+        {
+            validConfig.putAll( validator.validate( rawConfig, log::warn ) );
+        }
 
-        final boolean strictValidation = strict_config_validation.apply( validConfig::get );
+        final boolean strictValidation = config.get( strict_config_validation );
 
         rawConfig.forEach( ( key, value ) ->
         {
@@ -102,6 +94,6 @@ public class IndividualSettingsValidator implements ConfigurationValidator
             }
         } );
 
-        return validConfig;
+        return Collections.emptyMap();
     }
 }

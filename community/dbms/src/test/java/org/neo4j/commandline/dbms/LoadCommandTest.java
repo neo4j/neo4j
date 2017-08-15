@@ -45,6 +45,7 @@ import org.neo4j.dbms.archive.Loader;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -96,7 +97,7 @@ public class LoadCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -119,7 +120,7 @@ public class LoadCommandTest
 
         Files.createSymbolicLink( databaseDir, realDatabaseDir );
 
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
@@ -132,7 +133,7 @@ public class LoadCommandTest
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.createDirectories( databaseDir );
-        Files.write( configDir.resolve( "neo4j.conf" ),
+        Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         new LoadCommand( homeDir, configDir, loader )

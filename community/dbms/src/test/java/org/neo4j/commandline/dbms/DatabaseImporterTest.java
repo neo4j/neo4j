@@ -129,7 +129,7 @@ public class DatabaseImporterTest
         HashMap<String,String> additionalConfig = new HashMap<>();
         additionalConfig.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.toString() );
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return Config.defaults().with( additionalConfig );
+        return Config.defaults( additionalConfig );
     }
 
     private File provideStoreDirectory()

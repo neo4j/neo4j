@@ -47,7 +47,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -107,6 +106,7 @@ import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.legacyindex.InternalAutoIndexing.NODE_AUTO_INDEX;
@@ -129,7 +129,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     private RelationshipProxy.RelationshipActions relActions;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
-    private long defaultTransactionTimeout;
+    private Config config;
 
     /**
      * This is what you need to implemenent to get your very own {@link GraphDatabaseFacade}. This SPI exists as a thin
@@ -226,7 +226,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     public void init( SPI spi, Guard guard, ThreadToStatementContextBridge txBridge, Config config )
     {
         this.spi = spi;
-        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
+        this.config = config;
 
         Supplier<Statement> statementSupplier = spi::currentStatement;
         Supplier<KernelTransaction> transactionSupplier = spi::currentTransaction;
@@ -396,7 +396,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI
     @Override
     public InternalTransaction beginTransaction( KernelTransaction.Type type, SecurityContext securityContext )
     {
-        return beginTransactionInternal( type, securityContext, defaultTransactionTimeout );
+        return beginTransactionInternal( type, securityContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override

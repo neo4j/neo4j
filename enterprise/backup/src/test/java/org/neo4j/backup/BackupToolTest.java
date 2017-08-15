@@ -181,7 +181,7 @@ public class BackupToolTest
     public void passesOnConfigurationIfProvided() throws Exception
     {
         // given
-        File configFile = testDirectory.file( "neo4j.conf" );
+        File configFile = testDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( configFile ), null );

@@ -79,7 +79,6 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.com.storecopy.ResponseUnpacker.NO_OP_RESPONSE_UNPACKER;
 import static org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
 import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFAULT_BATCH_SIZE;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 
 public class MasterClientTest
@@ -237,7 +236,7 @@ public class MasterClientTest
 
     private static Config masterConfig()
     {
-        return Config.embeddedDefaults( stringMap( ClusterSettings.server_id.name(), "1" ) );
+        return Config.defaults( ClusterSettings.server_id, "1" );
     }
 
     private static Server.Configuration masterServerConfiguration()

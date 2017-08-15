@@ -45,7 +45,6 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.test.DoubleLatch.awaitLatch;
 
 public class DynamicIndexStoreViewIT
@@ -113,8 +112,7 @@ public class DynamicIndexStoreViewIT
         {
             database.shutdown();
             ConsistencyCheckService consistencyCheckService = new ConsistencyCheckService();
-            Config config = Config.defaults();
-            config = config.with( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+            Config config = Config.defaults(  GraphDatabaseSettings.pagecache_memory, "8m" );
             consistencyCheckService.runFullConsistencyCheck( testDirectory.graphDbDir(), config,
                     ProgressMonitorFactory.NONE, FormattedLogProvider.toOutputStream( System.out ), false );
         }

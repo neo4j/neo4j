@@ -96,7 +96,7 @@ public class RsdrMain
 
     private static Config buildConfig()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap(
+        return Config.defaults( MapUtil.stringMap(
                 GraphDatabaseSettings.read_only.name(), "true",
                 GraphDatabaseSettings.pagecache_memory.name(), "64M"
         ) );

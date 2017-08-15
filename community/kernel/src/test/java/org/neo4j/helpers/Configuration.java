@@ -21,9 +21,11 @@ package org.neo4j.helpers;
 
 import org.junit.rules.ExternalResource;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
 
@@ -33,9 +35,10 @@ public class Configuration extends ExternalResource
     private final Map<String, String> configuration = new HashMap<String, String>();
     private final Map<String, String> sysProperties = new HashMap<String, String>();
 
-    public Config config( Class<?>... settingsClasses )
+    public Config config( LoadableConfig settingsClasses )
     {
-        return Config.embeddedDefaults( configuration );
+        return Config.builder().withSettings( configuration ).withConfigClasses(
+                Collections.singletonList( settingsClasses ) ).build();
     }
 
     public Configuration with( Setting<?> setting, String value )

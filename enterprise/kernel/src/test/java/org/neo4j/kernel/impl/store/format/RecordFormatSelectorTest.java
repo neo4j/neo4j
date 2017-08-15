@@ -56,7 +56,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyVararg;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.findSuccessor;
@@ -120,7 +119,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForConfigWithoutRecordFormatParameter()
     {
-        assertSame( defaultFormat(), selectForConfig( Config.empty(), LOG ) );
+        assertSame( defaultFormat(), selectForConfig( Config.defaults(), LOG ) );
     }
 
     @Test
@@ -218,7 +217,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertSame( Standard.LATEST_RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
@@ -229,7 +228,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( HighLimit.STORE_VERSION, pageCache );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertSame( HighLimit.RECORD_FORMATS, selectForStoreOrConfig( config, storeDir, fs, pageCache, LOG ) );
     }
@@ -274,7 +273,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectForStoreOrConfigWithoutConfiguredAndStoredFormats() throws IOException
     {
-        assertSame( defaultFormat(), selectForStoreOrConfig( Config.empty(), storeDir, fs, getPageCache(), LOG ) );
+        assertSame( defaultFormat(), selectForStoreOrConfig( Config.defaults(), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -307,7 +306,7 @@ public class RecordFormatSelectorTest
     @Test
     public void selectNewestFormatWithoutConfigAndStore()
     {
-        assertSame( defaultFormat(), selectNewestFormat( Config.empty(), storeDir, fs, getPageCache(), LOG ) );
+        assertSame( defaultFormat(), selectNewestFormat( Config.defaults(), storeDir, fs, getPageCache(), LOG ) );
     }
 
     @Test
@@ -316,7 +315,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( Standard.LATEST_STORE_VERSION, pageCache );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertSame( Standard.LATEST_RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
@@ -327,7 +326,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( HighLimit.STORE_VERSION, pageCache );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertSame( HighLimit.RECORD_FORMATS, selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
@@ -338,7 +337,7 @@ public class RecordFormatSelectorTest
         PageCache pageCache = getPageCache();
         prepareNeoStoreFile( StandardV2_3.STORE_VERSION, pageCache );
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         assertSame( defaultFormat(), selectNewestFormat( config, storeDir, fs, getPageCache(), LOG ) );
     }
@@ -389,6 +388,6 @@ public class RecordFormatSelectorTest
 
     private static Config config( String recordFormatName )
     {
-        return Config.embeddedDefaults( stringMap( GraphDatabaseSettings.record_format.name(), recordFormatName ) );
+        return Config.defaults( GraphDatabaseSettings.record_format, recordFormatName );
     }
 }

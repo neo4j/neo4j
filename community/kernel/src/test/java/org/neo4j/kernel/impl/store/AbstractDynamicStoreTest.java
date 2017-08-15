@@ -142,7 +142,7 @@ public class AbstractDynamicStoreTest
     private AbstractDynamicStore newTestableDynamicStore()
     {
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.empty(), IdType.ARRAY_BLOCK,
+        AbstractDynamicStore store = new AbstractDynamicStore( fileName, Config.defaults(), IdType.ARRAY_BLOCK,
                 idGeneratorFactory, pageCache, NullLogProvider.getInstance(), "test", BLOCK_SIZE,
                 formats.dynamic(), formats.storeVersion() )
         {

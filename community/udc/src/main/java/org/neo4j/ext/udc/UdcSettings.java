@@ -34,6 +34,7 @@ import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.illegalValueMessage;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
@@ -50,12 +51,12 @@ public class UdcSettings implements LoadableConfig
     /** Configuration key for the first delay, expressed in milliseconds. */
     @Internal
     public static final Setting<Integer> first_delay =
-            setting( "unsupported.dbms.udc.first_delay", INTEGER, Integer.toString( 10 * 1000 * 60 ), min( 1 ) );
+            buildSetting( "unsupported.dbms.udc.first_delay", INTEGER, Integer.toString( 10 * 1000 * 60 ) ).constraint( min( 1 ) ).build();
 
     /** Configuration key for the interval for regular updates, expressed in milliseconds. */
     @Internal
-    public static final Setting<Integer> interval = setting( "unsupported.dbms.udc.interval", INTEGER, Integer.toString(
-            1000 * 60 * 60 * 24 ), min( 1 ) );
+    public static final Setting<Integer> interval = buildSetting( "unsupported.dbms.udc.interval", INTEGER, Integer.toString(
+            1000 * 60 * 60 * 24 ) ).constraint( min( 1 ) ).build();
 
     /** The host address to which UDC updates will be sent. Should be of the form hostname[:port]. */
     @Internal
@@ -64,13 +65,13 @@ public class UdcSettings implements LoadableConfig
 
     /** Configuration key for overriding the source parameter in UDC */
     @Internal
-    public static final Setting<String> udc_source = setting( "unsupported.dbms.udc.source", STRING, Settings.NO_DEFAULT,
-            illegalValueMessage( "Must be a valid source", matches( ANY ) ) );
+    public static final Setting<String> udc_source = buildSetting( "unsupported.dbms.udc.source", STRING, Settings.NO_DEFAULT ).constraint(
+            illegalValueMessage( "Must be a valid source", matches( ANY ) ) ).build();
 
     /** Unique registration id */
     @Internal
-    public static final Setting<String> udc_registration_key = setting( "unsupported.dbms.udc.reg", STRING, "unreg",
-            illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) );
+    public static final Setting<String> udc_registration_key = buildSetting( "unsupported.dbms.udc.reg", STRING, "unreg" ).constraint(
+            illegalValueMessage( "Must be a valid registration id", matches( ANY ) ) ).build();
 
     private enum Enabled implements Function<String,Boolean>
     {

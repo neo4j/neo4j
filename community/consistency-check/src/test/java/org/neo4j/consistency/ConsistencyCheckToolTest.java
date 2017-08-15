@@ -108,7 +108,7 @@ public class ConsistencyCheckToolTest
     {
         // given
         File storeDir = storeDirectory.directory();
-        File configFile = storeDirectory.file( "neo4j.conf" );
+        File configFile = storeDirectory.file( Config.DEFAULT_CONFIG_FILE_NAME );
         Properties properties = new Properties();
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( configFile ), null );

@@ -19,16 +19,15 @@
  */
 package org.neo4j.server.configuration;
 
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
-
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -55,11 +54,10 @@ public class ConfigLoaderTest
     public void shouldProvideAConfiguration() throws IOException
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
-                .build();
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
 
         // when
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         // then
         assertNotNull( config );
@@ -69,12 +67,12 @@ public class ConfigLoaderTest
     public void shouldUseSpecifiedConfigFile() throws Exception
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
                 .build();
 
         // when
-        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         // then
         final String EXPECTED_VALUE = "bar";
@@ -85,11 +83,10 @@ public class ConfigLoaderTest
     public void shouldUseSpecifiedHomeDir() throws Exception
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
-                .build();
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
 
         // when
-        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         // then
         assertEquals( folder.getRoot(), testConf.get( GraphDatabaseSettings.neo4j_home ) );
@@ -99,11 +96,10 @@ public class ConfigLoaderTest
     public void shouldUseWorkingDirForHomeDirIfUnspecified() throws Exception
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
-                .build();
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
 
         // when
-        Config testConf = ConfigLoader.loadConfig( Optional.empty(), configFile );
+        Config testConf = Config.fromFile( configFile ).build();
 
         // then
         assertEquals( new File( System.getProperty("user.dir") ),
@@ -114,13 +110,13 @@ public class ConfigLoaderTest
     public void shouldAcceptDuplicateKeysWithSameValue() throws IOException
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
                 .withNameValue( GraphDatabaseSettings.default_advertised_address.name(), "bar" )
                 .build();
 
         // when
-        Config testConf = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         // then
         assertNotNull( testConf );
@@ -133,12 +129,12 @@ public class ConfigLoaderTest
     {
         // given
         BoltConnector defaultBoltConf = new BoltConnector( "bolt" );
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( defaultBoltConf.enabled.name(), Settings.TRUE )
                 .build();
 
         // when
-        Config testConf = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = Config.fromFile( configFile ).withHome( folder.getRoot() ).withConnectorsDisabled().build();
 
         // then
         assertNotNull( testConf );
@@ -150,10 +146,10 @@ public class ConfigLoaderTest
     public void loadOfflineConfigAddDisabledBoltConnector() throws IOException
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() ).build();
 
         // when
-        Config testConf = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( folder.getRoot() ), configFile );
+        Config testConf = Config.fromFile( configFile ).withHome( folder.getRoot() ).withConnectorsDisabled().build();
 
         // then
         assertNotNull( testConf );
@@ -177,7 +173,7 @@ public class ConfigLoaderTest
         }
 
         // when
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), Optional.of( file ) );
+        Config config = Config.fromFile( file ).withHome( folder.getRoot() ).build();
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -189,14 +185,14 @@ public class ConfigLoaderTest
     public void shouldRetainRegistrationOrderOfThirdPartyJaxRsPackages() throws IOException
     {
         // given
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withNameValue( ServerSettings.third_party_packages.name(),
                         "org.neo4j.extension.extension1=/extension1,org.neo4j.extension.extension2=/extension2," +
                         "org.neo4j.extension.extension3=/extension3" )
                 .build();
 
         // when
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         // then
         List<ThirdPartyJaxRsPackage> thirdpartyJaxRsPackages = config.get( ServerSettings.third_party_packages );
@@ -212,10 +208,10 @@ public class ConfigLoaderTest
     public void shouldWorkFineWhenSpecifiedConfigFileDoesNotExist() throws IOException
     {
         // Given
-        Optional<File> nonExistentConfigFile = Optional.of( new File( "/tmp/" + System.currentTimeMillis() ) );
+        File nonExistentConfigFile = new File( "/tmp/" + System.currentTimeMillis() );
 
         // When
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), nonExistentConfigFile );
+        Config config = Config.fromFile( nonExistentConfigFile ).withHome( folder.getRoot() ).build();
 
         // Then
         assertNotNull( config );
@@ -224,11 +220,11 @@ public class ConfigLoaderTest
     @Test
     public void shouldDefaultToCorrectValueForAuthStoreLocation() throws IOException
     {
-        Optional<File> configFile = ConfigFileBuilder
+        File configFile = ConfigFileBuilder
                 .builder( folder.getRoot() )
                 .withoutSetting( DatabaseManagementSystemSettings.data_directory )
                 .build();
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 is( new File( folder.getRoot(), "data/dbms" ).getAbsoluteFile() ) );
@@ -237,10 +233,10 @@ public class ConfigLoaderTest
     @Test
     public void shouldSetAValueForAuthStoreLocation() throws IOException
     {
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .build();
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         assertThat( config.get( DatabaseManagementSystemSettings.auth_store_directory ),
                 is( new File( folder.getRoot(), "the-data-dir/dbms" ).getAbsoluteFile() ) );
@@ -249,11 +245,11 @@ public class ConfigLoaderTest
     @Test
     public void shouldNotOverwriteAuthStoreLocationIfProvided() throws IOException
     {
-        Optional<File> configFile = ConfigFileBuilder.builder( folder.getRoot() )
+        File configFile = ConfigFileBuilder.builder( folder.getRoot() )
                 .withSetting( DatabaseManagementSystemSettings.data_directory, "the-data-dir" )
                 .withSetting( GraphDatabaseSettings.auth_store, "foo/bar/auth" )
                 .build();
-        Config config = ConfigLoader.loadConfig( Optional.of( folder.getRoot() ), configFile );
+        Config config = Config.fromFile( configFile ).withHome( folder.getRoot() ).build();
 
         assertThat( config.get( GraphDatabaseSettings.auth_store ),
                 is( new File( folder.getRoot(), "foo/bar/auth" ).getAbsoluteFile() ) );

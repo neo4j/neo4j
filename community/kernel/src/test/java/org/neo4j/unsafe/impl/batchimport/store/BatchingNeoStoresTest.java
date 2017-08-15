@@ -67,10 +67,10 @@ public class BatchingNeoStoresTest
         // WHEN
         try
         {
-            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.empty(),
+            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(),
                     NullLogProvider.getInstance() );
             BatchingNeoStores.batchingNeoStores( fsr.get(), storeDir, recordFormats, DEFAULT,
-                    NullLogService.getInstance(), EMPTY, Config.empty() );
+                    NullLogService.getInstance(), EMPTY, Config.defaults() );
             fail( "Should fail on existing data" );
         }
         catch ( IllegalStateException e )
@@ -85,7 +85,7 @@ public class BatchingNeoStoresTest
     {
         // GIVEN
         int size = 10;
-        Config config = Config.embeddedDefaults( stringMap(
+        Config config = Config.defaults( stringMap(
                 GraphDatabaseSettings.array_block_size.name(), String.valueOf( size ),
                 GraphDatabaseSettings.string_block_size.name(), String.valueOf( size ) ) );
 

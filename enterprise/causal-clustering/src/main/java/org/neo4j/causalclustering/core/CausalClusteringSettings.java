@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.core;
 
 import java.io.File;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.determineDefaultLookup;
 import static org.neo4j.kernel.configuration.Settings.list;
@@ -195,7 +197,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "RAFT log rotation size" )
     public static final Setting<Long> raft_log_rotation_size =
-            setting( "causal_clustering.raft_log_rotation_size", BYTES, "250M", min( 1024L ) );
+            buildSetting( "causal_clustering.raft_log_rotation_size", BYTES, "250M" ).constraint( min( 1024L ) ).build();
 
     @Description( "RAFT log reader pool size" )
     public static final Setting<Integer> raft_log_reader_pool_size =
@@ -237,11 +239,11 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Time To Live before read replica is considered unavailable" )
     public static final Setting<Duration> read_replica_time_to_live =
-            setting( "causal_clustering.read_replica_time_to_live", DURATION, "1m", min( Duration.ofSeconds( 60 ) ) );
+            buildSetting( "causal_clustering.read_replica_time_to_live", DURATION, "1m" ).constraint( min( Duration.ofSeconds( 60 ) ) ).build();
 
     @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
     public static final Setting<Duration> cluster_routing_ttl =
-            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( Duration.ofSeconds( 1 ) ) );
+            buildSetting( "causal_clustering.cluster_routing_ttl", DURATION, "5m" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
     @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
             "endpoints or return only read replicas. Note: if there are no read replicas in the cluster, followers " +
@@ -342,7 +344,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "Time between scanning the cluster to refresh current server's view of topology" )
     public static final Setting<Duration> cluster_topology_refresh =
-            setting( "causal_clustering.cluster_topology_refresh", DURATION, "5s", min( Duration.ofSeconds( 1 ) ) );
+            buildSetting( "causal_clustering.cluster_topology_refresh", DURATION, "5s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
     @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
             "upstream database server from which to pull transactional updates." )
@@ -370,9 +372,8 @@ public class CausalClusteringSettings implements LoadableConfig
         BiFunction<String, Function<String, String>, String> defaultLookup = determineDefaultLookup( defaultValue,
                 valueLookup );
 
-        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup )
+        return new Settings.DefaultSetting<String>( name, parser, valueLookup, defaultLookup, Collections.emptyList() )
         {
-
             @Override
             public Map<String, String> validate( Map<String, String> rawConfig, Consumer<String> warningConsumer )
                     throws InvalidSettingException

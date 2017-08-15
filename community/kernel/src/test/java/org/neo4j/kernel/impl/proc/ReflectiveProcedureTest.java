@@ -56,7 +56,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.procedure_whitelist;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature;
 
 @SuppressWarnings( "WeakerAccess" )
@@ -313,8 +312,8 @@ public class ReflectiveProcedureTest
     public void shouldLoadWhiteListedProcedure() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.listCoolPeople") ) );
+        ProcedureConfig config = new ProcedureConfig(
+                Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.listCoolPeople" ) );
 
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
@@ -334,8 +333,8 @@ public class ReflectiveProcedureTest
     public void shouldNotLoadNoneWhiteListedProcedure() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "org.neo4j.kernel.impl.proc.NOTlistCoolPeople") ) );
+        ProcedureConfig config = new ProcedureConfig(
+                Config.defaults( procedure_whitelist, "org.neo4j.kernel.impl.proc.NOTlistCoolPeople" ) );
 
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
@@ -354,8 +353,7 @@ public class ReflectiveProcedureTest
     public void shouldIgnoreWhiteListingIfFullAccess() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "empty") ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "empty" ) );
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );
@@ -372,8 +370,7 @@ public class ReflectiveProcedureTest
     public void shouldNotLoadAnyProcedureIfConfigIsEmpty() throws Throwable
     {
         // Given
-        ProcedureConfig config = new ProcedureConfig( Config.defaults().with(
-                genericMap( procedure_whitelist.name(), "") ) );
+        ProcedureConfig config = new ProcedureConfig( Config.defaults( procedure_whitelist, "" ) );
         Log log = mock(Log.class);
         ReflectiveProcedureCompiler procedureCompiler = new ReflectiveProcedureCompiler( new TypeMappers(), components,
                 components, log, config );

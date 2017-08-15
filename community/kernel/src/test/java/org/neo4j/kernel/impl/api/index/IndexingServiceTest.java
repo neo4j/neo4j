@@ -134,7 +134,6 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.loop;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
@@ -344,7 +343,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
@@ -384,7 +383,7 @@ public class IndexingServiceTest
         IndexRule populatingIndex = indexRule( 2, 1, 2, PROVIDER_DESCRIPTOR );
         IndexRule failedIndex     = indexRule( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 schemaState );
@@ -986,7 +985,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.empty(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, indexes, logProvider, IndexingService.NO_MONITOR,
                 schemaState ) );
 
@@ -1034,7 +1033,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.empty(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
                 logProvider, IndexingService.NO_MONITOR, schemaState );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
@@ -1236,8 +1235,7 @@ public class IndexingServiceTest
         when( nameLookup.labelGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "label" ) );
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
 
-        Config config = Config.embeddedDefaults( stringMap(
-                GraphDatabaseSettings.multi_threaded_schema_index_population_enabled.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
 
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( new Neo4jJobScheduler() ),

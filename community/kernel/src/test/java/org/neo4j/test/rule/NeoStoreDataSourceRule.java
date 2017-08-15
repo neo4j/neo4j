@@ -103,7 +103,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         Monitors monitors = new Monitors();
 
         Dependencies mutableDependencies = new Dependencies( otherCustomOverriddenDependencies );
-        Config config = dependency( mutableDependencies, Config.class, deps -> Config.empty() );
+        Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,

@@ -312,7 +312,7 @@ public class CountsComputerTest
     private CountsTracker createCountsTracker()
     {
         return new CountsTracker( NullLogProvider.getInstance(), fs, pageCache,
-                Config.empty(), new File( dir, COUNTS_STORE_BASE ) );
+                Config.defaults(), new File( dir, COUNTS_STORE_BASE ) );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId ) throws IOException

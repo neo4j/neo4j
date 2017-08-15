@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
@@ -160,8 +159,8 @@ public class CountsRotationTest
     {
         // Given
         dbBuilder.newGraphDatabase().shutdown();
-        CountsTracker store = createCountsTracker( pageCache, Config.defaults().augment( Collections
-                .singletonMap( GraphDatabaseSettings.counts_store_rotation_timeout.name(), "100ms" ) ) );
+        CountsTracker store = createCountsTracker( pageCache,
+                Config.defaults( GraphDatabaseSettings.counts_store_rotation_timeout, "100ms" ) );
         try ( Lifespan lifespan = new Lifespan( store ) )
         {
             try ( CountsAccessor.Updater updater = store.apply( 2 ).get() )

@@ -52,7 +52,6 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.pagecache_memory;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.store.StoreFile.NEO_STORE;
 import static org.neo4j.kernel.impl.storemigration.StoreFileType.STORE;
@@ -72,7 +71,7 @@ public class StoreMigratorTest
                 .setConfig( GraphDatabaseSettings.record_format, HighLimitV3_0_0.NAME )
                 .newGraphDatabase()
                 .shutdown();
-        Config config = Config.embeddedDefaults( stringMap( pagecache_memory.name(), "8m" ) );
+        Config config = Config.defaults( pagecache_memory, "8m" );
 
         try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
               PageCache pageCache = new ConfiguringPageCacheFactory( fs, config, NULL,
@@ -104,7 +103,7 @@ public class StoreMigratorTest
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         PageCache pageCache = mock( PageCache.class );
-        Config config = Config.empty();
+        Config config = Config.defaults();
         CountsMigrator storeMigrator = new CountsMigrator( fileSystem, pageCache, config );
         Set<String> actualVersions = new TreeSet<>();
         Set<String> expectedVersions = new TreeSet<>(

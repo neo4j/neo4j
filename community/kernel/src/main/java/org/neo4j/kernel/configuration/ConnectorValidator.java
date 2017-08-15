@@ -47,7 +47,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     static final String DEPRECATED_CONNECTOR_MSG =
             "Warning: connectors with names other than [http,https,bolt] are%n" +
                     "deprecated and support for them will be removed in a future%n" +
-                    "version of Neo4j. Offending lines in neo4j.conf:%n%n%s";
+                    "version of Neo4j. Offending lines in " + Config.DEFAULT_CONFIG_FILE_NAME + ":%n%n%s";
     protected final Connector.ConnectorType type;
 
     public ConnectorValidator( @Nonnull Connector.ConnectorType type )
@@ -108,8 +108,7 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
         // If this is a connector not called bolt or http, then we require the type
         if ( typeValue == null )
         {
-            throw new InvalidSettingException( format( "Missing mandatory value for '%s'",
-                    typeKey ) );
+            throw new InvalidSettingException( format( "Missing mandatory value for '%s'", typeKey ) );
         }
 
         if ( !validTypes.contains( typeValue ) )
@@ -245,5 +244,11 @@ public abstract class ConnectorValidator implements SettingGroup<Object>
     public Optional<String> description()
     {
         return Optional.empty();
+    }
+
+    @Override
+    public boolean dynamic()
+    {
+        return false;
     }
 }

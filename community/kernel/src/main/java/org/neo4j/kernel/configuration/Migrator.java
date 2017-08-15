@@ -29,6 +29,9 @@ import java.lang.annotation.Target;
  * Used in settings classes to denote that a field contains an {@link ConfigurationMigrator}.
  * This gets picked up by the configuration, and config migrations are applied whenever configuration
  * is modified.
+ * <p>
+ * The filed must be declared as {@code static} and have a type that implements {@link ConfigurationMigrator}, otherwise
+ * runtime exceptions will be thrown.
  */
 @Retention( RetentionPolicy.RUNTIME )
 @Target( ElementType.FIELD )

@@ -75,13 +75,13 @@ public class FilteringPolicyLoaderTest
                 },
         };
 
-        Config config = Config.empty();
+        Config config = Config.defaults();
 
         for ( Object[] row : input )
         {
             String policyName = (String) row[0];
             String filterSpec = (String) row[1];
-            config = config.augment( stringMap( configNameFor( pluginName, policyName ), filterSpec ) );
+            config.augment( configNameFor( pluginName, policyName ), filterSpec );
         }
 
         // when

@@ -1192,7 +1192,7 @@ public class ClusterManager
             else
             {
                 URI clusterUri = clusterUri( member );
-                Config config = Config.embeddedDefaults( MapUtil.stringMap(
+                Config config = Config.defaults( MapUtil.stringMap(
                         ClusterSettings.cluster_name.name(), name,
                         ClusterSettings.initial_hosts.name(), initialHosts,
                         ClusterSettings.server_id.name(), serverId + "",

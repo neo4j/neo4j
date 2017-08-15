@@ -26,7 +26,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -40,7 +39,6 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.time.Clocks;
 
 import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -199,9 +197,7 @@ public class BasicAuthenticationTest
         UserRepository users = new InMemoryUserRepository();
         PasswordPolicy policy = mock( PasswordPolicy.class );
 
-        Map<String,String> maxAttamptsConfig = singletonMap( GraphDatabaseSettings.auth_max_failed_attempts.name(),
-                String.valueOf( maxFailedAttempts ) );
-        Config config = Config.defaults().augment( maxAttamptsConfig );
+        Config config = Config.defaults( GraphDatabaseSettings.auth_max_failed_attempts, String.valueOf( maxFailedAttempts ) );
 
         BasicAuthManager manager = new BasicAuthManager( users, policy, Clocks.systemClock(), users, config );
         Authentication authentication = new BasicAuthentication( manager, manager );

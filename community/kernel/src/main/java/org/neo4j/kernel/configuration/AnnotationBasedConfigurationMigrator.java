@@ -21,13 +21,13 @@
 package org.neo4j.kernel.configuration;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.LoadableConfig;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.logging.Log;
 
 public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrator
@@ -38,10 +38,9 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
     {
         for ( LoadableConfig loadableConfig : settingsClasses )
         {
-            for ( Pair<Field,ConfigurationMigrator> field : findStatic( loadableConfig.getClass(),
-                    ConfigurationMigrator.class, Migrator.class ) )
+            for ( ConfigurationMigrator field : getMigratorsFromClass( loadableConfig.getClass() ) )
             {
-                migrators.add( field.other() );
+                migrators.add( field );
             }
         }
     }
@@ -58,33 +57,38 @@ public class AnnotationBasedConfigurationMigrator implements ConfigurationMigrat
     }
 
     /**
-     * Find all static fields of a given type, annotated with some given
-     * annotation.
+     * Find all {@link ConfigurationMigrator} annotated with {@link Migrator} from a given class.
      *
-     * @param clazz
-     * @param type
-     * @param annotation
+     * @param clazz The class to scan for migrators.
+     * @throws AssertionError if a field annotated as a {@link Migrator} is not static or does not implement
+     * {@link ConfigurationMigrator}.
      */
-    @SuppressWarnings( {"rawtypes", "unchecked"} )
-    private static <T> Iterable<Pair<Field,T>> findStatic( Class<?> clazz, Class<T> type, Class annotation )
+    private static Iterable<ConfigurationMigrator> getMigratorsFromClass( Class<?> clazz )
     {
-        List<Pair<Field,T>> found = new ArrayList<>();
+        List<ConfigurationMigrator> found = new ArrayList<>();
         for ( Field field : clazz.getDeclaredFields() )
         {
-            try
+            if ( field.isAnnotationPresent( Migrator.class ) )
             {
-                field.setAccessible( true );
-
-                Object fieldValue = field.get( null );
-                if ( type.isInstance( fieldValue ) &&
-                        (annotation == null || field.getAnnotation( annotation ) != null) )
+                if ( !ConfigurationMigrator.class.isAssignableFrom( field.getType() ) )
                 {
-                    found.add( Pair.of( field, (T) fieldValue ) );
+                    throw new AssertionError( "Field annotated as Migrator has to implement ConfigurationMigrator" );
                 }
-            }
-            catch ( IllegalAccessException | NullPointerException ignored )
-            {
-                // Field is not public or static
+
+                if ( !Modifier.isStatic( field.getModifiers() ) )
+                {
+                    throw new AssertionError( "Field annotated as Migrator has to be static" );
+                }
+
+                try
+                {
+                    field.setAccessible( true );
+                    found.add( (ConfigurationMigrator) field.get( null ) );
+                }
+                catch ( IllegalAccessException ex )
+                {
+                    throw new AssertionError( "Field annotated as Migrator could not be accessed", ex );
+                }
             }
         }
 

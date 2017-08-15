@@ -19,18 +19,18 @@
  */
 package org.neo4j.server;
 
+import sun.misc.Signal;
+
 import java.io.File;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.annotation.Nonnull;
 
-import sun.misc.Signal;
-
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationValidator;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 
@@ -81,14 +80,19 @@ public abstract class ServerBootstrapper implements Bootstrapper
     }
 
     @Override
-    @SafeVarargs
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
     {
         addShutdownHook();
         installSignalHandler();
         try
         {
-            Config config = createConfig( homeDir, configFile, configOverrides );
+            // Create config file from arguments
+            Config config = Config.builder()
+                    .withFile( configFile )
+                    .withSettings( configOverrides )
+                    .withHome(homeDir)
+                    .withValidators( configurationValidators() )
+                    .withServerDefaults().build();
 
             LogProvider userLogProvider = setupLogging( config );
             dependencies = dependencies.userLogProvider( userLogProvider );
@@ -175,12 +179,6 @@ public abstract class ServerBootstrapper implements Bootstrapper
         JULBridge.forwardTo( userLogProvider );
         JettyLogBridge.setLogProvider( userLogProvider );
         return userLogProvider;
-    }
-
-    private Config createConfig( File homeDir, Optional<File> file, Pair<String, String>[] configOverrides )
-    {
-        return ConfigLoader.loadServerConfig( Optional.of( homeDir ), file, configOverrides,
-                configurationValidators() );
     }
 
     // Exit gracefully if possible

@@ -62,7 +62,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
 @RunWith( Parameterized.class )
@@ -79,8 +78,7 @@ public class StoreUpgraderInterruptionTestIT
     @Parameterized.Parameter
     public String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
-    private static final Config CONFIG = Config.defaults().augment(
-            stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Parameters( name = "{0}" )
     public static Collection<String> versions()
@@ -208,8 +206,7 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
             MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
     {
-        Config allowUpgrade = Config.embeddedDefaults( stringMap( GraphDatabaseSettings
-                .allow_store_upgrade.name(), "true" ) );
+        Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true" );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
                 NullLogProvider.getInstance() );

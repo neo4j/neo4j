@@ -27,20 +27,20 @@ import java.util.Optional;
 
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.HttpConnector;
 
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerSettingsTest
 {
     @Test
     public void webServerThreadCountDefaultShouldBeDocumented() throws Exception
     {
-        Config config = Config.serverDefaults();
+        Config config = Config.builder().withServerDefaults().build();
 
         String documentedDefaultValue =
                 config.getConfigValues().entrySet().stream()
@@ -57,7 +57,7 @@ public class ServerSettingsTest
     @Test
     public void configValuesContainsConnectors() throws Exception
     {
-        Config config = Config.serverDefaults();
+        Config config = Config.builder().withServerDefaults().build();
 
         List<String> connectorSettings = config.getConfigValues().entrySet().stream()
                 .map( Entry::getKey )
@@ -73,7 +73,8 @@ public class ServerSettingsTest
     @Test
     public void connectorSettingHasItsOwnValues() throws Exception
     {
-        Config config = Config.serverDefaults( stringMap( "dbms.connector.http.address", "localhost:123" ) );
+        Config config = Config.builder().withServerDefaults()
+                .withSetting( new HttpConnector( "http" ).address, "localhost:123" ).build();
 
         ConfigValue address = config.getConfigValues().entrySet().stream()
                 .filter( c -> c.getKey().equals( "dbms.connector.http.address" ) )

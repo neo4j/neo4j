@@ -67,7 +67,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
             populator.create();
             populator.add( Arrays.asList(
@@ -104,7 +104,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         public void shouldEnforceUniqueConstraintsDirectly() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
 
             populator.create();
@@ -133,7 +133,7 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
         public void shouldNotRestrictUpdatesDifferingOnSecondProperty() throws Exception
         {
             // given
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
 
             populator.create();

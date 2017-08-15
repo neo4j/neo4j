@@ -37,7 +37,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -112,8 +111,7 @@ public class StoreUpgraderTest
     private final String version;
     private final SchemaIndexProvider schemaIndexProvider = new InMemoryIndexProvider();
 
-    private final Config allowMigrateConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
-            .allow_store_upgrade.name(), "true" ) );
+    private final Config allowMigrateConfig = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true" );
 
     public StoreUpgraderTest( String version )
     {
@@ -190,8 +188,7 @@ public class StoreUpgraderTest
     public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
     {
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        Config deniedMigrationConfig = Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings
-                .allow_store_upgrade.name(), "false" ) );
+        Config deniedMigrationConfig = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "false" );
 
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fileSystem,
                 new StoreVersionCheck( pageCache ),
@@ -467,7 +464,7 @@ public class StoreUpgraderTest
 
     private Config getTuningConfig()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), getRecordFormatsName() ) );
+        return Config.defaults( GraphDatabaseSettings.record_format, getRecordFormatsName() );
     }
 
     protected RecordFormats getRecordFormats()

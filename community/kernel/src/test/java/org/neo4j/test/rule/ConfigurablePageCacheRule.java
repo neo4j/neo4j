@@ -20,7 +20,6 @@
 package org.neo4j.test.rule;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapperFactory;
@@ -51,11 +50,10 @@ public class ConfigurablePageCacheRule extends PageCacheRule
         PageCacheTracer tracer = selectConfig( baseConfig.tracer, pageCacheConfig.tracer, PageCacheTracer.NULL );
         PageCursorTracerSupplier cursorTracerSupplier = selectConfig( baseConfig.pageCursorTracerSupplier,
                 pageCacheConfig.pageCursorTracerSupplier, DefaultPageCursorTracerSupplier.INSTANCE );
-        Config finalConfig = config.withDefaults( MapUtil.stringMap(
-                GraphDatabaseSettings.pagecache_memory.name(), "8M" ) );
+        config.augmentDefaults( GraphDatabaseSettings.pagecache_memory, "8M" );
         FormattedLogProvider logProvider = FormattedLogProvider.toOutputStream( System.err );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fs, finalConfig, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ) )
+                fs, config, tracer, cursorTracerSupplier, logProvider.getLog( PageCache.class ) )
         {
             @Override
             public int calculatePageSize( Config config, PageSwapperFactory swapperFactory )

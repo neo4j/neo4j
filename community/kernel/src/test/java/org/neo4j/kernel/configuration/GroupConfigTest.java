@@ -26,6 +26,7 @@ import org.neo4j.graphdb.config.Setting;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -53,7 +54,7 @@ public class GroupConfigTest
         ConnectorExample( String key )
         {
             group = new GroupSettingSupport( ConnectorExample.class, key );
-            this.enabled = group.scope( setting( "enabled", BOOLEAN, "false" ) );
+            this.enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ) );
             this.name = group.scope( setting( "name", STRING, "Bob Dylan" ) );
         }
     }

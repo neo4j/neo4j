@@ -61,7 +61,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldStorePopulationFailedForRetrievalFromProviderLater() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -77,7 +77,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldReportInitialStateAsFailedIfPopulationFailed() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         String failure = "The contrived failure";
         populator.create();
@@ -93,7 +93,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldBeAbleToDropAClosedIndexPopulator() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.close( false );
 
@@ -107,7 +107,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     public void shouldApplyUpdatesIdempotently() throws Exception
     {
         // GIVEN
-        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+        IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
         IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
         populator.create();
         populator.configureSampling( true );
@@ -149,7 +149,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         public void shouldProvidePopulatorThatAcceptsDuplicateEntries() throws Exception
         {
             // when
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
             populator.create();
             Value value = Values.of( "value1" );
@@ -188,7 +188,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             int nodeId1 = 1;
             int nodeId2 = 2;
 
-            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.empty() );
+            IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig( Config.defaults() );
             IndexPopulator populator = indexProvider.getPopulator( 17, descriptor, indexSamplingConfig );
 
             populator.create();

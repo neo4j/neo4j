@@ -59,7 +59,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -156,7 +155,7 @@ public class DetectAllRelationshipInconsistenciesIT
 
     private Config getTuningConfiguration()
     {
-        return Config.embeddedDefaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
+        return Config.defaults( stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m",
                           GraphDatabaseSettings.record_format.name(), getRecordFormatName() ) );
     }
 

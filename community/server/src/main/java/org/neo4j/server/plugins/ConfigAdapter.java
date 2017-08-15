@@ -25,8 +25,6 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.configuration.Config;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 public class ConfigAdapter extends AbstractConfiguration
 {
     private final Config config;
@@ -46,7 +44,7 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     public boolean containsKey( String key )
     {
-        return config.getConfiguredSettingKeys().contains( key );
+        return config.getValue( key ).isPresent();
     }
 
     @Override
@@ -64,6 +62,6 @@ public class ConfigAdapter extends AbstractConfiguration
     @Override
     protected void addPropertyDirect( String key, Object value )
     {
-        config.augment( stringMap( key, value.toString() ) );
+        config.augment( key, value.toString() );
     }
 }

@@ -46,7 +46,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.logging.FormattedLogProvider;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
@@ -145,7 +144,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkGraph = ConsistencyCheckSettings.consistency_check_graph.from( config );
+                checkGraph = config.get( ConsistencyCheckSettings.consistency_check_graph );
             }
             if ( arguments.has( CHECK_INDEXES ) )
             {
@@ -153,7 +152,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkIndexes = ConsistencyCheckSettings.consistency_check_indexes.from( config );
+                checkIndexes = config.get( ConsistencyCheckSettings.consistency_check_indexes );
             }
             if ( arguments.has( CHECK_LABEL_SCAN_STORE ) )
             {
@@ -161,7 +160,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkLabelScanStore = ConsistencyCheckSettings.consistency_check_label_scan_store.from( config );
+                checkLabelScanStore = config.get( ConsistencyCheckSettings.consistency_check_label_scan_store );
             }
             if ( arguments.has( CHECK_PROPERTY_OWNERS ) )
             {
@@ -169,7 +168,7 @@ public class CheckConsistencyCommand implements AdminCommand
             }
             else
             {
-                checkPropertyOwners = ConsistencyCheckSettings.consistency_check_property_owners.from( config );
+                checkPropertyOwners = config.get( ConsistencyCheckSettings.consistency_check_property_owners );
             }
         }
         catch ( IllegalArgumentException e )
@@ -242,10 +241,10 @@ public class CheckConsistencyCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        Config config = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
         additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
+
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled()
+                .withSettings( additionalConfig ).build();
     }
 
     public static Arguments arguments()

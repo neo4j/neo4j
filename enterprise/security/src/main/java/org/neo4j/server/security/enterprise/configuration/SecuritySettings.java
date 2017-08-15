@@ -34,15 +34,17 @@ import org.neo4j.logging.Level;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.BYTES;
 import static org.neo4j.kernel.configuration.Settings.DURATION;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
+import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.max;
 import static org.neo4j.kernel.configuration.Settings.min;
 import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_ROLES;
@@ -72,8 +74,7 @@ public class SecuritySettings implements LoadableConfig
                   "They will be queried in the given order when login is attempted." )
     @Internal
     public static final Setting<List<String>> auth_providers =
-            derivedSetting( "dbms.security.auth_providers", auth_provider,
-                    ( r ) -> Arrays.asList( r ), STRING_LIST );
+            derivedSetting( "dbms.security.auth_providers", auth_provider, Arrays::asList, STRING_LIST );
 
     @Description( "Enable authentication via native authentication provider." )
     @Internal
@@ -131,7 +132,7 @@ public class SecuritySettings implements LoadableConfig
             "First an initial insecure connection will be made with the LDAP server, and a STARTTLS command will be " +
             "issued to negotiate an upgrade of the connection to TLS before initiating authentication." )
     public static final Setting<Boolean> ldap_use_starttls =
-            setting( "dbms.security.ldap.use_starttls", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.use_starttls", BOOLEAN, FALSE );
 
     @Description(
             "The LDAP referral behavior when creating a connection. This is one of `follow`, `ignore` or `throw`.\n" +
@@ -191,7 +192,7 @@ public class SecuritySettings implements LoadableConfig
                   "through ldap directly with the sAMAccountName, instead the login name will be resolved to a DN " +
                   "that will be used to log in with." )
     public static final Setting<Boolean> ldap_authentication_use_samaccountname =
-            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authentication.use_samaccountname", BOOLEAN, FALSE );
 
     //-----------------------------------------------------
     // LDAP authorization settings
@@ -213,7 +214,7 @@ public class SecuritySettings implements LoadableConfig
                   "Note that this account only needs read access to the relevant parts of the LDAP directory " +
                   "and does not need to have access rights to Neo4j, or any other systems." )
     public static final Setting<Boolean> ldap_authorization_use_system_account =
-            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, "false" );
+            setting( "dbms.security.ldap.authorization.use_system_account", BOOLEAN, FALSE );
 
     @Description(
             "An LDAP system account username to use for authorization searches when " +
@@ -297,7 +298,7 @@ public class SecuritySettings implements LoadableConfig
 
     @Description( "Threshold for rotation of the security log." )
     public static final Setting<Long> store_security_log_rotation_threshold =
-            setting( "dbms.logs.security.rotation.size", BYTES, "20m", min(0L), max( Long.MAX_VALUE ) );
+            buildSetting( "dbms.logs.security.rotation.size", BYTES, "20m" ).constraint( range( 0L, Long.MAX_VALUE ) ).build();
 
     @Description( "Minimum time interval after last rotation of the security log before it may be rotated again." )
     public static final Setting<Duration> store_security_log_rotation_delay =
@@ -305,7 +306,7 @@ public class SecuritySettings implements LoadableConfig
 
     @Description( "Maximum number of history files for the security log." )
     public static final Setting<Integer> store_security_log_max_archives =
-            setting( "dbms.logs.security.rotation.keep_number", INTEGER, "7", min(1) );
+            buildSetting( "dbms.logs.security.rotation.keep_number", INTEGER, "7" ).constraint( min(1) ).build();
 
     //=========================================================================
     // Procedure security settings

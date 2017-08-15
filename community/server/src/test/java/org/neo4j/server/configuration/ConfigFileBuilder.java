@@ -22,7 +22,6 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.config.Setting;
@@ -51,11 +50,11 @@ public class ConfigFileBuilder
                 ServerSettings.rest_api_path.name(), "http://localhost:7474/db/data/" );
     }
 
-    public Optional<File> build() throws IOException
+    public File build() throws IOException
     {
         File file = new File( directory, "config" );
         ServerTestUtils.writeConfigToFile( config, file );
-        return Optional.of( file );
+        return file;
     }
 
     public ConfigFileBuilder withNameValue( String name, String value )

@@ -19,19 +19,17 @@
  */
 package org.neo4j.server;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.util.Optional;
 
-import org.junit.Test;
-
-import org.neo4j.helpers.collection.Pair;
-import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.junit.Assert.assertEquals;
-
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.ArrayUtil.array;
-import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ServerCommandLineArgsTest
 {
@@ -39,7 +37,7 @@ public class ServerCommandLineArgsTest
     public void shouldPickUpSpecifiedConfigFile() throws Exception
     {
         File dir = new File( "/some-dir" ).getAbsoluteFile();
-        Optional<File> expectedFile = Optional.of( new File( dir, ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        Optional<File> expectedFile = Optional.of( new File( dir, Config.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", dir.toString() ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=" + dir ).configFile() );
     }
@@ -47,7 +45,7 @@ public class ServerCommandLineArgsTest
     @Test
     public void shouldResolveConfigFileRelativeToWorkingDirectory() throws Exception
     {
-        Optional<File> expectedFile = Optional.of( new File( "some-dir", ConfigLoader.DEFAULT_CONFIG_FILE_NAME ) );
+        Optional<File> expectedFile = Optional.of( new File( "some-dir", Config.DEFAULT_CONFIG_FILE_NAME ) );
         assertEquals( expectedFile, parse( "--config-dir", "some-dir" ).configFile() );
         assertEquals( expectedFile, parse( "--config-dir=some-dir" ).configFile() );
     }
@@ -83,8 +81,8 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet( Pair.of( "myoption", "myvalue" ) ),
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "myoption", "myvalue" ),
+                parsed.configOverrides() );
     }
 
     @Test
@@ -97,8 +95,8 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet( Pair.of( "myoptionenabled", Boolean.TRUE.toString() ) ),
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "myoptionenabled", Boolean.TRUE.toString() ),
+                parsed.configOverrides()  );
     }
 
     @Test
@@ -114,12 +112,10 @@ public class ServerCommandLineArgsTest
         ServerCommandLineArgs parsed = ServerCommandLineArgs.parse( args );
 
         // THEN
-        assertEquals( asSet(
-                        Pair.of( "my_first_option", "first" ),
-                        Pair.of( "myoptionenabled", Boolean.TRUE.toString() ),
-                        Pair.of( "my_second_option", "second" ) ),
-
-                asSet( parsed.configOverrides() ) );
+        assertEquals( stringMap( "my_first_option", "first" ,
+                        "myoptionenabled", Boolean.TRUE.toString(),
+                       "my_second_option", "second" ),
+                parsed.configOverrides() );
     }
 
     private ServerCommandLineArgs parse( String... args )

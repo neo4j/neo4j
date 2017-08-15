@@ -85,7 +85,7 @@ public class DbRepresentation
 
     public static DbRepresentation of( File storeDir )
     {
-        return of( storeDir, true, Config.embeddedDefaults() );
+        return of( storeDir, true, Config.defaults() );
     }
 
     public static DbRepresentation of( File storeDir, Config config )

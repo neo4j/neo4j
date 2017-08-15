@@ -24,41 +24,39 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Configuration;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.info.DiagnosticsProvider;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonMap;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.HTTP;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.NONE;
@@ -74,151 +72,305 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
  */
 public class Config implements DiagnosticsProvider, Configuration
 {
+    public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
+
     private final List<ConfigOptions> configOptions;
 
-    private final Map<String,String> params = new ConcurrentHashMap<>();
+    private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
     private final ConfigurationMigrator migrator;
-    private final Optional<File> configFile;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
+    private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>(); // TODO : has bo be reapplied every update
+
     // Messages to this log get replayed into a real logger once logging has been instantiated.
-    private Log log;
-    private ConfigValues settingsFunction;
-    private static final Consumer<Map<String,String>> NO_POST_PROCESSING = settings ->
-    {
-    };
+    private Log log = new BufferingLog();
 
     /**
-     * @return a configuration with embedded defaults
+     * Builder class for a configuration.
+     * <p>
+     * The configuration has three layers of values:
+     * <ol>
+     *   <li>Defaults settings, which is provided by validators.
+     *   <li>File settings, parsed from the configuration file if one is provided.
+     *   <li>Overridden settings, as provided by the user with the {@link Builder#withSettings(Map)} methods.
+     * </ol>
+     * They are added in the order specified, and is thus overridden by each layer.
+     * <p>
+     * Although the builder allows you to override the {@link LoadableConfig}'s with <code>withConfigClasses</code>,
+     * this functionality is mainly for testing. If no classes are provided to the builder, they will be located through
+     * service loading, and this is probably what you want in most of the cases.
+     * <p>
+     * Loaded {@link LoadableConfig}'s, whether provided though service loading or explicitly passed, will be scanned
+     * for validators that provides migration, validation and default values. Migrators can be specified with the
+     * {@link Migrator} annotation and should reside in a class implementing {@link LoadableConfig}.
      */
-    public static Config empty()
+    public static class Builder
     {
-        return embeddedDefaults( Optional.empty() );
+        private Map<String,String> initialSettings = stringMap();
+        private Map<String,String> overriddenDefaults = stringMap();
+        private List<ConfigurationValidator> validators = new ArrayList<>();
+        private File configFile;
+        private List<LoadableConfig> settingsClasses;
+        private boolean connectorsDisabled;
+
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param setting The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public Builder withSetting( final Setting<?> setting, final String value )
+        {
+            return withSetting( setting.name(), value );
+        }
+
+        /**
+         * Augment the configuration with the passed setting.
+         *
+         * @param setting The setting to set.
+         * @param value The value of the setting, pre parsed.
+         */
+        public Builder withSetting( final String setting, final String value )
+        {
+            initialSettings.put( setting, value );
+            return this;
+        }
+
+        /**
+         * Augment the configuration with the passed settings.
+         *
+         * @param initialSettings settings to augment the configuration with.
+         */
+        public Builder withSettings( final Map<String,String> initialSettings )
+        {
+            this.initialSettings.putAll( initialSettings );
+            return this;
+        }
+
+        /**
+         * Set the classes that contains the {@link Setting} fields. If no classes are provided to the builder, they
+         * will be located through service loading.
+         *
+         * @param loadableConfigs A collection fo class instances providing settings.
+         */
+        @Nonnull
+        public Builder withConfigClasses( final Collection<? extends LoadableConfig> loadableConfigs )
+        {
+            if ( settingsClasses == null )
+            {
+                settingsClasses = new ArrayList<>();
+            }
+            settingsClasses.addAll( loadableConfigs );
+            return this;
+        }
+
+        /**
+         * Provide an additional validator. Validators are automatically localed within classes with
+         * {@link LoadableConfig}, but this allows you to add others.
+         *
+         * @param validator an additional validator.
+         */
+        @Nonnull
+        public Builder withValidator( final ConfigurationValidator validator )
+        {
+            this.validators.add( validator );
+            return this;
+        }
+
+        /**
+         * @see Builder#withValidator(ConfigurationValidator)
+         */
+        @Nonnull
+        public Builder withValidators( final Collection<ConfigurationValidator> validators )
+        {
+            this.validators.addAll( validators );
+            return this;
+        }
+
+        /**
+         * Extends config with defaults for server, i.e. auth and connector settings.
+         */
+        @Nonnull
+        public Builder withServerDefaults()
+        {
+            // Add server defaults
+            HttpConnector http = new HttpConnector( "http", NONE );
+            HttpConnector https = new HttpConnector( "https", TLS );
+            BoltConnector bolt = new BoltConnector( "bolt" );
+            overriddenDefaults.put( GraphDatabaseSettings.auth_enabled.name(), TRUE );
+            overriddenDefaults.put( http.enabled.name(), TRUE );
+            overriddenDefaults.put( https.enabled.name(), TRUE );
+            overriddenDefaults.put( bolt.enabled.name(), TRUE );
+
+            // Add server validator
+            validators.add( new ServerConfigurationValidator() );
+
+            return this;
+        }
+
+        /**
+         * Provide a file for initial configuration. The settings added with the {@link Builder#withSettings(Map)}
+         * methods will be applied on top of the settings in the file.
+         *
+         * @param configFile A configuration file to parse for initial settings.
+         */
+        @Nonnull
+        public Builder withFile( final @Nullable File configFile )
+        {
+            this.configFile = configFile;
+            return this;
+        }
+
+        /**
+         * @see Builder#withFile(File)
+         */
+        @Nonnull
+        public Builder withFile( final Path configFile )
+        {
+            return withFile( configFile.toFile() );
+        }
+
+        /**
+         * @param configFile an optional configuration file. If not present, this call changes nothing.
+         */
+        @Nonnull
+        public Builder withFile( Optional<File> configFile )
+        {
+            configFile.ifPresent( file -> this.configFile = file );
+            return this;
+        }
+
+        /**
+         * Specifies the neo4j home directory to be set for this particular config. This will modify {@link
+         * GraphDatabaseSettings#neo4j_home} to the same value as provided. If this is not called, the home directory
+         * will be set to a system specific default home directory.
+         *
+         * @param homeDir The home directory this config belongs to.
+         */
+        @Nonnull
+        public Builder withHome( final File homeDir )
+        {
+            initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), homeDir.getAbsolutePath() );
+            return this;
+        }
+
+        /**
+         * @see Builder#withHome(File)
+         */
+        @Nonnull
+        public Builder withHome( final Path homeDir )
+        {
+            return withHome( homeDir.toFile() );
+        }
+
+        /**
+         * This will force all connectors to be disabled during creation of the config. This can be useful if an
+         * offline mode is wanted, e.g. in dbms tools or test environments.
+         */
+        @Nonnull
+        public Builder withConnectorsDisabled()
+        {
+            connectorsDisabled = true;
+            return this;
+        }
+
+        /**
+         * @return The config reflecting the state of the builder.
+         * @throws InvalidSettingException is thrown if an invalid setting is encountered and {@link
+         * GraphDatabaseSettings#strict_config_validation} is true.
+         */
+        @Nonnull
+        public Config build() throws InvalidSettingException
+        {
+            List<LoadableConfig> loadableConfigs =
+                    Optional.ofNullable( settingsClasses ).orElse( LoadableConfig.allConfigClasses() );
+
+            // If reading from a file, make sure we always have a neo4j_home
+            if ( configFile != null && !initialSettings.containsKey( GraphDatabaseSettings.neo4j_home.name() ) )
+            {
+                initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
+            }
+
+            Config config = new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
+
+            if ( connectorsDisabled )
+            {
+                config.augment( config.allConnectorIdentifiers().stream().collect(
+                        Collectors.toMap( id -> new Connector( id ).enabled.name(), id -> Settings.FALSE ) ) );
+            }
+
+            return config;
+        }
+    }
+
+    @Nonnull
+    public static Builder builder()
+    {
+        return new Builder();
     }
 
     /**
-     * @return a configuration with embedded defaults
+     * Convenient method for starting building from a file.
      */
+    @Nonnull
+    public static Builder fromFile( @Nullable final File configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from a file.
+     */
+    @Nonnull
+    public static Builder fromFile( @Nonnull final Path configFile )
+    {
+        return builder().withFile( configFile );
+    }
+
+    /**
+     * Convenient method for starting building from initial settings.
+     */
+    @Nonnull
+    public static Builder fromSettings( final Map<String,String> initialSettings )
+    {
+        return builder().withSettings( initialSettings );
+    }
+
+    /**
+     * @return a configuration with default values.
+     */
+    @Nonnull
     public static Config defaults()
     {
-        return embeddedDefaults( Optional.empty() );
+        return builder().build();
     }
 
     /**
-     * @return a configuration with embedded defaults
+     * @param initialSettings a map with settings to be present in the config.
+     * @return a configuration with default values augmented with the provided <code>initialSettings</code>.
      */
-    public static Config embeddedDefaults( Map<String,String> additionalConfig )
+    @Nonnull
+    public static Config defaults( @Nonnull final Map<String,String> initialSettings )
     {
-        return embeddedDefaults( Optional.empty(), additionalConfig );
+        return builder().withSettings( initialSettings ).build();
     }
 
     /**
-     * @return a configuration with embedded defaults
+     * Constructs a <code>Config</code> with default values and sets the supplied <code>setting</code> to the <code>value</code>.
+     * @param setting The initial setting to use.
+     * @param value The initial value to give the setting.
      */
-    public static Config embeddedDefaults( Optional<File> configFile )
+    @Nonnull
+    public static Config defaults( @Nonnull final Setting<?> setting, @Nonnull final String value )
     {
-        return embeddedDefaults( configFile, emptyMap() );
+        return builder().withSetting( setting, value ).build();
     }
 
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( ConfigurationValidator... validators )
-    {
-        return embeddedDefaults( Optional.empty(), emptyMap(), asList( validators ) );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig )
-    {
-        return embeddedDefaults( configFile, additionalConfig, emptyList() );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        return Config.embeddedDefaults( Optional.empty(), additionalConfig, additionalValidators );
-    }
-
-    /**
-     * @return a configuration with embedded defaults
-     */
-    public static Config embeddedDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        return new Config( configFile, additionalConfig, NO_POST_PROCESSING, additionalValidators, Optional.empty() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults()
-    {
-        return serverDefaults( Optional.empty(), emptyMap(), emptyList() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults( Map<String,String> additionalConfig )
-    {
-        return serverDefaults( Optional.empty(), additionalConfig, emptyList() );
-    }
-
-    /**
-     * @return a configuration with server defaults
-     */
-    public static Config serverDefaults( Optional<File> configFile, Map<String,String> additionalConfig,
-            Collection<ConfigurationValidator> additionalValidators )
-    {
-        ArrayList<ConfigurationValidator> validators = new ArrayList<>();
-        validators.addAll( additionalValidators );
-        validators.add( new ServerConfigurationValidator() );
-
-        HttpConnector http = new HttpConnector( "http", NONE );
-        HttpConnector https = new HttpConnector( "https", TLS );
-        BoltConnector bolt = new BoltConnector( "bolt" );
-        return new Config( configFile,
-                additionalConfig,
-                settings ->
-                {
-                    settings.putIfAbsent( GraphDatabaseSettings.auth_enabled.name(), TRUE );
-                    settings.putIfAbsent( http.enabled.name(), TRUE );
-                    settings.putIfAbsent( https.enabled.name(), TRUE );
-                    settings.putIfAbsent( bolt.enabled.name(), TRUE );
-                },
-                validators,
-                Optional.empty() );
-
-    }
-
-    private Config( Optional<File> configFile,
-            Map<String,String> overriddenSettings,
-            Consumer<Map<String,String>> settingsPostProcessor,
+    private Config( File configFile,
+            Map<String,String> initialSettings,
+            Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
-            Optional<Log> log )
-    {
-        this( configFile, overriddenSettings, settingsPostProcessor, additionalValidators, log,
-                LoadableConfig.allConfigClasses() );
-    }
-
-    /**
-     * Only package-local to support tests of this class. Other uses should use public factory methods.
-     */
-    Config( Optional<File> configFile,
-            Map<String,String> overriddenSettings,
-            Consumer<Map<String,String>> settingsPostProcessor,
-            Collection<ConfigurationValidator> additionalValidators,
-            Optional<Log> log,
             List<LoadableConfig> settingsClasses )
     {
-        this.log = log.orElse( new BufferingLog() );
-        this.configFile = configFile;
-
         configOptions = settingsClasses.stream()
                 .map( LoadableConfig::getConfigOptions )
                 .flatMap( List::stream )
@@ -226,39 +378,32 @@ public class Config implements DiagnosticsProvider, Configuration
 
         validators.addAll( additionalValidators );
         migrator = new AnnotationBasedConfigurationMigrator( settingsClasses );
+        this.overriddenDefaults.putAll( overriddenDefaults );
 
-        Map<String,String> settings = initSettings( configFile, settingsPostProcessor, overriddenSettings, this.log );
-        replaceSettings( settings, configFile.isPresent() );
+        boolean fromFile = configFile != null;
+        if ( fromFile )
+        {
+            loadFromFile( configFile, log ).forEach( initialSettings::putIfAbsent );
+        }
+
+        overriddenDefaults.forEach( initialSettings::putIfAbsent );
+
+        migrateAndValidateAndUpdateSettings( initialSettings, fromFile );
+
+        // Only warn for deprecations if red from a file
+        if ( fromFile )
+        {
+            warnAboutDeprecations( params );
+        }
     }
 
     /**
-     * Returns a copy of this config with the given modifications.
+     * Retrieves a configuration value. If no value is configured, a default value will be returned instead. Note that
+     * {@code null} is a valid value.
      *
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public Config with( Map<String,String> additionalConfig )
-    {
-        Map<String,String> newParams = new HashMap<>( params ); // copy is returned
-        newParams.putAll( additionalConfig );
-        return new Config( Optional.empty(), newParams, NO_POST_PROCESSING, validators, Optional.of( log ) );
-    }
-
-    /**
-     * Returns a copy of this config with the given modifications except for any settings which already have a
-     * specified value.
-     *
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public Config withDefaults( Map<String,String> additionalDefaults )
-    {
-        Map<String,String> newParams = new HashMap<>( this.params ); // copy is returned
-        additionalDefaults.forEach( newParams::putIfAbsent );
-
-        return new Config( Optional.empty(), newParams, NO_POST_PROCESSING, validators, Optional.of( log ) );
-    }
-
-    /**
-     * Retrieve a configuration property.
+     * @param setting The configuration property.
+     * @param <T> the underlying type of the setting.
+     * @return the value of the given setting, {@code null} can be returned.
      */
     @Override
     public <T> T get( Setting<T> setting )
@@ -267,44 +412,117 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * Unlike the public {@link Setting} instances, the function passed in here has access to
-     * the raw setting data, meaning it can provide functionality that cross multiple settings
-     * and other more advanced use cases.
+     * Test whether a setting is configured or not. Can be used to check if default value will be returned or not.
+     *
+     * @param setting The setting to check.
+     * @return {@code true} if the setting is configures, {@code false} otherwise implying that the default value will
+     * be returned if applicable.
      */
-    public <T> T view( Function<ConfigValues,T> projection )
+    public boolean isConfigured( Setting<?> setting )
     {
-        return projection.apply( settingsFunction );
+        return params.containsKey( setting.name() );
+    }
+
+    /**
+     * Returns the currently configured identifiers for grouped settings.
+     *
+     * Identifiers for groups exists to allow multiple configured settings of the same setting type.
+     * E.g. giving that prefix of a group is {@code dbms.ssl.policy} and the following settings are configured:
+     * <ul>
+     * <li> {@code dbms.ssl.policy.default.base_directory}
+     * <li> {@code dbms.ssl.policy.other.base_directory}
+     * </ul>
+     * a call to this will method return {@code ["default", "other"]}.
+     * <p>
+     * The key difference to these identifiers are that they are only known at runtime after a valid configuration is
+     * parsed and validated.
+     *
+     * @param groupClass A class that represents a setting group. Must be annotated with {@link Group}
+     * @return A set of configured identifiers for the given group.
+     * @throws IllegalArgumentException if the provided class is not annotated with {@link Group}.
+     */
+    public Set<String> identifiersFromGroup( Class<?> groupClass )
+    {
+        if ( !groupClass.isAnnotationPresent( Group.class ) )
+        {
+            throw new IllegalArgumentException( "Class must be annotated with @Group" );
+        }
+
+        String prefix = groupClass.getAnnotation( Group.class ).value();
+        Pattern pattern = Pattern.compile( Pattern.quote( prefix ) + "\\.([^.]+)\\.(.+)" );
+
+        Set<String> identifiers = new TreeSet<>();
+        for ( String setting : params.keySet() )
+        {
+            Matcher matcher = pattern.matcher( setting );
+            if ( matcher.matches() )
+            {
+                identifiers.add( matcher.group( 1 ) );
+            }
+        }
+        return identifiers;
     }
 
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
      *
-     * @param changes settings to add and override
+     * @param settings to add and override.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public Config augment( Map<String,String> changes )
+    public void augment( Map<String,String> settings ) throws InvalidSettingException
     {
-        Map<String,String> params = new HashMap<>( this.params );
-        params.putAll( changes );
-        replaceSettings( params, false );
-        return this;
+        migrateAndValidateAndUpdateSettings( settings, false );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( String setting, String value ) throws InvalidSettingException
+    {
+        augment( singletonMap( setting, value ) );
+    }
+
+    /**
+     * @see Config#augment(Map)
+     */
+    public void augment( Setting<?> setting, String value )
+    {
+        augment( setting.name(), value );
     }
 
     /**
      * Augment the existing config with new settings, overriding any conflicting settings, but keeping all old
      * non-overlapping ones.
-     * @param config config to add and override with
-     * @return combined config
+     *
+     * @param config config to add and override with.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
      */
-    public Config augment( Config config )
+    public void augment( Config config ) throws InvalidSettingException
     {
-        return augment( config.params );
+        augment( config.params );
     }
 
     /**
-     * Specify a log where errors and warnings will be reported.
+     * Augment the existing config with new settings, ignoring any conflicting settings.
      *
-     * @param log to use
+     * @param setting settings to add and override
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    public void augmentDefaults( Setting<?> setting, String value ) throws InvalidSettingException
+    {
+        overriddenDefaults.put( setting.name(), value );
+        params.putIfAbsent( setting.name(), value );
+    }
+
+    /**
+     * Specify a log where errors and warnings will be reported. Log messages that happens prior to setting a logger
+     * will be buffered and replayed onto the first logger that is set.
+     *
+     * @param log to use.
      */
     public void setLogger( Log log )
     {
@@ -313,16 +531,6 @@ public class Config implements DiagnosticsProvider, Configuration
             ((BufferingLog) this.log).replayInto( log );
         }
         this.log = log;
-    }
-
-    /**
-     * Return the keys of settings which have been configured (via a file or code).
-     *
-     * @return setting keys
-     */
-    public Set<String> getConfiguredSettingKeys()
-    {
-        return new HashSet<>( params.keySet() );
     }
 
     /**
@@ -335,7 +543,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
-     * @return a map of raw  configuration keys and values
+     * @return a copy of the raw configuration map
      */
     public Map<String,String> getRaw()
     {
@@ -395,45 +603,36 @@ public class Config implements DiagnosticsProvider, Configuration
         }
     }
 
-    public Optional<Path> getConfigFile()
+    /**
+     * Migrates and validates all string values in the provided <code>settings</code> map.
+     *
+     * This will update the configuration with the provided values regardless whether errors are encountered or not.
+     *
+     * @param settings the settings to migrate and validate.
+     * @param warnOnUnknownSettings if true method log messages to {@link Config#log}.
+     * @throws InvalidSettingException when and invalid setting is found and {@link
+     * GraphDatabaseSettings#strict_config_validation} is true.
+     */
+    private void migrateAndValidateAndUpdateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
+            throws InvalidSettingException
     {
-        return configFile.map( File::toPath );
-    }
+        Map<String,String> migratedSettings = migrator.apply( settings, log );
+        params.putAll( migratedSettings );
 
-    @Override
-    public String toString()
-    {
-        List<String> keys = new ArrayList<>( params.keySet() );
-        Collections.sort( keys );
-        LinkedHashMap<String,String> output = new LinkedHashMap<>();
-        for ( String key : keys )
-        {
-            output.put( key, params.get( key ) );
-        }
-
-        return output.toString();
-    }
-
-    private synchronized void replaceSettings( Map<String,String> userSettings, boolean warnOnUnknownSettings )
-    {
-        Map<String,String> validSettings = migrator.apply( userSettings, log );
         List<SettingValidator> settingValidators = configOptions.stream()
                 .map( ConfigOptions::settingGroup )
                 .collect( Collectors.toList() );
+
         // Validate settings
-        validSettings = new IndividualSettingsValidator( warnOnUnknownSettings )
-                .validate( settingValidators, validSettings, log, configFile.isPresent() );
+        Map<String,String> additionalSettings =
+                new IndividualSettingsValidator( settingValidators, warnOnUnknownSettings ).validate( this, log );
+        params.putAll( additionalSettings );
+
+        // Validate configuration
         for ( ConfigurationValidator validator : validators )
         {
-            validSettings = validator.validate( settingValidators, validSettings, log, configFile.isPresent() );
+            validator.validate( this, log );
         }
-
-        params.clear();
-        params.putAll( validSettings );
-        settingsFunction = new ConfigValues( params );
-
-        // We only warn when parsing the file so we don't warn about the same setting more than once
-        configFile.ifPresent( file -> warnAboutDeprecations( userSettings ) );
     }
 
     private void warnAboutDeprecations( Map<String,String> userSettings )
@@ -452,19 +651,6 @@ public class Config implements DiagnosticsProvider, Configuration
                         log.warn( "%s is deprecated.", c.name() );
                     }
                 } );
-    }
-
-    @Nonnull
-    private static Map<String,String> initSettings( @Nonnull Optional<File> configFile,
-            @Nonnull Consumer<Map<String,String>> settingsPostProcessor,
-            @Nonnull Map<String,String> overriddenSettings,
-            @Nonnull Log log )
-    {
-        Map<String,String> settings = new HashMap<>();
-        configFile.ifPresent( file -> settings.putAll( loadFromFile( file, log ) ) );
-        settingsPostProcessor.accept( settings );
-        settings.putAll( overriddenSettings );
-        return settings;
     }
 
     @Nonnull
@@ -490,7 +676,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
      */
     @Nonnull
-    public List<String> allConnectorIdentifiers()
+    public Set<String> allConnectorIdentifiers()
     {
         return allConnectorIdentifiers( params );
     }
@@ -499,17 +685,9 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return a list of all connector names like 'http' in 'dbms.connector.http.enabled = true'
      */
     @Nonnull
-    public static List<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
+    public Set<String> allConnectorIdentifiers( @Nonnull Map<String,String> params )
     {
-        Pattern pattern = Pattern.compile(
-                Pattern.quote( "dbms.connector." ) + "([^\\.]+)\\.(.+)" );
-
-        return params.keySet().stream()
-                .map( pattern::matcher )
-                .filter( Matcher::matches )
-                .map( match -> match.group( 1 ) )
-                .distinct()
-                .collect( Collectors.toList() );
+        return identifiersFromGroup( Connector.class );
     }
 
     /**
@@ -525,7 +703,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return stream of all configured bolt connectors
      */
     @Nonnull
-    private static Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
+    private Stream<BoltConnector> boltConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream().map( BoltConnector::new ).filter(
                 c -> c.group.groupKey.equalsIgnoreCase( "bolt" ) || BOLT.equals( c.type.apply( params::get ) ) );
@@ -544,7 +722,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return list of all configured bolt connectors which are enabled
      */
     @Nonnull
-    public static List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
+    public List<BoltConnector> enabledBoltConnectors( @Nonnull Map<String,String> params )
     {
         return boltConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
@@ -564,7 +742,7 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return stream of all configured http connectors
      */
     @Nonnull
-    private static Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
+    private Stream<HttpConnector> httpConnectors( @Nonnull Map<String,String> params )
     {
         return allConnectorIdentifiers( params ).stream()
                 .map( Connector::new )
@@ -604,10 +782,19 @@ public class Config implements DiagnosticsProvider, Configuration
      * @return list of all configured http connectors which are enabled
      */
     @Nonnull
-    private static List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
+    private List<HttpConnector> enabledHttpConnectors( @Nonnull Map<String,String> params )
     {
         return httpConnectors( params )
                 .filter( c -> c.enabled.apply( params::get ) )
                 .collect( Collectors.toList() );
+    }
+
+    @Override
+    public String toString()
+    {
+        return params.entrySet().stream()
+                .sorted( Comparator.comparing( Map.Entry::getKey ) )
+                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .collect( Collectors.joining( ", ") );
     }
 }

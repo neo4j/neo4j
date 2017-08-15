@@ -234,7 +234,7 @@ public class BackupTool
                         configFilePath ), e );
             }
         }
-        return Config.embeddedDefaults( specifiedConfig );
+        return Config.defaults( specifiedConfig );
     }
 
     private static URI resolveBackupUri( String from, Args arguments ) throws ToolFailureException

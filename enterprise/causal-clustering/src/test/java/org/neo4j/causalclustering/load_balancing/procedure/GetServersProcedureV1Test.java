@@ -51,7 +51,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -66,7 +65,6 @@ import static org.neo4j.causalclustering.discovery.TestTopology.adressesForCore;
 import static org.neo4j.causalclustering.discovery.TestTopology.readReplicaInfoMap;
 import static org.neo4j.causalclustering.identity.RaftTestMember.member;
 import static org.neo4j.helpers.collection.Iterators.asList;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTInteger;
 import static org.neo4j.kernel.api.proc.Neo4jTypes.NTMap;
 import static org.neo4j.logging.NullLogProvider.getInstance;
@@ -87,10 +85,10 @@ public class GetServersProcedureV1Test
     public static Collection<Object[]> params()
     {
         return Arrays.asList(
-                new Object[]{"with followers as read end points", Config.defaults().augment(
-                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.TRUE ) ), true },
-                new Object[]{"no followers as read end points", Config.defaults().augment(
-                        singletonMap( cluster_allow_reads_on_followers.name(), Settings.FALSE ) ), false }
+                new Object[]{"with followers as read end points", Config.defaults(
+                        cluster_allow_reads_on_followers, Settings.TRUE ), true },
+                new Object[]{"no followers as read end points", Config.defaults(
+                        cluster_allow_reads_on_followers, Settings.FALSE ), false }
         );
     }
 
@@ -107,7 +105,7 @@ public class GetServersProcedureV1Test
         when( coreTopologyService.readReplicas() ).thenReturn( new ReadReplicaTopology( emptyMap() ) );
 
         // set the TTL in minutes
-        config = config.augment( stringMap( cluster_routing_ttl.name(), "10m" ) );
+        config.augment( cluster_routing_ttl, "10m" );
 
         final LegacyGetServersProcedure proc =
                 new LegacyGetServersProcedure( coreTopologyService, leaderLocator, config, getInstance() );

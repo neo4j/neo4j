@@ -101,8 +101,6 @@ public class HazelcastClientTest
 
     private Config config()
     {
-        Config defaults = Config.defaults();
-
         HashMap<String, String> settings = new HashMap<>();
         settings.put( new BoltConnector( "bolt" ).type.name(), "BOLT" );
         settings.put( new BoltConnector( "bolt" ).enabled.name(), "true" );
@@ -112,7 +110,7 @@ public class HazelcastClientTest
         settings.put( new BoltConnector( "http" ).enabled.name(), "true" );
         settings.put( new BoltConnector( "http" ).advertised_address.name(), "http:3001" );
 
-        return defaults.augment( settings );
+        return Config.defaults( settings );
     }
 
     @Test

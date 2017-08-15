@@ -38,7 +38,8 @@ import static org.neo4j.helpers.Configuration.DEFAULT;
 @RunWith( Parameterized.class )
 public class UdcSettingsTest
 {
-    public static final String UDC_DISABLE = "dbms.udc.disable";
+    private static final String UDC_DISABLE = "dbms.udc.disable";
+    private static final UdcSettings settingsClasses = new UdcSettings();
     @Rule
     public final Configuration configuration = new Configuration();
 
@@ -67,7 +68,7 @@ public class UdcSettingsTest
     @Test
     public void shouldBeEnabledByDefault()
     {
-        assertTrue( configuration.config( UdcSettings.class ).get( udc_enabled ) );
+        assertTrue( configuration.config( settingsClasses ).get( udc_enabled ) );
         assertTrue( Config.defaults().get( udc_enabled ) );
     }
 
@@ -77,8 +78,8 @@ public class UdcSettingsTest
         assertFalse( configuration.with( udc_enabled, falseVariation )
                                   .withSystemProperty( udc_enabled.name(), DEFAULT )
                                   .withSystemProperty( UDC_DISABLE, DEFAULT )
-                                  .config( UdcSettings.class ).get( udc_enabled ) );
-        assertFalse( Config.embeddedDefaults( singletonMap( udc_enabled.name(), "false" ) ).get( udc_enabled ) );
+                                  .config( settingsClasses ).get( udc_enabled ) );
+        assertFalse( Config.defaults( singletonMap( udc_enabled.name(), "false" ) ).get( udc_enabled ) );
     }
 
     // enabled by default
@@ -521,12 +522,12 @@ public class UdcSettingsTest
 
     private static void assertEnabled( Configuration configuration )
     {
-        assertTrue( "should be enabled", configuration.config( UdcSettings.class ).get( udc_enabled ) );
+        assertTrue( "should be enabled", configuration.config( settingsClasses ).get( udc_enabled ) );
     }
 
     private static void assertDisabled( Configuration configuration )
     {
-        assertFalse( "should be disabled", configuration.config( UdcSettings.class ).get( udc_enabled ) );
+        assertFalse( "should be disabled", configuration.config( settingsClasses ).get( udc_enabled ) );
     }
 
     static final class Variations

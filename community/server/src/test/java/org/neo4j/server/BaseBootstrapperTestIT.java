@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.server.configuration.ConfigLoader;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -94,7 +94,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
     public void canSpecifyConfigFile() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
@@ -118,7 +118,7 @@ public abstract class BaseBootstrapperTestIT extends ExclusiveServerTestBase
     public void canOverrideConfigValues() throws Throwable
     {
         // Given
-        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME);
+        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME);
 
         Map<String, String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );

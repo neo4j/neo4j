@@ -36,7 +36,6 @@ import org.neo4j.causalclustering.discovery.CoreClusterMember;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -122,6 +121,6 @@ public class BackupCoreIT
 
     static Config getConfig()
     {
-        return Config.embeddedDefaults( MapUtil.stringMap( GraphDatabaseSettings.record_format.name(), Standard.LATEST_NAME ) );
+        return Config.defaults( GraphDatabaseSettings.record_format, Standard.LATEST_NAME );
     }
 }

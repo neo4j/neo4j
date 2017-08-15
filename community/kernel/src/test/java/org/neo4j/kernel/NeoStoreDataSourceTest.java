@@ -61,7 +61,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class NeoStoreDataSourceTest
@@ -216,7 +215,7 @@ public class NeoStoreDataSourceTest
     @Test
     public void logModuleSetUpError() throws Exception
     {
-        Config config = Config.embeddedDefaults( stringMap() );
+        Config config = Config.defaults();
         IdGeneratorFactory idGeneratorFactory = mock( IdGeneratorFactory.class );
         Throwable openStoresError = new RuntimeException( "Can't set up modules" );
         doThrow( openStoresError ).when( idGeneratorFactory ).create( any( File.class ), anyLong(), anyBoolean() );

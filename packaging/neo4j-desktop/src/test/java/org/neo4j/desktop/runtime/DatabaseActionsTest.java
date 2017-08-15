@@ -31,6 +31,7 @@ import java.util.Properties;
 import org.neo4j.desktop.Parameters;
 import org.neo4j.desktop.config.Installation;
 import org.neo4j.desktop.model.DesktopModel;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -79,7 +80,7 @@ public class DatabaseActionsTest
         storeDir = new File( testDirectory.directory(), "store_dir" );
         storeDir.mkdirs();
 
-        configFile = new File( testDirectory.directory(), "neo4j.conf" );
+        configFile = new File( testDirectory.directory(), Config.DEFAULT_CONFIG_FILE_NAME );
         Properties props = new Properties();
         props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
         props.setProperty( new HttpConnector( "http" ).encryption.name(), "NONE" );

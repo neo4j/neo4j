@@ -68,7 +68,7 @@ public class DefaultUdcInformationCollectorTest
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector(
-            Config.empty(), null,
+            Config.defaults(), null,
             new StubIdGeneratorFactory(), mock( StartupStatistics.class ), usageData );
 
     @Test
@@ -168,7 +168,7 @@ public class DefaultUdcInformationCollectorTest
         dataSourceManager.start();
 
         UdcInformationCollector collector = new DefaultUdcInformationCollector(
-                Config.empty(),
+                Config.defaults(),
                 dataSourceManager,
                 new StubIdGeneratorFactory(),
                 mock(StartupStatistics.class),

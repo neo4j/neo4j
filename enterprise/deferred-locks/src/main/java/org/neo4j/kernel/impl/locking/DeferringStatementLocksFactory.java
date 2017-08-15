@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.locking;
 
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.configuration.Internal;
 import org.neo4j.kernel.configuration.Settings;
 
 import static java.util.Objects.requireNonNull;

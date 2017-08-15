@@ -20,32 +20,22 @@
 
 package org.neo4j.kernel.configuration;
 
-import java.util.Collection;
 import java.util.Map;
 import javax.annotation.Nonnull;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.logging.Log;
 
 /**
- * Responsible for validating part of a configuration
+ * Responsible for validating part of a configuration.
  */
 public interface ConfigurationValidator
 {
     /**
-     * Validate a config and return its subset of valid keys and values. Unknown settings should be discarded. Invalid
-     * settings should cause an error.
-     *
-     * @param settingValidators which are available
-     * @param rawConfig to validate
-     * @param log for logging with
-     * @param parsingFile true if reading config file, false otherwise
-     * @return a Map of valid keys and values.
-     * @throws InvalidSettingException in case of invalid values
+     * @param config to validated.
+     * @param log for logging with messages.
+     * @return a map containing any additional settings to add the the configuration
+     * @throws InvalidSettingException in case of invalid values.
      */
-    @Nonnull
-    Map<String,String> validate( @Nonnull Collection<SettingValidator> settingValidators,
-            @Nonnull Map<String,String> rawConfig,
-            @Nonnull Log log, boolean parsingFile ) throws InvalidSettingException;
+    Map<String,String> validate( @Nonnull Config config, @Nonnull Log log ) throws InvalidSettingException;
 }

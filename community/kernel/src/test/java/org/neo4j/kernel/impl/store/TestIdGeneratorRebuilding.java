@@ -32,7 +32,6 @@ import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -70,8 +69,7 @@ public class TestIdGeneratorRebuilding
     public void verifyFixedSizeStoresCanRebuildIdGeneratorSlowly() throws IOException
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );
@@ -122,8 +120,7 @@ public class TestIdGeneratorRebuilding
     public void verifyDynamicSizedStoresCanRebuildIdGeneratorSlowly() throws Exception
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
 
         StoreFactory storeFactory = new StoreFactory( testDirectory.graphDbDir(), config,
                 new DefaultIdGeneratorFactory( fs ), pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance() );
@@ -175,8 +172,7 @@ public class TestIdGeneratorRebuilding
     public void rebuildingIdGeneratorMustNotMissOutOnFreeRecordsAtEndOfFilePage() throws IOException
     {
         // Given we have a store ...
-        Config config = Config.embeddedDefaults( MapUtil.stringMap(
-                GraphDatabaseSettings.rebuild_idgenerators_fast.name(), "false" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "false" );
         File storeFile = testDirectory.file( "nodes" );
 
         DynamicArrayStore labelStore = mock( DynamicArrayStore.class );

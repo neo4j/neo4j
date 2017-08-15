@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -34,6 +35,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 
 /**
  * This is the Neo4j Kernel, an implementation of the Kernel API which is an internal component used by Cypher and the
@@ -64,7 +67,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final DatabaseHealth health;
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
-    private final long defaultTransactionTimeout;
+    private final Config config;
 
     public Kernel( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
             TransactionMonitor transactionMonitor, Procedures procedures, Config config )
@@ -74,14 +77,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.health = health;
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
-        this.defaultTransactionTimeout = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
+        this.config = config;
     }
 
     @Override
     public KernelTransaction newTransaction( KernelTransaction.Type type, SecurityContext securityContext )
             throws TransactionFailureException
     {
-        return newTransaction( type, securityContext, defaultTransactionTimeout );
+        return newTransaction( type, securityContext, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override

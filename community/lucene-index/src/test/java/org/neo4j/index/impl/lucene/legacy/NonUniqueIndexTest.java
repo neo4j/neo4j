@@ -117,7 +117,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( directory.graphDbDir(), Config.embeddedDefaults(),
+        }.newFacade( directory.graphDbDir(), Config.defaults(),
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 
@@ -150,10 +150,10 @@ public class NonUniqueIndexTest
 
     private List<Long> nodeIdsInIndex( int indexId, String value ) throws Exception
     {
-        Config config = Config.empty();
+        Config config = Config.defaults();
         SchemaIndexProvider indexProvider = new LuceneSchemaIndexProvider( fileSystemRule.get(),
                 DirectoryFactory.PERSISTENT, directory.graphDbDir(), NullLogProvider.getInstance(),
-                Config.empty(), OperationalMode.single );
+                Config.defaults(), OperationalMode.single );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( indexId,
                 IndexDescriptorFactory.forLabel( 0, 0 ), samplingConfig );

@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.configuration;
 
-import java.io.File;
-import java.util.Map;
-import java.util.Optional;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-public interface Bootstrapper
+/**
+ * Dynamic properties can be changed at runtime.
+ */
+@Retention( RetentionPolicy.RUNTIME )
+@Target( {ElementType.TYPE, ElementType.FIELD} )
+public @interface Dynamic
 {
-    int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides );
-
-    int stop();
 }

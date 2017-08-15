@@ -24,12 +24,15 @@ import java.util.Optional;
 
 /**
  * All fields specified here are set via annotations when loaded
+ * @deprecated The settings API will be completely rewritten in 4.0
  */
+@Deprecated
 public abstract class BaseSetting<T> implements Setting<T>
 {
     private boolean deprecated;
     private String replacement;
     private boolean internal;
+    private boolean dynamic;
     private String documentedDefaultValue;
     private String description;
 
@@ -92,5 +95,22 @@ public abstract class BaseSetting<T> implements Setting<T>
     public String toString()
     {
         return valueDescription();
+    }
+
+    /**
+     * Checks whether this setting is dynamic or not. Dynamic properties are allowed to be changed at runtime without
+     * restarting the server.
+     *
+     * @return {@code true} if this setting can be changed at runtime.
+     */
+    @Override
+    public boolean dynamic()
+    {
+        return dynamic;
+    }
+
+    public void setDynamic( boolean dynamic )
+    {
+        this.dynamic = dynamic;
     }
 }

@@ -29,7 +29,6 @@ import org.neo4j.server.configuration.ServerSettings;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConfigAdapterTest
 {
@@ -68,7 +67,7 @@ public class ConfigAdapterTest
     {
         // GIVEN
 
-        Config config = Config.embeddedDefaults();
+        Config config = Config.defaults();
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         // THEN
@@ -88,8 +87,7 @@ public class ConfigAdapterTest
     @Test
     public void shouldAbleToAccessNonRegisteredPropertyByName()
     {
-        Config config = Config.embeddedDefaults( stringMap(
-                ServerSettings.transaction_idle_timeout.name(), "600ms" ) );
+        Config config = Config.defaults( ServerSettings.transaction_idle_timeout, "600ms" );
         ConfigAdapter wrappingConfiguration = new ConfigAdapter( config );
 
         assertEquals( Duration.ofMillis( 600 ),

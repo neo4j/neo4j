@@ -21,6 +21,10 @@ package org.neo4j.graphdb.config;
 
 import java.util.function.Function;
 
+/**
+ * @deprecated The settings API will be completely rewritten in 4.0
+ */
+@Deprecated
 public abstract class ScopeAwareSetting<T> extends BaseSetting<T>
 {
     private Function<String,String> scopingRule = Function.identity();

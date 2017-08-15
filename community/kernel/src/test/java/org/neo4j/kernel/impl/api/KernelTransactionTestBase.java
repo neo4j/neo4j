@@ -84,7 +84,7 @@ public class KernelTransactionTestBase
     protected final Pool<KernelTransactionImplementation> txPool = mock( Pool.class );
     protected final StatementOperationContainer operationContainer = mock( StatementOperationContainer.class );
 
-    private final long defaultTransactionTimeoutMillis = GraphDatabaseSettings.transaction_timeout.from( Config.defaults() ).toMillis();
+    private final long defaultTransactionTimeoutMillis = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
 
     @Before
     public void before() throws Exception

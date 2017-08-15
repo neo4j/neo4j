@@ -59,7 +59,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.Bits.bits;
 
 public class NodeLabelsFieldTest
@@ -517,7 +516,7 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        Config config = Config.embeddedDefaults( stringMap( GraphDatabaseSettings.label_block_size.name(), "60" ) );
+        Config config = Config.defaults( GraphDatabaseSettings.label_block_size, "60" );
         StoreFactory storeFactory = new StoreFactory( storeDir, config, new DefaultIdGeneratorFactory( fs.get() ),
                 pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance() );
         neoStores = storeFactory.openAllNeoStores( true );

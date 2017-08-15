@@ -27,7 +27,6 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Objects;
-import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
@@ -36,14 +35,13 @@ import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.internal.locker.StoreLocker;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.dbms.DatabaseManagementSystemSettings.database_path;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class DumpCommand implements AdminCommand
 {
@@ -101,12 +99,11 @@ public class DumpCommand implements AdminCommand
 
     private Path toDatabaseDirectory( String databaseName )
     {
-        //noinspection unchecked
-        return ConfigLoader
-                .loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
-                        Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) )
-                .with( stringMap( DatabaseManagementSystemSettings.active_database.name(), databaseName ) )
-                .get( database_path ).toPath();
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withConnectorsDisabled()
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .build().get( database_path ).toPath();
     }
 
     private Path calculateArchive( String database, Path to )

@@ -57,7 +57,6 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
 @RunWith( Parameterized.class )
@@ -66,8 +65,7 @@ public class StoreMigratorIT
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private static final Config CONFIG = Config.defaults().with(
-            stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" ) );
+    private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule ).around( pageCacheRule );

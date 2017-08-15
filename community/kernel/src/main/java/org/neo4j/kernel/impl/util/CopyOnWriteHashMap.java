@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import javax.annotation.Nonnull;
 
 /**
  * Optimized for rare writes and very frequent reads in a thread safe way.
@@ -44,7 +45,7 @@ import java.util.Set;
  */
 public class CopyOnWriteHashMap<K, V> implements Map<K, V>
 {
-    private volatile Map<K, V> actual = new HashMap<K, V>();
+    private volatile Map<K, V> actual = new HashMap<>();
 
     @Override
     public int size()
@@ -78,7 +79,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
 
     private Map<K, V> copy()
     {
-        return new HashMap<K, V>( actual );
+        return new HashMap<>( actual );
     }
 
     @Override
@@ -100,7 +101,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
     }
 
     @Override
-    public synchronized void putAll( Map<? extends K, ? extends V> m )
+    public synchronized void putAll( @Nonnull Map<? extends K, ? extends V> m )
     {
         Map<K, V> copy = copy();
         copy.putAll( m );
@@ -110,7 +111,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
     @Override
     public synchronized void clear()
     {
-        actual = new HashMap<K, V>();
+        actual = new HashMap<>();
     }
 
     private static class UnsupportedRemoveIterator<T> implements Iterator<T>
@@ -141,6 +142,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
         }
     }
 
+    @Nonnull
     @Override
     public Set<K> keySet()
     {
@@ -152,10 +154,11 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
                 return CopyOnWriteHashMap.this.remove( o ) != null;
             }
 
+            @Nonnull
             @Override
             public Iterator<K> iterator()
             {
-                return new UnsupportedRemoveIterator<K>( actual.keySet().iterator() );
+                return new UnsupportedRemoveIterator<>( actual.keySet().iterator() );
             }
 
             @Override
@@ -166,15 +169,17 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
         };
     }
 
+    @Nonnull
     @Override
     public Collection<V> values()
     {
         return new AbstractCollection<V>()
         {
+            @Nonnull
             @Override
             public Iterator<V> iterator()
             {
-                return new UnsupportedRemoveIterator<V>( actual.values().iterator() );
+                return new UnsupportedRemoveIterator<>( actual.values().iterator() );
             }
 
             @Override
@@ -185,6 +190,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
         };
     }
 
+    @Nonnull
     @Override
     public Set<Entry<K, V>> entrySet()
     {
@@ -196,6 +202,7 @@ public class CopyOnWriteHashMap<K, V> implements Map<K, V>
                 throw new UnsupportedOperationException();
             }
 
+            @Nonnull
             @Override
             public Iterator<Entry<K, V>> iterator()
             {

@@ -39,7 +39,6 @@ import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.server.configuration.ConfigLoader;
 
 import static org.neo4j.csv.reader.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT_MAX_MEMORY_PERCENT;
@@ -287,9 +286,10 @@ public class ImportCommand implements AdminCommand
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
             Map<String,String> additionalConfig )
     {
-        Config config = ConfigLoader.loadConfigWithConnectorsDisabled( Optional.of( homeDir.toFile() ),
-                Optional.of( configDir.resolve( "neo4j.conf" ).toFile() ) );
-        additionalConfig.put( DatabaseManagementSystemSettings.active_database.name(), databaseName );
-        return config.with( additionalConfig );
+        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withSetting( DatabaseManagementSystemSettings.active_database, databaseName )
+                .withSettings( additionalConfig )
+                .withConnectorsDisabled().build();
     }
 }

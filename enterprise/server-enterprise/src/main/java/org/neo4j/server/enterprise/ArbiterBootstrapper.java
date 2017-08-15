@@ -23,7 +23,6 @@ import org.jboss.netty.channel.ChannelException;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Timer;
@@ -33,8 +32,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClientModule;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
 import org.neo4j.function.Predicates;
-import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemLifecycleAdapter;
@@ -57,9 +54,8 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
     private final LifeSupport life = new LifeSupport();
     private final Timer timer = new Timer( true );
 
-    @SafeVarargs
     @Override
-    public final int start( File homeDir, Optional<File> configFile, Pair<String, String>... configOverrides )
+    public final int start( File homeDir, Optional<File> configFile, Map<String, String> configOverrides )
     {
         Config config = getConfig( configFile, configOverrides );
         try
@@ -109,29 +105,11 @@ public class ArbiterBootstrapper implements Bootstrapper, AutoCloseable
         stop();
     }
 
-    @SafeVarargs
-    private static Config getConfig( Optional<File> configFile, Pair<String, String>... configOverrides )
+    private static Config getConfig( Optional<File> configFile, Map<String, String> configOverrides )
     {
-        Map<String, String> config = new HashMap<>();
-        configFile.ifPresent( ( file ) ->
-        {
-            try
-            {
-                config.putAll( MapUtil.load( file ) );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( "Unable to load config file " + configFile, e );
-            }
-        } );
-
-        for ( Pair<String, String> configOverride : configOverrides )
-        {
-            config.put( configOverride.first(), configOverride.other() );
-        }
-
-        verifyConfig( config );
-        return Config.embeddedDefaults( config );
+        Config config = Config.builder().withFile( configFile ).withSettings( configOverrides ).build();
+        verifyConfig( config.getRaw() );
+        return config ;
     }
 
     private static void verifyConfig( Map<String, String> config )

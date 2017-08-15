@@ -37,8 +37,6 @@ import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.logging.SimpleLogService;
 import org.neo4j.logging.LogProvider;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 /**
  * Factory for test graph database.
  */
@@ -50,8 +48,9 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
     {
         return params ->
         {
-            Config config = Config.embeddedDefaults( params )
-                                  .with( stringMap( "unsupported.dbms.ephemeral", "false" ) );
+            Config config = Config.builder()
+                    .withSettings( params )
+                    .withSetting( GraphDatabaseFacadeFactory.Configuration.ephemeral, "false" ).build();
             return new GraphDatabaseFacadeFactory( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new )
             {
                 @Override
@@ -91,7 +90,7 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
             @Override
             public GraphDatabaseService newDatabase( Map<String,String> config )
             {
-                return newDatabase( Config.embeddedDefaults( config ) );
+                return newDatabase( Config.defaults( config ) );
             }
 
             @Override

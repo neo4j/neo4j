@@ -46,6 +46,7 @@ import org.neo4j.bolt.v1.runtime.WorkerFactory;
 import org.neo4j.bolt.v1.runtime.concurrent.ThreadedWorkerFactory;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
 import org.neo4j.configuration.Description;
+import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -82,7 +83,7 @@ import static org.neo4j.scheduler.JobScheduler.Groups.boltNetworkIO;
 @Service.Implementation( KernelExtensionFactory.class )
 public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtension.Dependencies>
 {
-    public static class Settings
+    public static class Settings implements LoadableConfig
     {
         @Description( "SSL policy to use" )
         public static Setting<String> ssl_policy = setting( "bolt.ssl_policy", STRING, LEGACY_POLICY_NAME );

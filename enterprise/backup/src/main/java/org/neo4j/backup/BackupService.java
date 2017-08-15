@@ -27,8 +27,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.function.Supplier;
 
 import org.neo4j.com.RequestContext;
@@ -80,7 +78,6 @@ import static org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker.DEFA
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Exceptions.rootCause;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory.createPageCache;
 
 /**
@@ -179,9 +176,8 @@ class BackupService
                     CancellationRequest.NEVER_CANCELLED,
                     MoveAfterCopy.moveReplaceExisting() );
 
-            File debugLogFile =
-                    tuningConfiguration.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
-                            .get( store_internal_log_path );
+            tuningConfiguration.augment( logs_directory, targetDirectory.getCanonicalPath() );
+            File debugLogFile = tuningConfiguration.get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, timestamp );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, tuningConfiguration, pageCache );
             clearIdFiles( fileSystem, targetDirectory );
@@ -216,15 +212,9 @@ class BackupService
         }
 
         Map<String,String> temporaryDbConfig = getTemporaryDbConfig();
-        config = config.with( temporaryDbConfig );
+        config.augment( temporaryDbConfig );
 
-        Map<String,String> configParams = new HashMap<>();
-        Set<String> keys = config.getConfiguredSettingKeys();
-        for ( String key : keys )
-        {
-            Optional<String> value = config.getRaw( key );
-            value.ifPresent( s -> configParams.put( key, s ) );
-        }
+        Map<String,String> configParams = config.getRaw();
 
         try ( PageCache pageCache = createPageCache( fileSystem, config ) )
         {
@@ -239,8 +229,8 @@ class BackupService
             {
                 targetDb.shutdown();
             }
-            File debugLogFile = config.with( stringMap( logs_directory.name(), targetDirectory.getCanonicalPath() ) )
-                    .get( store_internal_log_path );
+            config.augment( logs_directory, targetDirectory.getCanonicalPath() );
+            File debugLogFile = config.get( store_internal_log_path );
             bumpDebugDotLogFileVersion( debugLogFile, backupStartTime );
             boolean consistent = checkDbConsistency( fileSystem, targetDirectory, consistencyCheck, config, pageCache );
             clearIdFiles( fileSystem, targetDirectory );

@@ -20,6 +20,7 @@
 package org.neo4j.server.arbiter;
 
 import java.io.IOException;
+import java.util.Collections;
 
 import org.neo4j.server.ServerCommandLineArgs;
 import org.neo4j.server.enterprise.ArbiterBootstrapper;
@@ -42,7 +43,7 @@ public class ArbiterBootstrapperTestProxy
         System.out.println( START_SIGNAL );
         try ( ArbiterBootstrapper arbiter = new ArbiterBootstrapper() )
         {
-            arbiter.start( args.homeDir(), args.configFile() );
+            arbiter.start( args.homeDir(), args.configFile(), Collections.emptyMap() );
             System.in.read();
         }
     }

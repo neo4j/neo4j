@@ -32,7 +32,6 @@ import java.rmi.RemoteException;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -529,7 +528,7 @@ public class TransactionGuardIntegrationTest
         }
 
         @Override
-        protected CommunityNeoServer build( Optional<File> configFile, Config config,
+        protected CommunityNeoServer build( File configFile, Config config,
                 GraphDatabaseFacadeFactory.Dependencies dependencies )
         {
             return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
@@ -565,7 +564,7 @@ public class TransactionGuardIntegrationTest
                 @Override
                 public GraphDatabaseService newDatabase( Map<String,String> config )
                 {
-                    return newDatabase( Config.embeddedDefaults( config ) );
+                    return newDatabase( Config.defaults( config ) );
                 }
 
                 @Override

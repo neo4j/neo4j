@@ -178,7 +178,7 @@ public class ConsistencyCheckTool
                         configFilePath ), e );
             }
         }
-        return Config.embeddedDefaults( specifiedConfig );
+        return Config.defaults( specifiedConfig );
     }
 
     private String usage()

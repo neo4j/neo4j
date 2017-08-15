@@ -584,7 +584,7 @@ public class ManageNodeIT extends AbstractRestFunctionalDocTestBase
             URI uri = new URI( "http://example.org:7474/" );
             when( uriInfo.getBaseUri() ).thenReturn( uri );
 
-            RootService svc = new RootService( new CommunityNeoServer( Config.embeddedDefaults( stringMap(
+            RootService svc = new RootService( new CommunityNeoServer( Config.defaults( stringMap(
                     new HttpConnector( "http", Encryption.NONE ).type.name(), "HTTP",
                     new HttpConnector( "http", Encryption.NONE ).enabled.name(), "true"
             ) ),

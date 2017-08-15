@@ -40,7 +40,6 @@ import org.neo4j.test.rule.SuppressOutput;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.test.rule.SuppressOutput.suppressAll;
@@ -67,8 +66,7 @@ public class TestLifecycleManagedDatabase
         dataDirectory = createTempDir();
 
         dbFactory = createGraphFactory();
-        dbConfig = Config.embeddedDefaults(
-                stringMap( DatabaseManagementSystemSettings.data_directory.name(), dataDirectory.getAbsolutePath() ) );
+        dbConfig = Config.defaults( DatabaseManagementSystemSettings.data_directory, dataDirectory.getAbsolutePath() );
         theDatabase = newDatabase();
     }
 

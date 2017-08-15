@@ -48,7 +48,6 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -144,7 +143,7 @@ public class StartClientIT extends AbstractShellIT
         PrintStream err = mock( PrintStream.class );
         CtrlCHandler ctrlCHandler = mock( CtrlCHandler.class );
         final GraphDatabaseShellServer databaseShellServer = mock( GraphDatabaseShellServer.class );
-        when( databaseShellServer.welcome( anyMap() ) )
+        when( databaseShellServer.welcome( any() ) )
                 .thenReturn( new Welcome( StringUtils.EMPTY, 1, StringUtils.EMPTY ) );
         when( databaseShellServer.interpretLine( any( Serializable.class ), any( String.class ), any( Output.class ) ) )
                 .thenReturn( new Response( StringUtils.EMPTY, Continuation.INPUT_COMPLETE ) );

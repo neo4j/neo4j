@@ -1055,7 +1055,7 @@ public class BackupServiceIT
     {
         BackupService backupService = backupService();
         backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort,
-                backupDir, ConsistencyCheck.NONE, Config.empty(), BackupClient.BIG_READ_TIMEOUT, false );
+                backupDir, ConsistencyCheck.NONE, Config.defaults(), BackupClient.BIG_READ_TIMEOUT, false );
     }
 
     private Node findNodeByLabel( GraphDatabaseAPI graphDatabase, Label label )

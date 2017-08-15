@@ -37,7 +37,6 @@ import org.neo4j.server.BaseBootstrapperTestIT;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.ServerBootstrapper;
 import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.configuration.ConfigLoader;
 import org.neo4j.test.rule.CleanupRule;
 
 import static org.hamcrest.Matchers.is;
@@ -113,7 +112,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
     public void debugLoggingDisabledByDefault() throws Exception
     {
         // When
-        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String, String> properties = stringMap();
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
@@ -139,7 +138,7 @@ public class EnterpriseBootstrapperTestIT extends BaseBootstrapperTestIT
     public void debugLoggingEnabledBySetting() throws Exception
     {
         // When
-        File configFile = tempDir.newFile( ConfigLoader.DEFAULT_CONFIG_FILE_NAME );
+        File configFile = tempDir.newFile( Config.DEFAULT_CONFIG_FILE_NAME );
 
         Map<String, String> properties = stringMap( store_internal_log_level.name(), "DEBUG");
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );

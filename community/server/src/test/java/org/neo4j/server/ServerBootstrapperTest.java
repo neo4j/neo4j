@@ -70,7 +70,7 @@ public class ServerBootstrapperTest
         dir.deleteOnExit();
 
         // when
-        serverBootstrapper.start( dir, Optional.empty() );
+        serverBootstrapper.start( dir, Optional.empty(), Collections.emptyMap() );
 
         // then no exceptions are thrown and
         assertThat( suppress.getOutputVoice().lines(), not( empty() ) );

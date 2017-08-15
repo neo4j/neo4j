@@ -170,7 +170,6 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
@@ -232,7 +231,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         rejectAutoUpgrade( stringParams );
         Map<String, String> params = getDefaultParams();
         params.putAll( stringParams );
-        this.config = Config.embeddedDefaults( params );
+        this.config = Config.defaults( params );
 
         life = new LifeSupport();
         this.storeDir = storeDir;
@@ -241,8 +240,9 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        File internalLog = config.with( stringMap( logs_directory.name(), storeDir.getCanonicalPath() ) )
-                .get( store_internal_log_path );
+        config.augment( logs_directory, storeDir.getCanonicalPath() );
+        File internalLog = config.get( store_internal_log_path );
+
         StoreLogService logService = life.add( StoreLogService.withInternalLog( internalLog).build( fileSystem ) );
         msgLog = logService.getInternalLog( getClass() );
         storeLocker = tryLockStore( fileSystem );
