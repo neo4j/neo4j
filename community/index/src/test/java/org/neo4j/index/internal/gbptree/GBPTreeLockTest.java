@@ -24,12 +24,13 @@ import org.junit.Test;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -170,19 +171,18 @@ public class GBPTreeLockTest
         // when
         race.addContestant( c1 );
         race.addContestant( c2 );
-        try
+
+        race.goAsync();
+        while ( !(c1.lockAcquired() || c2.lockAcquired()) || !(c1.started() && c2.started()) )
         {
-            race.go( 10, TimeUnit.MILLISECONDS );
-            fail( "One of the contestants should be blocked" );
-        }
-        catch ( TimeoutException throwable )
-        {
-            // This is fine. We expect one of the contestants to block
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 1 ) );
         }
 
         // then
-        assertNotEquals( c1.lockAcquired, c2.lockAcquired );
-        assertNotEquals( c1.blocked, c2.blocked );
+        Pair<Boolean,Boolean> c1State = c1.state();
+        Pair<Boolean,Boolean> c2State = c2.state();
+        assertNotEquals( withState( "Expected exactly one to acquire lock.", c1State, c2State ), c1State.first(), c2State.first() );
+        assertTrue( withState( "Expected both to be started.", c1State, c2State ), c1State.other() && c2State.other() );
     }
 
     private void assertBothSucceeds( Runnable lockAction1, Runnable lockAction2 ) throws Throwable
@@ -196,20 +196,27 @@ public class GBPTreeLockTest
         race.addContestant( c1 );
         race.addContestant( c2 );
 
-        race.go( 1, TimeUnit.SECONDS );
+        race.go();
 
         // then
-        assertTrue( c1.lockAcquired );
-        assertTrue( c2.lockAcquired );
-        assertFalse( c1.blocked );
-        assertFalse( c2.blocked );
+        Pair<Boolean,Boolean> c1State = c1.state();
+        Pair<Boolean,Boolean> c2State = c2.state();
+        assertTrue( withState( "Expected both to acquire lock.", c1State, c2State ), c1State.first() && c2State.first() );
+        assertTrue( withState( "Expected both to be started.", c1State, c2State ), c1State.other() && c2State.other() );
+    }
+
+    private String withState( String message, Pair<Boolean,Boolean> c1State, Pair<Boolean,Boolean> c2State )
+    {
+        return String.format( "%s c1.lockAcquired=%b, c1.started=%b, c2.lockAcquired=%b, c2.started=%b",
+                message, c1State.first(), c1State.other(), c2State.first(), c2State.other() );
     }
 
     private class LockContestant implements Runnable
     {
         private final Runnable lockAction;
-        private boolean lockAcquired;
-        private boolean blocked;
+        private AtomicBoolean lockAcquired = new AtomicBoolean();
+        private AtomicBoolean started = new AtomicBoolean();
+
 
         LockContestant( Runnable lockAction )
         {
@@ -219,10 +226,24 @@ public class GBPTreeLockTest
         @Override
         public void run()
         {
-            blocked = true;
+            started.set( true );
             lockAction.run();
-            lockAcquired = true;
-            blocked = false;
+            lockAcquired.set( true );
+        }
+
+        Pair<Boolean,Boolean> state()
+        {
+            return Pair.of( lockAcquired(), started() );
+        }
+
+        boolean lockAcquired()
+        {
+            return lockAcquired.get();
+        }
+
+        boolean started()
+        {
+            return started.get();
         }
     }
 
