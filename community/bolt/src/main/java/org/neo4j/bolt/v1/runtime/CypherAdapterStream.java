@@ -53,7 +53,7 @@ class CypherAdapterStream extends BoltResult
     {
         this.delegate = delegate;
         this.fieldNames = delegate.fieldNames();
-        this.currentRecord = new CypherAdapterRecord( fieldNames );
+        this.currentRecord = new CypherAdapterRecord( fieldNames.length );
         this.clock = clock;
     }
 
@@ -151,12 +151,10 @@ class CypherAdapterStream extends BoltResult
     private static class CypherAdapterRecord implements QueryResult.Record
     {
         private final AnyValue[] fields; // This exists solely to avoid re-creating a new array for each record
-        private final String[] fieldNames;
 
-        private CypherAdapterRecord( String[] fieldNames )
+        private CypherAdapterRecord( int size )
         {
-            this.fields = new AnyValue[fieldNames.length];
-            this.fieldNames = fieldNames;
+            this.fields = new AnyValue[size];
         }
 
         @Override

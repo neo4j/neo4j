@@ -94,7 +94,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     executionResults.foreach { res =>
-      val fieldArray = new Array[AnyValue](res.length)
+      val fieldArray = new Array[AnyValue](indexResultNameMappings.size)
       var i = 0
       for ((pos, _, typ) <- indexResultNameMappings) {
         fieldArray(i) = typ match {
