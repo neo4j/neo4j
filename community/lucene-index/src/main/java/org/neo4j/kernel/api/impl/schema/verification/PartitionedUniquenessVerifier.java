@@ -27,10 +27,8 @@ import org.apache.lucene.index.ReaderSlice;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 
@@ -87,7 +85,7 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
                 if ( terms.docFreq() > 1 )
                 {
                     TermQuery query = new TermQuery( new Term( field, termsRef ) );
-                    searchForDuplicates( query, accessor, propKeyIds );
+                    searchForDuplicates( query, accessor, propKeyIds, terms.docFreq() );
                 }
             }
         }
@@ -134,18 +132,56 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
         return new MultiTerms( termsArray, readerSlicesArray );
     }
 
+    /**
+     * Search for unknown number of duplicates duplicates
+     *
+     * @param query query to find duplicates in
+     * @param accessor accessor to load actual property value from store
+     * @param propertyKeyIds property key ids
+     * @throws IOException
+     * @throws IndexEntryConflictException
+     */
     private void searchForDuplicates( Query query, PropertyAccessor accessor, int[] propertyKeyIds )
             throws IOException, IndexEntryConflictException
     {
+        DuplicateCheckingCollector collector = getDuplicateCollector( accessor, propertyKeyIds );
+        collector.init();
+        searchForDuplicates( query, collector );
+    }
+
+    /**
+     * Search for known number of duplicates duplicates
+     *
+     * @param query query to find duplicates in
+     * @param accessor accessor to load actual property value from store
+     * @param propertyKeyIds property key ids
+     * @param expectedNumberOfEntries expected number of duplicates in query
+     * @throws IOException
+     * @throws IndexEntryConflictException
+     */
+    private void searchForDuplicates( Query query, PropertyAccessor accessor, int[] propertyKeyIds,
+            int expectedNumberOfEntries ) throws IOException, IndexEntryConflictException
+    {
+        DuplicateCheckingCollector collector = getDuplicateCollector( accessor, propertyKeyIds );
+        collector.init( expectedNumberOfEntries );
+        searchForDuplicates( query, collector );
+    }
+
+    private DuplicateCheckingCollector getDuplicateCollector( PropertyAccessor accessor, int[] propertyKeyIds )
+    {
+        return DuplicateCheckingCollector.forProperties( accessor, propertyKeyIds );
+    }
+
+    private void searchForDuplicates( Query query, DuplicateCheckingCollector collector ) throws IndexEntryConflictException, IOException
+    {
         try
         {
-            /**
-             * Here {@link DuplicateCheckingCollector#reset()} is deliberately not called to preserve accumulated
-             * state (knowledge about duplicates) across all {@link IndexSearcher#search(Query, Collector)} calls.
-             */
-            SimpleCollector collector = DuplicateCheckingCollector.forProperties( accessor, propertyKeyIds );
             for ( PartitionSearcher searcher : searchers )
             {
+                    /*
+                     * Here {@link DuplicateCheckingCollector#init()} is deliberately not called to preserve accumulated
+                     * state (knowledge about duplicates) across all {@link IndexSearcher#search(Query, Collector)} calls.
+                     */
                 searcher.getIndexSearcher().search( query, collector );
             }
         }

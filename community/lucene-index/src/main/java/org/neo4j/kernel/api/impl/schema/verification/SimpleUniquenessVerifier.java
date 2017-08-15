@@ -79,7 +79,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
                     {
                         if ( terms.docFreq() > 1 )
                         {
-                            collector.reset();
+                            collector.init( terms.docFreq() );
                             searcher.search( new TermQuery( new Term( field, termsRef ) ), collector );
                         }
                     }
@@ -106,7 +106,7 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
             DuplicateCheckingCollector collector = DuplicateCheckingCollector.forProperties( accessor, propKeyIds );
             for ( Value[] valueTuple : updatedValueTuples )
             {
-                collector.reset();
+                collector.init();
                 Query query = LuceneDocumentStructure.newSeekQuery( valueTuple );
                 indexSearcher().search( query, collector );
             }
