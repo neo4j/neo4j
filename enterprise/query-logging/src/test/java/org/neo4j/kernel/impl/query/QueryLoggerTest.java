@@ -69,6 +69,7 @@ public class QueryLoggerTest
     public final FakeHeapAllocation heapAllocation = new FakeHeapAllocation();
     private long pageHits;
     private long pageFaults;
+    private long threshold = 10; //ms
 
     @Test
     public void shouldLogQuerySlowerThanThreshold() throws Exception
@@ -91,7 +92,7 @@ public class QueryLoggerTest
     }
 
     @Test
-    public void shouldNotLogQueryFasterThanThreshold() throws Exception
+    public void shouldRespectThreshold() throws Exception
     {
         // given
         final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -105,6 +106,19 @@ public class QueryLoggerTest
 
         // then
         logProvider.assertNoLoggingOccurred();
+
+        // and when
+        ExecutingQuery query2 = query( SESSION_2, "TestUser2", QUERY_2 );
+        threshold = 5;
+        queryLogger.startQueryExecution( query2 );
+        clock.forward( 9, TimeUnit.MILLISECONDS );
+        queryLogger.endSuccess( query2 );
+
+        // then
+        String expectedSessionString = sessionConnectionDetails( SESSION_2, "TestUser2" );
+        logProvider.assertExactly(
+                inLog( getClass() ).info( format( "%d ms: %s - %s - {}", 9L, expectedSessionString, QUERY_2 ) )
+        );
     }
 
     @Test
@@ -472,7 +486,7 @@ public class QueryLoggerTest
     {
         EnumSet<QueryLogEntryContent> flagSet = EnumSet.noneOf( QueryLogEntryContent.class );
         Collections.addAll( flagSet, flags );
-        return new QueryLogger( logProvider.getLog( getClass() ), () -> true, () -> 10/*ms*/, flagSet );
+        return new QueryLogger( logProvider.getLog( getClass() ), () -> true, () -> threshold, flagSet );
     }
 
     private ExecutingQuery query(

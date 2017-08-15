@@ -361,6 +361,33 @@ public class QueryLoggerIT
         assertThat( logLines.get( 0 ), containsString( neo.subject().username() ) );
     }
 
+    @Test
+    public void canBeEnabledAndDisabledAtRuntime() throws Exception
+    {
+        GraphDatabaseService database = databaseBuilder.setConfig( GraphDatabaseSettings.log_queries, Settings.FALSE )
+                .setConfig( GraphDatabaseSettings.log_queries_filename, logFilename.getPath() )
+                .newGraphDatabase();
+
+        database.execute( QUERY ).close();
+
+        List<String> strings = readAllLines( logFilename );
+        assertEquals( 0, strings.size() );
+
+        database.execute( "CALL dbms.setConfigValue('" + GraphDatabaseSettings.log_queries.name() + "', 'true')" ).close();
+        database.execute( QUERY ).close();
+
+        // Both config change and query should exist
+        strings = readAllLines( logFilename );
+        assertEquals( 2, strings.size() );
+
+        database.execute( "CALL dbms.setConfigValue('" + GraphDatabaseSettings.log_queries.name() + "', 'false')" ).close();
+        database.execute( QUERY ).close();
+
+        // Value should not change when disabled
+        strings = readAllLines( logFilename );
+        assertEquals( 2, strings.size() );
+    }
+
     private void executeQueryAndShutdown( GraphDatabaseService database )
     {
         executeQueryAndShutdown( database, QUERY, Collections.emptyMap() );

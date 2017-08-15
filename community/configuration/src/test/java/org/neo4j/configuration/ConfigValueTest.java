@@ -35,7 +35,7 @@ public class ConfigValueTest
     public void handlesEmptyValue() throws Exception
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.empty(),
-                "description", false, false, Optional.empty() );
+                "description", false, false, false, Optional.empty() );
 
         assertEquals( Optional.empty(), value.value() );
         assertEquals( "null", value.toString() );
@@ -48,7 +48,7 @@ public class ConfigValueTest
     public void handlesInternal() throws Exception
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.empty(),
-                "description", true, false,
+                "description", true, false, false,
                 Optional.empty() );
 
         assertTrue( value.internal() );
@@ -58,7 +58,7 @@ public class ConfigValueTest
     public void handlesNonEmptyValue() throws Exception
     {
         ConfigValue value = new ConfigValue( "name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
-                "description", false, false, Optional.empty() );
+                "description", false, false, false, Optional.empty() );
 
         assertEquals( Optional.of( 1 ), value.value() );
         assertEquals( "1", value.toString() );
@@ -71,7 +71,7 @@ public class ConfigValueTest
     public void handlesDeprecationAndReplacement() throws Exception
     {
         ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
-                "description", false, true,
+                "description", false, false, true,
                 Optional.of( "new_name" ) );
 
         assertEquals( Optional.of( 1 ), value.value() );
@@ -85,7 +85,7 @@ public class ConfigValueTest
     public void handlesValueDescription() throws Exception
     {
         ConfigValue value = new ConfigValue( "old_name", Optional.empty(), Optional.empty(), Optional.of( 1 ),
-                "a simple integer", false, true,
+                "a simple integer", false, false, true,
                 Optional.of( "new_name" ) );
 
         assertEquals( Optional.of( 1 ), value.value() );

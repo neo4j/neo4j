@@ -60,7 +60,7 @@ public class ConfigOptions
                     return new ConfigValue( setting.name(), setting.description(),
                             setting.documentedDefaultValue(),
                         Optional.ofNullable( val.getValue() ),
-                            setting.valueDescription(), setting.internal(),
+                            setting.valueDescription(), setting.internal(), setting.dynamic(),
                             setting.deprecated(), setting.replacement() );
                 } )
                 .collect( Collectors.toList() );

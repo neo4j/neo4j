@@ -670,6 +670,19 @@ public abstract class BuiltInProceduresInteractionTestBase<S> extends ProcedureI
         } );
     }
 
+    //---------- config manipulation -----------
+
+    @Test
+    public void setConfigValueShouldBeAccessibleOnlyToAdmins() throws Exception
+    {
+        String call = "CALL dbms.setConfigValue('dbms.logs.query.enabled', 'false')";
+        assertFail( writeSubject, call, PERMISSION_DENIED );
+        assertFail( schemaSubject, call, PERMISSION_DENIED );
+        assertFail( readSubject, call, PERMISSION_DENIED );
+
+        assertEmpty( adminSubject, call );
+    }
+
     //---------- procedure guard -----------
 
     @Test
