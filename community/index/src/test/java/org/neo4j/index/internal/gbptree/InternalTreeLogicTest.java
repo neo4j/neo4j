@@ -264,7 +264,6 @@ public class InternalTreeLogicTest
         long i = 0;
         while ( i < maxKeyCount )
         {
-            System.out.println( "Inserting " + (someLargeNumber + i) );
             insert( someLargeNumber - i, i );
             i++;
         }
