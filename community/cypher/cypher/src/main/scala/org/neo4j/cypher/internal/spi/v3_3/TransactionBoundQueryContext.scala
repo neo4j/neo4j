@@ -475,7 +475,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         transactionalContext.statement.readOperations().relationshipVisit(id, NoopVisitor)
         true
       } catch {
-        case e: EntityNotFoundException =>
+        case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
           false
       }
     }
