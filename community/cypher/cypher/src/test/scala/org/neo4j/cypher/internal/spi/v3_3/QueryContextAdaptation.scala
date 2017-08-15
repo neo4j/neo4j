@@ -88,8 +88,6 @@ trait QueryContextAdaptation {
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship = ???
 
-  override def relationshipStartNode(rel: Relationship): Node = ???
-
   override def getLabelsForNode(node: Long): scala.Iterator[Int] = ???
 
   override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = ???
@@ -126,8 +124,6 @@ trait QueryContextAdaptation {
   override def setLabelsOnNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = ???
-
-  override def relationshipEndNode(rel: Relationship): Node = ???
 
   override def dropIndexRule(descriptor: IndexDescriptor): Unit = ???
 

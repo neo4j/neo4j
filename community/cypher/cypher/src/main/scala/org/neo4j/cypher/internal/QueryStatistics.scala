@@ -76,8 +76,10 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
     includeIfNonZero(builder, "Labels removed: ", labelsRemoved)
     includeIfNonZero(builder, "Indexes added: ", indexesAdded)
     includeIfNonZero(builder, "Indexes removed: ", indexesRemoved)
-    includeIfNonZero(builder, "Constraints added: ", constraintsAdded)
-    includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
+    includeIfNonZero(builder, "Unique constraints added: ", uniqueConstraintsAdded)
+    includeIfNonZero(builder, "Unique constraints removed: ", uniqueConstraintsRemoved)
+    includeIfNonZero(builder, "Property existence constraints added: ", existenceConstraintsAdded)
+    includeIfNonZero(builder, "Property existence constraints removed: ", existenceConstraintsRemoved)
 
     val result = builder.toString()
 
