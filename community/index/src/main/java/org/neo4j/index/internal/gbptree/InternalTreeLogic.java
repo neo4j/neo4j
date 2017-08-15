@@ -25,7 +25,6 @@ import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Content;
 import org.neo4j.io.pagecache.PageCursor;
-
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
@@ -712,8 +711,16 @@ class InternalTreeLogic<KEY,VALUE>
         for ( int main = keyCount - 1, delta = deltaKeyCount - 1, target = keyCount + deltaKeyCount - 1;
                 target >= 0 && delta >= 0; target-- )
         {
-            mainContent.keyAt( cursor, readKey, main );
-            int compare = layout.compare( deltaKeys[delta], readKey );
+            int compare;
+            if ( main < 0 )
+            {
+                compare = 1;
+            }
+            else
+            {
+                mainContent.keyAt( cursor, readKey, main );
+                compare = layout.compare( deltaKeys[delta], readKey );
+            }
             if ( compare > 0 )
             {
                 // pick from delta

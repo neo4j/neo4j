@@ -41,11 +41,13 @@ class TreePrinter<KEY,VALUE>
     private final long stableGeneration;
     private final long unstableGeneration;
     private final Content<KEY,VALUE> mainContent;
+    private final Content<KEY,VALUE> deltaContent;
 
     TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
         this.mainContent = node.main();
+        this.deltaContent = node.delta();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -126,21 +128,46 @@ class TreePrinter<KEY,VALUE>
         {
             out.print( "{" + cursor.getCurrentPageId() + "} " );
         }
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, mainContent );
+        out.print( " DELTA " );
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, deltaContent );
+        if ( !isLeaf )
+        {
+            long child;
+            do
+            {
+                child = pointer( mainContent.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
+            }
+            while ( cursor.shouldRetry() );
+
+            if ( printPosition )
+            {
+                out.print( "#" + keyCount + " " );
+            }
+            out.print( "/" + child + "\\" );
+        }
+        out.println();
+    }
+
+    private void printKeysAndValues( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
+            boolean isLeaf, Content<KEY,VALUE> section ) throws IOException
+    {
         KEY key = layout.newKey();
         VALUE value = layout.newValue();
+        int keyCount = section.keyCount( cursor );
         for ( int i = 0; i < keyCount; i++ )
         {
             long child = -1;
             do
             {
-                mainContent.keyAt( cursor, key, i );
+                section.keyAt( cursor, key, i );
                 if ( isLeaf )
                 {
-                    mainContent.valueAt( cursor, value, i );
+                    section.valueAt( cursor, value, i );
                 }
                 else
                 {
-                    child = pointer( mainContent.childAt( cursor, i, stableGeneration, unstableGeneration ) );
+                    child = pointer( section.childAt( cursor, i, stableGeneration, unstableGeneration ) );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -164,22 +191,6 @@ class TreePrinter<KEY,VALUE>
             }
             out.print( " " );
         }
-        if ( !isLeaf )
-        {
-            long child;
-            do
-            {
-                child = pointer( mainContent.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
-            }
-            while ( cursor.shouldRetry() );
-
-            if ( printPosition )
-            {
-                out.print( "#" + keyCount + " " );
-            }
-            out.print( "/" + child + "\\" );
-        }
-        out.println();
     }
 
     private boolean goToLeftmostChild( PageCursor cursor ) throws IOException

@@ -1554,49 +1554,6 @@ public class GBPTreeTest
         }
     }
 
-    // TODO: temporary test
-    @Test
-    public void shouldDoDeltas() throws Exception
-    {
-        // given
-        try ( GBPTree<MutableLong,MutableLong> tree = index( 8192 ).build() )
-        {
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
-            {
-                MutableLong value = new MutableLong();
-                for ( int i = 0; i < 1000; i++ )
-                {
-                    value.setValue( i * 3 );
-                    writer.put( value, value );
-                }
-            }
-
-            System.out.println( "Should go into delta mode now" );
-
-            // when
-            try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
-            {
-                MutableLong value = new MutableLong();
-                for ( int i = 0; i < 11; i++ )
-                {
-                    value.setValue( 2 + i * 3 );
-                    writer.put( value, value );
-                }
-            }
-
-            try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> seeker = tree.seek( new MutableLong( 0 ), new MutableLong( 1000000 ) ) )
-            {
-                while ( seeker.next() )
-                {
-                    System.out.println( seeker.get().key() );
-                }
-            }
-        }
-
-        // then
-        fail( "Test not fully implemented yet" );
-    }
-
     private class ControlledRecoveryCleanupWorkCollector extends LifecycleAdapter
             implements RecoveryCleanupWorkCollector
     {
