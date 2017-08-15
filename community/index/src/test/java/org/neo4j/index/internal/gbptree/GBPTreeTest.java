@@ -1554,6 +1554,7 @@ public class GBPTreeTest
         }
     }
 
+    // TODO: temporary test
     @Test
     public void shouldDoDeltas() throws Exception
     {
@@ -1563,7 +1564,7 @@ public class GBPTreeTest
             try ( Writer<MutableLong,MutableLong> writer = tree.writer() )
             {
                 MutableLong value = new MutableLong();
-                for ( int i = 0; i < 100; i++ )
+                for ( int i = 0; i < 1000; i++ )
                 {
                     value.setValue( i * 3 );
                     writer.put( value, value );

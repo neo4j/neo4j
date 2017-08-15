@@ -128,7 +128,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.deltaContent = new DeltaContentV1();
 
         this.offsetKeyStart = HEADER_LENGTH;
-        this.offsetKeyEnd = HEADER_LENGTH + (leafMaxKeyCount + deltaLeafMaxKeyCount) * keySize;
+        this.offsetKeyEnd = offsetKeyStart + (leafMaxKeyCount + deltaLeafMaxKeyCount) * keySize;
         this.offsetValueStart = offsetKeyEnd;
         this.offsetValueEnd = offsetValueStart + (leafMaxKeyCount + deltaLeafMaxKeyCount) * valueSize;
         this.offsetChildStart = HEADER_LENGTH + internalMaxKeyCount * keySize;

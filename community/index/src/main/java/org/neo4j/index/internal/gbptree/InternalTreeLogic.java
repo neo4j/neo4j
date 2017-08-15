@@ -678,19 +678,16 @@ class InternalTreeLogic<KEY,VALUE>
             if ( deltaLeafMaxKeyCount > 0 && keyCount - pos > deltaLeafMaxKeyCount * 2 )
             {
                 // It seems to be quite a bit to the left, therefore it's better to put it in the delta section
-                consolidateDeltasIfNecessary( cursor, keyCount, deltaKeyCount );
-                System.out.println( "Selected delta" );
+                consolidateDeltasIfDeltaSectionFull( cursor, keyCount, deltaKeyCount );
                 return deltaContent;
             }
             // It's to the far right in this leaf, just insert it right in to the main section
-            System.out.println( "Selected main" );
             return mainContent;
         }
-        System.out.println( "Selected null" );
         return null;
     }
 
-    private void consolidateDeltasIfNecessary( PageCursor cursor, int keyCount, int deltaKeyCount )
+    private void consolidateDeltasIfDeltaSectionFull( PageCursor cursor, int keyCount, int deltaKeyCount )
     {
         if ( deltaKeyCount < deltaLeafMaxKeyCount )
         {
@@ -702,7 +699,10 @@ class InternalTreeLogic<KEY,VALUE>
 
     private void consolidateDeltas( PageCursor cursor, int keyCount, int deltaKeyCount )
     {
-        System.out.println( "Consolidating deltas" );
+        if ( deltaKeyCount == 0 )
+        {
+            return;
+        }
 
         // read in delta section into memory
         for ( int i = 0; i < deltaKeyCount; i++ )
@@ -716,17 +716,15 @@ class InternalTreeLogic<KEY,VALUE>
 
         // merge delta section into main
         for ( int main = keyCount - 1, delta = deltaKeyCount - 1, target = keyCount + deltaKeyCount - 1;
-                target >= 0 && delta > 0; target-- )
+                target >= 0 && delta >= 0; target-- )
         {
             mainContent.keyAt( cursor, readKey, main );
             int compare = layout.compare( deltaKeys[delta], readKey );
-            System.out.println( "Compare " + readKey + " vs " + deltaKeys[delta] + " = " + compare );
             if ( compare > 0 )
             {
                 // pick from delta
                 mainContent.setKeyAt( cursor, deltaKeys[delta], target );
                 mainContent.setValueAt( cursor, deltaValues[delta], target );
-                System.out.println( "Picked delta " + deltaKeys[delta] + " into slot " + target );
                 delta--;
             }
             else
@@ -734,7 +732,6 @@ class InternalTreeLogic<KEY,VALUE>
                 // pick from main
                 mainContent.setKeyAt( cursor, readKey, target );
                 cursor.copyTo( bTreeNode.valueOffset( main ), cursor, bTreeNode.valueOffset( target ), bTreeNode.valueSize() );
-                System.out.println( "Picked main " + readKey + " into slot " + target );
                 main--;
             }
         }
@@ -776,7 +773,7 @@ class InternalTreeLogic<KEY,VALUE>
             long stableGeneration, long unstableGeneration )
                     throws IOException
     {
-        consolidateDeltasIfNecessary( cursor, keyCount, deltaKeyCount );
+        consolidateDeltas( cursor, keyCount, deltaKeyCount );
 
         // To avoid moving cursor between pages we do all operations on left node first.
         // Save data that needs transferring and then add it to right node.
@@ -929,8 +926,12 @@ class InternalTreeLogic<KEY,VALUE>
     {
         fromCursor.copyTo( bTreeNode.keyOffset( fromPos ), toCursor, bTreeNode.keyOffset( toPos ),
                 count * bTreeNode.keySize() );
-        fromCursor.copyTo( bTreeNode.valueOffset( fromPos ), toCursor, bTreeNode.valueOffset( toPos ),
-                count * bTreeNode.valueSize() );
+        int valueSize = bTreeNode.valueSize();
+        if ( valueSize > 0 )
+        {
+            fromCursor.copyTo( bTreeNode.valueOffset( fromPos ), toCursor, bTreeNode.valueOffset( toPos ),
+                    count * valueSize );
+        }
     }
 
     /**
@@ -1360,7 +1361,7 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int rightSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
 
         merge( cursor, keyCount, rightSiblingCursor, rightSiblingKeyCount, stableGeneration, unstableGeneration );
 
@@ -1378,7 +1379,7 @@ class InternalTreeLogic<KEY,VALUE>
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount,
             long stableGeneration, long unstableGeneration ) throws IOException
     {
-        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+        consolidateDeltas( cursor, keyCount, deltaContent.keyCount( cursor ) );
 
         // Move stuff and update key count
         merge( leftSiblingCursor, leftSiblingKeyCount, cursor, keyCount, stableGeneration, unstableGeneration );
@@ -1416,7 +1417,7 @@ class InternalTreeLogic<KEY,VALUE>
     private void rebalanceLeaf( PageCursor cursor, PageCursor leftSiblingCursor,
             StructurePropagation<KEY> structurePropagation, int keyCount, int leftSiblingKeyCount )
     {
-        consolidateDeltasIfNecessary( cursor, keyCount, deltaContent.keyCount( cursor ) );
+        consolidateDeltasIfDeltaSectionFull( cursor, keyCount, deltaContent.keyCount( cursor ) );
 
         int totalKeyCount = keyCount + leftSiblingKeyCount;
         int keyCountInLeftSiblingAfterRebalance = totalKeyCount / 2;
