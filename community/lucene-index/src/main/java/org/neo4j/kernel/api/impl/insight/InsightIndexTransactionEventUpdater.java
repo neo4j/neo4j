@@ -27,7 +27,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.values.storable.Values;
 
@@ -50,6 +49,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
     public void afterCommit( TransactionData data, Object state )
     {
         writeNodeData( data.assignedNodeProperties() );
+        deleteNodeData( data.deletedNodes() );
     }
 
     private void writeNodeData( Iterable<PropertyEntry<Node>> propertyEntries )
@@ -57,14 +57,35 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         for ( PropertyEntry<Node> propertyEntry : propertyEntries )
         {
 //            propertyEntry.previouslyCommitedValue()
-            Document document = LuceneInsightDocumentStructure
-                    .documentRepresentingProperties( propertyEntry.entity().getId(),
-                            //TODO THIS IS BAD
-                            new PropertyKeyValue( Integer.parseInt( "1" ),
-                                    Values.of( propertyEntry.value() ) ) );
+            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( propertyEntry.entity().getId(),
+                    //TODO THIS IS BAD
+                    new PropertyKeyValue( Integer.parseInt( "1" ), Values.of( propertyEntry.value() ) ) );
             try
             {
                 writableDatabaseInsightIndex.getIndexWriter().addDocument( document );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        }
+        try
+        {
+            writableDatabaseInsightIndex.maybeRefreshBlocking();
+        }
+        catch ( IOException e )
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private void deleteNodeData( Iterable<Node> nodes )
+    {
+        for ( Node node : nodes )
+        {
+            try
+            {
+                writableDatabaseInsightIndex.getIndexWriter().deleteDocuments( LuceneInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
             }
             catch ( IOException e )
             {
