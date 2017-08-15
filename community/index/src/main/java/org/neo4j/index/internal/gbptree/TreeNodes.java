@@ -33,7 +33,15 @@ class TreeNodes
     static <KEY,VALUE> TreeNode<KEY,VALUE> instantiateTreeNode(
             int formatVersion, int pageSize, Layout<KEY,VALUE> layout )
     {
-        // TODO: instantiate correct TreeNode depending on actual format
-        return new TreeNodeV2<>( pageSize, layout );
+        switch ( formatVersion )
+        {
+        case 2:
+            return new TreeNodeV2<>( pageSize, layout );
+        case 3:
+            return new TreeNodeV3<>( pageSize, layout );
+        default:
+            throw new IllegalArgumentException( "Tried to open a tree with unknown format version" );
+
+        }
     }
 }

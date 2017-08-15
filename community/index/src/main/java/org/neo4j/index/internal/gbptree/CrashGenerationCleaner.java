@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.index.internal.gbptree.GBPTree.Monitor;
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -44,7 +44,7 @@ class CrashGenerationCleaner
 {
     private final PagedFile pagedFile;
     private final TreeNode<?,?> treeNode;
-    private final Content<?,?> mainContent;
+    private final Section<?,?> mainContent;
     private final long lowTreeNodeId;
     private final long highTreeNodeId;
     private final int availableProcessors;

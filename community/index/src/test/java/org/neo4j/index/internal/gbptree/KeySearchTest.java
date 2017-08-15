@@ -23,7 +23,7 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -44,7 +44,7 @@ public class KeySearchTest
     private final PageCursor cursor = wrap( new byte[PAGE_SIZE], 0, PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( PAGE_SIZE, layout );
-    private final Content<MutableLong,MutableLong> mainContent = node.main();
+    private final Section<MutableLong,MutableLong> mainContent = node.main();
     private final MutableLong readKey = layout.newKey();
     private final MutableLong searchKey = layout.newKey();
     private final MutableLong insertKey = layout.newKey();

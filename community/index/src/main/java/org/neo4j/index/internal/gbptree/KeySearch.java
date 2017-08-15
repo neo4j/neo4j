@@ -21,7 +21,7 @@ package org.neo4j.index.internal.gbptree;
 
 import java.util.Comparator;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -64,7 +64,7 @@ class KeySearch
      * To extract position from the returned search result, then use {@link #positionOf(int)}.
      * To extract whether or not the exact key was found, then use {@link #isHit(int)}.
      */
-    static <KEY,VALUE> int search( PageCursor cursor, Content<KEY,VALUE> bTreeNode, KEY key,
+    static <KEY,VALUE> int search( PageCursor cursor, Section<KEY,VALUE> bTreeNode, KEY key,
             KEY readKey, int keyCount )
     {
         if ( keyCount == 0 )
@@ -131,9 +131,9 @@ class KeySearch
     }
 
     /**
-     * Extracts the position from a search result from {@link #search(PageCursor, Content, Object, Object, int)}.
+     * Extracts the position from a search result from {@link #search(PageCursor, Section, Object, Object, int)}.
      *
-     * @param searchResult search result from {@link #search(PageCursor, Content, Object, Object, int)}.
+     * @param searchResult search result from {@link #search(PageCursor, Section, Object, Object, int)}.
      * @return position of the search result.
      */
     static int positionOf( int searchResult )
@@ -143,9 +143,9 @@ class KeySearch
 
     /**
      * Extracts whether or not the searched key was found from search result from
-     * {@link #search(PageCursor, Content, Object, Object, int)}.
+     * {@link #search(PageCursor, Section, Object, Object, int)}.
      *
-     * @param searchResult search result form {@link #search(PageCursor, Content, Object, Object, int)}.
+     * @param searchResult search result form {@link #search(PageCursor, Section, Object, Object, int)}.
      * @return whether or not the searched key was found.
      */
     static boolean isHit( int searchResult )

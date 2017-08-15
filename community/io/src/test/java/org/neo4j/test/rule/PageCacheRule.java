@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import org.apache.commons.lang3.ObjectUtils;
 
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -46,6 +47,7 @@ public class PageCacheRule extends ExternalResource
         protected AtomicBoolean nextReadIsInconsistent;
         protected PageCacheTracer tracer;
         protected PageCursorTracerSupplier pageCursorTracerSupplier;
+        protected Random random;
         private boolean accessChecks;
 
         private PageCacheConfig()
@@ -63,6 +65,20 @@ public class PageCacheRule extends ExternalResource
         public PageCacheConfig withInconsistentReads( boolean inconsistentReads )
         {
             this.inconsistentReads = inconsistentReads;
+            return this;
+        }
+
+        /**
+         * Sets whether or not to decorate PageCache where the read page cursors will randomly produce inconsistent
+         * reads with a ~50% probability.
+         *
+         * @param random {@link Random} to use in the adversary.
+         * @return this instance.
+         */
+        public PageCacheConfig withInconsistentReads( Random random )
+        {
+            this.random = random;
+            this.inconsistentReads = true;
             return this;
         }
 
@@ -188,9 +204,19 @@ public class PageCacheRule extends ExternalResource
         {
             AtomicBoolean controller = selectConfig( baseConfig.nextReadIsInconsistent,
                     overriddenConfig.nextReadIsInconsistent, null );
-            Adversary adversary = controller != null
-                    ? new AtomicBooleanInconsistentReadAdversary( controller )
-                    : new RandomInconsistentReadAdversary();
+            Adversary adversary;
+            if ( controller != null )
+            {
+                adversary = new AtomicBooleanInconsistentReadAdversary( controller );
+            }
+            else if ( overriddenConfig.random != null )
+            {
+                adversary = new RandomInconsistentReadAdversary( overriddenConfig.random );
+            }
+            else
+            {
+                adversary = new RandomInconsistentReadAdversary();
+            }
             pageCache = new AdversarialPageCache( pageCache, adversary );
         }
         if ( selectConfig( baseConfig.accessChecks, overriddenConfig.accessChecks, false ) )
@@ -257,6 +283,18 @@ public class PageCacheRule extends ExternalResource
 
     private static class RandomInconsistentReadAdversary implements Adversary
     {
+        private final Random random;
+
+        RandomInconsistentReadAdversary()
+        {
+            this( ThreadLocalRandom.current() );
+        }
+
+        RandomInconsistentReadAdversary( Random random )
+        {
+            this.random = random;
+        }
+
         @Override
         @SafeVarargs
         public final void injectFailure( Class<? extends Throwable>... failureTypes )
@@ -267,7 +305,7 @@ public class PageCacheRule extends ExternalResource
         @SafeVarargs
         public final boolean injectFailureOrMischief( Class<? extends Throwable>... failureTypes )
         {
-            return ThreadLocalRandom.current().nextBoolean();
+            return random.nextBoolean();
         }
     }
 }

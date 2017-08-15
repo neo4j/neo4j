@@ -39,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.RandomRule.Seed;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -72,7 +73,8 @@ public class GBPTreeIT
     private GBPTree<MutableLong,MutableLong> createIndex( int pageSize, GBPTree.Monitor monitor )
             throws IOException
     {
-        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
+        pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize )
+                .withInconsistentReads( random.random() ).withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
 
@@ -82,7 +84,7 @@ public class GBPTreeIT
         try
         {
             threadPool.shutdownNow();
-            index.consistencyCheck();
+//            index.consistencyCheck();
         }
         finally
         {
@@ -90,6 +92,7 @@ public class GBPTreeIT
         }
     }
 
+    @Seed( 1502808634864L )
     @Test
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {

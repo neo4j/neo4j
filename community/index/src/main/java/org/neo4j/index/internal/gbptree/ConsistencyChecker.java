@@ -26,7 +26,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -48,7 +48,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 class ConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
-    private final Content<KEY,?> mainContent;
+    private final Section<KEY,?> mainContent;
     private final KEY readKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;

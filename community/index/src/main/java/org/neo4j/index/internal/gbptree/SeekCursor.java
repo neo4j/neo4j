@@ -25,7 +25,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
@@ -185,8 +185,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * Logic for reading data from tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final Content<KEY,VALUE> mainContent;
-    private final Content<KEY,VALUE> deltaContent;
+    private final Section<KEY,VALUE> mainSection;
+    private final Section<KEY,VALUE> deltaSection;
 
     /**
      * Contains the highest returned key, i.e. from the last call to {@link #next()} returning {@code true}.
@@ -207,9 +207,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Max of leaf/internal key count that a tree node can have at most. This is used to sanity check
-     * key counts read from {@link Content#keyCount(PageCursor)}.
+     * key counts read from {@link Section#keyCount(PageCursor)}.
      */
     private final int maxKeyCount;
+    private final int maxDeltaKeyCount;
 
     /**
      * Whether or not some result has been found, i.e. if {@code true} if there have been no call to
@@ -258,7 +259,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * Generation of the pointer which was last followed, either a
      * {@link TreeNode#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
      * {@link TreeNode#successor(PageCursor, long, long) successor} or
-     * {@link Content#childAt(PageCursor, int, long, long) child}.
+     * {@link Section#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
 
@@ -324,7 +325,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long pointerGeneration;
 
     /**
-     * Result from {@link KeySearch#search(PageCursor, Content, Object, Object, int)}.
+     * Result from {@link KeySearch#search(PageCursor, Section, Object, Object, int)}.
      */
     private int searchResult;
     private int deltaSearchResult;
@@ -376,7 +377,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private final Consumer<Throwable> exceptionDecorator;
 
-    private Content<KEY,VALUE> section;
+    private Section<KEY,VALUE> section;
 
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -393,8 +394,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.unstableGeneration = unstableGeneration;
         this.generationSupplier = generationSupplier;
         this.bTreeNode = bTreeNode;
-        this.mainContent = bTreeNode.main();
-        this.deltaContent = bTreeNode.delta();
+        this.mainSection = bTreeNode.main();
+        this.deltaSection = bTreeNode.delta();
         this.rootCatchup = rootCatchup;
         this.lastFollowedPointerGeneration = lastFollowedPointerGeneration;
         this.mutableKey = layout.newKey();
@@ -402,7 +403,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.mutableDeltaKey = layout.newKey();
         this.mutableDeltaValue = layout.newValue();
         this.prevKey = layout.newKey();
-        this.maxKeyCount = max( mainContent.internalMaxKeyCount(), mainContent.leafMaxKeyCount() );
+        this.maxDeltaKeyCount = deltaSection.leafMaxKeyCount();
+        this.maxKeyCount = max( mainSection.internalMaxKeyCount(), mainSection.leafMaxKeyCount() );
         this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
         this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
@@ -446,7 +448,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     continue;
                 }
 
-                searchResult = searchKey( fromInclusive, mainContent, mutableKey, keyCount );
+                searchResult = searchKey( fromInclusive, mainSection, mutableKey, keyCount );
                 if ( !KeySearch.isSuccess( searchResult ) )
                 {
                     continue;
@@ -455,8 +457,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                 if ( isInternal )
                 {
-                    pointerId = mainContent.childAt( cursor, pos, stableGeneration, unstableGeneration );
+                    pointerId = mainSection.childAt( cursor, pos, stableGeneration, unstableGeneration );
                     pointerGeneration = readPointerGenerationOnSuccess( pointerId );
+                }
+                else
+                {
+                    deltaSearchResult = searchKey( fromInclusive, deltaSection, mutableDeltaKey, deltaKeyCount );
+                    if ( !KeySearch.isSuccess( deltaSearchResult ) )
+                    {
+                        continue;
+                    }
+                    deltaPos = positionOf( deltaSearchResult );
                 }
             }
             while ( cursor.shouldRetry() );
@@ -491,15 +502,19 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         while ( isInternal );
 
+        System.out.println( "Starting seek at pos:" + pos + " keyCount:" + keyCount + " deltaPos:" + deltaPos + " deltaKeyCount:" + deltaKeyCount + " @ " + cursor.getCurrentPageId() );
+
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         pos -= stride;
+        section = mainSection;
+
+
         if ( !seekForward )
         {
             // The tree traversal is best effort when seeking backwards
             // need to trigger search for key in next
             concurrentWriteHappened = true;
         }
-        section = null;
     }
 
     @Override
@@ -520,7 +535,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     {
         while ( true )
         {
-            if ( section == deltaContent )
+            if ( section == deltaSection )
             {
                 deltaPos += stride;
             }
@@ -543,15 +558,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
-                    mainContent.keyAt( cursor,firstKeyInNode, pos );
+                    deltaPos = seekForward ? 0 : deltaKeyCount - 1;
+                    mainSection.keyAt( cursor, firstKeyInNode, pos );
+                    // TODO: fix for concurrency stuff, seek backwards
                 }
 
                 if ( concurrentWriteHappened )
                 {
                     // Keys could have been moved so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
-                    searchResult = searchKey( first ? fromInclusive : prevKey, mainContent, mutableKey, keyCount );
-                    deltaSearchResult = searchKey( first ? fromInclusive : prevKey, deltaContent, mutableDeltaKey, deltaKeyCount );
+                    searchResult = searchKey( first ? fromInclusive : prevKey, mainSection, mutableKey, keyCount );
+                    deltaSearchResult = searchKey( first ? fromInclusive : prevKey, deltaSection, mutableDeltaKey, deltaKeyCount );
                     if ( !KeySearch.isSuccess( searchResult ) || !KeySearch.isSuccess( deltaSearchResult ) )
                     {
                         continue;
@@ -578,8 +595,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( 0 <= pos && pos < keyCount )
                 {
                     // Read the next value in this leaf
-                    mainContent.keyAt( cursor, mutableKey, pos );
-                    mainContent.valueAt( cursor, mutableValue, pos );
+                    mainSection.keyAt( cursor, mutableKey, pos );
+                    mainSection.valueAt( cursor, mutableValue, pos );
                     readMain = true;
                 }
                 else
@@ -589,8 +606,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                 if ( 0 <= deltaPos && deltaPos < deltaKeyCount && deltaKeyCount > 0 )
                 {
-                    deltaContent.keyAt( cursor, mutableDeltaKey, deltaPos );
-                    deltaContent.valueAt( cursor, mutableDeltaValue, deltaPos );
+                    deltaSection.keyAt( cursor, mutableDeltaKey, deltaPos );
+                    deltaSection.valueAt( cursor, mutableDeltaValue, deltaPos );
                     readDelta = true;
                 }
                 else
@@ -631,35 +648,40 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             // Select which section we should actually read from here
             section = null;
-            int thePos = 0;
-            int theKeyCount = 0;
-            KEY theKey = mutableKey;
+            int sectionPos = 0;
+            int sectionKeyCount = 0;
+            KEY sectionKey = mutableKey;
+            System.out.println( "pos:" + pos + " keyCount:" + keyCount + " deltaPos:" + deltaPos + " deltaKeyCount:" + deltaKeyCount + " @ " + cursor.getCurrentPageId() );
             if ( readMain || readDelta )
             {
                 if ( readMain && !readDelta )
                 {
-                    section = mainContent;
+                    System.out.println( "  Read only main " + mutableKey );
+                    section = mainSection;
                 }
                 else if ( !readMain && readDelta )
                 {
-                    section = deltaContent;
+                    System.out.println( "  Read only delta " + mutableDeltaKey );
+                    section = deltaSection;
                 }
                 else
                 {
-                    section = layout.compare( mutableKey, mutableDeltaKey ) > 0 == seekForward ? mainContent : deltaContent;
+                    section = layout.compare( mutableKey, mutableDeltaKey ) < 0 == seekForward ? mainSection : deltaSection;
+                    System.out.println( "  Read both main:" + mutableKey + " delta:" + mutableDeltaKey + " and selected section " + (section == mainSection ? "main" : "delta") );
                 }
 
-                if ( section == mainContent )
+                if ( section == mainSection )
                 {
-                    thePos = pos;
-                    theKeyCount = keyCount;
-                    theKey = mutableKey;
+                    sectionPos = pos;
+                    sectionKeyCount = keyCount;
+                    sectionKey = mutableKey;
                 }
                 else
                 {
-                    thePos = deltaPos;
-                    theKeyCount = deltaKeyCount;
-                    theKey = mutableDeltaKey;
+                    sectionPos = deltaPos;
+                    sectionKeyCount = deltaKeyCount;
+                    sectionKey = mutableDeltaKey;
+                    System.out.println( "  Picked DELTA " + mutableDeltaKey );
                 }
             }
 
@@ -671,18 +693,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 continue;
             }
 
-            if ( (seekForward && thePos >= theKeyCount) || (!seekForward && thePos <= 0 && !insidePrevKey( theKey )) )
+            if ( (seekForward && sectionPos >= sectionKeyCount) || (!seekForward && sectionPos <= 0 && !insidePrevKey( sectionKey )) )
             {
                 if ( goToNextSibling() )
                 {
                     continue; // in the read loop above so that we can continue reading from next sibling
                 }
             }
-            else if ( 0 <= pos && pos < keyCount && insideEndRange( exactMatch ) )
+            else if ( 0 <= sectionPos && sectionPos < sectionKeyCount && insideEndRange( sectionKey, exactMatch ) )
             {
-                if ( isResultKey( theKey ) )
+                if ( isResultKey( sectionKey ) )
                 {
-                    layout.copyKey( mutableKey, prevKey );
+                    layout.copyKey( sectionKey, prevKey );
                     return true; // which marks this read a hit that user can see
                 }
                 continue;
@@ -718,17 +740,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @return whether or not the read key ({@link #mutableKey}) is "before" the end of the key range
      * ({@link #toExclusive}) of this seek.
      */
-    private boolean insideEndRange( boolean exactMatch )
+    private boolean insideEndRange( KEY key, boolean exactMatch )
     {
         if ( exactMatch )
         {
-            return seekForward ? layout.compare( mutableKey, toExclusive ) <= 0
-                               : layout.compare( mutableKey, toExclusive ) >= 0;
+            return seekForward ? layout.compare( key, toExclusive ) <= 0
+                               : layout.compare( key, toExclusive ) >= 0;
         }
         else
         {
-            return seekForward ? layout.compare( mutableKey, toExclusive ) < 0
-                               : layout.compare( mutableKey, toExclusive ) > 0;
+            return seekForward ? layout.compare( key, toExclusive ) < 0
+                               : layout.compare( key, toExclusive ) > 0;
         }
     }
 
@@ -852,7 +874,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      *
      * @return position of the {@code key} in the current tree node, or position of the closest key.
      */
-    private int searchKey( KEY key, Content<KEY,VALUE> section, KEY intoKey, int keyCount )
+    private int searchKey( KEY key, Section<KEY,VALUE> section, KEY intoKey, int keyCount )
     {
         return KeySearch.search( cursor, section, key, intoKey, keyCount );
     }
@@ -892,10 +914,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         isInternal = bTreeNode.isInternal( cursor );
         // Find the left-most key within from-range
-        keyCount = mainContent.keyCount( cursor );
-        deltaKeyCount = deltaContent.keyCount( cursor );
+        keyCount = mainSection.keyCount( cursor );
+        deltaKeyCount = deltaSection.keyCount( cursor );
 
-        return keyCountIsSane( keyCount );
+        return keyCountIsSane( keyCount, maxKeyCount ) && keyCountIsSane( deltaKeyCount, maxDeltaKeyCount );
     }
 
     private boolean endedUpOnExpectedNode()
@@ -959,6 +981,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     // It is likely that first key in right sibling is a next hit.
                     // Continue using scan
                     pos = -1;
+                    section = mainSection;
+                    deltaPos = 0;
                 }
                 return true;
             }
@@ -1006,11 +1030,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             nodeType = TreeNode.nodeType( scout );
             if ( nodeType == TreeNode.NODE_TYPE_TREE_NODE )
             {
-                keyCount = mainContent.keyCount( scout );
-                if ( keyCountIsSane( keyCount ) )
+                keyCount = mainSection.keyCount( scout );
+                if ( keyCountIsSane( keyCount, maxKeyCount ) )
                 {
                     int firstPos = seekForward ? 0 : keyCount - 1;
-                    mainContent.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
+                    mainSection.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
                 }
             }
 
@@ -1025,7 +1049,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             checkOutOfBounds( this.cursor );
         }
-        return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount ));
+        return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount, maxKeyCount ));
     }
 
     /**
@@ -1062,7 +1086,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * {@link Content#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * {@link Section#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
      * which is used as data fed into another read. Because of that extra assertions are made around
      * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
      * (calling this method, which may throw exception).
@@ -1070,7 +1094,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * @param keyCount key count of a tree node.
      * @return {@code true} if key count is sane, i.e. positive and within max expected key count on a tree node.
      */
-    private boolean keyCountIsSane( int keyCount )
+    private boolean keyCountIsSane( int keyCount, int maxKeyCount )
     {
         // if keyCount is out of bounds of what a tree node can hold, it must be that we're
         // reading from an evicted page that just happened to look like a tree node.
@@ -1079,7 +1103,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     private boolean saneRead()
     {
-        return keyCountIsSane( keyCount ) && KeySearch.isSuccess( searchResult );
+        return keyCountIsSane( keyCount, maxKeyCount ) && KeySearch.isSuccess( searchResult ) &&
+                keyCountIsSane( deltaKeyCount, maxDeltaKeyCount ) && KeySearch.isSuccess( deltaSearchResult );
     }
 
     /**
@@ -1182,13 +1207,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     @Override
     public KEY key()
     {
-        return mutableKey;
+        return section == mainSection ? mutableKey : mutableDeltaKey;
     }
 
     @Override
     public VALUE value()
     {
-        return mutableValue;
+        return section == mainSection ? mutableValue : mutableDeltaValue;
     }
 
     @Override

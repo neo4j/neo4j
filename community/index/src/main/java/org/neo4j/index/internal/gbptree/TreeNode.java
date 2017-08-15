@@ -110,7 +110,7 @@ abstract class TreeNode<KEY,VALUE>
 
     // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
 
-    static abstract class Content<KEY,VALUE>
+    static abstract class Section<KEY,VALUE>
     {
         abstract Comparator<KEY> keyComparator();
 
@@ -150,7 +150,7 @@ abstract class TreeNode<KEY,VALUE>
         abstract int leafMaxKeyCount();
     }
 
-    abstract Content<KEY,VALUE> main();
+    abstract Section<KEY,VALUE> main();
 
-    abstract Content<KEY,VALUE> delta();
+    abstract Section<KEY,VALUE> delta();
 }

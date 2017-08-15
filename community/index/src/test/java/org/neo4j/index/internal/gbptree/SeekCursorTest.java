@@ -33,7 +33,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.impl.DelegatingPageCursor;
 
@@ -69,7 +69,7 @@ public class SeekCursorTest
     private final SimpleIdProvider id = new SimpleIdProvider();
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = TreeNodes.instantiateTreeNode( PAGE_SIZE, layout );
-    private final Content<MutableLong,MutableLong> mainContent = node.main();
+    private final Section<MutableLong,MutableLong> mainContent = node.main();
     private final InternalTreeLogic<MutableLong,MutableLong> treeLogic = new InternalTreeLogic<>( id, node, layout );
     private final StructurePropagation<MutableLong> structurePropagation =
             new StructurePropagation<>( layout.newKey(), layout.newKey(), layout.newKey() );

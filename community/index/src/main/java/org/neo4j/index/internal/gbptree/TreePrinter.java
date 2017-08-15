@@ -24,7 +24,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.String.format;
@@ -40,8 +40,8 @@ class TreePrinter<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final long stableGeneration;
     private final long unstableGeneration;
-    private final Content<KEY,VALUE> mainContent;
-    private final Content<KEY,VALUE> deltaContent;
+    private final Section<KEY,VALUE> mainContent;
+    private final Section<KEY,VALUE> deltaContent;
 
     TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
@@ -150,7 +150,7 @@ class TreePrinter<KEY,VALUE>
     }
 
     private void printKeysAndValues( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
-            boolean isLeaf, Content<KEY,VALUE> section ) throws IOException
+            boolean isLeaf, Section<KEY,VALUE> section ) throws IOException
     {
         KEY key = layout.newKey();
         VALUE value = layout.newValue();

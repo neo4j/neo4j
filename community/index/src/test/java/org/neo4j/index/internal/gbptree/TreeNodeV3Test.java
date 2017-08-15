@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.test.rule.RandomRule;
 
@@ -50,8 +50,8 @@ public class TreeNodeV3Test
     private final PageCursor cursor = new PageAwareByteArrayCursor( PAGE_SIZE );
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
     private final TreeNode<MutableLong,MutableLong> node = new TreeNodeV3<>( PAGE_SIZE, layout );
-    private final Content<MutableLong,MutableLong> mainContent = node.main();
-    private final Content<MutableLong,MutableLong> deltaContent = node.delta();
+    private final Section<MutableLong,MutableLong> mainContent = node.main();
+    private final Section<MutableLong,MutableLong> deltaContent = node.delta();
 
     @Rule
     public final RandomRule random = new RandomRule();

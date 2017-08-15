@@ -36,7 +36,7 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.index.internal.gbptree.TreeNode.Content;
+import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -135,7 +135,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * If any of the above changes the on-page format then this version should be bumped, so that opening
      * an index on wrong format version fails and user will need to rebuild.
      */
-    static final int FORMAT_VERSION = 2;
+    static final int FORMAT_VERSION = 3;
 
     /**
      * For monitoring {@link GBPTree}.
@@ -238,7 +238,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * Instance of {@link TreeNodeV3} which handles reading/writing physical bytes from pages representing tree nodes.
      */
     private final TreeNode<KEY,VALUE> bTreeNode;
-    private final Content<KEY,VALUE> mainContent;
+    private final Section<KEY,VALUE> mainContent;
 
     /**
      * A free-list of released ids. Acquiring new ids involves first trying out the free-list and then,

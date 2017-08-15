@@ -79,8 +79,8 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int internalMaxKeyCount;
     private final int leafMaxKeyCount;
     private final Layout<KEY,VALUE> layout;
-    private final Content<KEY,VALUE> mainContent;
-    private final Content<KEY,VALUE> deltaContent;
+    private final Section<KEY,VALUE> mainContent;
+    private final Section<KEY,VALUE> deltaContent;
 
     private final int keySize;
     private final int valueSize;
@@ -107,8 +107,8 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     pageSize, leafMaxKeyCount );
         }
 
-        this.mainContent = new MainContentV1();
-        this.deltaContent = new DeltaContentV1();
+        this.mainContent = new MainSectionV2();
+        this.deltaContent = new DeltaSectionV2();
     }
 
     @Override
@@ -315,13 +315,13 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    Content<KEY,VALUE> main()
+    Section<KEY,VALUE> main()
     {
         return mainContent;
     }
 
     @Override
-    Content<KEY,VALUE> delta()
+    Section<KEY,VALUE> delta()
     {
         return deltaContent;
     }
@@ -350,7 +350,7 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return BYTE_POS_KEYCOUNT;
     }
 
-    private class MainContentV1 extends Content<KEY,VALUE>
+    private class MainSectionV2 extends Section<KEY,VALUE>
     {
         @Override
         public Comparator<KEY> keyComparator()
@@ -482,7 +482,7 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    private class DeltaContentV1 extends Content<KEY,VALUE>
+    private class DeltaSectionV2 extends Section<KEY,VALUE>
     {
         @Override
         Comparator<KEY> keyComparator()

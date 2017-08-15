@@ -25,6 +25,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.pagecache.PageCursor;
 
+import static java.lang.Integer.min;
+
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 
@@ -72,13 +74,11 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private static final AtomicInteger OFFSET = new AtomicInteger( BYTE_POS_NODE_TYPE + Byte.BYTES );
     private static final int BYTE_POS_TYPE = OFFSET.getAndAdd( Byte.BYTES );
     private static final int BYTE_POS_GENERATION = OFFSET.getAndAdd( Integer.BYTES );
-    // TODO Could be short instead
-    private static final int BYTE_POS_KEYCOUNT = OFFSET.getAndAdd( Integer.BYTES );
+    private static final int BYTE_POS_KEYCOUNT = OFFSET.getAndAdd( Short.BYTES );
+    private static final int BYTE_POS_DELTA_KEY_COUNT = OFFSET.getAndAdd( Short.BYTES );
     private static final int BYTE_POS_RIGHTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
     private static final int BYTE_POS_LEFTSIBLING = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
     private static final int BYTE_POS_SUCCESSOR = OFFSET.getAndAdd( SIZE_PAGE_REFERENCE );
-    // TODO Put this on the high bits of the shorter keyCount instead
-    private static final int BYTE_POS_DELTA_KEY_COUNT = OFFSET.getAndAdd( Byte.BYTES );
 
     static final int HEADER_LENGTH = OFFSET.get();
 
@@ -94,8 +94,8 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
     private final int offsetValueEnd;
     private final int offsetChildStart;
     private final Layout<KEY,VALUE> layout;
-    private final Content<KEY,VALUE> mainContent;
-    private final Content<KEY,VALUE> deltaContent;
+    private final Section<KEY,VALUE> mainSection;
+    private final Section<KEY,VALUE> deltaSection;
 
     private final int keySize;
     private final int valueSize;
@@ -108,7 +108,7 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.valueSize = layout.valueSize();
         this.internalMaxKeyCount = Math.floorDiv( pageSize - (HEADER_LENGTH + SIZE_PAGE_REFERENCE),
                 keySize + SIZE_PAGE_REFERENCE);
-        int totalLeafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
+        this.leafMaxKeyCount = Math.floorDiv( pageSize - HEADER_LENGTH, keySize + valueSize );
 
         if ( internalMaxKeyCount < 2 )
         {
@@ -116,23 +116,24 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     "For layout %s a page size of %d would only fit %d internal keys, minimum is 2",
                     layout, pageSize, internalMaxKeyCount );
         }
-        if ( totalLeafMaxKeyCount < 2 )
+        if ( leafMaxKeyCount < 2 )
         {
             throw new MetadataMismatchException( "A page size of %d would only fit leaf keys, minimum is 2",
-                    pageSize, totalLeafMaxKeyCount );
+                    pageSize, leafMaxKeyCount );
         }
 
-        this.deltaLeafMaxKeyCount = totalLeafMaxKeyCount < DELTA_SECTION_SIZE * 3 ? 0 : DELTA_SECTION_SIZE;
-        this.leafMaxKeyCount = totalLeafMaxKeyCount - deltaLeafMaxKeyCount;
+        this.deltaLeafMaxKeyCount = min( DELTA_SECTION_SIZE, leafMaxKeyCount / 10 );
 
-        this.mainContent = new MainContentV1();
-        this.deltaContent = new DeltaContentV1();
+        this.mainSection = new MainSectionV3();
+        this.deltaSection = new DeltaSectionV3();
 
         this.offsetKeyStart = HEADER_LENGTH;
-        this.offsetKeyEnd = offsetKeyStart + (leafMaxKeyCount + deltaLeafMaxKeyCount) * keySize;
+        this.offsetKeyEnd = offsetKeyStart + leafMaxKeyCount * keySize;
         this.offsetValueStart = offsetKeyEnd;
-        this.offsetValueEnd = offsetValueStart + (leafMaxKeyCount + deltaLeafMaxKeyCount) * valueSize;
+        this.offsetValueEnd = offsetValueStart + leafMaxKeyCount * valueSize;
         this.offsetChildStart = HEADER_LENGTH + internalMaxKeyCount * keySize;
+
+        System.out.println( "V3 " + leafMaxKeyCount + " " + deltaLeafMaxKeyCount );
     }
 
     @Override
@@ -246,7 +247,6 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     // BODY METHODS
 
-
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - itemCount.
@@ -339,15 +339,15 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
     }
 
     @Override
-    Content<KEY,VALUE> main()
+    Section<KEY,VALUE> main()
     {
-        return mainContent;
+        return mainSection;
     }
 
     @Override
-    Content<KEY,VALUE> delta()
+    Section<KEY,VALUE> delta()
     {
-        return deltaContent;
+        return deltaSection;
     }
 
     @Override
@@ -374,7 +374,7 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         return BYTE_POS_KEYCOUNT;
     }
 
-    private class MainContentV1 extends Content<KEY,VALUE>
+    private class MainSectionV3 extends Section<KEY,VALUE>
     {
         @Override
         public Comparator<KEY> keyComparator()
@@ -385,13 +385,17 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         @Override
         public int keyCount( PageCursor cursor )
         {
-            return cursor.getInt( BYTE_POS_KEYCOUNT );
+            return cursor.getShort( BYTE_POS_KEYCOUNT ) & 0xFFFF;
         }
 
         @Override
         public void setKeyCount( PageCursor cursor, int count )
         {
-            cursor.putInt( BYTE_POS_KEYCOUNT, count );
+            if ( (count & ~0xFFFF) != 0 )
+            {
+                throw new IllegalArgumentException( "Count must be short " + count );
+            }
+            cursor.putShort( BYTE_POS_KEYCOUNT, (short) count );
         }
 
         @Override
@@ -506,7 +510,7 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         }
     }
 
-    private class DeltaContentV1 extends Content<KEY,VALUE>
+    private class DeltaSectionV3 extends Section<KEY,VALUE>
     {
         @Override
         public Comparator<KEY> keyComparator()
