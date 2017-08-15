@@ -33,13 +33,15 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 
 public class InsightLuceneIndexUpdaterTest
 {
     @ClassRule
-    public static DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    public static FileSystemRule fileSystemRule = new DefaultFileSystemRule();
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
@@ -48,17 +50,21 @@ public class InsightLuceneIndexUpdaterTest
     private static final Label LABEL = Label.label( "label1" );
 
     @Test
-    public void shouldFindNodeWithString() throws IOException
+    public void shouldFindNodeWithString() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), new int[]{1} );
         db.registerTransactionEventHandler( insightIndex.getUpdater() );
 
+        long firstID;
+        long secondID;
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( LABEL );
+            firstID = node.getId();
             node.setProperty( "prop", "Hello. Hello again." );
             Node node2 = db.createNode( LABEL );
+            secondID = node2.getId();
             node2.setProperty( "prop",
                     "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
                     "between a zebra and any other equine: essentially, a zebra hybrid." );
@@ -66,12 +72,13 @@ public class InsightLuceneIndexUpdaterTest
             tx.success();
         }
 
-        InsightIndexReader reader = insightIndex.getReader();
+        try (InsightIndexReader reader = insightIndex.getReader()) {
 
-        assertEquals( 0, reader.query( "hello" ).next() );
-        assertEquals( 1, reader.query( "zebra" ).next() );
-        assertEquals( 1, reader.query( "zedonk" ).next() );
-        assertEquals( 1, reader.query( "cross" ).next() );
-
+            assertEquals(firstID, reader.query("hello").next());
+            assertEquals(secondID, reader.query("zebra").next());
+            assertEquals(secondID, reader.query("zedonk").next());
+            assertEquals(secondID, reader.query("cross").next());
+        }
+        insightIndex.close();
     }
 }
