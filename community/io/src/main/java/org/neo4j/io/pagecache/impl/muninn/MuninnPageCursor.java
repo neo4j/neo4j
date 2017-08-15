@@ -730,6 +730,11 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public int copyTo( int sourceOffset, PageCursor targetCursor, int targetOffset, int lengthInBytes )
     {
+        if ( lengthInBytes == 0 )
+        {
+            return 0;
+        }
+
         int sourcePageSize = getCurrentPageSize();
         int targetPageSize = targetCursor.getCurrentPageSize();
         if ( targetCursor.getClass() != MuninnWritePageCursor.class )

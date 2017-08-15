@@ -120,7 +120,7 @@ class TreeNodeV1<KEY,VALUE> extends TreeNode<KEY,VALUE>
                     pageSize, totalLeafMaxKeyCount );
         }
 
-        int desiredDeltaSize = 10;
+        int desiredDeltaSize = 20;
         this.deltaLeafMaxKeyCount = totalLeafMaxKeyCount < desiredDeltaSize * 3 ? 0 : desiredDeltaSize;
         this.leafMaxKeyCount = totalLeafMaxKeyCount - deltaLeafMaxKeyCount;
 

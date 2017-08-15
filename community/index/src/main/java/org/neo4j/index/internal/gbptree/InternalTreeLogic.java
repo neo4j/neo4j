@@ -654,6 +654,7 @@ class InternalTreeLogic<KEY,VALUE>
         Content<KEY,VALUE> section = selectSection( cursor, keyCount, pos, deltaKeyCount );
         if ( section != null )
         {
+            deltaKeyCount = deltaContent.keyCount( cursor );
             int thePos = section == mainContent ? pos : deltaPos;
             int theKeyCount = section == mainContent ? keyCount : deltaKeyCount;
 
@@ -926,12 +927,8 @@ class InternalTreeLogic<KEY,VALUE>
     {
         fromCursor.copyTo( bTreeNode.keyOffset( fromPos ), toCursor, bTreeNode.keyOffset( toPos ),
                 count * bTreeNode.keySize() );
-        int valueSize = bTreeNode.valueSize();
-        if ( valueSize > 0 )
-        {
-            fromCursor.copyTo( bTreeNode.valueOffset( fromPos ), toCursor, bTreeNode.valueOffset( toPos ),
-                    count * valueSize );
-        }
+        fromCursor.copyTo( bTreeNode.valueOffset( fromPos ), toCursor, bTreeNode.valueOffset( toPos ),
+                count * bTreeNode.valueSize() );
     }
 
     /**
