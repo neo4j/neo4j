@@ -36,7 +36,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.labelscan.LabelScanWriter;
+import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -45,6 +48,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -106,6 +110,22 @@ public class NativeLabelScanStoreMigratorTest
     }
 
     @Test
+    public void clearMigrationDirFromAnyLabelScanStoreBeforeMigrating() throws Exception
+    {
+        // given
+        prepareEmpty23Database();
+        initializeNativeLabelScanStoreWithContent( migrationDir );
+        File toBeDeleted = new File( migrationDir, NativeLabelScanStore.FILE_NAME );
+        assertTrue( fileSystem.fileExists( toBeDeleted ) );
+
+        // when
+        indexMigrator.migrate( storeDir, migrationDir, progressMonitor, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+
+        // then
+        assertNoContentInNativeLabelScanStore( migrationDir );
+    }
+
+    @Test
     public void luceneLabelIndexRemovedAfterSuccessfulMigration() throws IOException
     {
         prepareEmpty23Database();
@@ -139,15 +159,16 @@ public class NativeLabelScanStoreMigratorTest
 
         try ( Lifespan lifespan = new Lifespan() )
         {
-            NativeLabelScanStore labelScanStore =
-                    new NativeLabelScanStore( pageCache, storeDir, FullStoreChangeStream.EMPTY, true, new Monitors(),
-                            RecoveryCleanupWorkCollector.NULL );
+            NativeLabelScanStore labelScanStore = getNativeLabelScanStore( storeDir, true );
             lifespan.add( labelScanStore );
             for ( int labelId = 0; labelId < 10; labelId++ )
             {
-                int nodeCount = PrimitiveLongCollections.count( labelScanStore.newReader().nodesWithLabel( labelId ) );
-                assertEquals( format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ),
-                        1, nodeCount );
+                try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+                {
+                    int nodeCount = PrimitiveLongCollections.count( labelScanReader.nodesWithLabel( labelId ) );
+                    assertEquals( format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ),
+                            1, nodeCount );
+                }
             }
         }
     }
@@ -161,6 +182,40 @@ public class NativeLabelScanStoreMigratorTest
 
         verify( progressMonitor ).start( 10 );
         verify( progressMonitor, times( 10 ) ).progress( 1 );
+    }
+
+    private NativeLabelScanStore getNativeLabelScanStore( File dir, boolean readOnly )
+    {
+        return new NativeLabelScanStore( pageCache, dir, FullStoreChangeStream.EMPTY, readOnly, new Monitors(),
+                RecoveryCleanupWorkCollector.NULL );
+    }
+
+    private void initializeNativeLabelScanStoreWithContent( File dir ) throws IOException
+    {
+        try ( Lifespan lifespan = new Lifespan() )
+        {
+            NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( dir, false );
+            lifespan.add( nativeLabelScanStore );
+            try ( LabelScanWriter labelScanWriter = nativeLabelScanStore.newWriter() )
+            {
+                labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{1} ) );
+            }
+            nativeLabelScanStore.force( IOLimiter.unlimited() );
+        }
+    }
+
+    private void assertNoContentInNativeLabelScanStore( File dir )
+    {
+        try ( Lifespan lifespan = new Lifespan() )
+        {
+            NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( dir, true );
+            lifespan.add( nativeLabelScanStore );
+            try ( LabelScanReader labelScanReader = nativeLabelScanStore.newReader() )
+            {
+                int count = PrimitiveLongCollections.count( labelScanReader.nodesWithLabel( 1 ) );
+                assertEquals( 0, count );
+            }
+        }
     }
 
     private ByteBuffer writeNativeIndexFile( File file, byte[] content ) throws IOException

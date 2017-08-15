@@ -180,12 +180,23 @@ public class NativeLabelScanStore implements LabelScanStore
         this.pageCache = pageCache;
         this.pageSize = pageSize;
         this.fullStoreChangeStream = fullStoreChangeStream;
-        this.storeFile = new File( storeDir, FILE_NAME );
+        this.storeFile = getLabelScanStoreFile( storeDir );
         this.singleWriter = new NativeLabelScanWriter( 1_000 );
         this.readOnly = readOnly;
         this.monitors = monitors;
         this.monitor = monitors.newMonitor( Monitor.class );
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
+    }
+
+    /**
+     * Returns the file backing the label scan store.
+     *
+     * @param storeDir The store directory to use.
+     * @return the file backing the label scan store
+     */
+    public static File getLabelScanStoreFile( File storeDir )
+    {
+        return new File( storeDir, FILE_NAME );
     }
 
     /**
