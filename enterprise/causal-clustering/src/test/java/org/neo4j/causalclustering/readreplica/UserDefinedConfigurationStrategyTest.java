@@ -59,8 +59,7 @@ public class UserDefinedConfigurationStrategyTest
         Config config = Config.defaults( CausalClusteringSettings.user_defined_upstream_selection_strategy,
                         "groups(east); groups(core); halt()" );
 
-        strategy.setConfig( config );
-        strategy.setTopologyService( topologyService );
+        strategy.inject( topologyService, config, null );
 
         //when
 

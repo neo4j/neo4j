@@ -347,15 +347,21 @@ public class CausalClusteringSettings implements LoadableConfig
             buildSetting( "causal_clustering.cluster_topology_refresh", DURATION, "5s" ).constraint( min( Duration.ofSeconds( 1 ) ) ).build();
 
     @Description( "An ordered list in descending preference of the strategy which read replicas use to choose " +
-            "upstream database server from which to pull transactional updates." )
+            "the upstream server from which to pull transactional updates." )
     public static final Setting<List<String>> upstream_selection_strategy =
             setting( "causal_clustering.upstream_selection_strategy", list( ",", STRING ), "default" );
 
-    @Description( "If the operator specifies the user-defined upstream database selection strategy in " +
-            "causal_clustering.upstream_selection_strategy then the configuration of the upstream dependencies is " +
-            "written here." )
+    @Description( "Configuration of a user-defined upstream selection strategy. " +
+            "The user-defined strategy is used if the list of strategies (`causal_clustering.upstream_selection_strategy`) " +
+            "includes the value `user_defined`. " )
     public static final Setting<String> user_defined_upstream_selection_strategy =
             setting( "causal_clustering.user_defined_upstream_strategy", STRING, "" );
+
+    @Description( "Comma separated list of groups to be used by the connect-randomly-to-server-group selection strategy. " +
+            "The connect-randomly-to-server-group strategy is used if the list of strategies (`causal_clustering.upstream_selection_strategy`) " +
+            "includes the value `connect-randomly-to-server-group`. " )
+    public static final Setting<List<String>> connect_randomly_to_server_group_strategy =
+            setting( "causal_clustering.connect-randomly-to-server-group", list( ",", STRING ), "" );
 
     @Description( "A list of group names for the server used when configuring load balancing and replication policies." )
     public static final Setting<List<String>> server_groups =
