@@ -54,6 +54,8 @@ public class ProcedureResourcesIT
     public DatabaseRule db = new EnterpriseDatabaseRule();
 
     private final String indexDefinition = ":Label(prop)";
+    private final String legacyIndexName = "legacyIndex";
+    private final String relLegacyIndexName = "relLegacyIndex";
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @After
@@ -70,6 +72,7 @@ public class ProcedureResourcesIT
         Map<String,List<Object>> allProceduresWithParameters = allProceduresWithParameters();
 
         // when
+        createLegacyIndex();
         createIndex();
         for ( Map.Entry<String,List<Object>> procedureWithParams : allProceduresWithParameters.entrySet() )
         {
@@ -135,6 +138,16 @@ public class ProcedureResourcesIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
+            tx.success();
+        }
+    }
+
+    private void createLegacyIndex()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.index().forNodes( legacyIndexName );
+            db.index().forRelationships( relLegacyIndexName );
             tx.success();
         }
     }
@@ -205,6 +218,24 @@ public class ProcedureResourcesIT
             break;
         case "dbms.listActiveLocks":
             parameters.add( "'query-1234'" );
+            break;
+        case "db.nodeManualIndexSeek":
+            parameters.add( "'" + legacyIndexName + "'" );
+            parameters.add( "'noKey'" );
+            parameters.add( "'noValue'" );
+            break;
+        case "db.nodeManualIndexSearch":
+            parameters.add( "'" + legacyIndexName + "'" );
+            parameters.add( "'noKey:foo*'" );
+            break;
+        case "db.relationshipManualIndexSearch":
+            parameters.add( "'" + relLegacyIndexName + "'" );
+            parameters.add( "'noKey:foo*'" );
+            break;
+        case "db.relationshipManualIndexSeek":
+            parameters.add( "'" + relLegacyIndexName + "'" );
+            parameters.add( "'noKey'" );
+            parameters.add( "'noValue'" );
             break;
         default:
         }
