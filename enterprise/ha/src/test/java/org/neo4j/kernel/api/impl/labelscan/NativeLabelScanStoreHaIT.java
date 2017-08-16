@@ -24,11 +24,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.ha.ClusterManager;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -72,6 +74,7 @@ public class NativeLabelScanStoreHaIT
                     {
                         GraphDatabaseService db = new TestGraphDatabaseFactory()
                                 .newEmbeddedDatabaseBuilder( storeDir.getAbsoluteFile() )
+                                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                                 .newGraphDatabase();
                         try
                         {

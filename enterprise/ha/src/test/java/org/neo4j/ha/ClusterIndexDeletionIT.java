@@ -22,7 +22,9 @@ package org.neo4j.ha;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.impl.ha.ClusterManager.ManagedCluster;
@@ -35,8 +37,8 @@ public class ClusterIndexDeletionIT
 {
     @Rule
     public ClusterRule clusterRule = new ClusterRule( getClass() )
-            .withSharedSetting( HaSettings.ha_server, ":6001-6005" )
-            .withSharedSetting( HaSettings.tx_push_factor, "2" );
+            .withSharedSetting( HaSettings.tx_push_factor, "2" )
+            .withSharedSetting( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
 
     @Test
     public void givenClusterWithCreatedIndexWhenDeleteIndexOnMasterThenIndexIsDeletedOnSlave() throws Throwable
