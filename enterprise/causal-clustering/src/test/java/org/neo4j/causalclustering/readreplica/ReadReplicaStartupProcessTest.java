@@ -111,7 +111,7 @@ public class ReadReplicaStartupProcessTest
     private UpstreamDatabaseStrategySelector chooseFirstMember()
     {
         AlwaysChooseFirstMember firstMember = new AlwaysChooseFirstMember();
-        firstMember.setTopologyService( topologyService );
+        firstMember.inject( topologyService, null, null);
 
         return new UpstreamDatabaseStrategySelector( firstMember );
     }

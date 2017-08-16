@@ -264,9 +264,7 @@ public class EnterpriseReadReplicaEditionModule extends EditionModule
                         logProvider );
 
         ConnectToRandomCoreServerStrategy defaultStrategy = new ConnectToRandomCoreServerStrategy();
-        defaultStrategy.setTopologyService( topologyService );
-        defaultStrategy.setConfig( config );
-        defaultStrategy.setMyself( myself );
+        defaultStrategy.inject( topologyService, config, myself );
 
         UpstreamDatabaseStrategiesLoader loader;
         if ( config.get( CausalClusteringSettings.multi_dc_license ) )

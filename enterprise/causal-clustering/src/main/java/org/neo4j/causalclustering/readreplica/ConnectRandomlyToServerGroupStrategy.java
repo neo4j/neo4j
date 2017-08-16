@@ -27,21 +27,22 @@ import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.Service;
 
 // TODO deprecation warning
-@Service.Implementation(UpstreamDatabaseSelectionStrategy.class)
-public class ConnectRandomlyWithinServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
+@Service.Implementation( UpstreamDatabaseSelectionStrategy.class )
+public class ConnectRandomlyToServerGroupStrategy extends UpstreamDatabaseSelectionStrategy
 {
     private ConnectRandomlyToServerGroupImpl strategyImpl;
 
-    public ConnectRandomlyWithinServerGroupStrategy()
+    public ConnectRandomlyToServerGroupStrategy()
     {
-        super( "connect-randomly-within-server-group" );
+        super( "connect-randomly-to-server-group" );
     }
 
     @Override
     void init()
     {
-        List<String> groups = config.get( CausalClusteringSettings.server_groups );
-        strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService, myself );
+        List<String> groups = config.get( CausalClusteringSettings.connect_randomly_to_server_group_strategy );
+        strategyImpl = new ConnectRandomlyToServerGroupImpl( groups, topologyService,
+                myself );
     }
 
     @Override

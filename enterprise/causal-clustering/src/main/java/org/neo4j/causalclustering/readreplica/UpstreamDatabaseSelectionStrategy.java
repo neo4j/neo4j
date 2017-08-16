@@ -20,6 +20,8 @@
 package org.neo4j.causalclustering.readreplica;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.causalclustering.discovery.TopologyService;
 import org.neo4j.causalclustering.identity.MemberId;
@@ -38,20 +40,16 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
     }
 
     // Service loaded can't inject this via the constructor
-    void setTopologyService( TopologyService topologyService )
+    void inject( TopologyService topologyService, Config config, MemberId myself )
     {
         this.topologyService = topologyService;
-    }
-
-    void setConfig( Config config )
-    {
         this.config = config;
+        this.myself = myself;
+
+        init();
     }
 
-    void setMyself( MemberId myself )
-    {
-        this.myself = myself;
-    }
+    void init() {}
 
     public abstract Optional<MemberId> upstreamDatabase() throws UpstreamDatabaseSelectionException;
 
@@ -63,20 +61,7 @@ public abstract class UpstreamDatabaseSelectionStrategy extends Service
 
     private static String nicelyCommaSeparatedList( Iterable<String> keys )
     {
-        StringBuilder sb = new StringBuilder();
-        for ( String key : keys )
-        {
-            sb.append( key );
-            sb.append( "," );
-            sb.append( " " );
-        }
-
-        int trimThese = sb.lastIndexOf( ", " );
-        if ( trimThese > 1 )
-        {
-            sb.replace( trimThese, sb.length(), "" );
-        }
-
-        return sb.toString();
+        return StreamSupport.stream( keys.spliterator(), false )
+                .collect( Collectors.joining( ", " ) );
     }
 }

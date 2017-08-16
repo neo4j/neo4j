@@ -58,7 +58,7 @@ public class ConnectToRandomCoreServerStrategyTest
                 .thenReturn( fakeCoreTopology( memberId1, memberId2, memberId3 ) );
 
         ConnectToRandomCoreServerStrategy connectionStrategy = new ConnectToRandomCoreServerStrategy();
-        connectionStrategy.setTopologyService( topologyService );
+        connectionStrategy.inject( topologyService, null, null );
 
         // when
         Optional<MemberId> memberId = connectionStrategy.upstreamDatabase();

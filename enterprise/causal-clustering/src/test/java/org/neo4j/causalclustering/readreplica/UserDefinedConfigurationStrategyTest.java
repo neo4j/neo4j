@@ -62,8 +62,7 @@ public class UserDefinedConfigurationStrategyTest
                 .with( stringMap( CausalClusteringSettings.user_defined_upstream_selection_strategy.name(),
                         "groups(east); groups(core); halt()" ) );
 
-        strategy.setConfig( config );
-        strategy.setTopologyService( topologyService );
+        strategy.inject( topologyService, config, null );
 
         //when
 
