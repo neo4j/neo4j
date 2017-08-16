@@ -19,11 +19,14 @@
  */
 package org.neo4j.kernel.api.impl.insight;
 
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.index.IndexWriterConfig;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.Arrays;
 
+import org.neo4j.function.Factory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
@@ -35,18 +38,16 @@ public class InsightIndex implements AutoCloseable
 {
     private final InsightLuceneIndex nodeIndex;
 
-    public InsightIndex( FileSystemAbstraction fileSystem, File file, int[] properties ) throws IOException
+    public InsightIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
 
-        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory(
-                IndexWriterConfigs::population );
-        String[] propertyIdsAsStrings = Arrays.stream( properties ).sorted().mapToObj( String::valueOf )
-                .toArray( String[]::new );
-        nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, propertyIdsAsStrings );
+        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
+        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
+        nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
         nodeIndex.open();
     }
 

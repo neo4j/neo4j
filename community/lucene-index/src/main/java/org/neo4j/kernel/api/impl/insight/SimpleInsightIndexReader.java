@@ -61,7 +61,11 @@ class SimpleInsightIndexReader implements InsightIndexReader
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for ( String property : properties )
         {
-            builder.add( new PhraseQuery( property, query ), BooleanClause.Occur.SHOULD );
+            builder.add( new PhraseQuery( 2, property, query ), BooleanClause.Occur.SHOULD );
+            for ( String s : query )
+            {
+                builder.add( new PhraseQuery( 2, property, s ), BooleanClause.Occur.SHOULD );
+            }
         }
         return query( builder.build() );
     }

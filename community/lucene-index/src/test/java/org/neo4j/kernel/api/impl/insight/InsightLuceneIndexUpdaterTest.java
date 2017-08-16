@@ -23,8 +23,7 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.io.IOException;
-
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,7 +32,6 @@ import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -54,7 +52,8 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldFindNodeWithString() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try (InsightIndex insightIndex = new InsightIndex(fileSystemRule, testDirectory.graphDbDir(), new int[]{1})) {
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        {
             db.registerTransactionEventHandler(insightIndex.getUpdater());
 
             long firstID;
@@ -86,7 +85,8 @@ public class InsightLuceneIndexUpdaterTest
     public void shouldNotFindRemovedNodes() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try (InsightIndex insightIndex = new InsightIndex(fileSystemRule, testDirectory.graphDbDir(), new int[]{1})) {
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        {
             db.registerTransactionEventHandler(insightIndex.getUpdater());
 
             long firstID;
@@ -117,6 +117,44 @@ public class InsightLuceneIndexUpdaterTest
                 assertFalse(reader.query("zebra").hasNext());
                 assertFalse(reader.query("zedonk").hasNext());
                 assertFalse(reader.query("cross").hasNext());
+            }
+        }
+    }
+
+    @Test
+    public void shouldOrderResults() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop", "prop2" ) )
+        {
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            long thirdID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "prop", "tomtar tomtar tomtar tomtar tomtar." );
+                node2.setProperty( "prop2", "tomtar tomtar tomtar tomtar tomtar tomtar karl" );
+                Node node3 = db.createNode( LABEL );
+                thirdID = node3.getId();
+                node3.setProperty( "prop", "Tomtar som tomtar ser upp till tomtar som inte tomtar." );
+
+                tx.success();
+            }
+
+            try ( InsightIndexReader reader = insightIndex.getReader() )
+            {
+
+                PrimitiveLongIterator iterator = reader.query( "tomtar", "karl" );
+                assertEquals( secondID, iterator.next() );
+                assertEquals( firstID, iterator.next() );
+                assertEquals( thirdID, iterator.next() );
             }
         }
     }

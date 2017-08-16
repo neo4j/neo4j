@@ -27,9 +27,10 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 
 import java.util.Iterator;
+import java.util.Map;
 
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
 import static org.apache.lucene.document.Field.Store.YES;
 
@@ -50,7 +51,7 @@ class LuceneInsightDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long nodeId, PropertyKeyValue... values )
+    public static Document documentRepresentingProperties( long nodeId, Map<String,Object> values )
     {
         DocWithId document = reuseDocument( nodeId );
         document.setValues( values );
@@ -62,10 +63,10 @@ class LuceneInsightDocumentStructure
         return Long.parseLong( from.get( NODE_ID_KEY ) );
     }
 
-    static Field encodeValueField( int propertyNumber, Value value )
+    static Field encodeValueField( String propertyKey, Value value )
     {
         InsightFieldEncoding encoding = InsightFieldEncoding.forValue( value );
-        return encoding.encodeField( Integer.toString( propertyNumber ), value );
+        return encoding.encodeField( propertyKey, value );
     }
 
     private static class DocWithId
@@ -91,11 +92,11 @@ class LuceneInsightDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( PropertyKeyValue... values )
+        private void setValues( Map<String,Object> values )
         {
-            for ( int i = 0; i < values.length; i++ )
+            for ( Map.Entry<String,Object> entry : values.entrySet() )
             {
-                Field field = encodeValueField( values[i].propertyKeyId(), values[i].value() );
+                Field field = encodeValueField( entry.getKey(), Values.of( entry.getValue() ) );
                 document.add( field );
             }
         }
