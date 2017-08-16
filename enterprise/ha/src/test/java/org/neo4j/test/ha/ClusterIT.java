@@ -81,23 +81,14 @@ public class ClusterIT
     @Test
     public void testCluster() throws Throwable
     {
-        try
-        {
-            ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
-                    .withSharedConfig(
-                            stringMap(
-                                HaSettings.ha_server.name(), "localhost:6001-9999",
-                                HaSettings.tx_push_factor.name(), "2",
-                                OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
+        ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory( testName.getMethodName() ) )
+                .withSharedConfig(
+                        stringMap(
+                            HaSettings.tx_push_factor.name(), "2",
+                            OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
 
-                    .build();
-            createClusterWithNode( clusterManager );
-        }
-        catch ( DirectoryNotEmptyException e )
-        {
-            e.printStackTrace();
-            throw new UnsupportedOperationException( "TODO", e );
-        }
+                .build();
+        createClusterWithNode( clusterManager );
     }
 
     @Test
@@ -106,7 +97,6 @@ public class ClusterIT
         ClusterManager clusterManager = new ClusterManager.Builder( testDirectory.directory(  testName.getMethodName() ) )
                 .withCluster( clusterOfSize( "localhost", 3 ) )
                 .withSharedConfig( stringMap(
-                        HaSettings.ha_server.name(), "localhost:6001-9999",
                         HaSettings.tx_push_factor.name(), "2",
                         OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()  ) )
                 .build();
@@ -120,7 +110,6 @@ public class ClusterIT
                 .withCluster( clusterOfSize( "0.0.0.0", 3 ) )
                 .withSharedConfig(
                         stringMap(
-                                HaSettings.ha_server.name(), "0.0.0.0:6001-9999",
                                 HaSettings.tx_push_factor.name(), "2",
                                 OnlineBackupSettings.online_backup_enabled.name(), Boolean.FALSE.toString()
                         )
