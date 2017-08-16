@@ -21,38 +21,27 @@ package org.neo4j.kernel.enterprise.builtinprocs;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.test.matchers.NestedThrowableMatcher;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
-import org.neo4j.test.rule.concurrent.ThreadingRule;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.log_queries;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.plugin_dir;
 
 public class SetConfigValueProcedureTest
 {
     @Rule
-    public final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule()
-    {
-        @Override
-        protected void configure( GraphDatabaseBuilder builder )
-        {
-            builder.setConfig( cypher_hints_error, "true" );
-        }
-    };
+    public final DatabaseRule db = new ImpermanentEnterpriseDatabaseRule();
+
     @Rule
-    public final ThreadingRule threads = new ThreadingRule();
+    public final ExpectedException expect = ExpectedException.none();
 
     @Test
     public void configShouldBeAffected() throws Exception
@@ -69,53 +58,31 @@ public class SetConfigValueProcedureTest
     @Test
     public void failIfUnknownSetting() throws Exception
     {
-        try
-        {
-            db.execute( "CALL dbms.setConfigValue('unknown.setting.indeed', 'foo')" );
-        }
-        catch ( Exception e )
-        {
-            Throwable cause = Exceptions.rootCause( e );
-            assertThat( cause, instanceOf( IllegalArgumentException.class ) );
-            assertThat( cause.getMessage(), equalTo( "Unknown setting: unknown.setting.indeed" ) );
-            return;
-        }
+        expect.expect( new NestedThrowableMatcher( IllegalArgumentException.class ) );
+        expect.expectMessage( "Unknown setting: unknown.setting.indeed" );
+
+        db.execute( "CALL dbms.setConfigValue('unknown.setting.indeed', 'foo')" );
         fail( "Should throw IllegalArgumentException" );
     }
 
     @Test
     public void failIfStaticSetting() throws Exception
     {
-        try
-        {
-            // Static setting, at least for now
-            db.execute( "CALL dbms.setConfigValue('" + plugin_dir.name() + "', 'path/to/dir')" );
-        }
-        catch ( Exception e )
-        {
-            Throwable cause = Exceptions.rootCause( e );
-            assertThat( cause, instanceOf( IllegalArgumentException.class ) );
-            assertThat( cause.getMessage(), equalTo( "Setting is not dynamic and can not be changed at runtime" ) );
-            return;
-        }
+        expect.expect( new NestedThrowableMatcher( IllegalArgumentException.class ) );
+        expect.expectMessage( "Setting is not dynamic and can not be changed at runtime" );
+
+        // Static setting, at least for now
+        db.execute( "CALL dbms.setConfigValue('" + plugin_dir.name() + "', 'path/to/dir')" );
         fail( "Should throw IllegalArgumentException" );
     }
 
     @Test
     public void failIfInvalidValue() throws Exception
     {
-        try
-        {
-            db.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'invalid')" );
-        }
-        catch ( Exception e )
-        {
-            Throwable cause = Exceptions.rootCause( e );
-            assertThat( cause, instanceOf( InvalidSettingException.class ) );
-            assertThat( cause.getMessage(),
-                    equalTo( "Bad value 'invalid' for setting 'dbms.logs.query.enabled': must be 'true' or 'false'" ) );
-            return;
-        }
+        expect.expect( new NestedThrowableMatcher( InvalidSettingException.class ) );
+        expect.expectMessage( "Bad value 'invalid' for setting 'dbms.logs.query.enabled': must be 'true' or 'false'" );
+
+        db.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'invalid')" );
         fail( "Should throw InvalidSettingException" );
     }
 }
