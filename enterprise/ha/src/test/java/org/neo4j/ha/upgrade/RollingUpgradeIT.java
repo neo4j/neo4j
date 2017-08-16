@@ -245,7 +245,7 @@ public class RollingUpgradeIT
                 server_id.name(), "" + serverId,
                 cluster_server.name(), localhost + ":" + (5000 + serverId),
                 ha_server.name(), localhost + ":" + (6000 + serverId),
-                GraphDatabaseSettings.allow_store_upgrade.name(), "true",
+                GraphDatabaseSettings.allow_upgrade.name(), "true",
                 GraphDatabaseSettings.pagecache_memory.name(), "8m",
                 OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
@@ -363,7 +363,7 @@ public class RollingUpgradeIT
             debug( "Starting standalone db " + dbIndex + " to run upgrade" );
             tempDbForUpgrade = new TestGraphDatabaseFactory()
                     .newEmbeddedDatabaseBuilder( storeDir )
-                    .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                    .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                     .newGraphDatabase();
         }
         finally

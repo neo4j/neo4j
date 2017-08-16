@@ -100,5 +100,14 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
                 }
             }
         } );
+        add( new SpecificPropertyMigration( "dbms.allow_format_migration",
+                "dbms.allow_format_migration has been replaced with dbms.allow_upgrade." )
+        {
+            @Override
+            public void setValueWithOldSetting( String value, Map<String,String> rawConfiguration )
+            {
+                rawConfiguration.put( GraphDatabaseSettings.allow_upgrade.name(), value );
+            }
+        } );
     }
 }

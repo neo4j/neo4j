@@ -206,7 +206,7 @@ public class StoreUpgraderInterruptionTestIT
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache,
             MigrationProgressMonitor progressMonitor, SchemaIndexMigrator indexMigrator, StoreMigrator migrator )
     {
-        Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_store_upgrade, "true" );
+        Config allowUpgrade = Config.defaults( GraphDatabaseSettings.allow_upgrade, "true" );
 
         StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowUpgrade, fs, pageCache,
                 NullLogProvider.getInstance() );

@@ -137,7 +137,7 @@ public class IndexProviderStore
         {
             throw new UpgradeNotAllowedByConfigurationException(
                     "Index version (managed by " + file + ") has changed " + "and cannot be upgraded unless " +
-                            GraphDatabaseSettings.allow_store_upgrade.name() +
+                            GraphDatabaseSettings.allow_upgrade.name() +
                             "=true is supplied in the configuration" );
         }
 

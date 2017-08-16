@@ -128,7 +128,7 @@ public class StoreUpgradeOnStartupTest
     {
         return new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( workingDirectory )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .newGraphDatabase();
     }
 }

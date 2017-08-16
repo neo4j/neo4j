@@ -145,7 +145,7 @@ public class StoreUpgradeIntegrationTest
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
@@ -176,7 +176,7 @@ public class StoreUpgradeIntegrationTest
             props.putAll( ServerTestUtils.getDefaultRelativeProperties() );
             props.setProperty( DatabaseManagementSystemSettings.data_directory.name(), rootDir.getAbsolutePath() );
             props.setProperty( GraphDatabaseSettings.logs_directory.name(), rootDir.getAbsolutePath() );
-            props.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
+            props.setProperty( GraphDatabaseSettings.allow_upgrade.name(), "true" );
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
             props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
@@ -207,7 +207,7 @@ public class StoreUpgradeIntegrationTest
             File dir = store.prepareDirectory( testDir.graphDbDir() );
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             builder.setConfig( GraphDatabaseSettings.logs_directory, testDir.directory( "logs" ).getAbsolutePath() );
             GraphDatabaseService db = builder.newGraphDatabase();
@@ -283,7 +283,7 @@ public class StoreUpgradeIntegrationTest
             new File( dir, "debug.log" ).delete(); // clear the log
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
             try
             {
@@ -330,7 +330,7 @@ public class StoreUpgradeIntegrationTest
 
             GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( dir );
-            builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" );
+            builder.setConfig( GraphDatabaseSettings.allow_upgrade, "true" );
             builder.setConfig( GraphDatabaseSettings.record_format, store.getFormatFamily() );
             GraphDatabaseService db = builder.newGraphDatabase();
             try

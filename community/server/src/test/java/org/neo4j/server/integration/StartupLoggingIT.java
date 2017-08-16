@@ -91,7 +91,7 @@ public class StartupLoggingIT extends ExclusiveServerTestBase
     {
         Map<String,String> relativeProperties = ServerTestUtils.getDefaultRelativeProperties();
 
-        relativeProperties.put( GraphDatabaseSettings.allow_store_upgrade.name(), Settings.TRUE);
+        relativeProperties.put( GraphDatabaseSettings.allow_upgrade.name(), Settings.TRUE);
 
         HttpConnector http = new HttpConnector( "http", Encryption.NONE );
         relativeProperties.put( http.type.name(), "HTTP" );

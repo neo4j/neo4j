@@ -730,7 +730,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void rejectAutoUpgrade( Map<String, String> params )
     {
-        if ( parseBoolean( params.get( GraphDatabaseSettings.allow_store_upgrade.name() ) ) )
+        if ( parseBoolean( params.get( GraphDatabaseSettings.allow_upgrade.name() ) ) )
         {
             throw new IllegalArgumentException( "Batch inserter is not allowed to do upgrade of a store" +
                                                 ", use " + EmbeddedGraphDatabase.class.getSimpleName() + " instead" );

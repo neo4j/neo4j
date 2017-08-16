@@ -93,7 +93,7 @@ public class PlatformConstraintStoreUpgradeTest
     private GraphDatabaseService createGraphDatabaseService()
     {
         return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( workingDir )
-                .setConfig( GraphDatabaseSettings.allow_store_upgrade, "true" )
+                .setConfig( GraphDatabaseSettings.allow_upgrade, "true" )
                 .setConfig( GraphDatabaseSettings.pagecache_swapper, TEST_PAGESWAPPER_NAME ).newGraphDatabase();
     }
 }

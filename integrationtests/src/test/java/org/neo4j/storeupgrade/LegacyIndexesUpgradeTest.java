@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.function.IntFunction;
 
@@ -124,7 +123,7 @@ public class LegacyIndexesUpgradeTest
     {
         GraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
-        builder.setConfig( GraphDatabaseSettings.allow_store_upgrade, Boolean.toString( allowUpgread ) );
+        builder.setConfig( GraphDatabaseSettings.allow_upgrade, Boolean.toString( allowUpgread ) );
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
         return builder.newGraphDatabase();
     }
