@@ -22,13 +22,12 @@ package org.neo4j.kernel.api.impl.insight;
 import org.apache.lucene.document.Document;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.kernel.api.properties.PropertyKeyValue;
-import org.neo4j.values.storable.Values;
 
 public class InsightIndexTransactionEventUpdater implements TransactionEventHandler<Object>
 {
@@ -42,24 +41,26 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
     @Override
     public Object beforeCommit( TransactionData data ) throws Exception
     {
-        return null;
+        Map<Long,Map<String,Object>> map = new HashMap<Long,Map<String,Object>>();
+        data.createdNodes().forEach( node -> map.put( node.getId(), node.getAllProperties() ) );
+        return map;
     }
 
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
-        writeNodeData( data.assignedNodeProperties() );
+        writeNodeData( data.createdNodes(), (Map<Long,Map<String,Object>>) state );
         deleteNodeData( data.deletedNodes() );
     }
 
-    private void writeNodeData( Iterable<PropertyEntry<Node>> propertyEntries )
+    private void writeNodeData( Iterable<Node> propertyEntries, Map<Long,Map<String,Object>> state )
     {
-        for ( PropertyEntry<Node> propertyEntry : propertyEntries )
+        for ( Node node : propertyEntries )
         {
-//            propertyEntry.previouslyCommitedValue()
-            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( propertyEntry.entity().getId(),
-                    //TODO THIS IS BAD
-                    new PropertyKeyValue( Integer.parseInt( "1" ), Values.of( propertyEntry.value() ) ) );
+
+            Map<String,Object> allProperties = state.get( node.getId() );
+
+            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( node.getId(), allProperties );
             try
             {
                 writableDatabaseInsightIndex.getIndexWriter().addDocument( document );

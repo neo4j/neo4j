@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.api.impl.insight;
 
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
 
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-
-import static org.apache.lucene.document.Field.Store.NO;
 
 /**
  * Enumeration representing all possible property types with corresponding encodings and query structures for Lucene
@@ -156,8 +151,7 @@ enum InsightFieldEncoding
                 {
                     java.lang.String stringValue = ((TextValue) value).stringValue();
 
-                    TokenStream tokenStream = englishAnalyzer.tokenStream( name, stringValue );
-                    TextField field = new TextField( name, tokenStream );
+                    TextField field = new TextField( name, stringValue, Field.Store.NO );
                     return field;
                 }
 
@@ -175,7 +169,6 @@ enum InsightFieldEncoding
 //                }
             };
 
-    private static EnglishAnalyzer englishAnalyzer = new EnglishAnalyzer();
     private static final InsightFieldEncoding[] AllEncodings = values();
 
     abstract String key();

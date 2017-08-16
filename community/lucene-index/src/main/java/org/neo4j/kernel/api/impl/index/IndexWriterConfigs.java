@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene54.Lucene54Codec;
@@ -71,7 +72,13 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig standard()
     {
-        IndexWriterConfig writerConfig = new IndexWriterConfig( LuceneDataSource.KEYWORD_ANALYZER );
+        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
+        return getIndexWriterConfigWithAnalyzer( analyzer );
+    }
+
+    private static IndexWriterConfig getIndexWriterConfigWithAnalyzer( Analyzer analyzer )
+    {
+        IndexWriterConfig writerConfig = new IndexWriterConfig( analyzer );
 
         writerConfig.setMaxBufferedDocs( MAX_BUFFERED_DOCS );
         writerConfig.setMaxBufferedDeleteTerms( MAX_BUFFERED_DELETE_TERMS );
@@ -104,6 +111,14 @@ public final class IndexWriterConfigs
     public static IndexWriterConfig population()
     {
         IndexWriterConfig writerConfig = standard();
+        writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
+        writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
+        return writerConfig;
+    }
+
+    public static IndexWriterConfig population( Analyzer analyzer )
+    {
+        IndexWriterConfig writerConfig = getIndexWriterConfigWithAnalyzer( analyzer );
         writerConfig.setMaxBufferedDocs( POPULATION_MAX_BUFFERED_DOCS );
         writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
         return writerConfig;
