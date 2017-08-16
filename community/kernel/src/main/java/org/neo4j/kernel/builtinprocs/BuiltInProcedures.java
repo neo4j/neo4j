@@ -182,16 +182,17 @@ public class BuiltInProcedures
     @Procedure( name = "db.constraints", mode = READ )
     public Stream<ConstraintResult> listConstraints()
     {
-        Statement statement = tx.acquireStatement();
-        ReadOperations operations = statement.readOperations();
-        TokenNameLookup tokens = new StatementTokenNameLookup( operations );
+        try ( Statement statement = tx.acquireStatement() )
+        {
+            ReadOperations operations = statement.readOperations();
+            TokenNameLookup tokens = new StatementTokenNameLookup( operations );
 
-        return asList( operations.constraintsGetAll() )
-                .stream()
-                .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
-                .sorted()
-                .map( ConstraintResult::new )
-                .onClose( statement::close );
+            return asList( operations.constraintsGetAll() )
+                    .stream()
+                    .map( ( constraint ) -> constraint.prettyPrint( tokens ) )
+                    .sorted()
+                    .map( ConstraintResult::new );
+        }
     }
 
     private IndexProcedures indexProcedures()
