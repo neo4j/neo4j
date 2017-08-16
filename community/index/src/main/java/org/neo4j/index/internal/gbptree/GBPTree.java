@@ -1022,7 +1022,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
     }
 
     @SuppressWarnings( "unused" )
-    void printTree() throws IOException
+    public void printTree() throws IOException
     {
         printTree( false, false, false, false );
     }
