@@ -36,6 +36,8 @@ import org.neo4j.helpers.collection.Iterators;
  *
  * It's basically like using an {@link ExecutorService}, but without that "baggage" and an easier usage
  * and less code in the scenario described above.
+ *
+ * @param <R> type of workers
  */
 public class Workers<R extends Runnable> implements Iterable<R>
 {
@@ -48,7 +50,9 @@ public class Workers<R extends Runnable> implements Iterable<R>
     }
 
     /**
-     * Starts a thread to run {@code toRun}.
+     * Starts a thread to run {@code toRun}. Returns immediately.
+     *
+     * @param toRun worker to start and run among potentially other workers.
      */
     public void start( R toRun )
     {
