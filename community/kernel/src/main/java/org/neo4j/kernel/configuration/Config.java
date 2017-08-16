@@ -565,21 +565,20 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
+     * Updates a provided setting to a given value. This method is intended to be used for changing settings during
+     * runtime. If you want to change settings at startup, use {@link Config#augment}.
      *
-     * TODO: DRAGONS! This code works for the current dynamic variables(3), but is not generic.
-     * TODO: DRAGONS! No migration or config validation is done.
+     * @implNote No migration or config validation is done. If you need this you have to refactor this method.
      *
      * @param setting The setting to set to the specified value.
      * @param value The new value to set, passing {@code null} or empty should reset the value back to default value.
      * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
      * @throws InvalidSettingException if the value is not formatted correctly.
      */
-    public void setConfigValue( String setting, String value ) throws IllegalArgumentException, InvalidSettingException
+    public void updateDynamicSetting( String setting, String value ) throws IllegalArgumentException, InvalidSettingException
     {
         // Make sure the setting is valid and is marked as dynamic
-        Optional<ConfigValue> option =
-                configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
-                        .filter( it -> it.name().equals( setting ) ).findFirst();
+        Optional<ConfigValue> option = findConfigValue( setting );
 
         if ( !option.isPresent() )
         {
@@ -615,6 +614,12 @@ public class Config implements DiagnosticsProvider, Configuration
 
             params.put( setting, value );
         }
+    }
+
+    private Optional<ConfigValue> findConfigValue( String setting )
+    {
+        return configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
+                .filter( it -> it.name().equals( setting ) ).findFirst();
     }
 
     /**
