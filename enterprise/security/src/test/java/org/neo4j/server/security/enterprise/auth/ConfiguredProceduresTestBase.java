@@ -62,7 +62,7 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     @Test
     public void shouldTerminateLongRunningProcedureThatChecksTheGuardRegularlyOnTimeout() throws Throwable
     {
-        configuredSetup( stringMap( GraphDatabaseSettings.transaction_timeout.name(), "2s" ) );
+        configuredSetup( stringMap( GraphDatabaseSettings.transaction_timeout.name(), "4s" ) );
 
         assertFail( adminSubject, "CALL test.loop", "Transaction guard check failed" );
 
