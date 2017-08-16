@@ -44,7 +44,7 @@ public class InsightLuceneIndexUpdaterTest
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule( testDirectory.graphDbDir() );
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule();
 
     private static final Label LABEL = Label.label( "label1" );
 
