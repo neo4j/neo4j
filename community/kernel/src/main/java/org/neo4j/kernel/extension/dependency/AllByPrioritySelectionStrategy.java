@@ -30,17 +30,20 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
 /**
  * Selects the candidate with highest priority (assumed to implement {@link Comparable}) and returns
  * in {@link #select(Class, Iterable)}, but keeps the others for access too.
+ *
+ * @param <T> type of items expected to be provided into {@link #select(Class, Iterable)}. Due to signature of the
+ * {@link #select(Class, Iterable) select method} where an explicit and local {@code R} is defined a cast from
+ * {@code R} to {@code T} is required and so will fail if {@code T} isn't matching {@code R}.
  */
-public class AllByPrioritySelectionStrategy<T> implements DependencyResolver.SelectionStrategy
+public class AllByPrioritySelectionStrategy<T extends Comparable<T>> implements DependencyResolver.SelectionStrategy
 {
-    @SuppressWarnings( "rawtypes" )
-    private List lowerPrioritizedCandidates = Collections.emptyList();
+    private List<T> lowerPrioritizedCandidates = Collections.emptyList();
 
-    @SuppressWarnings( {"rawtypes", "unchecked"} )
+    @SuppressWarnings( "unchecked" )
     @Override
     public <R> R select( Class<R> type, Iterable<R> candidates ) throws IllegalArgumentException
     {
-        List<Comparable> all = (List<Comparable>) Iterables.asList( candidates );
+        List<T> all = (List<T>) Iterables.asList( candidates );
         if ( all.isEmpty() )
         {
             throw new IllegalArgumentException( "Could not resolve dependency of type: " +
@@ -52,7 +55,6 @@ public class AllByPrioritySelectionStrategy<T> implements DependencyResolver.Sel
         return highest;
     }
 
-    @SuppressWarnings( "unchecked" )
     public Iterable<T> lowerPrioritizedCandidates()
     {
         return lowerPrioritizedCandidates;

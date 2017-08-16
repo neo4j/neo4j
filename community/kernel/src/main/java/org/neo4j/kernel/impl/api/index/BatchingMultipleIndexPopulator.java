@@ -64,6 +64,8 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     private static final String EOL = System.lineSeparator();
     private static final String FLUSH_THREAD_NAME_PREFIX = "Index Population Flush Thread";
 
+    static final int BATCH_SIZE = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+
     private final int MAXIMUM_NUMBER_OF_WORKERS = FeatureToggles.getInteger( getClass(), MAXIMUM_NUMBER_OF_WORKERS_NAME,
             Runtime.getRuntime().availableProcessors() - 1 );
     private final int TASK_QUEUE_SIZE = FeatureToggles.getInteger( getClass(), TASK_QUEUE_SIZE_NAME,
@@ -152,38 +154,22 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     /**
-     * Add given {@link IndexEntryUpdate update} to the list of updates already present for the given
-     * {@link IndexPopulation population}. Flushes all updates if {@link #BATCH_SIZE} is reached.
-     *
-     * @param population the index population.
-     * @param update updates to add to the batch.
-     */
-    private void batchUpdate( IndexPopulation population, IndexEntryUpdate<?> update )
-    {
-        if ( population.batch( update ) )
-        {
-            Collection<IndexEntryUpdate<?>> batchedUpdates = population.takeCurrentBatch();
-            flush( population, batchedUpdates );
-        }
-    }
-
-    /**
      * Insert all batched updates into corresponding indexes.
      */
     private void flushAll()
     {
-        populations.forEach( population -> flush( population, population.takeCurrentBatch() ) );
+        populations.forEach( population -> flush( population ) );
     }
 
     /**
      * Insert the given batch of updates into the index defined by the given {@link IndexPopulation}.
      *
      * @param population the index population.
-     * @param batch the list of updates to insert.
      */
-    private void flush( IndexPopulation population, Collection<IndexEntryUpdate<?>> batch )
+    private void flush( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
+        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
 
         executor.execute( () ->
         {

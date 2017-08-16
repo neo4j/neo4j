@@ -41,8 +41,16 @@ import org.neo4j.kernel.impl.transaction.state.DefaultSchemaIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ * Utility for loading {@link SchemaIndexProvider} instances from {@link KernelExtensions}.
+ */
 public class SchemaIndexExtensionLoader
 {
+    /**
+     * Used in scenarios where recovery isn't allowed.
+     */
+    public static final RecoveryCleanupWorkCollector RECOVERY_PREVENTING_COLLECTOR = new RecoveryPreventingCollector();
+
     public static SchemaIndexProviderMap loadSchemaIndexProviders( KernelExtensions extensions )
     {
         AllByPrioritySelectionStrategy<SchemaIndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
@@ -76,6 +84,4 @@ public class SchemaIndexExtensionLoader
             }
         }
     }
-
-    public static final RecoveryCleanupWorkCollector RECOVERY_PREVENTING_COLLECTOR = new RecoveryPreventingCollector();
 }
