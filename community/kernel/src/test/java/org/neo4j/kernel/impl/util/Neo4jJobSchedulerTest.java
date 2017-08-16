@@ -34,7 +34,6 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobScheduler.JobHandle;
-
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -72,25 +71,24 @@ public class Neo4jJobSchedulerTest
         life.shutdown();
     }
 
-    @Test
+    // Tests schedules a recurring job to run 5 times with 100ms in between.
+    // The timeout of 10s should be enough.
+    @Test( timeout = 10_000 )
     public void shouldRunRecurringJob() throws Throwable
     {
         // Given
-        long period = 1_000;
-        int count = 2;
+        long period = 100;
+        int count = 5;
         life.start();
 
         // When
         scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
-        awaitFirstInvocation();
-        sleep( period * count - period / 2 );
+        awaitInvocationCount( count );
         scheduler.shutdown();
 
-        // Then
+        // Then assert that the recurring job was stopped (when the scheduler was shut down)
         int actualInvocations = invocations.get();
-        assertEquals( count, actualInvocations );
-
-        sleep( period );
+        sleep( period * 2 );
         assertThat( invocations.get(), equalTo( actualInvocations ) );
     }
 
@@ -191,11 +189,16 @@ public class Neo4jJobSchedulerTest
         neo4jJobScheduler.shutdown();
     }
 
-    private void awaitFirstInvocation()
+    private void awaitFirstInvocation() throws InterruptedException
     {
-        while ( invocations.get() == 0 )
-        {   // Wait for the job to start running
-            Thread.yield();
+        awaitInvocationCount( 1 );
+    }
+
+    private void awaitInvocationCount( int count ) throws InterruptedException
+    {
+        while ( invocations.get() < count )
+        {
+            Thread.sleep( 10 );
         }
     }
 }
