@@ -148,3 +148,11 @@ ORDER BY two node properties
 ORDER BY with unwind primitive integer
 Primitive node type support in list literal
 Primitive relationship type support in list literal
+
+//VarLengthAcceptance.feature
+Handles checking properties on nodes in path - description 2
+Handles checking properties on nodes in path - description 3
+Handles checking properties on relationships in path - description 1
+Handles checking properties on relationships in path - description 2
+Handles checking properties on relationships in path - description 3
+Handles checking properties on relationships in path - description 4
