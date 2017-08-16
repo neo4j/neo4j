@@ -31,11 +31,13 @@ import org.neo4j.helpers.collection.Iterators;
  * Utility for running a handful of {@link Runnable} in parallel, each in its own thread.
  * {@link Runnable} instances are {@link #start(Runnable) added and started} and the caller can
  * {@link #await()} them all to finish, returning a {@link Throwable error} if any thread encountered one so
- * that the caller can decide how to handle that error. Or caller can use {@link #awaitAndThrowOnError()}
+ * that the caller can decide how to handle that error. Or caller can use {@link #awaitAndThrowOnError(Class)}
  * where error from any worker would be thrown from that method.
  *
  * It's basically like using an {@link ExecutorService}, but without that "baggage" and an easier usage
  * and less code in the scenario described above.
+ *
+ * @param <R> type of workers
  */
 public class Workers<R extends Runnable> implements Iterable<R>
 {
@@ -48,7 +50,9 @@ public class Workers<R extends Runnable> implements Iterable<R>
     }
 
     /**
-     * Starts a thread to run {@code toRun}.
+     * Starts a thread to run {@code toRun}. Returns immediately.
+     *
+     * @param toRun worker to start and run among potentially other workers.
      */
     public void start( R toRun )
     {
