@@ -135,7 +135,6 @@ public class SchemaProcedureIT extends KernelIntegrationTest
                     contains( equalTo( Label.label( "Person" ) ) ) );
             assertThat( relationships.get( 0 ).getEndNode().getLabels(),
                     contains( equalTo( Label.label( "Location" ) ) ) );
-
         }
     }
 }
