@@ -33,7 +33,7 @@ Feature: VarLengthAcceptance
              (n3)-[:T {blocked: true}]->(n4)
       """
 
-  Scenario: Handles checking properties on nodes in path - description 1
+  Scenario: Handles checking properties on nodes in path - using in-pattern property value
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -46,7 +46,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on nodes in path - description 2
+  Scenario: Handles checking properties on nodes in path - using ALL() function on path node properties
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -60,7 +60,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on nodes in path - description 3
+  Scenario: Handles checking properties on nodes in multistep path - using ALL() function on path node properties
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -74,7 +74,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on relationships in path - description 1
+  Scenario: Handles checking properties on relationships in path - using in-pattern property value
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -87,7 +87,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on relationships in path - description 2
+  Scenario: Handles checking properties on relationships in path - using ALL() function on relationship identifier
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -101,7 +101,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on relationships in path - description 3
+  Scenario: Handles checking properties on relationships in path - using ALL() function on path relationship properties
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
@@ -115,7 +115,7 @@ Feature: VarLengthAcceptance
       | 'n3'   |
     And no side effects
 
-  Scenario: Handles checking properties on relationships in path - description 4
+  Scenario: Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
     When executing query:
       """
       MATCH (a:A {name: 'n1'})
