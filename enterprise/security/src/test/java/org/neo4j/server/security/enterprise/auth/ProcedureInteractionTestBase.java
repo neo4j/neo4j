@@ -431,7 +431,8 @@ public abstract class ProcedureInteractionTestBase<S>
     private String assertCallEmpty( S subject, String call )
     {
         return neo.executeQuery( subject, call, null,
-                result -> {
+                result ->
+                {
                     List<Map<String,Object>> collect = result.stream().collect( toList() );
                     assertTrue( "Expected no results but got: " + collect, collect.isEmpty() );
                 } );
