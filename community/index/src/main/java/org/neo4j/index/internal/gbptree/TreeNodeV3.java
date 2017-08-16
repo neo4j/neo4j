@@ -374,6 +374,11 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     private class MainSectionV3 extends Section<KEY,VALUE>
     {
+        MainSectionV3()
+        {
+            super( Type.MAIN );
+        }
+
         @Override
         public Comparator<KEY> keyComparator()
         {
@@ -510,6 +515,11 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     private class DeltaSectionV3 extends Section<KEY,VALUE>
     {
+        DeltaSectionV3()
+        {
+            super( Type.DELTA );
+        }
+
         @Override
         public Comparator<KEY> keyComparator()
         {

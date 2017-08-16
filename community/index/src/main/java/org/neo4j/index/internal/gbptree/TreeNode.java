@@ -110,8 +110,26 @@ abstract class TreeNode<KEY,VALUE>
 
     // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
 
+    static enum Type
+    {
+        MAIN,
+        DELTA;
+    }
+
     abstract static class Section<KEY,VALUE>
     {
+        private final Type type;
+
+        protected Section( Type type )
+        {
+            this.type = type;
+        }
+
+        Type type()
+        {
+            return type;
+        }
+
         abstract Comparator<KEY> keyComparator();
 
         abstract int keyCount( PageCursor cursor );

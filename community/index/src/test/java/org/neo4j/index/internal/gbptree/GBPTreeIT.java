@@ -32,14 +32,12 @@ import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.RandomRule.Seed;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -74,7 +72,8 @@ public class GBPTreeIT
             throws IOException
     {
         pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize )
-                .withInconsistentReads( random.random() ).withAccessChecks( true ) );
+                .withInconsistentReads( random.random() )
+                .withAccessChecks( true ) );
         return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
     }
 
@@ -84,7 +83,7 @@ public class GBPTreeIT
         try
         {
             threadPool.shutdownNow();
-//            index.consistencyCheck();
+            index.consistencyCheck();
         }
         finally
         {
@@ -92,7 +91,6 @@ public class GBPTreeIT
         }
     }
 
-    @Seed( 1502808634864L )
     @Test
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
@@ -135,6 +133,7 @@ public class GBPTreeIT
                     from = second;
                     to = first;
                 }
+
                 Map<MutableLong,MutableLong> expectedHits = expectedHits( data, from, to, keyComparator );
                 try ( RawCursor<Hit<MutableLong,MutableLong>,IOException> result = index.seek( from, to ) )
                 {

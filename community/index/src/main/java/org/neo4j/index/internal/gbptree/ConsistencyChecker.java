@@ -38,8 +38,9 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
  * <ul>
+ * Generally: for leafs, both main and delta sections are checked
  * Checks:
- * <li>order of keys in isolated nodes
+ * <li>order of keys in internal nodes
  * <li>keys fit inside range given by parent node
  * <li>sibling pointers match
  * <li>GSPP
@@ -48,8 +49,10 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 class ConsistencyChecker<KEY>
 {
     private final TreeNode<KEY,?> node;
-    private final Section<KEY,?> mainContent;
+    private final Section<KEY,?> mainSection;
+    private final Section<KEY,?> deltaSection;
     private final KEY readKey;
+    private final KEY readDeltaKey;
     private final Comparator<KEY> comparator;
     private final Layout<KEY,?> layout;
     private final List<RightmostInChain> rightmostPerLevel = new ArrayList<>();
@@ -59,9 +62,11 @@ class ConsistencyChecker<KEY>
     ConsistencyChecker( TreeNode<KEY,?> node, Layout<KEY,?> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
-        this.mainContent = node.main();
+        this.mainSection = node.main();
+        this.deltaSection = node.delta();
         this.readKey = layout.newKey();
-        this.comparator = mainContent.keyComparator();
+        this.readDeltaKey = layout.newKey();
+        this.comparator = mainSection.keyComparator();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
@@ -130,7 +135,7 @@ class ConsistencyChecker<KEY>
             isInternal = node.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = mainContent.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = mainSection.childAt( cursor, 0, stableGeneration, unstableGeneration );
             }
         }
         while ( cursor.shouldRetry() );
@@ -264,15 +269,26 @@ class ConsistencyChecker<KEY>
             successor = node.successor( cursor, stableGeneration, unstableGeneration );
             successorGeneration = node.pointerGeneration( cursor, successor );
 
-            keyCount = mainContent.keyCount( cursor );
-            if ( keyCount > mainContent.internalMaxKeyCount() && keyCount > mainContent.leafMaxKeyCount() )
-            {
-                cursor.setCursorException( "Unexpected keyCount:" + keyCount );
-                continue;
-            }
-            assertKeyOrder( cursor, range, keyCount );
             isInternal = node.isInternal( cursor );
             isLeaf = node.isLeaf( cursor );
+
+            keyCount = mainSection.keyCount( cursor );
+            if ( keyCount > mainSection.internalMaxKeyCount() && keyCount > mainSection.leafMaxKeyCount() )
+            {
+                cursor.setCursorException( "Unexpected main keyCount:" + keyCount );
+                continue;
+            }
+            int deltaKeyCount = 0;
+            if ( isLeaf )
+            {
+                deltaKeyCount = deltaSection.keyCount( cursor );
+                if ( deltaKeyCount > deltaSection.leafMaxKeyCount() )
+                {
+                    cursor.setCursorException( "Unexpected delta keyCount:" + deltaKeyCount );
+                    continue;
+                }
+            }
+            assertKeyOrder( cursor, range, keyCount, deltaKeyCount );
         }
         while ( cursor.shouldRetry() );
         checkAfterShouldRetry( cursor );
@@ -361,7 +377,7 @@ class ConsistencyChecker<KEY>
             {
                 child = childAt( cursor, pos );
                 childGeneration = node.pointerGeneration( cursor, child );
-                mainContent.keyAt( cursor, readKey, pos );
+                mainSection.keyAt( cursor, readKey, pos );
             }
             while ( cursor.shouldRetry() );
             checkAfterShouldRetry( cursor );
@@ -408,33 +424,76 @@ class ConsistencyChecker<KEY>
     {
         assertNoCrashOrBrokenPointerInGSPP(
                 node, cursor, stableGeneration, unstableGeneration, "Child", node.childOffset( pos ) );
-        return mainContent.childAt( cursor, pos, stableGeneration, unstableGeneration );
+        return mainSection.childAt( cursor, pos, stableGeneration, unstableGeneration );
     }
 
-    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int keyCount )
+    private void assertKeyOrder( PageCursor cursor, KeyRange<KEY> range, int mainKeyCount, int deltaKeyCount )
     {
         KEY prev = layout.newKey();
         boolean first = true;
-        for ( int pos = 0; pos < keyCount; pos++ )
+        if ( mainKeyCount > 0 )
         {
-            mainContent.keyAt( cursor, readKey, pos );
-            if ( !range.inRange( readKey ) )
+            mainSection.keyAt( cursor, readKey, 0 );
+        }
+        if ( deltaKeyCount > 0 )
+        {
+            deltaSection.keyAt( cursor, readDeltaKey, 0 );
+        }
+        for ( int mainPos = 0, deltaPos = 0; mainPos < mainKeyCount || deltaPos < deltaKeyCount; )
+        {
+            Section<?,?> section;
+            KEY key;
+            int pos;
+            int keyCount;
+            if ( mainPos < mainKeyCount && deltaPos < deltaKeyCount )
             {
-                cursor.setCursorException( "Expected range for this node is " + range + " but found " + readKey +
-                        " in position " + pos + ", with key count " + keyCount );
+                section = layout.compare( readKey, readDeltaKey ) < 0 ? mainSection : deltaSection;
+            }
+            else
+            {
+                section = mainPos < mainKeyCount ? mainSection : deltaSection;
+            }
+
+            if ( section == mainSection )
+            {
+                key = readKey;
+                pos = mainPos++;
+                keyCount = mainKeyCount;
+            }
+            else
+            {
+                key = readDeltaKey;
+                pos = deltaPos++;
+                keyCount = deltaKeyCount;
+            }
+
+            if ( !range.inRange( key ) )
+            {
+                cursor.setCursorException( "Expected range for this node is " + range + " but found " +
+                        key + " in position " + pos + ", with key count " + keyCount + " in section " + section.type() );
             }
             if ( !first )
             {
-                if ( comparator.compare( prev, readKey ) >= 0 )
+                if ( comparator.compare( prev, key ) >= 0 )
                 {
-                    cursor.setCursorException( "Non-unique key " + readKey );
+                    cursor.setCursorException( "Non-unique key " + key + " in position " + pos + " in section " + section.type() );
                 }
             }
             else
             {
                 first = false;
             }
-            layout.copyKey( readKey, prev );
+            layout.copyKey( key, prev );
+
+            // read next in the section which's pos was incremented
+            if ( section == mainSection && mainPos < mainKeyCount )
+            {
+                mainSection.keyAt( cursor, readKey, mainPos );
+            }
+            else if ( section == deltaSection && deltaPos < deltaKeyCount )
+            {
+                deltaSection.keyAt( cursor, readDeltaKey, deltaPos );
+            }
         }
     }
 
