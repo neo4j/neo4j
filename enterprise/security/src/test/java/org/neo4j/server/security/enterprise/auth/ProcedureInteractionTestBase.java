@@ -120,9 +120,9 @@ public abstract class ProcedureInteractionTestBase<S>
     S pwdSubject;
     S noneSubject;
 
-    String[] initialUsers = { "adminSubject", "readSubject", "schemaSubject",
-        "writeSubject", "editorSubject", "pwdSubject", "noneSubject", "neo4j" };
-    String[] initialRoles = { ADMIN, ARCHITECT, PUBLISHER, EDITOR, READER, EMPTY_ROLE };
+    String[] initialUsers = {"adminSubject", "readSubject", "schemaSubject",
+            "writeSubject", "editorSubject", "pwdSubject", "noneSubject", "neo4j"};
+    String[] initialRoles = {ADMIN, ARCHITECT, PUBLISHER, EDITOR, READER, EMPTY_ROLE};
 
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
@@ -144,7 +144,7 @@ public abstract class ProcedureInteractionTestBase<S>
         return stringMap( GraphDatabaseSettings.logs_directory.name(), homeDir.toAbsolutePath().toString(),
                 SecuritySettings.procedure_roles.name(),
                 "test.allowed*Procedure:role1;test.nestedAllowedFunction:role1;" +
-                        "test.allowedFunc*:role1;test.*estedAllowedProcedure:role1");
+                "test.allowedFunc*:role1;test.*estedAllowedProcedure:role1" );
     }
 
     @Before
@@ -182,11 +182,12 @@ public abstract class ProcedureInteractionTestBase<S>
         schemaSubject = neo.login( "schemaSubject", "abc" );
         adminSubject = neo.login( "adminSubject", "abc" );
         assertEmpty( schemaSubject, "CREATE (n) SET n:A:Test:NEWNODE:VeryUniqueLabel:Node " +
-                "SET n.id = '2', n.square = '4', n.name = 'me', n.prop = 'a', n.number = '1' DELETE n" );
+                                    "SET n.id = '2', n.square = '4', n.name = 'me', n.prop = 'a', n.number = '1' " +
+                                    "DELETE n" );
         assertEmpty( writeSubject, "UNWIND range(0,2) AS number CREATE (:Node {number:number, name:'node'+number})" );
     }
 
-    protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<String, String> config ) throws Throwable;
+    protected abstract NeoInteractionLevel<S> setUpNeoServer( Map<String,String> config ) throws Throwable;
 
     @After
     public void tearDown() throws Throwable
@@ -199,7 +200,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
     protected String[] with( String[] strs, String... moreStr )
     {
-        return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
+        return Stream.concat( Arrays.stream( strs ), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
 
     List<String> listOf( String... values )
@@ -406,7 +407,7 @@ public abstract class ProcedureInteractionTestBase<S>
         assertThat( err, equalTo( "" ) );
     }
 
-    void assertSuccess( S subject, String call, Consumer<ResourceIterator<Map<String, Object>>> resultConsumer )
+    void assertSuccess( S subject, String call, Consumer<ResourceIterator<Map<String,Object>>> resultConsumer )
     {
         String err = neo.executeQuery( subject, call, null, resultConsumer );
         assertThat( err, equalTo( "" ) );
@@ -414,7 +415,7 @@ public abstract class ProcedureInteractionTestBase<S>
 
     List<Map<String,Object>> collectSuccessResult( S subject, String call )
     {
-        List<Map<String, Object>> result = new LinkedList<>();
+        List<Map<String,Object>> result = new LinkedList<>();
         assertSuccess( subject, call, r -> r.stream().forEach( result::add ) );
         return result;
     }
@@ -422,7 +423,8 @@ public abstract class ProcedureInteractionTestBase<S>
     private String assertCallEmpty( S subject, String call )
     {
         return neo.executeQuery( subject, call, null,
-                result -> {
+                result ->
+                {
                     List<Map<String,Object>> collect = result.stream().collect( toList() );
                     assertTrue( "Expected no results but got: " + collect, collect.isEmpty() );
                 } );
@@ -430,7 +432,9 @@ public abstract class ProcedureInteractionTestBase<S>
 
     private void executeQuery( S subject, String call )
     {
-        neo.executeQuery( subject, call, null, r -> {} );
+        neo.executeQuery( subject, call, null, r ->
+        {
+        } );
     }
 
     boolean userHasRole( String user, String role ) throws InvalidArgumentsException
@@ -438,12 +442,12 @@ public abstract class ProcedureInteractionTestBase<S>
         return userManager.getRoleNamesForUser( user ).contains( role );
     }
 
-    List<Object> getObjectsAsList( ResourceIterator<Map<String, Object>> r, String key )
+    List<Object> getObjectsAsList( ResourceIterator<Map<String,Object>> r, String key )
     {
         return r.stream().map( s -> s.get( key ) ).collect( toList() );
     }
 
-    void assertKeyIs( ResourceIterator<Map<String, Object>> r, String key, String... items )
+    void assertKeyIs( ResourceIterator<Map<String,Object>> r, String key, String... items )
     {
         assertKeyIsArray( r, key, items );
     }
@@ -459,12 +463,12 @@ public abstract class ProcedureInteractionTestBase<S>
     static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
             Map<String,Object> expected )
     {
-        List<Map<String, Object>> result = r.stream().collect( toList() );
+        List<Map<String,Object>> result = r.stream().collect( toList() );
 
         assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
                 expected.size(), result.size() );
 
-        for ( Map<String, Object> row : result )
+        for ( Map<String,Object> row : result )
         {
             String key = (String) row.get( keyKey );
             assertThat( expected, hasKey( key ) );
@@ -496,7 +500,7 @@ public abstract class ProcedureInteractionTestBase<S>
         userThread.executeCreateNode( threading(), subject );
         latch.startAndWaitForAllToStart();
 
-        assertEmpty( adminSubject, "CALL " + format(procedure, neo.nameOf( subject ) ) );
+        assertEmpty( adminSubject, "CALL " + format( procedure, neo.nameOf( subject ) ) );
 
         Map<String,Long> transactionsByUser = countTransactionsByUsername();
 
@@ -512,12 +516,12 @@ public abstract class ProcedureInteractionTestBase<S>
     private Map<String,Long> countTransactionsByUsername()
     {
         return EnterpriseBuiltInDbmsProcedures.countTransactionByUsername(
-                    EnterpriseBuiltInDbmsProcedures.getActiveTransactions(
-                            neo.getLocalGraph().getDependencyResolver()
-                    ).stream()
-                            .filter( tx -> !tx.terminationReason().isPresent() )
-                            .map( tx -> tx.securityContext().subject().username() )
-                ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
+                EnterpriseBuiltInDbmsProcedures.getActiveTransactions(
+                        neo.getLocalGraph().getDependencyResolver()
+                ).stream()
+                        .filter( tx -> !tx.terminationReason().isPresent() )
+                        .map( tx -> tx.securityContext().subject().username() )
+        ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
     }
 
     Map<String,Long> countBoltConnectionsByUsername()
@@ -530,7 +534,7 @@ public abstract class ProcedureInteractionTestBase<S>
                         .stream()
                         .filter( session -> !session.willTerminate() )
                         .map( ManagedBoltStateMachine::owner )
-                ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
+        ).collect( Collectors.toMap( r -> r.username, r -> r.connectionCount ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -829,7 +833,7 @@ public abstract class ProcedureInteractionTestBase<S>
                 @Name( "nestedFunction" ) String nestedFunction
         )
         {
-            Result result = db.execute( "RETURN " + nestedFunction + " AS value");
+            Result result = db.execute( "RETURN " + nestedFunction + " AS value" );
             return result.next().get( "value" ).toString();
         }
     }
