@@ -31,16 +31,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
-import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
-import org.neo4j.cluster.protocol.atomicbroadcast.Payload;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher;
@@ -70,11 +71,20 @@ public class HardKillIT
         HighlyAvailableGraphDatabase dbWithId2 = null;
         HighlyAvailableGraphDatabase dbWithId3 = null;
         HighlyAvailableGraphDatabase oldMaster = null;
+
+        int clusterPort1 = PortAuthority.allocatePort();
+        int clusterPort2 = PortAuthority.allocatePort();
+        int clusterPort3 = PortAuthority.allocatePort();
+
+        int haPort1 = PortAuthority.allocatePort();
+        int haPort2 = PortAuthority.allocatePort();
+        int haPort3 = PortAuthority.allocatePort();
+
         try
         {
-            proc = run( 1 );
-            dbWithId2 = startDb( 2, path( 2 ) );
-            dbWithId3 = startDb( 3, path( 3 ) );
+            proc = run( 1, clusterPort1, haPort1, clusterPort1, clusterPort2 );
+            dbWithId2 = startDb( 2, path( 2 ), clusterPort2, haPort2, clusterPort1, clusterPort2 );
+            dbWithId3 = startDb( 3, path( 3 ), clusterPort3, haPort3, clusterPort1, clusterPort2 );
 
             waitUntilAllProperlyAvailable( dbWithId2, 1, MASTER, 2, SLAVE, 3, SLAVE );
             waitUntilAllProperlyAvailable( dbWithId3, 1, MASTER, 2, SLAVE, 3, SLAVE );
@@ -113,7 +123,7 @@ public class HardKillIT
             waitUntilAllProperlyAvailable( dbWithId2, 1, UNKNOWN, 2, MASTER, 3, SLAVE );
             waitUntilAllProperlyAvailable( dbWithId3, 1, UNKNOWN, 2, MASTER, 3, SLAVE );
 
-            oldMaster = startDb( 1, path( 1 ) );
+            oldMaster = startDb( 1, path( 1 ), clusterPort1, haPort1, clusterPort1, clusterPort2 );
             long oldMasterNode = createNamedNode( oldMaster, "Old master" );
             assertEquals( oldMasterNode, getNamedNode( dbWithId2, "Old master" ) );
         }
@@ -166,12 +176,16 @@ public class HardKillIT
         }
     }
 
-    private Process run( int machineId ) throws IOException
+    private Process run( int machineId, int clusterPort, int haPort, int initialHost1, int initialHost2 ) throws IOException
     {
         List<String> allArgs = new ArrayList<>( Arrays.asList( "java", "-cp",
                 System.getProperty( "java.class.path" ), "-Djava.awt.headless=true", HardKillIT.class.getName() ) );
         allArgs.add( "" + machineId );
         allArgs.add( path( machineId ).getAbsolutePath() );
+        allArgs.add( String.valueOf( clusterPort ) );
+        allArgs.add( String.valueOf( haPort ) );
+        allArgs.add( String.valueOf( initialHost1 ) );
+        allArgs.add( String.valueOf( initialHost2 ) );
 
         Process process = Runtime.getRuntime().exec( allArgs.toArray( new String[allArgs.size()] ) );
         processHandler = new ProcessStreamHandler( process, false );
@@ -184,7 +198,13 @@ public class HardKillIT
      */
     public static void main( String[] args ) throws InterruptedException
     {
-        HighlyAvailableGraphDatabase db = startDb( Integer.parseInt( args[0] ), new File( args[1] ) );
+        int serverId = Integer.parseInt( args[0] );
+        File path = new File( args[1] );
+        int clusterPort = Integer.parseInt( args[2] );
+        int haPort = Integer.parseInt( args[3] );
+        int initialHost1 = Integer.parseInt( args[4] );
+        int initialHost2 = Integer.parseInt( args[5] );
+        HighlyAvailableGraphDatabase db = startDb( serverId, path, clusterPort, haPort, initialHost1, initialHost2 );
         waitUntilAllProperlyAvailable( db, 1, MASTER, 2, SLAVE, 3, SLAVE );
     }
 
@@ -192,7 +212,7 @@ public class HardKillIT
             throws InterruptedException
     {
         ClusterMembers members = db.getDependencyResolver().resolveDependency( ClusterMembers.class );
-        long endTime = currentTimeMillis() + SECONDS.toMillis( 60 );
+        long endTime = currentTimeMillis() + SECONDS.toMillis( 120 );
         Map<Integer,String> expectedStates = toExpectedStatesMap( expected );
         while ( currentTimeMillis() < endTime && !allMembersAreAsExpected( members, expectedStates ) )
         {
@@ -232,17 +252,18 @@ public class HardKillIT
         return expectedStates;
     }
 
-    private static HighlyAvailableGraphDatabase startDb( int serverId, File path )
+    private static HighlyAvailableGraphDatabase startDb( int serverId, File path, int clusterPort, int haPort, int initialHost1, int initialHost2 )
     {
         return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( path )
-                .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:7102,127.0.0.1:7103" )
-                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + (7101 + serverId) )
+                .setConfig( ClusterSettings.initial_hosts, String.format( "127.0.0.1:%d,127.0.0.1:%d", initialHost1, initialHost2 ) )
+                .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
                 .setConfig( ClusterSettings.server_id, "" + serverId )
                 .setConfig( ClusterSettings.heartbeat_timeout, "5s" )
                 .setConfig( ClusterSettings.default_timeout, "1s" )
-                .setConfig( HaSettings.ha_server, ":" + (7501 + serverId) )
+                .setConfig( HaSettings.ha_server, ":" + haPort )
                 .setConfig( HaSettings.tx_push_factor, "0" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
                 .newGraphDatabase();
     }
 

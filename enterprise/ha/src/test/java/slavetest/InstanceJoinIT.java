@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
@@ -179,6 +180,7 @@ public class InstanceJoinIT
                 .setConfig( ClusterSettings.server_id, i + "" )
                 .setConfig( HaSettings.ha_server, "127.0.0.1:" + haPort )
                 .setConfig( HaSettings.pull_interval, "0ms" )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .setConfig( additionalConfig )
                 .newGraphDatabase();
 

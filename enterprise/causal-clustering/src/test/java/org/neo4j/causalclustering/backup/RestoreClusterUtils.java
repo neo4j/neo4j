@@ -21,6 +21,7 @@ package org.neo4j.causalclustering.backup;
 
 import java.io.File;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -43,6 +44,7 @@ public class RestoreClusterUtils
                 .setFileSystem( fileSystem )
                 .newEmbeddedDatabaseBuilder( existingDbDir )
                 .setConfig( GraphDatabaseSettings.record_format, recordFormat )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                 .newGraphDatabase();
 
         for ( int i = 0; i < (nodesToCreate / 2); i++ )

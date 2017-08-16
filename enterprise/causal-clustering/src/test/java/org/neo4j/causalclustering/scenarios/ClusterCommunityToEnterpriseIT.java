@@ -26,6 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryService;
@@ -33,6 +34,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.test.DbRepresentation;
@@ -41,6 +43,7 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.Collections.emptyMap;
 
+import static java.util.Collections.singletonMap;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 
 public class ClusterCommunityToEnterpriseIT
@@ -78,9 +81,12 @@ public class ClusterCommunityToEnterpriseIT
         File storeDir = testDir.makeGraphDbDir();
         GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
                 .setConfig( GraphDatabaseSettings.allow_store_upgrade, Settings.TRUE )
-                .setConfig( GraphDatabaseSettings.record_format, HighLimit.NAME ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.record_format, HighLimit.NAME )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
+                .newGraphDatabase();
         database.shutdown();
-        DbRepresentation before = DbRepresentation.of( storeDir );
+        Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+        DbRepresentation before = DbRepresentation.of( storeDir, config );
 
         // when
         fsa.copyRecursively( storeDir, cluster.getCoreMemberById( 0 ).storeDir() );

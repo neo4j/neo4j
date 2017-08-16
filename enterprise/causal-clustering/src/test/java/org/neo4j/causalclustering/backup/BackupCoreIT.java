@@ -27,15 +27,18 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.CoreGraphDatabase;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -121,6 +124,11 @@ public class BackupCoreIT
 
     static Config getConfig()
     {
-        return Config.defaults( GraphDatabaseSettings.record_format, Standard.LATEST_NAME );
+        Map<String, String> config = MapUtil.stringMap(
+                GraphDatabaseSettings.record_format.name(), Standard.LATEST_NAME,
+                OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort()
+        );
+
+        return Config.defaults( config );
     }
 }

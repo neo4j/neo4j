@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.ha;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -61,6 +71,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -85,16 +96,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageEngine;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableMap;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.ArrayUtil.contains;
-import static org.neo4j.helpers.collection.Iterables.asList;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 /**
  * Utility for spinning up an HA cluster inside the same JVM. Only intended for being used in tests
@@ -935,6 +936,13 @@ public class ClusterManager
                     new GraphDatabaseSettings.BoltConnector( "bolt" ).advertised_address ).toString();
         }
 
+        public HostnamePort getBackupAddress( HighlyAvailableGraphDatabase hagdb )
+        {
+            return hagdb.getDependencyResolver()
+                    .resolveDependency( Config.class )
+                    .get( OnlineBackupSettings.online_backup_server );
+        }
+
         /**
          * @return the current master in the cluster.
          * @throws IllegalStateException if there's no current master.
@@ -1192,12 +1200,15 @@ public class ClusterManager
             else
             {
                 URI clusterUri = clusterUri( member );
-                Config config = Config.defaults( MapUtil.stringMap(
-                        ClusterSettings.cluster_name.name(), name,
-                        ClusterSettings.initial_hosts.name(), initialHosts,
-                        ClusterSettings.server_id.name(), serverId + "",
-                        ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort() ) );
-
+                Config config = Config.defaults(
+                        MapUtil.stringMap(
+                            ClusterSettings.cluster_name.name(), name,
+                            ClusterSettings.initial_hosts.name(), initialHosts,
+                            ClusterSettings.server_id.name(), serverId + "",
+                            ClusterSettings.cluster_server.name(), "0.0.0.0:" + clusterUri.getPort(),
+                            OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE
+                        )
+                );
                 LifeSupport clusterClientLife = new LifeSupport();
                 LogService logService = NullLogService.getInstance();
                 ClusterClientModule clusterClientModule = new ClusterClientModule( clusterClientLife,

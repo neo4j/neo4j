@@ -22,15 +22,18 @@ package org.neo4j.kernel.internal;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
+import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.ManagedResource;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertSame;
 
-public class HaKernelDataTest
+public class HaKernelDataIT
 {
     @Test
     public void shouldReturnHaGraphDbFromKernelData() throws Exception
@@ -49,10 +52,15 @@ public class HaKernelDataTest
         @Override
         protected HighlyAvailableGraphDatabase createResource( TestDirectory dir ) throws Exception
         {
+            int clusterPort = PortAuthority.allocatePort();
+
             return (HighlyAvailableGraphDatabase) new TestHighlyAvailableGraphDatabaseFactory().
                     newEmbeddedDatabaseBuilder( dir.directory().getAbsoluteFile() )
                     .setConfig( ClusterSettings.server_id, "1" )
-                    .setConfig( ClusterSettings.initial_hosts, ":5001" )
+                    .setConfig( ClusterSettings.cluster_server, "127.0.0.1:" + clusterPort )
+                    .setConfig( ClusterSettings.initial_hosts, "127.0.0.1:" + clusterPort )
+                    .setConfig( HaSettings.ha_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                    .setConfig( OnlineBackupSettings.online_backup_enabled, Boolean.FALSE.toString() )
                     .newGraphDatabase();
         }
 
