@@ -44,6 +44,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave.Monitor;
@@ -364,7 +365,9 @@ public class BranchedDataIT
 
     private GraphDatabaseService startGraphDatabaseService( File storeDir )
     {
-        return new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
     }
 
     private static class BranchMonitor implements Monitor
