@@ -643,7 +643,7 @@ public class SchemaImpl implements Schema
         @Override
         public void assertInOpenTransaction()
         {
-            ctxSupplier.get();
+            ctxSupplier.get().close();
         }
     }
 }
