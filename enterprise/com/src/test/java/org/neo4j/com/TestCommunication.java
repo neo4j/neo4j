@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.yield;
+import static java.lang.Thread.sleep;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -289,10 +289,10 @@ public class TestCommunication
         }
         assertTrue( writer.getSizeRead() >= failAtSize );
 
-        long maxWaitUntil = System.currentTimeMillis() + 2 * 1000;
+        long maxWaitUntil = System.currentTimeMillis() + 10_000L;
         while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil )
         {
-            yield();
+            sleep( 10 );
         }
         assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
         assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
