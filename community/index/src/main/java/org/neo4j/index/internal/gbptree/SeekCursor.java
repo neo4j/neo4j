@@ -502,12 +502,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         while ( isInternal );
 
-        System.out.println( "Starting seek at pos:" + pos + " keyCount:" + keyCount + " deltaPos:" + deltaPos + " deltaKeyCount:" + deltaKeyCount + " @ " + cursor.getCurrentPageId() );
-
         // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
         pos -= stride;
         section = mainSection;
-
 
         if ( !seekForward )
         {
@@ -651,23 +648,19 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             int sectionPos = 0;
             int sectionKeyCount = 0;
             KEY sectionKey = mutableKey;
-            System.out.println( "pos:" + pos + " keyCount:" + keyCount + " deltaPos:" + deltaPos + " deltaKeyCount:" + deltaKeyCount + " @ " + cursor.getCurrentPageId() );
             if ( readMain || readDelta )
             {
                 if ( readMain && !readDelta )
                 {
-                    System.out.println( "  Read only main " + mutableKey );
                     section = mainSection;
                 }
                 else if ( !readMain && readDelta )
                 {
-                    System.out.println( "  Read only delta " + mutableDeltaKey );
                     section = deltaSection;
                 }
                 else
                 {
                     section = layout.compare( mutableKey, mutableDeltaKey ) < 0 == seekForward ? mainSection : deltaSection;
-                    System.out.println( "  Read both main:" + mutableKey + " delta:" + mutableDeltaKey + " and selected section " + (section == mainSection ? "main" : "delta") );
                 }
 
                 if ( section == mainSection )
@@ -681,7 +674,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     sectionPos = deltaPos;
                     sectionKeyCount = deltaKeyCount;
                     sectionKey = mutableDeltaKey;
-                    System.out.println( "  Picked DELTA " + mutableDeltaKey );
                 }
             }
 

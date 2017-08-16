@@ -110,7 +110,7 @@ abstract class TreeNode<KEY,VALUE>
 
     // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
 
-    static abstract class Section<KEY,VALUE>
+    abstract static class Section<KEY,VALUE>
     {
         abstract Comparator<KEY> keyComparator();
 

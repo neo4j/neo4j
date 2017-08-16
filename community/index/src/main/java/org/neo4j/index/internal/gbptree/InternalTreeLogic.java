@@ -660,7 +660,7 @@ class InternalTreeLogic<KEY,VALUE>
                     "deltaKeyCount:" + deltaKeyCount + " max:" + leafMaxDeltaKeyCount;
                 if ( deltaKeyCount == leafMaxDeltaKeyCount )
                 {
-                    consolidateDeltas( cursor, keyCount, deltaKeyCount );
+                    keyCount = consolidateDeltas( cursor, keyCount, deltaKeyCount );
                     deltaKeyCount = 0;
                     deltaPos = 0;
                 }
@@ -695,11 +695,9 @@ class InternalTreeLogic<KEY,VALUE>
             if ( leafMaxDeltaKeyCount > 0 && keyCount - pos > deltaKeyCount )
             {
                 // It seems to be quite a bit to the left, therefore it's better to put it in the delta section
-                System.out.println( "Write " + key + " into delta in " + cursor.getCurrentPageId() + " will be keyCount " + (deltaSection.keyCount( cursor ) + 1) );
                 return deltaSection;
             }
             // It's to the far right in this leaf, just insert it right in to the main section
-            System.out.println( "Write " + key + " into main in " + cursor.getCurrentPageId() + " will be keyCount " + (keyCount + 1) );
             return mainSection;
         }
         return null;
@@ -712,7 +710,6 @@ class InternalTreeLogic<KEY,VALUE>
             return keyCount;
         }
 
-        System.out.println( "Consolidating " + cursor.getCurrentPageId() );
         // read in delta section into memory
         for ( int i = 0; i < deltaKeyCount; i++ )
         {
@@ -1317,11 +1314,9 @@ class InternalTreeLogic<KEY,VALUE>
             try ( PageCursor leftSiblingCursor = cursor.openLinkedCursor( GenerationSafePointerPair.pointer( leftSibling ) ) )
             {
                 leftSiblingCursor.next();
-                int leftSiblingKeyCountBeforeConsolidate = mainSection.keyCount( leftSiblingCursor );
-                int leftSiblingDeltaKeyCountBeforeConsolidate = deltaSection.keyCount( leftSiblingCursor );
-                consolidateDeltas( leftSiblingCursor, leftSiblingKeyCountBeforeConsolidate,
-                        leftSiblingDeltaKeyCountBeforeConsolidate );
-                int leftSiblingKeyCount = leftSiblingKeyCountBeforeConsolidate + leftSiblingDeltaKeyCountBeforeConsolidate;
+                int leftSiblingKeyCount = mainSection.keyCount( leftSiblingCursor );
+                leftSiblingKeyCount = consolidateDeltas( leftSiblingCursor, leftSiblingKeyCount,
+                        deltaSection.keyCount( leftSiblingCursor ));
 
                 if ( keyCount + leftSiblingKeyCount >= leafMaxKeyCount )
                 {
@@ -1345,7 +1340,8 @@ class InternalTreeLogic<KEY,VALUE>
             {
                 rightSiblingCursor.next();
                 int rightSiblingKeyCount = mainSection.keyCount( rightSiblingCursor );
-                consolidateDeltas( rightSiblingCursor, rightSiblingKeyCount, deltaSection.keyCount( rightSiblingCursor ) );
+                rightSiblingKeyCount = consolidateDeltas( rightSiblingCursor, rightSiblingKeyCount,
+                        deltaSection.keyCount( rightSiblingCursor ) );
 
                 if ( keyCount + rightSiblingKeyCount <= leafMaxKeyCount )
                 {

@@ -132,8 +132,6 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         this.offsetValueStart = offsetKeyEnd;
         this.offsetValueEnd = offsetValueStart + leafMaxKeyCount * valueSize;
         this.offsetChildStart = HEADER_LENGTH + internalMaxKeyCount * keySize;
-
-        System.out.println( "V3 " + leafMaxKeyCount + " " + deltaLeafMaxKeyCount );
     }
 
     @Override
