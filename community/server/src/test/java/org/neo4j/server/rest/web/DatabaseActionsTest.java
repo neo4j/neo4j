@@ -102,7 +102,7 @@ public class DatabaseActionsTest
     public static void createDb() throws IOException
     {
         graph = (GraphDatabaseFacade) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.tx_id_batch_size, "1" )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );

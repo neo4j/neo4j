@@ -197,7 +197,7 @@ public class DatabaseRebuildToolTest
     private void databaseWithSomeTransactions( File dir )
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir )
-                .setConfig( GraphDatabaseSettings.tx_id_batch_size, "1" )
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         Node[] nodes = new Node[10];
         for ( int i = 0; i < nodes.length; i++ )

@@ -27,7 +27,7 @@ import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandCreationContext;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
@@ -73,7 +73,7 @@ public class ReuseExcessBatchIdsOnRestartIT
     {
         // given
         int threads = Runtime.getRuntime().availableProcessors();
-        int batchSize = RecordStorageCommandCreationContext.DEFAULT_ID_BATCH_SIZE;
+        int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
         ExecutorService executor = Executors.newFixedThreadPool( threads );
         boolean[] createdIds = new boolean[threads * batchSize];
         for ( int i = 0; i < threads; i++ )

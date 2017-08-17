@@ -182,7 +182,7 @@ public class JavaProceduresTest
     {
         // When
         try ( ServerControls server = TestServerBuilders.newInProcessBuilder()
-                .withConfig( GraphDatabaseSettings.tx_id_batch_size, "1" )
+                .withConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .withProcedure( MyProceduresUsingMyCoreAPI.class ).newServer() )
         {
             // Then

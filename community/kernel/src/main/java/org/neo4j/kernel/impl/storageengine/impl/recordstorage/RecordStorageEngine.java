@@ -230,7 +230,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
-            txIdBatchSize = config.get( GraphDatabaseSettings.tx_id_batch_size );
+            txIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
         }
         catch ( Throwable failure )
         {
@@ -244,15 +244,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
         LockService lockService = takePropertyReadLocks ? this.lockService : NO_LOCK_SERVICE;
 
-        return new Supplier<StorageStatement>()
-        {
-            @Override
-            public StorageStatement get()
-            {
-                return new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService,
-                        allocateCommandCreationContext() );
-            }
-        };
+        return () -> new StoreStatement( neoStores, indexReaderFactory, labelScanStore::newReader, lockService,
+                allocateCommandCreationContext() );
     }
 
     @Override

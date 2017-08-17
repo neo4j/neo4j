@@ -74,13 +74,13 @@ public class IdRangeIteratorTest
     {
         // given
         int rangeLength = 1024;
-        IdRangeIterator iterator = new IdRange( new long[]{7,8,9}, 1024, rangeLength ).iterator();
+        IdRangeIterator iterator = new IdRange( new long[] {7, 8, 9}, 1024, rangeLength ).iterator();
 
         // then
-        assertEquals(7, iterator.nextId());
-        assertEquals(8, iterator.nextId());
-        assertEquals(9, iterator.nextId());
-        assertEquals(1024, iterator.nextId());
+        assertEquals( 7, iterator.nextId() );
+        assertEquals( 8, iterator.nextId() );
+        assertEquals( 9, iterator.nextId() );
+        assertEquals( 1024, iterator.nextId() );
     }
 
     @Test

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -42,8 +41,6 @@ import org.neo4j.storageengine.api.lock.ResourceLocker;
  */
 public class RecordStorageCommandCreationContext implements CommandCreationContext
 {
-    public static final int DEFAULT_ID_BATCH_SIZE = Integer.parseInt( GraphDatabaseSettings.tx_id_batch_size.getDefaultValue() );
-
     private final NeoStores neoStores;
     private final Loaders loaders;
     private final RelationshipCreator relationshipCreator;

@@ -58,7 +58,7 @@ public class IdReuseTest
             // - TXB has not allocated NODE/RELATIONSHIP id batch, so does so, which is after TxA id batches.
             // - The id of next node/relationship created by TxB will not be immediately following the one created in TxA.
             // = This is fine but perhaps unexpected and tests asserting on ids being sequential will fail.
-            .withSetting( GraphDatabaseSettings.tx_id_batch_size, "1" );
+            .withSetting( GraphDatabaseSettings.record_id_batch_size, "1" );
 
     @Test
     public void shouldReuseNodeIdsFromRolledBackTransaction() throws Exception

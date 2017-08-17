@@ -21,15 +21,14 @@ package org.neo4j.kernel.impl.store.id;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.function.LongConsumer;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import static java.util.Arrays.asList;
@@ -41,8 +40,8 @@ public class RenewableBatchIdSequenceTest
     public static final int BATCH_SIZE = 5;
 
     private final IdSource idSource = new IdSource();
-    private final LongConsumer excessIds = mock( LongConsumer.class );
-    private final RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds );
+    private final List<Long> excessIds = new ArrayList<>();
+    private final RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds::add );
 
     @Test
     public void shouldRequestIdBatchFromSourceOnFirstCall() throws Exception
@@ -92,11 +91,11 @@ public class RenewableBatchIdSequenceTest
         ids.close();
 
         // then
-        for ( int i = BATCH_SIZE / 2; i < BATCH_SIZE; i++ )
+        assertEquals( BATCH_SIZE - BATCH_SIZE / 2, excessIds.size() );
+        for ( long i = BATCH_SIZE / 2; i < BATCH_SIZE; i++ )
         {
-            verify( excessIds, times( 1 ) ).accept( i );
+            assertTrue( excessIds.contains( i ) );
         }
-        verifyNoMoreInteractions( excessIds );
     }
 
     @Test
@@ -106,7 +105,7 @@ public class RenewableBatchIdSequenceTest
         ids.close();
 
         // then
-        verifyNoMoreInteractions( excessIds );
+        assertTrue( excessIds.isEmpty() );
     }
 
     @Test
@@ -122,18 +121,16 @@ public class RenewableBatchIdSequenceTest
         ids.close();
 
         // then
-        for ( int i = BATCH_SIZE / 2; i < BATCH_SIZE; i++ )
+        for ( long i = BATCH_SIZE / 2; i < BATCH_SIZE; i++ )
         {
-            verify( excessIds, times( 1 ) ).accept( i );
+            assertTrue( excessIds.remove( i ) );
         }
-        verifyNoMoreInteractions( excessIds );
-        reset( excessIds );
 
         // and when closing one more time
         ids.close();
 
         // then
-        verifyNoMoreInteractions( excessIds );
+        assertTrue( excessIds.isEmpty() );
     }
 
     @Test
@@ -146,7 +143,7 @@ public class RenewableBatchIdSequenceTest
                 new IdRange( EMPTY_LONG_ARRAY, BATCH_SIZE, 0 ),
                 new IdRange( EMPTY_LONG_ARRAY, BATCH_SIZE, BATCH_SIZE ) ).iterator();
         when( idSource.nextIdBatch( anyInt() ) ).thenAnswer( invocation -> ranges.next() );
-        RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds );
+        RenewableBatchIdSequence ids = new RenewableBatchIdSequence( idSource, BATCH_SIZE, excessIds::add );
 
         // when/then
         for ( long expectedId = 0; expectedId < BATCH_SIZE * 2; expectedId++ )

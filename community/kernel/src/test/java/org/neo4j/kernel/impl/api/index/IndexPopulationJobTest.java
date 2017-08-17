@@ -125,7 +125,7 @@ public class IndexPopulationJobTest
     public void before() throws Exception
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.tx_id_batch_size, "1" ).newGraphDatabase();
+                .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" ).newGraphDatabase();
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
