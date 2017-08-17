@@ -158,6 +158,8 @@ import org.neo4j.kernel.spi.legacyindex.IndexProviders;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
+import org.neo4j.resources.CpuClock;
+import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreReadLayer;
@@ -865,8 +867,18 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
                 autoIndexing, constraintIndexCreator,
                 legacyIndexStore );
 
+        CpuClock cpuClock = CpuClock.NOT_AVAILABLE;
+        if ( config.get( GraphDatabaseSettings.track_query_cpu_time ) )
+        {
+            cpuClock = CpuClock.CPU_CLOCK;
+        }
+        HeapAllocation heapAllocation = HeapAllocation.NOT_AVAILABLE;
+        if ( config.get( GraphDatabaseSettings.track_query_allocation ) )
+        {
+            heapAllocation = HeapAllocation.HEAP_ALLOCATION;
+        }
         QueryRegistrationOperations queryRegistrationOperations =
-                new StackingQueryRegistrationOperations( clock );
+                new StackingQueryRegistrationOperations( clock, cpuClock, heapAllocation );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,

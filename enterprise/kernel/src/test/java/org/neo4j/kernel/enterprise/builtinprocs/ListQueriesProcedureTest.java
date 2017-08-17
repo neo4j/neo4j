@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.enterprise.builtinprocs;
 
-import org.hamcrest.Matcher;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.PrintWriter;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +29,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+
+import org.hamcrest.Matcher;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
@@ -65,6 +65,9 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.cypher_hints_error;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_allocation;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.track_query_cpu_time;
+import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.rule.concurrent.ThreadingRule.waitingWhileIn;
 
 public class ListQueriesProcedureTest
@@ -77,7 +80,7 @@ public class ListQueriesProcedureTest
         {
             builder.setConfig( cypher_hints_error, "true" );
         }
-    };
+    }.startLazily();
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
 
@@ -356,6 +359,42 @@ public class ListQueriesProcedureTest
             assertThat( index, hasEntry( "label", "Node" ) );
             assertThat( index, hasEntry( "propertyKey", "value" ) );
         }
+    }
+
+    @Test
+    public void shouldDisableCpuTimeTracking() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        db.setConfig( track_query_cpu_time, FALSE );
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        {
+            data = getQueryListing( query );
+        }
+
+        // then
+        assertThat( data, hasEntry( equalTo( "cpuTimeMillis" ), nullValue() ) );
+    }
+
+    @Test
+    public void shouldDisableHeapAllocationTracking() throws Exception
+    {
+        // given
+        String query = "MATCH (n) SET n.v = n.v + 1";
+        db.setConfig( track_query_allocation, FALSE );
+        Map<String,Object> data;
+
+        // when
+        try ( Resource<Node> test = test( db::createNode, Transaction::acquireWriteLock, query ) )
+        {
+            data = getQueryListing( query );
+        }
+
+        // then
+        assertThat( data, hasEntry( equalTo( "allocatedBytes" ), nullValue() ) );
     }
 
     @Ignore
