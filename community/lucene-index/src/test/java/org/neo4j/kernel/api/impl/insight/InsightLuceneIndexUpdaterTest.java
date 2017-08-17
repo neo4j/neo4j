@@ -82,6 +82,54 @@ public class InsightLuceneIndexUpdaterTest
     }
 
     @Test
+    public void shouldRepresentPropertyChanges() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        {
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+
+                tx.success();
+            }
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.getNodeById( firstID );
+                node.setProperty( "prop", "Hah! potato!" );
+                Node node2 = db.getNodeById( secondID );
+                node2.setProperty( "prop", "This one is potato as well." );
+
+                tx.success();
+            }
+
+            try ( InsightIndexReader reader = insightIndex.getReader() )
+            {
+
+                assertFalse( reader.query( "hello" ).hasNext() );
+                assertFalse( reader.query( "zebra" ).hasNext() );
+                assertFalse( reader.query( "zedonk" ).hasNext() );
+                assertFalse( reader.query( "cross" ).hasNext() );
+                assertEquals( firstID, reader.query( "hah" ).next() );
+                assertEquals( secondID, reader.query( "well" ).next() );
+                PrimitiveLongIterator iterator = reader.query( "potato" );
+                assertEquals( firstID, iterator.next() );
+                assertEquals( secondID, iterator.next() );
+            }
+        }
+    }
+
+    @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
@@ -122,7 +170,7 @@ public class InsightLuceneIndexUpdaterTest
     }
 
     @Test
-    public void shouldOrderResults() throws Exception
+    public void shouldSearchAcrossMultipleProperties() throws Exception
     {
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop", "prop2" ) )
@@ -139,11 +187,11 @@ public class InsightLuceneIndexUpdaterTest
                 node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
                 Node node2 = db.createNode( LABEL );
                 secondID = node2.getId();
-                node2.setProperty( "prop", "tomtar tomtar tomtar tomtar tomtar." );
-                node2.setProperty( "prop2", "tomtar tomtar tomtar tomtar tomtar tomtar karl" );
+                node2.setProperty( "prop", "Olof och Hans" );
+                node2.setProperty( "prop2", "karl" );
                 Node node3 = db.createNode( LABEL );
                 thirdID = node3.getId();
-                node3.setProperty( "prop", "Tomtar som tomtar ser upp till tomtar som inte tomtar." );
+                node3.setProperty( "prop", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
 
                 tx.success();
             }
@@ -152,8 +200,8 @@ public class InsightLuceneIndexUpdaterTest
             {
 
                 PrimitiveLongIterator iterator = reader.query( "tomtar", "karl" );
-                assertEquals( secondID, iterator.next() );
                 assertEquals( firstID, iterator.next() );
+                assertEquals( secondID, iterator.next() );
                 assertEquals( thirdID, iterator.next() );
             }
         }

@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 
@@ -42,28 +44,46 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
     public Object beforeCommit( TransactionData data ) throws Exception
     {
         Map<Long,Map<String,Object>> map = new HashMap<Long,Map<String,Object>>();
-        data.createdNodes().forEach( node -> map.put( node.getId(), node.getAllProperties() ) );
+//        data.createdNodes().forEach( node -> map.put( node.getId(), node.getAllProperties() ) );
+        data.removedNodeProperties().forEach( propertyEntry -> {
+            try
+            {
+                map.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
+            }
+            catch ( NotFoundException e )
+            {
+                //This means that the node was deleted.
+            }
+        } );
+        data.assignedNodeProperties().forEach( propertyEntry -> map.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
         return map;
     }
 
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
-        writeNodeData( data.createdNodes(), (Map<Long,Map<String,Object>>) state );
+        Map<Long,Map<String,Object>> mapMap = (Map<Long,Map<String,Object>>) state;
+//        writeNodeData( data.createdNodes(), mapMap );
+        updatePropertyData( data.removedNodeProperties(), mapMap );
+        updatePropertyData( data.assignedNodeProperties(), mapMap );
         deleteNodeData( data.deletedNodes() );
     }
 
-    private void writeNodeData( Iterable<Node> propertyEntries, Map<Long,Map<String,Object>> state )
+    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state )
     {
-        for ( Node node : propertyEntries )
+        for ( PropertyEntry<Node> propertyEntry : propertyEntries )
         {
+            long nodeId = propertyEntry.entity().getId();
+            Map<String,Object> allProperties = state.get( nodeId );
+            if ( allProperties == null )
+            {
+                return;
+            }
 
-            Map<String,Object> allProperties = state.get( node.getId() );
-
-            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( node.getId(), allProperties );
+            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
             try
             {
-                writableDatabaseInsightIndex.getIndexWriter().addDocument( document );
+                writableDatabaseInsightIndex.getIndexWriter().updateDocument( LuceneInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
             }
             catch ( IOException e )
             {
@@ -79,6 +99,33 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
             e.printStackTrace();
         }
     }
+
+//    private void writeNodeData( Iterable<Node> nodes, Map<Long,Map<String,Object>> state )
+//    {
+//        for ( Node node : nodes )
+//        {
+//
+//            Map<String,Object> allProperties = state.get( node.getId() );
+//
+//            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( node.getId(), allProperties );
+//            try
+//            {
+//                writableDatabaseInsightIndex.getIndexWriter().addDocument( document );
+//            }
+//            catch ( IOException e )
+//            {
+//                e.printStackTrace();
+//            }
+//        }
+//        try
+//        {
+//            writableDatabaseInsightIndex.maybeRefreshBlocking();
+//        }
+//        catch ( IOException e )
+//        {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void deleteNodeData( Iterable<Node> nodes )
     {
