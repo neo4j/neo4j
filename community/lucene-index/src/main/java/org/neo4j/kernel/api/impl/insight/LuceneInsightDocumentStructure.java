@@ -36,7 +36,7 @@ import static org.apache.lucene.document.Field.Store.YES;
 
 class LuceneInsightDocumentStructure
 {
-    static final String NODE_ID_KEY = "id";
+    static final String ID_KEY = "id";
 
     private static final ThreadLocal<DocWithId> perThreadDocument = ThreadLocal.withInitial( DocWithId::new );
 
@@ -44,23 +44,23 @@ class LuceneInsightDocumentStructure
     {
     }
 
-    private static DocWithId reuseDocument( long nodeId )
+    private static DocWithId reuseDocument( long id )
     {
         DocWithId doc = perThreadDocument.get();
-        doc.setId( nodeId );
+        doc.setId( id );
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long nodeId, Map<String,Object> values )
+    public static Document documentRepresentingProperties( long id, Map<String,Object> values )
     {
-        DocWithId document = reuseDocument( nodeId );
+        DocWithId document = reuseDocument( id );
         document.setValues( values );
         return document.document;
     }
 
     public static long getNodeId( Document from )
     {
-        return Long.parseLong( from.get( NODE_ID_KEY ) );
+        return Long.parseLong( from.get( ID_KEY ) );
     }
 
     static Field encodeValueField( String propertyKey, Value value )
@@ -78,8 +78,8 @@ class LuceneInsightDocumentStructure
 
         private DocWithId()
         {
-            idField = new StringField( NODE_ID_KEY, "", YES );
-            idValueField = new NumericDocValuesField( NODE_ID_KEY, 0L );
+            idField = new StringField( ID_KEY, "", YES );
+            idValueField = new NumericDocValuesField( ID_KEY, 0L );
             document = new Document();
             document.add( idField );
             document.add( idValueField );
@@ -108,7 +108,7 @@ class LuceneInsightDocumentStructure
             {
                 IndexableField field = it.next();
                 String fieldName = field.name();
-                if ( !fieldName.equals( NODE_ID_KEY ) )
+                if ( !fieldName.equals( ID_KEY ) )
                 {
                     it.remove();
                 }
@@ -117,9 +117,9 @@ class LuceneInsightDocumentStructure
 
     }
 
-    public static Term newTermForChangeOrRemove( long nodeId )
+    public static Term newTermForChangeOrRemove( long id )
     {
-        return new Term( NODE_ID_KEY, "" + nodeId );
+        return new Term( ID_KEY, "" + id );
     }
 
 }

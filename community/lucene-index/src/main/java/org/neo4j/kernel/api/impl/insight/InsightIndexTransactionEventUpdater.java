@@ -33,43 +33,64 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 
 public class InsightIndexTransactionEventUpdater implements TransactionEventHandler<Object>
 {
-    private WritableDatabaseInsightIndex writableDatabaseInsightIndex;
+    private final WritableDatabaseInsightIndex nodeIndex;
+    private final WritableDatabaseInsightIndex relationshipIndex;
 
-    InsightIndexTransactionEventUpdater( WritableDatabaseInsightIndex writableDatabaseInsightIndex )
+    InsightIndexTransactionEventUpdater( WritableDatabaseInsightIndex nodeIndex, WritableDatabaseInsightIndex relationshipIndex )
     {
-        this.writableDatabaseInsightIndex = writableDatabaseInsightIndex;
+        this.nodeIndex = nodeIndex;
+        this.relationshipIndex = relationshipIndex;
     }
 
     @Override
     public Object beforeCommit( TransactionData data ) throws Exception
     {
-        Map<Long,Map<String,Object>> map = new HashMap<Long,Map<String,Object>>();
-//        data.createdNodes().forEach( node -> map.put( node.getId(), node.getAllProperties() ) );
+        Map<Long,Map<String,Object>> nodeMap = new HashMap<Long,Map<String,Object>>();
         data.removedNodeProperties().forEach( propertyEntry -> {
             try
             {
-                map.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
+                nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
             }
             catch ( NotFoundException e )
             {
                 //This means that the node was deleted.
             }
         } );
-        data.assignedNodeProperties().forEach( propertyEntry -> map.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
-        return map;
+        data.assignedNodeProperties().forEach( propertyEntry -> nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
+
+        Map<Long,Map<String,Object>> relationshipMap = new HashMap<Long,Map<String,Object>>();
+
+        data.removedRelationshipProperties().forEach( propertyEntry -> {
+            try
+            {
+                relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
+            }
+            catch ( NotFoundException e )
+            {
+                //This means that the relationship was deleted.
+            }
+        } );
+        data.assignedRelationshipProperties().forEach(
+                propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
+        return new Map[]{nodeMap, relationshipMap};
     }
 
     @Override
     public void afterCommit( TransactionData data, Object state )
     {
-        Map<Long,Map<String,Object>> mapMap = (Map<Long,Map<String,Object>>) state;
-//        writeNodeData( data.createdNodes(), mapMap );
-        updatePropertyData( data.removedNodeProperties(), mapMap );
-        updatePropertyData( data.assignedNodeProperties(), mapMap );
-        deleteNodeData( data.deletedNodes() );
+        //update node index
+        Map<Long,Map<String,Object>> nodeMap = ((Map<Long,Map<String,Object>>[]) state)[0];
+        updatePropertyData( data.removedNodeProperties(), nodeMap, nodeIndex );
+        updatePropertyData( data.assignedNodeProperties(), nodeMap, nodeIndex );
+        deleteIndexData( data.deletedNodes(), nodeIndex );
+        //update relationship index
+        Map<Long,Map<String,Object>> relationshipMap = ((Map<Long,Map<String,Object>>[]) state)[1];
+        updatePropertyData( data.removedNodeProperties(), relationshipMap, relationshipIndex );
+        updatePropertyData( data.assignedNodeProperties(), relationshipMap, relationshipIndex );
+        deleteIndexData( data.deletedNodes(), nodeIndex );
     }
 
-    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state )
+    private void updatePropertyData( Iterable<PropertyEntry<Node>> propertyEntries, Map<Long,Map<String,Object>> state, WritableDatabaseInsightIndex nodeIndex )
     {
         for ( PropertyEntry<Node> propertyEntry : propertyEntries )
         {
@@ -83,7 +104,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
             Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( nodeId, allProperties );
             try
             {
-                writableDatabaseInsightIndex.getIndexWriter().updateDocument( LuceneInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
+                nodeIndex.getIndexWriter().updateDocument( LuceneInsightDocumentStructure.newTermForChangeOrRemove( nodeId ), document );
             }
             catch ( IOException e )
             {
@@ -92,7 +113,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         }
         try
         {
-            writableDatabaseInsightIndex.maybeRefreshBlocking();
+            nodeIndex.maybeRefreshBlocking();
         }
         catch ( IOException e )
         {
@@ -100,40 +121,13 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         }
     }
 
-//    private void writeNodeData( Iterable<Node> nodes, Map<Long,Map<String,Object>> state )
-//    {
-//        for ( Node node : nodes )
-//        {
-//
-//            Map<String,Object> allProperties = state.get( node.getId() );
-//
-//            Document document = LuceneInsightDocumentStructure.documentRepresentingProperties( node.getId(), allProperties );
-//            try
-//            {
-//                writableDatabaseInsightIndex.getIndexWriter().addDocument( document );
-//            }
-//            catch ( IOException e )
-//            {
-//                e.printStackTrace();
-//            }
-//        }
-//        try
-//        {
-//            writableDatabaseInsightIndex.maybeRefreshBlocking();
-//        }
-//        catch ( IOException e )
-//        {
-//            e.printStackTrace();
-//        }
-//    }
-
-    private void deleteNodeData( Iterable<Node> nodes )
+    private void deleteIndexData( Iterable<Node> nodes, WritableDatabaseInsightIndex nodeIndex )
     {
         for ( Node node : nodes )
         {
             try
             {
-                writableDatabaseInsightIndex.getIndexWriter().deleteDocuments( LuceneInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
+                nodeIndex.getIndexWriter().deleteDocuments( LuceneInsightDocumentStructure.newTermForChangeOrRemove( node.getId() ) );
             }
             catch ( IOException e )
             {
@@ -142,7 +136,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         }
         try
         {
-            writableDatabaseInsightIndex.maybeRefreshBlocking();
+            nodeIndex.maybeRefreshBlocking();
         }
         catch ( IOException e )
         {
