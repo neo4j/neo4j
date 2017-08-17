@@ -40,6 +40,7 @@ import org.neo4j.time.FakeClock;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.isA;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -90,8 +91,13 @@ public class ElectionTest
         assertEquals( 1, raft.term() );
         assertEquals( LEADER, raft.currentRole() );
 
-        verify( outbound ).send( eq( member1 ), isA( RaftMessages.AppendEntries.Request.class ) );
-        verify( outbound ).send( eq( member2 ), isA( RaftMessages.AppendEntries.Request.class ) );
+        /*
+         * We require atLeast here because RaftMachine has its own scheduled service, which can spuriously wake up and
+         * send empty entries. These are fine and have no bearing on the correctness of this test, but can cause it
+         * fail if we expect exactly 2 of these messages
+         */
+        verify( outbound, atLeast( 1 ) ).send( eq( member1 ), isA( RaftMessages.AppendEntries.Request.class ) );
+        verify( outbound, atLeast( 1 ) ).send( eq( member2 ), isA( RaftMessages.AppendEntries.Request.class ) );
     }
 
     @Test
