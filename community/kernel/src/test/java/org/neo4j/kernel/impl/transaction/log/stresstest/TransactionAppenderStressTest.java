@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryByteCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -43,8 +44,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.stresstest.workload.Runner;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import static org.neo4j.function.Suppliers.untilTimeExpired;
 
 public class TransactionAppenderStressTest
@@ -109,7 +112,13 @@ public class TransactionAppenderStressTest
 
         public long parseAllTxLogs() throws IOException
         {
-            long txId = -1;
+            // Initialize this txId to the BASE_TX_ID because if we don't find any tx log that means that
+            // no transactions have been appended in this test and that getLastCommittedTransactionId()
+            // will also return this constant. Why this is, is another question - but thread scheduling and
+            // I/O spikes on some build machines can be all over the place and also the test duration is
+            // configurable.
+            long txId = TransactionIdStore.BASE_TX_ID;
+
             try ( FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
                   ReadableLogChannel channel = openLogFile( fs, 0 ) )
             {
