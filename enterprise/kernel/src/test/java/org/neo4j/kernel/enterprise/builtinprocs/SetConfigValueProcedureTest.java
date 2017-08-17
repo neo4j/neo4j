@@ -31,7 +31,6 @@ import org.neo4j.test.rule.ImpermanentEnterpriseDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.log_queries;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.plugin_dir;
 
@@ -62,7 +61,6 @@ public class SetConfigValueProcedureTest
         expect.expectMessage( "Unknown setting: unknown.setting.indeed" );
 
         db.execute( "CALL dbms.setConfigValue('unknown.setting.indeed', 'foo')" );
-        fail( "Should throw IllegalArgumentException" );
     }
 
     @Test
@@ -73,7 +71,6 @@ public class SetConfigValueProcedureTest
 
         // Static setting, at least for now
         db.execute( "CALL dbms.setConfigValue('" + plugin_dir.name() + "', 'path/to/dir')" );
-        fail( "Should throw IllegalArgumentException" );
     }
 
     @Test
@@ -83,6 +80,5 @@ public class SetConfigValueProcedureTest
         expect.expectMessage( "Bad value 'invalid' for setting 'dbms.logs.query.enabled': must be 'true' or 'false'" );
 
         db.execute( "CALL dbms.setConfigValue('" + log_queries.name() + "', 'invalid')" );
-        fail( "Should throw InvalidSettingException" );
     }
 }
