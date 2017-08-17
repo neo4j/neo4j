@@ -38,6 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.enterprise.EnterpriseGraphDatabase;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.logging.LogProvider;
@@ -89,6 +90,12 @@ public class EnterpriseNeoServer extends CommunityNeoServer
     public EnterpriseNeoServer( Config config, Dependencies dependencies, LogProvider logProvider )
     {
         super( config, createDbFactory( config ), dependencies, logProvider );
+    }
+
+    public EnterpriseNeoServer( Config config, Database.Factory dbFactory, GraphDatabaseFacadeFactory.Dependencies
+            dependencies, LogProvider logProvider )
+    {
+        super( config, dbFactory, dependencies, logProvider );
     }
 
     protected static Database.Factory createDbFactory( Config config )

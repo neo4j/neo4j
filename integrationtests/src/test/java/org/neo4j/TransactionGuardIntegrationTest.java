@@ -53,7 +53,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.guard.GuardTimeoutException;
 import org.neo4j.kernel.guard.TimeoutGuard;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.factory.CommunityEditionModule;
+import org.neo4j.kernel.impl.enterprise.EnterpriseEditionModule;
 import org.neo4j.kernel.impl.factory.DataSourceModule;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.EditionModule;
@@ -69,7 +69,8 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.LifecycleManagingDatabase;
-import org.neo4j.server.helpers.CommunityServerBuilder;
+import org.neo4j.server.enterprise.EnterpriseNeoServer;
+import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.shell.InterruptSignalHandler;
 import org.neo4j.shell.Response;
@@ -91,6 +92,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionNotFound;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
@@ -106,9 +108,10 @@ public class TransactionGuardIntegrationTest
     private static GraphDatabaseAPI databaseWithTimeout;
     private static GraphDatabaseAPI databaseWithTimeoutAndGuard;
     private static GraphDatabaseAPI databaseWithoutTimeout;
-    private static CommunityNeoServer neoServer;
+    private static EnterpriseNeoServer neoServer;
     private static int boltPortCustomGuard;
     private static int boltPortDatabaseWithTimeout;
+    private static final String DEFAULT_TIMEOUT = "2s";
 
     @Test
     public void terminateLongRunningTransaction()
@@ -265,7 +268,7 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningRestTransactionalEndpointQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
-        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         String transactionEndPoint = HTTP.POST( transactionUri( neoServer ) ).location();
 
         fakeClock.forward( 3, TimeUnit.SECONDS );
@@ -286,7 +289,7 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningRestTransactionalEndpointWithCustomTimeoutQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
-        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
         long customTimeout = TimeUnit.SECONDS.toMillis( 10 );
         HTTP.Response beginResponse = HTTP
                 .withHeaders( HttpHeaderUtils.MAX_EXECUTION_TIME_HEADER, String.valueOf( customTimeout ) )
@@ -319,7 +322,7 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningDriverQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeout();
-        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -347,7 +350,7 @@ public class TransactionGuardIntegrationTest
     public void terminateLongRunningDriverPeriodicCommitQuery() throws Exception
     {
         GraphDatabaseAPI database = startDatabaseWithTimeoutCustomGuard();
-        CommunityNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
+        EnterpriseNeoServer neoServer = startNeoServer( (GraphDatabaseFacade) database );
 
         org.neo4j.driver.v1.Config driverConfig = getDriverConfig();
 
@@ -363,6 +366,57 @@ public class TransactionGuardIntegrationTest
             //
         }
         assertDatabaseDoesNotHaveNodes( database );
+    }
+
+    @Test
+    public void changeTimeoutAtRuntime() throws Exception
+    {
+        GraphDatabaseAPI database = startDatabaseWithTimeout();
+        try ( Transaction transaction = database.beginTx() )
+        {
+            fakeClock.forward( 3, TimeUnit.SECONDS );
+            transaction.success();
+            database.execute( "create (n)" );
+            fail( "Transaction should be already terminated." );
+        }
+        catch ( GuardTimeoutException e )
+        {
+            assertThat( e.getMessage(), startsWith( "Transaction timeout." ) );
+        }
+
+        assertDatabaseDoesNotHaveNodes( database );
+
+        // Increase timeout
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( "CALL dbms.setConfigValue('" + transaction_timeout.name() + "', '5s')" );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = database.beginTx() )
+        {
+            fakeClock.forward( 3, TimeUnit.SECONDS );
+            transaction.success();
+            database.execute( "create (n)" );
+        }
+
+        // Assert node successfully created
+        try ( Transaction ignored = database.beginTx() )
+        {
+            assertEquals( 1, database.getAllNodes().stream().count() );
+        }
+
+        // Reset timeout and cleanup
+        try ( Transaction transaction = database.beginTx() )
+        {
+            database.execute( "CALL dbms.setConfigValue('" + transaction_timeout.name() + "', '" + DEFAULT_TIMEOUT + "')" );
+            database.getAllNodes().stream().findFirst().map( node ->
+            {
+                node.delete();
+                return node;
+            } );
+            transaction.success();
+        }
     }
 
     private GraphDatabaseAPI startDatabaseWithTimeoutCustomGuard()
@@ -406,7 +460,7 @@ public class TransactionGuardIntegrationTest
                 .toConfig();
     }
 
-    private CommunityNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
+    private EnterpriseNeoServer startNeoServer( GraphDatabaseFacade database ) throws IOException
     {
         if ( neoServer == null )
         {
@@ -428,7 +482,7 @@ public class TransactionGuardIntegrationTest
     {
         BoltConnector boltConnector = new BoltConnector( "bolt" );
         return MapUtil.genericMap(
-                GraphDatabaseSettings.transaction_timeout, "2s",
+                transaction_timeout, DEFAULT_TIMEOUT,
                 boltConnector.address, "localhost:" + boltPort,
                 boltConnector.type, "BOLT",
                 boltConnector.enabled, "true",
@@ -441,7 +495,7 @@ public class TransactionGuardIntegrationTest
         return MapUtil.genericMap();
     }
 
-    private String transactionUri( CommunityNeoServer neoServer )
+    private String transactionUri( EnterpriseNeoServer neoServer )
     {
         return neoServer.baseUri().toString() + "db/data/transaction";
     }
@@ -491,9 +545,9 @@ public class TransactionGuardIntegrationTest
     private GraphDatabaseAPI startCustomGuardedDatabase( File storeDir, Map<Setting<?>,
             String> configMap )
     {
-        CustomClockCommunityFacadeFactory guardCommunityFacadeFactory = new CustomClockGuardedCommunityFacadeFactory();
+        CustomClockEnterpriseFacadeFactory guardedEnterpriseFacadeFactory = new CustomClockGuardedEnterpriseFacadeFactory();
         GraphDatabaseBuilder databaseBuilder =
-                new CustomGuardTestTestGraphDatabaseFactory( guardCommunityFacadeFactory )
+                new CustomGuardTestTestGraphDatabaseFactory( guardedEnterpriseFacadeFactory )
                         .newImpermanentDatabaseBuilder( storeDir );
         configMap.forEach( databaseBuilder::setConfig );
 
@@ -504,9 +558,9 @@ public class TransactionGuardIntegrationTest
 
     private GraphDatabaseAPI startCustomDatabase( File storeDir, Map<Setting<?>,String> configMap )
     {
-        CustomClockCommunityFacadeFactory customClockCommunityFacadeFactory = new CustomClockCommunityFacadeFactory();
+        CustomClockEnterpriseFacadeFactory customClockEnterpriseFacadeFactory = new CustomClockEnterpriseFacadeFactory();
         GraphDatabaseBuilder databaseBuilder = new CustomGuardTestTestGraphDatabaseFactory(
-                customClockCommunityFacadeFactory )
+                customClockEnterpriseFacadeFactory )
                 .newImpermanentDatabaseBuilder( storeDir );
         configMap.forEach( databaseBuilder::setConfig );
 
@@ -515,7 +569,7 @@ public class TransactionGuardIntegrationTest
         return database;
     }
 
-    private class GuardingServerBuilder extends CommunityServerBuilder
+    private class GuardingServerBuilder extends EnterpriseServerBuilder
     {
         private GraphDatabaseFacade graphDatabaseFacade;
         final LifecycleManagingDatabase.GraphFactory PRECREATED_FACADE_FACTORY =
@@ -534,10 +588,9 @@ public class TransactionGuardIntegrationTest
             return new GuardTestServer( config, dependencies, NullLogProvider.getInstance() );
         }
 
-        private class GuardTestServer extends CommunityNeoServer
+        private class GuardTestServer extends EnterpriseNeoServer
         {
-            GuardTestServer( Config config,
-                    GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
+            GuardTestServer( Config config, GraphDatabaseFacadeFactory.Dependencies dependencies, LogProvider logProvider )
             {
                 super( config, LifecycleManagingDatabase.lifecycleManagingDatabase( PRECREATED_FACADE_FACTORY ),
                         dependencies, logProvider );
@@ -577,12 +630,12 @@ public class TransactionGuardIntegrationTest
         }
     }
 
-    private class CustomClockCommunityFacadeFactory extends GraphDatabaseFacadeFactory
+    private class CustomClockEnterpriseFacadeFactory extends GraphDatabaseFacadeFactory
     {
 
-        CustomClockCommunityFacadeFactory()
+        CustomClockEnterpriseFacadeFactory()
         {
-            super( DatabaseInfo.COMMUNITY, CommunityEditionModule::new );
+            super( DatabaseInfo.ENTERPRISE, EnterpriseEditionModule::new );
         }
 
         @Override
@@ -618,10 +671,10 @@ public class TransactionGuardIntegrationTest
 
     }
 
-    private class CustomClockGuardedCommunityFacadeFactory extends CustomClockCommunityFacadeFactory
+    private class CustomClockGuardedEnterpriseFacadeFactory extends CustomClockEnterpriseFacadeFactory
     {
 
-        CustomClockGuardedCommunityFacadeFactory()
+        CustomClockGuardedEnterpriseFacadeFactory()
         {
             super();
         }

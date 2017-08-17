@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -265,8 +266,21 @@ public class EnterpriseBuiltInDbmsProcedures
         private boolean isAdminProcedure( String procedureName )
         {
             return name.startsWith( "dbms.security." ) && ADMIN_PROCEDURES.contains( procedureName ) ||
-                   name.equals( "dbms.listConfig" );
+                   name.equals( "dbms.listConfig" ) ||
+                   name.equals( "dbms.setConfigValue" );
         }
+    }
+
+    @Description( "Updates a given setting value. Passing an empty value will result in removing the configured value " +
+            "and falling back to the default value. Changes will not persist and will be lost if the server is restarted." )
+    @Procedure( name = "dbms.setConfigValue", mode = DBMS )
+    public void setConfigValue( @Name( "setting" ) String setting, @Name( "value" ) String value )
+    {
+        securityContext.assertCredentialsNotExpired();
+        assertAdmin();
+
+        Config config = resolver.resolveDependency( Config.class );
+        config.updateDynamicSetting( setting, value ); // throws if something goes wrong
     }
 
     /*

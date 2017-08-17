@@ -79,7 +79,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
-    private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>(); // TODO : has bo be reapplied every update
+    private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
 
     // Messages to this log get replayed into a real logger once logging has been instantiated.
     private Log log = new BufferingLog();
@@ -565,6 +565,64 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     /**
+     * Updates a provided setting to a given value. This method is intended to be used for changing settings during
+     * runtime. If you want to change settings at startup, use {@link Config#augment}.
+     *
+     * @implNote No migration or config validation is done. If you need this you have to refactor this method.
+     *
+     * @param setting The setting to set to the specified value.
+     * @param value The new value to set, passing {@code null} or empty should reset the value back to default value.
+     * @throws IllegalArgumentException if the provided setting is unknown or not dynamic.
+     * @throws InvalidSettingException if the value is not formatted correctly.
+     */
+    public void updateDynamicSetting( String setting, String value ) throws IllegalArgumentException, InvalidSettingException
+    {
+        // Make sure the setting is valid and is marked as dynamic
+        Optional<ConfigValue> option = findConfigValue( setting );
+
+        if ( !option.isPresent() )
+        {
+            throw new IllegalArgumentException( "Unknown setting: " + setting );
+        }
+
+        ConfigValue configValue = option.get();
+        if ( !configValue.dynamic() )
+        {
+            throw new IllegalArgumentException( "Setting is not dynamic and can not be changed at runtime" );
+        }
+
+        if ( value == null || value.isEmpty() )
+        {
+            // Empty means we want to delete the configured value and fallback to the default value
+            params.remove( setting );
+            if ( overriddenDefaults.containsKey( setting ) )
+            {
+                params.put( setting, overriddenDefaults.get( setting ) );
+            }
+        }
+        else
+        {
+            // Change setting, make sure it's valid
+            Map<String,String> newEntry = stringMap( setting, value );
+            List<SettingValidator> settingValidators = configOptions.stream()
+                    .map( ConfigOptions::settingGroup )
+                    .collect( Collectors.toList() );
+            for ( SettingValidator validator : settingValidators )
+            {
+                validator.validate( newEntry, ignore -> {} ); // Throws if invalid
+            }
+
+            params.put( setting, value );
+        }
+    }
+
+    private Optional<ConfigValue> findConfigValue( String setting )
+    {
+        return configOptions.stream().map( it -> it.asConfigValues( params ) ).flatMap( List::stream )
+                .filter( it -> it.name().equals( setting ) ).findFirst();
+    }
+
+    /**
      * @return all effective config values
      */
     public Map<String,ConfigValue> getConfigValues()
@@ -616,7 +674,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private void migrateAndValidateAndUpdateSettings( Map<String,String> settings, boolean warnOnUnknownSettings )
             throws InvalidSettingException
     {
-        Map<String,String> migratedSettings = migrator.apply( settings, log );
+        Map<String,String> migratedSettings = migrateSettings( settings );
         params.putAll( migratedSettings );
 
         List<SettingValidator> settingValidators = configOptions.stream()
@@ -633,6 +691,11 @@ public class Config implements DiagnosticsProvider, Configuration
         {
             validator.validate( this, log );
         }
+    }
+
+    private Map<String,String> migrateSettings( Map<String,String> settings )
+    {
+        return migrator.apply( settings, log );
     }
 
     private void warnAboutDeprecations( Map<String,String> userSettings )
