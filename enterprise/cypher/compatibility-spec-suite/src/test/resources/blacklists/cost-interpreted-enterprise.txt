@@ -64,6 +64,8 @@ Comparing nodes for equality
 Matching disconnected patterns
 No dependencies between the query parts
 
+Nodes are not created when aliases are applied to variable names
+Only a single node is created when an alias is applied to a variable name
 Support multiple divisions in aggregate function
 Aggregates inside normal functions
 Handle aggregates inside non-aggregate expressions

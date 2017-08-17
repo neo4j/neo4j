@@ -237,9 +237,6 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case Apply(_, _) =>
         ApplyRegisterPipe(lhs, rhs)(id)
 
-      case _: CartesianProduct =>
-        fallback.build(plan, lhs, rhs)
-
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }

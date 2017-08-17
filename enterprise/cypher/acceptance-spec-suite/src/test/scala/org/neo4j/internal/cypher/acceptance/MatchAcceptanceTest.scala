@@ -29,16 +29,6 @@ import scala.collection.mutable.ArrayBuffer
 
 class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  test("apa") {
-    createLabeledNode(Map("name" -> "a"), "Person")
-    createLabeledNode(Map("name" -> "b"), "Person")
-    val result = graph.execute("CYPHER runtime=enterprise-interpreted PROFILE CREATE (a)-[r:Rel]->(b) RETURN r")
-    println(result.resultAsString())
-    println(result.getExecutionPlanDescription)
-  }
-
-
-
   test("Do not count null elements in nodes without labels") {
 
     createNode("name" -> "a")
@@ -612,7 +602,7 @@ return p""")
 
   // Not sure if TCK material -- is this test just for `columns()`?
   test("columns should be in the provided order") {
-    val result = succeedWith(Configs.All, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
+    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (p),(o),(n),(t),(u),(s) RETURN p,o,n,t,u,s")
 
     result.columns should equal(List("p", "o", "n", "t", "u", "s"))
   }

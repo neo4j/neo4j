@@ -57,11 +57,13 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   //Not TCK material
   test("should handle pathological create query") {
 
-    val query = "CREATE" + List.fill(500)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
+    val amount = 200
 
-    val result = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
+    val query = "CREATE" + List.fill(amount)("(:Bar)-[:FOO]->(:Baz)").mkString(", ")
 
-    assertStats(result, nodesCreated = 1000, relationshipsCreated = 500, labelsAdded = 1000)
+    val result = updateWith(Configs.Interpreted - Configs.Cost2_3, query)
+
+    assertStats(result, nodesCreated = 2 * amount, relationshipsCreated = amount, labelsAdded = 2 * amount)
 
     // Should not get StackOverflowException
     result.executionPlanDescription()
