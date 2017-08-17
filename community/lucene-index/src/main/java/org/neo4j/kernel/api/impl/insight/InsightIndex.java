@@ -41,16 +41,17 @@ public class InsightIndex implements AutoCloseable
 
     public InsightIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
     {
-        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
+        LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
         nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
         nodeIndex.open();
 
+        storageBuilder = LuceneIndexStorageBuilder.create();
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
