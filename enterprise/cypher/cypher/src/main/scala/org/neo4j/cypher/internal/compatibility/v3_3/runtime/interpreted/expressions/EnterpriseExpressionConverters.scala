@@ -30,6 +30,8 @@ object EnterpriseExpressionConverters extends ExpressionConverter {
     expression match {
       case runtimeAst.NodeFromRegister(offset, _) =>
         Some(runtimeExpression.NodeFromRegister(offset))
+      case runtimeAst.RelationshipFromRegister(offset, _) =>
+        Some(runtimeExpression.RelationshipFromRegister(offset))
       case runtimeAst.NodeProperty(offset, token, _) =>
         Some(runtimeExpression.NodeProperty(offset, token))
       case runtimeAst.RelationshipProperty(offset, token, _) =>

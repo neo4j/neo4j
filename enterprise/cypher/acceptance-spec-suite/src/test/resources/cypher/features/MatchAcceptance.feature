@@ -37,6 +37,24 @@ Feature: MatchAcceptance
       | (:D {foo: 'bar'}) |
     And no side effects
 
+  Scenario: Should match the correct relationships if start and endpoint are the same
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (a:A)-[:REL]->(a)-[:REL]->(a)
+      CREATE (a)-[:REL]->(b:B)
+      """
+    When executing query:
+      """
+      MATCH (a)-->(a)
+      RETURN *
+      """
+    Then the result should be:
+      | a    |
+      | (:A) |
+      | (:A) |
+    And no side effects
+
   Scenario: Filter with AND/OR
     Given an empty graph
     And having executed:

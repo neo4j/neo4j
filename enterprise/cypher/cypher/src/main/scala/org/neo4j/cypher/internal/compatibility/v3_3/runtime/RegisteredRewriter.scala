@@ -37,6 +37,9 @@ using Variable. It will also rewrite the pipeline information so that the new pl
  */
 class RegisteredRewriter(tokenContext: TokenContext) {
 
+  private val SUPPORTED = Set("id", "count", "sum", "avg", "collect", "max",
+    "min", "percentileCont", "percentileDisc", "stDev", "stDevP")
+
   def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation]): (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
     var rewrites = Map[LogicalPlan, LogicalPlan]()
@@ -145,8 +148,8 @@ class RegisteredRewriter(tokenContext: TokenContext) {
             throw new InternalException("Did not find `" + k + "` in the pipeline information")
         }
 
-      case idFunction@FunctionInvocation(_, FunctionName("id"), _, _) =>
-        idFunction
+      case function@FunctionInvocation(_, FunctionName(name), _, _) if SUPPORTED(name) =>
+        function
 
       case _: FunctionInvocation =>
         throw new CantCompileQueryException(s"Expressions with functions not yet supported in register allocation")
