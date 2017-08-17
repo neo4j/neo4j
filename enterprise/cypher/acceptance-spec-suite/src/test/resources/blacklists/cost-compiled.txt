@@ -167,3 +167,12 @@ Should allow OR with index and regex predicates
 //SkipLimitAcceptance.feature
 Combining LIMIT and aggregation
 Using a optional match after aggregation and before an aggregation
+
+//VarLengthAcceptance.feature
+Handles checking properties on nodes in path - using in-pattern property value
+Handles checking properties on nodes in path - using ALL() function on path node properties
+Handles checking properties on nodes in multistep path - using ALL() function on path node properties
+Handles checking properties on relationships in path - using in-pattern property value
+Handles checking properties on relationships in path - using ALL() function on relationship identifier
+Handles checking properties on relationships in path - using ALL() function on path relationship properties
+Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
