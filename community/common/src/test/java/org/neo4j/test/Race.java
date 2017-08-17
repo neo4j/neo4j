@@ -52,6 +52,7 @@ public class Race
     private volatile boolean addSomeMinorRandomStartDelays;
     private volatile BooleanSupplier endCondition;
     private volatile boolean failure;
+    private boolean asyncExecution;
 
     public Race withRandomStartDelays()
     {
@@ -134,6 +135,16 @@ public class Race
     }
 
     /**
+     * Starts the race and returns without waiting for contestants to complete.
+     * Any exception thrown by contestant will be lost.
+     */
+    public void goAsync() throws Throwable
+    {
+        asyncExecution = true;
+        go( 0, TimeUnit.MILLISECONDS );
+    }
+
+    /**
      * Starts the race and waits indefinitely for all contestants to either fail or succeed.
      *
      * @throws Throwable on any exception thrown from any contestant.
@@ -165,6 +176,11 @@ public class Race
         }
         readySet.await();
         go.countDown();
+
+        if ( asyncExecution )
+        {
+            return;
+        }
 
         int errorCount = 0;
         long maxWaitTimeMillis = MILLISECONDS.convert( maxWaitTime, unit );
