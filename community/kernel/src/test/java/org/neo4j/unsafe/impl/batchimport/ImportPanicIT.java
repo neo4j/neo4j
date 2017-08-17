@@ -90,7 +90,7 @@ public class ImportPanicIT
                 IdType.ACTUAL,
                 csvConfigurationWithLowBufferSize(),
                 new BadCollector( NullOutputStream.NULL_OUTPUT_STREAM, 0, 0 ),
-                Runtime.getRuntime().availableProcessors() );
+                Runtime.getRuntime().availableProcessors(), true );
 
         // WHEN
         try

@@ -173,9 +173,16 @@ public class BadCollector implements Collector
         {
             if ( message == null )
             {
-                message = format( "%s referring to missing node %s", relationship, specificValue );
+                message = !isMissingData( relationship )
+                        ? format( "%s referring to missing node %s", relationship, specificValue )
+                        : format( "%s is missing data", relationship );
             }
             return message;
+        }
+
+        private static boolean isMissingData( InputRelationship relationship )
+        {
+            return relationship.startNode() == null || relationship.endNode() == null || !relationship.hasType();
         }
     }
 

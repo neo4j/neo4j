@@ -33,6 +33,7 @@ import org.neo4j.unsafe.impl.batchimport.input.Groups;
 import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.input.MissingRelationshipDataException;
 import org.neo4j.unsafe.impl.batchimport.input.csv.InputGroupsDeserializer.DeserializerFactory;
 
 import static org.neo4j.unsafe.impl.batchimport.input.csv.DeserializerFactories.defaultNodeDeserializer;
@@ -54,6 +55,7 @@ public class CsvInput implements Input
     private final Groups groups = new Groups();
     private final Collector badCollector;
     private final int maxProcessors;
+    private final boolean validateRelationshipData;
 
     /**
      * @param nodeDataFactory multiple {@link DataFactory} instances providing data, each {@link DataFactory}
@@ -68,11 +70,14 @@ public class CsvInput implements Input
      * @param config CSV configuration.
      * @param badCollector Collector getting calls about bad input data.
      * @param maxProcessors maximum number of processors in scenarios where multiple threads may parse CSV data.
+     * @param validateRelationshipData whether or not to validate relationship data strictly. If {@code true} then
+     * {@link MissingRelationshipDataException} will be thrown if some mandatory relationship field is missing, such as
+     * START_ID, END_ID or TYPE, otherwise if {@code false} such relationships will be collected by the {@code badCollector}.
      */
     public CsvInput(
             Iterable<DataFactory<InputNode>> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory<InputRelationship>> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
-            IdType idType, Configuration config, Collector badCollector, int maxProcessors )
+            IdType idType, Configuration config, Collector badCollector, int maxProcessors, boolean validateRelationshipData )
     {
         this.maxProcessors = maxProcessors;
         assertSaneConfiguration( config );
@@ -84,6 +89,7 @@ public class CsvInput implements Input
         this.idType = idType;
         this.config = config;
         this.badCollector = badCollector;
+        this.validateRelationshipData = validateRelationshipData;
     }
 
     private void assertSaneConfiguration( Configuration config )
@@ -136,7 +142,8 @@ public class CsvInput implements Input
                 DeserializerFactory<InputRelationship> factory =
                         defaultRelationshipDeserializer( groups, config, idType, badCollector );
                 return new InputGroupsDeserializer<>( relationshipDataFactory.iterator(), relationshipHeaderFactory,
-                        config, idType, maxProcessors, 1, factory, new InputRelationshipValidator(),
+                        config, idType, maxProcessors, 1, factory,
+                        validateRelationshipData ? new InputRelationshipValidator() : Validators.emptyValidator(),
                         InputRelationship.class );
             }
 

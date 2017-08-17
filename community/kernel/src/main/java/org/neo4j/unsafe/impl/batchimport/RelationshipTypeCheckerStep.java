@@ -66,6 +66,7 @@ public class RelationshipTypeCheckerStep extends ProcessorStep<Batch<InputRelati
         Map<Object,MutableLong> typeMap = typeCheckers.computeIfAbsent( currentThread(), ( t ) -> new HashMap<>() );
         Stream.of( batch.input )
               .map( InputRelationship::typeAsObject )
+              .filter( type -> type != null )
               .forEach( type -> typeMap.computeIfAbsent( type, NEW_MUTABLE_LONG ).increment() );
         sender.send( batch );
     }

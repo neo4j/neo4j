@@ -60,12 +60,16 @@ import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.input.Collector;
+import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static java.nio.charset.Charset.defaultCharset;
+
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -75,8 +79,14 @@ import static org.neo4j.kernel.impl.util.AutoCreatingHashMap.values;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.unsafe.impl.batchimport.input.Collectors.silentBadCollector;
 import static org.neo4j.unsafe.impl.batchimport.input.InputEntity.NO_PROPERTIES;
-import static org.neo4j.unsafe.impl.batchimport.input.Inputs.csv;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_NODE_DECORATOR;
+import static org.neo4j.unsafe.impl.batchimport.input.InputEntityDecorators.NO_RELATIONSHIP_DECORATOR;
 import static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.COMMAS;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.data;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatNodeFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.defaultFormatRelationshipFileHeader;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.nodeData;
+import static org.neo4j.unsafe.impl.batchimport.input.csv.DataFactories.relationshipData;
 import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitors.invisible;
 
 public class CsvInputBatchImportIT
@@ -124,7 +134,17 @@ public class CsvInputBatchImportIT
         }
     }
 
-    private org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(
+    public static Input csv( File nodes, File relationships, IdType idType,
+            org.neo4j.unsafe.impl.batchimport.input.csv.Configuration configuration, Collector badCollector, int maxProcessors )
+    {
+        return new CsvInput(
+                nodeData( data( NO_NODE_DECORATOR, defaultCharset(), nodes ) ), defaultFormatNodeFileHeader(),
+                relationshipData( data( NO_RELATIONSHIP_DECORATOR, defaultCharset(), relationships ) ),
+                defaultFormatRelationshipFileHeader(), idType, configuration,
+                badCollector, maxProcessors, true );
+    }
+
+    private static org.neo4j.unsafe.impl.batchimport.input.csv.Configuration lowBufferSize(
             org.neo4j.unsafe.impl.batchimport.input.csv.Configuration actual )
     {
         return new org.neo4j.unsafe.impl.batchimport.input.csv.Configuration.Overridden( actual )

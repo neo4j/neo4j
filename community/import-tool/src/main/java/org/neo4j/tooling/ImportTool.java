@@ -460,7 +460,7 @@ public class ImportTool
             input = new CsvInput( nodeData( inputEncoding, nodesFiles ), defaultFormatNodeFileHeader(),
                     relationshipData( inputEncoding, relationshipsFiles ), defaultFormatRelationshipFileHeader(),
                     idType, csvConfiguration( args, defaultSettingsSuitableForTests ), badCollector,
-                    configuration.maxNumberOfProcessors() );
+                    configuration.maxNumberOfProcessors(), !skipBadRelationships );
 
             doImport( out, err, storeDir, logsDir, badFile, fs, nodesFiles, relationshipsFiles,
                     enableStacktrace, input, dbConfig, badOutput, configuration );
