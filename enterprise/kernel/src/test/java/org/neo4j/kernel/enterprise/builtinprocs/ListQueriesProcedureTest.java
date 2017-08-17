@@ -276,12 +276,24 @@ public class ListQueriesProcedureTest
             db.schema().indexFor( label( label ) ).on( property ).create();
             tx.success();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 5, SECONDS );
-            tx.success();
-        }
+        ensureIndexesAreOnline();
         shouldListUsedIndexes( label, property );
+    }
+
+    private void ensureIndexesAreOnline() {
+        long startTime = System.currentTimeMillis();
+        long timeOut = 60 * 1000; // One minute
+        boolean indexesOnline = false;
+        while( !indexesOnline &&  startTime - timeOut < System.currentTimeMillis()){
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.schema().awaitIndexesOnline( 5, SECONDS );
+                tx.success();
+                indexesOnline = true;
+            }catch (IllegalStateException e){
+                //Lets try some more iterations
+            }
+        }
     }
 
     @Test
@@ -295,6 +307,7 @@ public class ListQueriesProcedureTest
             db.schema().constraintFor( label( label ) ).assertPropertyIsUnique( property ).create();
             tx.success();
         }
+        ensureIndexesAreOnline();
         shouldListUsedIndexes( label, property );
     }
 
@@ -308,11 +321,7 @@ public class ListQueriesProcedureTest
             db.schema().indexFor( label( "Node" ) ).on( "value" ).create();
             tx.success();
         }
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.schema().awaitIndexesOnline( 5, SECONDS );
-            tx.success();
-        }
+        ensureIndexesAreOnline();
         try ( Resource<Node> test = test( () ->
         {
             Node node = db.createNode( label( "Node" ) );
