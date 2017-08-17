@@ -280,17 +280,21 @@ public class ListQueriesProcedureTest
         shouldListUsedIndexes( label, property );
     }
 
-    private void ensureIndexesAreOnline() {
+    private void ensureIndexesAreOnline()
+    {
         long startTime = System.currentTimeMillis();
         long timeOut = 60 * 1000; // One minute
         boolean indexesOnline = false;
-        while( !indexesOnline &&  startTime - timeOut < System.currentTimeMillis()){
+        while ( !indexesOnline && startTime - timeOut < System.currentTimeMillis() )
+        {
             try ( Transaction tx = db.beginTx() )
             {
                 db.schema().awaitIndexesOnline( 5, SECONDS );
                 tx.success();
                 indexesOnline = true;
-            }catch (IllegalStateException e){
+            }
+            catch ( IllegalStateException e )
+            {
                 //Lets try some more iterations
             }
         }
