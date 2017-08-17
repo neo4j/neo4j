@@ -71,7 +71,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try (InsightIndexReader reader = insightIndex.getReader()) {
+            try (InsightIndexReader reader = insightIndex.getNodeReader()) {
 
                 assertEquals(firstID, reader.query("hello").next());
                 assertEquals(secondID, reader.query("zebra").next());
@@ -113,7 +113,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getReader() )
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
             {
 
                 assertFalse( reader.query( "hello" ).hasNext() );
@@ -159,7 +159,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try (InsightIndexReader reader = insightIndex.getReader()) {
+            try (InsightIndexReader reader = insightIndex.getNodeReader()) {
 
                 assertFalse(reader.query("hello").hasNext());
                 assertFalse(reader.query("zebra").hasNext());
@@ -196,7 +196,7 @@ public class InsightLuceneIndexUpdaterTest
                 tx.success();
             }
 
-            try ( InsightIndexReader reader = insightIndex.getReader() )
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
             {
 
                 PrimitiveLongIterator iterator = reader.query( "tomtar", "karl" );

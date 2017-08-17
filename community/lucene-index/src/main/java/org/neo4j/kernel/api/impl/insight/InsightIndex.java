@@ -37,33 +37,47 @@ import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFa
 public class InsightIndex implements AutoCloseable
 {
     private final InsightLuceneIndex nodeIndex;
+    private final InsightLuceneIndex relationshipIndex;
 
     public InsightIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
     {
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
+        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
+        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
+
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-
-        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
-        WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
         nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
         nodeIndex.open();
+
+        storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightRelationships" )
+                .withDirectoryFactory( directoryFactory( false, fileSystem ) )
+                .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
+        relationshipIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
+        relationshipIndex.open();
     }
 
     public InsightIndexTransactionEventUpdater getUpdater() throws IOException
     {
-        WritableDatabaseInsightIndex writableDatabaseInsightIndex = new WritableDatabaseInsightIndex( nodeIndex );
-        return new InsightIndexTransactionEventUpdater( writableDatabaseInsightIndex );
+        WritableDatabaseInsightIndex writableNodeIndex = new WritableDatabaseInsightIndex( nodeIndex );
+        WritableDatabaseInsightIndex writableRelationshipIndex = new WritableDatabaseInsightIndex( relationshipIndex );
+        return new InsightIndexTransactionEventUpdater( writableNodeIndex, writableRelationshipIndex );
     }
 
-    public InsightIndexReader getReader() throws IOException
+    public InsightIndexReader getNodeReader() throws IOException
     {
         return nodeIndex.getIndexReader();
+    }
+
+    public InsightIndexReader getRelationshipReader() throws IOException
+    {
+        return relationshipIndex.getIndexReader();
     }
 
     @Override
     public void close() throws Exception {
         nodeIndex.close();
+        relationshipIndex.close();
     }
 }
