@@ -52,6 +52,7 @@ public class ClientCrashingWriter implements MadeUpWriter
                 if ( (totalSize += size) >= crashAtSize )
                 {
                     client.stop();
+                    throw new IOException( "Fake read error" );
                 }
             }
             catch ( IOException e )
