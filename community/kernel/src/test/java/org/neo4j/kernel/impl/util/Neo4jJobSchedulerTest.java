@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.util;
 import org.junit.After;
 import org.junit.Test;
 
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -38,9 +39,13 @@ import org.neo4j.scheduler.JobScheduler.JobHandle;
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -107,10 +112,22 @@ public class Neo4jJobSchedulerTest
         // When
         jobHandle.cancel( false );
 
+        try
+        {
+            jobHandle.waitTermination();
+            fail( "Task should be terminated" );
+        }
+        catch ( CancellationException ingored )
+        {
+            // task should be canceled
+        }
+
         // Then
         int recorded = invocations.get();
         sleep( period * 100 );
-        assertThat( invocations.get(), equalTo( recorded ) );
+        // we can have task that is already running during cancellation so lets count it as well
+        assertThat( invocations.get(),
+                both( greaterThanOrEqualTo( recorded ) ).and( lessThanOrEqualTo( recorded + 1 ) ) );
     }
 
     @Test
