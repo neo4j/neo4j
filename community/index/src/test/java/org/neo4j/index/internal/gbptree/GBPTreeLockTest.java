@@ -125,7 +125,7 @@ public class GBPTreeLockTest
         assertUU();
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void test_race_ULvsUL() throws Throwable
     {
         assertOnlyOneSucceeds( lock::cleanerLock, lock::cleanerLock );
@@ -137,25 +137,25 @@ public class GBPTreeLockTest
         assertBothSucceeds( lock::cleanerLock, lock::writerLock );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void test_race_ULvsLL() throws Throwable
     {
         assertOnlyOneSucceeds( lock::cleanerLock, lock::writerAndCleanerLock );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void test_race_LUvsLU() throws Throwable
     {
         assertOnlyOneSucceeds( lock::writerLock, lock::writerLock );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void test_race_LUvsLL() throws Throwable
     {
         assertOnlyOneSucceeds( lock::writerLock, lock::writerAndCleanerLock );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void test_race_LLvsLL() throws Throwable
     {
         assertOnlyOneSucceeds( lock::writerAndCleanerLock, lock::writerAndCleanerLock );
