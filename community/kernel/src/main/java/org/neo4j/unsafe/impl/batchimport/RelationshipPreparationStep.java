@@ -21,10 +21,13 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
+import org.neo4j.unsafe.impl.batchimport.input.Group;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+import static org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper.ID_NOT_FOUND;
 
 /**
  * Prepares {@link InputRelationship}, or at least potential slow parts of it, namely {@link IdMapper} lookup.
@@ -49,9 +52,15 @@ public class RelationshipPreparationStep extends ProcessorStep<Batch<InputRelati
         for ( int i = 0; i < input.length; i++ )
         {
             InputRelationship batchRelationship = input[i];
-            ids[i * 2] = idMapper.get( batchRelationship.startNode(), batchRelationship.startNodeGroup() );
-            ids[i * 2 + 1] = idMapper.get( batchRelationship.endNode(), batchRelationship.endNodeGroup() );
+            boolean hasType = batchRelationship.hasType();
+            ids[i * 2] = lookup( batchRelationship.startNode(), batchRelationship.startNodeGroup(), hasType );
+            ids[i * 2 + 1] = lookup( batchRelationship.endNode(), batchRelationship.endNodeGroup(), hasType );
         }
         sender.send( batch );
+    }
+
+    private long lookup( Object nodeId, Group group, boolean hasType )
+    {
+        return nodeId == null || !hasType ? ID_NOT_FOUND : idMapper.get( nodeId, group );
     }
 }

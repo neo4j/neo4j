@@ -1272,6 +1272,7 @@ public class ImportToolTest
             importTool(
                     "--into", dbRule.getStoreDirAbsolutePath(),
                     "--nodes", nodeData( true, config, nodeIds, TRUE ).getAbsolutePath(),
+                    "--skip-bad-relationships", "false",
                     "--relationships", relationshipData( true, config, relationshipDataLines,
                             TRUE, true ).getAbsolutePath() );
             fail( " Should fail during import." );
@@ -1859,6 +1860,47 @@ public class ImportToolTest
                 "--max-memory", "100M" );
     }
 
+    @Test
+    public void shouldTreatRelationshipWithMissingStartOrEndIdOrTypeAsBadRelationship() throws Exception
+    {
+        // GIVEN
+        List<String> nodeIds = asList( "a", "b", "c" );
+        Configuration config = Configuration.COMMAS;
+        File nodeData = nodeData( true, config, nodeIds, TRUE );
+
+        List<RelationshipDataLine> relationships = Arrays.asList(
+                relationship( "a", null, "TYPE" ),
+                relationship( null, "b", "TYPE" ),
+                relationship( "a", "b", null ) );
+
+        File relationshipData = relationshipData( true, config, relationships.iterator(), TRUE, true );
+        File bad = badFile();
+
+        // WHEN importing data where some relationships refer to missing nodes
+        importTool(
+                "--into", dbRule.getStoreDirAbsolutePath(),
+                "--nodes", nodeData.getAbsolutePath(),
+                "--bad", bad.getAbsolutePath(),
+                "--skip-bad-relationships", "true",
+                "--relationships", relationshipData.getAbsolutePath() );
+
+        String badContents = FileUtils.readTextFile( bad, Charset.defaultCharset() );
+        assertEquals( badContents, 3, occurencesOf( badContents, "is missing data" ) );
+    }
+
+    private static int occurencesOf( String text, String lookFor )
+    {
+        int index = -1;
+        int count = -1;
+        do
+        {
+            count++;
+            index = text.indexOf( lookFor, index + 1 );
+        }
+        while ( index != -1 );
+        return count;
+    }
+
     private File writeArrayCsv( String[] headers, String[] values ) throws FileNotFoundException
     {
         File data = file( fileName( "whitespace.csv" ) );
@@ -2281,14 +2323,19 @@ public class ImportToolTest
             RelationshipDataLine entry = data.next();
             if ( linePredicate.test( i ) )
             {
-                writer.println( entry.startNodeId +
-                                delimiter + entry.endNodeId +
-                                (specifyType ? (delimiter + entry.type) : "") +
+                writer.println( nullSafeString( entry.startNodeId ) +
+                                delimiter + nullSafeString( entry.endNodeId ) +
+                                (specifyType ? (delimiter + nullSafeString( entry.type )) : "") +
                                 delimiter + currentTimeMillis() +
                                 delimiter + (entry.name != null ? entry.name : "")
                 );
             }
         }
+    }
+
+    private static String nullSafeString( String endNodeId )
+    {
+        return endNodeId != null ? endNodeId : "";
     }
 
     private Iterator<RelationshipDataLine> randomRelationships( final List<String> nodeIds )

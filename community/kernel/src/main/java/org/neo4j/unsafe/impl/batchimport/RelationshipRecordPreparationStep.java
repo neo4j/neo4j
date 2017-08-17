@@ -58,16 +58,10 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
             InputRelationship batchRelationship = batch.input[i];
             long startNodeId = batch.ids[idIndex++];
             long endNodeId = batch.ids[idIndex++];
-            if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND )
+            boolean hasType = batchRelationship.hasType();
+            if ( startNodeId == ID_NOT_FOUND || endNodeId == ID_NOT_FOUND || !hasType )
             {
-                if ( startNodeId == ID_NOT_FOUND )
-                {
-                    badCollector.collectBadRelationship( batchRelationship, batchRelationship.startNode() );
-                }
-                if ( endNodeId == ID_NOT_FOUND )
-                {
-                    badCollector.collectBadRelationship( batchRelationship, batchRelationship.endNode() );
-                }
+                collectBadRelationship( batchRelationship, startNodeId, endNodeId, hasType );
             }
             else
             {
@@ -82,10 +76,29 @@ public class RelationshipRecordPreparationStep extends ProcessorStep<Batch<Input
                 relationship.setSecondNode( endNodeId );
 
                 int typeId = batchRelationship.hasTypeId() ? batchRelationship.typeId() :
-                    relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
+                relationshipTypeRepository.getOrCreateId( batchRelationship.type() );
                 relationship.setType( typeId );
             }
         }
         sender.send( batch );
+    }
+
+    private void collectBadRelationship( InputRelationship batchRelationship, long startNodeId, long endNodeId, boolean hasType )
+    {
+        if ( !hasType )
+        {
+            badCollector.collectBadRelationship( batchRelationship, null );
+        }
+        else
+        {
+            if ( startNodeId == ID_NOT_FOUND )
+            {
+                badCollector.collectBadRelationship( batchRelationship, batchRelationship.startNode() );
+            }
+            if ( endNodeId == ID_NOT_FOUND )
+            {
+                badCollector.collectBadRelationship( batchRelationship, batchRelationship.endNode() );
+            }
+        }
     }
 }
