@@ -187,7 +187,7 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         waitForIndexesToComeOnline( indexingService, 0 );
-        verify( populator, timeout( 1000 ) ).close( true );
+        verify( populator, timeout( 10000 ) ).close( true );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -252,7 +252,7 @@ public class IndexingServiceTest
         latch.countDown();
 
         waitForIndexesToComeOnline( indexingService, 0 );
-        verify( populator, timeout( 1000 ) ).close( true );
+        verify( populator, timeout( 10000 ) ).close( true );
 
         // then
         assertEquals( InternalIndexState.ONLINE, proxy.getState() );
@@ -290,7 +290,7 @@ public class IndexingServiceTest
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
         // don't wait for index to come ONLINE here since we're testing that it doesn't
-        verify( populator, timeout( 2000 ) ).close( true );
+        verify( populator, timeout( 20000 ) ).close( true );
 
         try ( IndexUpdater updater = proxy.newUpdater( IndexUpdateMode.ONLINE ) )
         {
@@ -592,7 +592,7 @@ public class IndexingServiceTest
 
         indexing.createIndexes( IndexRule.indexRule( 0, index, PROVIDER_DESCRIPTOR ) );
         waitForIndexesToComeOnline( indexing, 0 );
-        verify( populator, timeout( 1000 ) ).close( true );
+        verify( populator, timeout( 10000 ) ).close( true );
 
         // When
         indexing.apply( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ) );
@@ -637,7 +637,7 @@ public class IndexingServiceTest
 
         waitForIndexesToComeOnline( indexing, indexId1, indexId2 );
 
-        verify( populator, timeout( 1000 ).times( 2 ) ).close( true );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( true );
 
         // When
         indexing.apply( updates( asList(
@@ -905,7 +905,7 @@ public class IndexingServiceTest
         // when
         indexing.createIndexes( IndexRule.indexRule( indexId, index, PROVIDER_DESCRIPTOR ) );
         waitForIndexesToGetIntoState( indexing, InternalIndexState.FAILED, indexId );
-        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture() );
 
         // then
         assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
@@ -941,7 +941,7 @@ public class IndexingServiceTest
 
         // when
         waitForIndexesToGetIntoState( indexing, InternalIndexState.FAILED, indexId );
-        verify( populator, timeout( 1000 ).times( 2 ) ).close( closeArgs.capture() );
+        verify( populator, timeout( 10000 ).times( 2 ) ).close( closeArgs.capture() );
 
         // then
         assertEquals( FAILED, indexing.getIndexProxy( 1 ).getState() );
