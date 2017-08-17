@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
+import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -211,6 +211,38 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
 
+  protected def failWithError(expectedSpecificFailureFrom: TestConfiguration, query: String, message: String, params: (String, Any)*):
+  Unit = {
+    for (thisScenario <- Configs.AbsolutelyAll.scenarios) {
+      thisScenario.prepare()
+      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.scenarios.contains(thisScenario)
+
+      try {
+        innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params.toMap)
+        if (expectedToFailWithSpecificMessage) {
+          fail("Unexpectedly Succeeded in " + thisScenario.name + " instead of failing with this message:'" + message + "'")
+        } else {
+          fail("Unexpectedly Succeeded in " + thisScenario.name)
+        }
+      } catch {
+        case e: CypherException => {
+          if (expectedToFailWithSpecificMessage) {
+            if (!e.getMessage.contains(message)) {
+              fail("Correctly failed in " + thisScenario.name + " but instead of '" + message +
+                "' the error message was '" + e.getMessage + "'")
+            }
+          } else {
+            if (e.getMessage.contains(message)) {
+              fail("Unexpectedly (but correctly!) failed in " + thisScenario.name + " with the correct message. Did you forget to add this config?")
+            }
+            // It failed like expected, and we did not specify any message for this config
+          }
+        }
+        case e: Throwable => throw e
+      }
+    }
+  }
+
   protected def assertResultsAreSame(result1: InternalExecutionResult, result2: InternalExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false) {
     withClue(errorMsg) {
       if (queryText.toLowerCase contains "order by") {
@@ -221,7 +253,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
+  private def innerExecute(queryText: String, params: Map[String, Any]): InternalExecutionResult = {
     val innerResult = eengine.execute(queryText, params, graph.transactionalContext(query = queryText -> params))
     rewindableResult(innerResult)
   }
