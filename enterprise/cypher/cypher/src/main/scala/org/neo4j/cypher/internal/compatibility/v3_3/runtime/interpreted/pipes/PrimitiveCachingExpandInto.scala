@@ -148,8 +148,9 @@ protected final class PrimitiveRelationshipsCache(capacity: Int) {
         var index: Int = 0
 
         override def next(): Long = {
+          val r = rels(index)
           index = index + 1
-          rels(index)
+          r
         }
 
         override def hasNext: Boolean = index < rels.length

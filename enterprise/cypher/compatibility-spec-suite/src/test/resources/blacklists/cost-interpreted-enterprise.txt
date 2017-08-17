@@ -72,7 +72,6 @@ Using aliased DISTINCT expression in ORDER BY
 Returning bound nodes that are not part of the pattern
 Comparing nodes for equality
 Matching disconnected patterns
-Non-optional matches should not return nulls
 No dependencies between the query parts
 
 Support multiple divisions in aggregate function
