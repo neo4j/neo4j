@@ -45,6 +45,14 @@ public abstract class CpuClock
             return threadMXBean.getThreadCpuTime( threadId );
         }
     };
+    public static final CpuClock NOT_AVAILABLE = new CpuClock()
+    {
+        @Override
+        public long cpuTimeNanos( long threadId )
+        {
+            return -1;
+        }
+    };
 
     /**
      * Returns the current CPU time used by the thread, in nanoseconds.
