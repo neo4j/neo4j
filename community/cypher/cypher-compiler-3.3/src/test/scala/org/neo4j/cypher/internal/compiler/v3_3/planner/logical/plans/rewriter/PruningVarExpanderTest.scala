@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
-class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   test("simples possible query that can use PruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
@@ -37,7 +37,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)(solved)
@@ -56,7 +56,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val aggregatingExpression = FunctionInvocation(functionName = FunctionName("count")(pos), distinct = true, args = IndexedSeq(Variable("to")(pos)))(pos)
     val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))(solved)
 
@@ -76,7 +76,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val predicate = HasLabels(Variable("to")(pos), Seq(LabelName("X")(pos)))(pos)
     val filter = Selection(Seq(predicate), originalExpand)(solved)
     val input = Aggregation(filter, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
@@ -98,7 +98,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val aggregate = Aggregation(originalExpand, Map.empty, Map("count" -> CountStar()(pos)))(solved)
     val input = Aggregation(aggregate, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
@@ -117,8 +117,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val allNodes = AllNodesScan(aId, Set.empty)(solved)
     val dir = SemanticDirection.BOTH
     val length = VarPatternLength(1, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length)(solved)
-    val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length)(solved)
+    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
+    val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Aggregation(originalExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)(solved)
@@ -140,7 +140,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val allNodes = AllNodesScan(aId, Set.empty)(solved)
     val dir = SemanticDirection.BOTH
     val length = VarPatternLength(1, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length)(solved)
+    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)(solved)
     val input = Aggregation(originalExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
 
@@ -175,7 +175,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val allNodes = AllNodesScan(aId, Set.empty)(solved)
     val argument = Argument(Set(aId))(solved)()
-    val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length)(solved)
+    val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val optional1 = Optional(originalExpand, Set(aId))(solved)
     val apply1 = Apply(allNodes, optional1)(solved)
     val distinct1 = Aggregation(apply1, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
@@ -198,7 +198,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(3))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Aggregation(originalExpand, Map("r" -> Variable("r")(pos)), Map.empty)(solved)
 
     assertNotRewritten(input)
@@ -214,7 +214,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(4, Some(5))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
     val rewrittenExpand = FullPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)(solved)
@@ -233,7 +233,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val length = VarPatternLength(1, Some(1))
     val toId = IdName("to")
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val input = Aggregation(originalExpand, Map("to" -> Variable("to")(pos)), Map.empty)(solved)
 
     assertNotRewritten(input)
@@ -250,7 +250,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val toId = IdName("to")
 
     val relId = IdName("r")
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
+    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll, IdName("tempNode"), IdName("tempEdge"), TRUE, TRUE, Seq.empty)(solved)
     val pathProjectior = NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, NilPathStep))
 
     val function = FunctionInvocation(FunctionName("nodes")(pos), PathExpression(pathProjectior)(pos))(pos)

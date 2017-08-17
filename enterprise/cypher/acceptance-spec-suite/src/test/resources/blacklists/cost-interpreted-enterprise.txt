@@ -43,7 +43,6 @@ Works with indexed and unindexed property
 Works with two indexed properties
 Should be able to merge using property from match with index
 Merge with an index must properly handle multiple labels
-Filter on path nodes
 Using a single bound node
 Using a longer pattern
 Using bound nodes in mid-pattern
@@ -150,10 +149,5 @@ Primitive node type support in list literal
 Primitive relationship type support in list literal
 
 //VarLengthAcceptance.feature
-Handles checking properties on nodes in path - using ALL() function on path node properties
 Handles checking properties on nodes in multistep path - using ALL() function on path node properties
-Handles checking properties on relationships in path - using in-pattern property value
-Handles checking properties on relationships in path - using ALL() function on relationship identifier
-Handles checking properties on relationships in path - using ALL() function on path relationship properties
 Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties
-

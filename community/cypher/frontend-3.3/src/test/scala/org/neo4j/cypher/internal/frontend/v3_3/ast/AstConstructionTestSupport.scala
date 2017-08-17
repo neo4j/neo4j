@@ -57,4 +57,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     })(pos)
 
   def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
+
+  def TRUE: Expression = True()(pos)
 }

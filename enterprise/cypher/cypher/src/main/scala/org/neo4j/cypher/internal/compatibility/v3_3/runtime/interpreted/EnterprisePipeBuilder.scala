@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => registerExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{IndexSeekModeFactory, LazyLabel, LazyTypes, Pipe, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{LongSlot, PipeBuilder, PipeExecutionBuilderContext, PipelineInformation, _}
@@ -46,7 +46,8 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
                             rewriteAstExpression: (frontEndAst.Expression) => frontEndAst.Expression)
                            (implicit context: PipeExecutionBuilderContext, planContext: PlanContext) extends PipeBuilder {
 
-  private val convertExpressions = rewriteAstExpression andThen expressionConverters.toCommandExpression
+  private val convertExpressions: (frontEndAst.Expression) => commandExpressions.Expression =
+    rewriteAstExpression andThen expressionConverters.toCommandExpression
 
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
@@ -123,11 +124,9 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
 
-      case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
-        // TODO: This is not right!
-        if (predicates.nonEmpty)
-          throw new CantCompileQueryException("does not handle varexpand with predicates")
-        val predicate = VarLengthRegisterPredicate.NONE
+      case VarExpand(sourcePlan, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName),
+      VarPatternLength(min, max), expansionMode, IdName(tempNode), IdName(tempEdge), nodePredicate,
+      edgePredicate, legacyPredicates) =>
 
         val shouldExpandAll = expansionMode match {
           case ExpandAll => true
@@ -136,8 +135,19 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val fromOffset = pipeline.getLongOffsetFor(fromName)
         val toOffset = pipeline.getLongOffsetFor(toName)
         val relOffset = pipeline.getReferenceOffsetFor(relName)
-        VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir,
-          LazyTypes(types), min, max, shouldExpandAll, predicate, pipeline)(id)
+
+        // The node/edge predicates are evaluated on the incoming pipeline, not the produced one
+        val incomingPipeline = pipelines(sourcePlan)
+        val tempNodeOffset = incomingPipeline.getLongOffsetFor(tempNode)
+        val tempEdgeOffset = incomingPipeline.getLongOffsetFor(tempEdge)
+        val sizeOfTemporaryStorage = 2
+        VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir, LazyTypes(types), min,
+          max, shouldExpandAll, pipeline,
+          tempNodeOffset = tempNodeOffset,
+          tempEdgeOffset = tempEdgeOffset,
+          nodePredicate = buildPredicate(nodePredicate),
+          edgePredicate = buildPredicate(edgePredicate),
+          longsToCopy = incomingPipeline.numberOfLongs - sizeOfTemporaryStorage)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
@@ -179,16 +189,16 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       k =>
         pipelineInformation1(k) match {
           case LongSlot(offset, false, CTNode, _) =>
-            k -> runtimeExpressions.NodeFromRegister(offset)
+            k -> registerExpressions.NodeFromRegister(offset)
           case LongSlot(offset, true, CTNode, _) =>
-            k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.NodeFromRegister(offset))
+            k -> registerExpressions.NullCheck(offset, registerExpressions.NodeFromRegister(offset))
           case LongSlot(offset, false, CTRelationship, _) =>
-            k -> runtimeExpressions.RelationshipFromRegister(offset)
+            k -> registerExpressions.RelationshipFromRegister(offset)
           case LongSlot(offset, true, CTRelationship, _) =>
-            k -> runtimeExpressions.NullCheck(offset, runtimeExpressions.RelationshipFromRegister(offset))
+            k -> registerExpressions.NullCheck(offset, registerExpressions.RelationshipFromRegister(offset))
 
           case RefSlot(offset, _, _, _) =>
-            k -> runtimeExpressions.ReferenceFromRegister(offset)
+            k -> registerExpressions.ReferenceFromRegister(offset)
 
           case _ =>
             throw new InternalException(s"Did not find `$k` in the pipeline information")

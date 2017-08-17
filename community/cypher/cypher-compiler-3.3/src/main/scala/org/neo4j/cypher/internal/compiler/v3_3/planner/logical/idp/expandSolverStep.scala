@@ -33,10 +33,9 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
     val result: Iterator[Iterator[LogicalPlan]] =
       for (patternId <- goal.iterator;
            pattern <- registry.lookup(patternId);
-           plan <- table(goal - patternId)
-      ) yield {
+           plan <- table(goal - patternId)) yield {
         if (plan.availableSymbols.contains(pattern.name))
-          Iterator.apply(
+          Iterator(
             planSingleProjectEndpoints(pattern, plan)
           )
         else
@@ -46,7 +45,6 @@ case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelatio
           ).flatten
       }
 
-    // This should be (and is) lazy
     result.flatten
   }
 }
@@ -61,46 +59,90 @@ object expandSolverStep {
     context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
-  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, plan: LogicalPlan, nodeId: IdName)
+  def planSinglePatternSide(qg: QueryGraph, patternRel: PatternRelationship, sourcePlan: LogicalPlan, nodeId: IdName)
                            (implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
-    val availableSymbols = plan.availableSymbols
+    val availableSymbols = sourcePlan.availableSymbols
     if (availableSymbols(nodeId)) {
-      val dir = patternRel.directionRelativeTo(nodeId)
-      val otherSide = patternRel.otherSide(nodeId)
-      val overlapping = availableSymbols.contains(otherSide)
-      val mode = if (overlapping) ExpandInto else ExpandAll
-
-      patternRel.length match {
-        case SimplePatternLength =>
-          Some(context.logicalPlanProducer.planSimpleExpand(plan, nodeId, dir, otherSide, patternRel, mode))
-
-        case length: VarPatternLength =>
-          val availablePredicates = qg.selections.predicatesGiven(availableSymbols + patternRel.name)
-          val (predicates, allPredicates) = availablePredicates.collect {
-            //MATCH ()-[r* {prop:1337}]->()
-            case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name.name))
-              if variable == relId || !innerPredicate.dependencies(relId) =>
-              (variable, innerPredicate) -> all
-            //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-            case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-                                          FunctionInvocation(_, FunctionName(fname), false,
-                                                             Seq(PathExpression(
-                                                             NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
-              if (fname  == "nodes" || fname == "relationships") && startNode.name == nodeId.name && rel.name == patternRel.name.name =>
-              (variable, innerPredicate) -> all
-
-            //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-            case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
-                                            FunctionInvocation(_, FunctionName(fname), false,
-                                                               Seq(PathExpression(
-                                                             NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
-              if (fname  == "nodes" || fname == "relationships") && startNode.name == nodeId.name && rel.name == patternRel.name.name =>
-              (variable, Not(innerPredicate)(innerPredicate.position)) -> none
-          }.unzip
-          Some(context.logicalPlanProducer.planVarExpand(plan, nodeId, dir, otherSide, patternRel, predicates, allPredicates, mode))
-      }
+      Some(produceLogicalPlan(qg, patternRel, sourcePlan, nodeId, availableSymbols))
     } else {
       None
     }
   }
+
+  private def produceLogicalPlan(qg: QueryGraph,
+                                 patternRel: PatternRelationship,
+                                 sourcePlan: LogicalPlan,
+                                 nodeId: IdName,
+                                 availableSymbols: Set[IdName])
+                                (implicit context: LogicalPlanningContext): LogicalPlan = {
+    val dir = patternRel.directionRelativeTo(nodeId)
+    val otherSide = patternRel.otherSide(nodeId)
+    val overlapping = availableSymbols.contains(otherSide)
+    val mode = if (overlapping) ExpandInto else ExpandAll
+
+    patternRel.length match {
+      case SimplePatternLength =>
+        context.logicalPlanProducer.planSimpleExpand(sourcePlan, nodeId, dir, otherSide, patternRel, mode)
+
+      case _: VarPatternLength =>
+        val availablePredicates: Seq[Expression] =
+          qg.selections.predicatesGiven(availableSymbols + patternRel.name)
+        val tempNode = IdName(patternRel.name.name + "_NODES")
+        val tempEdge = IdName(patternRel.name.name + "_RELS")
+        val (nodePredicates: Seq[Expression], edgePredicates: Seq[Expression], solvedPredicates: Seq[Expression]) =
+          extractPredicates(
+            availablePredicates,
+            originalEdgeName = patternRel.name.name,
+            tempEdge = tempEdge.name,
+            tempNode = tempNode.name,
+            originalNodeName = nodeId.name)
+        val nodePredicate = Ands.create(nodePredicates.toSet)
+        val relationshipPredicate = Ands.create(edgePredicates.toSet)
+        val legacyPredicates = extractLegacyPredicates(availablePredicates, patternRel, nodeId)
+
+        context.logicalPlanProducer.planVarExpand(
+          left = sourcePlan,
+          from = nodeId,
+          dir = dir,
+          to = otherSide,
+          pattern = patternRel,
+          temporaryNode = tempNode,
+          temporaryEdge = tempEdge,
+          edgePredicate = relationshipPredicate,
+          nodePredicate = nodePredicate,
+          allPredicates = solvedPredicates,
+          mode = mode,
+          legacyPredicates = legacyPredicates)
+    }
+  }
+
+  def extractLegacyPredicates(availablePredicates: Seq[Expression], patternRel: PatternRelationship,
+                              nodeId: IdName): Seq[(Variable, Expression)] = {
+    availablePredicates.collect {
+      //MATCH ()-[r* {prop:1337}]->()
+      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)), relId@Variable(patternRel.name.name))
+        if variable == relId || !innerPredicate.dependencies(relId) =>
+        (variable, innerPredicate) -> all
+      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
+      case all@AllIterablePredicate(FilterScope(variable, Some(innerPredicate)),
+      FunctionInvocation(_, FunctionName(fname), false,
+      Seq(PathExpression(
+      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
+        if (fname  == "nodes" || fname == "relationships")
+          && startNode.name == nodeId.name
+          && rel.name == patternRel.name.name =>
+        (variable, innerPredicate) -> all
+
+      //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
+      case none@NoneIterablePredicate(FilterScope(variable, Some(innerPredicate)),
+      FunctionInvocation(_, FunctionName(fname), false,
+      Seq(PathExpression(
+      NodePathStep(startNode, MultiRelationshipPathStep(rel, _, NilPathStep) ))) ))
+        if (fname  == "nodes" || fname == "relationships")
+          && startNode.name == nodeId.name
+          && rel.name == patternRel.name.name =>
+        (variable, Not(innerPredicate)(innerPredicate.position)) -> none
+    }.unzip._1
+  }
+
 }

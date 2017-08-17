@@ -26,12 +26,14 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.ir.v3_3.IdName.fromVariable
 import org.neo4j.cypher.internal.ir.v3_3._
 
-class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
+class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
 
@@ -104,6 +106,30 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
       Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
     ))
   }
+
+  test("extracts predicates as expected") {
+    //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
+    val startNode = varFor("startNode")
+    val endNode = varFor("endNode")
+    val innerVar = varFor("n")
+    val rels = varFor("rels")
+    val startId = fromVariable(startNode)
+
+    val patternRel = PatternRelationship(fromVariable(rels), (startId, fromVariable(endNode)), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+    val innerPredicate = propEquality("n", "blocked", 42)
+    val positionToExpressions = IndexedSeq(PathExpression(
+      NodePathStep(startNode, MultiRelationshipPathStep(rels, SemanticDirection.OUTGOING, NilPathStep)))(pos))
+
+    val predicate = AllIterablePredicate(FilterScope(innerVar, Some(innerPredicate))(pos),
+      FunctionInvocation(Namespace()(pos), FunctionName("nodes")(pos), distinct = false, positionToExpressions)(pos))(pos)
+
+    val predicates = Seq(predicate)
+    val tuples: Seq[(Variable, Expression)] = expandSolverStep.extractLegacyPredicates(predicates, patternRel, startId)
+    println(tuples)
+
+  }
+
+
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
 }

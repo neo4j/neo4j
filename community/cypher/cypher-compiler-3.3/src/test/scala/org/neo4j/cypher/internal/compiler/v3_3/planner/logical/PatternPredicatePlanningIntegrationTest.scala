@@ -155,7 +155,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should plan all predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
       case Projection(
-      VarExpand(_, _, _, _, _,_, _, _, _,
+      VarExpand(_, _, _, _, _,_, _, _, _,_,_,_,_,
                      Seq((Variable("n"),
                      In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))))), _) => ()
 
@@ -165,7 +165,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   test("should plan none predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
       case Projection(
-      VarExpand(_, _, _, _, _,_, _, _, _,
+      VarExpand(_, _, _, _, _,_, _, _, _,_,_,_,_,
                 Seq((Variable("n"),
                 Not(In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
 

@@ -140,7 +140,16 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoPipe(source, fromName, relName, toName, dir, LazyTypes(types), predicate)(id = id)
 
-      case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
+      case VarExpand(_,
+                     IdName(fromName),
+                     dir,
+                     projectedDir,
+                     types,
+                     IdName(toName),
+                     IdName(relName),
+                     VarPatternLength(min, max),
+                     expansionMode,
+                     _, _, _, _, predicates) =>
         val predicate = varLengthPredicate(predicates)
 
         val nodeInScope = expansionMode match {

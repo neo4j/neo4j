@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyTypes, Pipe, PipeWithSource, QueryState}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
@@ -41,11 +42,13 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
                                        min: Int,
                                        maxDepth: Option[Int],
                                        shouldExpandAll: Boolean,
-                                       filteringStep: VarLengthRegisterPredicate,
-                                       pipeline: PipelineInformation)
+                                       pipeline: PipelineInformation,
+                                       tempNodeOffset: Int,
+                                       tempEdgeOffset: Int,
+                                       nodePredicate: Predicate,
+                                       edgePredicate: Predicate,
+                                       longsToCopy: Int)
                                       (val id: Id = new Id) extends PipeWithSource(source) {
-  /*  Since Long is used for both edges and nodes, the "why" of these aliases is to make the code a easier to read.*/
-
   type LNode = Long
 
   private def varLengthExpand(node: LNode,
@@ -57,7 +60,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
     new Iterator[(LNode, Seq[Relationship])] {
       override def next(): (LNode, Seq[Relationship]) = {
         val (fromNode, rels) = stack.pop()
-        if (rels.length < maxDepth.getOrElse(Int.MaxValue) && filteringStep.filterNode(row, state)(fromNode)) {
+        if (rels.length < maxDepth.getOrElse(Int.MaxValue)) {
           val relationships: RelationshipIterator = state.query.getRelationshipsForIdsPrimitive(fromNode, dir, types.types(state.query))
 
           var relationship: Relationship = null
@@ -72,11 +75,18 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
           while (relationships.hasNext) {
             val relId = relationships.next()
             relationships.relationshipVisit(relId, relVisitor)
-
             val relationshipIsUniqueInPath = !rels.contains(relationship)
+
             if (relationshipIsUniqueInPath) {
-              // TODO: This call creates an intermediate NodeProxy which should not be necessary
-              stack.push((relationship.getOtherNodeId(fromNode), rels :+ relationship))
+              row.setLongAt(tempEdgeOffset, relId)
+              row.setLongAt(tempNodeOffset, relationship.getOtherNodeId(fromNode))
+              val a = edgePredicate.isTrue(row)(state)
+              val b = nodePredicate.isTrue(row)(state)
+              if (a && b) {
+                // TODO: This call creates an intermediate NodeProxy which should not be necessary
+                stack.push((relationship.getOtherNodeId(fromNode), rels :+ relationship))
+                //                stack.push((otherSide, rels :+ relId))
+              }
             }
           }
         }
@@ -101,34 +111,28 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
     input.flatMap {
       inputRowWithFromNode =>
         val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
-        val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
-        paths collect {
-          case (toNode: LNode, rels: Seq[Relationship])
-            if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
-            val resultRow = PrimitiveExecutionContext(pipeline)
-            resultRow.copyFrom(inputRowWithFromNode)
-            resultRow.setLongAt(toOffset, toNode)
-            resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
-            resultRow
+
+        // We set the fromNode on the temp node offset as well, to be able to run our node predicate and make sure
+        // the start node is valid
+        inputRowWithFromNode.setLongAt(tempNodeOffset, fromNode)
+        if (nodePredicate.isTrue(inputRowWithFromNode)(state)) {
+
+          val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
+          paths collect {
+            case (toNode: LNode, rels: Seq[Relationship])
+              if rels.length >= min && isToNodeValid(inputRowWithFromNode, toNode) =>
+              val resultRow = PrimitiveExecutionContext(pipeline)
+              resultRow.copyFrom(inputRowWithFromNode, longsToCopy)
+              resultRow.setLongAt(toOffset, toNode)
+              resultRow.setRefAt(relOffset, AnyValues.asListOfEdges(rels.toArray))
+              resultRow
+          }
         }
+        else
+          Iterator.empty
     }
   }
 
   private def isToNodeValid(row: ExecutionContext, node: LNode): Boolean =
     shouldExpandAll || row.getLongAt(toOffset) == node
-}
-
-trait VarLengthRegisterPredicate {
-  def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean
-
-  def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean
-}
-
-object VarLengthRegisterPredicate {
-  val NONE: VarLengthRegisterPredicate = new VarLengthRegisterPredicate {
-
-    override def filterNode(row: ExecutionContext, state: QueryState)(node: Long): Boolean = true
-
-    override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Long): Boolean = true
-  }
 }

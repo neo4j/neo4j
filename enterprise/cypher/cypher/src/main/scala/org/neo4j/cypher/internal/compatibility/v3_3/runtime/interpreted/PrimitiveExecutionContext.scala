@@ -32,6 +32,14 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   private val longs = new Array[Long](pipeline.numberOfLongs)
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
+  def copyFrom(input: ExecutionContext, longsToCopy: Int): Unit = input match {
+    case other@PrimitiveExecutionContext(otherPipeline) =>
+      System.arraycopy(other.longs, 0, longs, 0, longsToCopy)
+      System.arraycopy(other.refs, 0, refs, 0, otherPipeline.numberOfReferences)
+
+    case _ => fail()
+  }
+
   def copyFrom(input: ExecutionContext): Unit = input match {
     case other@PrimitiveExecutionContext(otherPipeline) =>
       if (otherPipeline.numberOfLongs > pipeline.numberOfLongs || otherPipeline.numberOfReferences > pipeline.numberOfReferences)
