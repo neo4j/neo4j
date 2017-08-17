@@ -214,9 +214,8 @@ public class GBPTreeLockTest
     private class LockContestant implements Runnable
     {
         private final Runnable lockAction;
-        private AtomicBoolean lockAcquired = new AtomicBoolean();
-        private AtomicBoolean started = new AtomicBoolean();
-
+        private final AtomicBoolean lockAcquired = new AtomicBoolean();
+        private final AtomicBoolean started = new AtomicBoolean();
 
         LockContestant( Runnable lockAction )
         {
