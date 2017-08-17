@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -158,14 +158,11 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
         EmptyResultPipe(source)(id = id)
 
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
-      case _: Selection => // selection relies on inner expressions to interact with variables
-        fallback.build(plan, source)
-
-      case _: OptionalExpand =>
-        fallback.build(plan, source)
-
-      case _: Skip =>
-        fallback.build(plan, source)
+      case _: Selection |
+           _: Limit |
+           _: ErrorPlan |
+           _: Skip =>
+             fallback.build(plan, source)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
