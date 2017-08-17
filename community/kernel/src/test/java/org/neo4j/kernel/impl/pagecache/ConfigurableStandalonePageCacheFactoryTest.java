@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.pagecache;
 import com.google.common.jimfs.Configuration;
 import com.google.common.jimfs.Jimfs;
 import org.apache.commons.lang3.SystemUtils;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,18 +30,23 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.fs.DelegateFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.test.rule.VerboseTimeout;
 
 import static org.junit.Assert.assertTrue;
 
 public class ConfigurableStandalonePageCacheFactoryTest
 {
-    @Test( timeout = 10000 )
+    @Rule
+    public VerboseTimeout timeout = VerboseTimeout.builder().withTimeout( 30, TimeUnit.SECONDS ).build();
+
+    @Test
     public void mustAutomaticallyStartEvictionThread() throws IOException
     {
         try ( FileSystemAbstraction fs = new DelegateFileSystemAbstraction( Jimfs.newFileSystem( jimConfig() ) ) )
