@@ -95,7 +95,7 @@ public class EphemeralIdGenerator implements IdGenerator
     }
 
     @Override
-    public long nextId()
+    public synchronized long nextId()
     {
         if ( freeList != null )
         {
@@ -109,7 +109,7 @@ public class EphemeralIdGenerator implements IdGenerator
     }
 
     @Override
-    public IdRange nextIdBatch( int size )
+    public synchronized IdRange nextIdBatch( int size )
     {
         long[] defragIds = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
         if ( freeList != null && !freeList.isEmpty() )
