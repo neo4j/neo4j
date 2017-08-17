@@ -230,7 +230,7 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "How long drivers should cache the data from the `dbms.cluster.routing.getServers()` procedure." )
     public static final Setting<Duration> cluster_routing_ttl =
-            setting( "causal_clustering.cluster_routing_ttl", DURATION, "5m", min( Duration.ofSeconds( 1 ) ) );
+            setting( "causal_clustering.cluster_routing_ttl", DURATION, "300s", min( Duration.ofSeconds( 1 ) ) );
 
     @Description( "Configure if the `dbms.cluster.routing.getServers()` procedure should include followers as read " +
             "endpoints or return only read replicas. Note: if there are no read replicas in the cluster, followers " +
