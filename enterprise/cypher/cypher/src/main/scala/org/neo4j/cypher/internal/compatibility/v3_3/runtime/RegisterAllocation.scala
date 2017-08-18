@@ -28,22 +28,115 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 import scala.collection.mutable
 
+/**
+  * This object knows how to go from a query plan to pipelines with register slot information calculated.
+  *
+  * The structure of the code is built this maybe weird way instead of being recursive to avoid the JVM execution stack
+  * and instead handle the stacks manually here. Some queries we have seen are deep enough to crash the VM if not
+  * configured carefully.
+  *
+  * The knowledge about how to actually allocate slots for each logical plan lives in the three `allocate` methods,
+  * whereas the knowledge of how to traverse the plan tree is store in the while loops and stacks in the `populate`
+  * method.
+  **/
 object RegisterAllocation {
   def allocateRegisters(lp: LogicalPlan): Map[LogicalPlan, PipelineInformation] = {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
 
-    def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation = lp match {
-      case Aggregation(source, groupingExpressions, aggregationExpressions) =>
-        val oldPipeline = allocate(source, nullable, argument)
+    val planStack = new mutable.Stack[(Boolean, LogicalPlan)]()
+    val outputStack = new mutable.Stack[PipelineInformation]()
+    val argumentStack = new mutable.Stack[PipelineInformation]()
+    var comingFrom = lp
+
+    /**
+      * eagerly populate the stack using all the lhs children
+      */
+    def populate(plan: LogicalPlan, nullIn: Boolean) = {
+      var nullable = nullIn
+      var current = plan
+      while (!current.isLeaf) {
+        if (current.isInstanceOf[Optional])
+          nullable = true
+
+        planStack.push((nullable, current))
+
+        current = current.lhs.get // this should not fail unless we are on a leaf
+      }
+      comingFrom = current
+      planStack.push((nullable, current))
+    }
+
+    populate(lp, nullIn = false)
+
+    while (planStack.nonEmpty) {
+      val (nullable, current) = planStack.pop()
+
+      (current.lhs, current.rhs) match {
+        case (None, None) =>
+          val argument = if (argumentStack.isEmpty) None else Some(argumentStack.top)
+          val output = allocate(current, nullable, argument)
+          result += (current -> output)
+          outputStack.push(output)
+
+        case (Some(_), None) =>
+          val incomingPipeline = outputStack.pop()
+          val output = allocate(current, nullable, incomingPipeline)
+          result += (current -> output)
+          outputStack.push(output)
+
+        case (Some(left), Some(right)) if (comingFrom eq left) && isAnApplyPlan(current) =>
+          planStack.push((nullable, current))
+          val argumentPipeline = outputStack.top
+          argumentStack.push(argumentPipeline.deepClone())
+          populate(right, nullable)
+
+        case (Some(left), Some(right)) if comingFrom eq left =>
+          planStack.push((nullable, current))
+          populate(right, nullable)
+
+        case (Some(_), Some(right)) if comingFrom eq right =>
+          val rhsPipeline = outputStack.pop()
+          val lhsPipeline = outputStack.pop()
+          val output = allocate(current, nullable, lhsPipeline, rhsPipeline)
+          result += (current -> output)
+          if (isAnApplyPlan(current))
+            argumentStack.pop()
+          outputStack.push(output)
+      }
+
+      comingFrom = current
+    }
+
+    result.toMap
+  }
+
+  private def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation =
+    lp match {
+      case _: Argument =>
+        argument.getOrElse(throw new InternalException("Found argument without Apply"))
+
+      case leaf: NodeLogicalLeafPlan =>
+        val pipeline = argument.getOrElse(PipelineInformation.empty)
+        pipeline.newLong(leaf.idName.name, nullable, CTNode)
+        pipeline
+
+      case SingleRow() =>
+        argument.getOrElse(PipelineInformation.empty)
+
+    }
+
+  private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
+    lp match {
+      case Aggregation(_, groupingExpressions, aggregationExpressions) =>
         val newPipeline = PipelineInformation.empty
 
-        def addExpressions(groupingExpressions: Map[String, Expression]) = {
+        def addExpressions(groupingExpressions: Map[String, Expression]): Unit = {
           groupingExpressions foreach {
-            case (key, parserAst.Variable(ident)) =>
-              val slotInfo = oldPipeline(ident)
+            case (_, parserAst.Variable(ident)) =>
+              val slotInfo = incomingPipeline(ident)
               newPipeline.add(ident, slotInfo)
-            case (key, exp) =>
+            case (_, exp) =>
               // TODO: Support this properly. Requires actually using the expression and supporting aggregation
               //newPipeline.newReference(key, nullable = true, CTAny)
               throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
@@ -52,74 +145,47 @@ object RegisterAllocation {
 
         addExpressions(groupingExpressions)
         addExpressions(aggregationExpressions)
-        result += (lp -> newPipeline)
         newPipeline
 
-      case Argument(_) =>
-        val pipeline = argument.getOrElse(throw new InternalException("Found argument without Apply"))
-        result += (lp -> pipeline)
-        pipeline
-
-      case Projection(source, expressions) =>
-        val pipeline = allocate(source, nullable, argument)
-        expressions foreach {
-          case (key, parserAst.Variable(ident)) =>
-            // it's already there. no need to add a new slot for it
-          case (key, exp) =>
-            pipeline.newReference(key, nullable = true, CTAny)
-        }
-        result += (lp -> pipeline)
-        pipeline
-
-      case leaf: NodeLogicalLeafPlan =>
-        val pipeline = argument.getOrElse(PipelineInformation.empty)
-        pipeline.newLong(leaf.idName.name, nullable, CTNode)
-        result += (lp -> pipeline)
-        pipeline
-
-      case ProduceResult(_, source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
-
-      case Selection(_, source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
-
-      case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
+      case Expand(_, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+        val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
         newPipeline.newLong(to, nullable, CTNode)
-        result += (lp -> newPipeline)
         newPipeline
 
-      case Expand(source, _, _, _, _, IdName(relName), ExpandInto) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
+      case Expand(_, _, _, _, _, IdName(relName), ExpandInto) =>
+        val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(relName, nullable, CTRelationship)
-        result += (lp -> newPipeline)
         newPipeline
 
-      case Optional(source, _) =>
-        val pipeline = allocate(source, nullable = true, argument)
-        result += (lp -> pipeline)
-        pipeline
+      case Optional(_, _) =>
+        incomingPipeline
 
-      case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandAll, _) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
+      case _: ProduceResult |
+           _: Selection |
+           _: Skip
+      =>
+        incomingPipeline
+
+      case Projection(_, expressions) =>
+        expressions foreach {
+          case (key, parserAst.Variable(ident)) if key == ident =>
+          // it's already there. no need to add a new slot for it
+          case (key, _) =>
+            incomingPipeline.newReference(key, nullable = true, CTAny)
+        }
+        incomingPipeline
+
+      case OptionalExpand(_, _, _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+        val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
         newPipeline.newLong(to, nullable = true, CTNode)
-        result += (lp -> newPipeline)
         newPipeline
 
-      case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandInto, _) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
+
+      case OptionalExpand(_, _, _, _, _, IdName(rel), ExpandInto, _) =>
+        val newPipeline = incomingPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
-        result += (lp -> newPipeline)
         newPipeline
 
         case VarExpand(lhs: LogicalPlan,
@@ -136,70 +202,65 @@ object RegisterAllocation {
                        _,
                        _,
                        _) =>
-          val oldPipeline = allocate(lhs, nullable, argument)
-          val newPipeline = oldPipeline.deepClone()
+          val newPipeline = incomingPipeline.deepClone()
 
           // We register these on the incoming pipeline after cloning it, since we don't need these slots in
           // the produced rows
-          oldPipeline.newLong(tempNode, nullable = false, CTNode)
-          oldPipeline.newLong(tempEdge, nullable = false, CTRelationship)
+          incomingPipeline.newLong(tempNode, nullable = false, CTNode)
+          incomingPipeline.newLong(tempEdge, nullable = false, CTRelationship)
 
           newPipeline.newLong(to, nullable, CTNode)
           newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-          result += (lp -> newPipeline)
           newPipeline
 
-      case Skip(source, _) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
+      case CreateNode(_, IdName(name), _, _) =>
+        incomingPipeline.newLong(name, nullable = false, CTNode)
+        incomingPipeline
 
-      case Apply(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
-        result += (lp -> rhsPipeline)
+      case EmptyResult(_) =>
+        incomingPipeline
+
+      case UnwindCollection(_, IdName(variable), expression) =>
+        val newPipeline = incomingPipeline.deepClone()
+        newPipeline.newReference(variable, nullable = true, CTAny)
+        newPipeline
+    }
+
+  private def allocate(plan: LogicalPlan,
+                       nullable: Boolean,
+                       lhsPipeline: PipelineInformation,
+                       rhsPipeline: PipelineInformation): PipelineInformation =
+    plan match {
+      case _: Apply =>
         rhsPipeline
 
-      case CartesianProduct(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, argument)
+      case _:CartesianProduct =>
         val cartesianProductPipeline = lhsPipeline.deepClone()
         rhsPipeline.foreachSlot {
           case (k, slot) =>
             cartesianProductPipeline.add(k, slot)
         }
-        result += (lp -> cartesianProductPipeline)
         cartesianProductPipeline
 
-      case CreateNode(source, IdName(name), labels, properties) =>
-        val pipeline = allocate(source, nullable, argument)
-        pipeline.newLong(name, nullable = false, CTNode)
-        result += (lp -> pipeline)
-        pipeline
 
-      case SingleRow() =>
-        val pipeline = argument.getOrElse(PipelineInformation.empty)
-        result += (lp -> pipeline)
-        pipeline
 
-      case EmptyResult(source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
 
-      case UnwindCollection(source, IdName(variable), expression) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newReference(variable, nullable = true, CTAny)
-        result += (lp -> newPipeline)
-        newPipeline
+
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
-    allocate(lp, nullable = false, None)
+  private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
+    case _: AntiConditionalApply |
+         _: Apply |
+         _: AbstractSemiApply |
+         _: AbstractSelectOrSemiApply |
+         _: AbstractLetSelectOrSemiApply |
+         _: ConditionalApply |
+         _: ForeachApply |
+         _: RollUpApply => true
 
-    result.toMap
+    case _ => false
   }
 }
 
