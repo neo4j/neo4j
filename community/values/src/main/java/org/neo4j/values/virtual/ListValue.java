@@ -780,6 +780,84 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     }
 
+    static final class ConcatList extends ListValue
+    {
+        private final ListValue[] lists;
+        private int size = -1;
+
+        ConcatList( ListValue[] lists )
+        {
+            this.lists = lists;
+        }
+
+        @Override
+        public int size()
+        {
+            if ( size < 0 )
+            {
+                int s = 0;
+                for ( ListValue list : lists )
+                {
+                    s += list.size();
+                }
+                size = s;
+            }
+            return size;
+        }
+
+        @Override
+        public AnyValue value( int offset )
+        {
+            for ( ListValue list : lists )
+            {
+                int size = list.size();
+                if ( offset < size )
+                {
+                    return list.value( offset );
+                }
+                offset -= size;
+            }
+            throw new IndexOutOfBoundsException();
+        }
+
+        @Override
+        public AnyValue[] asArray()
+        {
+            AnyValue[] values = new AnyValue[size()];
+            int start = 0;
+            for ( ListValue list : lists )
+            {
+                int length = list.length();
+                System.arraycopy( list.asArray(), 0, values, start, length );
+                start += length;
+            }
+            return values;
+        }
+
+        @Override
+        public int computeHash()
+        {
+            int hashCode = 1;
+            int size = size();
+            for ( int i = 0; i < size; i++ )
+            {
+                hashCode = 31 * hashCode + value( i ).hashCode();
+            }
+            return hashCode;
+        }
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            writer.beginList( size() );
+            for ( int i = 0; i < size(); i++ )
+            {
+                value( i ).writeTo( writer );
+            }
+            writer.endList();
+        }
+    }
+
     @Override
     public VirtualValueGroup valueGroup()
     {

@@ -110,21 +110,7 @@ public final class VirtualValues
 
     public static ListValue concat( ListValue... lists )
     {
-        int totalSize = 0;
-        for ( ListValue list : lists )
-        {
-            totalSize += list.size();
-        }
-
-        AnyValue[] anyValues = new AnyValue[totalSize];
-        int startPoint = 0;
-        for ( ListValue list : lists )
-        {
-            System.arraycopy( list.asArray(), 0, anyValues, startPoint, list.size() );
-            startPoint += list.size();
-        }
-
-        return VirtualValues.list( anyValues );
+        return new ListValue.ConcatList( lists );
     }
 
     public static ListValue appendToList( ListValue list, AnyValue value )
