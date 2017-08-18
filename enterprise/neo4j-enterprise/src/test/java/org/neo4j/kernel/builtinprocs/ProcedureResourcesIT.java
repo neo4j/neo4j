@@ -237,6 +237,10 @@ public class ProcedureResourcesIT
             parameters.add( "'noKey'" );
             parameters.add( "'noValue'" );
             break;
+        case "dbms.setConfigValue":
+            parameters.add( "'dbms.logs.query.enabled'" );
+            parameters.add( "'false'" );
+            break;
         default:
         }
         return parameters;
