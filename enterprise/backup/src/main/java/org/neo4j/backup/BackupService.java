@@ -118,6 +118,7 @@ class BackupService
     private final Supplier<FileSystemAbstraction> fileSystemSupplier;
     private final LogProvider logProvider;
     private final Log log;
+    private final OutputStream logDestination;
     private final Monitors monitors;
 
     BackupService()
@@ -127,15 +128,17 @@ class BackupService
 
     BackupService( OutputStream logDestination )
     {
-        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ),
+        this( DefaultFileSystemAbstraction::new, FormattedLogProvider.toOutputStream( logDestination ), logDestination,
                 new Monitors() );
     }
 
-    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider, Monitors monitors )
+    BackupService( Supplier<FileSystemAbstraction> fileSystemSupplier, LogProvider logProvider,
+                   OutputStream logDestination, Monitors monitors )
     {
         this.fileSystemSupplier = fileSystemSupplier;
         this.logProvider = logProvider;
         this.log = logProvider.getLog( getClass() );
+        this.logDestination = logDestination;
         this.monitors = monitors;
         monitors.addMonitorListener( new StoreCopyClientLoggingMonitor( log ), getClass().getName() );
     }
@@ -248,8 +251,8 @@ class BackupService
         boolean consistent = false;
         try
         {
-            consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration, ProgressMonitorFactory.textual( System.err ),
-                            logProvider, fileSystem, pageCache, false,
+            consistent = consistencyCheck.runFull( targetDirectory, tuningConfiguration,
+                    ProgressMonitorFactory.textual( logDestination ), logProvider, fileSystem, pageCache, false,
                             new CheckConsistencyConfig( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckFailedException e )

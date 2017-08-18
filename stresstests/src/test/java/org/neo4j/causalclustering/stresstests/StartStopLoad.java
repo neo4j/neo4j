@@ -20,6 +20,7 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.BooleanSupplier;
 
@@ -35,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
 
 import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
 {
@@ -71,7 +73,8 @@ class StartStopLoad extends RepeatUntilOnSelectedMemberCallable
             fs.copyRecursively( storeDir, storeDirectory.storeDir() );
             new CopiedStoreRecovery( Config.defaults(), kernelExtensions.listFactories(),  pageCache )
                     .recoverCopiedStore( storeDirectory.storeDir() );
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()} );
+            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
+                    new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( System.err ) );
             if ( !result.isSuccessful() )
             {
                 throw new RuntimeException( "Not consistent database in " + storeDir );

@@ -19,16 +19,16 @@
  */
 package org.neo4j.consistency;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.mockito.ArgumentCaptor;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Properties;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.mockito.ArgumentCaptor;
 
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
@@ -72,10 +72,9 @@ public class ConsistencyCheckToolTest
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemError = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemError, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         verify( service ).runFullConsistencyCheck( eq( storeDir ), any( Config.class ),
@@ -90,10 +89,9 @@ public class ConsistencyCheckToolTest
         File storeDir = storeDirectory.directory();
         String[] args = {storeDir.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemOut, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -115,10 +113,9 @@ public class ConsistencyCheckToolTest
 
         String[] args = {storeDir.getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         // when
-        runConsistencyCheckToolWith( service, systemOut, args );
+        runConsistencyCheckToolWith( service, args );
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
@@ -134,12 +131,11 @@ public class ConsistencyCheckToolTest
         // given
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         String[] args = {};
-        PrintStream systemError = mock( PrintStream.class );
 
         try
         {
             // when
-            runConsistencyCheckToolWith( service, systemError, args );
+            runConsistencyCheckToolWith( service, args );
             fail( "should have thrown exception" );
         }
         catch ( ConsistencyCheckTool.ToolFailureException e )
@@ -156,12 +152,11 @@ public class ConsistencyCheckToolTest
         File configFile = storeDirectory.file( "nonexistent_file" );
         String[] args = {storeDirectory.directory().getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
-        PrintStream systemOut = mock( PrintStream.class );
 
         try
         {
             // when
-            runConsistencyCheckToolWith( service, systemOut, args );
+            runConsistencyCheckToolWith( service, args );
             fail( "should have thrown exception" );
         }
         catch ( ConsistencyCheckTool.ToolFailureException e )
@@ -202,15 +197,17 @@ public class ConsistencyCheckToolTest
     private void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )
             throws IOException, ToolFailureException
     {
-        new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class ) ).run( args );
+        new ConsistencyCheckTool( mock( ConsistencyCheckService.class ), fileSystem, mock( PrintStream.class),
+                mock( PrintStream.class ) ).run( args );
     }
 
     private void runConsistencyCheckToolWith( ConsistencyCheckService
-            consistencyCheckService, PrintStream systemError, String... args ) throws ToolFailureException, IOException
+            consistencyCheckService, String... args ) throws ToolFailureException, IOException
     {
         try ( FileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction() )
         {
-            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, systemError ).run( args );
+            new ConsistencyCheckTool( consistencyCheckService, fileSystemAbstraction, mock( PrintStream.class ),
+                    mock( PrintStream.class ) ).run( args );
         }
     }
 }

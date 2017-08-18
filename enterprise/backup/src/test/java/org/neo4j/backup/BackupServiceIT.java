@@ -19,6 +19,16 @@
  */
 package org.neo4j.backup;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.ConnectException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.junit.Before;
@@ -27,15 +37,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.mockito.Mockito;
 
-import java.io.File;
-import java.io.FileFilter;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
@@ -119,6 +120,13 @@ public class BackupServiceIT
     private static final String NODE_STORE = StoreFactory.NODE_STORE_NAME;
     private static final String RELATIONSHIP_STORE = StoreFactory.RELATIONSHIP_STORE_NAME;
     private static final String BACKUP_HOST = "localhost";
+    private static final OutputStream NULL_OUTPUT = new OutputStream()
+    {
+        @Override
+        public void write( int b ) throws IOException
+        {
+        }
+    };
 
     private final Monitors monitors = new Monitors();
     private final IOLimiter limiter = IOLimiter.unlimited();
@@ -152,13 +160,13 @@ public class BackupServiceIT
     private BackupService backupService()
     {
         return new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                FormattedLogProvider.toOutputStream( System.out ), new Monitors() );
+                FormattedLogProvider.toOutputStream( NULL_OUTPUT ), NULL_OUTPUT, new Monitors() );
     }
 
     private BackupService backupService( LogProvider logProvider )
     {
         return new BackupService( () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ),
-                logProvider, new Monitors() );
+                logProvider, NULL_OUTPUT, new Monitors() );
     }
 
     @Test
