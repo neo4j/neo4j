@@ -33,6 +33,4 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)
         if (negated) innerResults.isEmpty else innerResults.nonEmpty
     }
   }
-
-  private def name = if (negated) "AntiSemiApply" else "SemiApply"
 }

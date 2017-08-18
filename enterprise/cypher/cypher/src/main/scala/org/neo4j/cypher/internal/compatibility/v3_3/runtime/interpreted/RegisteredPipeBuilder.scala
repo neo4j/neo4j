@@ -204,8 +204,18 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     val id = idMap.getOrElse(plan, new Id)
 
     plan match {
-      case Apply(_, _) => ApplyRegisterPipe(lhs, rhs)(id)
-      case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
+      case Apply(_, _) =>
+        ApplyRegisterPipe(lhs, rhs)(id)
+
+      case SemiApply(_,_) =>
+        SemiApplyRegisterPipe(lhs, rhs, negated = false)(id)
+
+      case AntiSemiApply(_,_) =>
+        SemiApplyRegisterPipe(lhs, rhs, negated = true)(id)
+
+      case _:CartesianProduct =>
+        fallback.build(plan, lhs, rhs)
+
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }

@@ -141,6 +141,18 @@ object RegisterAllocation {
         result += (lp -> rhsPipeline)
         rhsPipeline
 
+      case SemiApply(lhs, rhs) =>
+        val lhsPipeline = allocate(lhs, nullable, argument)
+        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+        result += (lp -> rhsPipeline)
+        rhsPipeline
+
+      case AntiSemiApply(lhs, rhs) =>
+        val lhsPipeline = allocate(lhs, nullable, argument)
+        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+        result += (lp -> rhsPipeline)
+        rhsPipeline
+
       case CartesianProduct(lhs, rhs) =>
         val lhsPipeline = allocate(lhs, nullable, argument)
         val rhsPipeline = allocate(rhs, nullable, argument)
