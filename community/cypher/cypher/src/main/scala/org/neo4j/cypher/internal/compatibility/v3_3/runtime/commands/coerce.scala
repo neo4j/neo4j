@@ -42,7 +42,7 @@ object coerce {
         case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
         case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
         case CTMap => value match {
-          case IsMap(m) => m
+          case IsMap(m) => m(context)
           case _ => throw cantCoerce(value, typ)
         }
         case t: ListType => value match {

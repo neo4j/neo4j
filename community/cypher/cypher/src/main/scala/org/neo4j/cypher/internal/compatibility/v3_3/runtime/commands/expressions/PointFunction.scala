@@ -32,8 +32,9 @@ import org.neo4j.values.{AnyValue, AnyValues}
 case class PointFunction(data: Expression) extends NullInNullOutExpression(data) {
   override def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
     case IsMap(mapCreator) =>
-      if (containsNull(mapCreator)) Values.NO_VALUE
-      else AnyValues.fromMap(mapCreator)
+      val map = mapCreator(state.query)
+      if (containsNull(map)) Values.NO_VALUE
+      else AnyValues.fromMap(map)
     case x => throw new CypherTypeException(s"Expected a map but got $x")
   }
 

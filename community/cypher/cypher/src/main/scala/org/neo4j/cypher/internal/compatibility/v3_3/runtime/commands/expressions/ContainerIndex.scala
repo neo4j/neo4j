@@ -37,7 +37,7 @@ with ListSupport {
         if (item == Values.NO_VALUE) Values.NO_VALUE
         else {
           val key = CastSupport.castOrFail[TextValue](item)
-          m.get(key.stringValue())
+          m(state.query).get(key.stringValue())
         }
 
       case IsList(collection) =>

@@ -33,8 +33,6 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-import scala.collection.Map
-
 case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
                                   labels: Seq[LazyLabel], properties: Option[Expression])
                                    (val id: Id = new Id) extends PipeWithSource(source) with Pipe{
@@ -58,7 +56,7 @@ case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformati
         case _: Node | _: Relationship =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(m) =>
-          m.foreach(new BiConsumer[String, AnyValue] {
+          m(state.query).foreach(new BiConsumer[String, AnyValue] {
             override def accept(k: String, v: AnyValue): Unit = setProperty(nodeId, k, v, state.query)
           })
         case _ =>

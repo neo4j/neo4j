@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.map
 
@@ -61,23 +62,26 @@ class PropertiesFunctionTest extends CypherFunSuite {
   }
 
   test("should map nodes to maps") {
-    val m = new util.HashMap[String, AnyRef]()
-    m.put("a", "x")
-    m.put("b", "y")
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    when(node.getAllProperties).thenReturn(m)
+    when(nodeOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(query.getPropertyKeyName(0)).thenReturn("a")
+    when(query.getPropertyKeyName(1)).thenReturn("b")
+    when(nodeOps.getProperty(0, 0)).thenReturn(stringValue("x"))
+    when(nodeOps.getProperty(0, 1)).thenReturn(stringValue("y"))
 
     properties(node) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }
 
   test("should map relationships to maps") {
-    val m = new util.HashMap[String, AnyRef]()
-    m.put("a", "x")
-    m.put("b", "y")
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
-    when(rel.getAllProperties).thenReturn(m)
+    when(rel.getId).thenReturn(0)
+    when(relOps.propertyKeyIds(0)).thenReturn(List(0,1).iterator)
+    when(query.getPropertyKeyName(0)).thenReturn("a")
+    when(query.getPropertyKeyName(1)).thenReturn("b")
+    when(relOps.getProperty(0, 0)).thenReturn(stringValue("x"))
+    when(relOps.getProperty(0, 1)).thenReturn(stringValue("y"))
 
     properties(rel) should equal(map(Array("a", "b"), Array(stringValue("x"), stringValue("y"))))
   }

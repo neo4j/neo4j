@@ -38,7 +38,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
 
     val mapOfProperties = variableValue match {
       case v if v == Values.NO_VALUE => return Values.NO_VALUE
-      case IsMap(m) => if (includeAllProps) m else VirtualValues.emptyMap()
+      case IsMap(m) => if (includeAllProps) m(state.query) else VirtualValues.emptyMap()
     }
     val mapOfLiteralValues = literalExpressions.map {
       case (k, e) => (k, e(ctx))

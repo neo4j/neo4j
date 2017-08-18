@@ -37,9 +37,16 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
 
     val node = mock[Node]
-    when(node.getAllProperties).thenReturn(Map("theProp1" -> "foo", "OtherProp" -> "bar", "MoreProp" -> "baz").asJava
-                                             .asInstanceOf[java.util.Map[String, AnyRef]])
+
     val queryContext = mock[QueryContext]
+
+    val ops = mock[Operations[Node]]
+    when(queryContext.nodeOps).thenReturn(ops)
+    when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator(11, 12, 13))
+
+    when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
+    when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
+    when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
@@ -48,7 +55,7 @@ class KeysFunctionTest extends CypherFunSuite {
     val result = KeysFunction(Variable("n"))(ctx)(state)
 
     // THEN
-    result should equal(list(stringValue("MoreProp"), stringValue("theProp1"), stringValue("OtherProp")))
+    result should equal(list(stringValue("theProp1"), stringValue("OtherProp"), stringValue("MoreProp")))
   }
 
   test("test without Property Keys ") {

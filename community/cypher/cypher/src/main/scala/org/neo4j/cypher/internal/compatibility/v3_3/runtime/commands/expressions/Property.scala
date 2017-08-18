@@ -43,7 +43,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case None => Values.NO_VALUE
         case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
       }
-    case IsMap(mapFunc) => mapFunc.get(propertyKey.name)
+    case IsMap(mapFunc) => mapFunc(state.query).get(propertyKey.name)
     case other => throw new CypherTypeException(s"Type mismatch: expected a map but was $other")
   }
 

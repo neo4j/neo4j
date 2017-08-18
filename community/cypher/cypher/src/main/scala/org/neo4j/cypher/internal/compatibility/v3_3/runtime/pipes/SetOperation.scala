@@ -47,7 +47,7 @@ object SetOperation {
     /* Make the map expression look like a map */
     val qtx = state.query
     expression(executionContext)(state) match {
-      case IsMap(map) => propertyKeyMap(qtx, map)
+      case IsMap(map) => propertyKeyMap(qtx, map(qtx))
       case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
     }
   }

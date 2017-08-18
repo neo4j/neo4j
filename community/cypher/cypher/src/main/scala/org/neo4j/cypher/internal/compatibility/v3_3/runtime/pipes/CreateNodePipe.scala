@@ -51,7 +51,7 @@ abstract class BaseCreateNodePipe(src: Pipe, key: String, labels: Seq[LazyLabel]
         case _: NodeValue | _: EdgeValue =>
           throw new CypherTypeException("Parameter provided for node creation is not a Map")
         case IsMap(map) =>
-          map.foreach(new BiConsumer[String, AnyValue] {
+          map(state.query).foreach(new BiConsumer[String, AnyValue] {
             override def accept(k: String, v: AnyValue): Unit = setProperty(nodeId, k, v, state.query)
           })
 

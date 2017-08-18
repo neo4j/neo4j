@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValue
 case class PropertiesFunction(a: Expression) extends NullInNullOutExpression(a) {
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) =
     value match {
-      case IsMap(mapValue) => mapValue
+      case IsMap(mapValue) => mapValue(state.query)
       case v =>
         throw new CypherTypeException(s"Expected a Node, Relationship, or Map, got: $v")
     }
