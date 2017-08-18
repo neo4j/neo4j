@@ -103,6 +103,17 @@ trait CypherComparisonSupport extends CypherTestSupport {
       config.scenarios.head
   }
 
+  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
+
+  protected def updateWith(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, ignoreScenarios, query, false, params: _*)
+
+  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                    query: String,
+                                                    params: (String, Any)*): InternalExecutionResult =
+    updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
+
   protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
                                                     query: String,
                                                     checkPlans: Boolean,
@@ -160,19 +171,19 @@ trait CypherComparisonSupport extends CypherTestSupport {
     lastResult
   }
 
-  protected def updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, true, params: _*)
-
-  protected def updateWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = updateWithAndExpectPlansToBeSimilar(expectedSuccessFrom, query, false, params: _*)
-
-  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
-
-  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult = succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
-
-  def assertHasNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
+  private def assertHasNoOverlap(expectedSuccessFrom: TestConfiguration, ignoreScenarios: TestConfiguration) = {
     val hasOverlap = expectedSuccessFrom.scenarios.exists(ignoreScenarios.scenarios.contains(_))
     if (hasOverlap)
       fail("Set of configurations that were expected to succeed and the set of configs that should be ignored are overlapping")
   }
+
+  protected def succeedWith(expectedSuccessFrom: TestConfiguration, query: String, params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, false, params: _*)
+
+  protected def succeedWithAndExpectPlansToBeSimilar(expectedSuccessFrom: TestConfiguration,
+                                                     query: String,
+                                                     params: (String, Any)*): InternalExecutionResult =
+    succeedWithAndMaybeCheckPlans(expectedSuccessFrom, query, true, params: _*)
 
   protected def succeedWithAndMaybeCheckPlans(expectedSuccessFrom: TestConfiguration, query: String, checkPlans: Boolean, params: (String, Any)*):
   InternalExecutionResult =
