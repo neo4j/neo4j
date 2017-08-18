@@ -172,7 +172,7 @@ public final class VirtualValues
     {
         assert nodes != null;
         assert edges != null;
-        if ( nodes.length + edges.length % 2 == 0 )
+        if ( (nodes.length + edges.length) % 2 == 0 )
         {
             throw new IllegalArgumentException(
                     "Tried to construct a path that is not built like a path: even number of elements" );
