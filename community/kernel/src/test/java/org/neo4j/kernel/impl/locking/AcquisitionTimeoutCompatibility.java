@@ -45,7 +45,7 @@ import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
 public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSuite.Compatibility
 {
 
-    private final long TEST_TIMEOUT = 4000;
+    private final long TEST_TIMEOUT_SECONDS = 30;
     private FakeClock clock;
     private Config customConfig;
     private Locks lockManager;
@@ -54,7 +54,7 @@ public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSui
 
     @Rule
     public VerboseTimeout timeout = VerboseTimeout.builder()
-                                        .withTimeout( TEST_TIMEOUT, TimeUnit.MILLISECONDS )
+                                        .withTimeout( TEST_TIMEOUT_SECONDS, TimeUnit.SECONDS )
                                         .build();
 
     public AcquisitionTimeoutCompatibility( LockingCompatibilityTestSuite suite )
