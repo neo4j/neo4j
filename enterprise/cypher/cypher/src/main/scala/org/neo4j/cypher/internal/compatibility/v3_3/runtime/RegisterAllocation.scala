@@ -235,8 +235,8 @@ object RegisterAllocation {
         newPipeline
 
       case Eager(_) =>
-        val pipeline = incomingPipeline.deepClone()
-        pipeline
+        val newPipeline = incomingPipeline.deepClone()
+        newPipeline
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
