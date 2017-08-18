@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.AggregationExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpressions}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
@@ -157,6 +159,18 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case EmptyResult(_) =>
         EmptyResultPipe(source)(id = id)
 
+      case Aggregation(_, groupingExpressions, aggregatingExpressions) if aggregatingExpressions.isEmpty =>
+        //TODO: Distinct ?
+        throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
+
+      case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
+        EagerAggregationRegisterPipe(
+          source,
+          pipeline,
+          groupingExpressions.keySet,
+          Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](aggregatingExpressions, convertExpressions(_).asInstanceOf[AggregationExpression])
+        )(id = id)
+
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection => // selection relies on inner expressions to interact with variables
         fallback.build(plan, source)
@@ -208,7 +222,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case Apply(_, _) => ApplyRegisterPipe(lhs, rhs)(id)
-      case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }

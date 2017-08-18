@@ -34,10 +34,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
@@ -56,7 +56,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+      val converters = new ExpressionConverters(EnterpriseExpressionConverters, CommunityExpressionConverter)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
         expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)

@@ -91,10 +91,10 @@ trait PrimitiveCachingExpandInto {
 
     val relVisitor = new RelationshipVisitor[InternalException] {
       override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =
-        if (end == startNodeId || end == endNodeId) {
-          connectedRelationships += relationshipId
-          connected = true
-        }
+        if ((end == startNodeId && start == endNodeId) || (start == startNodeId && end == endNodeId)) {
+        connectedRelationships += relationshipId
+        connected = true
+      }
     }
 
     new PrimitiveLongIterator {
