@@ -287,9 +287,6 @@ public class ListQueriesProcedureTest
             db.schema().awaitIndexesOnline( 60, SECONDS );
             tx.success();
         }
-        catch ( IllegalStateException e )
-        {
-        }
     }
 
     @Test
