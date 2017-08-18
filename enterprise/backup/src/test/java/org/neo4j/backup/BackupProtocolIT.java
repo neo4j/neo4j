@@ -26,6 +26,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.monitor.RequestMonitor;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.ResponseUnpacker;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.helpers.HostnamePort;
@@ -76,7 +77,7 @@ public class BackupProtocolIT
         Response<Void> response = Response.EMPTY;
         StoreId storeId = response.getStoreId();
         String host = "localhost";
-        int port = BackupServer.DEFAULT_PORT;
+        int port = PortAuthority.allocatePort();
         LifeSupport life = new LifeSupport();
 
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();

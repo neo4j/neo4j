@@ -26,6 +26,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
 
+import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.DatabaseManagementSystemSettings;
@@ -35,6 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -47,7 +50,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class RestoreDatabaseCommandTest
+public class RestoreDatabaseCommandIT
 {
     @Rule
     public final TestDirectory directory = TestDirectory.testDirectory();
@@ -155,7 +158,9 @@ public class RestoreDatabaseCommandTest
         new RestoreDatabaseCommand( fileSystemRule.get(), fromPath, config, databaseName, true ).execute();
 
         // then
-        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabase( toPath );
+        GraphDatabaseService copiedDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( toPath )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
 
         try ( Transaction ignored = copiedDb.beginTx() )
         {
@@ -206,7 +211,9 @@ public class RestoreDatabaseCommandTest
     {
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
 
-        GraphDatabaseService db = factory.newEmbeddedDatabase( fromPath );
+        GraphDatabaseService db = factory.newEmbeddedDatabaseBuilder( fromPath )
+                .setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + PortAuthority.allocatePort() )
+                .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )
         {

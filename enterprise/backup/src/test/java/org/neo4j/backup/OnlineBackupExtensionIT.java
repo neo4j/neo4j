@@ -21,12 +21,13 @@ package org.neo4j.backup;
 
 import java.util.Map;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 
-public class TestOnlineBackupExtension extends KernelExtensionFactoryContractTest
+public class OnlineBackupExtensionIT extends KernelExtensionFactoryContractTest
 {
-    public TestOnlineBackupExtension()
+    public OnlineBackupExtensionIT()
     {
         super( OnlineBackupExtensionFactory.KEY, OnlineBackupExtensionFactory.class );
     }
@@ -38,6 +39,7 @@ public class TestOnlineBackupExtension extends KernelExtensionFactoryContractTes
         if ( shouldLoad )
         {
             configuration.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.TRUE );
+            configuration.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:" + PortAuthority.allocatePort() );
         }
         return configuration;
     }

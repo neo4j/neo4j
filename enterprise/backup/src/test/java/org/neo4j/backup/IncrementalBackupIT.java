@@ -27,6 +27,7 @@ import org.junit.rules.TestName;
 
 import java.io.File;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -84,9 +86,10 @@ public class IncrementalBackupIT
     public void shouldDoIncrementalBackup() throws Exception
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
-        server = startServer( serverPath, "127.0.0.1:6362" );
+        int port = PortAuthority.allocatePort();
+        server = startServer( serverPath, "127.0.0.1:" + port );
 
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port );
 
         backup.full( backupPath.getPath() );
 
@@ -94,7 +97,7 @@ public class IncrementalBackupIT
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = addMoreData2( serverPath );
-        server = startServer( serverPath, null );
+        server = startServer( serverPath, "127.0.0.1:" + port );
         backup.incremental( backupPath.getPath() );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
@@ -123,9 +126,10 @@ public class IncrementalBackupIT
          * Note that this problem can also happen in HA slaves.
          */
         DbRepresentation initialDataSetRepresentation = createInitialDataSet( serverPath );
-        server = startServer( serverPath, "127.0.0.1:6362" );
+        int port = PortAuthority.allocatePort();
+        server = startServer( serverPath, "127.0.0.1:" + port );
 
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+        OnlineBackup backup = OnlineBackup.from( "127.0.0.1", port);
 
         backup.full( backupPath.getPath() );
 
@@ -133,7 +137,7 @@ public class IncrementalBackupIT
         shutdownServer( server );
 
         DbRepresentation furtherRepresentation = createTransactiongWithWeirdRelationshipGroupRecord( serverPath );
-        server = startServer( serverPath, null );
+        server = startServer( serverPath, "127.0.0.1:" + port );
         backup.incremental( backupPath.getPath() );
         assertEquals( furtherRepresentation, getBackupDbRepresentation() );
         shutdownServer( server );
@@ -235,6 +239,6 @@ public class IncrementalBackupIT
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupPath );
+        return DbRepresentation.of( backupPath, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
     }
 }

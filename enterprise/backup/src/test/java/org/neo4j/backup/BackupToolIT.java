@@ -29,16 +29,23 @@ import java.io.File;
 import java.io.PrintStream;
 import java.nio.file.Path;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
@@ -79,14 +86,30 @@ public class BackupToolIT
         prepareNeoStoreFile( StandardV2_3.STORE_VERSION );
 
         // Start database to backup
-        dbRule.getGraphDatabaseAPI();
+        int backupPort = PortAuthority.allocatePort();
+        GraphDatabaseService db = startGraphDatabase( backupPort );
+        try
+        {
+            expected.expect( BackupTool.ToolFailureException.class );
+            expected.expectMessage( "Failed to perform backup because existing backup is from a different version." );
 
-        expected.expect( BackupTool.ToolFailureException.class );
-        expected.expectMessage( "Failed to perform backup because existing backup is from a different version." );
+            // Perform backup
+            backupTool.executeBackup( new HostnamePort( "localhost", backupPort ), backupDir.toFile(),
+                    ConsistencyCheck.NONE, Config.defaults(), 20L * 60L * 1000L, false );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
 
-        // Perform backup
-        backupTool.executeBackup( new HostnamePort( "localhost", 6362 ), backupDir.toFile(),
-                ConsistencyCheck.NONE, Config.defaults(), 20L * 60L * 1000L, false );
+    private GraphDatabaseService startGraphDatabase( int backupPort )
+    {
+        return new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.directory() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE )
+                .setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1:" + backupPort )
+                .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .newGraphDatabase();
     }
 
     private void prepareNeoStoreFile( String storeVersion ) throws Exception
