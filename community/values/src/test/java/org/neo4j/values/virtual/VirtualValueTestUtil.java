@@ -116,8 +116,8 @@ public class VirtualValueTestUtil
 
     public static void assertNotEqual( VirtualValue a, VirtualValue b )
     {
-        assertFalse( "should not equal", a.equals( b ) );
-        assertFalse( "should not equal", b.equals( a ) );
+        assertFalse( a + " should not equal " + b, a.equals( b ) );
+        assertFalse( b + "should not equal " + a, b.equals( a ) );
     }
 
     public static void assertEqualValues( VirtualValue a, Value b )
