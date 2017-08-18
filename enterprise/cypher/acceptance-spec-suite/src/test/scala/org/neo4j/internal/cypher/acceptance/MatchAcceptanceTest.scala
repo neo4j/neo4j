@@ -574,9 +574,9 @@ return p""")
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    succeedWith(Configs.AllExceptSleipnir, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    succeedWith(Configs.All, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()

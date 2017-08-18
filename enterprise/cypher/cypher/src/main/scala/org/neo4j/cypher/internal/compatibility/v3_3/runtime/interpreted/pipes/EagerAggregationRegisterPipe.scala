@@ -48,12 +48,15 @@ case class EagerAggregationRegisterPipe(source: Pipe, pipelineInformation: Pipel
     val mapSize = keyNamesSize + aggregationNames.size
 
     def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
-      val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
+      val rows = PrimitiveExecutionContext(pipelineInformation)
 
       aggregationNamesAndFunctions.toMap
-        .foreach { case (name, zeroValue) => newMap += name -> zeroValue}
-      Iterator.single(ExecutionContext(newMap))
+        .foreach { case (name, zeroValue) => {
+          val offset = pipelineInformation.getReferenceOffsetFor(name)
+          rows.setRefAt(offset, zeroValue)
+        }}
+      Iterator.single(rows)
     }
 
     // This code is not pretty. It's full of asInstanceOf calls and other things that might irk you.

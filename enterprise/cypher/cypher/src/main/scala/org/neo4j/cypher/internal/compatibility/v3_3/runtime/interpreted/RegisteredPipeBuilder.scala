@@ -222,7 +222,6 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
     plan match {
       case Apply(_, _) => ApplyRegisterPipe(lhs, rhs)(id)
-      case CartesianProduct(_, _) => fallback.build(plan, lhs, rhs)
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
     }
   }
