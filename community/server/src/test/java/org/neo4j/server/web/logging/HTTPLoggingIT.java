@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.configuration.ServerSettings;
@@ -71,6 +72,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         NeoServer server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.FALSE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.toString() )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try
@@ -106,6 +108,7 @@ public class HTTPLoggingIT extends ExclusiveServerTestBase
         NeoServer server = serverOnRandomPorts().withDefaultDatabaseTuning().persistent()
                 .withProperty( ServerSettings.http_logging_enabled.name(), Settings.TRUE )
                 .withProperty( GraphDatabaseSettings.logs_directory.name(), logDirectory.getAbsolutePath() )
+                .withProperty( new BoltConnector( "bolt" ).listen_address.name(), ":0" )
                 .usingDataDir( testDirectory.directory( directoryPrefix + "-dbdir" ).getAbsolutePath() )
                 .build();
         try
