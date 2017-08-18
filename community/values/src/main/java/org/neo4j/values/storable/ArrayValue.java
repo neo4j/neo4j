@@ -20,7 +20,6 @@
 package org.neo4j.values.storable;
 
 import org.neo4j.values.SequenceValue;
-import org.neo4j.values.AnyValue;
 
 /**
  * Array of one of the storable primitives

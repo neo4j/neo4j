@@ -43,6 +43,14 @@ import org.neo4j.values.virtual.NodeValue;
 
 import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
+/**
+ * Base class for converting AnyValue to normal java objects.
+ *
+ * This base class takes care of converting all "normal" java types such as
+ * number types, booleans, strings, arrays and lists. It leaves to the extending
+ * class to handle neo4j specific types such as nodes, edges and points.
+ * @param <E>
+ */
 public abstract class BaseToObjectValueWriter<E extends Exception> implements AnyValueWriter<E>
 {
     private final Deque<Writer> stack = new ArrayDeque<>();
@@ -129,6 +137,9 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     {
         assert nodes != null;
         assert nodes.length > 0;
+        assert edges != null;
+        assert nodes.length == edges.length + 1;
+
         Node[] nodeProxies = new Node[nodes.length];
         for ( int i = 0; i < nodes.length; i++ )
         {
