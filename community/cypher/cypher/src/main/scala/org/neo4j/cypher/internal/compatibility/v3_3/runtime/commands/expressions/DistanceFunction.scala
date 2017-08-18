@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import java.lang.Math._
-import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, ExecutionContext}
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
-import org.neo4j.graphdb.spatial.{Coordinate, Geometry, Point}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DoubleValue, Values}
 import org.neo4j.values.virtual.PointValue
@@ -42,16 +40,6 @@ case class DistanceFunction(p1: Expression, p2: Expression) extends Expression {
       case (geometry1: PointValue, geometry2: PointValue) => calculateDistance(geometry1, geometry2)
       case (x, y) => throw new CypherTypeException(s"Expected two Points, but got $x and $y")
     }
-  }
-
-  implicit def coerceToPoint(geometry: Geometry): Point = geometry match {
-    case point: Point => point
-    case _ if geometry.getGeometryType == "Point" => new Point {
-      override def getCRS = geometry.getCRS
-      override def getGeometryType: String = geometry.getGeometryType
-      override def getCoordinates: util.List[Coordinate] = geometry.getCoordinates
-    }
-    case _ => throw new CypherTypeException(s"Expected Point, but got $geometry")
   }
 
   def calculateDistance(geometry1: PointValue, geometry2: PointValue): DoubleValue = {

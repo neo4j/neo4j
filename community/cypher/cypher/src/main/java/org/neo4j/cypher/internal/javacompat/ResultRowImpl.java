@@ -30,15 +30,14 @@ import org.neo4j.graphdb.Result;
 
 public class ResultRowImpl implements Result.ResultRow
 {
-    private Map<String, Object> results;
+    private Map<String,Object> results;
 
-    public ResultRowImpl( Map<String, Object> results )
+    public ResultRowImpl( Map<String,Object> results )
     {
         this.results = results;
     }
 
-    public
-    ResultRowImpl( )
+    public ResultRowImpl()
     {
         this( new HashMap<>() );
     }
@@ -103,8 +102,8 @@ public class ResultRowImpl implements Result.ResultRow
         }
         catch ( ClassCastException e )
         {
-            String message = String.format("The current item in column \"%s\" is not a %s; it's \"%s\"",
-                    key, type.getSimpleName(), value);
+            String message = String.format( "The current item in column \"%s\" is not a %s; it's \"%s\"",
+                    key, type.getSimpleName(), value );
             throw new NoSuchElementException( message );
         }
     }

@@ -26,11 +26,6 @@ public class ResultRecord implements QueryResult.Record
 {
     private final AnyValue[] fields;
 
-    public ResultRecord( int size )
-    {
-        this.fields = new AnyValue[size];
-    }
-
     public ResultRecord( AnyValue[] fields )
     {
         this.fields = fields;

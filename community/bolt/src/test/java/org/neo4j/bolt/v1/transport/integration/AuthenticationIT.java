@@ -55,7 +55,6 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
-import org.neo4j.values.AnyValue;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -68,7 +67,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgIgnored;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 @RunWith( Parameterized.class )
@@ -565,10 +563,5 @@ public class AuthenticationIT
         {
             return specialMessage != null;
         }
-    }
-
-    public static Map<String,AnyValue> mapValue( Object... objects )
-    {
-        return genericMap( objects );
     }
 }

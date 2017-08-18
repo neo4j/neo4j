@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
-import org.neo4j.graphdb.{Node, Relationship, Result}
+import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelAPI
 import org.neo4j.kernel.api.query.{IndexUsage, PlannerInfo}
@@ -42,6 +42,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 
 import scala.util.Try
+
 
 trait Compatibility {
 
@@ -95,8 +96,7 @@ trait Compatibility {
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode,
-            params: Map[String, Any]): Result = {
+    def run(transactionalContext: TransactionalContextWrapper, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
         case CypherExecutionMode.profile => ProfileModev2_3
@@ -129,14 +129,12 @@ trait Compatibility {
 }
 
 class StringInfoLogger(log: Log) extends InfoLogger {
-
   def info(message: String) {
     log.info(message)
   }
 }
 
 class EntityAccessorWrapper(nodeManager: NodeManager) extends EntityAccessor {
-
   override def newNodeProxyById(id: Long): Node = nodeManager.newNodeProxyById(id)
 
   override def newRelationshipProxyById(id: Long): Relationship = nodeManager.newRelationshipProxyById(id)

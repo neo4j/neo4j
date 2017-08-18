@@ -153,8 +153,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
   private def addAllOrNoneNodeExpander(ctx: ExecutionContext, currentExpander: Expander, all: Boolean,
                                        predicate: Predicate, relName: String,
                                        currentNodePredicates: Seq[KernelPredicate[PropertyContainer]])
-                                      (implicit
-                                       state: QueryState): (Expander, Seq[KernelPredicate[PropertyContainer]]) = {
+                                      (implicit state: QueryState): (Expander, Seq[KernelPredicate[PropertyContainer]]) = {
     val filter = predicate match {
       case PropertyExists(_, propertyKey) =>
         if (all) propertyExistsExpander(propertyKey.name)
