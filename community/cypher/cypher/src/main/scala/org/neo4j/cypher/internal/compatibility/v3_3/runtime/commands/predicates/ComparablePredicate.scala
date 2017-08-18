@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -77,8 +76,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
     (a1, b1) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None
-      case (x: ArrayValue, y: ListValue) => Some(VirtualValues.fromArray(x).equals(y))
-      case (x: ListValue, y: ArrayValue) => Some(VirtualValues.fromArray(y).equals(x))
       case _ => Some(a1.equals(b1))
     }
   }
