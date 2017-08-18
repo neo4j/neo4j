@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.commandline.admin.AdminTool;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -41,6 +42,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.proc.ProcessUtil;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
@@ -64,7 +66,6 @@ public class OnlineBackupCommandIT
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( db );
 
-    private static final String ip = "127.0.0.1";
     private final File backupDir = testDirectory.directory( "backups" );
 
     @Parameter
@@ -89,45 +90,21 @@ public class OnlineBackupCommandIT
     }
 
     @Test
-    public void makeSureBackupCanBePerformedWithDefaultPort() throws Exception
-    {
-        assumeFalse( SystemUtils.IS_OS_WINDOWS );
-
-        startDb( null );
-        assertEquals(
-                0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
-        createSomeData( db );
-        assertEquals(
-                0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
-                        "--cc-report-dir=" + backupDir,
-                        "--backup-dir=" + backupDir,
-                        "--name=defaultport" ) );
-        assertEquals( getDbRepresentation(), getBackupDbRepresentation( "defaultport" ) );
-    }
-
-    @Test
     public void makeSureBackupCanBePerformedWithCustomPort() throws Exception
     {
         assumeFalse( SystemUtils.IS_OS_WINDOWS );
 
-        int port = 4445;
-        startDb( "" + port );
-        assertEquals(
+        int backupPort = PortAuthority.allocatePort();
+        startDb( backupPort );
+        assertEquals( "should not be able to do backup when noone is listening",
                 1,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + PortAuthority.allocatePort(),
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from",
-                        ip + ":" + port,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
@@ -135,21 +112,18 @@ public class OnlineBackupCommandIT
         createSomeData( db );
         assertEquals(
                 0,
-                runBackupToolFromOtherJvmToGetExitCode( "--from", ip + ":" + port,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", "127.0.0.1:" + backupPort,
                         "--cc-report-dir=" + backupDir,
                         "--backup-dir=" + backupDir,
                         "--name=customport" ) );
         assertEquals( getDbRepresentation(), getBackupDbRepresentation( "customport" ) );
     }
 
-    private void startDb( String backupPort )
+    private void startDb( int backupPort )
     {
         db.setConfig( GraphDatabaseSettings.record_format, recordFormat );
         db.setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE );
-        if ( backupPort != null )
-        {
-            db.setConfig( OnlineBackupSettings.online_backup_server, ip + ":" + backupPort );
-        }
+        db.setConfig( OnlineBackupSettings.online_backup_server, "127.0.0.1" + ":" + backupPort );
         db.ensureStarted();
         createSomeData( db );
     }
@@ -181,6 +155,8 @@ public class OnlineBackupCommandIT
 
     private DbRepresentation getBackupDbRepresentation( String name )
     {
-        return DbRepresentation.of( new File( backupDir, name ) );
+        Config config = Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
+
+        return DbRepresentation.of( new File( backupDir, name ), config );
     }
 }
