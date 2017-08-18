@@ -38,12 +38,14 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.TokenWriteOperations;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.IndexDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.security.SecurityContext;
@@ -63,6 +65,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeThat;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class KernelIT extends KernelIntegrationTest
@@ -479,7 +482,7 @@ public class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline( 20, SECONDS );
             tx.success();
         }
         // THEN
@@ -495,7 +498,7 @@ public class KernelIT extends KernelIntegrationTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexOnline( db.schema().getIndexes().iterator().next(), 20, SECONDS );
+            db.schema().awaitIndexesOnline( 20, SECONDS );
             getOrCreateSchemaState( "my key", "some state" );
             tx.success();
         }
@@ -630,16 +633,18 @@ public class KernelIT extends KernelIntegrationTest
     private IndexDescriptor createIndex( Statement statement )
             throws SchemaKernelException, InvalidTransactionTypeKernelException
     {
-        return statement.schemaWriteOperations().indexCreate( SchemaDescriptorFactory.forLabel(
-                statement.tokenWriteOperations().labelGetOrCreateForName( "hello" ),
-                statement.tokenWriteOperations().propertyKeyGetOrCreateForName( "hepp" ) ) );
+        TokenWriteOperations tokenWriteOperations = statement.tokenWriteOperations();
+        SchemaWriteOperations schemaWriteOperations = statement.schemaWriteOperations();
+        LabelSchemaDescriptor schemaDescriptor = forLabel( tokenWriteOperations.labelGetOrCreateForName( "hello" ),
+                        tokenWriteOperations.propertyKeyGetOrCreateForName( "hepp" ) );
+        return schemaWriteOperations.indexCreate( schemaDescriptor );
     }
 
     private String getOrCreateSchemaState( String key, final String maybeSetThisState )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statementContextSupplier.get() )
         {
-            Statement statement = statementContextSupplier.get();
             String state = statement.readOperations().schemaStateGetOrCreate( key, s -> maybeSetThisState );
             tx.success();
             return state;
@@ -648,9 +653,9 @@ public class KernelIT extends KernelIntegrationTest
 
     private boolean schemaStateContains( String key )
     {
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction tx = db.beginTx();
+              Statement statement = statementContextSupplier.get() )
         {
-            Statement statement = statementContextSupplier.get();
             final AtomicBoolean result = new AtomicBoolean( true );
             statement.readOperations().schemaStateGetOrCreate( key, s ->
             {
