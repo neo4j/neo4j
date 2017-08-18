@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticTable, ast => frontEndAst}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
-class RegisteredPipeBuilder(fallback: PipeBuilder,
+class EnterprisePipeBuilder(fallback: PipeBuilder,
                             expressionConverters: ExpressionConverters,
                             idMap: Map[LogicalPlan, Id],
                             monitors: Monitors,
@@ -57,7 +57,8 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
     plan match {
       case AllNodesScan(IdName(column), _) =>
         AllNodesScanRegisterPipe(column, pipelineInformation)(id)
-      case p@NodeIndexScan(IdName(column), label, propertyKeys, _ /*TODO*/) =>
+
+      case NodeIndexScan(IdName(column), label, propertyKeys, _) =>
         NodeIndexScanRegisterPipe(column, label, propertyKeys, pipelineInformation)(id)
 
       case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
@@ -68,9 +69,9 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode,pipelineInformation)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
 
-      case Argument(_) =>
+      case _: Argument =>
         ArgumentRegisterPipe(pipelineInformation)(id)
 
       case NodeByLabelScan(IdName(column), label, _) =>
@@ -124,7 +125,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
 
       case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
         // TODO: This is not right!
-        if(predicates.nonEmpty)
+        if (predicates.nonEmpty)
           throw new CantCompileQueryException("does not handle varexpand with predicates")
         val predicate = VarLengthRegisterPredicate.NONE
 
@@ -162,7 +163,7 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
            _: Limit |
            _: ErrorPlan |
            _: Skip =>
-             fallback.build(plan, source)
+        fallback.build(plan, source)
 
       case _ =>
         throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")
@@ -207,13 +208,13 @@ class RegisteredPipeBuilder(fallback: PipeBuilder,
       case Apply(_, _) =>
         ApplyRegisterPipe(lhs, rhs)(id)
 
-      case SemiApply(_,_) =>
+      case SemiApply(_, _) =>
         SemiApplyRegisterPipe(lhs, rhs, negated = false)(id)
 
-      case AntiSemiApply(_,_) =>
+      case AntiSemiApply(_, _) =>
         SemiApplyRegisterPipe(lhs, rhs, negated = true)(id)
 
-      case _:CartesianProduct =>
+      case _: CartesianProduct =>
         fallback.build(plan, lhs, rhs)
 
       case _ => throw new CantCompileQueryException(s"Unsupported logical plan operator: $plan")

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.EnterpriseRuntimeContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.RegisteredPipeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.EnterprisePipeBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions.EnterpriseExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
@@ -34,14 +34,14 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{IndexUsage, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Monitors, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Monitors, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
-  override def phase = PIPE_BUILDING
+  override def phase: CompilationPhaseTracer.CompilationPhase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
 
@@ -58,7 +58,7 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
       val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-        expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
+        expressionConverters = converters, pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines))
       val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, from.semanticTable(), from.plannerName)
       val pipeInfo = executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
@@ -66,9 +66,9 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
       val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
       val fingerprint = context.createFingerprintReference(fp)
-      val periodicCommig = periodicCommitInfo.isDefined
+      val periodicCommit = periodicCommitInfo.isDefined
       val indexes = logicalPlan.indexUsage
-      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommig, planner, indexes, func, pipe, context.config)
+      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(execPlan))
     } catch {
@@ -97,25 +97,25 @@ object BuildEnterpriseInterpretedExecutionPlan extends Phase[EnterpriseRuntimeCo
 
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
 
-    override def runtimeUsed = EnterpriseInterpretedRuntimeName
+    override def runtimeUsed: RuntimeName = EnterpriseInterpretedRuntimeName
 
     override def notifications(planContext: PlanContext): Seq[InternalNotification] =
       BuildInterpretedExecutionPlan.checkForNotifications(pipe, planContext, config)
   }
 
-  case class RegisteredPipeBuilderFactory(pipelineInformation: Map[LogicalPlan, PipelineInformation])
+  case class EnterprisePipeBuilderFactory(pipelineInformation: Map[LogicalPlan, PipelineInformation])
     extends PipeBuilderFactory {
-    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id], expressionConverters: ExpressionConverters)
+    def apply(monitors: Monitors, recurse: LogicalPlan => Pipe, readOnly: Boolean, idMap: Map[LogicalPlan, Id],
+              expressionConverters: ExpressionConverters)
              (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder = {
 
       val expressionToExpression = recursePipes(recurse, planContext) _
 
       val fallback = CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, expressionToExpression)
 
-      new RegisteredPipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
-                                expressionToExpression)
+      new EnterprisePipeBuilder(fallback, expressionConverters, idMap, monitors, pipelineInformation, readOnly,
+        expressionToExpression)
     }
   }
-
 
 }
