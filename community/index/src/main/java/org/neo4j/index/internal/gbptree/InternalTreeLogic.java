@@ -632,6 +632,7 @@ class InternalTreeLogic<KEY,VALUE>
             // this key already exists in the delta section so overwrite its value there
             overwriteKeyValue( cursor, structurePropagation, key, value, valueMerger,
                     stableGeneration, unstableGeneration, deltaPos, deltaSection );
+            assert mainHighest( cursor );
             return; // No split has occurred
         }
 
@@ -643,13 +644,14 @@ class InternalTreeLogic<KEY,VALUE>
             // this key already exists in the main section so overwrite its value there
             overwriteKeyValue( cursor, structurePropagation, key, value, valueMerger, stableGeneration,
                     unstableGeneration, pos, mainSection );
+            assert mainHighest( cursor );
             return; // No split has occurred
         }
 
         createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
                 stableGeneration, unstableGeneration );
 
-        Section<KEY,VALUE> section = selectSection( cursor, keyCount, pos, deltaKeyCount, key );
+        Section<KEY,VALUE> section = selectSection( keyCount, pos, deltaKeyCount );
         if ( section != null )
         {
             int sectionPos;
@@ -678,15 +680,43 @@ class InternalTreeLogic<KEY,VALUE>
             section.insertValueAt( cursor, value, sectionPos, sectionKeyCount );
             section.setKeyCount( cursor, sectionKeyCount + 1 );
 
+            assert mainHighest( cursor );
             return; // No split has occurred
         }
 
         // Overflow, split leaf
         int totalKeyCount = consolidateDeltas( cursor, keyCount, deltaKeyCount );
         splitLeaf( cursor, structurePropagation, key, value, totalKeyCount, stableGeneration, unstableGeneration );
+        assert mainHighest( cursor );
     }
 
-    private Section<KEY,VALUE> selectSection( PageCursor cursor, int keyCount, int pos, int deltaKeyCount, KEY key )
+    private boolean mainHighest( PageCursor cursor )
+    {
+        int keyCount = mainSection.keyCount( cursor );
+        int deltaKeyCount = deltaSection.keyCount( cursor );
+        if ( keyCount > 0 && deltaKeyCount > 0 )
+        {
+            // compare
+            mainSection.keyAt( cursor, readKey, keyCount - 1 );
+            deltaSection.keyAt( cursor, deltaKeys[0], deltaKeyCount - 1 );
+            if ( layout.compare( deltaKeys[0], readKey ) > 0 )
+            {
+                return false;
+            }
+        }
+        else if ( keyCount > 0 )
+        {
+            // only stuff in main
+        }
+        else if ( deltaKeyCount > 0 )
+        {
+            // only stuff in delta
+            return false;
+        }
+        return true;
+    }
+
+    private Section<KEY,VALUE> selectSection( int keyCount, int pos, int deltaKeyCount )
     {
         int totalKeyCount = keyCount + deltaKeyCount;
         if ( totalKeyCount < leafMaxKeyCount )
@@ -1251,6 +1281,7 @@ class InternalTreeLogic<KEY,VALUE>
      * If the given {@code key} does not exist in tree, return {@code null}.
      * <p>
      * Leaves cursor at same page as when called. No guarantees on offset.
+     * Also this method upholds this constraint: highest key in this leaf will be in the main section.
      *
      * @param cursor {@link PageCursor} pinned to page where remove is to be done.
      * @param structurePropagation {@link StructurePropagation} used to report structure changes between tree levels.
@@ -1264,39 +1295,74 @@ class InternalTreeLogic<KEY,VALUE>
     private boolean removeFromLeaf( PageCursor cursor, StructurePropagation<KEY> structurePropagation,
             KEY key, VALUE into, long stableGeneration, long unstableGeneration ) throws IOException
     {
-        // check delta section
-        int deltaKeyCount = deltaSection.keyCount( cursor );
-        int deltaSearch = search( cursor, key, readKey, deltaSection, deltaKeyCount );
-        int deltaPos = positionOf( deltaSearch );
-        if ( isHit( deltaSearch ) )
-        {
-            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                    stableGeneration, unstableGeneration );
-            simplyRemoveFromLeaf( cursor, into, deltaKeyCount, deltaPos, deltaSection );
-            return true;
-        }
-
         int keyCount = mainSection.keyCount( cursor );
+        int deltaKeyCount = deltaSection.keyCount( cursor );
         int search = search( cursor, key, readKey, mainSection, keyCount );
         int pos = positionOf( search );
         boolean hit = isHit( search );
-        if ( !hit )
+        if ( hit )
         {
-            return false;
+            // we found it in main section, remove it
+            createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                    stableGeneration, unstableGeneration );
+            boolean lastOne = pos == keyCount - 1;
+            keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos, mainSection );
+
+            if ( lastOne && deltaKeyCount > 0 )
+            {
+                // we removed the highest key from main section,
+                // check if delta key is the highest now and if so move it to this pos right now
+                KEY deltaKey = deltaKeys[0];
+                deltaSection.keyAt( cursor, deltaKey, deltaKeyCount - 1 );
+                boolean moveIt = keyCount > 0
+                        // there's at least one key in main section, we have to compare
+                        ? layout.compare( deltaKey, mainSection.keyAt( cursor, readKey, pos - 1 ) ) > 0
+                        // the key in the delta section is definitely the highest now
+                        : true;
+                if ( moveIt )
+                {
+                    // write highest from delta into main
+                    mainSection.setKeyAt( cursor, deltaKey, pos );
+                    mainSection.setValueAt( cursor, deltaSection.valueAt( cursor, readValue, deltaKeyCount - 1 ), pos );
+                    keyCount++;
+                    mainSection.setKeyCount( cursor, keyCount );
+
+                    // remove highest in delta
+                    deltaSection.removeKeyAt( cursor, deltaKeyCount - 1, deltaKeyCount );
+                    deltaSection.removeValueAt( cursor, deltaKeyCount - 1, deltaKeyCount );
+                    deltaKeyCount--;
+                    deltaSection.setKeyCount( cursor, deltaKeyCount );
+                }
+            }
+        }
+        else if ( deltaKeyCount > 0 )
+        {
+            // check delta section
+            int deltaSearch = search( cursor, key, readKey, deltaSection, deltaKeyCount );
+            int deltaPos = positionOf( deltaSearch );
+            hit = isHit( deltaSearch );
+            if ( hit )
+            {
+                createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
+                        stableGeneration, unstableGeneration );
+                simplyRemoveFromLeaf( cursor, into, deltaKeyCount, deltaPos, deltaSection );
+                assert mainHighest( cursor );
+                return true;
+            }
         }
 
-        createSuccessorIfNeeded( cursor, structurePropagation, UPDATE_MID_CHILD,
-                stableGeneration, unstableGeneration );
-        keyCount = simplyRemoveFromLeaf( cursor, into, keyCount, pos, mainSection );
-
-        if ( keyCount + deltaKeyCount < (leafMaxKeyCount + 1) / 2 )
+        assert mainHighest( cursor );
+        if ( hit )
         {
-            // Underflow
-            int totalKeyCount = consolidateDeltas( cursor, keyCount, deltaKeyCount );
-            underflowInLeaf( cursor, structurePropagation, totalKeyCount, stableGeneration, unstableGeneration );
+            if ( keyCount + deltaKeyCount < (leafMaxKeyCount + 1) / 2 )
+            {
+                // Underflow
+                int totalKeyCount = consolidateDeltas( cursor, keyCount, deltaKeyCount );
+                underflowInLeaf( cursor, structurePropagation, totalKeyCount, stableGeneration, unstableGeneration );
+            }
         }
-
-        return true;
+        assert mainHighest( cursor );
+        return hit;
     }
 
     // TODO: javadoc

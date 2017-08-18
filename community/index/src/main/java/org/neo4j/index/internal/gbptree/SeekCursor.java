@@ -378,6 +378,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private final Consumer<Throwable> exceptionDecorator;
 
     private Section<KEY,VALUE> section;
+    private final KEY tempKey;
 
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -409,6 +410,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.stride = seekForward ? 1 : -1;
         this.expectedFirstAfterGoToNext = layout.newKey();
         this.firstKeyInNode = layout.newKey();
+        this.tempKey = layout.newKey();
 
         try
         {
@@ -555,9 +557,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
-                    deltaPos = seekForward ? 0 : deltaKeyCount - 1;
                     mainSection.keyAt( cursor, firstKeyInNode, pos );
-                    // TODO: fix for concurrency stuff, seek backwards
                 }
 
                 if ( concurrentWriteHappened )
@@ -934,7 +934,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Moves {@link PageCursor} to next sibling (read before this call into {@link #pointerId}).
-     * Also, on backwards seek, calls {@link #scoutNextSibling()} to be able to verify consistent read on
+     * Also, on backwards seek, calls {@link #scoutLeftSibling()} to be able to verify consistent read on
      * new sibling even on concurrent writes.
      * <p>
      * As with all pointers, the generation is checked for sanity and if generation looks to be in the future,
@@ -981,7 +981,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             else
             {
                 // Need to scout next sibling because we are seeking backwards
-                if ( scoutNextSibling() )
+                if ( scoutLeftSibling() )
                 {
                     bTreeNode.goTo( cursor, "sibling", pointerId );
                     verifyExpectedFirstAfterGoToNext = true;
@@ -1000,22 +1000,22 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * Reads first key on next sibling, without moving the main {@link PageCursor} to that sibling.
-     * This to be able to guard for, and retry read if, concurrent writes moving keys in the "wrong" direction.
-     * The first key read here will be matched after actually moving the main {@link PageCursor} to
-     * the next sibling.
+     * Reads highest key in left sibling, without moving the main {@link PageCursor} to that sibling.
+     * This to be able to guard for, and retry read if, concurrent writes moving keys in the "wrong" direction, i.e. to the right.
+     * The highest key read here will be matched after actually moving the main {@link PageCursor} to the left sibling.
      * <p>
-     * May only be called if {@link #pointerId} points to next sibling.
+     * May only be called if {@link #pointerId} points to left sibling.
      *
-     * @return {@code true} if first key in next sibling was read successfully, otherwise {@code false},
+     * @return {@code true} if first key in left sibling was read successfully, otherwise {@code false},
      * which means that caller should retry most recent read.
      * @throws IOException on {@link PageCursor} error.
      */
-    private boolean scoutNextSibling() throws IOException
+    private boolean scoutLeftSibling() throws IOException
     {
         // Read header but to local variables and not global once
         byte nodeType;
         int keyCount = -1;
+        int deltaKeyCount = -1;
         try ( PageCursor scout = this.cursor.openLinkedCursor( GenerationSafePointerPair.pointer( pointerId ) ) )
         {
             scout.next();
@@ -1025,8 +1025,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 keyCount = mainSection.keyCount( scout );
                 if ( keyCountIsSane( keyCount, maxKeyCount ) )
                 {
-                    int firstPos = seekForward ? 0 : keyCount - 1;
-                    mainSection.keyAt( scout, expectedFirstAfterGoToNext, firstPos );
+                    mainSection.keyAt( scout, expectedFirstAfterGoToNext, keyCount - 1 );
+                }
+
+                deltaKeyCount = deltaSection.keyCount( scout );
+                if ( deltaKeyCount > 0 && keyCountIsSane( deltaKeyCount, maxDeltaKeyCount ) )
+                {
+                    deltaSection.keyAt( scout, tempKey, deltaKeyCount - 1 );
                 }
             }
 
@@ -1040,6 +1045,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 return false;
             }
             checkOutOfBounds( this.cursor );
+
+            if ( keyCount > 0 && deltaKeyCount > 0 )
+            {
+                assert layout.compare( tempKey, expectedFirstAfterGoToNext ) < 0;
+            }
         }
         return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount, maxKeyCount ));
     }
