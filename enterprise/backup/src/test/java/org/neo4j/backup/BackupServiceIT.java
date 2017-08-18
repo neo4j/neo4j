@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.com.ports.allocation.PortAuthority;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreUtil;
 import org.neo4j.consistency.checking.full.CheckConsistencyConfig;
@@ -55,6 +56,7 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
@@ -123,7 +125,7 @@ public class BackupServiceIT
     private FileSystemAbstraction fileSystem;
     private File storeDir;
     private File backupDir;
-    private int backupPort = 8200;
+    private int backupPort = -1;
 
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
     private final TestDirectory target = TestDirectory.testDirectory();
@@ -142,7 +144,7 @@ public class BackupServiceIT
     public void setup()
     {
         fileSystem = fileSystemRule.get();
-        backupPort = backupPort + 1;
+        backupPort = PortAuthority.allocatePort();
         storeDir = dbRule.getStoreDirFile();
         backupDir = target.directory( "backup_dir" );
     }
@@ -475,7 +477,9 @@ public class BackupServiceIT
         // it should be possible to at this point to start db based on our backup and create couple of properties
         // their ids should not clash with already existing
         GraphDatabaseService backupBasedDatabase = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabase( backupDir.getAbsoluteFile() );
+                .newEmbeddedDatabaseBuilder( backupDir.getAbsoluteFile() )
+                .setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE )
+                .newGraphDatabase();
         try
         {
             try ( Transaction transaction = backupBasedDatabase.beginTx() )
@@ -490,7 +494,7 @@ public class BackupServiceIT
                 transaction.success();
             }
 
-            try ( Transaction transaction = backupBasedDatabase.beginTx() )
+            try ( Transaction ignored = backupBasedDatabase.beginTx() )
             {
                 Node node = findNodeByLabel( (GraphDatabaseAPI) backupBasedDatabase, markerLabel );
                 // newProperty + 10 defined properties.
@@ -1068,12 +1072,12 @@ public class BackupServiceIT
 
     private DbRepresentation getBackupDbRepresentation()
     {
-        return DbRepresentation.of( backupDir );
+        return DbRepresentation.of( backupDir, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
     }
 
     private DbRepresentation getDbRepresentation()
     {
-        return DbRepresentation.of( storeDir );
+        return DbRepresentation.of( storeDir, Config.defaults( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ) );
     }
 
     private static final class StoreSnoopingMonitor extends StoreCopyServer.Monitor.Adapter
