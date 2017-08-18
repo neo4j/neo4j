@@ -594,18 +594,19 @@ public class SchemaIndexHaIT
 
         ControlledGraphDatabaseFactory()
         {
-            factory = new ControllingIndexProviderFactory( perDbIndexProvider, Predicates.alwaysTrue() );
+            this( Predicates.alwaysTrue() );
         }
 
         private ControlledGraphDatabaseFactory( Predicate<GraphDatabaseService> dbsToControlIndexingOn )
         {
             factory = new ControllingIndexProviderFactory( perDbIndexProvider, dbsToControlIndexingOn );
+            getCurrentState().removeKernelExtensions( kef -> kef.getClass().getSimpleName().contains( "IndexProvider" ) );
+            getCurrentState().addKernelExtensions( Collections.singletonList( factory ) );
         }
 
         @Override
         public GraphDatabaseBuilder newEmbeddedDatabaseBuilder( File file )
         {
-            getCurrentState().addKernelExtensions( Collections.singletonList( factory ) );
             return super.newEmbeddedDatabaseBuilder( file );
         }
 
