@@ -25,8 +25,8 @@ import org.apache.lucene.queryparser.classic.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Sort;
 
 import java.io.IOException;
 
@@ -45,26 +45,27 @@ import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_K
 class SimpleInsightIndexReader implements InsightIndexReader
 {
     private final PartitionSearcher partitionSearcher;
+    private final EnglishAnalyzer analyzer;
     private String[] properties;
-    private final MultiFieldQueryParser multiFieldQueryParser;
+    private final QueryParser multiFieldQueryParser;
 
     SimpleInsightIndexReader( PartitionSearcher partitionSearcher, String[] properties )
     {
         this.partitionSearcher = partitionSearcher;
         this.properties = properties;
-        multiFieldQueryParser = new MultiFieldQueryParser( properties, new EnglishAnalyzer() );
+        analyzer = new EnglishAnalyzer();
+        multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
         multiFieldQueryParser.setDefaultOperator( QueryParser.Operator.OR );
     }
 
     public PrimitiveLongIterator query( String... query )
     {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for ( String property : properties )
+        for ( String s : query )
         {
-            builder.add( new PhraseQuery( 2, property, query ), BooleanClause.Occur.SHOULD );
-            for ( String s : query )
+            for ( String property : properties )
             {
-                builder.add( new PhraseQuery( 2, property, s ), BooleanClause.Occur.SHOULD );
+                builder.add( multiFieldQueryParser.createBooleanQuery( property, s ), BooleanClause.Occur.SHOULD );
             }
         }
         return query( builder.build() );
@@ -86,9 +87,9 @@ class SimpleInsightIndexReader implements InsightIndexReader
     {
         try
         {
-            DocValuesCollector docValuesCollector = new DocValuesCollector();
+            DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             getIndexSearcher().search( query, docValuesCollector );
-            return docValuesCollector.getValuesIterator( NODE_ID_KEY );
+            return docValuesCollector.getSortedValuesIterator( NODE_ID_KEY, Sort.RELEVANCE );
         }
         catch ( IOException e )
         {

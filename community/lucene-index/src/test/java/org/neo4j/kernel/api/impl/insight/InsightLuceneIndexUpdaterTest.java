@@ -26,6 +26,8 @@ import org.junit.Test;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
@@ -46,7 +48,8 @@ public class InsightLuceneIndexUpdaterTest
     @Rule
     public DatabaseRule dbRule = new EmbeddedDatabaseRule();
 
-    private static final Label LABEL = Label.label( "label1" );
+    private static final Label LABEL = Label.label( "label" );
+    private static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
 
     @Test
     public void shouldFindNodeWithString() throws Exception
@@ -106,9 +109,9 @@ public class InsightLuceneIndexUpdaterTest
             try ( Transaction tx = db.beginTx() )
             {
                 Node node = db.getNodeById( firstID );
-                node.setProperty( "prop", "Hah! potato!" );
+                node.setProperty( "prop", "Hahahaha! potato!" );
                 Node node2 = db.getNodeById( secondID );
-                node2.setProperty( "prop", "This one is potato as well." );
+                node2.setProperty( "prop", "This one is a potato farmer." );
 
                 tx.success();
             }
@@ -120,8 +123,8 @@ public class InsightLuceneIndexUpdaterTest
                 assertFalse( reader.query( "zebra" ).hasNext() );
                 assertFalse( reader.query( "zedonk" ).hasNext() );
                 assertFalse( reader.query( "cross" ).hasNext() );
-                assertEquals( firstID, reader.query( "hah" ).next() );
-                assertEquals( secondID, reader.query( "well" ).next() );
+                assertEquals( firstID, reader.query( "hahahaha" ).next() );
+                assertEquals( secondID, reader.query( "farmer" ).next() );
                 PrimitiveLongIterator iterator = reader.query( "potato" );
                 assertEquals( firstID, iterator.next() );
                 assertEquals( secondID, iterator.next() );
@@ -187,8 +190,8 @@ public class InsightLuceneIndexUpdaterTest
                 node.setProperty( "prop", "Tomtar tomtar oftsat i tomteutstyrsel." );
                 Node node2 = db.createNode( LABEL );
                 secondID = node2.getId();
-                node2.setProperty( "prop", "Olof och Hans" );
-                node2.setProperty( "prop2", "karl" );
+                node2.setProperty( "prop", "Olof och Hans tomtar med karl som tomtar ofta" );
+                node2.setProperty( "prop2", "karl tomtar" );
                 Node node3 = db.createNode( LABEL );
                 thirdID = node3.getId();
                 node3.setProperty( "prop", "Tomtar som inte tomtar ser upp till tomtar som tomtar." );
@@ -200,10 +203,69 @@ public class InsightLuceneIndexUpdaterTest
             {
 
                 PrimitiveLongIterator iterator = reader.query( "tomtar", "karl" );
-                assertEquals( firstID, iterator.next() );
                 assertEquals( secondID, iterator.next() );
                 assertEquals( thirdID, iterator.next() );
+                assertEquals( firstID, iterator.next() );
             }
         }
     }
+
+    @Test
+    public void shouldDifferentiateNodesAndRelationships() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        {
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+
+            long firstNodeID;
+            long secondNodeID;
+            long firstRelID;
+            long secondRelID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstNodeID = node.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
+                Node node2 = db.createNode( LABEL );
+                secondNodeID = node2.getId();
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
+                Relationship rel1 = node.createRelationshipTo( node2, RELTYPE );
+                firstRelID = rel1.getId();
+                rel1.setProperty( "prop", "Hello. Hello again." );
+                Relationship rel2 = node2.createRelationshipTo( node, RELTYPE );
+                secondRelID = rel2.getId();
+                rel2.setProperty( "prop", "And now, something completely different" );
+
+                tx.success();
+            }
+
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( firstNodeID, hello.next() );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "zebra" );
+                assertEquals( secondNodeID, zebra.next() );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertFalse( different.hasNext() );
+            }
+            try ( InsightIndexReader reader = insightIndex.getRelationshipReader() )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( firstRelID, hello.next() );
+                assertFalse( hello.hasNext() );
+                PrimitiveLongIterator zebra = reader.query( "zebra" );
+                assertFalse( zebra.hasNext() );
+                PrimitiveLongIterator different = reader.query( "different" );
+                assertEquals( secondRelID, different.next() );
+                assertFalse( different.hasNext() );
+            }
+        }
+    }
+
 }
