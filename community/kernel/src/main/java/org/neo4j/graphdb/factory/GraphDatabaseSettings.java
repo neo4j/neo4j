@@ -397,8 +397,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                         "limiting logical log space on disk to 100Mb," +
                         " or `200k txs` for limiting the number of transactions to keep to 200 000", matches(ANY)));
 
-    @Description( "Specifies at which file size the logical log will auto-rotate. " +
-                  "`0` means that no rotation will automatically occur based on file size. " )
+    @Description( "Specifies at which file size the logical log will auto-rotate. Minimum accepted value is 1M. " )
     public static final Setting<Long> logical_log_rotation_threshold = setting( "dbms.tx_log.rotation.size", BYTES, "250M", min( 1024 * 1024L /*1Mb*/ ) );
 
     @Description("Use a quick approach for rebuilding the ID generators. This give quicker recovery time, " +
