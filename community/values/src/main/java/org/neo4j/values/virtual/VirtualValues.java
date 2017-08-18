@@ -38,8 +38,8 @@ import org.neo4j.values.storable.TextValue;
 @SuppressWarnings( "WeakerAccess" )
 public final class VirtualValues
 {
-    public static MapValue EMPTY_MAP = new MapValue( Collections.emptyMap() );
-    public static ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
+    public static final MapValue EMPTY_MAP = new MapValue( Collections.emptyMap() );
+    public static final ListValue EMPTY_LIST = new ListValue.ArrayListValue( new AnyValue[0] );
 
     private VirtualValues()
     {
