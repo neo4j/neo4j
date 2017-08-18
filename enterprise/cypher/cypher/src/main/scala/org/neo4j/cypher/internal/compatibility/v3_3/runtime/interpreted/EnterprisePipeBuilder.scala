@@ -186,7 +186,6 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val endOffset = pipeline(endNode).offset
         MergeCreateRelationshipRegisterPipe(source, idName.name, fromOffset, LazyType(typ)(context.semanticTable), endOffset,pipeline, props.map(convertExpressions))(id = id)
 
-
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection |
            _: Limit |

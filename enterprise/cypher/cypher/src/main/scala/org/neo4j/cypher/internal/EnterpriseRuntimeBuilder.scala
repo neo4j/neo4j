@@ -56,8 +56,7 @@ object EnterpriseRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRun
         BuildEnterpriseInterpretedExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty) {
             Do((_: EnterpriseRuntimeContext).notificationLogger.log(RuntimeUnsupportedNotification)) andThen
-              Do((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
-//              BuildInterpretedExecutionPlan
+              BuildInterpretedExecutionPlan
           }
 
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
