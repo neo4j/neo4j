@@ -20,15 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
-import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.{Value, Values}
 
 import scala.collection.JavaConverters._
 
@@ -83,8 +85,17 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles node lookup") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
-    when(node.getAllProperties).thenReturn(Map("v" -> Long.box(1L)).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     implicit val expression = Literal(node)
+    when(qtx.getPropertyKeyId("v")).thenReturn(0)
+    when(qtx.getPropertyKeyId("c")).thenReturn(1)
+    val nodeOps = mock[Operations[Node]]
+    when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
+    })
+    when(nodeOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
+    })
+    when(qtx.nodeOps).thenReturn(nodeOps)
 
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
@@ -93,8 +104,17 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles relationship lookup") {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
-    when(rel.getAllProperties).thenReturn(Map("v" -> Long.box(1L)).asJava.asInstanceOf[java.util.Map[String, AnyRef]])
     implicit val expression = Literal(rel)
+    when(qtx.getPropertyKeyId("v")).thenReturn(0)
+    when(qtx.getPropertyKeyId("c")).thenReturn(1)
+    val relOps = mock[Operations[Relationship]]
+    when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
+    })
+    when(relOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
+    })
+    when(qtx.relationshipOps).thenReturn(relOps)
 
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)

@@ -45,7 +45,7 @@ trait MapSupport {
   def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
     case x: MapValue => _ => x
     case x: NodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
-    case x: EdgeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
+    case x: EdgeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
   }
 }
 

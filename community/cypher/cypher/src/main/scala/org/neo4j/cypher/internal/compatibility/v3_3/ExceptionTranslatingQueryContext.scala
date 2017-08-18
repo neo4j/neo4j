@@ -32,6 +32,7 @@ import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.EdgeValue
 
 import scala.collection.Iterator
 
@@ -188,6 +189,12 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
+
+  override def edgeGetStartNode(edge: EdgeValue) =
+    translateException(inner.edgeGetStartNode(edge))
+
+  override def edgeGetEndNode(edge: EdgeValue) =
+    translateException(inner.edgeGetEndNode(edge))
 
   override def createRelationship(start: Long, end: Long, relType: Int) =
     translateException(inner.createRelationship(start, end, relType))

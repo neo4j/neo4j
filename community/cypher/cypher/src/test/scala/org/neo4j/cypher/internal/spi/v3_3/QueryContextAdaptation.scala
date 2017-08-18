@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 trait QueryContextAdaptation {
   self: QueryContext =>
@@ -61,6 +62,10 @@ trait QueryContextAdaptation {
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
 
   override def asObject(value: AnyValue): AnyRef = ???
+
+  override def edgeGetStartNode(edge: EdgeValue): NodeValue = ???
+
+  override def edgeGetEndNode(edge: EdgeValue): NodeValue = ???
 
   /**
     * This should not be used. We'll remove sooner (or later). Don't do it.

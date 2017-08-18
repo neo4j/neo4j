@@ -30,9 +30,9 @@ case class RelationshipEndPoints(relExpression: Expression, start: Boolean) exte
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = relExpression(ctx) match {
     case v if v == Values.NO_VALUE => Values.NO_VALUE
     case value =>
-      val rel = castOrFail[EdgeValue](value)
-      if (start) rel.startNode()
-      else rel.endNode()
+      val edge = castOrFail[EdgeValue](value)
+      if (start) state.query.edgeGetStartNode(edge)
+      else state.query.edgeGetEndNode(edge)
   }
 
   def arguments = Seq(relExpression)

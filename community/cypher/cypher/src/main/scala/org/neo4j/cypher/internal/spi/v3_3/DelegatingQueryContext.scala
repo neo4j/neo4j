@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.EdgeValue
 
 import scala.collection.Iterator
 
@@ -167,6 +168,10 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
+
+  override def edgeGetStartNode(edge: EdgeValue) = inner.edgeGetStartNode(edge)
+
+  override def edgeGetEndNode(edge: EdgeValue) = inner.edgeGetEndNode(edge)
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 

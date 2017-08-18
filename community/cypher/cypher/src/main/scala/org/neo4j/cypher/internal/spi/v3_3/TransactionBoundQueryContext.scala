@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.EdgeValue
 import org.neo4j.values.virtual.EdgeValue.RelationshipProxyWrappingEdgeValue
 import org.neo4j.values.virtual.NodeValue.NodeProxyWrappingNodeValue
 
@@ -588,6 +589,10 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
         case error: URLAccessValidationError => Left(error.getMessage)
       }
   }
+
+  override def edgeGetStartNode(edge: EdgeValue) = edge.startNode()
+
+  override def edgeGetEndNode(edge: EdgeValue) = edge.endNode()
 
   private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
 

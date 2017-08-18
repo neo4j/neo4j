@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -147,6 +148,10 @@ trait QueryContext extends TokenContext {
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
+
+  def edgeGetStartNode(edge: EdgeValue): NodeValue
+
+  def edgeGetEndNode(edge: EdgeValue): NodeValue
 
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 
