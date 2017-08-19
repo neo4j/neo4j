@@ -124,6 +124,7 @@ object RegisterAllocation {
       case SingleRow() =>
         argument.getOrElse(PipelineInformation.empty)
 
+      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
@@ -224,6 +225,8 @@ object RegisterAllocation {
         val newPipeline = incomingPipeline.deepClone()
         newPipeline.newReference(variable, nullable = true, CTAny)
         newPipeline
+
+      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def allocate(plan: LogicalPlan,
@@ -241,11 +244,6 @@ object RegisterAllocation {
             cartesianProductPipeline.add(k, slot)
         }
         cartesianProductPipeline
-
-
-
-
-
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
