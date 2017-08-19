@@ -124,6 +124,7 @@ object RegisterAllocation {
       case SingleRow() =>
         argument.getOrElse(PipelineInformation.empty)
 
+      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def allocate(lp: LogicalPlan, nullable: Boolean, incomingPipeline: PipelineInformation): PipelineInformation =
@@ -199,6 +200,8 @@ object RegisterAllocation {
 
       case EmptyResult(_) =>
         incomingPipeline
+
+      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def allocate(plan: LogicalPlan,
@@ -216,6 +219,8 @@ object RegisterAllocation {
             cartesianProductPipeline.add(k, slot)
         }
         cartesianProductPipeline
+
+      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
 
   private def isAnApplyPlan(current: LogicalPlan): Boolean = current match {
