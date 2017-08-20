@@ -2082,6 +2082,8 @@ public class SeekCursorTest
         }
     }
 
+    // TODO: shouldMergeMainAndDeltaSectionsOnScan
+
     private void triggerUnderflowAndSeekRange( SeekCursor<MutableLong,MutableLong> seeker,
             TestPageCursor seekCursor, long fromInclusive, long toExclusive, long rightChild ) throws IOException
     {

@@ -89,7 +89,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 @SuppressWarnings( "EmptyTryBlock" )
 public class GBPTreeTest
 {
-    private static final int DEFAULT_PAGE_SIZE = 256;
+    private static final int DEFAULT_PAGE_SIZE = 1024;
 
     private static final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
 

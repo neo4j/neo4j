@@ -52,7 +52,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 
 public class GBPTreeRecoveryIT
 {
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 1024;
     private final Action CHECKPOINT = new CheckpointAction();
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

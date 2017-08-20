@@ -57,7 +57,7 @@ public class CrashGenerationCleanerTest
             .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
 
     private static final String FILE_NAME = "index";
-    private static final int PAGE_SIZE = 256;
+    private static final int PAGE_SIZE = 1024;
 
     private PagedFile pagedFile;
     private final Layout<MutableLong,MutableLong> layout = new SimpleLongLayout();
