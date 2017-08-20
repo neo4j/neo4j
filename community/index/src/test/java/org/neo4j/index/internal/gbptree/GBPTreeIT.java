@@ -95,11 +95,11 @@ public class GBPTreeIT
     public void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
-        GBPTree<MutableLong,MutableLong> index = createIndex( 256 );
+        GBPTree<MutableLong,MutableLong> index = createIndex( 1024 );
         Comparator<MutableLong> keyComparator = layout;
         Map<MutableLong,MutableLong> data = new TreeMap<>( keyComparator );
         int count = 100;
-        int totalNumberOfRounds = 10;
+        int totalNumberOfRounds = 100;
         for ( int i = 0; i < count; i++ )
         {
             data.put( randomKey( random.random() ), randomKey( random.random() ) );
@@ -167,7 +167,7 @@ public class GBPTreeIT
     private static void randomlyModifyIndex( GBPTree<MutableLong,MutableLong> index,
             Map<MutableLong,MutableLong> data, Random random, double removeProbability ) throws IOException
     {
-        int changeCount = random.nextInt( 10 ) + 10;
+        int changeCount = random.nextInt( 100 ) + 10;
         try ( Writer<MutableLong,MutableLong> writer = index.writer() )
         {
             for ( int i = 0; i < changeCount; i++ )
