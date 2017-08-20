@@ -578,8 +578,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                     if ( !seekForward )
                     {
-                        pos = min( pos, keyCount - 1 );
-                        deltaPos = min( deltaPos, deltaKeyCount - 1 );
+                        pos = pos == 0 && !KeySearch.isHit( searchResult ) ? -1 : min( pos, keyCount - 1 );
+                        deltaPos = deltaPos == 0 && !KeySearch.isHit( deltaSearchResult ) ? -1 :  min( deltaPos, deltaKeyCount - 1 );
                     }
                 }
 
