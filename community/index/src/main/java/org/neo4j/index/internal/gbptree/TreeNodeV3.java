@@ -561,7 +561,7 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         @Override
         public void removeKeyAt( PageCursor cursor, int pos, int keyCount )
         {
-            removeSlotAt( cursor, pos, keyCount, offsetKeyEnd, keySize );
+            deltaRemoveSlotAt( cursor, pos, keyCount, offsetKeyEnd, keySize );
         }
 
         @Override
@@ -589,7 +589,7 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
         @Override
         public void removeValueAt( PageCursor cursor, int pos, int keyCount )
         {
-            removeSlotAt( cursor, pos, keyCount, offsetValueEnd, valueSize );
+            deltaRemoveSlotAt( cursor, pos, keyCount, offsetValueEnd, valueSize );
         }
 
         @Override
@@ -668,15 +668,15 @@ class TreeNodeV3<KEY,VALUE> extends TreeNode<KEY,VALUE>
             }
         }
 
-        // ,,,,,,,,,,|,,,G,D,A
-        // POS           2 1 0
-        private void removeSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
+        // ,,,,,,,,,,|,,L,G,D,A
+        // POS          3 2 1 0
+        private void deltaRemoveSlotAt( PageCursor cursor, int pos, int itemCount, int baseOffset, int itemSize )
         {
             // TODO optimize
             int itemsToMove = itemCount - pos - 1;
             for ( int i = 0; i < itemsToMove; i++ )
             {
-                int sourceOffset = baseOffset - (pos + 2) * itemSize;
+                int sourceOffset = baseOffset - (pos + i + 2) * itemSize;
                 cursor.copyTo( sourceOffset, cursor, sourceOffset + itemSize, itemSize );
             }
         }
