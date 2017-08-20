@@ -29,6 +29,8 @@ import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
+import static java.lang.Integer.min;
+
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -353,11 +355,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      * may have missed some keys that was moved passed us and we need to start
      * over from previous node.
      */
-    private final KEY expectedFirstAfterGoToNext;
+    private final KEY expectedFirstAfterGoToLeft;
 
     /**
      * Key on pos 0 if traversing forward, pos {@code keyCount - 1} if traversing backwards.
-     * To be compared with {@link #expectedFirstAfterGoToNext}.
+     * To be compared with {@link #expectedFirstAfterGoToLeft}.
      */
     private final KEY firstKeyInNode;
 
@@ -378,7 +380,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private final Consumer<Throwable> exceptionDecorator;
 
     private Section<KEY,VALUE> section;
-    private final KEY tempKey;
 
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -408,9 +409,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         this.maxKeyCount = max( mainSection.internalMaxKeyCount(), mainSection.leafMaxKeyCount() );
         this.seekForward = layout.compare( fromInclusive, toExclusive ) <= 0;
         this.stride = seekForward ? 1 : -1;
-        this.expectedFirstAfterGoToNext = layout.newKey();
+        this.expectedFirstAfterGoToLeft = layout.newKey();
         this.firstKeyInNode = layout.newKey();
-        this.tempKey = layout.newKey();
 
         try
         {
@@ -504,10 +504,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         }
         while ( isInternal );
 
-        // We've now come to the first relevant leaf, initialize the state for the coming leaf scan
-        pos -= stride;
-        section = mainSection;
-
         if ( !seekForward )
         {
             // The tree traversal is best effort when seeking backwards
@@ -534,18 +530,10 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     {
         while ( true )
         {
-            if ( section == deltaSection )
-            {
-                deltaPos += stride;
-            }
-            else
-            {
-                pos += stride;
-            }
-
             // Read
             boolean readMain = false;
             boolean readDelta = false;
+            boolean goToPrev = false;
             do
             {
                 // Where we are
@@ -557,15 +545,18 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( verifyExpectedFirstAfterGoToNext )
                 {
                     pos = seekForward ? 0 : keyCount - 1;
+                    deltaPos = seekForward ? 0 : deltaKeyCount - 1;
                     mainSection.keyAt( cursor, firstKeyInNode, pos );
+                    // no need to read delta section because main section always has the highest key
                 }
 
                 if ( concurrentWriteHappened )
                 {
                     // Keys could have been moved so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
-                    searchResult = searchKey( first ? fromInclusive : prevKey, mainSection, mutableKey, keyCount );
-                    deltaSearchResult = searchKey( first ? fromInclusive : prevKey, deltaSection, mutableDeltaKey, deltaKeyCount );
+                    KEY keyToSearchFrom = first ? fromInclusive : prevKey;
+                    searchResult = searchKey( keyToSearchFrom, mainSection, mutableKey, keyCount );
+                    deltaSearchResult = searchKey( keyToSearchFrom, deltaSection, mutableDeltaKey, deltaKeyCount );
                     if ( !KeySearch.isSuccess( searchResult ) || !KeySearch.isSuccess( deltaSearchResult ) )
                     {
                         continue;
@@ -573,22 +564,35 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     pos = positionOf( searchResult );
                     deltaPos = positionOf( deltaSearchResult );
 
-                    if ( !seekForward && pos >= keyCount )
+                    if ( !seekForward && pos >= keyCount && deltaPos >= deltaKeyCount )
                     {
                         // We may need to go to previous sibling to find correct place to start seeking from
                         prevSiblingId = readPrevSibling();
                         prevSiblingGeneration = readPointerGenerationOnSuccess( prevSiblingId );
+                        goToPrev = true;
+                    }
+                    else
+                    {
+                        goToPrev = false;
+                    }
+
+                    if ( !seekForward )
+                    {
+                        pos = min( pos, keyCount - 1 );
+                        deltaPos = min( deltaPos, deltaKeyCount - 1 );
                     }
                 }
 
                 // Next result
                 if ( (seekForward && pos >= keyCount && deltaPos >= deltaKeyCount) ||
-                        (!seekForward && pos <= 0 && deltaPos <= 0) )
+                        (!seekForward && pos < 0 && deltaPos < 0) )
                 {
                     // Read right sibling
                     pointerId = readNextSibling();
                     pointerGeneration = readPointerGenerationOnSuccess( pointerId );
                 }
+
+                // 0 <= pos < keyCount
                 if ( 0 <= pos && pos < keyCount )
                 {
                     // Read the next value in this leaf
@@ -601,6 +605,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                     readMain = false;
                 }
 
+                // 0 <= deltaPos < deltaKeyCount
                 if ( 0 <= deltaPos && deltaPos < deltaKeyCount && deltaKeyCount > 0 )
                 {
                     deltaSection.keyAt( cursor, mutableDeltaKey, deltaPos );
@@ -628,7 +633,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 throw new TreeInconsistencyException( "Read inconsistent tree node %d%n" +
                         "  nodeType:%d%n  currentNodeGeneration:%d%n  successor:%d%n  successorGeneration:%d%n" +
                         "  keyCount:%d%n  maxKeyCount:%d%n  searchResult:%d%n  pos:%d%n" +
-                        "  rightSibling:%d%n  rightSiblingGeneration:%d",
+                        "  sibling:%d%n  siblingGeneration:%d",
                         cursor.getCurrentPageId(), nodeType, currentNodeGeneration, successor, successorGeneration,
                         keyCount, maxKeyCount, searchResult, pos, pointerId, pointerGeneration );
             }
@@ -640,6 +645,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
             if ( goToSuccessor() )
             {
+                continue;
+            }
+
+            if ( goToPrev )
+            {
+                goTo( prevSiblingId, prevSiblingGeneration, "prev sibling", true );
+                // Continue in the read loop above so that we can continue reading from previous sibling
+                // or on next position
                 continue;
             }
 
@@ -677,15 +690,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 }
             }
 
-            if ( !seekForward && section == null && pos >= keyCount )
-            {
-                goTo( prevSiblingId, prevSiblingGeneration, "prev sibling", true );
-                // Continue in the read loop above so that we can continue reading from previous sibling
-                // or on next position
-                continue;
-            }
-
-            if ( (seekForward && sectionPos >= sectionKeyCount) || (!seekForward && sectionPos <= 0 && !insidePrevKey( sectionKey )) )
+            if ( (seekForward && pos >= keyCount && deltaPos >= deltaKeyCount) ||
+                    (!seekForward && pos < 0 && deltaPos < 0 && !insidePrevKey( sectionKey )) )
             {
                 if ( goToNextSibling() )
                 {
@@ -694,6 +700,14 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             }
             else if ( 0 <= sectionPos && sectionPos < sectionKeyCount && insideEndRange( sectionKey, exactMatch ) )
             {
+                if ( section == mainSection )
+                {
+                    pos += stride;
+                }
+                else
+                {
+                    deltaPos += stride;
+                }
                 if ( isResultKey( sectionKey ) )
                 {
                     layout.copyKey( sectionKey, prevKey );
@@ -832,7 +846,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private boolean verifyFirstKeyInNodeIsExpectedAfterGoTo()
     {
         boolean result = true;
-        if ( verifyExpectedFirstAfterGoToNext && layout.compare( firstKeyInNode, expectedFirstAfterGoToNext ) != 0 )
+        if ( verifyExpectedFirstAfterGoToNext && layout.compare( firstKeyInNode, expectedFirstAfterGoToLeft ) != 0 )
         {
             concurrentWriteHappened = true;
             result = false;
@@ -972,11 +986,9 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     // It is likely that first key in right sibling is a next hit.
                     // Continue using scan
-                    pos = -1;
-                    section = mainSection;
+                    pos = 0;
                     deltaPos = 0;
                 }
-                return true;
             }
             else
             {
@@ -991,8 +1003,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     concurrentWriteHappened = true;
                 }
-                return true;
             }
+            return true;
         }
 
         // The current node is exhausted and it had no sibling to read more from.
@@ -1015,7 +1027,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         // Read header but to local variables and not global once
         byte nodeType;
         int keyCount = -1;
-        int deltaKeyCount = -1;
         try ( PageCursor scout = this.cursor.openLinkedCursor( GenerationSafePointerPair.pointer( pointerId ) ) )
         {
             scout.next();
@@ -1025,13 +1036,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 keyCount = mainSection.keyCount( scout );
                 if ( keyCountIsSane( keyCount, maxKeyCount ) )
                 {
-                    mainSection.keyAt( scout, expectedFirstAfterGoToNext, keyCount - 1 );
-                }
-
-                deltaKeyCount = deltaSection.keyCount( scout );
-                if ( deltaKeyCount > 0 && keyCountIsSane( deltaKeyCount, maxDeltaKeyCount ) )
-                {
-                    deltaSection.keyAt( scout, tempKey, deltaKeyCount - 1 );
+                    mainSection.keyAt( scout, expectedFirstAfterGoToLeft, keyCount - 1 );
                 }
             }
 
@@ -1045,13 +1050,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 return false;
             }
             checkOutOfBounds( this.cursor );
-
-            if ( keyCount > 0 && deltaKeyCount > 0 )
-            {
-                assert layout.compare( tempKey, expectedFirstAfterGoToNext ) < 0;
-            }
         }
-        return !(nodeType != TreeNode.NODE_TYPE_TREE_NODE || !keyCountIsSane( keyCount, maxKeyCount ));
+        return nodeType == TreeNode.NODE_TYPE_TREE_NODE && keyCountIsSane( keyCount, maxKeyCount );
     }
 
     /**

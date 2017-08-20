@@ -40,17 +40,21 @@ class TreePrinter<KEY,VALUE>
     private final Layout<KEY,VALUE> layout;
     private final long stableGeneration;
     private final long unstableGeneration;
-    private final Section<KEY,VALUE> mainContent;
-    private final Section<KEY,VALUE> deltaContent;
+    private final Section<KEY,VALUE> mainSection;
+    private final Section<KEY,VALUE> deltaSection;
+    private final KEY key;
+    private final VALUE value;
 
     TreePrinter( TreeNode<KEY,VALUE> node, Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration )
     {
         this.node = node;
-        this.mainContent = node.main();
-        this.deltaContent = node.delta();
+        this.mainSection = node.main();
+        this.deltaSection = node.delta();
         this.layout = layout;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
+        this.key = layout.newKey();
+        this.value = layout.newValue();
     }
 
     /**
@@ -104,8 +108,8 @@ class TreePrinter<KEY,VALUE>
         do
         {
             isLeaf = node.isLeaf( cursor );
-            keyCount = mainContent.keyCount( cursor );
-            if ( keyCount < 0 || (keyCount > mainContent.internalMaxKeyCount() && keyCount > mainContent.leafMaxKeyCount()) )
+            keyCount = mainSection.keyCount( cursor );
+            if ( keyCount < 0 || (keyCount > mainSection.internalMaxKeyCount() && keyCount > mainSection.leafMaxKeyCount()) )
             {
                 cursor.setCursorException( "Unexpected keyCount " + keyCount );
             }
@@ -128,15 +132,15 @@ class TreePrinter<KEY,VALUE>
         {
             out.print( "{" + cursor.getCurrentPageId() + "} " );
         }
-        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, mainContent );
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, mainSection );
         out.print( " DELTA " );
-        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, deltaContent );
+        printKeysAndValues( cursor, out, printValues, printPosition, isLeaf, deltaSection );
         if ( !isLeaf )
         {
             long child;
             do
             {
-                child = pointer( mainContent.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
+                child = pointer( mainSection.childAt( cursor, keyCount, stableGeneration, unstableGeneration ) );
             }
             while ( cursor.shouldRetry() );
 
@@ -152,8 +156,6 @@ class TreePrinter<KEY,VALUE>
     private void printKeysAndValues( PageCursor cursor, PrintStream out, boolean printValues, boolean printPosition,
             boolean isLeaf, Section<KEY,VALUE> section ) throws IOException
     {
-        KEY key = layout.newKey();
-        VALUE value = layout.newValue();
         int keyCount = section.keyCount( cursor );
         for ( int i = 0; i < keyCount; i++ )
         {
@@ -202,7 +204,7 @@ class TreePrinter<KEY,VALUE>
             isInternal = node.isInternal( cursor );
             if ( isInternal )
             {
-                leftmostSibling = mainContent.childAt( cursor, 0, stableGeneration, unstableGeneration );
+                leftmostSibling = mainSection.childAt( cursor, 0, stableGeneration, unstableGeneration );
             }
         }
         while ( cursor.shouldRetry() );

@@ -25,6 +25,7 @@ import java.util.Comparator;
 
 import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
+
 import static org.neo4j.index.internal.gbptree.KeySearch.isHit;
 import static org.neo4j.index.internal.gbptree.KeySearch.positionOf;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
@@ -1382,7 +1383,7 @@ class InternalTreeLogic<KEY,VALUE>
                 leftSiblingCursor.next();
                 int leftSiblingKeyCount = mainSection.keyCount( leftSiblingCursor );
                 leftSiblingKeyCount = consolidateDeltas( leftSiblingCursor, leftSiblingKeyCount,
-                        deltaSection.keyCount( leftSiblingCursor ));
+                        deltaSection.keyCount( leftSiblingCursor ) );
 
                 if ( keyCount + leftSiblingKeyCount >= leafMaxKeyCount )
                 {
