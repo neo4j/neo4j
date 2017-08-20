@@ -64,7 +64,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
       case NodeIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekRegisterPipe(column, label, propertyKeys,
-          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id = id)
+          valueExpr.map(convertExpressions), indexSeekMode, pipelineInformation)(id)
 
       case NodeUniqueIndexSeek(IdName(column), label, propertyKeys, valueExpr, _) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
@@ -114,14 +114,14 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val relOffset = pipeline(relName).offset
         val toOffset = pipeline(toName).offset
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+        OptionalExpandAllRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
         val fromOffset = pipeline(fromName).offset
         val relOffset = pipeline(relName).offset
         val toOffset = pipeline(toName).offset
         val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
-        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id = id)
+        OptionalExpandIntoRegisterPipe(source, fromOffset, relOffset, toOffset, dir, LazyTypes(types), predicate, pipeline)(id)
 
       case VarExpand(_, IdName(fromName), dir, projectedDir, types, IdName(toName), IdName(relName), VarPatternLength(min, max), expansionMode, predicates) =>
         // TODO: This is not right!
@@ -137,7 +137,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         val toOffset = pipeline.getLongOffsetFor(toName)
         val relOffset = pipeline.getReferenceOffsetFor(relName)
         VarLengthExpandRegisterPipe(source, fromOffset, relOffset, toOffset, dir, projectedDir,
-          LazyTypes(types), min, max, shouldExpandAll, predicate, pipeline)(id = id)
+          LazyTypes(types), min, max, shouldExpandAll, predicate, pipeline)(id)
 
       case Optional(inner, symbols) =>
         val nullableKeys = inner.availableSymbols -- symbols
@@ -153,10 +153,14 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
         ProjectionRegisterPipe(source, expressionsWithOffsets)(id)
 
       case CreateNode(_, idName, labels, props) =>
-        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id = id)
+        CreateNodeRegisterPipe(source, idName.name, pipeline, labels.map(LazyLabel.apply), props.map(convertExpressions))(id)
 
       case EmptyResult(_) =>
-        EmptyResultPipe(source)(id = id)
+        EmptyResultPipe(source)(id)
+
+      case UnwindCollection(_, IdName(name), expression) =>
+        val offset = pipeline.getReferenceOffsetFor(name)
+        UnwindRegisterPipe(source, expressionConverters.toCommandExpression(expression), offset, pipeline)(id)
 
       // Pipes that do not themselves read/write registers/slots should be fine to use the fallback (non-register aware pipes)
       case _: Selection |

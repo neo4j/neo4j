@@ -46,7 +46,7 @@ object RegisterAllocation {
             case (key, exp) =>
               // TODO: Support this properly. Requires actually using the expression and supporting aggregation
               //newPipeline.newReference(key, nullable = true, CTAny)
-            throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
+              throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
           }
         }
 
@@ -107,7 +107,7 @@ object RegisterAllocation {
         result += (lp -> pipeline)
         pipeline
 
-      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandAll, _) =>
+      case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandAll, _) =>
         val oldPipeline = allocate(source, nullable, argument)
         val newPipeline = oldPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
@@ -115,7 +115,7 @@ object RegisterAllocation {
         result += (lp -> newPipeline)
         newPipeline
 
-      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandInto, _) =>
+      case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandInto, _) =>
         val oldPipeline = allocate(source, nullable, argument)
         val newPipeline = oldPipeline.deepClone()
         newPipeline.newLong(rel, nullable = true, CTRelationship)
@@ -158,7 +158,7 @@ object RegisterAllocation {
         val rhsPipeline = allocate(rhs, nullable, argument)
         val cartesianProductPipeline = lhsPipeline.deepClone()
         rhsPipeline.foreachSlot {
-          case (k,slot) =>
+          case (k, slot) =>
             cartesianProductPipeline.add(k, slot)
         }
         result += (lp -> cartesianProductPipeline)
@@ -166,7 +166,7 @@ object RegisterAllocation {
 
       case CreateNode(source, IdName(name), labels, properties) =>
         val pipeline = allocate(source, nullable, argument)
-        pipeline.newLong(name,false,CTNode)
+        pipeline.newLong(name, nullable = false, CTNode)
         result += (lp -> pipeline)
         pipeline
 
@@ -179,6 +179,13 @@ object RegisterAllocation {
         val pipeline = allocate(source, nullable, argument)
         result += (lp -> pipeline)
         pipeline
+
+      case UnwindCollection(source, IdName(variable), expression) =>
+        val oldPipeline = allocate(source, nullable, argument)
+        val newPipeline = oldPipeline.deepClone()
+        newPipeline.newReference(variable, nullable, CTAny)
+        result += (lp -> newPipeline)
+        newPipeline
 
       case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
     }
