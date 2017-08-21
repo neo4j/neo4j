@@ -34,6 +34,8 @@ public interface StatementLocks extends AutoCloseable
 {
     Supplier<LockTracer> DEFAULT_LOCK_TRACER_SUPPLIER = () -> LockTracer.NONE;
 
+    // ====[ Explicit locking ]====
+
     /**
      * Explicitly acquire an exclusive lock of the given resource type, on the given resources.
      * <p>
@@ -70,11 +72,7 @@ public interface StatementLocks extends AutoCloseable
      */
     void explicitReleaseShared( ResourceType type, long resourceId );
 
-    /**
-     * An id that uniquely identifies the current lock session at this point in time.
-     * @return The current lock session id used by this instance of {@link StatementLocks}.
-     */
-    int getLockSessionId();
+    // ====[ Optimistic constraint locks ]====
 
     /**
      * Get {@link Locks.Client} responsible for optimistic locks. Such locks could potentially be grabbed later at
@@ -83,6 +81,28 @@ public interface StatementLocks extends AutoCloseable
      * @return the locks client to serve optimistic locks.
      */
     Locks.Client optimistic();
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) exclusive lock on the index entry given by the specified
+     * resource.
+     */
+    void uniquenessConstraintEntryAcquireExclusive( long resource );
+
+    /**
+     * Release the optimistic exclusive lock that was acquired on the index entry given by the specified resource.
+     */
+    void uniquenessConstraintEntryReleaseExclusive( long resource );
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) shared lock on teh index entry given by the specified
+     * resource.
+     */
+    void uniquenessConstraintEntryAcquireShared( long resource );
+
+    /**
+     * Release the optimistic shared lock that was acquired on the index entry given by the specified resource.
+     */
+    void uniquenessConstraintEntryReleaseShared( long resource );
 
     /**
      * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
@@ -131,4 +151,10 @@ public interface StatementLocks extends AutoCloseable
      * @param lockTracerSupplier The supplier of lock tracers.
      */
     void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier );
+
+    /**
+     * An id that uniquely identifies the current lock session at this point in time.
+     * @return The current lock session id used by this instance of {@link StatementLocks}.
+     */
+    int getLockSessionId();
 }

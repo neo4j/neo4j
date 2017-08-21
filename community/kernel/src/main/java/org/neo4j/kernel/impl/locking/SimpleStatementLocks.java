@@ -43,7 +43,12 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void explicitAcquireExclusive( ResourceType type, long... resourceId )
     {
-        client.acquireExclusive( lockTracerSupplier.get(), type, resourceId );
+        client.acquireExclusive( getTracer(), type, resourceId );
+    }
+
+    private LockTracer getTracer()
+    {
+        return lockTracerSupplier.get();
     }
 
     @Override
@@ -55,7 +60,7 @@ public class SimpleStatementLocks implements StatementLocks
     @Override
     public void explicitAcquireShared( ResourceType type, long... resourceId )
     {
-        client.acquireShared( lockTracerSupplier.get(), type, resourceId );
+        client.acquireShared( getTracer(), type, resourceId );
     }
 
     @Override
@@ -74,6 +79,30 @@ public class SimpleStatementLocks implements StatementLocks
     public Locks.Client optimistic()
     {
         return client;
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireExclusive( long resource )
+    {
+        client.acquireExclusive( getTracer(), ResourceTypes.INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseExclusive( long resource )
+    {
+        client.releaseExclusive( ResourceTypes.INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireShared( long resource )
+    {
+        client.acquireShared( getTracer(), ResourceTypes.INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseShared( long resource )
+    {
+        client.releaseShared( ResourceTypes.INDEX_ENTRY, resource );
     }
 
     @Override

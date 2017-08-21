@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
+import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
+
 /**
  * A {@link StatementLocks} implementation that defers {@link #optimistic() optimistic}
  * locks using {@link DeferringLockClient}.
@@ -45,7 +47,12 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void explicitAcquireExclusive( ResourceType type, long... resourceId )
     {
-        explicit.acquireExclusive( lockTracerSupplier.get(), type, resourceId );
+        explicit.acquireExclusive( getTracer(), type, resourceId );
+    }
+
+    private LockTracer getTracer()
+    {
+        return lockTracerSupplier.get();
     }
 
     @Override
@@ -57,7 +64,7 @@ public class DeferringStatementLocks implements StatementLocks
     @Override
     public void explicitAcquireShared( ResourceType type, long... resourceId )
     {
-        explicit.acquireShared( lockTracerSupplier.get(), type, resourceId );
+        explicit.acquireShared( getTracer(), type, resourceId );
     }
 
     @Override
@@ -76,6 +83,30 @@ public class DeferringStatementLocks implements StatementLocks
     public Locks.Client optimistic()
     {
         return implicit;
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireExclusive( long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseExclusive( long resource )
+    {
+        optimistic().releaseExclusive( INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryAcquireShared( long resource )
+    {
+        optimistic().acquireShared( getTracer(), INDEX_ENTRY, resource );
+    }
+
+    @Override
+    public void uniquenessConstraintEntryReleaseShared( long resource )
+    {
+        optimistic().releaseShared( INDEX_ENTRY, resource );
     }
 
     @Override
