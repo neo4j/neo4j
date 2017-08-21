@@ -69,7 +69,7 @@ public class GetServersProcedureForSingleDC implements CallableProcedure
             ProcedureSignature.procedureSignature( GET_SERVERS_V2.fullyQualifiedProcedureName() )
                     .in( CONTEXT.parameterName(), Neo4jTypes.NTMap )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
-                    .out( SERVERS.parameterName(), Neo4jTypes.NTMap )
+                    .out( SERVERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                     .description( DESCRIPTION )
                     .build();
 

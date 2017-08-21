@@ -64,7 +64,7 @@ public class LegacyGetServersProcedure implements CallableProcedure
     private final ProcedureSignature procedureSignature =
             ProcedureSignature.procedureSignature( GET_SERVERS_V1.fullyQualifiedProcedureName() )
                     .out( TTL.parameterName(), Neo4jTypes.NTInteger )
-                    .out( SERVERS.parameterName(), Neo4jTypes.NTMap )
+                    .out( SERVERS.parameterName(), Neo4jTypes.NTList( Neo4jTypes.NTMap ) )
                     .description( DESCRIPTION )
                     .build();
 
@@ -109,7 +109,8 @@ public class LegacyGetServersProcedure implements CallableProcedure
         }
         catch ( NoLeaderFoundException e )
         {
-            log.debug( "No leader server found. This can happen during a leader switch. No write end points available" );
+            log.debug(
+                    "No leader server found. This can happen during a leader switch. No write end points available" );
             return Optional.empty();
         }
 
