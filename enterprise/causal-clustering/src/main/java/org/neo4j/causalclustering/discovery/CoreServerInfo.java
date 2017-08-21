@@ -25,7 +25,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.emptySet;
 
-public class CoreServerInfo implements CatchupServerAddress, ClientConnector, GroupedServer
+public class CoreServerInfo implements DiscoveryServerInfo
 {
     private final AdvertisedSocketAddress raftServer;
     private final AdvertisedSocketAddress catchupServer;

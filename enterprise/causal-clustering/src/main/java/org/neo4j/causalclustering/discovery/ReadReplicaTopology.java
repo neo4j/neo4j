@@ -22,17 +22,12 @@ package org.neo4j.causalclustering.discovery;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 
 import org.neo4j.causalclustering.identity.MemberId;
 
 import static java.util.Collections.emptyMap;
-import static java.util.stream.Collectors.toSet;
 
-import static org.neo4j.causalclustering.discovery.Difference.asDifference;
-
-
-public class ReadReplicaTopology
+public class ReadReplicaTopology implements Topology<ReadReplicaInfo>
 {
     static final ReadReplicaTopology EMPTY = new ReadReplicaTopology( emptyMap() );
 
@@ -48,14 +43,10 @@ public class ReadReplicaTopology
         return readReplicaMembers.values();
     }
 
-    public Map<MemberId,ReadReplicaInfo> members()
+    @Override
+    public Map<MemberId, ReadReplicaInfo> members()
     {
         return readReplicaMembers;
-    }
-
-    Optional<ReadReplicaInfo> find( MemberId memberId )
-    {
-        return Optional.ofNullable( readReplicaMembers.get( memberId ) );
     }
 
     @Override
@@ -66,27 +57,6 @@ public class ReadReplicaTopology
 
     public Optional<MemberId> anyReadReplicaMemberId()
     {
-        if ( readReplicaMembers.keySet().size() == 0 )
-        {
-            return Optional.empty();
-        }
-        else
-        {
-            return readReplicaMembers.keySet().stream().findAny();
-        }
-    }
-
-    TopologyDifference difference( ReadReplicaTopology other )
-    {
-        Set<MemberId> members = readReplicaMembers.keySet();
-        Set<MemberId> otherMembers = other.readReplicaMembers.keySet();
-
-        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
-                .map( memberId -> asDifference( other, memberId ) ).collect( toSet() );
-
-        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
-                .map( memberId -> asDifference( ReadReplicaTopology.this, memberId ) ).collect( toSet() );
-
-        return new TopologyDifference( added, removed );
+        return readReplicaMembers.keySet().stream().findAny();
     }
 }
