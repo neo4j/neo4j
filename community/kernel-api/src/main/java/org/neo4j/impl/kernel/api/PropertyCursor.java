@@ -21,9 +21,9 @@ package org.neo4j.impl.kernel.api;
 
 import java.util.regex.Pattern;
 
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueGroup;
-import org.neo4j.values.ValueWriter;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueWriter;
 
 /**
  * Cursor for scanning the properties of a node or edge.

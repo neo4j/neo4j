@@ -20,10 +20,9 @@
 package org.neo4j.impl.store.prototype.neole;
 
 import org.neo4j.string.UTF8;
-import org.neo4j.values.Value;
-import org.neo4j.values.ValueGroup;
-import org.neo4j.values.ValueWriter;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
 import static org.neo4j.impl.store.prototype.neole.ShortStringEncoding.ENCODINGS;

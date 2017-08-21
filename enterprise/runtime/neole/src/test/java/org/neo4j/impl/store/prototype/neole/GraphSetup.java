@@ -31,14 +31,14 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.impl.kernel.api.EdgeGroupCursor;
+import org.neo4j.impl.kernel.api.EdgeManualIndexCursor;
 import org.neo4j.impl.kernel.api.EdgeScanCursor;
-import org.neo4j.impl.kernel.api.EdgeSearchStructureCursor;
 import org.neo4j.impl.kernel.api.EdgeTraversalCursor;
 import org.neo4j.impl.kernel.api.IndexPredicate;
 import org.neo4j.impl.kernel.api.IndexReference;
 import org.neo4j.impl.kernel.api.NodeCursor;
 import org.neo4j.impl.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.impl.kernel.api.NodeSearchStructureCursor;
+import org.neo4j.impl.kernel.api.NodeManualIndexCursor;
 import org.neo4j.impl.kernel.api.NodeValueIndexCursor;
 import org.neo4j.impl.kernel.api.PropertyCursor;
 import org.neo4j.impl.kernel.api.Read;
@@ -275,14 +275,14 @@ public abstract class GraphSetup extends TestResource implements Read, org.neo4j
     }
 
     @Override
-    public NodeSearchStructureCursor allocateNodeSearchStructureCursor()
+    public NodeManualIndexCursor allocateNodeManualIndexCursor()
     {
-        return cursors.allocateNodeSearchStructureCursor();
+        return cursors.allocateNodeManualIndexCursor();
     }
 
     @Override
-    public EdgeSearchStructureCursor allocateEdgeSearchStructureCursor()
+    public EdgeManualIndexCursor allocateEdgeManualIndexCursor()
     {
-        return cursors.allocateEdgeSearchStructureCursor();
+        return cursors.allocateEdgeManualIndexCursor();
     }
 }
