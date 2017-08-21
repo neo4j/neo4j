@@ -19,16 +19,6 @@
  */
 package org.neo4j.kernel.impl.ha;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableMap;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.neo4j.helpers.ArrayUtil.contains;
-import static org.neo4j.helpers.collection.Iterables.asList;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -97,6 +87,16 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageEngine;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.helpers.ArrayUtil.contains;
+import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
+
 /**
  * Utility for spinning up an HA cluster inside the same JVM. Only intended for being used in tests
  * as well as other tools that may need a cluster conveniently within the same JVM.
@@ -127,7 +127,7 @@ public class ClusterManager
         IN
     }
 
-    private static final long DEFAULT_TIMEOUT_SECONDS = 60L;
+    private static final long DEFAULT_TIMEOUT_SECONDS = 600L;
     public static final Map<String,String> CONFIG_FOR_SINGLE_JVM_CLUSTER = unmodifiableMap( stringMap(
             GraphDatabaseSettings.pagecache_memory.name(), "8m",
             GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "1s",
