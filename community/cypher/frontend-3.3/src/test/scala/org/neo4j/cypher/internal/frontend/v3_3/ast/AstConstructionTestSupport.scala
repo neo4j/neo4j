@@ -36,6 +36,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def propEquality(variable: String, propKey: String, intValue: Int) =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
 
+  def propLessThan(variable: String, propKey: String, intValue: Int) =
+    LessThan(prop(variable, propKey), literalInt(intValue))(pos)
+
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
     SignedDecimalIntegerLiteral(intValue.toString)(pos)
 

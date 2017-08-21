@@ -128,7 +128,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                     temporaryEdge: IdName,
                     edgePredicate: Expression,
                     nodePredicate: Expression,
-                    allPredicates: Seq[Expression],
+                    solvedPredicates: Seq[Expression],
                     legacyPredicates: Seq[(Variable, Expression)] = Seq.empty,
                     mode: ExpansionMode)(implicit context: LogicalPlanningContext): LogicalPlan = pattern.length match {
     case l: VarPatternLength =>
@@ -136,7 +136,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
       val solved = left.solved.amendQueryGraph(_
         .addPatternRelationship(pattern)
-        .addPredicates(allPredicates: _*)
+        .addPredicates(solvedPredicates: _*)
       )
       VarExpand(
         left = left,

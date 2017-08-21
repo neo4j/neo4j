@@ -43,7 +43,7 @@ object extractPredicates {
 
     During the folding, we also accumulate the original predicate, which we can mark as solved by this plan.
      */
-    val seed: (List[Expression], List[Expression], List[Expression]) =
+    val seed: (NodePredicates, EdgePredicates, SolvedPredicates) =
       (List.empty, List.empty, List.empty)
 
     availablePredicates.foldLeft(seed) {
@@ -55,7 +55,7 @@ object extractPredicates {
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempEdge))
         (n, e :+ rewrittenPredicate, s :+ p)
 
-      //MATCH p = ()-[*]->() WHERE ALL(r in rels(p) WHERE r.prop > 4)
+      //MATCH p = (a)-[x*]->(b) WHERE ALL(r in rels(p) WHERE r.prop > 5)
       case ((n, e, s),
             p @ AllRelationshipsInPath(`originalNodeName`, `originalEdgeName`, variable, innerPredicate)) =>
         val rewrittenPredicate = innerPredicate.endoRewrite(replaceVariable(variable, tempEdge))
@@ -110,7 +110,7 @@ object extractPredicates {
             FunctionInvocation(
               _, // namespace
               FunctionName(fname),
-              false,
+              false, //distinct
               Seq(
                 PathExpression(
                   NodePathStep(

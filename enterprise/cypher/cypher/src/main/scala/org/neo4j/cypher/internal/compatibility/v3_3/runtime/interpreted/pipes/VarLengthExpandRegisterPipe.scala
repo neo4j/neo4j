@@ -80,12 +80,10 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
             if (relationshipIsUniqueInPath) {
               row.setLongAt(tempEdgeOffset, relId)
               row.setLongAt(tempNodeOffset, relationship.getOtherNodeId(fromNode))
-              val a = edgePredicate.isTrue(row)(state)
-              val b = nodePredicate.isTrue(row)(state)
-              if (a && b) {
+              // Before expanding, check that both the edge and node in question fulfil the predicate
+              if (edgePredicate.isTrue(row)(state) && nodePredicate.isTrue(row)(state)) {
                 // TODO: This call creates an intermediate NodeProxy which should not be necessary
                 stack.push((relationship.getOtherNodeId(fromNode), rels :+ relationship))
-                //                stack.push((otherSide, rels :+ relId))
               }
             }
           }

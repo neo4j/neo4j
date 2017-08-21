@@ -107,29 +107,5 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     ))
   }
 
-  test("extracts predicates as expected") {
-    //MATCH p = ... WHERE all(n in nodes(p)... or all(r in relationships(p)
-    val startNode = varFor("startNode")
-    val endNode = varFor("endNode")
-    val innerVar = varFor("n")
-    val rels = varFor("rels")
-    val startId = fromVariable(startNode)
-
-    val patternRel = PatternRelationship(fromVariable(rels), (startId, fromVariable(endNode)), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val innerPredicate = propEquality("n", "blocked", 42)
-    val positionToExpressions = IndexedSeq(PathExpression(
-      NodePathStep(startNode, MultiRelationshipPathStep(rels, SemanticDirection.OUTGOING, NilPathStep)))(pos))
-
-    val predicate = AllIterablePredicate(FilterScope(innerVar, Some(innerPredicate))(pos),
-      FunctionInvocation(Namespace()(pos), FunctionName("nodes")(pos), distinct = false, positionToExpressions)(pos))(pos)
-
-    val predicates = Seq(predicate)
-    val tuples: Seq[(Variable, Expression)] = expandSolverStep.extractLegacyPredicates(predicates, patternRel, startId)
-    println(tuples)
-
-  }
-
-
-
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
 }

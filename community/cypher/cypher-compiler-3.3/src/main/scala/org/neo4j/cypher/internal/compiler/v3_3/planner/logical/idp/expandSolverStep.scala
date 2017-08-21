@@ -110,7 +110,7 @@ object expandSolverStep {
           temporaryEdge = tempEdge,
           edgePredicate = relationshipPredicate,
           nodePredicate = nodePredicate,
-          allPredicates = solvedPredicates,
+          solvedPredicates = solvedPredicates,
           mode = mode,
           legacyPredicates = legacyPredicates)
     }
