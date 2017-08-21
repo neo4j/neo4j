@@ -146,15 +146,21 @@ public class BidirectionalTraversalDescriptionImpl implements BidirectionalTrave
         return new DefaultTraverser( () ->
         {
             Resource resource = statementFactory.get();
+            boolean success = false;
             try
             {
-                return new BidirectionalTraverserIterator( resource, start, end, sideSelector, collisionPolicy,
-                        collisionEvaluator, maxDepth, startNodes, endNodes );
+                BidirectionalTraverserIterator iterator =
+                        new BidirectionalTraverserIterator( resource, start, end, sideSelector, collisionPolicy,
+                                collisionEvaluator, maxDepth, startNodes, endNodes );
+                success = true;
+                return iterator;
             }
-            catch ( Exception e )
+            finally
             {
-                resource.close();
-                throw e;
+                if ( !success )
+                {
+                    resource.close();
+                }
             }
         } );
     }

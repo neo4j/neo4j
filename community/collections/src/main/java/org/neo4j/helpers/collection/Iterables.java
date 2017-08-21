@@ -48,6 +48,9 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 public final class Iterables
 {
 
+    @SuppressWarnings( "rawtypes" )
+    private static final ResourceIterable EMPTY_RESOURCE_ITERATOR = new EmptyResourceIterable<>();
+
     private Iterables()
     {
     }
@@ -56,6 +59,11 @@ public final class Iterables
     public static <T> Iterable<T> empty()
     {
         return Collections.emptyList();
+    }
+
+    public static <T> Iterable<T> emptyResourceIterable()
+    {
+        return (Iterable<T>) EMPTY_RESOURCE_ITERATOR;
     }
 
     public static <T> Iterable<T> limit( final int limitItems, final Iterable<T> iterable )
@@ -628,9 +636,17 @@ public final class Iterables
      */
     public static <T> long count( Iterable<T> iterable, Predicate<T> filter )
     {
-        try ( ResourceIterator<T> iterator = Iterators.asResourceIterator( iterable.iterator() ) )
+        Iterator<T> iterator = iterable.iterator();
+        try
         {
             return Iterators.count( iterator, filter );
+        }
+        finally
+        {
+            if ( iterator instanceof ResourceIterator )
+            {
+                ((ResourceIterator) iterator).close();
+            }
         }
     }
 
@@ -932,5 +948,18 @@ public final class Iterables
         List<String> names = new ArrayList<>();
         EnumSet.allOf( cls ).forEach( item -> names.add( item.name() ) );
         return names;
+    }
+
+    private static class EmptyResourceIterable<T> implements ResourceIterable<T>
+    {
+        private EmptyResourceIterable()
+        {
+        }
+
+        @Override
+        public ResourceIterator<T> iterator()
+        {
+            return Iterators.emptyResourceIterator();
+        }
     }
 }
