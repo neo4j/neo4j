@@ -22,6 +22,7 @@ package org.neo4j.impl.kernel.api;
 import java.util.regex.Pattern;
 
 import org.neo4j.values.Value;
+import org.neo4j.values.ValueGroup;
 import org.neo4j.values.ValueWriter;
 
 /**
@@ -53,6 +54,8 @@ public interface PropertyCursor extends Cursor
     }
 
     int propertyKey();
+
+    ValueGroup propertyType();
 
     Value propertyValue();
 

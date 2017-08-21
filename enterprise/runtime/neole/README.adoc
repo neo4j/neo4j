@@ -1,0 +1,4 @@
+Implementation of the Neo4j storage format
+==========================================
+
+This module implements the storage format of the Community Edition of Neo4j using the API defined in link:../protostore/README.adoc[protostore].
