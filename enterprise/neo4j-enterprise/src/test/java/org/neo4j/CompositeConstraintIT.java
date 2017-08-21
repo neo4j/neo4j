@@ -19,12 +19,12 @@
  */
 package org.neo4j;
 
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.ConsistencyCheckTool;
@@ -89,7 +89,8 @@ public class CompositeConstraintIT
     private static ConsistencyCheckService.Result checkDbConsistency( File storeDir )
             throws ConsistencyCheckTool.ToolFailureException, IOException
     {
-        return ConsistencyCheckTool.runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()} );
+        return ConsistencyCheckTool.runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
+                System.out, System.err );
     }
 
     private static void awaitIndex( GraphDatabaseService database )

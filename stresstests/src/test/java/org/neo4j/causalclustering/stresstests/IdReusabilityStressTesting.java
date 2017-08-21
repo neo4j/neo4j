@@ -19,10 +19,6 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
 import java.io.File;
 import java.security.SecureRandom;
 import java.util.List;
@@ -36,6 +32,10 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
+
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
@@ -146,7 +146,8 @@ public class IdReusabilityStressTesting
         // Check consistency
         for ( String storeDirectory : storeDirectories )
         {
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDirectory} );
+            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDirectory},
+                    System.out, System.err );
             if ( !result.isSuccessful() )
             {
                 throw new RuntimeException( "Not consistent database in " + storeDirectory );

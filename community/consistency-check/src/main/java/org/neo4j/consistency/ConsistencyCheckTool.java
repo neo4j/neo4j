@@ -55,7 +55,7 @@ public class ConsistencyCheckTool
         {
             System.err.println("WARNING: ConsistencyCheckTool is deprecated and support for it will be" +
                     "removed in a future version of Neo4j. Please use neo4j-admin check-consistency.");
-            runConsistencyCheckTool( args );
+            runConsistencyCheckTool( args, System.out, System.err );
         }
         catch ( ToolFailureException e )
         {
@@ -63,14 +63,15 @@ public class ConsistencyCheckTool
         }
     }
 
-    public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args )
+    public static ConsistencyCheckService.Result runConsistencyCheckTool( String[] args, PrintStream outStream,
+                                                                          PrintStream errStream )
             throws ToolFailureException, IOException
     {
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         try
         {
             ConsistencyCheckTool tool =
-                    new ConsistencyCheckTool( new ConsistencyCheckService(), fileSystem, System.err );
+                    new ConsistencyCheckTool( new ConsistencyCheckService(), fileSystem, outStream, errStream );
             return tool.run( args );
         }
         finally
@@ -87,14 +88,16 @@ public class ConsistencyCheckTool
     }
 
     private final ConsistencyCheckService consistencyCheckService;
+    private final PrintStream systemOut;
     private final PrintStream systemError;
     private final FileSystemAbstraction fs;
 
     ConsistencyCheckTool( ConsistencyCheckService consistencyCheckService, FileSystemAbstraction fs,
-            PrintStream systemError )
+            PrintStream systemOut, PrintStream systemError )
     {
         this.consistencyCheckService = consistencyCheckService;
         this.fs = fs;
+        this.systemOut = systemOut;
         this.systemError = systemError;
     }
 
@@ -108,11 +111,11 @@ public class ConsistencyCheckTool
 
         checkDbState( storeDir, tuningConfiguration );
 
-        LogProvider logProvider = FormattedLogProvider.toOutputStream( System.out );
+        LogProvider logProvider = FormattedLogProvider.toOutputStream( systemOut );
         try
         {
             return consistencyCheckService.runFullConsistencyCheck( storeDir, tuningConfiguration,
-                    ProgressMonitorFactory.textual( System.err ), logProvider, fs, verbose,
+                    ProgressMonitorFactory.textual( systemError ), logProvider, fs, verbose,
                     new CheckConsistencyConfig( tuningConfiguration ) );
         }
         catch ( ConsistencyCheckIncompleteException e )

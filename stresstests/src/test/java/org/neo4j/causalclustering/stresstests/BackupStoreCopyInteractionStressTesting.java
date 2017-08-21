@@ -19,11 +19,6 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,10 +30,15 @@ import java.util.function.BiFunction;
 import java.util.function.BooleanSupplier;
 import java.util.function.IntFunction;
 
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.RuleChain;
+
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.HazelcastDiscoveryServiceFactory;
-import org.neo4j.concurrent.Futures;
 import org.neo4j.causalclustering.discovery.IpFamily;
+import org.neo4j.concurrent.Futures;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.SocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
