@@ -19,27 +19,34 @@
  */
 package org.neo4j.causalclustering.discovery;
 
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+
 import org.neo4j.causalclustering.identity.MemberId;
 
-class Difference
+import static java.util.stream.Collectors.toSet;
+
+public interface Topology<T extends DiscoveryServerInfo>
 {
-    private MemberId memberId;
-    private CatchupServerAddress server;
+    Map<MemberId, T> members();
 
-    private Difference( MemberId memberId, CatchupServerAddress server )
+    default TopologyDifference difference( Topology<T> other )
     {
-        this.memberId = memberId;
-        this.server = server;
+        Set<MemberId> members = members().keySet();
+        Set<MemberId> otherMembers = other.members().keySet();
+
+        Set<Difference> added = otherMembers.stream().filter( m -> !members.contains( m ) )
+                .map( memberId -> Difference.asDifference( other, memberId ) ).collect( toSet() );
+
+        Set<Difference> removed = members.stream().filter( m -> !otherMembers.contains( m ) )
+                .map( memberId -> Difference.asDifference( this, memberId ) ).collect( toSet() );
+
+        return new TopologyDifference( added, removed );
     }
 
-    static <T extends DiscoveryServerInfo> Difference asDifference( Topology<T> topology, MemberId memberId )
+    default Optional<T> find( MemberId memberId )
     {
-        return new Difference( memberId, topology.find( memberId ).orElse( null ) );
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format( "{memberId=%s, info=%s}", memberId, server );
+        return Optional.ofNullable( members().get( memberId ) );
     }
 }

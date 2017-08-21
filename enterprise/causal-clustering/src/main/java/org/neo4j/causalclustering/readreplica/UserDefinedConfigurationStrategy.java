@@ -19,13 +19,16 @@
  */
 package org.neo4j.causalclustering.readreplica;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
-import org.neo4j.causalclustering.discovery.CoreServerInfo;
-import org.neo4j.causalclustering.discovery.CoreTopology;
+import org.neo4j.causalclustering.discovery.DiscoveryServerInfo;
+import org.neo4j.causalclustering.discovery.Topology;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.causalclustering.load_balancing.filters.Filter;
 import org.neo4j.causalclustering.load_balancing.plugins.server_policies.FilterConfigParser;
@@ -46,30 +49,38 @@ public class UserDefinedConfigurationStrategy extends UpstreamDatabaseSelectionS
     {
         try
         {
-            Filter<ServerInfo> filters = FilterConfigParser
-                    .parse( config.get( CausalClusteringSettings.user_defined_upstream_selection_strategy ) );
+            Filter<ServerInfo> filters = FilterConfigParser.parse( config.get( CausalClusteringSettings.user_defined_upstream_selection_strategy ) );
 
-            Set<ServerInfo> possibleReaders = topologyService.readReplicas().members().entrySet().stream()
-                    .map( entry -> new ServerInfo( entry.getValue().connectors().boltAddress(), entry.getKey(),
-                            entry.getValue().groups() ) ).collect( Collectors.toSet() );
+            Set<ServerInfo> possibleServers = possibleServers();
 
-            CoreTopology coreTopology = topologyService.coreServers();
-            for ( MemberId validCore : coreTopology.members().keySet() )
-            {
-                Optional<CoreServerInfo> coreServerInfo = coreTopology.find( validCore );
-                if ( coreServerInfo.isPresent() )
-                {
-                    CoreServerInfo serverInfo = coreServerInfo.get();
-                    possibleReaders.add(
-                            new ServerInfo( serverInfo.connectors().boltAddress(), validCore, serverInfo.groups() ) );
-                }
-            }
-
-            return filters.apply( possibleReaders ).stream().map( ServerInfo::memberId ).findAny();
+            return filters.apply( possibleServers ).stream()
+                    .map( ServerInfo::memberId )
+                    .filter( memberId -> !Objects.equals( myself, memberId ) )
+                    .findFirst();
         }
         catch ( InvalidFilterSpecification invalidFilterSpecification )
         {
             return Optional.empty();
         }
+    }
+
+    private Set<ServerInfo> possibleServers()
+    {
+        Stream<Map.Entry<MemberId, ? extends DiscoveryServerInfo>> infoMap =
+                Stream.of( topologyService.readReplicas(), topologyService.coreServers() )
+                        .map( Topology::members )
+                        .map( Map::entrySet )
+                        .flatMap( Set::stream );
+
+        return infoMap
+                .map( this::toServerInfo )
+                .collect( Collectors.toSet() );
+    }
+
+    private <T extends DiscoveryServerInfo> ServerInfo toServerInfo( Map.Entry<MemberId, T> entry )
+    {
+        T server = entry.getValue();
+        MemberId memberId = entry.getKey();
+        return new ServerInfo( server.connectors().boltAddress(), memberId, server.groups() );
     }
 }

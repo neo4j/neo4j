@@ -25,7 +25,7 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 
 import static java.util.Collections.emptySet;
 
-public class ReadReplicaInfo implements CatchupServerAddress, ClientConnector, GroupedServer
+public class ReadReplicaInfo implements DiscoveryServerInfo
 {
     private final AdvertisedSocketAddress catchupServerAddress;
     private final ClientConnectorAddresses clientConnectorAddresses;
