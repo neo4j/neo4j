@@ -23,7 +23,7 @@ public class LogEntryByteCodes
 {
     private LogEntryByteCodes()
     {
-        // no instances are allowed
+        throw new AssertionError(); // no instances are allowed
     }
 
     // empty record due to memory mapped file
@@ -31,10 +31,7 @@ public class LogEntryByteCodes
 
     // Real entries
     public static final byte TX_START = (byte) 1;
-    public static final byte TX_PREPARE = (byte) 2;
     public static final byte COMMAND = (byte) 3;
-    public static final byte DONE = (byte) 4;
     public static final byte TX_1P_COMMIT = (byte) 5;
-    public static final byte TX_2P_COMMIT = (byte) 6;
     public static final byte CHECK_POINT = (byte) 7;
 }

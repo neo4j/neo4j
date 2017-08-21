@@ -155,30 +155,10 @@ public class LogEntryParserDispatcherV6Test
     }
 
     @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenParsingPrepareEntry() throws IOException
+    public void shouldThrowWhenParsingUnknownEntry() throws IOException
     {
         // when
-        version.entryParser( LogEntryByteCodes.TX_PREPARE );
-
-        // then
-        // it should throw exception
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenParsingTwoPhaseCommitEntry() throws IOException
-    {
-        // when
-        version.entryParser( LogEntryByteCodes.TX_2P_COMMIT );
-
-        // then
-        // it should throw exception
-    }
-
-    @Test( expected = IllegalArgumentException.class )
-    public void shouldThrowWhenParsingDoneEntry() throws IOException
-    {
-        // when
-        version.entryParser( LogEntryByteCodes.DONE );
+        version.entryParser( (byte)42 ); // unused, at lest for now
 
         // then
         // it should throw exception

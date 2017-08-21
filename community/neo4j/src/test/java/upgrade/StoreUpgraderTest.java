@@ -29,14 +29,12 @@ import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -47,7 +45,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
@@ -56,7 +53,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeExcepti
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.storemigration.legacylogs.LegacyLogFilenames;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
@@ -71,11 +67,9 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyCollectionOf;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -83,7 +77,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.verify;
@@ -132,56 +125,6 @@ public class StoreUpgraderTest
         dbDirectory = directory.directory( "db_" + version );
         File prepareDirectory = directory.directory( "prepare_" + version );
         prepareSampleDatabase( version, fileSystem, dbDirectory, prepareDirectory );
-    }
-
-    @Test
-    public void failMigrationWhenFailDuringTransactionInformationRetrieval() throws IOException
-    {
-        File storeDirectory = directory.graphDbDir();
-        File prepare = directory.directory( "prepare" );
-        FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( fileSystem )
-        {
-            @Override
-            public File[] listFiles( File directory, FilenameFilter filter )
-            {
-                if ( filter == LegacyLogFilenames.versionedLegacyLogFilesFilter )
-                {
-                    sneakyThrow( new IOException( "Enforced IO Exception Fail to open file" ) );
-                }
-                return super.listFiles( directory, filter );
-            }
-        };
-
-        prepareSampleDatabase( version, fs, storeDirectory, prepare );
-        // and a state of the migration saying that it has done the actual migration
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        // remove metadata store record to force tx info lookup in tx logs
-        MetaDataStore.setRecord( pageCache, new File( storeDirectory, MetaDataStore.DEFAULT_NAME ),
-                MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP, MetaDataRecordFormat.FIELD_NOT_PRESENT );
-
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( fs, new StoreVersionCheck( pageCache ),
-                getRecordFormats() )
-        {
-            @Override
-            public RecordFormats checkUpgradeable( File storeDirectory )
-            {
-                return getRecordFormats();
-            }
-        };
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-
-        StoreMigrator defaultMigrator = new StoreMigrator( fs, pageCache, getTuningConfig(), NullLogService.getInstance()
-
-        );
-        StoreUpgrader upgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, allowMigrateConfig, fs,
-                pageCache, NullLogProvider.getInstance() );
-        upgrader.addParticipant( defaultMigrator );
-
-        expectedException.expect( UnableToUpgradeException.class );
-        expectedException.expectCause( instanceOf( IOException.class ) );
-        expectedException.expectCause( hasMessage( containsString( "Enforced IO Exception Fail to open file" ) ) );
-
-        upgrader.migrateIfNeeded( storeDirectory );
     }
 
     @Test

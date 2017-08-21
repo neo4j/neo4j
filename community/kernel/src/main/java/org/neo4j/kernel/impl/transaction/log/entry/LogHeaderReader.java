@@ -91,12 +91,12 @@ public class LogHeaderReader
         return new LogHeader( logFormatVersion, logVersion, previousCommittedTx );
     }
 
-    public static long decodeLogVersion( long encLogVersion )
+    static long decodeLogVersion( long encLogVersion )
     {
         return encLogVersion & 0x00FFFFFFFFFFFFFFL;
     }
 
-    public static byte decodeLogFormatVersion( long encLogVersion )
+    static byte decodeLogFormatVersion( long encLogVersion )
     {
         return (byte) ((encLogVersion >> 56) & 0xFF);
     }

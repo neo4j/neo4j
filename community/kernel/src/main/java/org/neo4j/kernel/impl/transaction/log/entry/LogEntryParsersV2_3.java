@@ -36,7 +36,6 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                                        CommandReaderFactory commandReader ) throws IOException
                 {
                     return null;
-
                 }
 
                 @Override
@@ -130,6 +129,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                     return false;
                 }
             },
+
     CHECK_POINT
             {
                 @Override

@@ -36,6 +36,7 @@ class LogEntrySanity
 
     private LogEntrySanity()
     {
+        throw new AssertionError();
     }
 
     static boolean logEntryMakesSense( LogEntry entry )
@@ -44,13 +45,6 @@ class LogEntrySanity
         {
             return false;
         }
-
-        if ( entry instanceof IdentifiableLogEntry )
-        {
-            IdentifiableLogEntry iEntry = (IdentifiableLogEntry) entry;
-            entry = iEntry.getEntry();
-        }
-
         if ( entry instanceof LogEntryStart )
         {
             return startEntryMakesSense( (LogEntryStart) entry );
@@ -62,7 +56,7 @@ class LogEntrySanity
         return true;
     }
 
-    static boolean commitEntryMakesSense( LogEntryCommit entry )
+    private static boolean commitEntryMakesSense( LogEntryCommit entry )
     {
         return timeMakesSense( entry.getTimeWritten() ) && transactionIdMakesSense( entry );
     }
@@ -72,7 +66,7 @@ class LogEntrySanity
         return entry.getTxId() > TransactionIdStore.BASE_TX_ID;
     }
 
-    static boolean startEntryMakesSense( LogEntryStart entry )
+    private static boolean startEntryMakesSense( LogEntryStart entry )
     {
         return serverIdMakesSense( entry.getLocalId() ) &&
                 serverIdMakesSense( entry.getMasterId() ) &&
@@ -84,7 +78,7 @@ class LogEntrySanity
         return serverId >= 0 && serverId < UNREASONABLY_HIGH_SERVER_ID;
     }
 
-    static boolean timeMakesSense( long time )
+    private static boolean timeMakesSense( long time )
     {
         return abs( currentTimeMillis() - time ) < UNREASONABLY_LONG_TIME;
     }
