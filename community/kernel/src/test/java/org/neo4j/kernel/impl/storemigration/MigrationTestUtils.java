@@ -34,11 +34,11 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
 import org.neo4j.kernel.impl.storemigration.legacystore.v30.Legacy30Store;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.Unzip;
 
@@ -184,19 +184,19 @@ public class MigrationTestUtils
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( workingDirectory, fileSystem );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fileSystem, logEntryReader );
-        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = finder.find( logFiles.getHighestLogVersion() );
+        LogTailScanner finder = new LogTailScanner( logFiles, fileSystem, logEntryReader );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( logFiles.getHighestLogVersion() );
 
-        if ( latestCheckPoint.commitsAfterCheckPoint )
+        if ( logTailInformation.commitsAfterLastCheckPoint )
         {
             // done already
             return;
         }
 
         // let's assume there is at least a checkpoint
-        assertNotNull( latestCheckPoint.checkPoint );
+        assertNotNull( logTailInformation.lastCheckPoint );
 
-        LogPosition logPosition = latestCheckPoint.checkPoint.getLogPosition();
+        LogPosition logPosition = logTailInformation.lastCheckPoint.getLogPosition();
         File logFile = logFiles.getLogFileForVersion( logPosition.getLogVersion() );
         fileSystem.truncate( logFile, logPosition.getByteOffset() );
     }

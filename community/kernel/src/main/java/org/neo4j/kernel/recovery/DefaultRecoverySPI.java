@@ -27,6 +27,7 @@ import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
@@ -52,7 +53,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
     public DefaultRecoverySPI(
             StorageEngine storageEngine,
             PhysicalLogFiles logFiles, FileSystemAbstraction fs,
-            LogVersionRepository logVersionRepository, LatestCheckPointFinder checkPointFinder,
+            LogVersionRepository logVersionRepository, LogTailScanner logTailScanner,
             TransactionIdStore transactionIdStore, LogicalTransactionStore logicalTransactionStore,
             PositionToRecoverFrom.Monitor monitor )
     {
@@ -62,7 +63,7 @@ public class DefaultRecoverySPI implements Recovery.SPI
         this.logVersionRepository = logVersionRepository;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
-        this.positionToRecoverFrom = new PositionToRecoverFrom( checkPointFinder, monitor );
+        this.positionToRecoverFrom = new PositionToRecoverFrom( logTailScanner, monitor );
     }
 
     @Override

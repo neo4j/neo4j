@@ -34,12 +34,11 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFil
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 
 /**
  * Logic to check whether a database version is upgradable to the current version. It looks at the
@@ -139,12 +138,12 @@ public class UpgradableDatabase
         // check version
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDirectory, fs );
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-        LatestCheckPointFinder latestCheckPointFinder =
-                new LatestCheckPointFinder( logFiles, fs, logEntryReader );
+        LogTailScanner logTailScanner =
+                new LogTailScanner( logFiles, fs, logEntryReader );
         try
         {
-            LatestCheckPoint latestCheckPoint = latestCheckPointFinder.find( logFiles.getHighestLogVersion() );
-            if ( !latestCheckPoint.commitsAfterCheckPoint )
+            LogTailScanner.LogTailInformation logTailInformation = logTailScanner.find( logFiles.getHighestLogVersion() );
+            if ( !logTailInformation.commitsAfterLastCheckPoint )
             {
                 return new Result( Result.Outcome.ok, null, null );
             }

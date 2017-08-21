@@ -23,28 +23,31 @@ import org.junit.Test;
 
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom.Monitor;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
-import static org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint.NO_TRANSACTION_ID;
 
 public class PositionToRecoverFromTest
 {
     private final long logVersion = 2L;
-    private final LatestCheckPointFinder finder = mock( LatestCheckPointFinder.class );
+    private final LogTailScanner finder = mock( LogTailScanner.class );
     private final Monitor monitor = mock( Monitor.class );
 
     @Test
     public void shouldReturnUnspecifiedIfThereIsNoNeedForRecovery() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, false, NO_TRANSACTION_ID, logVersion ) );
+        when( finder.find( logVersion ) ).thenReturn( new LogTailScanner.LogTailInformation( null, false, NO_TRANSACTION_ID, logVersion,
+                LogEntryVersion.CURRENT ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
@@ -60,7 +63,8 @@ public class PositionToRecoverFromTest
         // given
         LogPosition checkPointLogPosition = new LogPosition( 1L, 4242 );
         when( finder.find( logVersion ) )
-                .thenReturn( new LatestCheckPoint( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion ) );
+                .thenReturn( new LogTailInformation( new CheckPoint( checkPointLogPosition ), true, 10L, logVersion,
+                        LogEntryVersion.CURRENT ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
@@ -74,7 +78,8 @@ public class PositionToRecoverFromTest
     public void shouldRecoverFromStartOfLogZeroIfThereAreNoCheckPointAndOldestLogIsVersionZero() throws Throwable
     {
         // given
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, INITIAL_LOG_VERSION ) );
+        when( finder.find( logVersion ) ).thenReturn( new LogTailInformation( null, true, 10L, INITIAL_LOG_VERSION,
+                LogEntryVersion.CURRENT ) );
 
         // when
         LogPosition logPosition = new PositionToRecoverFrom( finder, monitor ).apply( logVersion );
@@ -89,7 +94,8 @@ public class PositionToRecoverFromTest
     {
         // given
         long oldestLogVersionFound = 1L;
-        when( finder.find( logVersion ) ).thenReturn( new LatestCheckPoint( null, true, 10L, oldestLogVersionFound ) );
+        when( finder.find( logVersion ) ).thenReturn( new LogTailScanner.LogTailInformation( null, true, 10L, oldestLogVersionFound,
+                LogEntryVersion.CURRENT ) );
 
         // when
         try

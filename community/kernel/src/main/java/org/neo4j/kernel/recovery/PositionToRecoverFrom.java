@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.function.ThrowingLongFunction;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 
@@ -66,12 +67,12 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
     {
     };
 
-    private final LatestCheckPointFinder checkPointFinder;
+    private final LogTailScanner logTailScanner;
     private final Monitor monitor;
 
-    public PositionToRecoverFrom( LatestCheckPointFinder checkPointFinder, Monitor monitor )
+    public PositionToRecoverFrom( LogTailScanner logTailScanner, Monitor monitor )
     {
-        this.checkPointFinder = checkPointFinder;
+        this.logTailScanner = logTailScanner;
         this.monitor = monitor;
     }
 
@@ -86,25 +87,25 @@ public class PositionToRecoverFrom implements ThrowingLongFunction<LogPosition,I
     @Override
     public LogPosition apply( long currentLogVersion ) throws IOException
     {
-        LatestCheckPointFinder.LatestCheckPoint latestCheckPoint = checkPointFinder.find( currentLogVersion );
-        if ( !latestCheckPoint.commitsAfterCheckPoint )
+        LogTailScanner.LogTailInformation logTailInformation = logTailScanner.find( currentLogVersion );
+        if ( !logTailInformation.commitsAfterLastCheckPoint )
         {
             monitor.noCommitsAfterLastCheckPoint(
-                    latestCheckPoint.checkPoint != null ? latestCheckPoint.checkPoint.getLogPosition() : null );
+                    logTailInformation.lastCheckPoint != null ? logTailInformation.lastCheckPoint.getLogPosition() : null );
             return LogPosition.UNSPECIFIED;
         }
 
-        if ( latestCheckPoint.checkPoint != null )
+        if ( logTailInformation.lastCheckPoint != null )
         {
-            monitor.commitsAfterLastCheckPoint( latestCheckPoint.checkPoint.getLogPosition(),
-                    latestCheckPoint.firstTxIdAfterLastCheckPoint );
-            return latestCheckPoint.checkPoint.getLogPosition();
+            monitor.commitsAfterLastCheckPoint( logTailInformation.lastCheckPoint.getLogPosition(),
+                    logTailInformation.firstTxIdAfterLastCheckPoint );
+            return logTailInformation.lastCheckPoint.getLogPosition();
         }
         else
         {
-            if ( latestCheckPoint.oldestLogVersionFound != INITIAL_LOG_VERSION )
+            if ( logTailInformation.oldestLogVersionFound != INITIAL_LOG_VERSION )
             {
-                long fromLogVersion = Math.max( INITIAL_LOG_VERSION, latestCheckPoint.oldestLogVersionFound );
+                long fromLogVersion = Math.max( INITIAL_LOG_VERSION, logTailInformation.oldestLogVersionFound );
                 throw new UnderlyingStorageException( "No check point found in any log file from version " +
                                                       fromLogVersion + " to " + currentLogVersion );
             }

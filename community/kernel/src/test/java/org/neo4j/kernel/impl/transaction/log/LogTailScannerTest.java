@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery;
+package org.neo4j.kernel.impl.transaction.log;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,41 +37,35 @@ import java.util.function.Supplier;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.DeadSimpleLogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.log.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.kernel.impl.transaction.log.LogTailScanner.LogTailInformation.NO_TRANSACTION_ID;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.NO_MONITOR;
-import static org.neo4j.kernel.recovery.LatestCheckPointFinder.LatestCheckPoint.NO_TRANSACTION_ID;
 
 @RunWith( Parameterized.class )
-public class LatestCheckPointFinderTest
+public class LogTailScannerTest
 {
     @Rule
     public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private final File directory = new File( "/somewhere" );
     private final LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
-    private LatestCheckPointFinder finder;
+    private LogTailScanner finder;
     private PhysicalLogFiles logFiles;
     private final int startLogVersion;
     private final int endLogVersion;
+    private final LogEntryVersion latestLogEntryVersion = LogEntryVersion.CURRENT;
 
-    public LatestCheckPointFinderTest( Integer startLogVersion, Integer endLogVersion )
+    public LogTailScannerTest( Integer startLogVersion, Integer endLogVersion )
     {
         this.startLogVersion = startLogVersion;
         this.endLogVersion = endLogVersion;
@@ -88,7 +82,7 @@ public class LatestCheckPointFinderTest
     {
         fsRule.get().mkdirs( directory );
         logFiles = new PhysicalLogFiles( directory, fsRule.get() );
-        finder = new LatestCheckPointFinder( logFiles, fsRule.get(), reader );
+        finder = new LogTailScanner( logFiles, fsRule.get(), reader );
     }
 
     @Test
@@ -97,13 +91,13 @@ public class LatestCheckPointFinderTest
         // given no files
         setupLogFiles();
         int logVersion = startLogVersion;
-        LatestCheckPointFinder finder = new LatestCheckPointFinder( logFiles, fsRule.get(), reader );
+        LogTailScanner finder = new LogTailScanner( logFiles, fsRule.get(), reader );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( logVersion );
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, -1, latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, -1, logTailInformation );
     }
 
     @Test
@@ -114,10 +108,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile() );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( logVersion );
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, logVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, logVersion, logTailInformation );
     }
 
     @Test
@@ -129,10 +123,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start(), commit( txId ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( logVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( logVersion );
 
         // then
-        assertLatestCheckPoint( false, true, txId, logVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, true, txId, logVersion, logTailInformation );
     }
 
     @Test
@@ -142,10 +136,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile(), logFile() );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -156,10 +150,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile(), logFile( start(), commit( txId ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -169,10 +163,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile(), logFile( start() ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, true, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -183,10 +177,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile(), logFile( start(), commit( txId ), start(), commit( txId + 1 ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( false, true, txId, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( false, true, txId, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -201,10 +195,10 @@ public class LatestCheckPointFinderTest
                 logFile( checkPoint( position ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -214,10 +208,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( checkPoint() ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -227,10 +221,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start(), checkPoint() ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -238,16 +232,16 @@ public class LatestCheckPointFinderTest
     {
         long firstTxAfterCheckpoint = Integer.MAX_VALUE + 4L;
 
-        LatestCheckPointFinder checkPointFinder =
+        LogTailScanner checkPointFinder =
                 new FirstTxIdConfigurableCheckpointFinder( firstTxAfterCheckpoint, logFiles, fsRule.get(), reader );
         LogEntryStart startEntry = new LogEntryStart( 1, 2, 3L, 4L, new byte[]{5, 6},
                 new LogPosition( endLogVersion, Integer.MAX_VALUE + 17L ) );
         CheckPoint checkPoint = new CheckPoint( new LogPosition( endLogVersion, 16L ) );
-        LatestCheckPoint latestCheckPoint = checkPointFinder.latestCheckPoint( endLogVersion, endLogVersion, startEntry,
-                endLogVersion, checkPoint );
+        LogTailInformation
+                logTailInformation = checkPointFinder.latestCheckPoint( endLogVersion, endLogVersion, startEntry,
+                endLogVersion, checkPoint, latestLogEntryVersion );
 
-        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion,
-            latestCheckPoint );
+        assertLatestCheckPoint( true, true, firstTxAfterCheckpoint, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -259,10 +253,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start, commit( txId ), checkPoint( start ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -273,10 +267,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start, checkPoint( start ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -286,10 +280,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( checkPoint(), start(), checkPoint() ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -300,10 +294,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( checkPoint(), checkPoint(), start(), commit( txId ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -315,10 +309,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( checkPoint() ), logFile( start, commit( txId ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -329,10 +323,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start, checkPoint() ), logFile() );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, startLogVersion, logTailInformation );
     }
 
     @Test
@@ -344,10 +338,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start, commit( txId ) ), logFile( checkPoint( start ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -359,10 +353,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start ), logFile( checkPoint( start ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -373,10 +367,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start(), commit( 3 ), position ), logFile( checkPoint( position ) ) );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, false, NO_TRANSACTION_ID, endLogVersion, logTailInformation );
     }
 
     @Test
@@ -387,10 +381,10 @@ public class LatestCheckPointFinderTest
         setupLogFiles( logFile( start(), checkPoint(), start(), commit( txId ) ), logFile() );
 
         // when
-        LatestCheckPoint latestCheckPoint = finder.find( endLogVersion );
+        LogTailScanner.LogTailInformation logTailInformation = finder.find( endLogVersion );
 
         // then
-        assertLatestCheckPoint( true, true, txId, startLogVersion, latestCheckPoint );
+        assertLatestCheckPoint( true, true, txId, startLogVersion, logTailInformation );
     }
 
     // === Below is code for helping the tests above ===
@@ -534,18 +528,18 @@ public class LatestCheckPointFinderTest
     }
 
     private void assertLatestCheckPoint( boolean hasCheckPointEntry, boolean commitsAfterLastCheckPoint,
-            long firstTxIdAfterLastCheckPoint, long logVersion, LatestCheckPoint latestCheckPoint )
+            long firstTxIdAfterLastCheckPoint, long logVersion, LogTailScanner.LogTailInformation logTailInformation )
     {
-        assertEquals( hasCheckPointEntry, latestCheckPoint.checkPoint != null );
-        assertEquals( commitsAfterLastCheckPoint, latestCheckPoint.commitsAfterCheckPoint );
+        assertEquals( hasCheckPointEntry, logTailInformation.lastCheckPoint != null );
+        assertEquals( commitsAfterLastCheckPoint, logTailInformation.commitsAfterLastCheckPoint );
         if ( commitsAfterLastCheckPoint )
         {
-            assertEquals( firstTxIdAfterLastCheckPoint, latestCheckPoint.firstTxIdAfterLastCheckPoint );
+            assertEquals( firstTxIdAfterLastCheckPoint, logTailInformation.firstTxIdAfterLastCheckPoint );
         }
-        assertEquals( logVersion, latestCheckPoint.oldestLogVersionFound );
+        assertEquals( logVersion, logTailInformation.oldestLogVersionFound );
     }
 
-    private static class FirstTxIdConfigurableCheckpointFinder extends LatestCheckPointFinder
+    private static class FirstTxIdConfigurableCheckpointFinder extends LogTailScanner
     {
 
         private final long txId;
@@ -558,12 +552,13 @@ public class LatestCheckPointFinderTest
         }
 
         @Override
-        public LatestCheckPoint latestCheckPoint( long fromVersionBackwards, long version,
-                LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint )
+        public LogTailInformation latestCheckPoint( long fromVersionBackwards, long version,
+                LogEntryStart latestStartEntry, long oldestVersionFound, CheckPoint latestCheckPoint,
+                LogEntryVersion latestLogEntryVersion )
                 throws IOException
         {
             return super.latestCheckPoint( fromVersionBackwards, version, latestStartEntry, oldestVersionFound,
-                    latestCheckPoint );
+                    latestCheckPoint, latestLogEntryVersion );
         }
 
         @Override

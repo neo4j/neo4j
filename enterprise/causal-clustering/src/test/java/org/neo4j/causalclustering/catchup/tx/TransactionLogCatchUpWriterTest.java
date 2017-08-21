@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageComma
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Commands;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogFile;
@@ -48,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.OnePhaseCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.lifecycle.Lifespan;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.NeoStoreDataSourceRule;
 import org.neo4j.test.rule.PageCacheRule;
@@ -119,12 +119,12 @@ public class TransactionLogCatchUpWriterTest
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>(
                 new RecordStorageCommandReaderFactory(), InvalidLogEntryHandler.STRICT );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
-        final LatestCheckPointFinder checkPointFinder =
-                new LatestCheckPointFinder( logFiles, fs, logEntryReader );
+        final LogTailScanner logTailScanner =
+                new LogTailScanner( logFiles, fs, logEntryReader );
 
-        LatestCheckPointFinder.LatestCheckPoint checkPoint = checkPointFinder.find( 0 );
-        assertNotNull( checkPoint.checkPoint );
-        assertTrue( checkPoint.commitsAfterCheckPoint );
+        LogTailScanner.LogTailInformation checkPoint = logTailScanner.find( 0 );
+        assertNotNull( checkPoint.lastCheckPoint );
+        assertTrue( checkPoint.commitsAfterLastCheckPoint );
     }
 
     private void verifyTransactionsInLog( long fromTxId, long endTxId ) throws IOException

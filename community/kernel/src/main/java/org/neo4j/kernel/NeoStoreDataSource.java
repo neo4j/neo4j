@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogTailScanner;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -148,7 +149,6 @@ import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.kernel.recovery.DefaultRecoverySPI;
-import org.neo4j.kernel.recovery.LatestCheckPointFinder;
 import org.neo4j.kernel.recovery.PositionToRecoverFrom;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.spi.legacyindex.IndexImplementation;
@@ -691,11 +691,11 @@ public class NeoStoreDataSource implements Lifecycle, IndexProviders
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             LogicalTransactionStore logicalTransactionStore )
     {
-        final LatestCheckPointFinder checkPointFinder =
-                new LatestCheckPointFinder( logFiles, fileSystemAbstraction, logEntryReader );
+        final LogTailScanner logTailScanner =
+                new LogTailScanner( logFiles, fileSystemAbstraction, logEntryReader );
         Recovery.SPI spi = new DefaultRecoverySPI(
                 storageEngine, logFiles, fileSystemAbstraction, logVersionRepository,
-                checkPointFinder, transactionIdStore, logicalTransactionStore, positionMonitor );
+                logTailScanner, transactionIdStore, logicalTransactionStore, positionMonitor );
         Recovery recovery = new Recovery( spi, recoveryMonitor );
         monitors.addMonitorListener( new Recovery.Monitor()
         {
