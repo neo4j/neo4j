@@ -38,9 +38,11 @@ public class InsightIndex implements AutoCloseable
 {
     private final InsightLuceneIndex nodeIndex;
     private final InsightLuceneIndex relationshipIndex;
+    private final String[] properties;
 
     public InsightIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
     {
+        this.properties = properties;
         Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
@@ -48,7 +50,7 @@ public class InsightIndex implements AutoCloseable
         storageBuilder.withFileSystem( fileSystem ).withIndexIdentifier( "insightNodes" )
                 .withDirectoryFactory( directoryFactory( false, fileSystem ) )
                 .withIndexRootFolder( Paths.get( file.getAbsolutePath(),"insightindex" ).toFile() );
-        nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, properties );
+        nodeIndex = new InsightLuceneIndex( storageBuilder.build(), partitionFactory, this.properties );
         nodeIndex.open();
 
         storageBuilder = LuceneIndexStorageBuilder.create();
@@ -63,7 +65,7 @@ public class InsightIndex implements AutoCloseable
     {
         WritableDatabaseInsightIndex writableNodeIndex = new WritableDatabaseInsightIndex( nodeIndex );
         WritableDatabaseInsightIndex writableRelationshipIndex = new WritableDatabaseInsightIndex( relationshipIndex );
-        return new InsightIndexTransactionEventUpdater( writableNodeIndex, writableRelationshipIndex );
+        return new InsightIndexTransactionEventUpdater( writableNodeIndex, writableRelationshipIndex, properties );
     }
 
     public InsightIndexReader getNodeReader() throws IOException

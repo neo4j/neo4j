@@ -35,11 +35,13 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
 {
     private final WritableDatabaseInsightIndex nodeIndex;
     private final WritableDatabaseInsightIndex relationshipIndex;
+    private final String[] properties;
 
-    InsightIndexTransactionEventUpdater( WritableDatabaseInsightIndex nodeIndex, WritableDatabaseInsightIndex relationshipIndex )
+    InsightIndexTransactionEventUpdater( WritableDatabaseInsightIndex nodeIndex, WritableDatabaseInsightIndex relationshipIndex, String[] properties )
     {
         this.nodeIndex = nodeIndex;
         this.relationshipIndex = relationshipIndex;
+        this.properties = properties;
     }
 
     @Override
@@ -49,7 +51,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         data.removedNodeProperties().forEach( propertyEntry -> {
             try
             {
-                nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
+                nodeMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( properties ) );
             }
             catch ( NotFoundException e )
             {
@@ -63,7 +65,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
         data.removedRelationshipProperties().forEach( propertyEntry -> {
             try
             {
-                relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() );
+                relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( properties ) );
             }
             catch ( NotFoundException e )
             {
@@ -71,7 +73,7 @@ public class InsightIndexTransactionEventUpdater implements TransactionEventHand
             }
         } );
         data.assignedRelationshipProperties().forEach(
-                propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getAllProperties() ) );
+                propertyEntry -> relationshipMap.put( propertyEntry.entity().getId(), propertyEntry.entity().getProperties( properties ) ) );
         return new Map[]{nodeMap, relationshipMap};
     }
 
