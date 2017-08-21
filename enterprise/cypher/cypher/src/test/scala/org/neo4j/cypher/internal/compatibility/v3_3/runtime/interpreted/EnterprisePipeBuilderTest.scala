@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.RegisteredPipeBuilderFactory
+import org.neo4j.cypher.internal.BuildEnterpriseInterpretedExecutionPlan.EnterprisePipeBuilderFactory
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Property, Variable}
@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, SemanticDirection, SemanticTable, ast}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 
-class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   implicit private val table = SemanticTable()
 
@@ -58,7 +58,7 @@ class RegisteredPipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
     val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock, context.monitors,
-      expressionConverters = converters, pipeBuilderFactory = RegisteredPipeBuilderFactory(pipelines))
+      expressionConverters = converters, pipeBuilderFactory = EnterprisePipeBuilderFactory(pipelines))
     val pipeBuildContext = PipeExecutionBuilderContext(context.metrics.cardinality, table, IDPPlannerName)
     executionPlanBuilder.build(None, logicalPlan, idMap)(pipeBuildContext, context.planContext).pipe
   }
