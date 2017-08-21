@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.values.BufferValueWriter;
-import org.neo4j.values.Values;
+import org.neo4j.values.storable.BufferValueWriter;
+import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

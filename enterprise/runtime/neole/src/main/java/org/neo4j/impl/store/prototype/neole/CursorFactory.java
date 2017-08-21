@@ -19,9 +19,9 @@
  */
 package org.neo4j.impl.store.prototype.neole;
 
-import org.neo4j.impl.kernel.api.EdgeSearchStructureCursor;
+import org.neo4j.impl.kernel.api.EdgeManualIndexCursor;
 import org.neo4j.impl.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.impl.kernel.api.NodeSearchStructureCursor;
+import org.neo4j.impl.kernel.api.NodeManualIndexCursor;
 import org.neo4j.impl.kernel.api.NodeValueIndexCursor;
 
 class CursorFactory implements org.neo4j.impl.kernel.api.CursorFactory
@@ -76,13 +76,13 @@ class CursorFactory implements org.neo4j.impl.kernel.api.CursorFactory
     }
 
     @Override
-    public NodeSearchStructureCursor allocateNodeSearchStructureCursor()
+    public NodeManualIndexCursor allocateNodeManualIndexCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
-    public EdgeSearchStructureCursor allocateEdgeSearchStructureCursor()
+    public EdgeManualIndexCursor allocateEdgeManualIndexCursor()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

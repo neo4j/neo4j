@@ -22,7 +22,7 @@ package org.neo4j.impl.store.prototype.neole;
 import java.util.regex.Pattern;
 
 import org.neo4j.impl.store.cursors.ReadCursor;
-import org.neo4j.values.ValueWriter;
+import org.neo4j.values.storable.ValueWriter;
 
 public abstract class PartialPropertyCursor extends ReadCursor
         implements org.neo4j.impl.kernel.api.PropertyCursor
