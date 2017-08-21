@@ -19,9 +19,11 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +39,12 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.mockito.internal.util.collections.Sets.newSet;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
@@ -304,6 +309,54 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         assertListProceduresHasRoles( schemaSubject, expected, call );
         assertListProceduresHasRoles( writeSubject, expected, call );
         assertListProceduresHasRoles( readSubject, expected, call );
+    }
+
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKill() throws Throwable
+    {
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name() , "true" ) );
+
+        String query = "CALL dbms.killQuery('query-9999999999')";
+        Map<String,String> expected = new HashMap<>();
+        expected.put( "queryId",  "query-9999999999" );
+        expected.put( "username",  "n/a" );
+        expected.put( "message",  "No Query found with this id" );
+        assertSuccess( adminSubject, query, r -> Assert.assertThat(r.next(), equalTo( expected )));
+    }
+
+    @Test
+    public void shouldNotGiveNiceMessageAtFailWhenTryingToKillWhenConfigured() throws Throwable
+    {
+        super.setUp();
+        String query = "CALL dbms.killQuery('query-9999999999')";
+        assertSuccess( adminSubject, query, r -> Assert.assertThat(r.hasNext(), is(false)));
+    }
+
+    @Test
+    public void shouldGiveNiceMessageAtFailWhenTryingToKillMoreThenOne() throws Throwable
+    {
+        //Given
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name() , "true" ) );
+        String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
+
+        //Expect
+        Set<Map<String,String>> expected = new HashSet<>();
+        Map<String,String> firstResultExpected = new HashMap<>();
+        firstResultExpected.put( "queryId", "query-9999999989" );
+        firstResultExpected.put( "username", "n/a" );
+        firstResultExpected.put( "message", "No Query found with this id" );
+        Map<String,String> secoundResultExpected = new HashMap<>();
+        secoundResultExpected.put( "queryId", "query-9999999999" );
+        secoundResultExpected.put( "username", "n/a" );
+        secoundResultExpected.put( "message", "No Query found with this id" );
+        expected.add( firstResultExpected );
+        expected.add( secoundResultExpected );
+
+        //Then
+        assertSuccess( adminSubject, query, r -> {
+            Set<Map<String,Object>> actual = r.stream().collect( toSet() );
+            Assert.assertThat( actual, equalTo( expected ) );
+        } );
     }
 
     private void assertListProceduresHasRoles( S subject, Map<String,Set<String>> expected, String call )

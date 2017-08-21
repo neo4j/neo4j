@@ -31,6 +31,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.function.UncaughtCheckedException;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -44,6 +45,7 @@ import org.neo4j.kernel.api.proc.ProcedureSignature;
 import org.neo4j.kernel.api.proc.UserFunctionSignature;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -322,7 +324,8 @@ public class EnterpriseBuiltInDbmsProcedures
 
             Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys =
                     getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
-            if ( querys.isEmpty() )
+            Config configs = resolver.resolveDependency( Config.class );
+            if ( configs.get( GraphDatabaseSettings.kill_query_verbose ) && querys.isEmpty() )
             {
                 return Stream.<QueryTerminationResult>builder()
                         .add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
@@ -350,8 +353,9 @@ public class EnterpriseBuiltInDbmsProcedures
 
             Set<QueryTerminationResult> terminatedQuerys = getActiveTransactions( tx -> executingQueriesWithIds( queryIds, tx ) ).map(
                     catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) ).collect( toSet() );
+            Config configs = resolver.resolveDependency( Config.class );
 
-            if ( terminatedQuerys.size() != idTexts.size() )
+            if ( configs.get( GraphDatabaseSettings.kill_query_verbose ) && terminatedQuerys.size() != idTexts.size() )
             {
                 for ( String id : idTexts )
                 {
