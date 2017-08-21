@@ -758,11 +758,12 @@ class EagerizationAcceptanceTest
 
       val query = "MATCH () CREATE () RETURN count(*)"
 
-      val result = succeedWithAndMaybeCheckPlans(
-        Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1,
-        Configs.AllRulePlanners + Configs.Cost3_1,
-        query,
-        checkPlans = false)
+      val expectedSuccessFrom = Configs.CommunityInterpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1
+      val ignoreScenarios = Configs.AbsolutelyAll - expectedSuccessFrom
+      val result = updateWith(
+        expectedSuccessFrom,
+        ignoreScenarios,
+        query)
       result.columnAs[Long]("count(*)").next shouldBe 6
       assertStats(result, nodesCreated = 6)
       assertNumberOfEagerness(query, 0)
