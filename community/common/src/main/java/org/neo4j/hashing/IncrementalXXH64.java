@@ -36,6 +36,10 @@ package org.neo4j.hashing;
  * {@link IncrementalXXH64#update(long, long) update} function and merged with an input word as many times as desired.
  * When the input has been consumed, the final hash value is then produced from the last intermediate hash value with
  * the {@link IncrementalXXH64#finalise(long) finalise} function.
+ * <p>
+ * The xxHash algorithm is originally by Yann Collet, http://cyan4973.github.io/xxHash/, and this implementation is
+ * with inspiration from Vsevolod Tolstopyatovs implementation in https://github.com/OpenHFT/Zero-Allocation-Hashing.
+ * Credit for SMHasher goes to Austin Appleby, https://github.com/aappleby/smhasher.
  */
 public class IncrementalXXH64
 {
