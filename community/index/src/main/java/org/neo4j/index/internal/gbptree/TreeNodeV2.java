@@ -222,7 +222,6 @@ class TreeNodeV2<KEY,VALUE> extends TreeNode<KEY,VALUE>
 
     // BODY METHODS
 
-
     /**
      * Moves items (key/value/child) one step to the right, which means rewriting all items of the particular type
      * from pos - itemCount.

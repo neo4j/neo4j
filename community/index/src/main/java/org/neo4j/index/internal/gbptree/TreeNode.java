@@ -110,7 +110,7 @@ abstract class TreeNode<KEY,VALUE>
 
     // AS A CLASS SO THAT THERE CAN BE ONE FOR MAIN AND ONE FOR DELTA SECTION
 
-    static enum Type
+    enum Type
     {
         MAIN,
         DELTA;
