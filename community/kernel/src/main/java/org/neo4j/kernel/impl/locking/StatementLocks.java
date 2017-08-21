@@ -104,6 +104,20 @@ public interface StatementLocks extends AutoCloseable
      */
     void uniquenessConstraintEntryReleaseShared( long resource );
 
+    // ====[ Optimistic locks for schema reading and modifying ]====
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) exclusive lock on the given schema resource with the
+     * given type.
+     */
+    void schemaModifyAcquireExclusive( ResourceType type, long resource );
+
+    /**
+     * Acquire an <strong>optimistic</strong> (may be deferred) shared lock on the given schema resource with the given
+     * type.
+     */
+    void schemaModifyAcquireShared( ResourceType type, long resource );
+
     /**
      * Prepare the underlying {@link Locks.Client client}(s) for commit. This will grab all locks that have
      * previously been taken {@link #optimistic() optimistically}.

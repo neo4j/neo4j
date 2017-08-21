@@ -106,6 +106,18 @@ public class SimpleStatementLocks implements StatementLocks
     }
 
     @Override
+    public void schemaModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        client.acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void schemaModifyAcquireShared( ResourceType type, long resource )
+    {
+        client.acquireShared( getTracer(), type, resource  );
+    }
+
+    @Override
     public void prepareForCommit()
     {
         // Locks where grabbed eagerly by client so no need to prepare

@@ -110,6 +110,18 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
+    public void schemaModifyAcquireExclusive( ResourceType type, long resource )
+    {
+        optimistic().acquireExclusive( getTracer(), type, resource );
+    }
+
+    @Override
+    public void schemaModifyAcquireShared( ResourceType type, long resource )
+    {
+        optimistic().acquireShared( getTracer(), type, resource );
+    }
+
+    @Override
     public void prepareForCommit()
     {
         implicit.acquireDeferredLocks();

@@ -538,7 +538,7 @@ public class LockingStatementOperations implements
     {
         if ( !SCHEMA_WRITES_DISABLE )
         {
-            state.locks().optimistic().acquireShared( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+            state.locks().schemaModifyAcquireShared( ResourceTypes.SCHEMA, schemaResource() );
         }
     }
 
@@ -550,7 +550,7 @@ public class LockingStatementOperations implements
         }
         else
         {
-            state.locks().optimistic().acquireExclusive( state.lockTracer(), ResourceTypes.SCHEMA, schemaResource() );
+            state.locks().schemaModifyAcquireExclusive( ResourceTypes.SCHEMA, schemaResource() );
         }
     }
 }
