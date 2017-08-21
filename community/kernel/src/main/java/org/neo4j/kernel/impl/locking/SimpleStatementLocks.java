@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
  * A {@link StatementLocks} implementation that uses given {@link Locks.Client} for both
- * {@link #optimistic() optimistic} and {@link #explicit() pessimistic} locks.
+ * {@link #optimistic() optimistic} and explicit locks.
  */
 public class SimpleStatementLocks implements StatementLocks
 {
@@ -38,12 +38,6 @@ public class SimpleStatementLocks implements StatementLocks
     {
         this.client = client;
         lockTracerSupplier = DEFAULT_LOCK_TRACER_SUPPLIER;
-    }
-
-    @Override
-    public Locks.Client explicit()
-    {
-        return client;
     }
 
     @Override

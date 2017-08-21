@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -43,8 +42,10 @@ public class DeferringStatementLocksTest
         final Locks.Client client = mock( Locks.Client.class );
         final DeferringStatementLocks statementLocks = new DeferringStatementLocks( client );
 
+        // WHEN
+        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
         // THEN
-        assertSame( client, statementLocks.explicit() );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
         assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
     }
 

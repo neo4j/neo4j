@@ -27,7 +27,7 @@ import org.neo4j.kernel.impl.coreapi.IsolationLevel;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**
- * Component used by {@link KernelStatement} to acquire {@link #explicit() pessimistic} and
+ * Component used by {@link KernelStatement} to acquire explicit (also known as "pessimistic") and
  * {@link #optimistic() optimistic} locks.
  */
 public interface StatementLocks extends AutoCloseable
@@ -35,16 +35,45 @@ public interface StatementLocks extends AutoCloseable
     Supplier<LockTracer> DEFAULT_LOCK_TRACER_SUPPLIER = () -> LockTracer.NONE;
 
     /**
-     * Get {@link Locks.Client} responsible for explicit locks. Such locks will be grabbed right away.
+     * Explicitly acquire an exclusive lock of the given resource type, on the given resources.
+     * <p>
+     * These locks are always taken, and held until explicitly released, or until the transaction ends.
      *
-     * @return the locks client to serve explicit locks.
+     * @param type The type of resource to lock on.
+     * @param resourceId The resources to lock.
      */
-    Locks.Client explicit();
-
     void explicitAcquireExclusive( ResourceType type, long... resourceId );
+
+    /**
+     * Release the exclusive lock that was explicitly taken on the given resource, of the given type.
+     *
+     * @param type The type of resource that was locked.
+     * @param resourceId The resources to unlock.
+     */
     void explicitReleaseExclusive( ResourceType type, long resourceId );
+
+    /**
+     * Explicitly acquire an shared lock of the given resource type, on the given resources.
+     * <p>
+     * These locks are always taken, and held until explicitly released, or until the transaction ends.
+     *
+     * @param type The type of resource to lock on.
+     * @param resourceId The resources to lock.
+     */
     void explicitAcquireShared( ResourceType type, long... resourceId );
+
+    /**
+     * Release the shared lock that was explicitly taken on the given resource, of the given type.
+     *
+     * @param type The type of resource that was locked.
+     * @param resourceId The resources to unlock.
+     */
     void explicitReleaseShared( ResourceType type, long resourceId );
+
+    /**
+     * An id that uniquely identifies the current lock session at this point in time.
+     * @return The current lock session id used by this instance of {@link StatementLocks}.
+     */
     int getLockSessionId();
 
     /**
@@ -74,7 +103,7 @@ public interface StatementLocks extends AutoCloseable
 
     /**
      * List the locks held by this transaction.
-     *
+     * <p>
      * This method is invoked by concurrent threads in order to inspect the lock state in this transaction.
      *
      * @return the locks held by this transaction.
@@ -83,7 +112,7 @@ public interface StatementLocks extends AutoCloseable
 
     /**
      * Get the current number of active locks.
-     *
+     * <p>
      * Note that the value returned by this method might differ from the number of locks returned by
      * {@link #activeLocks()}, since they would introspect the lock state at different points in time.
      *
@@ -98,6 +127,7 @@ public interface StatementLocks extends AutoCloseable
 
     /**
      * Set the supplier of the tracers used to trace every lock acquire and release.
+     *
      * @param lockTracerSupplier The supplier of lock tracers.
      */
     void setLockTracerSupplier( Supplier<LockTracer> lockTracerSupplier );

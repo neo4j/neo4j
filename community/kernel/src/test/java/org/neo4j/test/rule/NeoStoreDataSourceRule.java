@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.logging.LogService;
@@ -99,10 +100,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
         shutdownAnyRunning();
 
         StatementLocksFactory locksFactory = mock( StatementLocksFactory.class );
-        StatementLocks statementLocks = mock( StatementLocks.class );
         Locks.Client locks = mock( Locks.Client.class );
-        when( statementLocks.optimistic() ).thenReturn( locks );
-        when( statementLocks.explicit() ).thenReturn( locks );
+        StatementLocks statementLocks = new SimpleStatementLocks( locks );
         when( locksFactory.newInstance() ).thenReturn( statementLocks );
 
         JobScheduler jobScheduler = mock( JobScheduler.class, RETURNS_MOCKS );

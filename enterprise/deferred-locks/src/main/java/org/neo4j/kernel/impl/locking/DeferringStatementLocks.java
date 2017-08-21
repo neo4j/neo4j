@@ -43,12 +43,6 @@ public class DeferringStatementLocks implements StatementLocks
     }
 
     @Override
-    public Locks.Client explicit()
-    {
-        return explicit;
-    }
-
-    @Override
     public void explicitAcquireExclusive( ResourceType type, long... resourceId )
     {
         explicit.acquireExclusive( lockTracerSupplier.get(), type, resourceId );

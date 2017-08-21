@@ -29,6 +29,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.locking.DeferringStatementLocksFactory.deferred_locks_enabled;
@@ -93,10 +94,11 @@ public class DeferringStatementLocksFactoryTest
         factory.initialize( locks, config );
 
         StatementLocks statementLocks = factory.newInstance();
+        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
 
         assertThat( statementLocks, instanceOf( SimpleStatementLocks.class ) );
         assertSame( client, statementLocks.optimistic() );
-        assertSame( client, statementLocks.explicit() );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
     }
 
     @Test
@@ -112,9 +114,10 @@ public class DeferringStatementLocksFactoryTest
         factory.initialize( locks, config );
 
         StatementLocks statementLocks = factory.newInstance();
+        statementLocks.explicitAcquireExclusive( ResourceTypes.NODE, 0 );
 
         assertThat( statementLocks, instanceOf( DeferringStatementLocks.class ) );
         assertThat( statementLocks.optimistic(), instanceOf( DeferringLockClient.class ) );
-        assertSame( client, statementLocks.explicit() );
+        verify( client ).acquireExclusive( LockTracer.NONE, ResourceTypes.NODE, 0 );
     }
 }
