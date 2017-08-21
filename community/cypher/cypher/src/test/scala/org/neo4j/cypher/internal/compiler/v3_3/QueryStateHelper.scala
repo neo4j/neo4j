@@ -50,7 +50,7 @@ object QueryStateHelper {
     newWith(db = db, query = queryContext, params = params)
   }
 
-  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, Any] = Map.empty, f: (QueryState) => T)  = {
+  def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, AnyValue] = Map.empty, f: (QueryState) => T)  = {
     val queryState = queryStateFrom(db, tx, params)
     try {
       f(queryState)

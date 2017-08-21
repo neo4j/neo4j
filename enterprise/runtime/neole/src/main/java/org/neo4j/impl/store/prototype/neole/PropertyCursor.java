@@ -22,6 +22,7 @@ package org.neo4j.impl.store.prototype.neole;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.impl.store.prototype.neole.ReadStore.combineReference;
@@ -253,6 +254,12 @@ class PropertyCursor extends PartialPropertyCursor
         default:
             return null;
         }
+    }
+
+    @Override
+    public <E extends Exception> void writeTo( ValueWriter<E> target )
+    {
+
     }
 
     @Override

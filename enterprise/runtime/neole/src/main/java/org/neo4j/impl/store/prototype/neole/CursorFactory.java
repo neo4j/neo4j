@@ -78,12 +78,12 @@ class CursorFactory implements org.neo4j.impl.kernel.api.CursorFactory
     @Override
     public NodeManualIndexCursor allocateNodeManualIndexCursor()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return null;
     }
 
     @Override
     public EdgeManualIndexCursor allocateEdgeManualIndexCursor()
     {
-        throw new UnsupportedOperationException( "not implemented" );
+        return null;
     }
 }
