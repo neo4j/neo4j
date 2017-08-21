@@ -382,4 +382,24 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations(apply) should equal(rhsPipeline)
     allocations(rhs) should equal(rhsPipeline)
   }
+
+  test("unwind and project") {
+    // given UNWIND [1,2,3] as x RETURN x
+    val leaf = SingleRow()(solved)
+    val unwind = UnwindCollection(leaf, IdName("x"), listOf(literalInt(1), literalInt(2), literalInt(3)))(solved)
+    val produceResult = ProduceResult(Seq("x"), unwind)
+
+    // when
+    val allocations = RegisterAllocation.allocateRegisters(produceResult)
+
+    // then
+    allocations should have size 3
+    allocations(leaf) should equal(PipelineInformation(Map.empty, 0, 0))
+
+
+    allocations(unwind) should equal(PipelineInformation(numberOfLongs = 0, numberOfReferences = 1, slots = Map(
+      "x" -> RefSlot(0, nullable = true, CTAny, "x")
+    )))
+    allocations(produceResult) shouldBe theSameInstanceAs(allocations(unwind))
+  }
 }

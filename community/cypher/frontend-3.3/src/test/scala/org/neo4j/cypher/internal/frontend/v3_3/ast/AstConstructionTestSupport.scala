@@ -55,4 +55,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     MapExpression(keyValues.map {
       case (k, v) => (PropertyKeyName(k)(pos), SignedDecimalIntegerLiteral(v.toString)(pos))
     })(pos)
+
+  def listOf(expressions: Expression*): ListLiteral = ListLiteral(expressions)(pos)
 }

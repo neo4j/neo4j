@@ -183,7 +183,7 @@ object RegisterAllocation {
       case UnwindCollection(source, IdName(variable), expression) =>
         val oldPipeline = allocate(source, nullable, argument)
         val newPipeline = oldPipeline.deepClone()
-        newPipeline.newReference(variable, nullable, CTAny)
+        newPipeline.newReference(variable, nullable = true, CTAny)
         result += (lp -> newPipeline)
         newPipeline
 
