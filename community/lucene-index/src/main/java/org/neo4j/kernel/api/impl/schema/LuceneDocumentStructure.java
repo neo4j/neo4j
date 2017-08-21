@@ -259,6 +259,12 @@ public class LuceneDocumentStructure
         return encoding.encodeField( encoding.key(), value );
     }
 
+    public static boolean useFieldForUniquenessVerification( String fieldName )
+    {
+        return !LuceneDocumentStructure.NODE_ID_KEY.equals( fieldName ) &&
+                ValueEncoding.fieldPropertyNumber( fieldName ) == 0;
+    }
+
     private static class DocWithId
     {
         private final Document document;

@@ -72,19 +72,17 @@ public class PartitionedUniquenessVerifier implements UniquenessVerifier
     {
         for ( String field : allFields() )
         {
-            if ( LuceneDocumentStructure.NODE_ID_KEY.equals( field ) )
+            if ( LuceneDocumentStructure.useFieldForUniquenessVerification( field ) )
             {
-                continue;
-            }
-
-            TermsEnum terms = LuceneDocumentStructure.originalTerms( termsForField( field ), field );
-            BytesRef termsRef;
-            while ( (termsRef = terms.next()) != null )
-            {
-                if ( terms.docFreq() > 1 )
+                TermsEnum terms = LuceneDocumentStructure.originalTerms( termsForField( field ), field );
+                BytesRef termsRef;
+                while ( (termsRef = terms.next()) != null )
                 {
-                    TermQuery query = new TermQuery( new Term( field, termsRef ) );
-                    searchForDuplicates( query, accessor, propKeyIds, terms.docFreq() );
+                    if ( terms.docFreq() > 1 )
+                    {
+                        TermQuery query = new TermQuery( new Term( field, termsRef ) );
+                        searchForDuplicates( query, accessor, propKeyIds, terms.docFreq() );
+                    }
                 }
             }
         }
