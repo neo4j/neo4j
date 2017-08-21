@@ -57,29 +57,30 @@ public class InsightLuceneIndexUpdaterTest
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler(insightIndex.getUpdater());
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
 
             long firstID;
             long secondID;
-            try (Transaction tx = db.beginTx()) {
-                Node node = db.createNode(LABEL);
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
                 firstID = node.getId();
-                node.setProperty("prop", "Hello. Hello again.");
-                Node node2 = db.createNode(LABEL);
+                node.setProperty( "prop", "Hello. Hello again." );
+                Node node2 = db.createNode( LABEL );
                 secondID = node2.getId();
-                node2.setProperty("prop",
-                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                                "between a zebra and any other equine: essentially, a zebra hybrid.");
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
 
-            try (InsightIndexReader reader = insightIndex.getNodeReader()) {
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            {
 
-                assertEquals(firstID, reader.query("hello").next());
-                assertEquals(secondID, reader.query("zebra").next());
-                assertEquals(secondID, reader.query("zedonk").next());
-                assertEquals(secondID, reader.query("cross").next());
+                assertEquals( firstID, reader.query( "hello" ).next() );
+                assertEquals( secondID, reader.query( "zebra" ).next() );
+                assertEquals( secondID, reader.query( "zedonk" ).next() );
+                assertEquals( secondID, reader.query( "cross" ).next() );
             }
         }
     }
@@ -138,36 +139,72 @@ public class InsightLuceneIndexUpdaterTest
         GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
         try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
         {
-            db.registerTransactionEventHandler(insightIndex.getUpdater());
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
 
             long firstID;
             long secondID;
-            try (Transaction tx = db.beginTx()) {
-                Node node = db.createNode(LABEL);
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
                 firstID = node.getId();
-                node.setProperty("prop", "Hello. Hello again.");
-                Node node2 = db.createNode(LABEL);
+                node.setProperty( "prop", "Hello. Hello again." );
+                Node node2 = db.createNode( LABEL );
                 secondID = node2.getId();
-                node2.setProperty("prop",
-                        "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
-                                "between a zebra and any other equine: essentially, a zebra hybrid.");
+                node2.setProperty( "prop", "A zebroid (also zedonk, zorse, zebra mule, zonkey, and zebmule) is the offspring of any cross " +
+                        "between a zebra and any other equine: essentially, a zebra hybrid." );
 
                 tx.success();
             }
 
-            try (Transaction tx = db.beginTx()) {
-                db.getNodeById(firstID).delete();
-                db.getNodeById(secondID).delete();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.getNodeById( firstID ).delete();
+                db.getNodeById( secondID ).delete();
 
                 tx.success();
             }
 
-            try (InsightIndexReader reader = insightIndex.getNodeReader()) {
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            {
 
-                assertFalse(reader.query("hello").hasNext());
-                assertFalse(reader.query("zebra").hasNext());
-                assertFalse(reader.query("zedonk").hasNext());
-                assertFalse(reader.query("cross").hasNext());
+                assertFalse( reader.query( "hello" ).hasNext() );
+                assertFalse( reader.query( "zebra" ).hasNext() );
+                assertFalse( reader.query( "zedonk" ).hasNext() );
+                assertFalse( reader.query( "cross" ).hasNext() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldOnlyIndexIndexedProperties() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        {
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "prop", "Hello. Hello again." );
+                node.setProperty( "prop2", "zebra" );
+                Node node2 = db.createNode( LABEL );
+                node2.setProperty( "prop2", "zebra" );
+                node2.setProperty( "prop3", "hello" );
+
+                tx.success();
+            }
+
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            {
+
+                PrimitiveLongIterator hello = reader.query( "hello" );
+                assertEquals( firstID, hello.next() );
+                assertFalse( hello.hasNext() );
+                assertFalse( reader.query( "zebra" ).hasNext() );
             }
         }
     }
@@ -206,6 +243,52 @@ public class InsightLuceneIndexUpdaterTest
                 assertEquals( secondID, iterator.next() );
                 assertEquals( thirdID, iterator.next() );
                 assertEquals( firstID, iterator.next() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldOrderResultsBasedOnRelevance() throws Exception
+    {
+        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
+        try ( InsightIndex insightIndex = new InsightIndex( fileSystemRule, testDirectory.graphDbDir(), "first", "last" ) )
+        {
+            db.registerTransactionEventHandler( insightIndex.getUpdater() );
+
+            long firstID;
+            long secondID;
+            long thirdID;
+            long fourthID;
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode( LABEL );
+                firstID = node.getId();
+                node.setProperty( "first", "Full" );
+                node.setProperty( "last", "Hanks" );
+                Node node2 = db.createNode( LABEL );
+                secondID = node2.getId();
+                node2.setProperty( "first", "Tom" );
+                node2.setProperty( "last", "Hunk" );
+                Node node3 = db.createNode( LABEL );
+                thirdID = node3.getId();
+                node3.setProperty( "first", "Tom" );
+                node3.setProperty( "last", "Hanks" );
+                Node node4 = db.createNode( LABEL );
+                fourthID = node4.getId();
+                node4.setProperty( "first", "Tom Hanks" );
+                node4.setProperty( "last", "Tom Hanks" );
+
+                tx.success();
+            }
+
+            try ( InsightIndexReader reader = insightIndex.getNodeReader() )
+            {
+
+                PrimitiveLongIterator iterator = reader.query( "Tom", "Hanks" );
+                assertEquals( fourthID, iterator.next() );
+                assertEquals( thirdID, iterator.next() );
+                assertEquals( firstID, iterator.next() );
+                assertEquals( secondID, iterator.next() );
             }
         }
     }
@@ -267,5 +350,4 @@ public class InsightLuceneIndexUpdaterTest
             }
         }
     }
-
 }
