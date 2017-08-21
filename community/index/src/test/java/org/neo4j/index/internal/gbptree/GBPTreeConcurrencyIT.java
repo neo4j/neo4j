@@ -180,10 +180,12 @@ public class GBPTreeConcurrencyIT
         testCoordinator.prepare( index );
 
         // WHEN starting the readers
-        RunnableReader readerTask = new RunnableReader( testCoordinator, readerReadySignal, readerStartSignal,
-                endSignal, failHalt, readerError );
+        List<RunnableReader> allReaders = new ArrayList<>();
         for ( int i = 0; i < readers; i++ )
         {
+            RunnableReader readerTask = new RunnableReader( testCoordinator, readerReadySignal, readerStartSignal,
+                    endSignal, failHalt, readerError );
+            allReaders.add( readerTask );
             threadPool.submit( readerTask );
         }
 
@@ -202,11 +204,12 @@ public class GBPTreeConcurrencyIT
             // none of the removed values at the point of making the seek call.
             endSignal.set( true );
             threadPool.shutdown();
-            threadPool.awaitTermination( 10, TimeUnit.SECONDS );
+            boolean readersFinished = threadPool.awaitTermination( 10, TimeUnit.SECONDS );
             if ( readerError.get() != null )
             {
                 throw readerError.get();
             }
+            assertTrue( "One or more readers didn't finish a seek in the designated timeout", readersFinished );
         }
     }
 

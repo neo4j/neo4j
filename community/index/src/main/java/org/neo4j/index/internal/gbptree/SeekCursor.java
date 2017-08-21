@@ -29,8 +29,6 @@ import org.neo4j.index.internal.gbptree.TreeNode.Section;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static java.lang.Integer.max;
-import static java.lang.Integer.min;
-
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.checkOutOfBounds;
 
 /**
@@ -578,8 +576,17 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                     if ( !seekForward )
                     {
-                        pos = pos == 0 && !KeySearch.isHit( searchResult ) ? -1 : min( pos, keyCount - 1 );
-                        deltaPos = deltaPos == 0 && !KeySearch.isHit( deltaSearchResult ) ? -1 :  min( deltaPos, deltaKeyCount - 1 );
+                        // The binary search algorithm will return pos of first key from "left" that is equal to or higher than searchKey.
+                        // When seeking backwards we want to find "hit" or pos of first key from right that is lower than searchKey.
+                        // Therefore we decrement pos here.
+                        if ( !KeySearch.isHit( searchResult ) )
+                        {
+                            pos--;
+                        }
+                        if ( !KeySearch.isHit( deltaSearchResult ) )
+                        {
+                            deltaPos--;
+                        }
                     }
                 }
 
