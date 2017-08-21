@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.spi.v3_3
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.storable.Value
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
@@ -42,7 +43,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val propertyExistenceConstraintsAdded = new Counter
   private val propertyExistenceConstraintsRemoved = new Counter
 
-  def getStatistics = InternalQueryStatistics(
+  def getStatistics = QueryStatistics(
     nodesCreated = nodesCreated.count,
     relationshipsCreated = relationshipsCreated.count,
     propertiesSet = propertiesSet.count,
@@ -110,7 +111,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
     val result = inner.createUniqueConstraint(descriptor)
-    if ( result ) uniqueConstraintsAdded.increase();
+    if ( result ) uniqueConstraintsAdded.increase()
     result
   }
 
@@ -143,7 +144,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = super.nodeGetDegree(node, dir)
 
-  override def detachDeleteNode(node: Node): Int = {
+  override def detachDeleteNode(node: Long): Int = {
     nodesDeleted.increase()
     val count = inner.detachDeleteNode(node)
     relationshipsDeleted.increase(count)
@@ -163,9 +164,9 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private class CountingOps[T <: PropertyContainer](inner: Operations[T], deletes: Counter)
     extends DelegatingOperations[T](inner) {
 
-    override def delete(obj: T) {
+    override def delete(id: Long) {
       deletes.increase()
-      inner.delete(obj)
+      inner.delete(id)
     }
 
     override def removeProperty(id: Long, propertyKeyId: Int) {
@@ -173,7 +174,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.removeProperty(id, propertyKeyId)
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Value) {
       propertiesSet.increase()
       inner.setProperty(id, propertyKeyId, value)
     }

@@ -23,43 +23,44 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 
 class ToStringFunctionTest extends CypherFunSuite {
 
   test("should return null if argument is null") {
-    assert(toStringFunction(null) === null)
+    assert(toStringFunction(null) === NO_VALUE)
   }
 
   test("should not change a string") {
-    toStringFunction("10.599") should be("10.599")
+    toStringFunction("10.599") should be(stringValue("10.599"))
   }
 
   test("should convert an integer to a string") {
-    toStringFunction(21) should be("21")
+    toStringFunction(21) should be(stringValue("21"))
   }
 
-  test("should convert an float to a string") {
-    toStringFunction(23.34) should be("23.34")
+  test("should convert a float to a string") {
+    toStringFunction(23.34) should be(stringValue("23.34"))
   }
 
   test("should convert a negative float to a string") {
-    toStringFunction(-12.66) should be("-12.66")
+    toStringFunction(-12.66) should be(stringValue("-12.66"))
   }
 
   test("should convert a negative integer to a string") {
-    toStringFunction(-12) should be("-12")
+    toStringFunction(-12) should be(stringValue("-12"))
   }
 
   test("should handle boolean false") {
-    toStringFunction(false) should be("false")
+    toStringFunction(false) should be(stringValue("false"))
   }
 
   test("should handle boolean true") {
-    toStringFunction(true) should be("true")
+    toStringFunction(true) should be(stringValue("true"))
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
-    val caughtException = evaluating { toStringFunction(new Object) } should produce[ParameterWrongTypeException]
+    val caughtException = evaluating { toStringFunction(List(1,24))} should produce[ParameterWrongTypeException]
     caughtException.getMessage should startWith("Expected a String, Number or Boolean, got: ")
   }
 

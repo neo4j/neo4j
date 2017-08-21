@@ -19,23 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiled_runtime.v3_3.codegen.ir
 
+import java.util
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.function.BiConsumer
 
+import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{CodeGenType, NodeProjection}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, JoinTableMethod, Variable}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable._
+import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue}
 
-import scala.collection.mutable
+import scala.collection.{JavaConverters, mutable}
 
 class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
@@ -50,7 +56,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   private val allNodeIds = mutable.ArrayBuffer[Long]()
 
   // used by instructions that generate probe tables
-  private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty)
+  private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty, Map.empty)
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.readOperations).thenReturn(readOps)
   when(queryContext.entityAccessor).thenReturn(entityAccessor.asInstanceOf[queryContext.EntityAccessor])
@@ -150,6 +156,36 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
       allNodeIds += id
     }
   }
+
+  when(queryContext.asObject(any())).thenAnswer(new Answer[AnyRef] {
+    override def answer(invocationOnMock: InvocationOnMock): AnyRef =
+      toObjectConverter(invocationOnMock.getArguments()(0))
+  })
+
+  import JavaConverters._
+  private def toObjectConverter(a: AnyRef): AnyRef = a match {
+    case Values.NO_VALUE => null
+    case n: NodeValue =>
+      val proxy = mock[NodeProxy]
+      when(proxy.getId).thenReturn(n.id())
+      proxy
+
+    case s: TextValue => s.stringValue()
+    case b: BooleanValue => Boolean.box(b.booleanValue())
+    case f: FloatingPointValue => Double.box(f.doubleValue())
+    case i: IntegralValue => Long.box(i.longValue())
+    case l: ListValue =>
+      val list = new util.ArrayList[AnyRef]
+      l.iterator().asScala.foreach(a => list.add(toObjectConverter(a)))
+      list
+    case m: MapValue =>
+      val map = new util.HashMap[String, AnyRef]()
+      m.foreach(new BiConsumer[String, AnyValue] {
+        override def accept(t: String, u: AnyValue): Unit = map.put(t, toObjectConverter(u))
+      })
+      map
+  }
+
 
   private def checkNodeResult(id: Long, res: Map[String, Object]): Unit = {
     res.size shouldEqual 1

@@ -19,21 +19,22 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
-
-import scala.collection.Map
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, typ: LazyType, endNode: String,
                                     properties: Option[Expression])
-  extends PipeWithSource(src) with GraphElementPropertyFunctions with ListSupport {
+  extends PipeWithSource(src) with GraphElementPropertyFunctions {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map(createRelationship(_, state))
@@ -42,37 +43,36 @@ abstract class BaseRelationshipPipe(src: Pipe, key: String, startNode: String, t
     val start = getNode(context, startNode)
     val end = getNode(context, endNode)
     val typeId = typ.typ(state.query)
-    val relationship = state.query.createRelationship(start.getId, end.getId, typeId)
+    val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
     relationship.getType // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.getId)
-    context += key -> relationship
+    context += key -> AnyValues.asEdgeValue(relationship)
   }
 
-  private def getNode(row: ExecutionContext, name: String): Node =
+  private def getNode(row: ExecutionContext, name: String): NodeValue =
     row.get(name) match {
-      case Some(n: Node) => n
+      case Some(n: NodeValue) => n
       case x => throw new InternalException(s"Expected to find a node at $name but found nothing $x")
     }
 
   private def setProperties(context: ExecutionContext, state: QueryState, relId: Long) = {
     properties.foreach { expr =>
       expr(context)(state) match {
-        case _: Node | _: Relationship =>
+        case _: NodeValue | _: EdgeValue =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
-        case IsMap(f) =>
-          val propertiesMap: Map[String, Any] = f(state.query)
-          propertiesMap.foreach {
-            case (k, v) => setProperty(relId, k, v, state.query)
-          }
+        case IsMap(map) =>
+          map(state.query).foreach(new BiConsumer[String, AnyValue] {
+            override def accept(k: String, v: AnyValue): Unit = setProperty(relId, k, v, state.query)
+          })
         case _ =>
           throw new CypherTypeException("Parameter provided for relationship creation is not a Map")
       }
     }
   }
 
-  private def setProperty(relId: Long, key: String, value: Any, qtx: QueryContext) {
+  private def setProperty(relId: Long, key: String, value: AnyValue, qtx: QueryContext) {
     //do not set properties for null values
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       handleNull(key: String)
     } else {
       val propertyKeyId = qtx.getOrCreatePropertyKeyId(key)

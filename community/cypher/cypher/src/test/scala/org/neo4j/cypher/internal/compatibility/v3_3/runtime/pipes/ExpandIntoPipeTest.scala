@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Relationship
+import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -52,7 +53,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (single :: Nil) = result
-    single.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
+    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
+                              "b" -> fromNodeProxy(endNode1)))
   }
 
   test("should return no relationships for types that have not been defined yet") {
@@ -97,8 +99,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (first :: second :: Nil) = result
-    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.toMap should equal(Map("a" -> startNode, "r" -> relationship2, "b" -> endNode2))
+    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
@@ -114,8 +116,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // then
     val (first :: second :: Nil) = result
-    first.toMap should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
-    second.toMap should equal(Map("a" -> startNode, "r" -> selfRelationship, "b" -> startNode))
+    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -175,8 +177,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results should contain theSameElementsAs List(
-      Map("n" -> node1, "k" -> node0, "r1" -> rel1, "r2" -> rel1),
-      Map("n" -> node0, "k" -> node1, "r1" -> rel0, "r2" -> rel0))
+      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel1)),
+      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
   }
 
   test("should work for bidirectional relationships") {
@@ -198,10 +200,10 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results should contain theSameElementsAs List(
-      Map("n" -> node1, "k" -> node0, "r1" -> rel0, "r2" -> rel1),
-      Map("n" -> node1, "k" -> node0, "r1" -> rel1, "r2" -> rel1),
-      Map("n" -> node0, "k" -> node1, "r1" -> rel1, "r2" -> rel0),
-      Map("n" -> node0, "k" -> node1, "r1" -> rel0, "r2" -> rel0))
+      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel1)),
+      Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel1)),
+      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel0)),
+      Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
 
     // relationships should be cached after the first call
     verify(query, times(1)).getRelationshipsForIds(any(), mockEq(SemanticDirection.BOTH), mockEq(None))

@@ -36,6 +36,19 @@ public class EmbeddedUserManagementProceduresInteractionIT extends AuthProcedure
         return new EmbeddedInteraction( config );
     }
 
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Integer )
+        {
+            return ((Integer) obj).longValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
+
     /*
       This test is too slow for unit testing, but might be useful for local stress testing.
      */

@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPa
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, ShortestPathPipe}
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.graphdb.{Node, Path}
+import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
@@ -38,20 +40,20 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
 
     val resultPath = runThroughPipeAndGetPath(a, b, path)
 
-    val number_of_relationships_in_path = resultPath.length()
+    val number_of_relationships_in_path = resultPath.size()
 
     number_of_relationships_in_path should equal(1)
-    resultPath.lastRelationship() should equal(r)
-    resultPath.startNode() should equal(a)
-    resultPath.endNode() should equal(b)
+    resultPath.lastEdge() should equal(fromRelationshipProxy(r))
+    resultPath.startNode() should equal(fromNodeProxy(a))
+    resultPath.endNode() should equal(fromNodeProxy(b))
   }
 
-  private def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
+  private def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): PathValue = {
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"-> CTNode, "b"-> CTNode)
 
-    val pipe = new ShortestPathPipe(source, path)()
+    val pipe = ShortestPathPipe(source, path)()
     graph.withTx { tx =>
-      pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).next()("p").asInstanceOf[Path]
+      pipe.createResults(QueryStateHelper.queryStateFrom(graph, tx)).next()("p").asInstanceOf[PathValue]
     }
   }
 }

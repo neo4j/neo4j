@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito
+import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -48,7 +49,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       DirectedRelationshipByIdSeekPipe("a", SingleSeekArg(Literal(17)), to, from)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
+    result.toList should beEquivalentTo(List(Map("a" -> rel, "to" -> endNode, "from" -> startNode)))
   }
 
   test("should seek relationships by multiple ids") {
@@ -73,7 +74,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().createResults(queryState)
 
     // then
-    result.toList should equal(List(
+    result.toList should beEquivalentTo(List(
       Map(relName -> r1, to -> e1, from -> s1),
       Map(relName -> r2, to -> e2, from -> s2)
     ))

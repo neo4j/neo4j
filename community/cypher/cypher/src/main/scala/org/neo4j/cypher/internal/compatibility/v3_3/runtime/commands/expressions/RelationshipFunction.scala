@@ -20,17 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
-import org.neo4j.graphdb.Path
-
-import scala.collection.JavaConverters._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{PathValue, VirtualValues}
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = value match {
-    case p: PathImpl => p.relList
-    case p: Path => p.relationships().asScala.toIndexedSeq
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = value match {
+    case p: PathValue => VirtualValues.list(p.edges():_*)
     case x       => throw new SyntaxException("Expected " + path + " to be a path.")
   }
 

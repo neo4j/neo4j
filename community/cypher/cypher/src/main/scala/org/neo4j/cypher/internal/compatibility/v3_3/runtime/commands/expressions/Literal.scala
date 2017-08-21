@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConversion.asValue
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 case class Literal(v: Any) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = v
+  //TODO this could have been figured out earlier
+  val anyVal = asValue(v)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = anyVal
 
   def rewrite(f: (Expression) => Expression) = f(this)
 

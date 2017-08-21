@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v1.runtime.integration;
 
-import java.net.InetSocketAddress;
-
 import org.junit.Rule;
 import org.junit.Test;
+
+import java.net.InetSocketAddress;
 
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.runtime.BoltConnectionDescriptor;
@@ -36,6 +36,8 @@ import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
 import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class BoltConnectionAuthIT
 {
@@ -62,7 +64,7 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", map(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", true ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "credentials_expired", TRUE ) );
         assertThat( recorder.nextResponse(), failedWithStatus( Status.Security.CredentialsExpired ) );
     }
 
@@ -71,7 +73,7 @@ public class BoltConnectionAuthIT
     {
         // Given it is important for client applications to programmatically
         // identify expired credentials as the cause of not being authenticated
-        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR);
+        BoltStateMachine machine = env.newMachine( CONNECTION_DESCRIPTOR );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
         String version = "Neo4j/" + Version.getNeo4jVersion();
         // When
@@ -82,7 +84,7 @@ public class BoltConnectionAuthIT
         machine.run( "CREATE ()", map(), recorder );
 
         // Then
-        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", version ) );
+        assertThat( recorder.nextResponse(), succeededWithMetadata( "server", stringValue( version ) ) );
     }
 
     @Test
@@ -115,7 +117,7 @@ public class BoltConnectionAuthIT
                 "principal", "neo4j",
                 "credentials", "neo4j",
                 "new_credentials", "secret"
-                ), recorder );
+        ), recorder );
         machine.run( "CREATE ()", map(), recorder );
 
         // then

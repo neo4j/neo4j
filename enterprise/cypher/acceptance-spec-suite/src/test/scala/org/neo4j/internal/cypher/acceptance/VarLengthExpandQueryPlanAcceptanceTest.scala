@@ -30,6 +30,12 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
     result should havePlanLike(
       """
+        |Compiler CYPHER 3.3
+        |
+        |Planner COST
+        |
+        |Runtime ENTERPRISE-INTERPRETED
+        |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
         || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                            |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+----------------------------------+
@@ -52,6 +58,12 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result should havePlanLike(
       """
+        |Compiler CYPHER 3.3
+        |
+        |Planner COST
+        |
+        |Runtime ENTERPRISE-INTERPRETED
+        |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+
         || Operator              | Estimated Rows | Rows | DB Hits | Page Cache Hits | Page Cache Misses | Page Cache Hit Ratio | Variables        | Other                          |
         |+-----------------------+----------------+------+---------+-----------------+-------------------+----------------------+------------------+--------------------------------+

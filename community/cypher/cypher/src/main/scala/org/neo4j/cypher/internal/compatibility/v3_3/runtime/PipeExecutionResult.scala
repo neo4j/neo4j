@@ -22,43 +22,46 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import java.io.PrintWriter
 import java.util
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, InternalQueryType}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeJavaValueConverter
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow, RuntimeJavaValueConverter, RuntimeScalaValueConverter}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
-import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Version
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{NotFoundException, ResourceIterator}
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.{NotFoundException, Notification, ResourceIterator}
+import org.neo4j.values.result.QueryResult
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
 class PipeExecutionResult(val result: ResultIterator,
-                          val columns: List[String],
+                          val fieldNames: Array[String],
                           val state: QueryState,
                           val executionPlanBuilder: () => InternalPlanDescription,
                           val executionMode: ExecutionMode,
-                          val executionType: InternalQueryType)
-  extends InternalExecutionResult
-  with ListSupport {
+                          val queryType: InternalQueryType)
+  extends InternalExecutionResult {
 
   self =>
 
-  val javaValues = new RuntimeJavaValueConverter(state.query.isGraphKernelResultValue)
+  private val query = state.query
+  val javaValues = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
+  val scalaValues = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
 
-  def executionPlanDescription(): InternalPlanDescription = executionPlanBuilder()
-
-  def javaColumns: java.util.List[String] = columns.asJava
+  def executionPlanDescription(): InternalPlanDescription =
+    executionPlanBuilder()
+      .addArgument(Version("CYPHER 3.3"))
 
   def javaColumnAs[T](column: String): ResourceIterator[T] = new WrappingResourceIterator[T] {
     def hasNext = self.hasNext
-    def next() = javaValues.asDeepJavaValue(getAnyColumn(column, self.next())).asInstanceOf[T]
+    def next() = query.asObject(result.next().getOrElse(column, columnNotFoundException(column, columns))).asInstanceOf[T]
   }
 
   def columnAs[T](column: String): Iterator[T] =
@@ -67,18 +70,15 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next() = {
-      val value = self.next()
-      val result = Eagerly.immutableMapValues(value, javaValues.asDeepJavaValue).asJava
-      result
-    }
+    def next() = immutableMapValues(result.next(), query.asObject).asJava
   }
 
-  override def toList: List[Predef.Map[String, Any]] = result.toList
+  override def toList: List[Predef.Map[String, Any]] = result.toList.map(immutableMapValues(_, query.asObject))
+    .map(immutableMapValues(_, scalaValues.asDeepScalaValue))
 
   def hasNext = result.hasNext
 
-  def next() = result.next()
+  def next() = immutableMapValues(immutableMapValues(result.next(), query.asObject), scalaValues.asDeepScalaValue)
 
   def queryStatistics() = state.getStatistics
 
@@ -104,13 +104,24 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   //notifications only present for EXPLAIN
-  override val notifications = Iterable.empty[InternalNotification]
+  override val notifications = Iterable.empty[Notification]
+  override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
-  def accept[EX <: Exception](visitor: InternalResultVisitor[EX]) = {
+  def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {
     try {
-      javaValues.feedIteratorToVisitable(self).accept(visitor)
+      javaValues.feedIteratorToVisitable(result.map(r => fieldNames.map(r))).accept(visitor)
     } finally {
       self.close()
     }
+  }
+
+  override def accept[E <: Exception](visitor: ResultVisitor[E]): Unit = {
+    accept(new QueryResultVisitor[E] {
+      override def visit(record: QueryResult.Record): Boolean = {
+        val row = new MapBasedRow
+        row.map = fieldNames.zip(record.fields().map(state.query.asObject)).toMap
+        visitor.visit(row)
+      }
+    })
   }
 }

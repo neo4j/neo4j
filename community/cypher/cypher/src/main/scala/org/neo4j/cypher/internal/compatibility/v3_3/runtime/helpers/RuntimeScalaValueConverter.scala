@@ -24,6 +24,7 @@ import java.util
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable

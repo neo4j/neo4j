@@ -21,13 +21,18 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-final class LongValue extends IntegralValue
+public final class LongValue extends IntegralValue
 {
     private final long value;
 
     LongValue( long value )
     {
         this.value = value;
+    }
+
+    public long value()
+    {
+        return value;
     }
 
     @Override

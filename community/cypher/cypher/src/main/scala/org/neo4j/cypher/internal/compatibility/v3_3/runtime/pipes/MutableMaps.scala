@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.values.AnyValue
+
 object MutableMaps {
 
-  def create(size: Int) : collection.mutable.Map[String, Any] =
-    new collection.mutable.OpenHashMap[String, Any](if (size < 16) 16 else size)
+  def create(size: Int) : collection.mutable.Map[String, AnyValue] =
+    new collection.mutable.OpenHashMap[String, AnyValue](if (size < 16) 16 else size)
 
-  def empty: collection.mutable.Map[String, Any] = create(16)
+  def empty: collection.mutable.Map[String, AnyValue] = create(16)
 
-  def create(input: scala.collection.Map[String, Any]) : collection.mutable.Map[String, Any] =
+  def create(input: scala.collection.Map[String, AnyValue]) : collection.mutable.Map[String, AnyValue] =
     create(input.size) ++= input
 
-  def create(input: (String, Any)*) : collection.mutable.Map[String, Any] = {
+  def create(input: (String, AnyValue)*) : collection.mutable.Map[String, AnyValue] = {
     create(input.size) ++= input
   }
 }

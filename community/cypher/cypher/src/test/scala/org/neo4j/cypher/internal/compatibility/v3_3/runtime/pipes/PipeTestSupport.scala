@@ -24,12 +24,13 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValues
 import org.scalatest.mock.MockitoSugar
 
 trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
@@ -43,7 +44,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
     override def id: Id = new Id
   }
 
-  def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
+  def row(values: (String, Any)*) = ExecutionContext.from(values.map(v => (v._1, AnyValues.of(v._2))): _*)
 
   def setUpRelMockingInQueryContext(rels: Relationship*) {
     val relsByStartNode = rels.groupBy(_.getStartNode)
@@ -60,7 +61,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
   def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
     relsByNode.foreach {
       case (node, rels) =>
-        when(query.getRelationshipsForIds(node, direction, None)).thenAnswer(
+        when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(
           new Answer[Iterator[Relationship]] {
             def answer(invocation: InvocationOnMock) = rels.iterator
           })
@@ -77,9 +78,13 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
+    val startId = startNode.getId
+    val endId = endNode.getId
     when(relationship.getId).thenReturn(id)
     when(relationship.getStartNode).thenReturn(startNode)
+    when(relationship.getStartNodeId).thenReturn(startId)
     when(relationship.getEndNode).thenReturn(endNode)
+    when(relationship.getEndNodeId).thenReturn(endId)
     when(relationship.getOtherNode(startNode)).thenReturn(endNode)
     when(relationship.getOtherNode(endNode)).thenReturn(startNode)
     relationship

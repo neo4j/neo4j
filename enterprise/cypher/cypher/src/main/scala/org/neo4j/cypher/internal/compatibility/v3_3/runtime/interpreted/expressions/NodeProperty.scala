@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.express
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 case class NodeProperty(offset: Int, token: Int) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     state.query.nodeOps.getProperty(ctx.getLongAt(offset), token)
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
@@ -37,10 +39,10 @@ case class NodeProperty(offset: Int, token: Int) extends Expression {
 
 case class NodePropertyLate(offset: Int, propKey: String) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val maybeToken = state.query.getOptPropertyKeyId(propKey)
     if (maybeToken.isEmpty)
-      null
+      Values.NO_VALUE
     else
       state.query.nodeOps.getProperty(ctx.getLongAt(offset), maybeToken.get)
   }

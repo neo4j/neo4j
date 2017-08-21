@@ -20,8 +20,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper._
-import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
+import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED
 
 import scala.language.reflectiveCalls
 
@@ -29,7 +30,7 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
 
   test("default behaviour is to not fail when asked for compiled runtime") {
     val result = execute("cypher runtime=compiled explain return 42")
-    result.notifications should contain(RuntimeUnsupportedNotification)
+    result.notifications should contain(RUNTIME_UNSUPPORTED.notification(InputPosition.empty))
   }
 
   test("can also be configured to fail hard") {

@@ -24,8 +24,10 @@ import org.neo4j.values.SequenceValue;
 /**
  * Array of one of the storable primitives
  */
-abstract class ArrayValue extends Value implements SequenceValue
+public abstract class ArrayValue extends Value implements SequenceValue
 {
+    public abstract int length();
+
     @Override
     public boolean equals( boolean x )
     {

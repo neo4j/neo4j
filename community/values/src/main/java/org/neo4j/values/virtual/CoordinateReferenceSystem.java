@@ -34,4 +34,19 @@ public enum CoordinateReferenceSystem
         this.code = code;
         this.href = href;
     }
+
+    public int code()
+    {
+        return code;
+    }
+
+    public String type()
+    {
+        return name;
+    }
+
+    public String href()
+    {
+        return href;
+    }
 }

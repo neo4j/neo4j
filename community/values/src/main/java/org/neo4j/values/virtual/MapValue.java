@@ -22,10 +22,13 @@ package org.neo4j.values.virtual;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.BiConsumer;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.Values;
 
 public final class MapValue extends VirtualValue
 {
@@ -48,7 +51,7 @@ public final class MapValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         return map.hashCode();
     }
@@ -63,6 +66,12 @@ public final class MapValue extends VirtualValue
             entry.getValue().writeTo( writer );
         }
         writer.endMap();
+    }
+
+    public ListValue keys()
+    {
+        String[] strings = map.keySet().toArray( new String[map.size()] );
+        return VirtualValues.fromArray( Values.stringArray( strings ) );
     }
 
     @Override
@@ -107,6 +116,26 @@ public final class MapValue extends VirtualValue
             }
         }
         return compare;
+    }
+
+    public void foreach( BiConsumer<String,AnyValue> f )
+    {
+        map.forEach( f );
+    }
+
+    public Set<Map.Entry<String,AnyValue>> entrySet()
+    {
+        return map.entrySet();
+    }
+
+    public boolean containsKey( String key )
+    {
+        return map.containsKey( key );
+    }
+
+    public AnyValue get( String key )
+    {
+      return map.getOrDefault( key, Values.NO_VALUE );
     }
 
     @Override

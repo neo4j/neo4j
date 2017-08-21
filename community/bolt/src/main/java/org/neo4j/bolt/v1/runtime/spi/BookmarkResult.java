@@ -21,6 +21,8 @@ package org.neo4j.bolt.v1.runtime.spi;
 
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 
+import static org.neo4j.values.storable.Values.stringValue;
+
 public class BookmarkResult extends BoltResult
 {
     private final Bookmark bookmark;
@@ -39,7 +41,7 @@ public class BookmarkResult extends BoltResult
     @Override
     public void accept( Visitor visitor ) throws Exception
     {
-        visitor.addMetadata( "bookmark", bookmark.toString() );
+        visitor.addMetadata( "bookmark", stringValue( bookmark.toString() ) );
     }
 
     @Override

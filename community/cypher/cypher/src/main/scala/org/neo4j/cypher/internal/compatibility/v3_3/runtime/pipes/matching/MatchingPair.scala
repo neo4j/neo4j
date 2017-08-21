@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Map
 
@@ -33,21 +33,21 @@ case class MatchingPair(patternElement: PatternElement, entity: Any) {
   def matchesBoundEntity(boundNodes: Map[String, Set[MatchingPair]]): Boolean = boundNodes.get(patternElement.key)
   match {
     case Some(pinnedNodeSet) => pinnedNodeSet.forall(pinnedNode => (entity, pinnedNode.entity) match {
-      case (a: Node, b: Node)                                                       => a == b
-      case (a: SingleGraphRelationship, b: Relationship)                            => a.rel == b
-      case (a: Relationship, b: SingleGraphRelationship)                            => a == b.rel
+      case (a: NodeValue, b: NodeValue)                                                       => a == b
+      case (a: SingleGraphRelationship, b: EdgeValue)                            => a.rel == b
+      case (a: EdgeValue, b: SingleGraphRelationship)                            => a == b.rel
       case (a: VariableLengthGraphRelationship, b: VariableLengthGraphRelationship) => a.path == b.path
-      case (a: VariableLengthGraphRelationship, b)                                  => false
-      case (a, b: VariableLengthGraphRelationship)                                  => false
+      case (a: VariableLengthGraphRelationship, _)                                  => false
+      case (a, _: VariableLengthGraphRelationship)                                  => false
 
     })
     case None             => true
   }
 
   def getGraphRelationships(pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
-    patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[Node], pRel, state, f)
+    patternElement.asInstanceOf[PatternNode].getGraphRelationships(entity.asInstanceOf[NodeValue], pRel, state, f)
 
-  def getPatternAndGraphPoint: (PatternNode, Node) = (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[Node])
+  def getPatternAndGraphPoint: (PatternNode, NodeValue) = (patternElement.asInstanceOf[PatternNode], entity.asInstanceOf[NodeValue])
 
   def patternNode = patternElement.asInstanceOf[PatternNode]
 }

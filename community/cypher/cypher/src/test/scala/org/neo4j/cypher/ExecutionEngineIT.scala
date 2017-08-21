@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.{ExecutionEngine, ExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService}
+import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, Result}
 import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.immutable.Map
@@ -205,10 +205,10 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   }
 
   implicit class RichExecutionEngine(engine: ExecutionEngine) {
-    def profile(query: String, params: Map[String, Any]): ExecutionResult =
+    def profile(query: String, params: Map[String, Any]): Result =
       engine.profile(query, params, engine.queryService.transactionalContext(query = query -> params))
 
-    def execute(query: String, params: Map[String, Any]): ExecutionResult =
+    def execute(query: String, params: Map[String, Any]): Result =
       engine.execute(query, params, engine.queryService.transactionalContext(query = query -> params))
   }
 }

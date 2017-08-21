@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher.internal.v3_3.executionplan;
 
-import java.util.List;
-
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode;
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Completable;
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription;
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor;
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription;
+import org.neo4j.values.result.QueryResult;
 
 public interface GeneratedQueryExecution
 {
-    List<String> javaColumns();
-
-    <E extends Exception> void accept( InternalResultVisitor<E> visitor ) throws E;
+    <E extends Exception> void accept( QueryResult.QueryResultVisitor<E> visitor ) throws E;
 
     ExecutionMode executionMode();
 
     InternalPlanDescription executionPlanDescription();
+
+    String[] fieldNames();
 
     void setCompletable( Completable completable );
 }

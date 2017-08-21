@@ -40,4 +40,5 @@ abstract class FloatingPointArray extends NumberArray
     {
         return NumberType.FLOATING_POINT;
     }
+
 }

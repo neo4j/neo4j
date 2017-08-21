@@ -27,6 +27,10 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.storable.NumberValue;
+
 import static java.util.Arrays.asList;
 
 public class StreamMatchers
@@ -35,12 +39,31 @@ public class StreamMatchers
     {
     }
 
-    public static Matcher<Record> eqRecord( final Matcher<?>... expectedFieldValues )
+    public static Matcher<AnyValue> greaterThanOrEqualTo( long input )
     {
-        return new TypeSafeMatcher<Record>()
+        return new TypeSafeMatcher<AnyValue>()
         {
             @Override
-            protected boolean matchesSafely( Record item )
+            public void describeTo( Description description )
+            {
+                description.appendText( "Value = " + input );
+
+            }
+
+            @Override
+            protected boolean matchesSafely( AnyValue value )
+            {
+                return value instanceof NumberValue && ((NumberValue) value).longValue() >= input;
+            }
+        };
+    }
+
+    public static Matcher<QueryResult.Record> eqRecord( final Matcher<?>... expectedFieldValues )
+    {
+        return new TypeSafeMatcher<QueryResult.Record>()
+        {
+            @Override
+            protected boolean matchesSafely( QueryResult.Record item )
             {
                 if ( expectedFieldValues.length != item.fields().length )
                 {
@@ -61,13 +84,13 @@ public class StreamMatchers
             public void describeTo( Description description )
             {
                 description.appendText( "Record[" )
-                           .appendList( ", fields=[", ",", "]", asList(expectedFieldValues) );
+                        .appendList( ", fields=[", ",", "]", asList( expectedFieldValues ) );
 
             }
         };
     }
 
-    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher ... records )
+    public static Matcher<BoltResult> equalsStream( final String[] fieldNames, final Matcher... records )
     {
         return new TypeSafeMatcher<BoltResult>()
         {
@@ -85,7 +108,7 @@ public class StreamMatchers
                     item.accept( new BoltResult.Visitor()
                     {
                         @Override
-                        public void visit( Record record )
+                        public void visit( QueryResult.Record record )
                         {
                             if ( !expected.hasNext() || !expected.next().matches( record ) )
                             {
@@ -94,7 +117,7 @@ public class StreamMatchers
                         }
 
                         @Override
-                        public void addMetadata( String key, Object value )
+                        public void addMetadata( String key, AnyValue value )
                         {
 
                         }
@@ -114,7 +137,7 @@ public class StreamMatchers
             {
                 description
                         .appendText( "Stream[" )
-                        .appendValueList( " fieldNames=[",",","]", fieldNames )
+                        .appendValueList( " fieldNames=[", ",", "]", fieldNames )
                         .appendList( ", records=[", ",", "]", asList( records ) );
             }
         };

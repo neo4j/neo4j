@@ -21,8 +21,14 @@ package org.neo4j.values.virtual;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+
+import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.String.format;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertFalse;
 import static org.neo4j.values.storable.Values.booleanArray;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charArray;
@@ -37,6 +43,7 @@ import static org.neo4j.values.virtual.VirtualValueTestUtil.assertEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqual;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.assertNotEqualValues;
 import static org.neo4j.values.virtual.VirtualValueTestUtil.list;
+import static org.neo4j.values.virtual.VirtualValues.range;
 
 public class ListTest
 {
@@ -109,12 +116,12 @@ public class ListTest
         // different value types
         assertNotEqualValues( list( true, true ), intArray( new int[]{0, 0} ) );
         assertNotEqualValues( list( true, true ), longArray( new long[]{0L, 0L} ) );
-        assertNotEqualValues( list( true, true ), shortArray( new short[]{(short)0,(short) 0} ) );
+        assertNotEqualValues( list( true, true ), shortArray( new short[]{(short) 0, (short) 0} ) );
         assertNotEqualValues( list( true, true ), floatArray( new float[]{0.0f, 0.0f} ) );
         assertNotEqualValues( list( true, true ), doubleArray( new double[]{0.0, 0.0} ) );
-        assertNotEqualValues( list( true, true ), charArray( new char[]{'T','T'} ) );
-        assertNotEqualValues( list( true, true ), stringArray( new String[]{"True","True"} ) );
-        assertNotEqualValues( list( true, true ), byteArray( new byte[]{(byte)0,(byte)0} ) );
+        assertNotEqualValues( list( true, true ), charArray( new char[]{'T', 'T'} ) );
+        assertNotEqualValues( list( true, true ), stringArray( new String[]{"True", "True"} ) );
+        assertNotEqualValues( list( true, true ), byteArray( new byte[]{(byte) 0, (byte) 0} ) );
 
         // wrong or missing items
         assertNotEqualValues( list( true ), booleanArray( new boolean[]{true, false} ) );
@@ -136,7 +143,7 @@ public class ListTest
         assertNotEqualValues( list( "hi", "hello" ), stringArray( new String[]{"hi"} ) );
         assertNotEqualValues( list( "hello" ), stringArray( new String[]{"hi"} ) );
 
-        assertNotEqualValues( list(1,'b'),charArray( new char[]{'a','b'} ) );
+        assertNotEqualValues( list( 1, 'b' ), charArray( new char[]{'a', 'b'} ) );
     }
 
     @Test
@@ -146,7 +153,7 @@ public class ListTest
                 list( new String[]{"h"}, 3.0 ),
                 list( new char[]{'h'}, 3 ) );
 
-        assertEqualValues( list("a",'b'),charArray( new char[]{'a','b'} ) );
+        assertEqualValues( list( "a", 'b' ), charArray( new char[]{'a', 'b'} ) );
     }
 
     @Test
@@ -162,13 +169,13 @@ public class ListTest
     {
         assertEqual(
                 list(
-                  booleanArray( new boolean[]{true, false} ),
-                  intArray( new int[]{1, 2} ),
-                  stringArray( new String[]{"Hello", "World"} ) ),
+                        booleanArray( new boolean[]{true, false} ),
+                        intArray( new int[]{1, 2} ),
+                        stringArray( new String[]{"Hello", "World"} ) ),
                 list(
-                  booleanArray( new boolean[]{true, false} ),
-                  intArray( new int[]{1, 2} ),
-                  stringArray( new String[]{"Hello", "World"} ) ) );
+                        booleanArray( new boolean[]{true, false} ),
+                        intArray( new int[]{1, 2} ),
+                        stringArray( new String[]{"Hello", "World"} ) ) );
 
         assertNotEqual(
                 list(
@@ -197,5 +204,79 @@ public class ListTest
         assertEqual(
                 list( "a", list( 'b', list( "c" ) ) ),
                 list( 'a', list( "b", list( 'c' ) ) ) );
+    }
+
+    private ListValue[] equivalentLists =
+            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
+
+                    range( 1L, 8L, 3L ),
+                    VirtualValues.fromArray( Values.longArray( new long[]{1L, 4L, 7L} ) ),
+                    VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
+                    {
+                        long l = ((LongValue) anyValue).longValue();
+                        return l == 1L || l == 4L || l == 7L;
+                    } ),
+                    VirtualValues.slice( list( -2L, 1L, 4L, 7L, 10L ), 1, 4 ),
+                    VirtualValues.drop( list( -2L, 1L, 4L, 7L ), 1 ),
+                    VirtualValues.take( list( 1L, 4L, 7L, 10L, 13L ), 3 ),
+                    VirtualValues.transform( list( 0L, 3L, 6L ),
+                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 1L ) ),
+                    VirtualValues.reverse( list( 7L, 4L, 1L ) ),
+                    VirtualValues.concat( list( 1L, 4L ), list( 7L ) )
+            };
+
+    private ListValue[] nonEquivalentLists =
+            {VirtualValues.list( Values.longValue( 1L ), Values.longValue( 4L ), Values.longValue( 7L ) ),
+
+                    range( 2L, 9L, 3L ),
+                    VirtualValues.fromArray( Values.longArray( new long[]{3L, 6L, 9L} ) ),
+                    VirtualValues.filter( range( 1L, 100, 1L ), anyValue ->
+                    {
+                        long l = ((LongValue) anyValue).longValue();
+                        return l == 4L || l == 7L || l == 10L;
+                    } ),
+                    VirtualValues.slice( list( -2L, 1L, 5L, 8L, 11L ), 1, 4 ),
+                    VirtualValues.drop( list( -2L, 6L, 9L, 12L ), 1 ),
+                    VirtualValues.take( list( 7L, 10L, 13L, 10L, 13L ), 3 ),
+                    VirtualValues.transform( list( 0L, 3L, 6L ),
+                            anyValue -> Values.longValue( ((LongValue) anyValue).longValue() + 8L ) ),
+                    VirtualValues.reverse( list( 15L, 12L, 9L ) ),
+                    VirtualValues.concat( list( 10L, 13L ), list( 16L ) )
+            };
+
+    @Test
+    public void shouldTreatDifferentListImplementationSimilar()
+    {
+        for ( ListValue list1 : equivalentLists )
+        {
+            for ( ListValue list2 : equivalentLists )
+            {
+                assertEqual( list1, list2 );
+                assertArrayEquals(
+                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
+                                list2.getClass().getSimpleName() ),
+                        list1.asArray(), list2.asArray() );
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotTreatDifferentListImplementationSimilarOfNonEquivalentListsSimilar()
+    {
+        for ( ListValue list1 : nonEquivalentLists )
+        {
+            for ( ListValue list2 : nonEquivalentLists )
+            {
+                if ( list1 == list2 )
+                {
+                    continue;
+                }
+                assertNotEqual( list1, list2 );
+                assertFalse(
+                        format( "%s.asArray != %s.toArray", list1.getClass().getSimpleName(),
+                                list2.getClass().getSimpleName() ),
+                        Arrays.equals( list1.asArray(), list2.asArray() ) );
+            }
+        }
     }
 }

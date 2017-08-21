@@ -27,26 +27,33 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.BoltIOException;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
+
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 class CypherAdapterStream extends BoltResult
 {
-    private final Result delegate;
+    private final QueryResult delegate;
     private final String[] fieldNames;
     private CypherAdapterRecord currentRecord;
     private final Clock clock;
 
-    CypherAdapterStream( Result delegate, Clock clock )
+    CypherAdapterStream( QueryResult delegate, Clock clock )
     {
         this.delegate = delegate;
-        this.fieldNames = delegate.columns().toArray( new String[delegate.columns().size()] );
-        this.currentRecord = new CypherAdapterRecord( fieldNames );
+        this.fieldNames = delegate.fieldNames();
+        this.currentRecord = new CypherAdapterRecord( fieldNames.length );
         this.clock = clock;
     }
 
@@ -71,18 +78,18 @@ class CypherAdapterStream extends BoltResult
             visitor.visit( currentRecord.reset( row ) );
             return true;
         } );
-        visitor.addMetadata( "result_consumed_after", clock.millis() - start );
-        QueryExecutionType qt = delegate.getQueryExecutionType();
-        visitor.addMetadata( "type", queryTypeCode( qt.queryType() ) );
+        visitor.addMetadata( "result_consumed_after", longValue( clock.millis() - start ) );
+        QueryExecutionType qt = delegate.executionType();
+        visitor.addMetadata( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
 
-        if ( delegate.getQueryStatistics().containsUpdates() )
+        if ( delegate.queryStatistics().containsUpdates() )
         {
-            Object stats = queryStats( delegate.getQueryStatistics() );
+            MapValue stats = queryStats( delegate.queryStatistics() );
             visitor.addMetadata( "stats", stats );
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
-            ExecutionPlanDescription rootPlanTreeNode = delegate.getExecutionPlanDescription();
+            ExecutionPlanDescription rootPlanTreeNode = delegate.executionPlanDescription();
             String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
             visitor.addMetadata( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
@@ -94,9 +101,9 @@ class CypherAdapterStream extends BoltResult
         }
     }
 
-    private Map<String, Integer> queryStats( QueryStatistics queryStatistics )
+    private MapValue queryStats( QueryStatistics queryStatistics )
     {
-        Map<String, Integer> result = new HashMap<>();
+        Map<String,AnyValue> result = new HashMap<>();
         addIfNonZero( result, "nodes-created", queryStatistics.getNodesCreated() );
         addIfNonZero( result, "nodes-deleted", queryStatistics.getNodesDeleted() );
         addIfNonZero( result, "relationships-created", queryStatistics.getRelationshipsCreated() );
@@ -108,14 +115,14 @@ class CypherAdapterStream extends BoltResult
         addIfNonZero( result, "indexes-removed", queryStatistics.getIndexesRemoved() );
         addIfNonZero( result, "constraints-added", queryStatistics.getConstraintsAdded() );
         addIfNonZero( result, "constraints-removed", queryStatistics.getConstraintsRemoved() );
-        return result;
+        return VirtualValues.map( result );
     }
 
-    private void addIfNonZero( Map<String, Integer> map, String name, int count )
+    private void addIfNonZero( Map<String,AnyValue> map, String name, int count )
     {
         if ( count > 0 )
         {
-            map.put( name, count );
+            map.put( name, intValue( count ) );
         }
     }
 
@@ -123,77 +130,73 @@ class CypherAdapterStream extends BoltResult
     {
         switch ( queryType )
         {
-            case READ_ONLY:
-                return "r";
+        case READ_ONLY:
+            return "r";
 
-            case READ_WRITE:
-                return "rw";
+        case READ_WRITE:
+            return "rw";
 
-            case WRITE:
-                return "w";
+        case WRITE:
+            return "w";
 
-            case SCHEMA_WRITE:
-                return "s";
+        case SCHEMA_WRITE:
+            return "s";
 
-            default:
-                return queryType.name();
+        default:
+            return queryType.name();
         }
     }
 
-    private static class CypherAdapterRecord implements Record
+    //TODO is this copy necessary
+    private static class CypherAdapterRecord implements QueryResult.Record
     {
-        private final Object[] fields; // This exists solely to avoid re-creating a new array for each record
-        private final String[] fieldNames;
+        private final AnyValue[] fields; // This exists solely to avoid re-creating a new array for each record
 
-        private CypherAdapterRecord( String[] fieldNames )
+        private CypherAdapterRecord( int size )
         {
-            this.fields = new Object[fieldNames.length];
-            this.fieldNames = fieldNames;
+            this.fields = new AnyValue[size];
         }
 
         @Override
-        public Object[] fields()
+        public AnyValue[] fields()
         {
             return fields;
         }
 
-        public CypherAdapterRecord reset( Result.ResultRow cypherRecord ) throws BoltIOException
+        public CypherAdapterRecord reset( QueryResult.Record cypherRecord ) throws BoltIOException
         {
-            for ( int i = 0; i < fields.length; i++ )
-            {
-                fields[i] = cypherRecord.get( fieldNames[i] );
-            }
+            System.arraycopy( cypherRecord.fields(), 0, this.fields, 0, this.fields.length );
             return this;
         }
     }
 
     private static class NotificationConverter
     {
-        public static Object convert( Iterable<Notification> notifications )
+        public static AnyValue convert( Iterable<Notification> notifications )
         {
-            List<Object> out = new ArrayList<>();
+            List<AnyValue> out = new ArrayList<>();
             for ( Notification notification : notifications )
             {
-                Map<String, Object> notificationMap = new HashMap<>( 4 );
-                notificationMap.put( "code", notification.getCode() );
-                notificationMap.put( "title", notification.getTitle() );
-                notificationMap.put( "description", notification.getDescription() );
-                notificationMap.put( "severity", notification.getSeverity().toString() );
+                Map<String,AnyValue> notificationMap = new HashMap<>( 4 );
+                notificationMap.put( "code", stringValue( notification.getCode() ) );
+                notificationMap.put( "title", stringValue( notification.getTitle() ) );
+                notificationMap.put( "description", stringValue( notification.getDescription() ) );
+                notificationMap.put( "severity", stringValue( notification.getSeverity().toString() ) );
 
                 InputPosition pos = notification.getPosition(); // position is optional
                 if ( !pos.equals( InputPosition.empty ) )
                 {
                     // only add the position if it is not empty
-                    Map<String,Object> posMap = new HashMap<>( 3 );
-                    posMap.put( "offset", pos.getOffset() );
-                    posMap.put( "line", pos.getLine() );
-                    posMap.put( "column", pos.getColumn() );
-                    notificationMap.put( "position", posMap );
+                    Map<String,AnyValue> posMap = new HashMap<>( 3 );
+                    posMap.put( "offset", intValue( pos.getOffset() ) );
+                    posMap.put( "line", intValue( pos.getLine() ) );
+                    posMap.put( "column", intValue( pos.getColumn() ) );
+                    notificationMap.put( "position", VirtualValues.map( posMap ) );
                 }
 
-                out.add( notificationMap );
+                out.add( VirtualValues.map( notificationMap ) );
             }
-            return out;
+            return VirtualValues.fromList( out );
         }
     }
 }

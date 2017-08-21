@@ -20,20 +20,25 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.values.AnyValue
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
   extends NullInNullOutExpression(collection) with ListSupport {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = {
+
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
     val initMap = m.newWith1(acc, init(m))
-    val computedMap = makeTraversable(value).foldLeft(initMap) { (accMap, k) => {
-        val innerMap = accMap.newWith1(id, k)
-        innerMap.newWith1(acc, expression(innerMap))
-      }
+    val list = makeTraversable(value)
+    val iterator = list.iterator()
+    var computed = initMap
+    while(iterator.hasNext) {
+      val innerMap = computed.newWith1(id, iterator.next())
+      computed = innerMap.newWith1(acc, expression(innerMap))
     }
-    computedMap(acc)
+
+    computed(acc)
   }
 
   def rewrite(f: (Expression) => Expression) =

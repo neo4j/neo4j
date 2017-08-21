@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.graphdb.NotFoundException
+import org.neo4j.values.AnyValue
 
 case class Variable(entityName: String) extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     ctx.getOrElse(entityName, throw new NotFoundException("Unknown variable `%s`.".format(entityName)))
 
   override def toString: String = entityName

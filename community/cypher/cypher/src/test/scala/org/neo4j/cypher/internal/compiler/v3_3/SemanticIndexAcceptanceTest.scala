@@ -30,7 +30,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   override protected def initTest(): Unit = {
     super.initTest()
-    for(i <- 1 to 1000) createLabeledNode("Label")
+    for(_ <- 1 to 1000) createLabeledNode("Label")
   }
 
   def changeLastChar(f: Char => Char)(in: String) =

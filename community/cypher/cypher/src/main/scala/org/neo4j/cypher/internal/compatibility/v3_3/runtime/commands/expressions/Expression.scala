@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QuerySt
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{NumberValue, Values}
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
 
@@ -62,7 +64,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
 
   def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue
 
   override def toString = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
@@ -93,19 +95,18 @@ abstract class Arithmetics(left: Expression, right: Expression)
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState) = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val aVal = left(ctx)
     val bVal = right(ctx)
 
     (aVal, bVal) match {
-      case (null, _) => null
-      case (_, null) => null
-      case (x: Number, y: Number) => calc(x, y)
+      case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
+      case (x: NumberValue, y: NumberValue) => calc(x, y)
       case _ => throwTypeError(bVal, aVal)
     }
   }
 
-  def calc(a: Number, b: Number): Any
+  def calc(a: NumberValue, b: NumberValue): AnyValue
 
   def arguments = Seq(left, right)
 }

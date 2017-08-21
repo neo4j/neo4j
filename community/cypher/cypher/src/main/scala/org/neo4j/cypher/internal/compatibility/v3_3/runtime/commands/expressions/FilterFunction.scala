@@ -21,15 +21,22 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class FilterFunction(collection: Expression, id: String, predicate: Predicate)
   extends NullInNullOutExpression(collection)
   with ListSupport
   with Closure {
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) =
-    makeTraversable(value).filter(element => predicate.isTrue(m.newWith1(id, element)  ))
+
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
+    val traversable = makeTraversable(value)
+    VirtualValues.filter(traversable, new java.util.function.Function[AnyValue, java.lang.Boolean]() {
+      override def apply(v1: AnyValue): java.lang.Boolean =  predicate.isTrue(m.newWith1(id, v1)  )
+    })
+  }
 
   def rewrite(f: (Expression) => Expression) =
     f(FilterFunction(collection.rewrite(f), id, predicate.rewriteAsPredicate(f)))

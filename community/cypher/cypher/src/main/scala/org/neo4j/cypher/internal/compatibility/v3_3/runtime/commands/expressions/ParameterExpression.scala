@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 
 case class ParameterExpression(parameterName: String) extends Expression {
@@ -30,7 +29,7 @@ case class ParameterExpression(parameterName: String) extends Expression {
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
-  def arguments = Seq()
+  def arguments = Seq.empty
 
   def symbolTableDependencies = Set()
 }

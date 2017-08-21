@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
@@ -56,7 +57,7 @@ public class VirtualValueTestUtil
         {
             labelValues[i] = stringValue( labels[i] );
         }
-        return nodeValue( id, labelValues, emptyMap() );
+        return nodeValue( id, stringArray( labels ), emptyMap() );
     }
 
     public static VirtualValue path( VirtualValue... pathElements )
@@ -75,10 +76,10 @@ public class VirtualValueTestUtil
 
     public static EdgeValue edge( long id, long start, long end )
     {
-        return edgeValue( id, start, end, stringValue( "T" ), emptyMap() );
+        return edgeValue( id, node( start ), node( end ), stringValue( "T" ), emptyMap() );
     }
 
-    public static VirtualValue list( Object... objects )
+    public static ListValue list( Object... objects )
     {
         AnyValue[] values = new AnyValue[objects.length];
         for ( int i = 0; i < objects.length; i++ )
@@ -103,15 +104,20 @@ public class VirtualValueTestUtil
 
     public static void assertEqual( VirtualValue a, VirtualValue b )
     {
-        assertTrue( "should be equal", a.equals( b ) );
-        assertTrue( "should be equal", b.equals( a ) );
-        assertTrue( "should have same has", a.hashCode() == b.hashCode() );
+        assertTrue(
+                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+                a.equals( b ) );
+        assertTrue(
+                String.format( "%s should be equal %s", a.getClass().getSimpleName(), b.getClass().getSimpleName() ),
+                b.equals( a ) );
+        assertTrue( String.format( "%s should have same hashcode as %s", a.getClass().getSimpleName(),
+                b.getClass().getSimpleName() ), a.hashCode() == b.hashCode() );
     }
 
     public static void assertNotEqual( VirtualValue a, VirtualValue b )
     {
-        assertFalse( "should not equal", a.equals( b ) );
-        assertFalse( "should not equal", b.equals( a ) );
+        assertFalse( a + " should not equal " + b, a.equals( b ) );
+        assertFalse( b + "should not equal " + a, b.equals( a ) );
     }
 
     public static void assertEqualValues( VirtualValue a, Value b )
@@ -129,14 +135,14 @@ public class VirtualValueTestUtil
     public static NodeValue[] nodes( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> nodeValue( id, new TextValue[]{stringValue( "L" )}, emptyMap() ) )
+                .mapToObj( id -> nodeValue( id, stringArray( "L" ), emptyMap() ) )
                 .toArray( NodeValue[]::new );
     }
 
     public static EdgeValue[] edges( long... ids )
     {
         return Arrays.stream( ids )
-                .mapToObj( id -> edgeValue( id, 0L, 1L, stringValue( "T" ), emptyMap() ) )
+                .mapToObj( id -> edgeValue( id, node( 0L ), node( 1L ), stringValue( "T" ), emptyMap() ) )
                 .toArray( EdgeValue[]::new );
     }
 }

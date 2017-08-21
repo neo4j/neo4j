@@ -63,7 +63,7 @@ public class BoltRequestMessageReader
                 {
                 case INIT:
                     String clientName = unpacker.unpackString();
-                    Map<String,Object> credentials = unpacker.unpackMap();
+                    Map<String,Object> credentials = unpacker.unpackToRawMap();
                     handler.onInit( clientName, credentials );
                     break;
                 case ACK_FAILURE:
@@ -74,7 +74,7 @@ public class BoltRequestMessageReader
                     break;
                 case RUN:
                     String statement = unpacker.unpackString();
-                    Map<String,Object> params = unpacker.unpackMap();
+                    Map<String,Object> params = unpacker.unpackToRawMap();
                     Optional<Neo4jError> error = unpacker.consumeError();
                     if ( error.isPresent() )
                     {

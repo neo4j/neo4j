@@ -23,14 +23,16 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{LongValue, Values}
 
 case class GetDegreePrimitive(offset: Int, typ: Option[String], direction: SemanticDirection) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Long = typ match {
-    case None => state.query.nodeGetDegree(ctx.getLongAt(offset), direction)
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = typ match {
+    case None => Values.longValue(state.query.nodeGetDegree(ctx.getLongAt(offset), direction))
     case Some(t) => state.query.getOptRelTypeId(t) match {
-      case None => 0
-      case Some(relTypeId) => state.query.nodeGetDegree(ctx.getLongAt(offset), direction, relTypeId)
+      case None => Values.ZERO_INT
+      case Some(relTypeId) => Values.longValue(state.query.nodeGetDegree(ctx.getLongAt(offset), direction, relTypeId))
     }
   }
 

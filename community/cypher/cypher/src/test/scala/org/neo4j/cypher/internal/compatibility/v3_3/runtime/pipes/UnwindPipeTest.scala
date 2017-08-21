@@ -22,19 +22,23 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.virtual.VirtualValues.list
+
+import scala.collection.JavaConverters._
 
 class UnwindPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
     val source = new FakePipe(data, "x" -> CTList(CTInteger))
-    val unwindPipe = new UnwindPipe(source, Variable("x"), "y")()
+    val unwindPipe = UnwindPipe(source, Variable("x"), "y")()
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
 
   test("should unwind collection of numbers") {
-    unwindWithInput(List(Map("x" -> List(1, 2)))) should equal(List(
-      Map("y" -> 1, "x" -> List(1, 2)),
-      Map("y" -> 2, "x" -> List(1, 2))))
+    unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should equal(List(
+      Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
+      Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
   }
 
   test("should handle null") {
@@ -44,14 +48,16 @@ class UnwindPipeTest extends CypherFunSuite {
   test("should handle collection of collections") {
 
     val listOfLists = List(
-      List(1, 2, 3),
-      List(4, 5, 6))
+      List(1, 2, 3).asJava,
+      List(4, 5, 6).asJava).asJava
 
     unwindWithInput(List(Map(
       "x" -> listOfLists))) should equal(
 
       List(
-        Map("y" -> List(1, 2, 3), "x" -> listOfLists),
-        Map("y" -> List(4, 5, 6), "x" -> listOfLists)))
+        Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
+                                                                            list(intValue(4), intValue(5), intValue(6)))),
+        Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
+                                                                            list(intValue(4), intValue(5), intValue(6))))))
   }
 }

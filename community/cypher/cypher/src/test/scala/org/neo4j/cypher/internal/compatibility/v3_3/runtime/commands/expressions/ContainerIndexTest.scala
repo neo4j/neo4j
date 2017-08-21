@@ -28,6 +28,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.{Value, Values}
 
 import scala.collection.JavaConverters._
 
@@ -36,16 +39,16 @@ class ContainerIndexTest extends CypherFunSuite {
   val qtx = mock[QueryContext]
   implicit val state = QueryStateHelper.empty.withQueryContext(qtx)
   val ctx = ExecutionContext.empty
-  val expectedNull: Any = null
+  val expectedNull: AnyValue = Values.NO_VALUE
 
   test("handles collection lookup") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))
 
-    idx(0) should equal(1)
-    idx(1) should equal(2)
-    idx(2) should equal(3)
-    idx(3) should equal(4)
-    idx(-1) should equal(4)
+    idx(0) should equal(longValue(1))
+    idx(1) should equal(longValue(2))
+    idx(2) should equal(longValue(3))
+    idx(3) should equal(longValue(4))
+    idx(-1) should equal(longValue(4))
     idx(100) should equal(expectedNull)
   }
 
@@ -66,51 +69,55 @@ class ContainerIndexTest extends CypherFunSuite {
   test("handles scala map lookup") {
     implicit val expression = Literal(Map("a" -> 1, "b" -> "foo"))
 
-    idx("a") should equal(1)
-    idx("b") should equal("foo")
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("a") should equal(longValue(1))
+    idx("b") should equal(Values.stringValue("foo"))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles java map lookup") {
     implicit val expression = Literal(Map("a" -> 1, "b" -> "foo").asJava)
 
-    idx("a") should equal(1)
-    idx("b") should equal("foo")
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("a") should equal(longValue(1))
+    idx("b") should equal(Values.stringValue("foo"))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles node lookup") {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     implicit val expression = Literal(node)
-
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
+    when(qtx.getPropertyKeyId("v")).thenReturn(0)
+    when(qtx.getPropertyKeyId("c")).thenReturn(1)
     val nodeOps = mock[Operations[Node]]
-    when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Int] {
-      override def answer(invocation: InvocationOnMock): Int = 1
+    when(nodeOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
+    })
+    when(nodeOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
     })
     when(qtx.nodeOps).thenReturn(nodeOps)
 
-    idx("v") should equal(1)
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("v") should equal(longValue(1))
+    idx("c") should equal(expectedNull)
   }
 
   test("handles relationship lookup") {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     implicit val expression = Literal(rel)
-
-    when(qtx.getOptPropertyKeyId("v")).thenReturn(Some(0))
-    when(qtx.getOptPropertyKeyId("c")).thenReturn(Some(1))
+    when(qtx.getPropertyKeyId("v")).thenReturn(0)
+    when(qtx.getPropertyKeyId("c")).thenReturn(1)
     val relOps = mock[Operations[Relationship]]
-    when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Int] {
-      override def answer(invocation: InvocationOnMock): Int = 1
+    when(relOps.getProperty(0, 0)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.longValue(1)
+    })
+    when(relOps.getProperty(0, 1)).thenAnswer(new Answer[Value] {
+      override def answer(invocation: InvocationOnMock): Value = Values.NO_VALUE
     })
     when(qtx.relationshipOps).thenReturn(relOps)
 
-    idx("v") should equal(1)
-    idx("c") should equal(null.asInstanceOf[AnyRef])
+    idx("v") should equal(longValue(1))
+    idx("c") should equal(expectedNull)
   }
 
   test("should fail when not integer values are passed") {

@@ -56,7 +56,7 @@ abstract class CharArray extends TextArray
     }
 
     @Override
-    public final boolean equals( Object other )
+    public final boolean eq( Object other )
     {
         if ( other == null )
         {
@@ -71,7 +71,7 @@ abstract class CharArray extends TextArray
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return TextValues.hash( value() );
     }

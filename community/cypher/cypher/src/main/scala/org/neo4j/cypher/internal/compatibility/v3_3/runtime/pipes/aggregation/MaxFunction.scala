@@ -19,33 +19,32 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{Comparer, ExecutionContext}
-import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.values.storable.Values
+import org.neo4j.values.{AnyValue, AnyValues}
 
-trait MinMax extends AggregationFunction with Comparer {
+trait MinMax extends AggregationFunction {
   def value: Expression
   def keep(comparisonResult: Int): Boolean
   def name: String
 
-  private var biggestSeen: Any = null
+  private var biggestSeen: AnyValue = Values.NO_VALUE
 
-  def result(implicit state: QueryState): Any = biggestSeen
+  def result(implicit state: QueryState): AnyValue = biggestSeen
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {
-      case null =>
-      case x: Comparable[_] => checkIfLargest(x)
-      case _ => throw new SyntaxException("MIN/MAX can only handle values of Comparable type, or null. This was a :" + value)
+      case v if v == Values.NO_VALUE =>
+      case x: AnyValue => checkIfLargest(x)
     }
   }
 
-  private def checkIfLargest(value: Any)(implicit qtx: QueryState) {
-    if (biggestSeen == null) {
+  private def checkIfLargest(value: AnyValue)(implicit qtx: QueryState) {
+    if (biggestSeen == Values.NO_VALUE) {
       biggestSeen = value
-    } else if (keep(compareForOrderability(Some(name), biggestSeen, value))) {
+    } else if (keep(AnyValues.COMPARATOR.compare(biggestSeen, value))) {
       biggestSeen = value
     }
   }

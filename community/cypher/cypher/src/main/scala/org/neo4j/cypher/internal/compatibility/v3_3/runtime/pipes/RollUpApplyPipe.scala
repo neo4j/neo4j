@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.virtual.VirtualValues
 
 case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identifierToCollect: String, nullableIdentifiers: Set[String])
                           (val id: Id = new Id)
@@ -29,13 +31,13 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
     input.map {
       ctx =>
-        if (nullableIdentifiers.map(ctx).contains(null)) {
-          ctx += collectionName -> null
+        if (nullableIdentifiers.map(ctx).contains(NO_VALUE)) {
+          ctx += collectionName -> NO_VALUE
         } else {
           val original = ctx.createClone()
           val innerState = state.withInitialContext(ctx)
           val innerResults = rhs.createResults(innerState)
-          val collection = innerResults.map(m => m(identifierToCollect)).toList
+          val collection = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray:_*)
           original += collectionName -> collection
         }
     }

@@ -30,6 +30,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.EdgeValue
 
 import scala.collection.Iterator
 
@@ -72,7 +75,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
+  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
   manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
@@ -166,9 +169,9 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
 
-  override def relationshipStartNode(rel: Relationship) = inner.relationshipStartNode(rel)
+  override def edgeGetStartNode(edge: EdgeValue) = inner.edgeGetStartNode(edge)
 
-  override def relationshipEndNode(rel: Relationship) = inner.relationshipEndNode(rel)
+  override def edgeGetEndNode(edge: EdgeValue) = inner.edgeGetEndNode(edge)
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = singleDbHit(inner.nodeGetDegree(node, dir))
 
@@ -178,7 +181,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
 
   override def variableLengthPathExpand(node: PatternNode,
-                                        realNode: Node,
+                                        realNode: Long,
                                         minHops: Option[Int],
                                         maxHops: Option[Int],
                                         direction: SemanticDirection,
@@ -196,12 +199,12 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds:_*)
 
-  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander,
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
                                   filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
     singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander,
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
                                pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
@@ -228,10 +231,11 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def isGraphKernelResultValue(v: Any): Boolean =
     inner.isGraphKernelResultValue(v)
 
-  override def detachDeleteNode(node: Node): Int = manyDbHits(inner.detachDeleteNode(node))
+  override def detachDeleteNode(node: Long): Int = manyDbHits(inner.detachDeleteNode(node))
 
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
+  override def asObject(value: AnyValue): Any = inner.asObject(value)
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
@@ -240,14 +244,14 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
   protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
 
-  override def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
+  override def delete(id: Long): Unit = singleDbHit(inner.delete(id))
 
-  override def setProperty(obj: Long, propertyKey: Int, value: Any): Unit =
+  override def setProperty(obj: Long, propertyKey: Int, value: Value): Unit =
     singleDbHit(inner.setProperty(obj, propertyKey, value))
 
   override def getById(id: Long): T = inner.getById(id)
 
-  override def getProperty(obj: Long, propertyKeyId: Int): Any = singleDbHit(inner.getProperty(obj, propertyKeyId))
+  override def getProperty(obj: Long, propertyKeyId: Int): Value = singleDbHit(inner.getProperty(obj, propertyKeyId))
 
   override def hasProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.hasProperty(obj, propertyKeyId))
 
@@ -263,7 +267,7 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   override def allPrimitive: PrimitiveLongIterator = manyDbHits(inner.allPrimitive)
 
-  override def isDeletedInThisTx(obj: T): Boolean = inner.isDeletedInThisTx(obj)
+  override def isDeletedInThisTx(id: Long): Boolean = inner.isDeletedInThisTx(id)
 
   override def acquireExclusiveLock(obj: Long): Unit = inner.acquireExclusiveLock(obj)
 

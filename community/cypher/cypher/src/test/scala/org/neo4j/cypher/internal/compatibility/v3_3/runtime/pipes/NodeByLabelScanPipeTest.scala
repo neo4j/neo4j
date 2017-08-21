@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class NodeByLabelScanPipeTest extends CypherFunSuite {
 
@@ -31,7 +32,7 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
 
   test("should scan labeled nodes") {
     // given
-    val nodes = List(mock[Node], mock[Node])
+    val nodes = List(nodeProxy(1), nodeProxy(2))
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].getNodesByLabel(12)).thenReturn(nodes.iterator).getMock[QueryContext]
     )
@@ -43,6 +44,12 @@ class NodeByLabelScanPipeTest extends CypherFunSuite {
     val result = NodeByLabelScanPipe("a", LazyLabel(LabelName("Foo")(null)))().createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(nodes)
+    result.map(_("a")).toList should equal(List(fromNodeProxy(nodeProxy(1)), fromNodeProxy(nodeProxy(2))))
+  }
+
+  private def nodeProxy(id: Long) = {
+    val node = mock[Node]
+    when(node.getId).thenReturn(id)
+    node
   }
 }

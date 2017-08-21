@@ -20,6 +20,7 @@
 package org.neo4j.bolt.v1.runtime;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.values.AnyValue;
 
 /**
  * Callback for handling the result of requests. For a given session, callbacks will be invoked serially,
@@ -33,7 +34,7 @@ public interface BoltResponseHandler
 
     void onRecords( BoltResult result, boolean pull ) throws Exception;
 
-    void onMetadata( String key, Object value );
+    void onMetadata( String key, AnyValue value );
 
     /** Called when the state machine ignores an operation, because it is waiting for an error to be acknowledged */
     void markIgnored();

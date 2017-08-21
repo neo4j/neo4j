@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen
 import java.time.Clock
 import java.util
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{CodeStructure, CodeStructureResult}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledExecutionResult, CompiledPlan, RunnablePlan}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, PlanFingerprint, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{PlanFingerprint, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription, LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, ProduceResult}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlan2PlanDescription, LogicalPlanIdentificationBuilder}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.{PlannerName, SemanticTable}
@@ -65,7 +65,7 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
             None
         }
 
-        val descriptionTree = LogicalPlan2PlanDescription(plan, idMap)
+        val descriptionTree = LogicalPlan2PlanDescription(plan, idMap, plannerName)
         val description: InternalPlanDescription = query.code.foldLeft(descriptionTree) {
           case (descriptionRoot, code) => descriptionRoot.addArgument(code)
         }
@@ -90,7 +90,8 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery], clock: Clock, 
   private def generateQuery(plan: LogicalPlan, semantics: SemanticTable, ids: Map[LogicalPlan, Id],
                             columns: Seq[String], conf: CodeGenConfiguration): CodeStructureResult[GeneratedQuery] = {
     import LogicalPlanConverter._
-    implicit val context = new CodeGenContext(semantics, ids)
+    val lookup = columns.indices.map(i => columns(i) -> i).toMap
+    implicit val context = new CodeGenContext(semantics, ids, lookup)
     val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id

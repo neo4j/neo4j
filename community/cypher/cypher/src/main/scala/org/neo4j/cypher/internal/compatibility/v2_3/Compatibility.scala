@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{EntityAccessor, Ex
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{PlanContext, QueryContext}
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.RewriterStepSequencer
 import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => ExplainModev2_3, NormalMode => NormalModev2_3, ProfileMode => ProfileModev2_3, _}
-import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.frontend.v3_3
+import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -61,25 +62,29 @@ trait Compatibility {
 
   implicit val executionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer, preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
+  def produceParsedQuery(preParsedQuery: PreParsedQuery, tracer: CompilationPhaseTracer,
+                         preParsingNotifications: Set[org.neo4j.graphdb.Notification]) = {
     import org.neo4j.cypher.internal.compatibility.v2_3.helpers.as2_3
     val notificationLogger = new RecordingNotificationLogger
     val preparedQueryForV_2_3: Try[PreparedQuery] =
       Try(compiler.prepareQuery(preParsedQuery.statement,
-        preParsedQuery.rawStatement,
-        notificationLogger,
-        preParsedQuery.planner.name,
-        Some(as2_3(preParsedQuery.offset)), tracer))
+                                preParsedQuery.rawStatement,
+                                notificationLogger,
+                                preParsedQuery.planner.name,
+                                Some(as2_3(preParsedQuery.offset)), tracer))
     new ParsedQuery {
-      def plan(transactionalContext: TransactionalContextWrapper, tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler.runSafely {
-        val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
-        val (planImpl, extractedParameters) = compiler.planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
+      def plan(transactionalContext: TransactionalContextWrapper,
+               tracer: v3_3.phases.CompilationPhaseTracer): (org.neo4j.cypher.internal.ExecutionPlan, Map[String, Any]) = exceptionHandler
+        .runSafely {
+          val planContext: PlanContext = new TransactionBoundPlanContext(transactionalContext)
+          val (planImpl, extractedParameters) = compiler
+            .planPreparedQuery(preparedQueryForV_2_3.get, planContext, as2_3(tracer))
 
-        // Log notifications/warnings from planning
-        planImpl.notifications(planContext).foreach(notificationLogger += _)
+          // Log notifications/warnings from planning
+          planImpl.notifications(planContext).foreach(notificationLogger += _)
 
-        (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
-      }
+          (new ExecutionPlanWrapper(planImpl, preParsingNotifications, as2_3(preParsedQuery.offset)), extractedParameters)
+        }
 
       override protected val trier = preparedQueryForV_2_3
     }
@@ -101,11 +106,14 @@ trait Compatibility {
       val query = transactionalContext.tc.executingQuery()
 
       exceptionHandler.runSafely {
-        val innerResult = inner.run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
-        new ClosingExecutionResult(
-          query,
-          new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
-          exceptionHandler.runSafely
+        val innerResult = inner
+          .run(queryContext(transactionalContext), transactionalContext.statement, innerExecutionMode, params)
+
+        new ExecutionResult(
+          new ClosingExecutionResult(
+            query,
+            new ExecutionResultWrapper(innerResult, inner.plannerUsed, inner.runtimeUsed, preParsingNotifications, Some(offSet)),
+            exceptionHandler.runSafely)
         )
       }
     }

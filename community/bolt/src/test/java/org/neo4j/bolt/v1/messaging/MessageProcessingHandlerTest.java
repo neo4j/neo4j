@@ -29,12 +29,12 @@ import org.neo4j.bolt.v1.runtime.Neo4jError;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
+import org.neo4j.values.virtual.MapValue;
 
 import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -51,7 +51,7 @@ public class MessageProcessingHandlerTest
         BoltResponseMessageHandler<IOException> msgHandler = newResponseHandlerMock();
         doThrow( new RuntimeException( "Something went horribly wrong" ) )
                 .when( msgHandler )
-                .onSuccess( anyMapOf( String.class, Object.class ) );
+                .onSuccess( any( MapValue.class ) );
 
         BoltWorker worker = mock( BoltWorker.class );
         MessageProcessingHandler handler =

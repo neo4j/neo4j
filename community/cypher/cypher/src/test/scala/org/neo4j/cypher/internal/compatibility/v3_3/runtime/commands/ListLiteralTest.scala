@@ -24,63 +24,64 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{FALSE, NO_VALUE, TRUE}
 
 class ListLiteralTest extends CypherFunSuite {
 
   test("any") {
-    Seq() any false
-    Seq(true) any true
-    Seq(false) any false
-    Seq(null) any null
-    Seq(null, true) any true
-    Seq(null, false) any null
-    Seq(false, null) any null
-    Seq(true, null) any true
+    Seq() any FALSE
+    Seq(true) any TRUE
+    Seq(false) any FALSE
+    Seq(null) any NO_VALUE
+    Seq(null, true) any TRUE
+    Seq(null, false) any NO_VALUE
+    Seq(false, null) any NO_VALUE
+    Seq(true, null) any TRUE
   }
 
   test("all") {
-    Seq() all true
-    Seq(true) all true
-    Seq(false) all false
-    Seq(null) all null
-    Seq(null, true) all null
-    Seq(null, false) all false
-    Seq(false, null) all false
-    Seq(true, null) all null
+    Seq() all TRUE
+    Seq(true) all TRUE
+    Seq(false) all FALSE
+    Seq(null) all NO_VALUE
+    Seq(null, true) all NO_VALUE
+    Seq(null, false) all FALSE
+    Seq(false, null) all FALSE
+    Seq(true, null) all NO_VALUE
   }
 
   test("single") {
-    Seq() single false
-    Seq(true) single true
-    Seq(false) single false
-    Seq(null) single null
-    Seq(null, true) single null
-    Seq(null, false) single null
-    Seq(false, null) single null
-    Seq(true, null) single null
-    Seq(true, false) single true
-    Seq(false, true) single true
-    Seq(true, true) single false
-    Seq(false, true, true) single false
-    Seq(false, true, false) single true
-    Seq(false, true, null) single null
+    Seq() single FALSE
+    Seq(true) single TRUE
+    Seq(false) single FALSE
+    Seq(null) single NO_VALUE
+    Seq(null, true) single NO_VALUE
+    Seq(null, false) single NO_VALUE
+    Seq(false, null) single NO_VALUE
+    Seq(true, null) single NO_VALUE
+    Seq(true, false) single TRUE
+    Seq(false, true) single TRUE
+    Seq(true, true) single FALSE
+    Seq(false, true, true) single FALSE
+    Seq(false, true, false) single TRUE
+    Seq(false, true, null) single NO_VALUE
   }
 
   test("none") {
-    Seq() none true
-    Seq(true) none false
-    Seq(false) none true
-    Seq(null) none null
-    Seq(null, true) none false
-    Seq(null, false) none null
-    Seq(false, null) none null
-    Seq(true, null) none false
-    Seq(true, false) none false
-    Seq(false, true) none false
-    Seq(true, true) none false
-    Seq(false, true, true) none false
-    Seq(false, true, false) none false
-    Seq(false, true, null) none false
+    Seq() none TRUE
+    Seq(true) none FALSE
+    Seq(false) none TRUE
+    Seq(null) none NO_VALUE
+    Seq(null, true) none FALSE
+    Seq(null, false) none NO_VALUE
+    Seq(false, null) none NO_VALUE
+    Seq(true, null) none FALSE
+    Seq(true, false) none FALSE
+    Seq(false, true) none FALSE
+    Seq(true, true) none FALSE
+    Seq(false, true, true) none FALSE
+    Seq(false, true, false) none FALSE
+    Seq(false, true, null) none FALSE
   }
 
   implicit class Check(values: Seq[_]) {

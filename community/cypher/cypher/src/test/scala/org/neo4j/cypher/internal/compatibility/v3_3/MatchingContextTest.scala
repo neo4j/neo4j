@@ -31,7 +31,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-
+import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import scala.collection.Map
 
 class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder with QueryStateTestSupport {
@@ -441,11 +442,11 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   private var matchingContext: MatchingContext = null
 
   private def getMatches(params: (String, Any)*) = withQueryState { queryState =>
-    val ctx = ExecutionContext().newWith(params)
+    val ctx = ExecutionContext().newWith(params.map(p => (p._1, AnyValues.of(p._2))))
     matchingContext.getMatches(ctx, queryState).toList
   }
 
-  private def assertMatches(matches: List[Map[String, Any]], expectedSize: Int, expected: Map[String, Any]*) {
+  private def assertMatches(matches: List[Map[String, Any]], expectedSize: Int, expected: Map[String, AnyValue]*) {
     matches should have size expectedSize
     expected.foreach(expectation => {
       withClue("Didn't find the expected row: ") {

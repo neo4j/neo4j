@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_3
 import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InternalQueryStatistics
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
@@ -31,6 +31,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.Iterator
 
@@ -70,7 +73,7 @@ trait QueryContext extends TokenContext {
 
   def getOrCreateRelTypeId(relTypeName: String): Int
 
-  def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship]
 
   def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator
 
@@ -96,6 +99,7 @@ trait QueryContext extends TokenContext {
 
   def dropIndexRule(descriptor: IndexDescriptor)
 
+  //TODO this should be `Seq[AnyValue]`
   def indexSeek(index: IndexDescriptor, values: Seq[Any]): Iterator[Node]
 
   def indexSeekByRange(index: IndexDescriptor, value: Any): Iterator[Node]
@@ -136,7 +140,7 @@ trait QueryContext extends TokenContext {
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int)
 
-  def getOptStatistics: Option[InternalQueryStatistics] = None
+  def getOptStatistics: Option[QueryStatistics] = None
 
   def getImportURL(url: URL): Either[String,URL]
 
@@ -145,9 +149,9 @@ trait QueryContext extends TokenContext {
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
-  def relationshipStartNode(rel: Relationship): Node
+  def edgeGetStartNode(edge: EdgeValue): NodeValue
 
-  def relationshipEndNode(rel: Relationship): Node
+  def edgeGetEndNode(edge: EdgeValue): NodeValue
 
   def nodeGetDegree(node: Long, dir: SemanticDirection): Int
 
@@ -155,18 +159,20 @@ trait QueryContext extends TokenContext {
 
   def nodeIsDense(node: Long): Boolean
 
+  def asObject(value: AnyValue): Any
+
   // Legacy dependency between kernel and compiler
   def variableLengthPathExpand(node: PatternNode,
-                               realNode: Node,
+                               realNode: Long,
                                minHops: Option[Int],
                                maxHops: Option[Int],
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
 
-  def singleShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
 
-  def allShortestPath(left: Node, right: Node, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
                       filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 
   def nodeCountByCountStore(labelId: Int): Long
@@ -193,20 +199,20 @@ trait QueryContext extends TokenContext {
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
 
-  def detachDeleteNode(node: Node): Int
+  def detachDeleteNode(id: Long): Int
 
   def assertSchemaWritesAllowed(): Unit
 
 }
 
 trait Operations[T <: PropertyContainer] {
-  def delete(obj: T)
+  def delete(id: Long)
 
-  def setProperty(obj: Long, propertyKeyId: Int, value: Any)
+  def setProperty(obj: Long, propertyKeyId: Int, value: Value)
 
   def removeProperty(obj: Long, propertyKeyId: Int)
 
-  def getProperty(obj: Long, propertyKeyId: Int): Any
+  def getProperty(obj: Long, propertyKeyId: Int): Value
 
   def hasProperty(obj: Long, propertyKeyId: Int): Boolean
 
@@ -218,7 +224,7 @@ trait Operations[T <: PropertyContainer] {
 
   def indexQuery(name: String, query: Any): Iterator[T]
 
-  def isDeletedInThisTx(obj: T): Boolean
+  def isDeletedInThisTx(id: Long): Boolean
 
   def all: Iterator[T]
 

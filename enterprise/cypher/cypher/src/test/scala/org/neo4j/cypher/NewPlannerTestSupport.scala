@@ -21,17 +21,18 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.NewPlannerMonitor.{NewPlannerMonitorCall, UnableToHandleQuery}
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, NewRuntimeMonitorCall, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility.v3_3.ExecutionResultWrapper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, NewRuntimeSuccessRateMonitor}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.NewRuntimeSuccessRateMonitor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compatibility.{ClosingExecutionResult, v2_3, v3_1}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal.javacompat.ExecutionResult
+import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.Exceptions
@@ -358,19 +359,11 @@ trait NewPlannerTestSupport extends CypherTestSupport {
   }
 
   protected def innerExecute(queryText: String, params: (String, Any)*): InternalExecutionResult = {
-    val result: ExecutionResult = eengine.execute(queryText, params.toMap, graph.transactionalContext(query = queryText -> params.toMap))
+    val result: Result = eengine.execute(queryText, params.toMap, graph.transactionalContext(query = queryText -> params.toMap))
     rewindableResult(result)
   }
 
-  private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
-    result match {
-      case e: ClosingExecutionResult => e.inner match {
-        case _: ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
-      }
-    }
-  }
+  private def rewindableResult(result: Result): InternalExecutionResult = RewindableExecutionResult(result)
 
   override def execute(queryText: String, params: (String, Any)*) =
     fail("Don't use execute together with NewPlannerTestSupport")

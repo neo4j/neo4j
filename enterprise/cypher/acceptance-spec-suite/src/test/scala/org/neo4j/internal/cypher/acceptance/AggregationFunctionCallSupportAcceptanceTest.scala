@@ -61,7 +61,7 @@ class AggregationFunctionCallSupportAcceptanceTest extends ProcedureCallAcceptan
 
     // Using graph execute to get a Java value
     graph.execute("RETURN my.first.value() AS out").stream().toArray.toList should equal(List(
-      java.util.Collections.singletonMap("out", stream)
+      java.util.Collections.singletonMap("out", value)
     ))
   }
 

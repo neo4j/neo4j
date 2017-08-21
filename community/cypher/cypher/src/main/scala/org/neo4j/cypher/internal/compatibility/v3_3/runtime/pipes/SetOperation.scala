@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import java.util.function.BiConsumer
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsMap}
@@ -26,10 +28,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNe
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue}
 
 import scala.collection.Map
 
 sealed trait SetOperation {
+
   def set(executionContext: ExecutionContext, state: QueryState): Unit
 
   def name: String
@@ -41,55 +47,59 @@ object SetOperation {
     /* Make the map expression look like a map */
     val qtx = state.query
     expression(executionContext)(state) match {
-      case IsMap(createMapFrom) => propertyKeyMap(qtx, createMapFrom(qtx))
+      case IsMap(map) => propertyKeyMap(qtx, map(qtx))
       case x => throw new CypherTypeException(s"Expected $expression to be a map, but it was :`$x`")
     }
   }
 
-  private def propertyKeyMap(qtx: QueryContext, map: Map[String, Any]): Map[Int, Any] = {
-    var builder = Map.newBuilder[Int, Any]
-
-    for ((k, v) <- map) {
-      if (v == null) {
-        val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
-        if (optPropertyKeyId.isDefined) {
-          builder += optPropertyKeyId.get -> v
+  private def propertyKeyMap(qtx: QueryContext, map: MapValue): Map[Int, AnyValue] = {
+    var builder = Map.newBuilder[Int, AnyValue]
+    map.foreach(new BiConsumer[String, AnyValue] {
+      override def accept(k: String, v: AnyValue): Unit = {
+        if (v == Values.NO_VALUE) {
+          val optPropertyKeyId = qtx.getOptPropertyKeyId(k)
+          if (optPropertyKeyId.isDefined) {
+            builder += optPropertyKeyId.get -> v
+          }
+        }
+        else {
+          builder += qtx.getOrCreatePropertyKeyId(k) -> v
         }
       }
-      else {
-        builder += qtx.getOrCreatePropertyKeyId(k) -> v
-      }
-    }
+    })
 
     builder.result()
   }
 }
 
 abstract class AbstractSetPropertyOperation extends SetOperation {
+
   protected def setProperty[T <: PropertyContainer](context: ExecutionContext, state: QueryState, ops: Operations[T],
-                          itemId: Long, propertyKey: LazyPropertyKey, expression: Expression) = {
+                                                    itemId: Long, propertyKey: LazyPropertyKey,
+                                                    expression: Expression) = {
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
-        .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
+      .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
 
     val value = makeValueNeoSafe(expression(context)(state))
 
-    if (value == null) {
+    if (value == Values.NO_VALUE) {
       if (ops.hasProperty(itemId, propertyId)) ops.removeProperty(itemId, propertyId)
     }
     else ops.setProperty(itemId, propertyId, value)
   }
 }
 
-abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey, expression: Expression)
+abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: String, propertyKey: LazyPropertyKey,
+                                                                  expression: Expression)
   extends AbstractSetPropertyOperation {
 
   private val needsExclusiveLock = Expression.hasPropertyReadDependency(itemName, expression, propertyKey.name)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val item = executionContext.get(itemName).get
-    if (item != null) {
+    if (item != Values.NO_VALUE) {
       val itemId = id(item)
       val ops = operations(state.query)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
@@ -101,6 +111,7 @@ abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: Stri
   }
 
   protected def id(item: Any): Long
+
   protected def operations(qtx: QueryContext): Operations[T]
 }
 
@@ -110,7 +121,7 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
 
   override def name = "SetNodeProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -121,7 +132,7 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
 
   override def name = "SetRelationshipProperty"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -133,11 +144,12 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext)(state)
-    if (resolvedEntity != null) {
+    if (resolvedEntity != Values.NO_VALUE) {
       val (entityId, ops) = resolvedEntity match {
-        case node: Node => (node.getId, state.query.nodeOps)
-        case rel: Relationship => (rel.getId, state.query.relationshipOps)
-        case _ => throw new InvalidArgumentException(s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
+        case node: NodeValue => (node.id(), state.query.nodeOps)
+        case rel: EdgeValue => (rel.id(), state.query.relationshipOps)
+        case _ => throw new InvalidArgumentException(
+          s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
       }
       // better safe than sorry let's lock the entity
       ops.acquireExclusiveLock(entityId)
@@ -150,12 +162,13 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
 }
 
 abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: String, expression: Expression,
-                                           removeOtherProps: Boolean) extends SetOperation {
+                                                                   removeOtherProps: Boolean) extends SetOperation {
+
   private val needsExclusiveLock = Expression.mapExpressionHasPropertyReadDependency(itemName, expression)
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val item = executionContext.get(itemName).get
-    if (item != null) {
+    if (item != Values.NO_VALUE) {
       val ops = operations(state.query)
       val itemId = id(item)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
@@ -167,15 +180,17 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
+
   protected def id(item: Any): Long
+
   protected def operations(qtx: QueryContext): Operations[T]
 
   private def setPropertiesFromMap(qtx: QueryContext, ops: Operations[T], itemId: Long,
-                                                           map: Map[Int, Any], removeOtherProps: Boolean) {
+                                   map: Map[Int, AnyValue], removeOtherProps: Boolean) {
 
     /*Set all map values on the property container*/
     for ((k, v) <- map) {
-      if (v == null)
+      if (v == Values.NO_VALUE)
         ops.removeProperty(itemId, k)
       else
         ops.setProperty(itemId, k, makeValueNeoSafe(v))
@@ -198,7 +213,7 @@ case class SetNodePropertyFromMapOperation(nodeName: String, expression: Express
 
   override def name = "SetNodePropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Node](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[NodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
 }
@@ -209,7 +224,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String, expression: 
 
   override def name = "SetRelationshipPropertyFromMap"
 
-  override protected def id(item: Any) = CastSupport.castOrFail[Relationship](item).getId
+  override protected def id(item: Any) = CastSupport.castOrFail[EdgeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
 }
@@ -217,9 +232,9 @@ case class SetRelationshipPropertyFromMapOperation(relName: String, expression: 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value = executionContext.get(nodeName).get
-    if (value != null) {
-      val nodeId = CastSupport.castOrFail[Node](value).getId
+    val value: AnyValue = executionContext.get(nodeName).get
+    if (value != Values.NO_VALUE) {
+      val nodeId = CastSupport.castOrFail[NodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query).id)
       state.query.setLabelsOnNode(nodeId, labelIds.iterator)
     }

@@ -43,7 +43,8 @@ import static org.neo4j.graphdb.security.AuthorizationViolationException.PERMISS
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.security.AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
 import static org.neo4j.server.security.enterprise.auth.InternalFlatFileRealm.IS_SUSPENDED;
-import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures.exceptionsInProcedure;
+import static org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase.ClassWithProcedures
+        .exceptionsInProcedure;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
@@ -61,7 +62,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         assertSuccess( readSubject, "CALL dbms.procedures", r ->
         {
-            Stream<Map<String, Object>> securityProcedures = r.stream().filter( s ->
+            Stream<Map<String,Object>> securityProcedures = r.stream().filter( s ->
             {
                 String name = s.get( "name" ).toString();
                 String description = s.get( "description" ).toString();
@@ -553,7 +554,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldFailToRemoveRoleFromUserIfNotAdmin() throws Exception
     {
-        testFailRemoveRoleFromUser( pwdSubject, PUBLISHER, "readSubject",CHANGE_PWD_ERR_MSG );
+        testFailRemoveRoleFromUser( pwdSubject, PUBLISHER, "readSubject", CHANGE_PWD_ERR_MSG );
         testFailRemoveRoleFromUser( readSubject, PUBLISHER, "readSubject", PERMISSION_DENIED );
         testFailRemoveRoleFromUser( writeSubject, PUBLISHER, "readSubject", PERMISSION_DENIED );
 
@@ -608,7 +609,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldNotCreateExistingRole() throws Exception
     {
-        assertFail( adminSubject, format( "CALL dbms.security.createRole('%s')", ARCHITECT),
+        assertFail( adminSubject, format( "CALL dbms.security.createRole('%s')", ARCHITECT ),
                 "The specified role 'architect' already exists" );
         assertEmpty( adminSubject, "CALL dbms.security.createRole('new_role')" );
         assertFail( adminSubject, "CALL dbms.security.createRole('new_role')",
@@ -642,11 +643,11 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldThrowIfNonAdminTryingToDeleteRole() throws Exception
     {
-        assertEmpty( adminSubject, format("CALL dbms.security.createRole('%s')", "new_role" ) );
-        testFailDeleteRole( schemaSubject, "new_role", PERMISSION_DENIED);
-        testFailDeleteRole( writeSubject, "new_role", PERMISSION_DENIED);
-        testFailDeleteRole( readSubject, "new_role", PERMISSION_DENIED);
-        testFailDeleteRole( noneSubject, "new_role", PERMISSION_DENIED);
+        assertEmpty( adminSubject, format( "CALL dbms.security.createRole('%s')", "new_role" ) );
+        testFailDeleteRole( schemaSubject, "new_role", PERMISSION_DENIED );
+        testFailDeleteRole( writeSubject, "new_role", PERMISSION_DENIED );
+        testFailDeleteRole( readSubject, "new_role", PERMISSION_DENIED );
+        testFailDeleteRole( noneSubject, "new_role", PERMISSION_DENIED );
     }
 
     @Test
@@ -659,7 +660,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void shouldDeleteRole() throws Exception
     {
         neo.getLocalUserManager().newRole( "new_role" );
-        assertEmpty( adminSubject, format("CALL dbms.security.deleteRole('%s')", "new_role") );
+        assertEmpty( adminSubject, format( "CALL dbms.security.deleteRole('%s')", "new_role" ) );
 
         assertThat( userManager.getAllRoleNames(), not( contains( "new_role" ) ) );
     }
@@ -668,7 +669,8 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     public void deletingRoleAssignedToSelfShouldWork() throws Exception
     {
         assertEmpty( adminSubject, format( "CALL dbms.security.createRole('%s')", "new_role" ) );
-        assertEmpty( adminSubject, format( "CALL dbms.security.addRoleToUser('%s', '%s')", "new_role", "adminSubject" ) );
+        assertEmpty( adminSubject,
+                format( "CALL dbms.security.addRoleToUser('%s', '%s')", "new_role", "adminSubject" ) );
         assertThat( userManager.getRoleNamesForUser( "adminSubject" ), hasItem( "new_role" ) );
 
         assertEmpty( this.adminSubject, format( "CALL dbms.security.deleteRole('%s')", "new_role" ) );
@@ -688,19 +690,19 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldReturnUsersWithRoles() throws Exception
     {
-        Map<String, Object> expected = map(
+        Map<String,Object> expected = map(
                 "adminSubject", listOf( ADMIN ),
                 "readSubject", listOf( READER ),
                 "schemaSubject", listOf( ARCHITECT ),
                 "writeSubject", listOf( READER, PUBLISHER ),
                 "editorSubject", listOf( EDITOR ),
-                "pwdSubject", listOf( ),
-                "noneSubject", listOf( ),
+                "pwdSubject", listOf(),
+                "noneSubject", listOf(),
                 "neo4j", listOf( ADMIN )
         );
         userManager.addRoleToUser( READER, "writeSubject" );
         assertSuccess( adminSubject, "CALL dbms.security.listUsers()",
-                r -> assertKeyIsMap( r, "username", "roles", expected ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( expected ) ) );
     }
 
     @Test
@@ -719,7 +721,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
         userManager.suspendUser( "writeSubject" );
         userManager.suspendUser( "pwdSubject" );
         assertSuccess( adminSubject, "CALL dbms.security.listUsers()",
-                r -> assertKeyIsMap( r, "username", "flags", expected ) );
+                r -> assertKeyIsMap( r, "username", "flags", valueOf( expected ) ) );
     }
 
     @Test
@@ -727,16 +729,16 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     {
         userManager.addRoleToUser( READER, "writeSubject" );
         assertSuccess( adminSubject, "CALL dbms.security.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "adminSubject", listOf( ADMIN ) ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "adminSubject", listOf( ADMIN ) ) ) ) );
         assertSuccess( readSubject, "CALL dbms.security.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "readSubject", listOf( READER ) ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "readSubject", listOf( READER ) ) ) ) );
         assertSuccess( schemaSubject, "CALL dbms.security.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "schemaSubject", listOf( ARCHITECT ) ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "schemaSubject", listOf( ARCHITECT ) ) ) ) );
         assertSuccess( writeSubject, "CALL dbms.security.showCurrentUser()",
                 r -> assertKeyIsMap( r, "username", "roles",
-                        map( "writeSubject", listOf( READER, PUBLISHER ) ) ) );
+                        valueOf( map( "writeSubject", listOf( READER, PUBLISHER ) ) ) ) );
         assertSuccess( noneSubject, "CALL dbms.security.showCurrentUser()",
-                r -> assertKeyIsMap( r, "username", "roles", map( "noneSubject", listOf() ) ) );
+                r -> assertKeyIsMap( r, "username", "roles", valueOf( map( "noneSubject", listOf() ) ) ) );
     }
 
     @Test
@@ -769,7 +771,7 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
                 "empty", listOf()
         );
         assertSuccess( adminSubject, "CALL dbms.security.listRoles()",
-                r -> assertKeyIsMap( r, "role", "users", expected ) );
+                r -> assertKeyIsMap( r, "role", "users", valueOf( expected ) ) );
     }
 
     @Test
@@ -786,9 +788,11 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldListRolesForUser() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject,
+                "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
-        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject,
+                "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", READER ) );
     }
 
@@ -811,9 +815,11 @@ public abstract class AuthProceduresInteractionTestBase<S> extends ProcedureInte
     @Test
     public void shouldListOwnRolesRoles() throws Exception
     {
-        assertSuccess( adminSubject, "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
+        assertSuccess( adminSubject,
+                "CALL dbms.security.listRolesForUser('adminSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", ADMIN ) );
-        assertSuccess( readSubject, "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
+        assertSuccess( readSubject,
+                "CALL dbms.security.listRolesForUser('readSubject') YIELD value as roles RETURN roles",
                 r -> assertKeyIs( r, "roles", READER ) );
     }
 

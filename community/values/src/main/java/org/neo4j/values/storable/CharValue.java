@@ -21,7 +21,7 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-final class CharValue extends TextValue
+public final class CharValue extends TextValue
 {
     final char value;
 
@@ -31,7 +31,7 @@ final class CharValue extends TextValue
     }
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
     }
@@ -61,7 +61,7 @@ final class CharValue extends TextValue
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return value;
     }
@@ -88,6 +88,17 @@ final class CharValue extends TextValue
     public String stringValue()
     {
         return Character.toString( value );
+    }
+
+    @Override
+    public int length()
+    {
+        return 1;
+    }
+
+    public char value()
+    {
+        return value;
     }
 
     @Override

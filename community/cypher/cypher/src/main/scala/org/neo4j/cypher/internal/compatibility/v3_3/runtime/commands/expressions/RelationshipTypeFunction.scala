@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
-import org.neo4j.graphdb.Relationship
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.EdgeValue
 
 case class RelationshipTypeFunction(relationship: Expression) extends NullInNullOutExpression(relationship) {
 
-  override def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): String = value match {
-    case r: Relationship => r.getType.name()
+  override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
+    case r: EdgeValue => r.`type`()
 
     case x => throw new ParameterWrongTypeException("Expected a Relationship, got: " + x)
   }

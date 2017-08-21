@@ -107,7 +107,7 @@ public class GraphElementValueTest
             VirtualValues.path( nodes( 1L,2L ), edges() );
             fail();
         }
-        catch ( AssertionError e )
+        catch ( Exception e )
         {
             // ignore
         }

@@ -19,45 +19,52 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
-import java.util
-
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Provider, READ_ONLY, StandardInternalExecutionResult}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, InternalQueryStatistics, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.spi.InternalResultVisitor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, Provider, READ_ONLY, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, TaskCloser}
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
+import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.graphdb.Notification
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
 /**
- * Main class for compiled execution results, implements everything in InternalExecutionResult
- * except `javaColumns` and `accept` which delegates to the injected compiled code.
- */
+  * Main class for compiled execution results, implements everything in InternalExecutionResult
+  * except `javaColumns` and `accept` which delegates to the injected compiled code.
+  */
 class CompiledExecutionResult(taskCloser: TaskCloser,
                               context: QueryContext,
                               compiledCode: GeneratedQueryExecution,
-                              description: Provider[InternalPlanDescription])
-  extends StandardInternalExecutionResult(context, Some(taskCloser))
-  with StandardInternalExecutionResult.IterateByAccepting {
+                              description: Provider[InternalPlanDescription],
+                              notifications: Iterable[Notification] = Iterable.empty)
+  extends StandardInternalExecutionResult(context, CompiledRuntimeName, Some(taskCloser))
+    with StandardInternalExecutionResult.IterateByAccepting {
 
   compiledCode.setCompletable(this)
 
   // *** Delegate to compiled code
   def executionMode: ExecutionMode = compiledCode.executionMode()
 
-  override def javaColumns: util.List[String] = compiledCode.javaColumns()
+  override def fieldNames(): Array[String] = compiledCode.fieldNames()
 
-  override def accept[EX <: Exception](visitor: InternalResultVisitor[EX]): Unit =
+  override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit =
     compiledCode.accept(visitor)
 
   override def executionPlanDescription(): InternalPlanDescription = {
     if (!taskCloser.isClosed) throw new ProfilerStatisticsNotReadyException
 
     compiledCode.executionPlanDescription()
+      .addArgument(Runtime(CompiledRuntimeName.toTextOutput))
+      .addArgument(RuntimeImpl(CompiledRuntimeName.name))
   }
 
-  override def queryStatistics() = InternalQueryStatistics()
+  override def queryStatistics() = QueryStatistics()
 
   //TODO delegate to compiled code once writes are being implemented
-  override def executionType = READ_ONLY
+  override def queryType: InternalQueryType = READ_ONLY
+
+  override def withNotifications(notification: Notification*): InternalExecutionResult =
+    new CompiledExecutionResult(taskCloser, context, compiledCode, description, notification)
 }

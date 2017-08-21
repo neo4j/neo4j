@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
 
 class UnionIteratorTest extends CypherFunSuite {
   val state = QueryStateHelper.empty
@@ -38,7 +39,7 @@ class UnionIteratorTest extends CypherFunSuite {
     val union = createUnion(Iterator(singleMap), Iterator.empty)
 
     //THEN
-    union.toList should equal(List(singleMap))
+    union.toList should equal(List( Map("x" -> intValue(1))))
   }
 
   test("two_elements") {
@@ -48,7 +49,7 @@ class UnionIteratorTest extends CypherFunSuite {
     val union = createUnion(Iterator(aMap), Iterator(bMap))
 
     //THEN
-    union.toList should equal(List(aMap, bMap))
+    union.toList should equal(List(Map("x" -> intValue(1)), Map("x" -> intValue(2))))
   }
 
   private def createUnion(aIt: Iterator[Map[String, Any]], bIt: Iterator[Map[String, Any]]): UnionIterator = {

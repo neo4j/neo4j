@@ -22,11 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
+import org.neo4j.values.AnyValue
 
 trait AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction
 
-  def aggregateOn(values: Any*): Any = {
+  def aggregateOn(values: AnyValue*): Any = {
     implicit val state = QueryStateHelper.empty
 
     val func: AggregationFunction = createAggregator(Variable("x"))

@@ -141,6 +141,7 @@ class LoadCsvAcceptanceTest
   }
 
   test("import three rows with headers messy data") {
+
     val urls = csvUrls({
       writer =>
         writer.println("id,name,x")

@@ -65,7 +65,7 @@ class ProcedureCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
 
     // Using graph execute to get a Java value
     graph.execute("CALL my.first.value() YIELD out RETURN * LIMIT 1").stream().toArray.toList should equal(List(
-      java.util.Collections.singletonMap("out", stream)
+      java.util.Collections.singletonMap("out", value)
     ))
   }
 

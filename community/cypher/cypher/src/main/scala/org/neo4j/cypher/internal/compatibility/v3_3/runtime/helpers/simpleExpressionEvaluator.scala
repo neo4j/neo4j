@@ -40,7 +40,8 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
                                                   repeatableReads = mutable.Map.empty)
 
     try {
-      Some(commandExpr(ExecutionContext.empty))
+      val foo = Some(commandExpr(ExecutionContext.empty))
+      foo
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context

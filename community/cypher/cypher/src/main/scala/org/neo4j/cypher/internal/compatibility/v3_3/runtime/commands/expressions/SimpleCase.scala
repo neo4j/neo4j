@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 case class SimpleCase(expression: Expression, alternatives: Seq[(Expression, Expression)], default: Option[Expression])
   extends Expression {
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = expression(ctx)
 
     val matchingExpression: Option[Expression] = alternatives collectFirst {

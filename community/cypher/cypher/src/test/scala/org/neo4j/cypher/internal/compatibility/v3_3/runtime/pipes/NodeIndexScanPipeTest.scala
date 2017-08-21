@@ -27,13 +27,20 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val label = LabelToken(LabelName("LabelName")_, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
-  private val node = mock[Node]
+  private val node = nodeProxy(11)
+
+  private def nodeProxy(id: Long) = {
+    val node = mock[Node]
+    when(node.getId()).thenReturn(id)
+    node
+  }
 
   test("should return nodes found by index scan when both labelId and property key id are solved at compile time") {
     // given
@@ -46,7 +53,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_("n")).toList should equal(List(fromNodeProxy(node)))
   }
 
   private def scanFor(nodes: Iterator[Node]): QueryContext = {

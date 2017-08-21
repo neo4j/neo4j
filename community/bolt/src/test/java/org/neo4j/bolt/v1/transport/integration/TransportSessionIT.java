@@ -48,7 +48,6 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.hasKey;
@@ -64,6 +63,9 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
@@ -143,9 +145,9 @@ public class TransportSessionIT
                 msgSuccess(
                         allOf( hasEntry( is( "fields" ), equalTo( asList( "a", "a_squared" ) ) ),
                                 hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( equalTo( 1L ), equalTo( 1L ) ) ),
-                msgRecord( eqRecord( equalTo( 2L ), equalTo( 4L ) ) ),
-                msgRecord( eqRecord( equalTo( 3L ), equalTo( 9L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ), equalTo( longValue( 1L ) ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 2L ) ), equalTo( longValue( 4L ) ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 3L ) ), equalTo( longValue( 9L ) ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
@@ -198,7 +200,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -218,7 +220,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "age" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( equalTo( 2L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 2L ) ) ) ),
                 msgSuccess() ) );
 
         // When
@@ -230,7 +232,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "label" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( Matchers.equalTo( "Test" ) ) ),
+                msgRecord( eqRecord( Matchers.equalTo( stringValue( "Test" ) ) ) ),
                 msgSuccess()
         ) );
     }
@@ -324,7 +326,7 @@ public class TransportSessionIT
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess( allOf( hasEntry( is( "type" ), equalTo( "r" ) ),
                         hasKey( "result_consumed_after" ) ) ) ) );
     }
@@ -373,7 +375,7 @@ public class TransportSessionIT
                 msgSuccess(),
                 msgSuccess( allOf( hasEntry( is( "fields" ), equalTo( singletonList( "p" ) ) ),
                         hasKey( "result_available_after" ) ) ),
-                msgRecord( eqRecord( nullValue() ) ),
+                msgRecord( eqRecord( equalTo( NO_VALUE ) ) ),
                 msgFailure( Status.Request.Invalid, "Point is not yet supported as a return type in Bolt" ) ) );
     }
 
@@ -393,8 +395,8 @@ public class TransportSessionIT
         //Given
         HashMap<String,Object> params = new HashMap<>();
         HashMap<String,Object> inner = new HashMap<>();
-        inner.put(null, 42L);
-        inner.put("foo", 1337L);
+        inner.put( null, 42L );
+        inner.put( "foo", 1337L );
         params.put( "p", inner );
 
         // When
@@ -409,8 +411,9 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Request.Invalid, "Value `null` is not supported as key in maps, must be a non-nullable string."),
-                msgIgnored()));
+                msgFailure( Status.Request.Invalid,
+                        "Value `null` is not supported as key in maps, must be a non-nullable string." ),
+                msgIgnored() ) );
 
         client.send( TransportTestUtil.chunk( ackFailure(), run( "RETURN 1" ), pullAll() ) );
 
@@ -418,7 +421,7 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( 1L ) ) ),
+                msgRecord( eqRecord( equalTo( longValue( 1L ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -437,7 +440,8 @@ public class TransportSessionIT
         assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgFailure( Status.Schema.IndexDropFailed, "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)."),
-                msgIgnored()) );
+                msgFailure( Status.Schema.IndexDropFailed,
+                        "Unable to drop index on :Movie12345(id): No such INDEX ON :Movie12345(id)." ),
+                msgIgnored() ) );
     }
 }

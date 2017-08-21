@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.NodeByLabel
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.graphdb.Node
 
 case class NodeByLabelEntityProducer(nodeByLabel: NodeByLabel, labelId: Int) extends EntityProducer[Node] {

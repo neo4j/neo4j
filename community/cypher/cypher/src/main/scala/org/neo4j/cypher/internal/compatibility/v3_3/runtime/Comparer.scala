@@ -19,38 +19,42 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
+
+import java.util
+
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.CypherOrdering
 import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{BooleanValue, NumberValue, TextValue}
+import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
 
 import scala.collection.JavaConverters._
 
 /**
- * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
- */
+  * Comparer is a trait that enables it's subclasses to compare to AnyRef with each other.
+  */
 trait Comparer extends CypherSerializer {
 
   import Comparer._
 
-  def compareForOrderability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Int = {
+  def compareForOrderability(operator: Option[String], l: AnyValue, r: AnyValue)(implicit qtx: QueryState): Int = {
     CypherOrderability.compare(makeComparable(l), makeComparable(r))
   }
 
-  private def makeComparable(a: Any): Any = a match {
-    case n: Node => new NodeIdWrapper {
-      override def id() = n.getId
+  private def makeComparable(a: AnyValue)(implicit qtx: QueryState): AnyRef = a match {
+    case n: NodeValue => new NodeIdWrapper {
+      override def id() = n.id()
     }
-    case r: Relationship => new RelationshipIdWrapper {
-      override def id() = r.getId
+    case r: EdgeValue => new RelationshipIdWrapper {
+      override def id() = r.id
     }
-    case s: Seq[_] => s.map(makeComparable).asJava
-    case m: Map[_, _] => m.mapValues(makeComparable).asJava
+    case x: AnyValue => qtx.query.asObject(x).asInstanceOf[AnyRef]
     case x => x
   }
 
-  def compareForComparability(operator: Option[String], l: Any, r: Any)(implicit qtx: QueryState): Option[Int] = {
+  def compareForComparability(operator: Option[String], l: AnyValue, r: AnyValue)(implicit qtx: QueryState): Option[Int] = {
     try {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         Some(CypherOrdering.DEFAULT.compare(l, r))
@@ -64,19 +68,18 @@ trait Comparer extends CypherSerializer {
 }
 
 object Comparer {
-  def isString(value: Any): Boolean = value match {
-    case _: String => true
-    case _: Character => true
+  def isString(value: AnyValue): Boolean = value match {
+    case _: TextValue => true
     case _ => value == null
   }
 
-  def isNumber(value: Any): Boolean = value match {
-    case _: Number => true
+  def isNumber(value: AnyValue): Boolean = value match {
+    case _: NumberValue => true
     case _ => value == null
   }
 
-  def isBoolean(value: Any): Boolean = value match {
-    case _: Boolean => true
+  def isBoolean(value: AnyValue): Boolean = value match {
+    case _: BooleanValue => true
     case _ => value == null
   }
 }

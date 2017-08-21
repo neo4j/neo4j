@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Literal, Variable}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, Not, True}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.intValue
 
 class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -32,14 +34,14 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
       SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 1)))
+    result should equal(List(Map("a" -> intValue(1))))
   }
 
   test("should only let through the one that not matches when the expression is false and it is negated") {
@@ -48,14 +50,14 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
       SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = true)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 2)))
+    result should equal(List(Map("a" -> intValue(2))))
   }
 
   test("should not let anything through if rhs is empty and expression is false") {
@@ -79,7 +81,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(lhsData)
+    result should beEquivalentTo(lhsData)
   }
 
   test("if lhs is empty, rhs should not be touched regardless the given expression") {
@@ -99,7 +101,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val result =
       SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 2)))
+    result should equal(List(Map("a" -> intValue(2))))
   }
 
   test("should let through the one that matches and the one satisfying the expression") {
@@ -108,12 +110,12 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> 1), Map("a" -> 2)))
+    result should equal(List(Map("a" -> intValue(1)), Map("a" -> intValue(2))))
   }
 
   test("should let pass nothing if the rhs is empty and the expression is false") {
@@ -122,7 +124,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList

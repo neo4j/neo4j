@@ -31,15 +31,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
-import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.QueryStatistics;
-import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.impl.query.TransactionalContext;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -52,7 +53,13 @@ import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_ONLY;
 import static org.neo4j.graphdb.QueryExecutionType.QueryType.READ_WRITE;
 import static org.neo4j.graphdb.QueryExecutionType.explained;
 import static org.neo4j.graphdb.QueryExecutionType.query;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.list;
 
 public class CypherAdapterStreamTest
 {
@@ -74,9 +81,10 @@ public class CypherAdapterStreamTest
         when( queryStatistics.getLabelsAdded() ).thenReturn( 10 );
         when( queryStatistics.getLabelsRemoved() ).thenReturn( 11 );
 
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when( result.fieldNames() ).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( query( READ_WRITE ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
 
         Clock clock = mock( Clock.class );
@@ -86,24 +94,24 @@ public class CypherAdapterStreamTest
         CypherAdapterStream stream = new CypherAdapterStream( result, clock );
 
         // When
-        Map<String,Object> meta = metadataOf( stream );
+        MapValue meta = metadataOf( stream );
 
         // Then
-        assertThat( meta.get("type").toString(), equalTo( "rw") );
-        assertThat( meta.get("stats"), equalTo( map(
-                "nodes-created", 1,
-                "nodes-deleted", 2,
-                "relationships-created", 3,
-                "relationships-deleted", 4,
-                "properties-set", 5,
-                "indexes-added", 6,
-                "indexes-removed", 7,
-                "constraints-added", 8,
-                "constraints-removed", 9,
-                "labels-added", 10,
-                "labels-removed", 11
+        assertThat( meta.get( "type" ), equalTo( stringValue( "rw" ) ) );
+        assertThat( meta.get( "stats" ), equalTo( VirtualValues.map( mapValues(
+                "nodes-created", intValue( 1 ),
+                "nodes-deleted", intValue( 2 ),
+                "relationships-created", intValue( 3 ),
+                "relationships-deleted", intValue( 4 ),
+                "properties-set", intValue( 5 ),
+                "indexes-added", intValue( 6 ),
+                "indexes-removed", intValue( 7 ),
+                "constraints-added", intValue( 8 ),
+                "constraints-removed", intValue( 9 ),
+                "labels-added", intValue( 10 ),
+                "labels-removed", intValue( 11 ) )
         ) ) );
-        assertThat(meta.get("result_consumed_after"), equalTo(1337L));
+        assertThat( meta.get( "result_consumed_after" ), equalTo( longValue( 1337L ) ) );
     }
 
     @Test
@@ -112,34 +120,35 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when( result.fieldNames() ).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
-        when( result.getExecutionPlanDescription() ).thenReturn(
-                plan("Join", map( "arg1", 1 ), singletonList( "id1" ),
-                plan("Scan", map( "arg2", 1 ), singletonList("id2")) ) );
+        when( result.executionPlanDescription() ).thenReturn(
+                plan( "Join", map( "arg1", 1 ), singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), singletonList( "id2" ) ) ) );
 
         TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
-        Map<String,Object> meta = metadataOf( stream );
+        MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,Object> expectedChild = map(
-                "args", map( "arg2", 1 ),
-                "identifiers", Iterators.asSet("id2"),
-                "operatorType", "Scan",
-                "children", Collections.EMPTY_LIST
+        Map<String,AnyValue> expectedChild = mapValues(
+                "args", VirtualValues.map( mapValues( "arg2", intValue( 1 ) ) ),
+                "identifiers", list( stringValue( "id2" ) ),
+                "operatorType", stringValue( "Scan" ),
+                "children", VirtualValues.EMPTY_LIST
         );
-        Map<String,Object> expectedPlan = map(
-                "args", map( "arg1", 1 ),
-                "identifiers", Iterators.asSet("id1"),
-                "operatorType", "Join",
-                "children", Arrays.asList( expectedChild )
+        Map<String,AnyValue> expectedPlan = mapValues(
+                "args", VirtualValues.map( mapValues( "arg1", intValue( 1 ) ) ),
+                "identifiers", list( stringValue( "id1" ) ),
+                "operatorType", stringValue( "Join" ),
+                "children", list( VirtualValues.map( expectedChild ) )
         );
-        assertThat( meta.get( "plan" ), equalTo( expectedPlan ) );
+        assertThat( meta.get( "plan" ), equalTo( VirtualValues.map( expectedPlan ) ) );
     }
 
     @Test
@@ -148,11 +157,12 @@ public class CypherAdapterStreamTest
         // Given
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
-        Result result = mock( Result.class );
-        when( result.getQueryExecutionType() ).thenReturn( explained( READ_ONLY ) );
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
+        QueryResult result = mock( QueryResult.class );
+        when( result.fieldNames() ).thenReturn( new String[0] );
+        when( result.executionType() ).thenReturn( explained( READ_ONLY ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
-        when( result.getExecutionPlanDescription() ).thenReturn(
+        when( result.executionPlanDescription() ).thenReturn(
                 plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, singletonList( "id1" ),
                         plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, singletonList( "id2" ) ) ) );
 
@@ -160,49 +170,55 @@ public class CypherAdapterStreamTest
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
-        Map<String,Object> meta = metadataOf( stream );
+        MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,Object> expectedChild = map(
-                "args", map( "arg2", 1 ),
-                "identifiers", Iterators.asSet("id2"),
-                "operatorType", "Scan",
-                "children", Collections.EMPTY_LIST,
-                "rows", 1L,
-                "dbHits", 2L,
-                "pageCacheHits", 4L,
-                "pageCacheMisses", 7L,
-                "pageCacheHitRatio", 4.0 / 11
+        Map<String,AnyValue> expectedChild = mapValues(
+                "args", VirtualValues.map( mapValues( "arg2", intValue( 1 ) ) ),
+                "identifiers", list( stringValue( "id2" ) ),
+                "operatorType", stringValue( "Scan" ),
+                "children", VirtualValues.EMPTY_LIST,
+                "rows", longValue( 1L ),
+                "dbHits", longValue( 2L ),
+                "pageCacheHits", longValue( 4L ),
+                "pageCacheMisses", longValue( 7L ),
+                "pageCacheHitRatio", doubleValue( 4.0 / 11 )
         );
 
-        Map<String,Object> expectedProfile = map(
-                "args", map( "arg1", 1 ),
-                "identifiers", Iterators.asSet("id1"),
-                "operatorType", "Join",
-                "children", Arrays.asList( expectedChild ),
-                "rows", 1L,
-                "dbHits", 2L,
-                "pageCacheHits", 4L,
-                "pageCacheMisses", 3L,
-                "pageCacheHitRatio", 4.0 / 7
+        Map<String,AnyValue> expectedProfile = mapValues(
+                "args", VirtualValues.map( mapValues( "arg1", intValue( 1 ) ) ),
+                "identifiers", list( stringValue( "id1" ) ),
+                "operatorType", stringValue( "Join" ),
+                "children", list( VirtualValues.map( expectedChild ) ),
+                "rows", longValue( 1L ),
+                "dbHits", longValue( 2L ),
+                "pageCacheHits", longValue( 4L ),
+                "pageCacheMisses", longValue( 3L ),
+                "pageCacheHitRatio", doubleValue( 4.0 / 7 )
         );
 
-        assertMapEqualsWithDelta( (Map<String,Object>)meta.get( "profile" ), expectedProfile, 0.0001 );
+        assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ), VirtualValues.map( expectedProfile ), 0.0001 );
+    }
+
+    private Map<String,AnyValue> mapValues( Object... values )
+    {
+        return genericMap( values );
     }
 
     @Test
     public void shouldIncludeNotificationsIfPresent() throws Throwable
     {
         // Given
-        Result result = mock( Result.class );
+        QueryResult result = mock( QueryResult.class );
+        when( result.fieldNames() ).thenReturn( new String[0] );
 
         QueryStatistics queryStatistics = mock( QueryStatistics.class );
         when( queryStatistics.containsUpdates() ).thenReturn( false );
 
-        when( result.getQueryStatistics() ).thenReturn( queryStatistics );
-        when( result.getQueryExecutionType() ).thenReturn( query( READ_WRITE ) );
+        when( result.queryStatistics() ).thenReturn( queryStatistics );
+        when( result.executionType() ).thenReturn( query( READ_WRITE ) );
 
-        when( result.getNotifications() ).thenReturn( Arrays.<Notification>asList(
+        when( result.getNotifications() ).thenReturn( Arrays.asList(
                 NotificationCode.INDEX_HINT_UNFULFILLABLE.notification( InputPosition.empty ),
                 NotificationCode.PLANNER_UNSUPPORTED.notification( new InputPosition( 4, 5, 6 ) )
         ) );
@@ -210,63 +226,68 @@ public class CypherAdapterStreamTest
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
 
         // When
-        Map<String,Object> meta = metadataOf( stream );
+        MapValue meta = metadataOf( stream );
 
         // Then
-        Map<String,Object> msg1 = map(
-                "severity", "WARNING",
-                "code", "Neo.ClientError.Schema.IndexNotFound",
-                "title", "The request (directly or indirectly) referred to an index that does not exist.",
-                "description", "The hinted index does not exist, please check the schema"
+        Map<String,AnyValue> msg1 = mapValues(
+                "severity", stringValue( "WARNING" ),
+                "code", stringValue( "Neo.ClientError.Schema.IndexNotFound" ),
+                "title",
+                stringValue( "The request (directly or indirectly) referred to an index that does not exist." ),
+                "description", stringValue( "The hinted index does not exist, please check the schema" )
         );
-        Map<String,Object> msg2 = map(
-                "severity", "WARNING",
-                "code", "Neo.ClientNotification.Statement.PlannerUnsupportedWarning",
-                "title", "This query is not supported by the COST planner.",
-                "description", "Using COST planner is unsupported for this query, please use RULE planner instead",
-                "position", map( "offset", 4, "column", 6, "line", 5 )
+        Map<String,AnyValue> msg2 = mapValues(
+                "severity", stringValue( "WARNING" ),
+                "code", stringValue( "Neo.ClientNotification.Statement.PlannerUnsupportedWarning" ),
+                "title", stringValue( "This query is not supported by the COST planner." ),
+                "description",
+                stringValue( "Using COST planner is unsupported for this query, please use RULE planner instead" ),
+                "position", VirtualValues
+                        .map( mapValues( "offset", intValue( 4 ), "column", intValue( 6 ), "line", intValue( 5 ) ) )
         );
 
-        assertThat( meta.get( "notifications" ), equalTo( Arrays.asList( msg1, msg2 ) ) );
+        assertThat( meta.get( "notifications" ),
+                equalTo( list( VirtualValues.map( msg1 ), VirtualValues.map( msg2 ) ) ) );
     }
 
-    private Map<String,Object> metadataOf( CypherAdapterStream stream ) throws Exception
+    private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
     {
-        final Map<String, Object> meta = new HashMap<>();
+        final Map<String,AnyValue> meta = new HashMap<>();
         stream.accept( new BoltResult.Visitor()
         {
             @Override
-            public void visit( Record record ) throws Exception
+            public void visit( QueryResult.Record record ) throws Exception
             {
 
             }
 
             @Override
-            public void addMetadata( String key, Object value )
+            public void addMetadata( String key, AnyValue value )
             {
                 meta.put( key, value );
             }
         } );
-        return meta;
+        return VirtualValues.map( meta );
     }
 
-    private static void assertMapEqualsWithDelta( Map<String,Object> a, Map<String,Object> b, double delta )
+    private static void assertMapEqualsWithDelta( MapValue a, MapValue b, double delta )
     {
-        assertThat( "Map should have same size", a.size(), equalTo(b.size()) );
-        for ( Map.Entry<String,Object> entry : a.entrySet() )
+        assertThat( "Map should have same size", a.size(), equalTo( b.size() ) );
+        for ( Map.Entry<String,AnyValue> entry : a.entrySet() )
         {
             String key = entry.getKey();
-            assertThat( "Missing key", b.get( key ) != null );
-            Object aValue = entry.getValue();
-            Object bValue = b.get( key );
-            if ( aValue instanceof Map )
+            //assertThat( "Missing key", b.get( key ) != Values.NO_VALUE );
+            AnyValue aValue = entry.getValue();
+            AnyValue bValue = b.get( key );
+            if ( aValue instanceof MapValue )
             {
-                assertThat( "Value mismatch", bValue instanceof Map );
-                assertMapEqualsWithDelta( (Map<String,Object>)aValue, (Map<String,Object>)bValue, delta);
+                assertThat( "Value mismatch", bValue instanceof MapValue );
+                assertMapEqualsWithDelta( (MapValue) aValue, (MapValue) bValue, delta );
             }
-            else if ( aValue instanceof Double )
+            else if ( aValue instanceof DoubleValue )
             {
-                assertThat( "Value mismatch", (double)aValue, closeTo( (double)bValue, delta ) );
+                assertThat( "Value mismatch", ((DoubleValue) aValue).doubleValue(),
+                        closeTo( ((DoubleValue) bValue).doubleValue(), delta ) );
             }
             else
             {
@@ -275,7 +296,7 @@ public class CypherAdapterStreamTest
         }
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args, final long dbHits,
+    private static ExecutionPlanDescription plan( final String name, final Map<String,Object> args, final long dbHits,
             final long pageCacheHits, final long pageCacheMisses, final long rows, final List<String> identifiers,
             final ExecutionPlanDescription... children )
     {
@@ -307,15 +328,15 @@ public class CypherAdapterStreamTest
         }, children );
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args,
-            final List<String> identifiers, final ExecutionPlanDescription ... children )
+    private static ExecutionPlanDescription plan( final String name, final Map<String,Object> args,
+            final List<String> identifiers, final ExecutionPlanDescription... children )
     {
         return plan( name, args, identifiers, null, children );
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String, Object> args,
+    private static ExecutionPlanDescription plan( final String name, final Map<String,Object> args,
             final List<String> identifiers, final ExecutionPlanDescription.ProfilerStatistics profile,
-            final ExecutionPlanDescription ... children )
+            final ExecutionPlanDescription... children )
     {
         return new ExecutionPlanDescription()
         {
@@ -328,7 +349,7 @@ public class CypherAdapterStreamTest
             @Override
             public List<ExecutionPlanDescription> getChildren()
             {
-                return asList(children);
+                return asList( children );
             }
 
             @Override

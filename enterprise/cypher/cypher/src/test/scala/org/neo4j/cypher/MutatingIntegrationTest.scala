@@ -277,14 +277,14 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with Assertions wi
     updateWithBothPlannersAndCompatibilityMode("""match (n) where id(n) = 0 match p=(n)-->() delete p""")
 
     graph.inTx {
-      graph.getAllNodes.asScala shouldBe empty
+      graph.getAllNodes().asScala shouldBe empty
     }
   }
 
   test("string literals should not be mistaken for variables") {
     //https://github.com/neo4j/community/issues/523
     updateWithBothPlannersAndCompatibilityMode("EXPLAIN create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
-    val result = executeScalar[List[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
+    val result = executeScalar[Seq[Node]]("create (tag1 {name:'tag2'}), (tag2 {name:'tag1'}) return [tag1,tag2] as tags")
     result should have size 2
   }
 

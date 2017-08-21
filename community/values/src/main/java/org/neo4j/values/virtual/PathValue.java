@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.VirtualValue;
 
-final class PathValue extends VirtualValue
+public final class PathValue extends VirtualValue
 {
     private final NodeValue[] nodes;
     private final EdgeValue[] edges;
@@ -39,6 +39,22 @@ final class PathValue extends VirtualValue
 
         this.nodes = nodes;
         this.edges = edges;
+    }
+
+    public NodeValue startNode()
+    {
+        return nodes[0];
+    }
+
+    public NodeValue endNode()
+    {
+        return nodes[nodes.length - 1];
+    }
+
+    public EdgeValue lastEdge()
+    {
+        assert edges.length > 0;
+        return edges[edges.length - 1];
     }
 
     @Override
@@ -55,7 +71,7 @@ final class PathValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         int result = nodes[0].hashCode();
         for ( int i = 1; i < nodes.length; i++ )
@@ -69,7 +85,7 @@ final class PathValue extends VirtualValue
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-      writer.writePath( nodes, edges );
+        writer.writePath( nodes, edges );
     }
 
     @Override
@@ -120,8 +136,36 @@ final class PathValue extends VirtualValue
         return sb.toString();
     }
 
+    public ListValue asList()
+    {
+        int size = nodes.length + edges.length;
+        AnyValue[] anyValues = new AnyValue[size];
+        for ( int i = 0; i < size; i++ )
+        {
+            if ( i % 2 == 0 )
+            {
+                anyValues[i] = nodes[i / 2];
+            }
+            else
+            {
+                anyValues[i] = edges[i / 2];
+            }
+        }
+        return VirtualValues.list( anyValues );
+    }
+
     public int size()
     {
         return edges.length;
+    }
+
+    public NodeValue[] nodes()
+    {
+        return nodes;
+    }
+
+    public EdgeValue[] edges()
+    {
+        return edges;
     }
 }

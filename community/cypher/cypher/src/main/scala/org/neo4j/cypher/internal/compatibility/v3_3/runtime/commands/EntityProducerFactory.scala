@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.GetGraphElements
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Argument
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ScanQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.{IndexHintException, InternalException}
@@ -57,8 +57,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        val neoValue = makeValueNeoSafe(valueVal)
-        state.query.nodeOps.indexGet(idxName, keyVal, neoValue)
+        state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
       }
   }
 
@@ -125,8 +124,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
         val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
-        val neoValue = makeValueNeoSafe(valueVal)
-        state.query.relationshipOps.indexGet(idxName, keyVal, neoValue)
+        state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
       }
   }
 

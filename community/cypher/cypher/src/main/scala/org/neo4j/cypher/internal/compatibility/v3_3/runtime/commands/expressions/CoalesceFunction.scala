@@ -20,17 +20,18 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 case class CoalesceFunction(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
     arguments.
       view.
       map(expression => expression(ctx)).
-      find(value => value != null) match {
-        case None    => null
+      find(value => value != Values.NO_VALUE) match {
+        case None    => Values.NO_VALUE
         case Some(x) => x
       }
 

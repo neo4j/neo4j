@@ -45,11 +45,14 @@ import org.neo4j.bolt.v1.transport.socket.client.SocketConnection;
 import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.api.bolt.BoltConnectionTracker;
 import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
@@ -66,6 +69,11 @@ import org.neo4j.procedure.UserFunction;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.BaseToObjectValueWriter;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
 import static java.util.stream.Collectors.toList;
@@ -210,13 +218,13 @@ public abstract class ProcedureInteractionTestBase<S>
 
     //------------- Helper functions---------------
 
-    void testSuccessfulRead( S subject, int count )
+    void testSuccessfulRead( S subject, Object count )
     {
         assertSuccess( subject, "MATCH (n) RETURN count(n) as count", r ->
         {
             List<Object> result = r.stream().map( s -> s.get( "count" ) ).collect( toList() );
             assertThat( result.size(), equalTo( 1 ) );
-            assertThat( String.valueOf( result.get( 0 ) ), equalTo( String.valueOf( count ) ) );
+            assertThat( result.get( 0 ), equalTo( valueOf( count ) ) );
         } );
     }
 
@@ -309,7 +317,7 @@ public abstract class ProcedureInteractionTestBase<S>
         assertFail( subject, "CALL dbms.security.deleteRole('" + roleName + "')", errMsg );
     }
 
-    void testSuccessfulListUsers( S subject, String[] users )
+    void testSuccessfulListUsers( S subject, Object[] users )
     {
         assertSuccess( subject, "CALL dbms.security.listUsers() YIELD username",
                 r -> assertKeyIsArray( r, "username", users ) );
@@ -320,7 +328,7 @@ public abstract class ProcedureInteractionTestBase<S>
         assertFail( subject, "CALL dbms.security.listUsers() YIELD username", errMsg );
     }
 
-    void testSuccessfulListRoles( S subject, String[] roles )
+    void testSuccessfulListRoles( S subject, Object[] roles )
     {
         assertSuccess( subject, "CALL dbms.security.listRoles() YIELD role",
                 r -> assertKeyIsArray( r, "role", roles ) );
@@ -447,16 +455,30 @@ public abstract class ProcedureInteractionTestBase<S>
         return r.stream().map( s -> s.get( key ) ).collect( toList() );
     }
 
-    void assertKeyIs( ResourceIterator<Map<String,Object>> r, String key, String... items )
+    void assertKeyIs( ResourceIterator<Map<String,Object>> r, String key, Object... items )
     {
         assertKeyIsArray( r, key, items );
     }
 
-    private void assertKeyIsArray( ResourceIterator<Map<String,Object>> r, String key, String[] items )
+    private void assertKeyIsArray( ResourceIterator<Map<String,Object>> r, String key, Object[] items )
     {
         List<Object> results = getObjectsAsList( r, key );
         assertEquals( Arrays.asList( items ).size(), results.size() );
-        Assert.assertThat( results, containsInAnyOrder( items ) );
+        Assert.assertThat( results, containsInAnyOrder( Arrays.stream( items ).map( this::valueOf ).toArray()
+        ) );
+    }
+
+    static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            Object expected )
+    {
+        if ( expected instanceof MapValue )
+        {
+            assertKeyIsMap( r, keyKey, valueKey, (MapValue) expected );
+        }
+        else
+        {
+            assertKeyIsMap( r, keyKey, valueKey, (Map<String,Object>) expected );
+        }
     }
 
     @SuppressWarnings( "unchecked" )
@@ -491,8 +513,38 @@ public abstract class ProcedureInteractionTestBase<S>
         }
     }
 
-    // --------------------- helpers -----------------------
+    static void assertKeyIsMap( ResourceIterator<Map<String,Object>> r, String keyKey, String valueKey,
+            MapValue expected )
+    {
+        List<Map<String,Object>> result = r.stream().collect( toList() );
 
+        assertEquals( "Results for should have size " + expected.size() + " but was " + result.size(),
+                expected.size(), result.size() );
+
+        for ( Map<String,Object> row : result )
+        {
+            TextValue key = (TextValue) row.get( keyKey );
+            assertTrue( expected.containsKey( key.stringValue() ) );
+            assertThat( row, hasKey( valueKey ) );
+
+            Object objectValue = row.get( valueKey );
+            if ( objectValue instanceof ListValue )
+            {
+                ListValue value = (ListValue) objectValue;
+                ListValue expectedValues = (ListValue) expected.get( key.stringValue() );
+                assertEquals( "sizes", value.size(), expectedValues.size() );
+                assertThat( Arrays.asList( value.asArray() ), containsInAnyOrder( expectedValues.asArray() ) );
+            }
+            else
+            {
+                String value = ((TextValue) objectValue).stringValue();
+                String expectedValue = ((TextValue) expected.get( key.stringValue() )).stringValue();
+                assertThat( value, equalTo( expectedValue ) );
+            }
+        }
+    }
+
+    // --------------------- helpers -----------------------
     void shouldTerminateTransactionsForUser( S subject, String procedure ) throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
@@ -522,6 +574,20 @@ public abstract class ProcedureInteractionTestBase<S>
                         .filter( tx -> !tx.terminationReason().isPresent() )
                         .map( tx -> tx.securityContext().subject().username() )
         ).collect( Collectors.toMap( r -> r.username, r -> r.activeTransactions ) );
+    }
+
+    protected Object toRawValue( Object value )
+    {
+        if ( value instanceof AnyValue )
+        {
+            BaseToObjectValueWriter<RuntimeException> writer = writer();
+            ((AnyValue) value).writeTo( writer );
+            return writer.value();
+        }
+        else
+        {
+            return value;
+        }
     }
 
     Map<String,Long> countBoltConnectionsByUsername()
@@ -836,5 +902,37 @@ public abstract class ProcedureInteractionTestBase<S>
             Result result = db.execute( "RETURN " + nestedFunction + " AS value" );
             return result.next().get( "value" ).toString();
         }
+    }
+
+    protected abstract Object valueOf( Object obj );
+
+    private BaseToObjectValueWriter<RuntimeException> writer()
+    {
+        return new BaseToObjectValueWriter<RuntimeException>()
+        {
+            @Override
+            protected Node newNodeProxyById( long id )
+            {
+                return null;
+            }
+
+            @Override
+            protected Relationship newRelationshipProxyById( long id )
+            {
+                return null;
+            }
+
+            @Override
+            protected Point newGeographicPoint( double longitude, double latitude, String name, int code, String href )
+            {
+                return null;
+            }
+
+            @Override
+            protected Point newCartesianPoint( double x, double y, String name, int code, String href )
+            {
+                return null;
+            }
+        };
     }
 }

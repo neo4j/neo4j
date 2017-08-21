@@ -19,18 +19,16 @@
  */
 package org.neo4j.values.storable;
 
-abstract class IntegralValue extends NumberValue
+public abstract class IntegralValue extends NumberValue
 {
-    abstract long longValue();
-
     @Override
-    public final int hashCode()
+    public final int computeHash()
     {
         return NumberValues.hash( longValue() );
     }
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
     }
@@ -68,5 +66,11 @@ abstract class IntegralValue extends NumberValue
     public NumberType numberType()
     {
         return NumberType.INTEGRAL;
+    }
+
+    @Override
+    public double doubleValue()
+    {
+        return longValue();
     }
 }

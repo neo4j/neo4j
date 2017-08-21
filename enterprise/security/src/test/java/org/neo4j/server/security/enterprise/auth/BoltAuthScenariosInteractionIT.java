@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.values.AnyValues;
 
 public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTestBase<BoltInteraction.BoltSubject>
 {
@@ -39,9 +40,16 @@ public class BoltAuthScenariosInteractionIT extends AuthScenariosInteractionTest
     }
 
     @Override
-    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String, String> config )
+    public NeoInteractionLevel<BoltInteraction.BoltSubject> setUpNeoServer( Map<String,String> config )
             throws Throwable
     {
-        return new BoltInteraction( config, () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
+        return new BoltInteraction( config,
+                () -> new UncloseableDelegatingFileSystemAbstraction( fileSystemRule.get() ) );
+    }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        return AnyValues.of( obj );
     }
 }

@@ -21,13 +21,18 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-final class FloatValue extends FloatingPointValue
+public final class FloatValue extends FloatingPointValue
 {
     private final float value;
 
     FloatValue( float value )
     {
         this.value = value;
+    }
+
+    public float value()
+    {
+        return value;
     }
 
     @Override

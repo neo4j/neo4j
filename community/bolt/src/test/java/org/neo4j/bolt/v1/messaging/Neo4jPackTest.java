@@ -32,33 +32,33 @@ import java.util.Map;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.bolt.v1.packstream.PackedOutputArray;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.Path;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.PathValue;
+import org.neo4j.values.virtual.VirtualValues;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.neo4j.bolt.v1.messaging.example.Edges.ALICE_KNOWS_BOB;
 import static org.neo4j.bolt.v1.messaging.example.Nodes.ALICE;
 import static org.neo4j.bolt.v1.messaging.example.Paths.ALL_PATHS;
-import static org.neo4j.bolt.v1.messaging.example.Relationships.ALICE_KNOWS_BOB;
-import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.charValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class Neo4jPackTest
 {
     @Rule
     public ExpectedException exception = ExpectedException.none();
 
-    private byte[] packed( Object object ) throws IOException
+    private byte[] packed( AnyValue object ) throws IOException
     {
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
@@ -66,7 +66,7 @@ public class Neo4jPackTest
         return output.bytes();
     }
 
-    private Object unpacked( byte[] bytes ) throws IOException
+    private AnyValue unpacked( byte[] bytes ) throws IOException
     {
         PackedInputArray input = new PackedInputArray( bytes );
         Neo4jPack.Unpacker unpacker = new Neo4jPack.Unpacker( input );
@@ -82,19 +82,20 @@ public class Neo4jPackTest
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
         packer.packListStreamHeader();
         List<String> expected = new ArrayList<>();
-        for ( Label label : ALICE.getLabels() )
+        TextArray labels = ALICE.labels();
+        for ( int i = 0; i < labels.length(); i++ )
         {
-            String labelName = label.name();
+            String labelName = labels.stringValue( i );
             packer.pack( labelName );
             expected.add( labelName );
         }
         packer.packEndOfStream();
-        Object unpacked = unpacked( output.bytes() );
+        AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( List.class ) );
-        List<String> unpackedList = (List<String>) unpacked;
-        assertThat( unpackedList, equalTo( expected ) );
+        assertThat( unpacked, instanceOf( ListValue.class ) );
+        ListValue unpackedList = (ListValue) unpacked;
+        assertThat( unpackedList, equalTo( AnyValues.asListValue( expected ) ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -105,18 +106,25 @@ public class Neo4jPackTest
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
         packer.packMapStreamHeader();
-        for ( Map.Entry<String,Object> entry : ALICE.getAllProperties().entrySet() )
+        ALICE.properties().foreach( ( s, value ) ->
         {
-            packer.pack( entry.getKey() );
-            packer.pack( entry.getValue() );
-        }
+            try
+            {
+                packer.pack( s );
+                packer.pack( value );
+            }
+            catch ( IOException e )
+            {
+                e.printStackTrace();
+            }
+        } );
         packer.packEndOfStream();
-        Object unpacked = unpacked( output.bytes() );
+        AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( Map.class ) );
-        Map<String,Object> unpackedMap = (Map<String,Object>) unpacked;
-        assertThat( unpackedMap, equalTo( ALICE.getAllProperties() ) );
+        assertThat( unpacked, instanceOf( MapValue.class ) );
+        MapValue unpackedMap = (MapValue) unpacked;
+        assertThat( unpackedMap, equalTo( ALICE.properties() ) );
     }
 
     @SuppressWarnings( "unchecked" )
@@ -128,10 +136,10 @@ public class Neo4jPackTest
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
         packer.packMapStreamHeader();
 
-        HashMap<String,Object> map = new HashMap<>();
-        map.put(null, 42L);
-        map.put("foo", 1337L);
-        for ( Map.Entry<String,Object> entry : map.entrySet() )
+        HashMap<String,AnyValue> map = new HashMap<>();
+        map.put( null, longValue( 42L ) );
+        map.put( "foo", longValue( 1337L ) );
+        for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {
             packer.pack( entry.getKey() );
             packer.pack( entry.getValue() );
@@ -144,40 +152,9 @@ public class Neo4jPackTest
         unpacker.unpack();
 
         // Then
-        assertThat(unpacker.consumeError().get(), equalTo(
+        assertThat( unpacker.consumeError().get(), equalTo(
                 Neo4jError.from( Status.Request.Invalid,
-                        "Value `null` is not supported as key in maps, must be a non-nullable string." )));
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void shouldFailWhenNullKeysInMaps() throws IOException
-    {
-        // Given
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        HashMap<String,Object> map = new HashMap<>();
-        map.put(null, 42L);
-        map.put("foo", 1337L);
-        packer.pack( map );
-        assertTrue( packer.hasErrors() );
-    }
-
-    @SuppressWarnings( "unchecked" )
-    @Test
-    public void shouldFailNicelyWhenPackingAMapWithUnpackableValues() throws IOException
-    {
-        // Given
-        PackedOutputArray output = new PackedOutputArray();
-        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.packRawMap( map( "unpackable", new Unpackable() ) );
-        Object unpacked = unpacked( output.bytes() );
-
-        // Then
-        assertThat( unpacked, instanceOf( Map.class ) );
-        Map<String,Object> unpackedMap = (Map<String,Object>) unpacked;
-        assertThat( unpackedMap, equalTo( map( "unpackable", null ) ) );
-        assertTrue( packer.hasErrors() );
+                        "Value `null` is not supported as key in maps, must be a non-nullable string." ) ) );
     }
 
     @Test
@@ -198,29 +175,8 @@ public class Neo4jPackTest
         unpacker.unpack();
 
         // Then
-        assertThat(unpacker.consumeError().get(), equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ));
-    }
-
-    @Test
-    public void shouldHandleDeletedNodesGracefully() throws IOException
-    {
-        // Given
-        Node node = mock( Node.class );
-        when( node.getId() ).thenReturn( 42L );
-        doThrow( NotFoundException.class ).when( node ).getAllProperties();
-        doThrow( NotFoundException.class ).when( node ).getLabels();
-
-        // When
-        byte[] packed = packed( node );
-
-        // Then
-        //Node (signature=0x4E)
-        //{
-        //    id: 42 (0x2A)
-        //    labels: [] (90)
-        //    props: {} (A0)
-        //}
-        assertThat( HexPrinter.hex( packed ), equalTo( "B3 4E 2A 90 A0" ) );
+        assertThat( unpacker.consumeError().get(),
+                equalTo( Neo4jError.from( Status.Request.Invalid, "Duplicate map key `key`." ) ) );
     }
 
     @Test
@@ -244,7 +200,7 @@ public class Neo4jPackTest
     @Test
     public void shouldNotBeAbleToUnpackPaths() throws IOException
     {
-        for ( Path path : ALL_PATHS )
+        for ( PathValue path : ALL_PATHS )
         {
             // Expect
             exception.expect( BoltIOException.class );
@@ -259,12 +215,12 @@ public class Neo4jPackTest
         // Given
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.pack( 'C' );
-        Object unpacked = unpacked( output.bytes() );
+        packer.pack( charValue( 'C' ) );
+        AnyValue unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( String.class ) );
-        assertThat( unpacked, equalTo( "C" ) );
+        assertThat( unpacked, instanceOf( TextValue.class ) );
+        assertThat( unpacked, equalTo( stringValue( "C" ) ) );
     }
 
     @Test
@@ -273,12 +229,13 @@ public class Neo4jPackTest
         // Given
         PackedOutputArray output = new PackedOutputArray();
         Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
-        packer.pack( new char[]{'W', 'H', 'Y'} );
+        packer.pack( Values.charArray( new char[]{'W', 'H', 'Y'} ) );
         Object unpacked = unpacked( output.bytes() );
 
         // Then
-        assertThat( unpacked, instanceOf( List.class ) );
-        assertThat( unpacked, equalTo( asList( "W", "H", "Y" ) ) );
+        assertThat( unpacked, instanceOf( ListValue.class ) );
+        assertThat( unpacked,
+                equalTo( VirtualValues.list( stringValue( "W" ), stringValue( "H" ), stringValue( "Y" ) ) ) );
     }
 
     private static class Unpackable

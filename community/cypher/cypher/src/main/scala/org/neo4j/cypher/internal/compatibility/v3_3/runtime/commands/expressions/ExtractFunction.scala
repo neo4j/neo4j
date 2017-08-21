@@ -20,19 +20,21 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
   extends NullInNullOutExpression(collection)
   with ListSupport
   with Closure {
-
-  def compute(value: Any, m: ExecutionContext)(implicit state: QueryState) = makeTraversable(value).map {
-    case iterValue =>
-      val innerMap = m.newWith1(id, iterValue)
-      expression(innerMap)
-  }.toList
+  def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
+    val list = makeTraversable(value)
+    VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
+      override def apply(v1: AnyValue): AnyValue = expression(m.newWith1(id, v1))
+    })
+  }
 
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 

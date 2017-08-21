@@ -36,8 +36,11 @@ import org.neo4j.kernel.api.bolt.ManagedBoltStateMachine;
 import org.neo4j.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.api.security.AuthToken.PRINCIPAL;
+import static org.neo4j.values.storable.Values.stringArray;
 
 /**
  * This state machine oversees the exchange of messages for the Bolt protocol.
@@ -112,8 +115,8 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     /**
      * Initialize the session.
      */
-    public void init( String userAgent, Map<String, Object> authToken,
-                      BoltResponseHandler handler ) throws BoltConnectionFatality
+    public void init( String userAgent, Map<String,Object> authToken,
+            BoltResponseHandler handler ) throws BoltConnectionFatality
     {
         before( handler );
         try
@@ -129,12 +132,12 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     /**
      * Clear any outstanding error condition. This differs from {@link #reset(BoltResponseHandler)} in two
      * important ways:
-     *
+     * <p>
      * 1) If there was an explicitly created transaction, the session will move back
-     *    to IN_TRANSACTION, rather than IDLE. This allows a more natural flow for client
-     *    side drivers, where explicitly opened transactions always are ended with COMMIT or ROLLBACK,
-     *    even if an error occurs. In all other cases, the session will move to the IDLE state.
-     *
+     * to IN_TRANSACTION, rather than IDLE. This allows a more natural flow for client
+     * side drivers, where explicitly opened transactions always are ended with COMMIT or ROLLBACK,
+     * even if an error occurs. In all other cases, the session will move to the IDLE state.
+     * <p>
      * 2) It will not interrupt any ahead-in-line messages.
      */
     public void ackFailure( BoltResponseHandler handler ) throws BoltConnectionFatality
@@ -153,15 +156,15 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     /**
      * Reset the session to an IDLE state. This clears any outstanding failure condition, disposes
      * of any outstanding result records and rolls back the current transaction (if any).
-     *
+     * <p>
      * This differs from {@link #ackFailure(BoltResponseHandler)} in that it is more "radical" - it does not
      * matter what the state of the session is, as long as it is open, reset will move it back to IDLE.
-     *
+     * <p>
      * This is designed to cater to two use cases:
-     *
+     * <p>
      * 1) Rather than create new sessions over and over, drivers can maintain a pool of sessions,
-     *    and reset them before each re-use. Since establishing sessions can be high overhead,
-     *    this is quite helpful.
+     * and reset them before each re-use. Since establishing sessions can be high overhead,
+     * this is quite helpful.
      * 2) Kill any stuck or long running operation
      */
     public void reset( BoltResponseHandler handler ) throws BoltConnectionFatality
@@ -184,7 +187,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
      * {@link #pullAll(BoltResponseHandler) pulled} or {@link #discardAll(BoltResponseHandler)
      * discarded}.
      */
-    public void run( String statement, Map<String, Object> params, BoltResponseHandler handler )
+    public void run( String statement, Map<String,Object> params, BoltResponseHandler handler )
             throws BoltConnectionFatality
     {
         long start = clock.millis();
@@ -192,7 +195,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         try
         {
             state = state.run( this, statement, params );
-            handler.onMetadata( "result_available_after", clock.millis() - start );
+            handler.onMetadata( "result_available_after", Values.longValue( clock.millis() - start ) );
         }
         finally
         {
@@ -247,11 +250,11 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
      * and will then ignore all inbound messages until a {@link #reset(BoltResponseHandler) reset}
      * message is received. If this is called multiple times, an equivalent number
      * of reset messages must be received before the SSM goes back to a good state.
-     *
+     * <p>
      * You can imagine this is as a "call ahead" mechanism used by RESET to
      * cancel any statements ahead of it in line, without compromising the single-
      * threaded processing of messages that the state machine does.
-     *
+     * <p>
      * This can be used to cancel a long-running statement or transaction.
      */
     public void interrupt()
@@ -338,7 +341,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 {
                     @Override
                     public State init( BoltStateMachine machine, String userAgent,
-                                       Map<String, Object> authToken ) throws BoltConnectionFatality
+                            Map<String,Object> authToken ) throws BoltConnectionFatality
                     {
                         try
                         {
@@ -346,9 +349,9 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                             machine.ctx.init( authResult );
                             if ( authResult.credentialsExpired() )
                             {
-                                machine.ctx.onMetadata( "credentials_expired", true );
+                                machine.ctx.onMetadata( "credentials_expired", Values.TRUE );
                             }
-                            machine.ctx.onMetadata( "server", machine.spi.version() );
+                            machine.ctx.onMetadata( "server", Values.stringValue( machine.spi.version() ) );
 
                             machine.spi.udcRegisterClient( userAgent );
                             if ( authToken.containsKey( PRINCIPAL ) )
@@ -388,12 +391,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                 {
                     @Override
                     public State run( BoltStateMachine machine, String statement,
-                                      Map<String, Object> params ) throws BoltConnectionFatality
+                            Map<String,Object> params ) throws BoltConnectionFatality
                     {
                         try
                         {
-                            StatementMetadata statementMetadata = machine.ctx.statementProcessor.run( statement, params );
-                            machine.ctx.onMetadata( "fields", statementMetadata.fieldNames() );
+                            StatementMetadata statementMetadata =
+                                    machine.ctx.statementProcessor.run( statement, params );
+                            machine.ctx.onMetadata( "fields", stringArray( statementMetadata.fieldNames() ) );
                             return STREAMING;
                         }
                         catch ( AuthorizationExpiredException e )
@@ -514,7 +518,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
 
                     @Override
                     public State run( BoltStateMachine machine, String statement,
-                                      Map<String, Object> params )
+                            Map<String,Object> params )
                     {
                         machine.ctx.markIgnored();
                         return FAILED;
@@ -568,7 +572,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
 
                     @Override
-                    public State run( BoltStateMachine machine, String statement, Map<String, Object>
+                    public State run( BoltStateMachine machine, String statement, Map<String,Object>
                             params ) throws BoltConnectionFatality
                     {
                         machine.ctx.markIgnored();
@@ -590,7 +594,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
                     }
                 };
 
-        public State init( BoltStateMachine machine, String userAgent, Map<String, Object> authToken )
+        public State init( BoltStateMachine machine, String userAgent, Map<String,Object> authToken )
                 throws BoltConnectionFatality
         {
             String msg = "INIT cannot be handled by a session in the " + name() + " state.";
@@ -621,7 +625,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
             throw new BoltProtocolBreachFatality( msg );
         }
 
-        public State run( BoltStateMachine machine, String statement, Map<String, Object> params ) throws
+        public State run( BoltStateMachine machine, String statement, Map<String,Object> params ) throws
                 BoltConnectionFatality
         {
             String msg = "RUN cannot be handled by a session in the " + name() + " state.";
@@ -716,7 +720,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         private void setQuerySourceFromClientNameAndPrincipal( String clientName, String principal,
-                                                               BoltConnectionDescriptor connectionDescriptor )
+                BoltConnectionDescriptor connectionDescriptor )
         {
             String principalName = principal == null ? "null" : principal;
             statementProcessor.setQuerySource( new BoltQuerySource( principalName, clientName, connectionDescriptor ) );
@@ -740,7 +744,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
         }
 
         @Override
-        public void onMetadata( String key, Object value )
+        public void onMetadata( String key, AnyValue value )
         {
             if ( responseHandler != null )
             {
@@ -781,7 +785,7 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     {
         void reportError( Neo4jError err );
 
-        AuthenticationResult authenticate( Map<String, Object> authToken ) throws AuthenticationException;
+        AuthenticationResult authenticate( Map<String,Object> authToken ) throws AuthenticationException;
 
         void udcRegisterClient( String clientName );
 
@@ -799,13 +803,13 @@ public class BoltStateMachine implements AutoCloseable, ManagedBoltStateMachine
     private static class NullStatementProcessor implements StatementProcessor
     {
         @Override
-        public StatementMetadata run( String statement, Map<String, Object> params ) throws KernelException
+        public StatementMetadata run( String statement, Map<String,Object> params ) throws KernelException
         {
             throw new UnsupportedOperationException( "Unable to run any statements." );
         }
 
         @Override
-        public void streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
+        public void streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream any results." );
         }

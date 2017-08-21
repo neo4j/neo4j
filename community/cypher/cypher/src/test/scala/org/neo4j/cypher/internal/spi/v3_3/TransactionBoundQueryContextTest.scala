@@ -122,7 +122,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
-    val iterable = DynamicIterable(context.getRelationshipsForIds(node, SemanticDirection.BOTH, None))
+    val iterable = DynamicIterable(context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, None))
 
     // THEN
     val iteratorA: Iterator[Relationship] = iterable.iterator

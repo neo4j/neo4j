@@ -65,7 +65,6 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 
-import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.message.InitMessage.init;
@@ -80,6 +79,8 @@ import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventual
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_READ_TIMEOUT_CLIENT_MESSAGE;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 interface TimeoutTests
 { /* Category marker */
@@ -88,7 +89,7 @@ interface TimeoutTests
 @RunWith( FrameworkRunner.class )
 @CreateDS(
         name = "Test",
-        partitions = { @CreatePartition(
+        partitions = {@CreatePartition(
                 name = "example",
                 suffix = "dc=example,dc=com",
                 contextEntry = @ContextEntry( entryLdif = "dn: dc=example,dc=com\n" +
@@ -102,25 +103,26 @@ interface TimeoutTests
                 @LoadSchema( name = "nis", enabled = true ),
         } )
 @CreateLdapServer(
-        transports = { @CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ),
-                       @CreateTransport( protocol = "LDAPS", port = 10636, address = "0.0.0.0", ssl = true )
+        transports = {@CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ),
+                @CreateTransport( protocol = "LDAPS", port = 10636, address = "0.0.0.0", ssl = true )
         },
 
         saslMechanisms = {
                 @SaslMechanism( name = "DIGEST-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
                         .digestMD5.DigestMd5MechanismHandler.class ),
-                @SaslMechanism( name  = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
+                @SaslMechanism( name = "CRAM-MD5", implClass = org.apache.directory.server.ldap.handlers.sasl
                         .cramMD5.CramMd5MechanismHandler.class )
         },
         saslHost = "0.0.0.0",
-        extendedOpHandlers = { StartTlsHandler.class },
+        extendedOpHandlers = {StartTlsHandler.class},
         keyStore = "target/test-classes/neo4j_ldap_test_keystore.jks",
         certificatePassword = "secret"
 )
 @ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 {
-    private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw=="; // Hashed 'abc123' (see ldap_test_data.ldif)
+    private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw==";
+    // Hashed 'abc123' (see ldap_test_data.ldif)
 
     @Before
     @Override
@@ -157,7 +159,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
     {
         return super.getSettingsFunction().andThen( ldapOnlyAuthSettings ).andThen( settings ->
         {
@@ -281,8 +283,9 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // Assuming showCurrentUser has fields username, roles, flags
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( "smith" ), equalTo( emptyList() ), equalTo( emptyList() ) ) )
-            ) );
+                msgRecord(
+                        eqRecord( equalTo( stringValue( "smith" ) ), equalTo( EMPTY_LIST ), equalTo( EMPTY_LIST ) ) )
+        ) );
     }
 
     @Test
@@ -290,7 +293,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
-                .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null ) ) );
+                .andThen(
+                        settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, null ) ) );
 
         // Then
         // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
@@ -304,7 +308,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
                 .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
-                " '500'  =\t reader  ; \"501\"\t=publisher\n;502 =architect  ;  \"503\"=  \nadmin" ) ) );
+                        " '500'  =\t reader  ; \"501\"\t=publisher\n;502 =architect  ;  \"503\"=  \nadmin" ) ) );
 
         // Then
         testAuthWithReaderUser();
@@ -380,7 +384,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithUserLdapContextAndNoGroupToRoleMapping()
+            throws Throwable
     {
         restartNeo4jServerWithOverriddenSettings( settings ->
         {
@@ -436,13 +441,13 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         String ldapReaderUser = "neo";
         String nativePassword = "nativePassword";
 
-            // this is ugly, but cannot be resolved until embedded gets security
-        GraphDatabaseFacade gds = (GraphDatabaseFacade)server.graphDatabaseService();
+        // this is ugly, but cannot be resolved until embedded gets security
+        GraphDatabaseFacade gds = (GraphDatabaseFacade) server.graphDatabaseService();
         EnterpriseAuthAndUserManager authManager =
                 gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
 
         authManager.getUserManager( EnterpriseSecurityContext.AUTH_DISABLED )
-                    .newUser( ldapReaderUser, nativePassword, false );
+                .newUser( ldapReaderUser, nativePassword, false );
 
         // Then
         // login user 'neo' with native auth provider and test that LDAP authorization gives correct permission
@@ -550,7 +555,8 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     {
         // When
         restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings
-                .andThen( settings -> settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" ) ) );
+                .andThen( settings -> settings
+                        .put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=role1" ) ) );
 
         GraphDatabaseAPI graphDatabaseAPI = (GraphDatabaseAPI) server.graphDatabaseService();
         graphDatabaseAPI.getDependencyResolver().resolveDependency( Procedures.class )
@@ -643,7 +649,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // Then
         assertThat( client, eventuallyReceives(
                 msgSuccess(),
-                msgRecord( eqRecord( equalTo( "foo" ) ) ),
+                msgRecord( eqRecord( equalTo( stringValue( "foo" ) ) ) ),
                 msgSuccess() ) );
     }
 
@@ -1105,7 +1111,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             break;
         default:
             throw new IllegalArgumentException( "Invalid group name '" + group +
-                    "', expected one of none, reader, publisher, architect, or admin" );
+                                                "', expected one of none, reader, publisher, architect, or admin" );
         }
         modifyLDAPAttribute( username, credentials, "gidnumber", gid );
     }

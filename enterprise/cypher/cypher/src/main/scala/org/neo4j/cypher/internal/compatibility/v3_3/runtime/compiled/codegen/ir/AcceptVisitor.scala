@@ -29,11 +29,22 @@ case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeG
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(produceResultOpName) { body =>
       body.incrementRows()
-      columns.foreach { case (k, v) =>
-        body.setInRow(k, generator.box(v.generateExpression(body), v.codeGenType))
+      columns.foreach { case (k, v: CodeGenExpression) =>
+        body.setInRow(context.nameToIndex(k), anyValue(body, v))
       }
       body.visitorAccept()
     }
+  }
+
+  private def anyValue[E](generator: MethodStructure[E], v: CodeGenExpression)(implicit context: CodeGenContext) = {
+    if (v.nullable) {
+      val variable = context.namer.newVarName()
+      generator.localVariable(variable, v.generateExpression(generator))
+      generator.ternaryOperator(generator.isNull(generator.loadVariable(variable), v.codeGenType),
+                                generator.noValue(),
+                                generator.toAnyValue(generator.loadVariable(variable), v.codeGenType))
+    }
+    else generator.toAnyValue(v.generateExpression(generator), v.codeGenType)
   }
 
   override protected def operatorId = Set(produceResultOpName)

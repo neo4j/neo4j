@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
 
 case class GenericCase(alternatives: IndexedSeq[(Predicate, Expression)], default: Option[Expression]) extends Expression {
 
   require(alternatives.nonEmpty)
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val thisMatch: Option[Expression] = alternatives collectFirst {
       case (p, res) if p.isTrue(ctx) => res
     }

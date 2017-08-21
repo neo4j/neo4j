@@ -20,12 +20,16 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Matchers._
+import org.neo4j.cypher.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values.{doubleArray, intArray, intValue}
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -45,7 +49,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result.toList should beEquivalentTo(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle nulls") {
@@ -62,7 +66,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> 2, "b" -> 2)))
+    result.toList should beEquivalentTo(List(Map("a" -> 2, "b" -> 2)))
   }
 
   test("should handle multiples on both sides") {
@@ -93,10 +97,10 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
     // then
     result.toSet should equal(Set(
-      Map("a" -> 1, "b" -> 1, "a2" -> 1, "b2" -> 1),
-      Map("a" -> 1, "b" -> 1, "a2" -> 2, "b2" -> 1),
-      Map("a" -> 2, "b" -> 2, "a2" -> 3, "b2" -> 2),
-      Map("a" -> 2, "b" -> 2, "a2" -> 3, "b2" -> 3)
+      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(1), "b2" -> intValue(1)),
+      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(2), "b2" -> intValue(1)),
+      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(2)),
+      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(3))
     ))
   }
 
@@ -159,16 +163,16 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   test("should support joining on arrays") {
     // given
-    val ints = Array(1, 2, 3)
-    val doubles = Array(1.0, 2.0, 3.0)
+    val ints = intArray(Array(1, 2, 3))
+    val doubles = doubleArray(Array(1.0, 2.0, 3.0))
 
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
-    when(left.createResults(queryState)).thenReturn(rows("a", ints, Array(2, 3, 4)))
+    when(left.createResults(queryState)).thenReturn(rows("a", ints, intArray(Array(2, 3, 4))))
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
-    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, Array(0, 1, 2)))
+    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, intArray(Array(0, 1, 2))))
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
@@ -178,9 +182,9 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
   }
 
 
-  private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
+  private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
-  private def rows(variable: String, values: Any*): Iterator[ExecutionContext] =
+  private def rows(variable: String, values: AnyValue*): Iterator[ExecutionContext] =
     values.map(x => ExecutionContext.from(variable -> x)).iterator
 
   private def newMockedPipe(symbolTable: SymbolTable): Pipe = {

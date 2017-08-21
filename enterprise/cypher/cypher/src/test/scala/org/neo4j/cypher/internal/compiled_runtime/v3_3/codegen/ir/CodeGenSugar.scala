@@ -23,23 +23,25 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.{CompiledExecutionResult, CompiledPlan}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalExecutionResult, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, NormalMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
-import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
+import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.v3_3.codegen.QueryExecutionTracer
 import org.neo4j.cypher.internal.v3_3.executionplan.{GeneratedQuery, GeneratedQueryExecution}
 import org.neo4j.graphdb.GraphDatabaseService
+import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.api.{KernelTransaction, Statement}
@@ -52,6 +54,7 @@ import org.scalatest.mock.MockitoSugar
 import scala.collection.JavaConversions
 
 trait CodeGenSugar extends MockitoSugar {
+
   private val semanticTable = mock[SemanticTable]
 
   def compile(plan: LogicalPlan): CompiledPlan = {
@@ -75,10 +78,12 @@ trait CodeGenSugar extends MockitoSugar {
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
       val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
-      val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
-                                                                                       "no query text exists for this test", Collections.emptyMap()))
+      val transactionalContext = TransactionalContextWrapper(
+        contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx,
+                                  "no query text exists for this test", Collections.emptyMap()))
       val queryContext = new TransactionBoundQueryContext(transactionalContext)(mock[IndexSearchMonitor])
-      val result = plan.executionResultBuilder(queryContext, mode, tracer(mode, queryContext), Map.empty, new TaskCloser)
+      val result = plan
+        .executionResultBuilder(queryContext, mode, tracer(mode, queryContext), Map.empty, new TaskCloser)
       tx.success()
       result.size
       result
@@ -92,7 +97,7 @@ trait CodeGenSugar extends MockitoSugar {
                columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
-    val clazz = compile(instructions, columns,  operatorIds)
+    val clazz = compile(instructions, columns, operatorIds)
     val result = newInstance(clazz, queryContext = qtx, params = params)
     evaluate(result)
   }
@@ -100,8 +105,8 @@ trait CodeGenSugar extends MockitoSugar {
   def evaluate(result: InternalExecutionResult): List[Map[String, Object]] = {
     var rows = List.empty[Map[String, Object]]
     val columns: List[String] = result.columns
-    result.accept(new InternalResultVisitor[RuntimeException] {
-      override def visit(row: InternalResultRow): Boolean = {
+    result.accept(new ResultVisitor[RuntimeException] {
+      override def visit(row: ResultRow): Boolean = {
         rows = rows :+ columns.map(key => (key, row.get(key))).toMap
         true
       }
@@ -111,11 +116,12 @@ trait CodeGenSugar extends MockitoSugar {
 
   def codeGenConfiguration = CodeGenConfiguration(mode = ByteCodeMode)
 
-  def compile(instructions: Seq[Instruction], columns: Seq[String], operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
+  def compile(instructions: Seq[Instruction], columns: Seq[String],
+              operatorIds: Map[String, Id] = Map.empty): GeneratedQuery = {
     //In reality the same namer should be used for construction Instruction as in generating code
     //these tests separate the concerns so we give this namer non-standard prefixes
     CodeGenerator.generateCode(GeneratedQueryStructure)(instructions, operatorIds, columns, codeGenConfiguration)(
-      new CodeGenContext(new SemanticTable(), Map.empty, new Namer(
+      new CodeGenContext(new SemanticTable(), Map.empty, columns.indices.map(i => columns(i) -> i).toMap, new Namer(
         new AtomicInteger(0), varPrefix = "TEST_VAR", methodPrefix = "TEST_METHOD"))).query
   }
 

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
+import org.neo4j.graphdb.ExecutionPlanDescription
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -81,33 +82,35 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should show_java_source") {
     val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n", Map.empty[String, Object])
-    res.size
-    shouldContainSourceCode(res.executionPlanDescription())
+    res.resultAsString()
+    shouldContainSourceCode(res.getExecutionPlanDescription)
   }
 
   test("should show_bytecode") {
     val res = eengine.execute("CYPHER debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
-    res.size
-    shouldContainByteCode(res.executionPlanDescription())
+    res.resultAsString()
+    shouldContainByteCode(res.getExecutionPlanDescription)
   }
 
   test("should show_java_source and show_bytecode") {
     val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
-    res.size
-    shouldContainSourceCode(res.executionPlanDescription())
-    shouldContainByteCode(res.executionPlanDescription())
+    res.resultAsString()
+    shouldContainSourceCode(res.getExecutionPlanDescription)
+    shouldContainByteCode(res.getExecutionPlanDescription)
   }
 
-  private def shouldContainSourceCode(planDescription: org.neo4j.cypher.internal.PlanDescription) = {
+  private def shouldContainSourceCode(planDescription: ExecutionPlanDescription) = {
     shouldContain("source", planDescription)
   }
 
-  private def shouldContainByteCode(planDescription: org.neo4j.cypher.internal.PlanDescription) = {
+  private def shouldContainByteCode(planDescription: ExecutionPlanDescription) = {
     shouldContain("bytecode", planDescription)
   }
 
-  private def shouldContain(argument:String, planDescription: org.neo4j.cypher.internal.PlanDescription) = {
-    if(!planDescription.arguments.exists {
+  import scala.collection.JavaConverters._
+
+  private def shouldContain(argument:String, planDescription: ExecutionPlanDescription) = {
+    if(!planDescription.getArguments.asScala.exists {
       case (name: String, code: String) if name.startsWith(s"$argument:") =>
         !code.isEmpty
       case _ => false
@@ -123,7 +126,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
                        planner: Option[PlannerName] = None,
                        runtime: Option[RuntimeName] = None) {
 
-    lazy val planDescription: PlanDescription = execute()
+    lazy val planDescription: ExecutionPlanDescription = execute()
 
     def withCypherVersion(version: CypherVersion): TestQuery = copy(cypherVersion = Some(version))
 
@@ -158,9 +161,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
           s"CYPHER $version $plannerString $runtimeString"
       }
       val result = eengine.profile(s"$prepend $query", Map.empty[String, Object])
-      result.size
-      val executionResult = result.executionPlanDescription()
-      executionResult.asJava
+      result.resultAsString()
+      val executionResult = result.getExecutionPlanDescription
+      executionResult
     }
   }
 }

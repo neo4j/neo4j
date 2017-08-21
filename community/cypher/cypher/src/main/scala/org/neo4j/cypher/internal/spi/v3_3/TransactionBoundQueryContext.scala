@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.compiler.v3_3.{IndexDescriptor, _}
 import org.neo4j.cypher.internal.frontend.v3_3._
+import org.neo4j.cypher.internal.javacompat.ValueToObjectSerializer
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -58,7 +59,11 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{NodeManager, RelationshipProxy}
 import org.neo4j.kernel.impl.locking.ResourceTypes
-import org.neo4j.values.storable.Values
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.EdgeValue.RelationshipProxyWrappingEdgeValue
+import org.neo4j.values.virtual.NodeValue.NodeProxyWrappingNodeValue
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -72,7 +77,6 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override val relationshipOps = new RelationshipOperations
   override lazy val entityAccessor: NodeManager =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
-
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = labelIds.foldLeft(0) {
     case (count, labelId) => if (transactionalContext.statement.dataWriteOperations().nodeAddLabel(node, labelId)) count + 1 else count
   }
@@ -132,8 +136,16 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def getOrCreateLabelId(labelName: String) =
     transactionalContext.statement.tokenWriteOperations().labelGetOrCreateForName(labelName)
 
-  override def getRelationshipsForIds(node: Node, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
-    new BeansAPIRelationshipIterator(getRelationshipsForIdsPrimitive(node.getId, dir, types), entityAccessor)
+
+  def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] = {
+    val relationships = types match {
+      case None =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir))
+      case Some(typeIds) =>
+        transactionalContext.statement.readOperations().nodeGetRelationships(node, toGraphDb(dir), typeIds.toArray)
+    }
+    new BeansAPIRelationshipIterator(relationships, entityAccessor)
+  }
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
     types match {
@@ -312,10 +324,24 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def nodeIsDense(node: Long): Boolean = transactionalContext.statement.readOperations().nodeIsDense(node)
 
+  override def asObject(value: AnyValue): Any = {
+    value match {
+      case node: NodeProxyWrappingNodeValue => node.nodeProxy
+      case edge: RelationshipProxyWrappingEdgeValue => edge.relationshipProxy
+      case _ =>
+
+        val converter = new ValueToObjectSerializer(entityAccessor)
+        //TODO this is not very nice, but I need a transaction here and this is what
+        // I ended up with.
+        withAnyOpenQueryContext(_ => value.writeTo(converter))
+        converter.value()
+    }
+  }
+
   class NodeOperations extends BaseOperations[Node] {
-    override def delete(obj: Node) {
+    override def delete(id: Long) {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeDelete(obj.getId)
+        transactionalContext.statement.dataWriteOperations().nodeDelete(id)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
@@ -327,14 +353,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
+    override def getProperty(id: Long, propertyKeyId: Int): Value = try {
+      transactionalContext.statement.readOperations().nodeGetProperty(id, propertyKeyId)
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Node with id $id has been deleted in this transaction", e)
         else
-          null
+          Values.NO_VALUE
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
@@ -351,9 +377,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       try {
-        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
+        transactionalContext.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, value)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -377,9 +403,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def indexQuery(name: String, query: Any): Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
 
-    override def isDeletedInThisTx(n: Node): Boolean = isDeletedInThisTx(n.getId)
-
-    def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
+    override def isDeletedInThisTx(id: Long): Boolean = transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().nodeIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
       transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.NODE, obj)
@@ -393,9 +417,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   class RelationshipOperations extends BaseOperations[Relationship] {
 
-    override def delete(obj: Relationship) {
+    override def delete(id: Long) {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipDelete(obj.getId)
+        transactionalContext.statement.dataWriteOperations().relationshipDelete(id)
       } catch {
         case _: exceptions.EntityNotFoundException => // node has been deleted by another transaction, oh well...
       }
@@ -407,14 +431,14 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       case _: exceptions.EntityNotFoundException => Iterator.empty
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
+    override def getProperty(id: Long, propertyKeyId: Int): Value = try {
+      transactionalContext.statement.readOperations().relationshipGetProperty(id, propertyKeyId)
     } catch {
       case e: org.neo4j.kernel.api.exceptions.EntityNotFoundException =>
         if (isDeletedInThisTx(id))
           throw new EntityNotFoundException(s"Relationship with id $id has been deleted in this transaction", e)
         else
-          null
+          Values.NO_VALUE
     }
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
@@ -431,9 +455,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
     }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = {
+    override def setProperty(id: Long, propertyKeyId: Int, value: Value): Unit = {
       try {
-        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
+        transactionalContext.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, value)
       } catch {
         case _: exceptions.EntityNotFoundException => //ignore
       }
@@ -458,10 +482,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
       JavaConversionSupport.mapToScalaENFXSafe(transactionalContext.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
-    override def isDeletedInThisTx(r: Relationship): Boolean =
-      isDeletedInThisTx(r.getId)
-
-    def isDeletedInThisTx(id: Long): Boolean =
+    override def isDeletedInThisTx(id: Long): Boolean =
       transactionalContext.stateView.hasTxStateWithChanges && transactionalContext.stateView.txState().relationshipIsDeletedInThisTx(id)
 
     override def acquireExclusiveLock(obj: Long) =
@@ -569,15 +590,15 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
   }
 
-  override def relationshipStartNode(rel: Relationship) = rel.getStartNode
+  override def edgeGetStartNode(edge: EdgeValue) = edge.startNode()
 
-  override def relationshipEndNode(rel: Relationship) = rel.getEndNode
+  override def edgeGetEndNode(edge: EdgeValue) = edge.endNode()
 
   private lazy val tokenNameLookup = new StatementTokenNameLookup(transactionalContext.statement.readOperations())
 
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(node: PatternNode,
-                                        realNode: Node,
+                                        realNode: Long,
                                         minHops: Option[Int],
                                         maxHops: Option[Int],
                                         direction: SemanticDirection,
@@ -606,7 +627,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
       }
       baseTraversalDescription.expand(expander.build())
     }
-    traversalDescription.traverse(realNode).iterator().asScala
+    traversalDescription.traverse(entityAccessor.newNodeProxyById(realNode)).iterator().asScala
   }
 
   override def nodeCountByCountStore(labelId: Int): Long = {
@@ -623,20 +644,21 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def lockRelationships(relIds: Long*) =
     relIds.sorted.foreach(transactionalContext.statement.readOperations().acquireExclusive(ResourceTypes.RELATIONSHIP, _))
 
-  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander,
+  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: expressions.Expander,
                                   pathPredicate: KernelPredicate[Path],
                                   filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
-    Option(pathFinder.findSinglePath(left, right))
+    //could probably do without node proxies here
+    Option(pathFinder.findSinglePath(entityAccessor.newNodeProxyById(left), entityAccessor.newNodeProxyById(right)))
   }
 
-  override def allShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander,
+  override def allShortestPath(left: Long, right: Long, depth: Int, expander: expressions.Expander,
                                pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
-    pathFinder.findAllPaths(left, right).iterator().asScala
+    pathFinder.findAllPaths(entityAccessor.newNodeProxyById(left), entityAccessor.newNodeProxyById(right)).iterator().asScala
   }
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
@@ -765,9 +787,9 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
   }
 
-  override def detachDeleteNode(node: Node): Int = {
+  override def detachDeleteNode(node: Long): Int = {
     try {
-      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node.getId)
+      transactionalContext.statement.dataWriteOperations().nodeDetachDelete(node)
     } catch {
       case _: exceptions.EntityNotFoundException => 0 // node has been deleted by another transaction, oh well...
     }

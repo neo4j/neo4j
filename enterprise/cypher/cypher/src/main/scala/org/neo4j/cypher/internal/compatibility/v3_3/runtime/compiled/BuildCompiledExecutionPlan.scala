@@ -19,23 +19,27 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.DescriptionProvider
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping.asKernelNotification
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{TaskCloser, _}
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.codegen.profiling.ProfilingTracer
+import org.neo4j.values.AnyValue
 
 object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] {
 
@@ -49,7 +53,7 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable, from.plannerName)
+      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(executionPlan))
@@ -66,17 +70,19 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
     override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
 
     override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: Map[String, Any]): InternalExecutionResult = {
+                     executionMode: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       try {
         if (executionMode == ExplainMode) {
           //close all statements
           taskCloser.close(success = true)
-          ExplainExecutionResult(compiled.columns.toList,
-            compiled.planDescription, READ_ONLY, context.notificationLogger.notifications)
+          val logger = context.notificationLogger
+          ExplainExecutionResult(compiled.columns.toArray,
+                                 compiled.planDescription, READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
         } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext), params, taskCloser)
+          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
+                                          immutableMapValues(params, queryContext.asObject), taskCloser)
       } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)

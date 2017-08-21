@@ -30,8 +30,8 @@ import org.neo4j.codegen._
 import org.neo4j.collection.primitive.{Primitive, PrimitiveLongIntMap, PrimitiveLongObjectMap}
 import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelationshipStream}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{Completable, Provider}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, TaskCloser}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.frontend.v3_3.CypherExecutionException
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.{ReadOperations, StatementTokenNameLookup, TokenNameLookup}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.values.storable.{Value, Values}
 
 /**
   * Contains common code generation constructs.
@@ -120,6 +121,7 @@ object Templates {
     }, exception)
   }
 
+  val noValue = Expression.getStatic(staticField[Values, Value]("NO_VALUE"))
   val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
   val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
   val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
@@ -182,7 +184,7 @@ object Templates {
                    method[Provider[InternalPlanDescription], Object]("get")))).
     build()
 
-  val JAVA_COLUMNS = MethodTemplate.method(typeRef[util.List[String]], "javaColumns").
-    returns(get(typeRef[util.List[String]], "COLUMNS")).
+  val FIELD_NAMES = MethodTemplate.method(TypeReference.typeReference(classOf[Array[String]]), "fieldNames").
+    returns(get(TypeReference.typeReference(classOf[Array[String]]), "COLUMNS")).
     build()
 }

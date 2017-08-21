@@ -26,8 +26,8 @@ import java.util.function.Supplier;
 
 import org.neo4j.bolt.v1.runtime.TransactionStateMachine.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.spi.BoltResult;
+import org.neo4j.cypher.internal.javacompat.ExecutionResult;
 import org.neo4j.function.ThrowingAction;
-import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -41,12 +41,13 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
+import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.values.result.QueryResult;
 
 import static org.neo4j.kernel.api.KernelTransaction.Type.implicit;
 
@@ -141,7 +142,9 @@ class TransactionStateMachineSPI implements TransactionStateMachine.SPI
             {
                 try
                 {
-                    Result run = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                    QueryResult run =
+                            ((ExecutionResult) queryExecutionEngine.executeQuery( statement, params, transactionalContext ))
+                                    .queryResult();
                     return new CypherAdapterStream( run, clock );
                 }
                 catch ( KernelException e )

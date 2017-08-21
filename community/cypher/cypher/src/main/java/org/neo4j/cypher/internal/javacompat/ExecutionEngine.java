@@ -58,7 +58,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return new ExecutionResult( inner.execute( query, parameters, context ) );
+            return inner.execute( query, parameters, context );
         }
         catch ( CypherException e )
         {
@@ -72,7 +72,7 @@ public class ExecutionEngine implements QueryExecutionEngine
     {
         try
         {
-            return new ExecutionResult( inner.profile( query, parameters, context ) );
+            return inner.profile( query, parameters, context );
         }
         catch ( CypherException e )
         {

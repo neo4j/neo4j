@@ -23,30 +23,31 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values._
 
 class ToBooleanFunctionTest extends CypherFunSuite {
 
   test("null in null out") {
-    assert(toBoolean(null) === null)
+    assert(toBoolean(null) === NO_VALUE)
   }
 
   test("converts strings to booleans") {
     Seq("true  ", "TRUE", " tRuE").foreach { s =>
-      toBoolean(s) shouldBe true
+      toBoolean(s) shouldBe TRUE
     }
     Seq("false", " FALSE", "FaLsE  ").foreach { s =>
-      toBoolean(s) shouldBe false
+      toBoolean(s) shouldBe FALSE
     }
   }
 
   test("identity for booleans") {
-    toBoolean(true) shouldBe true
-    toBoolean(false) shouldBe false
+    toBoolean(true) shouldBe TRUE
+    toBoolean(false) shouldBe FALSE
   }
 
   test("null for bad strings") {
-    toBoolean("tru") shouldBe null.asInstanceOf[Any]
-    toBoolean("") shouldBe null.asInstanceOf[Any]
+    toBoolean("tru") shouldBe NO_VALUE
+    toBoolean("") shouldBe NO_VALUE
   }
 
   test("throws for wrong types") {

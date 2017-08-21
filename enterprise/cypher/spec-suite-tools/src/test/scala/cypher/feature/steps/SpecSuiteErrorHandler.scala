@@ -197,9 +197,9 @@ case class SpecSuiteErrorHandler(typ: String, phase: String, detail: String) ext
 
     if (msg.matches("Type mismatch: expected a map but was .+"))
       detail should equal(PROPERTY_ACCESS_ON_NON_MAP)
-    else if (msg.matches("Expected .+ to be a java.lang.String, but it was a .+"))
+    else if (msg.matches("Expected .+ to be a ((java.lang.String)|(org.neo4j.values.storable.TextValue)), but it was a .+"))
       detail should equal(MAP_ELEMENT_ACCESS_BY_NON_STRING)
-    else if (msg.matches("Expected .+ to be a java.lang.Number, but it was a .+"))
+    else if (msg.matches("Expected .+ to be a ((java.lang.Number)|(org.neo4j.values.storable.NumberValue)), but it was a .+"))
       detail should equal(LIST_ELEMENT_ACCESS_BY_NON_INTEGER)
     else if (msg.matches(".+ is not a collection or a map. Element access is only possible by performing a collection lookup using an integer index, or by performing a map lookup using a string key .+"))
       detail should equal(INVALID_ELEMENT_ACCESS)

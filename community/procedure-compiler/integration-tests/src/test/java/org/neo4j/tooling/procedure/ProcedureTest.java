@@ -86,7 +86,7 @@ public class ProcedureTest
                 Session session = driver.session() )
         {
 
-            assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput11('string')" ).single() ).isNotNull();
+            assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput11('string') YIELD field04 AS p RETURN p" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput12(42)" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput13(42)" ).single() ).isNotNull();
             assertThat( session.run( "CALL " + procedureNamespace + ".simpleInput14(4.2)" ).single() ).isNotNull();

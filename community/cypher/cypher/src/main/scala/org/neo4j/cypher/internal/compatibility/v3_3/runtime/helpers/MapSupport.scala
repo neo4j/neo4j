@@ -19,17 +19,19 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
-import java.util.{Map => JavaMap}
+import java.util
+import java.util.Map
 
-import org.neo4j.cypher.internal.frontend.v3_3.EntityNotFoundException
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{EdgeValue, MapValue, NodeValue, VirtualValues}
 
-import scala.collection.JavaConverters._
-import scala.collection.{Iterator, Map, immutable}
+import scala.collection.immutable
 
 object IsMap extends MapSupport {
-  def unapply(x: Any): Option[(QueryContext) => Map[String, Any]] = if (isMap(x)) {
+
+  def unapply(x: AnyValue): Option[QueryContext => MapValue] = if (isMap(x)) {
     Some(castToMap(x))
   } else {
     None
@@ -37,49 +39,69 @@ object IsMap extends MapSupport {
 }
 
 trait MapSupport {
-  def isMap(x: Any) = castToMap.isDefinedAt(x)
 
-  def castToMap: PartialFunction[Any, (QueryContext) => Map[String, Any]] = {
-    case x: Any if x.isInstanceOf[Map[_, _]] =>
-      (_: QueryContext) => x.asInstanceOf[Map[String, Any]]
-    case x: Any if x.isInstanceOf[JavaMap[_, _]] =>
-      (_: QueryContext) => x.asInstanceOf[JavaMap[String, Any]].asScala
-    case x: Node  =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx, ctx.nodeOps)
-    case x: Relationship =>
-      (ctx: QueryContext) => new PropertyContainerMap(x, ctx, ctx.relationshipOps)
-  }
+  def isMap(x: AnyValue): Boolean = castToMap.isDefinedAt(x)
 
-  class PropertyContainerMap[T <: PropertyContainer](n: T, ctx: QueryContext, ops: Operations[T]) extends Map[String, Any] {
-    def +[B1 >: Any](kv: (String, B1)) = throw new UnsupportedOperationException("This map is not a real map")
-
-    def -(key: String) = throw new UnsupportedOperationException("This map is not a real map")
-
-    def get(key: String) = ctx.getOptPropertyKeyId(key).flatMap( (pkId: Int) => Option(ops.getProperty(id(n), pkId)) )
-
-    def iterator: Iterator[(String, Any)] =
-      ops.propertyKeyIds(id(n)).
-        map(propertyId => ctx.getPropertyKeyName(propertyId) -> ops.getProperty(id(n), propertyId))
-
-    override def contains(key: String) = ctx.getOptPropertyKeyId(key).exists(ops.hasProperty(id(n), _))
-
-    override def apply(key: String) =
-      get(key).getOrElse(throw new EntityNotFoundException("The property '%s' does not exist on %s".format(key, n)))
-
-    private def id(x: PropertyContainer) = n match {
-      case n: Node         => n.getId
-      case r: Relationship => r.getId
-    }
+  def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
+    case x: MapValue => _ => x
+    case x: NodeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.nodeOps, x.id()))
+    case x: EdgeValue => ctx => VirtualValues.map(new LazyMap(ctx, ctx.relationshipOps, x.id()))
   }
 }
 
+class LazyMap[T <: PropertyContainer](ctx: QueryContext, ops: Operations[T], id: Long)
+  extends java.util.Map[String, AnyValue] {
+
+  import scala.collection.JavaConverters._
+
+  private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id)
+    .map(propertyId => {
+      val value: AnyValue = ops.getProperty(id, propertyId)
+      ctx.getPropertyKeyName(propertyId) -> value
+    }
+    ).toMap.asJava
+
+  override def values(): util.Collection[AnyValue] = allProps.values()
+
+  override def containsValue(value: scala.Any): Boolean = allProps.containsValue(value)
+
+  override def remove(key: scala.Any): AnyValue = throw new UnsupportedOperationException()
+
+  override def put(key: String,
+                   value: AnyValue): AnyValue = throw new UnsupportedOperationException()
+
+  override def putAll(m: util.Map[_ <: String, _ <: AnyValue]): Unit = throw new UnsupportedOperationException()
+
+  override def get(key: scala.Any): AnyValue = ops.getProperty(id, ctx.getPropertyKeyId(key.asInstanceOf[String]))
+
+  override def keySet(): util.Set[String] = allProps.keySet()
+
+  override def entrySet(): util.Set[Map.Entry[String, AnyValue]] = allProps.entrySet()
+
+  override def containsKey(key: Any): Boolean = ctx.getOptPropertyKeyId(key.asInstanceOf[String])
+    .exists(ops.hasProperty(id, _))
+
+  override def clear(): Unit = throw new UnsupportedOperationException
+
+  override lazy val isEmpty: Boolean = ops.propertyKeyIds(id).isEmpty
+
+  override lazy val size: Int = ops.propertyKeyIds(id).size
+
+  override def hashCode(): Int = allProps.hashCode()
+
+  override def equals(obj: scala.Any): Boolean = allProps.equals(obj)
+}
+
 object MapSupport {
+
   implicit class PowerMap[A, B](m: immutable.Map[A, B]) {
+
     def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
       other.foldLeft(m) {
         case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry)                     => acc + entry
+        case (acc, entry) => acc + entry
       }
     }
   }
+
 }

@@ -19,41 +19,36 @@
  */
 package org.neo4j.values.virtual;
 
+
+import java.util.ArrayList;
+
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.TextArray;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 
-public class NodeValue extends VirtualNodeValue
+public abstract class NodeValue extends VirtualNodeValue
 {
     private final long id;
-    private final TextValue[] labels;
-    private final MapValue properties;
 
-    NodeValue( long id, TextValue[] labels, MapValue properties )
+    protected NodeValue( long id )
     {
-        assert labels != null;
-        assert properties != null;
-
         this.id = id;
-        this.labels = labels;
-        this.properties = properties;
     }
 
-    TextValue[] labels()
-    {
-        return labels;
-    }
+    public abstract TextArray labels();
 
-    MapValue properties()
-    {
-        return properties;
-    }
+    public abstract MapValue properties();
 
     @Override
     public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
     {
-       writer.writeNode( id, labels, properties  );
+        writer.writeNode( id, labels(), properties() );
     }
 
     @Override
@@ -68,4 +63,107 @@ public class NodeValue extends VirtualNodeValue
         return format( "(%d)", id );
     }
 
+    static class DirectNodeValue extends NodeValue
+    {
+        private final TextArray labels;
+        private final MapValue properties;
+
+        DirectNodeValue( long id, TextArray labels, MapValue properties )
+        {
+            super( id );
+            assert labels != null;
+            assert properties != null;
+            this.labels = labels;
+            this.properties = properties;
+        }
+
+        public TextArray labels()
+        {
+            return labels;
+        }
+
+        public MapValue properties()
+        {
+            return properties;
+        }
+    }
+
+    public static class NodeProxyWrappingNodeValue extends NodeValue
+    {
+        private final Node node;
+        private volatile TextArray labels;
+        private volatile MapValue properties;
+
+        NodeProxyWrappingNodeValue( Node node )
+        {
+            super( node.getId() );
+            this.node = node;
+        }
+
+        public Node nodeProxy()
+        {
+            return node;
+        }
+
+        @Override
+        public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+        {
+            TextArray l;
+            MapValue p;
+            try
+            {
+                l = labels();
+                p = properties();
+            }
+            catch ( NotFoundException e )
+            {
+                l = Values.stringArray();
+                p = VirtualValues.EMPTY_MAP;
+
+            }
+            writer.writeNode( node.getId(), l, p );
+        }
+
+        @Override
+        public TextArray labels()
+        {
+            TextArray l = labels;
+            if ( l == null )
+            {
+                synchronized ( this )
+                {
+                    l = labels;
+                    if ( l == null )
+                    {
+                        ArrayList<String> ls = new ArrayList<>();
+                        for ( Label label : node.getLabels() )
+                        {
+                            ls.add( label.name() );
+                        }
+                        l = labels = Values.stringArray( ls.toArray( new String[ls.size()] ) );
+
+                    }
+                }
+            }
+            return l;
+        }
+
+        @Override
+        public MapValue properties()
+        {
+            MapValue m = properties;
+            if ( m == null )
+            {
+                synchronized ( this )
+                {
+                    m = properties;
+                    if ( m == null )
+                    {
+                        m = properties = AnyValues.asMapValue( node.getAllProperties() );
+                    }
+                }
+            }
+            return m;
+        }
+    }
 }

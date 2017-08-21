@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Equals, Not, True}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
 
 class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -32,7 +33,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -40,8 +41,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> false)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> FALSE)
     ))
   }
 
@@ -51,7 +52,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -59,8 +60,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -74,8 +75,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> false)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> FALSE)
     ))
   }
 
@@ -89,8 +90,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -113,8 +114,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -124,7 +125,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -132,9 +133,9 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> true),
-      Map("a" -> 3, "let" -> false)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> TRUE),
+      Map("a" -> intValue(3), "let" -> FALSE)
     ))
   }
 
@@ -144,15 +145,15 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
       LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)().
         createResults(QueryStateHelper.empty).toList
     result should equal(List(
-      Map("a" -> 3, "let" -> false),
-      Map("a" -> 4, "let" -> false)
+      Map("a" -> intValue(3), "let" -> FALSE),
+      Map("a" -> intValue(4), "let" -> FALSE)
     ))
   }
 }

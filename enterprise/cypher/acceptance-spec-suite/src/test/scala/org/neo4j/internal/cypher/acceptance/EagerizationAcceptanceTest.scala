@@ -20,8 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.{Direction, Node}
@@ -2720,7 +2720,7 @@ class EagerizationAcceptanceTest
     }
     val q = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
     val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
-    val plan = result.executionPlanDescription().toString
+    val plan = result.getExecutionPlanDescription().toString
     result.close()
     val eagers = EagerRegEx.findAllIn(plan).length
     if (VERBOSE && expectedEagerCount > 0) {

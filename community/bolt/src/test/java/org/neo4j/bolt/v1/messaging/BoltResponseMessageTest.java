@@ -25,10 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
 
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.bolt.v1.messaging.message.FailureMessage;
 import org.neo4j.bolt.v1.messaging.message.IgnoredMessage;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
@@ -36,9 +33,13 @@ import org.neo4j.bolt.v1.messaging.message.ResponseMessage;
 import org.neo4j.bolt.v1.messaging.message.SuccessMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
 import static java.util.Arrays.asList;
@@ -52,11 +53,17 @@ import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LENGTH_ZERO;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_LOOP;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_NODES_VISITED_MULTIPLE_TIMES;
 import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION;
-import static org.neo4j.bolt.v1.messaging.example.Paths.PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
+import static org.neo4j.bolt.v1.messaging.example.Paths
+        .PATH_WITH_RELATIONSHIP_TRAVERSED_MULTIPLE_TIMES_IN_SAME_DIRECTION;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 public class BoltResponseMessageTest
 {
@@ -66,8 +73,8 @@ public class BoltResponseMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( new RecordMessage( record( 1L, "b", 2L ) ) );
-        assertSerializes( new SuccessMessage( new HashMap<>() ) );
+        assertSerializes( new RecordMessage( record( longValue( 1L ), stringValue( "b" ), longValue( 2L ) ) ) );
+        assertSerializes( new SuccessMessage( VirtualValues.EMPTY_MAP ) );
         assertSerializes( new FailureMessage( Status.General.UnknownError, "Err" ) );
         assertSerializes( new IgnoredMessage() );
     }
@@ -109,10 +116,10 @@ public class BoltResponseMessageTest
     @Test
     public void shouldSerializeNode() throws Throwable
     {
-        ValueNode valueNode = new ValueNode( 12L, asList( label( "User" ), label( "Banana" ) ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueNode ),
+        NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), VirtualValues
+                .map( new String[]{"name", "age"},
+                        new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( nodeValue ),
                 equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
                          "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 0E" ) );
@@ -121,10 +128,12 @@ public class BoltResponseMessageTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        ValueRelationship valueRelationship = new ValueRelationship( 12L, 1L, 2L, RelationshipType.withName( "KNOWS" ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueRelationship ),
+        EdgeValue edgeValue = edgeValue( 12L,
+                nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
+                nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
+                stringValue( "KNOWS" ), VirtualValues.map( new String[]{"name", "age"},
+                        new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( edgeValue ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
@@ -135,7 +144,7 @@ public class BoltResponseMessageTest
         assertThat( serialized( PATH_WITH_LENGTH_ZERO ),
                 equalTo( "B1 71 91 B3 50 91 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
-                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 90 90"  ) );
+                         "6D 65 85 41 6C 69 63 65 83 61 67 65 21 90 90" ) );
         assertThat( serialized( PATH_WITH_LENGTH_ONE ),
                 equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
@@ -144,7 +153,7 @@ public class BoltResponseMessageTest
                          "79 65 65 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 2C 91 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73 69" + lineSeparator() +
                          "6E 63 65 C9 07 CF 92 01 01"
-        ) );
+                ) );
         assertThat( serialized( PATH_WITH_LENGTH_TWO ),
                 equalTo( "B1 71 91 B3 50 93 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
@@ -153,8 +162,8 @@ public class BoltResponseMessageTest
                          "85 43 61 72 6F 6C B3 4E C9 03 EC 90 A1 84 6E 61" + lineSeparator() +
                          "6D 65 84 44 61 76 65 92 B3 72 0D 85 4C 49 4B 45" + lineSeparator() +
                          "53 A0 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F" + lineSeparator() +
-                         "A0 94 01 01 02 02"  ) );
-        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION),
+                         "A0 94 01 01 02 02" ) );
+        assertThat( serialized( PATH_WITH_RELATIONSHIP_TRAVERSED_AGAINST_ITS_DIRECTION ),
                 equalTo( "B1 71 91 B3 50 94 B3 4E C9 03 E9 92 86 50 65 72" + lineSeparator() +
                          "73 6F 6E 88 45 6D 70 6C 6F 79 65 65 A2 84 6E 61" + lineSeparator() +
                          "6D 65 85 41 6C 69 63 65 83 61 67 65 21 B3 4E C9" + lineSeparator() +
@@ -192,17 +201,17 @@ public class BoltResponseMessageTest
                          "4B 45 53 A0 B3 72 0C 85 4B 4E 4F 57 53 A1 85 73" + lineSeparator() +
                          "69 6E 63 65 C9 07 CF B3 72 22 8A 4D 41 52 52 49" + lineSeparator() +
                          "45 44 5F 54 4F A0 9A 01 01 02 02 FD 00 01 01 04" + lineSeparator() +
-                         "03") );
+                         "03" ) );
         assertThat( serialized( PATH_WITH_LOOP ),
                 equalTo( "B1 71 91 B3 50 92 B3 4E C9 03 EB 91 86 50 65 72" + lineSeparator() +
                          "73 6F 6E A1 84 6E 61 6D 65 85 43 61 72 6F 6C B3" + lineSeparator() +
                          "4E C9 03 EC 90 A1 84 6E 61 6D 65 84 44 61 76 65" + lineSeparator() +
                          "92 B3 72 22 8A 4D 41 52 52 49 45 44 5F 54 4F A0" + lineSeparator() +
                          "B3 72 2C 89 57 4F 52 4B 53 5F 46 4F 52 A0 94 01" + lineSeparator() +
-                         "01 02 01") );
+                         "01 02 01" ) );
     }
 
-    private String serialized( Object object ) throws IOException
+    private String serialized( AnyValue object ) throws IOException
     {
         RecordMessage message =
                 new RecordMessage( record( object ) );
@@ -249,7 +258,7 @@ public class BoltResponseMessageTest
 
     private void assertSerializesNeoValue( Object val ) throws IOException
     {
-        assertSerializes( new RecordMessage( record( val ) ) );
+        assertSerializes( new RecordMessage( record( AnyValues.of( val ) ) ) );
     }
 
 }

@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.{Key
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.Map
 
@@ -47,7 +47,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toIndexedSeq
 
-  def getGraphRelationships(node: Node, pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
+  def getGraphRelationships(node: NodeValue, pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
     pRel.getGraphRelationships(this, node, state, f)
 
   def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: SemanticDirection,

@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values._
+import org.neo4j.values.virtual.VirtualValues.list
 
 class SplitFunctionTest extends CypherFunSuite {
 
@@ -29,31 +31,33 @@ class SplitFunctionTest extends CypherFunSuite {
   val nullString = null.asInstanceOf[String]
 
   test("passing null to split() returns null") {
-    split("something", nullString) should be(nullSeq)
-    split(nullString, "something") should be(nullSeq)
+    split("something", nullString) should be(NO_VALUE)
+    split(nullString, "something") should be(NO_VALUE)
   }
 
   test("splitting non-empty strings with one character") {
-    split("first,second", ",") should be(Seq("first", "second"))
+    split("first,second", ",") should be(seq("first", "second"))
   }
 
   test("splitting non-empty strings with more than one character") {
-    split("first11second11third", "11") should be(Seq("first", "second", "third"))
+    split("first11second11third", "11") should be(seq("first", "second", "third"))
   }
 
   test("splitting an empty string should return an empty string") {
-    split("", ",") should be(Seq(""))
+    split("", ",") should be(seq(""))
   }
 
   test("splitting a string containing only the split pattern should return two empty strings") {
-    split(",", ",") should be(Seq("",""))
+    split(",", ",") should be(seq("",""))
   }
 
   test("using an empty separator should split on every character") {
-    split("banana", "") should be(Seq("b", "a", "n", "a", "n", "a"))
-    split("a", "") should be(Seq("a"))
-    split("", "") should be(Seq(""))
+    split("banana", "") should be(seq("b", "a", "n", "a", "n", "a"))
+    split("a", "") should be(seq("a"))
+    split("", "") should be(seq(""))
   }
+
+  private def seq(vals: String*) = list(vals.map(stringValue):_*)
 
   private def split(orig: String, splitPattern: String) = {
     val expr = SplitFunction(Literal(orig), Literal(splitPattern))

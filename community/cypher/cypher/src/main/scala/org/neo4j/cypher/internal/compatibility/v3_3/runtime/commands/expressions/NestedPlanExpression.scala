@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.values.AnyValue
 
 case class NestedPlanExpression(logicalPlan: LogicalPlan) extends Expression {
   override def rewrite(f: (Expression) => Expression): Expression = ???
 
   override def arguments: Seq[Expression] = Seq.empty
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = ???
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = ???
 
   override def symbolTableDependencies: Set[String] = ???
 

@@ -26,18 +26,18 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueNode;
-import org.neo4j.bolt.v1.messaging.infrastructure.ValueRelationship;
 import org.neo4j.bolt.v1.messaging.message.RecordMessage;
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.messaging.message.RunMessage;
 import org.neo4j.bolt.v1.packstream.BufferedChannelInput;
 import org.neo4j.bolt.v1.packstream.BufferedChannelOutput;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.impl.util.HexPrinter;
+import org.neo4j.values.AnyValue;
+import org.neo4j.values.virtual.EdgeValue;
+import org.neo4j.values.virtual.NodeValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static java.lang.System.lineSeparator;
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.bolt.v1.messaging.BoltResponseMessageWriter.NO_BOUNDARY_HOOK;
@@ -49,8 +49,13 @@ import static org.neo4j.bolt.v1.messaging.message.ResetMessage.reset;
 import static org.neo4j.bolt.v1.messaging.message.RunMessage.run;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.bolt.v1.runtime.spi.Records.record;
-import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.edgeValue;
+import static org.neo4j.values.virtual.VirtualValues.map;
+import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
 public class BoltRequestMessageTest
 {
@@ -60,7 +65,7 @@ public class BoltRequestMessageTest
     @Test
     public void shouldHandleCommonMessages() throws Throwable
     {
-        assertSerializes( init( "MyClient/1.0", map("scheme", "basic") ) );
+        assertSerializes( init( "MyClient/1.0", map( "scheme", "basic" ) ) );
         assertSerializes( ackFailure() );
         assertSerializes( reset() );
         assertSerializes( run( "CREATE (n) RETURN åäö" ) );
@@ -81,13 +86,14 @@ public class BoltRequestMessageTest
         assertThat( msg.params().entrySet(), equalTo( expected.entrySet() ) );
     }
 
+    //"B1 71 91 B3 4E 0C 92 |84 55 73 65 72 | 86 42 61 6E\n61 6E 61 A284 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E"
+    //"B1 71 91 B3 4E 0C 92 |86 42 61 6E 61 6E 61| 84 55\n73 65 72 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67\n65 0E
     @Test
     public void shouldSerializeNode() throws Throwable
     {
-        ValueNode valueNode = new ValueNode( 12L, asList( label( "User" ), label( "Banana" ) ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueNode ),
+        NodeValue nodeValue = nodeValue( 12L, stringArray( "User", "Banana" ), map( new String[]{"name", "age"},
+                new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( nodeValue ),
                 equalTo( "B1 71 91 B3 4E 0C 92 84 55 73 65 72 86 42 61 6E" + lineSeparator() +
                          "61 6E 61 A2 84 6E 61 6D 65 83 42 6F 62 83 61 67" + lineSeparator() +
                          "65 0E" ) );
@@ -96,15 +102,17 @@ public class BoltRequestMessageTest
     @Test
     public void shouldSerializeRelationship() throws Throwable
     {
-        ValueRelationship valueRelationship = new ValueRelationship( 12L, 1L, 2L, RelationshipType.withName( "KNOWS" ),
-                map( "name", "Bob", "age", 14 ) );
-
-        assertThat( serialized( valueRelationship ),
+        EdgeValue edgeValue = edgeValue( 12L,
+                nodeValue( 1L, stringArray(), VirtualValues.EMPTY_MAP ),
+                nodeValue( 2L, stringArray(), VirtualValues.EMPTY_MAP ),
+                stringValue( "KNOWS" ), map( new String[]{"name", "age"},
+                        new AnyValue[]{stringValue( "Bob" ), intValue( 14 )} ) );
+        assertThat( serialized( edgeValue ),
                 equalTo( "B1 71 91 B5 52 0C 01 02 85 4B 4E 4F 57 53 A2 84" + lineSeparator() +
                          "6E 61 6D 65 83 42 6F 62 83 61 67 65 0E" ) );
     }
 
-    private String serialized( Object object ) throws IOException
+    private String serialized( AnyValue object ) throws IOException
     {
         RecordMessage message =
                 new RecordMessage( record( object ) );

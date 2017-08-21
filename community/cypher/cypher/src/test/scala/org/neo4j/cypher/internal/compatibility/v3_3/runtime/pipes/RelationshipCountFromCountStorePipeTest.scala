@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId, SemanticTable}
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.values.storable.Values.longValue
 
 class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -34,7 +35,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, WILDCARD, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 
   test("should return a count for relationships with a type but no labels") {
@@ -46,7 +47,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(WILDCARD, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 
   test("should return a count for relationships with a type and start label") {
@@ -59,7 +60,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipCountByCountStore(12, 22, WILDCARD)).thenReturn(42L).getMock[QueryContext]
     )
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(42L))
+    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(42L)))
   }
 
   test("should return zero if rel-type is missing") {
@@ -73,7 +74,7 @@ class RelationshipCountFromCountStorePipeTest extends CypherFunSuite with AstCon
     when(mockedContext.getOptLabelId("A")).thenReturn(None)
     val queryState = QueryStateHelper.emptyWith(query = mockedContext)
 
-    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(0L))
+    pipe.createResults(queryState).map(_("count(r)")).toSet should equal(Set(longValue(0L)))
   }
 
 }

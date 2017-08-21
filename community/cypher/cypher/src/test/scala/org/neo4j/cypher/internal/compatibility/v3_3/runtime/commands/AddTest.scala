@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.{longValue, stringValue}
 
 class AddTest extends CypherFunSuite {
 
@@ -32,11 +34,11 @@ class AddTest extends CypherFunSuite {
 
   test("numbers") {
     val expr = Add(Literal(1), Literal(1))
-    expr(m)(s) should equal(2)
+    expr(m)(s) should equal(longValue(2))
   }
 
   test("with_null") {
-    val expected = null.asInstanceOf[Any]
+    val expected = Values.NO_VALUE
 
     Add(Literal(null), Literal(1))(m)(s) should equal(expected)
     Add(Literal(2), Literal(null))(m)(s) should equal(expected)
@@ -44,17 +46,17 @@ class AddTest extends CypherFunSuite {
 
   test("strings") {
     val expr = Add(Literal("hello"), Literal("world"))
-    expr(m)(s) should equal("helloworld")
+    expr(m)(s) should equal(stringValue("helloworld"))
   }
 
   test("stringPlusNumber") {
     val expr = Add(Literal("hello"), Literal(1))
-    expr(m)(s) should equal("hello1")
+    expr(m)(s) should equal(stringValue("hello1"))
   }
 
   test("numberPlusString") {
     val expr = Add(Literal(1), Literal("world"))
-    expr(m)(s) should equal("1world")
+    expr(m)(s) should equal(stringValue("1world"))
   }
 
   test("numberPlusBool") {

@@ -30,24 +30,27 @@ import org.neo4j.collection.primitive._
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.{BoolType, CodeGenType, CypherCodeGenType, FloatType, ListReferenceType, LongType, ReferenceType, RepresentationType, Parameter => _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, QueryExecutionEvent}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.DirectionConverter.toGraphDb
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTNode, CTRelationship, ListType}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTInteger, CTNode, CTRelationship, ListType}
 import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, symbols}
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedMethodStructure.CompletableFinalizer
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Methods._
 import org.neo4j.cypher.internal.spi.v3_3.codegen.Templates.{createNewInstance, handleKernelExceptions, newRelationshipDataExtractor, tryCatch}
-import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.{Direction, Node, Relationship}
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.{IndexDescriptor, IndexDescriptorFactory}
 import org.neo4j.kernel.api.schema.{IndexQuery, LabelSchemaDescriptor}
 import org.neo4j.kernel.impl.api.RelationshipDataExtractor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
+import org.neo4j.values.storable._
+import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.mutable
 
@@ -245,8 +248,43 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
-  override def setInRow(column: String, value: Expression) =
+  override def setInRow(column: Int, value: Expression) =
     generator.expression(invoke(resultRow, set, constant(column), value))
+
+
+  override def toAnyValue(expression: Expression, codeGenType: CodeGenType): Expression = codeGenType match {
+    case CodeGenType.primitiveNode =>
+      invoke(method[VirtualValues, NodeValue]("fromNodeProxy", typeRef[Node]),
+             invoke(nodeManager, newNodeProxyById, expression))
+    case CypherCodeGenType(CTNode, _) =>
+      invoke(method[VirtualValues, NodeValue]("fromNodeProxy", typeRef[Node]), cast(typeRef[Node], expression))
+    case CodeGenType.primitiveRel =>
+      invoke(method[VirtualValues, EdgeValue]("fromRelationshipProxy", typeRef[Node]),
+             invoke(nodeManager, newRelationshipProxyById, expression))
+    case CypherCodeGenType(CTRelationship, _) =>
+      invoke(method[VirtualValues, EdgeValue]("fromRelationshipProxy", typeRef[Relationship]),
+             cast(typeRef[Relationship], expression))
+    case CodeGenType.primitiveInt =>
+      invoke(method[Values, LongValue]("longValue", typeRef[Long]), expression)
+    case CypherCodeGenType(CTInteger, _) =>
+      invoke(method[Values, LongValue]("longValue", typeRef[Long]), Expression.unbox(cast(typeRef[java.lang.Long],
+                                                                                          expression)))
+    case CodeGenType.primitiveFloat =>
+      invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), expression)
+    case CypherCodeGenType(symbols.CTFloat, _) =>
+      invoke(method[Values, DoubleValue]("doubleValue", typeRef[Double]), Expression.unbox(cast(typeRef[java.lang.Double],
+                                                                                              expression)))
+    case CodeGenType.primitiveBool =>
+      invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), expression)
+    case CypherCodeGenType(symbols.CTBoolean, _) =>
+      invoke(method[Values, BooleanValue]("booleanValue", typeRef[Boolean]), Expression.unbox(cast(typeRef[java.lang.Boolean],
+                                                                                                expression)))
+    case CypherCodeGenType(symbols.CTString, _) =>
+      invoke(method[Values, TextValue]("stringValue", typeRef[String]), cast(typeRef[String], expression))
+    case _ =>
+      invoke(method[AnyValues, AnyValue]("of", typeRef[Object]), expression)
+
+  }
 
   override def visitorAccept() = tryCatch(generator) { onSuccess =>
     using(
@@ -401,10 +439,13 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(lowerType(codeGenType), varName, nullValue(codeGenType))
 
 
-  override def isNull(varName: String, codeGenType: CodeGenType) =
-    equal(nullValue(codeGenType), generator.load(varName))
+  override def isNull(varName: String, codeGenType: CodeGenType) = isNull(generator.load(varName), codeGenType)
 
-  override def notNull(varName: String, codeGenType: CodeGenType) = not(isNull(varName, codeGenType))
+  override def isNull(expr: Expression, codeGenType: CodeGenType) = equal(nullValue(codeGenType), expr)
+
+  override def notNull(expr: Expression, codeGenType: CodeGenType) = not(isNull(expr, codeGenType))
+
+  override def notNull(varName: String, codeGenType: CodeGenType) = notNull(generator.load(varName), codeGenType)
 
   override def box(expression: Expression, codeGenType: CodeGenType) = codeGenType match {
     case CypherCodeGenType(symbols.CTNode, LongType) =>
@@ -814,7 +855,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                     method[util.HashMap[Object, java.lang.Long], Object]("getOrDefault", typeRef[Object],
                                                                          typeRef[Object]),
                     generator.load(keyVar), box(constantLong(0L), CodeGenType.javaLong))),
-        CypherCodeGenType(symbols.CTInteger, ReferenceType)))
+        CypherCodeGenType(CTInteger, ReferenceType)))
     }
   }
 
@@ -1000,7 +1041,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
                     unbox(cast(typeRef[java.lang.Long],
                                invoke(body.load(next),
                                       method[java.util.Map.Entry[Object, java.lang.Long], Object]("getValue"))),
-                          CypherCodeGenType(symbols.CTInteger, ReferenceType)))
+                          CypherCodeGenType(CTInteger, ReferenceType)))
         block(copy(generator = body))
       }
     }
@@ -1244,7 +1285,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     val localVariable = generator.declare(lowerType(codeGenType), varName)
     locals += (varName -> localVariable)
     codeGenType match {
-      case CypherCodeGenType(symbols.CTInteger, LongType) => constant(0L)
+      case CypherCodeGenType(CTInteger, LongType) => constant(0L)
       case CypherCodeGenType(symbols.CTFloat, FloatType) => constant(0.0)
       case CypherCodeGenType(symbols.CTBoolean, BoolType) => constant(false)
       case _ => generator.assign(localVariable, nullValue(codeGenType))
@@ -1286,6 +1327,11 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     }
   }
 
+  override def localVariable(variable: String, e: Expression): Unit = {
+    val local = generator.declare(e.`type`(), variable)
+    generator.assign(local, e)
+  }
+
   override def declareFlag(name: String, initialValue: Boolean) = {
     val localVariable = generator.declare(typeRef[Boolean], name)
     locals += (name -> localVariable)
@@ -1324,9 +1370,9 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeIdSeek(nodeIdVar: String, expression: Expression, codeGenType: CodeGenType)(block: MethodStructure[Expression] => Unit) = {
     codeGenType match {
-      case CypherCodeGenType(symbols.CTInteger, LongType) =>
+      case CypherCodeGenType(CTInteger, LongType) =>
         generator.assign(typeRef[Long], nodeIdVar, expression)
-      case CypherCodeGenType(symbols.CTInteger, ReferenceType) =>
+      case CypherCodeGenType(CTInteger, ReferenceType) =>
         generator.assign(typeRef[Long], nodeIdVar, invoke(Methods.mathCastToLong, expression))
       case _ =>
         throw new IllegalArgumentException(s"CodeGenType $codeGenType can not be converted to long")
@@ -1406,6 +1452,8 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
     generator.assign(tupleType, targetVar, createNewInstance(tupleType))
     generator.load(targetVar)
   }
+
+  override def noValue(): Expression = Templates.noValue
 
   private def field(tupleDescriptor: TupleDescriptor, fieldName: String) = {
     val fieldType: CodeGenType = tupleDescriptor.structure(fieldName)

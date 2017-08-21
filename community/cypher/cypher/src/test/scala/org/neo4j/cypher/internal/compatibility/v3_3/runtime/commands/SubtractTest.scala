@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.longValue
 
 class SubtractTest extends CypherFunSuite {
 
@@ -33,7 +34,7 @@ class SubtractTest extends CypherFunSuite {
 
   test("numbers") {
     val expr = Subtract(Literal(2), Literal(1))
-   expr(m)(s) should equal(1)
+   expr(m)(s) should equal(longValue(1))
   }
 
   test("strings") {

@@ -20,35 +20,40 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RelationshipSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.{ShortestPathCommonEndNodesForbiddenException, SyntaxException}
-import org.neo4j.graphdb.{Node, Path, PropertyContainer}
+import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.{NodeValue, VirtualValues}
+import org.neo4j.values.{AnyValue, AnyValues}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates: Seq[Predicate] = Seq.empty,
-                                  withFallBack: Boolean = false, disallowSameNode: Boolean = true) extends Expression with PathExtractor {
+                                  withFallBack: Boolean = false, disallowSameNode: Boolean = true) extends Expression {
+
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
   val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     if (anyStartpointsContainNull(ctx)) {
-      Stream.empty
+      Values.NO_VALUE
     } else {
       val start = getEndPoint(ctx, shortestPathPattern.left)
       val end = getEndPoint(ctx, shortestPathPattern.right)
-      if (!shortestPathPattern.allowZeroLength && disallowSameNode && start.equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
+      if (!shortestPathPattern.allowZeroLength && disallowSameNode && start
+        .equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
       getMatches(ctx, start, end)
     }
   }
 
-  private def getMatches(ctx: ExecutionContext, start: Node, end: Node)(implicit state: QueryState): Any = {
+  private def getMatches(ctx: ExecutionContext, start: NodeValue, end: NodeValue)
+                        (implicit state: QueryState): AnyValue = {
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander())
     val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
     /* This test is made after a full shortest path candidate has been produced,
@@ -57,33 +62,40 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     val shortestPathPredicate = createShortestPathPredicate(ctx, maybePredicate)
 
     if (shortestPathPattern.single) {
-      val result = state.query.singleShortestPath(start, end, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander, shortestPathPredicate, nodePredicates)
+      val result = state.query
+        .singleShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
+                            shortestPathPredicate, nodePredicates)
       if (!shortestPathPattern.allowZeroLength && result.forall(p => p.length() == 0))
-        null
-      else
-        result.orNull
+        Values.NO_VALUE
+      else result.map(AnyValues.asPathValue).getOrElse(Values.NO_VALUE)
     }
     else {
-      val result = state.query.allShortestPath(start, end, shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander, shortestPathPredicate, nodePredicates)
-      result.filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }
+      val result = state.query
+        .allShortestPath(start.id(), end.id(), shortestPathPattern.maxDepth.getOrElse(Int.MaxValue), expander,
+                         shortestPathPredicate, nodePredicates)
+        .filter { p => shortestPathPattern.allowZeroLength || p.length() > 0 }.map(AnyValues.asPathValue).toArray
+      VirtualValues.list(result:_*)
     }
   }
 
-  private def createShortestPathPredicate(incomingCtx: ExecutionContext, maybePredicate: Option[Predicate])(implicit state: QueryState): KernelPredicate[Path] =
+  private def createShortestPathPredicate(incomingCtx: ExecutionContext, maybePredicate: Option[Predicate])
+                                         (implicit state: QueryState): KernelPredicate[Path] =
     new KernelPredicate[Path] {
       override def test(path: Path): Boolean = maybePredicate.forall {
         predicate =>
-          incomingCtx += shortestPathPattern.pathName -> path
-          incomingCtx += shortestPathPattern.relIterator.get -> path.relationships()
+          incomingCtx += shortestPathPattern.pathName -> AnyValues.asPathValue(path)
+          incomingCtx += shortestPathPattern.relIterator.get -> AnyValues.asListOfEdges(path.relationships())
           predicate.isTrue(incomingCtx)
       } && (!withFallBack || RelationshipSupport.areRelationshipsUnique(path.relationships.asScala.toList))
     }
 
-  private def getEndPoint(m: Map[String, Any], start: SingleNode): Node = m.getOrElse(start.name,
-    throw new SyntaxException(s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")).asInstanceOf[Node]
+  private def getEndPoint(m: Map[String, AnyValue], start: SingleNode): NodeValue = m.getOrElse(start.name,
+                                                                                                throw new SyntaxException(
+                                                                                                  s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`"))
+    .asInstanceOf[NodeValue]
 
   private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
-    m(shortestPathPattern.left.name) == null || m(shortestPathPattern.right.name) == null
+    m(shortestPathPattern.left.name) == Values.NO_VALUE || m(shortestPathPattern.right.name) == Values.NO_VALUE
 
   override def children = Seq(shortestPathPattern)
 
@@ -91,7 +103,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
 
   def rewrite(f: (Expression) => Expression): Expression = f(ShortestPathExpression(shortestPathPattern.rewrite(f)))
 
-  def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left.name + shortestPathPattern.right.name
+  def symbolTableDependencies = shortestPathPattern.symbolTableDependencies + shortestPathPattern.left
+    .name + shortestPathPattern.right.name
 
   private def propertyExistsExpander(name: String) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
@@ -105,19 +118,23 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
     }
   }
 
-  private def cypherPositivePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
+  private def cypherPositivePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)
+                                                (implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      predicate.isTrue(incomingCtx += (name -> t))
+      predicate.isTrue(incomingCtx += (name -> AnyValues.asNodeOrEdgeValue(t)))
     }
   }
 
-  private def cypherNegativePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)(implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
+  private def cypherNegativePredicatesAsExpander(incomingCtx: ExecutionContext, name: String, predicate: Predicate)
+                                                (implicit state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      !predicate.isTrue(incomingCtx += (name -> t))
+      !predicate.isTrue(incomingCtx += (name -> AnyValues.asNodeOrEdgeValue(t)))
     }
   }
 
-  private def addAllOrNoneRelationshipExpander(ctx: ExecutionContext, currentExpander: Expander, all: Boolean, predicate: Predicate, relName: String)(implicit state: QueryState): Expander = {
+  private def addAllOrNoneRelationshipExpander(ctx: ExecutionContext, currentExpander: Expander, all: Boolean,
+                                               predicate: Predicate, relName: String)
+                                              (implicit state: QueryState): Expander = {
     predicate match {
       case PropertyExists(_, propertyKey) =>
         currentExpander.addRelationshipFilter(
@@ -166,14 +183,20 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath, predicates:
       predicates.foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
         case ((currentExpander, currentNodePredicates: Seq[KernelPredicate[PropertyContainer]]), predicate) =>
           predicate match {
-            case NoneInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
-              (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate, symbolName), currentNodePredicates)
-            case AllInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
-              (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate, symbolName), currentNodePredicates)
+            case NoneInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(
+              innerPredicate) =>
+              (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = false, innerPredicate,
+                                                symbolName), currentNodePredicates)
+            case AllInList(RelationshipFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(
+              innerPredicate) =>
+              (addAllOrNoneRelationshipExpander(ctx, currentExpander, all = true, innerPredicate,
+                                                symbolName), currentNodePredicates)
             case NoneInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
-              addAllOrNoneNodeExpander(ctx, currentExpander, all = false, innerPredicate, symbolName, currentNodePredicates)
+              addAllOrNoneNodeExpander(ctx, currentExpander, all = false, innerPredicate, symbolName,
+                                       currentNodePredicates)
             case AllInList(NodesFunction(_), symbolName, innerPredicate) if doesNotDependOnFullPath(innerPredicate) =>
-              addAllOrNoneNodeExpander(ctx, currentExpander, all = true, innerPredicate, symbolName, currentNodePredicates)
+              addAllOrNoneNodeExpander(ctx, currentExpander, all = true, innerPredicate, symbolName,
+                                       currentNodePredicates)
             case _ => (currentExpander, currentNodePredicates)
           }
       }

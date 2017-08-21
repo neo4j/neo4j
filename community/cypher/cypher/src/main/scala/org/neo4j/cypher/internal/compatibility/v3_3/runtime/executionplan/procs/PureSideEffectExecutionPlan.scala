@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalExecutionResult, InternalQueryType, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, InternalQueryType, SCHEMA_WRITE}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.{Id, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.values.AnyValue
 
 /**
   * Execution plan for performing pure side-effects, i.e. returning no data to the user.
@@ -39,11 +42,11 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
   extends ExecutionPlan {
 
     override def run(ctx: QueryContext, planType: ExecutionMode,
-                     params: Map[String, Any]): InternalExecutionResult = {
+                     params: Map[String, AnyValue]): InternalExecutionResult = {
       if (planType == ExplainMode) {
         //close all statements
         ctx.transactionalContext.close(success = true)
-        ExplainExecutionResult(List.empty, description, queryType, Set.empty)
+        ExplainExecutionResult(Array.empty, description, queryType, Set.empty)
       } else {
         if (queryType == SCHEMA_WRITE) ctx.assertSchemaWritesAllowed()
 
@@ -55,6 +58,8 @@ case class PureSideEffectExecutionPlan(name: String, queryType: InternalQueryTyp
     }
 
     private def description = PlanDescriptionImpl(new Id, name, NoChildren, Seq.empty, Set.empty)
+      .addArgument(Runtime(runtimeUsed.toTextOutput))
+      .addArgument(RuntimeImpl(runtimeUsed.toTextOutput))
 
     override def runtimeUsed: RuntimeName = ProcedureRuntimeName
 

@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.mockito.Mockito
+import org.neo4j.cypher.ValueComparisonHelper._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
@@ -29,17 +31,25 @@ class AllNodesScanPipeTest extends CypherFunSuite {
   import Mockito.when
 
   test("should scan all nodes") {
+    val node1 = node(1)
+    val node2 = node(2)
     // given
-    val nodes = List(mock[Node], mock[Node])
+    val nodes = List(node1, node2)
     val nodeOps = when(mock[Operations[Node]].all).thenReturn(nodes.iterator).getMock[Operations[Node]]
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
 
     // when
-    val result = AllNodesScanPipe("a")().createResults(queryState)
+    val result: Iterator[ExecutionContext] = AllNodesScanPipe("a")().createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(nodes)
+    result.toList should beEquivalentTo(List(Map("a" -> node1), Map("a" -> node2)))
+  }
+
+  private def node(id: Long) = {
+    val n = mock[Node]
+    when(n.getId).thenReturn(id)
+    n
   }
 }

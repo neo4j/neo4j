@@ -33,6 +33,7 @@ import static org.neo4j.values.storable.Values.booleanValue;
 import static org.neo4j.values.storable.Values.byteArray;
 import static org.neo4j.values.storable.Values.charValue;
 import static org.neo4j.values.storable.Values.intValue;
+import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginList;
 import static org.neo4j.values.BufferAnyValueWriter.Specials.beginMap;
@@ -48,7 +49,6 @@ import static org.neo4j.values.BufferAnyValueWriter.Specials.writePath;
 import static org.neo4j.values.virtual.VirtualValues.edge;
 import static org.neo4j.values.virtual.VirtualValues.edgeValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
-import static org.neo4j.values.virtual.VirtualValues.labels;
 import static org.neo4j.values.virtual.VirtualValues.map;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
 
@@ -92,13 +92,19 @@ public class VirtualValueWriteToTest
                 ),
                 shouldWrite(
                         VirtualValues.path(
-                                new NodeValue[]{nodeValue( 20L, labels( stringValue( "L" ) ), emptyMap() ),
-                                        nodeValue( 40L, labels( stringValue( "L" ) ), emptyMap() )},
-                                new EdgeValue[]{edgeValue( 100L, 40L, 20L, stringValue( "T" ), emptyMap() )} ),
+                                new NodeValue[]{nodeValue( 20L, stringArray( "L" ), emptyMap() ),
+                                        nodeValue( 40L, stringArray( "L" ), emptyMap() )},
+                                new EdgeValue[]{
+                                        edgeValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
+                                                nodeValue( 20L, stringArray( "L" ), emptyMap() ),
+                                                stringValue( "T" ), emptyMap() )} ),
                         writePath(
-                                new NodeValue[]{nodeValue( 20L, labels( stringValue( "L" ) ), emptyMap() ),
-                                        nodeValue( 40L, labels( stringValue( "L" ) ), emptyMap() )},
-                                new EdgeValue[]{edgeValue( 100L, 40L, 20L, stringValue( "T" ), emptyMap() )} )
+                                new NodeValue[]{nodeValue( 20L, stringArray( "L" ), emptyMap() ),
+                                        nodeValue( 40L, stringArray( "L" ), emptyMap() )},
+                                new EdgeValue[]{
+                                        edgeValue( 100L, nodeValue( 40L, stringArray( "L" ), emptyMap() ),
+                                                nodeValue( 20L, stringArray( "L" ), emptyMap() ),
+                                                stringValue( "T" ), emptyMap() )} )
                 ),
                 shouldWrite(
                         VirtualValues.pointCartesian( 2.0, -4.0 ),
@@ -139,17 +145,16 @@ public class VirtualValueWriteToTest
                         endMap()
                 ),
                 shouldWrite(
-                        nodeValue( 1337L, labels(
-                                stringValue( "L1" ),
-                                stringValue( "L2" ) ),
+                        nodeValue( 1337L,
+                                stringArray( "L1", "L2" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
-                        writeNode( 1337L, labels(
-                                stringValue( "L1" ),
-                                stringValue( "L2" ) ),
+                        writeNode( 1337L,
+                                stringArray( "L1", "L2" ) ,
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) )
                 ),
                 shouldWrite(
-                        edgeValue( 1337L, 42L, 43L,
+                        edgeValue( 1337L, nodeValue( 42L, stringArray( "L" ), emptyMap() ),
+                                nodeValue( 43L, stringArray( "L" ), emptyMap() ),
                                 stringValue( "T" ),
                                 map( new String[]{"foo"}, new AnyValue[]{stringValue( "foo" )} ) ),
                         writeEdge( 1337L, 42L, 43L,

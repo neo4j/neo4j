@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.messaging.message.RequestMessage;
 import org.neo4j.bolt.v1.runtime.Neo4jError;
+import org.neo4j.values.AnyValues;
 
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.ACK_FAILURE;
 import static org.neo4j.bolt.v1.messaging.BoltRequestMessage.DISCARD_ALL;
@@ -52,11 +53,11 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onInit( String clientName, Map<String, Object> credentials ) throws IOException
+    public void onInit( String clientName, Map<String,Object> credentials ) throws IOException
     {
         packer.packStructHeader( 1, INIT.signature() );
         packer.pack( clientName );
-        packer.packRawMap( credentials );
+        packer.packRawMap( AnyValues.asMapValue( credentials ) );
         onMessageComplete.onMessageComplete();
     }
 
@@ -75,12 +76,12 @@ public class BoltRequestMessageWriter implements BoltRequestMessageHandler<IOExc
     }
 
     @Override
-    public void onRun( String statement, Map<String, Object> params )
+    public void onRun( String statement, Map<String,Object> params )
             throws IOException
     {
         packer.packStructHeader( 2, RUN.signature() );
         packer.pack( statement );
-        packer.packRawMap( params );
+        packer.packRawMap( AnyValues.asMapValue( params ) );
         onMessageComplete.onMessageComplete();
     }
 

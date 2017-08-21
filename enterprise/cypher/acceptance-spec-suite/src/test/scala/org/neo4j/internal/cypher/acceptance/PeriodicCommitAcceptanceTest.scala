@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.io.PrintWriter
 
 import org.neo4j.cypher._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{PageCacheHits, PageCacheMisses, Planner, PlannerImpl}
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.helpers.TxCounts
@@ -82,7 +82,7 @@ class PeriodicCommitAcceptanceTest extends ExecutionEngineFunSuite
     val beforeTxId = txIdStore.getLastClosedTransactionId
     val result = execute(s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
     val arguments = result.executionPlanDescription().arguments
-    arguments should contain(Planner("IDP"))
+    arguments should contain(PlannerImpl("IDP"))
     arguments.find( _.isInstanceOf[PageCacheHits]) shouldBe defined
     arguments.find( _.isInstanceOf[PageCacheMisses]) shouldBe defined
     result.columnAs[Long]("id").toList should equal(List("1","2","3","4","5"))

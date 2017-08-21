@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNumber
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -30,7 +31,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -38,8 +39,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> false)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> FALSE)
     ))
   }
 
@@ -49,7 +50,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -57,8 +58,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -72,8 +73,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> false)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> FALSE)
     ))
   }
 
@@ -87,8 +88,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -102,8 +103,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
         createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> true),
-      Map("a" -> 2, "let" -> true)
+      Map("a" -> intValue(1), "let" -> TRUE),
+      Map("a" -> intValue(2), "let" -> TRUE)
     ))
   }
 
@@ -117,8 +118,8 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       createResults(QueryStateHelper.empty).toList
 
     result should equal(List(
-      Map("a" -> 1, "let" -> false),
-      Map("a" -> 2, "let" -> false)
+      Map("a" -> intValue(1), "let" -> FALSE),
+      Map("a" -> intValue(2), "let" -> FALSE)
     ))
   }
 

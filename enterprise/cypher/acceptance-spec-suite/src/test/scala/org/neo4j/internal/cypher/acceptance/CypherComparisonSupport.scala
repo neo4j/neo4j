@@ -20,18 +20,17 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.NewRuntimeMonitor.{NewPlanSeen, UnableToCompileQuery}
-import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalExecutionResult
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CRS, CartesianPoint, GeographicPoint}
 import org.neo4j.cypher.internal.compiler.v3_1.{CartesianPoint => CartesianPointv3_1, GeographicPoint => GeographicPointv3_1}
 import org.neo4j.cypher.internal.compiler.v3_2.{CartesianPoint => CartesianPointv3_2, GeographicPoint => GeographicPointv3_2}
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.InternalPlanDescription.Arguments.{Planner, Runtime}
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.{ExecutionResult, RewindableExecutionResult}
+import org.neo4j.cypher.internal.{InternalExecutionResult, RewindableExecutionResult}
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.cypher.{CypherException, ExecutionEngineFunSuite, NewPlannerMonitor, NewRuntimeMonitor}
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
@@ -258,16 +257,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     rewindableResult(innerResult)
   }
 
-  private def rewindableResult(result: ExecutionResult): InternalExecutionResult = {
-    result match {
-      case e: ClosingExecutionResult => e.inner match {
-        case _: v3_3.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v3_2.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v3_1.ExecutionResultWrapper => RewindableExecutionResult(e)
-        case _: v2_3.ExecutionResultWrapper => RewindableExecutionResult(e)
-      }
-    }
-  }
+  private def rewindableResult(result: Result): InternalExecutionResult = RewindableExecutionResult(result)
 
   object Configs {
     def CompiledSource: TestConfiguration = Scenarios.CompiledSource3_3

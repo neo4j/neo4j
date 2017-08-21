@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.prepare.KeyTokenResolver
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 /**
  * Responsible for turning a logical plan with argument pipes into a new pipe.
@@ -212,7 +214,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
           case (given, default) => given.map(buildExpression).getOrElse(Literal(default.get))
         }
         val rowProcessing = ProcedureCallRowProcessing(signature)
-        ProcedureCallPipe(source, signature.name, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
+        ProcedureCallPipe(source, signature, callMode, callArgumentCommands, rowProcessing, call.callResultTypes, call.callResultIndices)(id = id)
 
       case LoadCSVPlan(_, url, variableName, format, fieldTerminator, legacyCsvQuoteEscaping) =>
         LoadCSVPipe(source, format, buildExpression(url), variableName.name, fieldTerminator, legacyCsvQuoteEscaping)(id = id)
@@ -294,8 +296,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     //Creates commands out of the predicates
     def asCommand(predicates: Seq[(Variable, Expression)]) = {
       val (keys: Seq[Variable], exprs) = predicates.unzip
-      val commands: Seq[Predicate] = exprs.map(buildPredicate)
-      (context: ExecutionContext, state: QueryState, entity: PropertyContainer) => {
+
+      val commands = exprs.map(buildPredicate)
+      (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
         keys.zip(commands).forall { case (variable: Variable, expr: Predicate) =>
           context(variable.name) = entity
           val result = expr.isTrue(context)(state)
@@ -311,9 +314,9 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
     val relCommand = asCommand(relPreds)
 
     new VarLengthPredicate {
-      override def filterNode(row: ExecutionContext, state: QueryState)(node: Node): Boolean = nodeCommand(row, state, node)
+      override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = nodeCommand(row, state, node)
 
-      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: Relationship): Boolean = relCommand(row, state, rel)
+      override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: EdgeValue): Boolean = relCommand(row, state, rel)
     }
   }
 

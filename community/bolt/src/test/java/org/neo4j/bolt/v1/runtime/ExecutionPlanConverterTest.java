@@ -29,8 +29,14 @@ import java.util.Set;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.DoubleValue;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class ExecutionPlanConverterTest
 {
@@ -38,18 +44,18 @@ public class ExecutionPlanConverterTest
     @Test
     public void profileStatisticConversion() throws Exception
     {
-        Map<String,Object> convertedMap = ExecutionPlanConverter.convert(
+        MapValue convertedMap = ExecutionPlanConverter.convert(
                 new TestExecutionPlanDescription( "description", getProfilerStatistics(), getIdentifiers(),
                         getArguments() ) );
-        assertEquals( convertedMap.get( "operatorType" ), "description" );
-        assertEquals( convertedMap.get( "args" ), getArguments() );
-        assertEquals( convertedMap.get( "identifiers" ), getIdentifiers() );
-        assertEquals( convertedMap.get( "children" ), Collections.emptyList() );
-        assertEquals( convertedMap.get( "rows" ), 1L );
-        assertEquals( convertedMap.get( "dbHits" ), 2L );
-        assertEquals( convertedMap.get( "pageCacheHits" ), 3L );
-        assertEquals( convertedMap.get( "pageCacheMisses" ), 2L );
-        assertEquals( (double)convertedMap.get( "pageCacheHitRatio" ), 3.0 / 5, 0.0001 );
+        assertEquals( convertedMap.get( "operatorType" ), stringValue( "description" ) );
+        assertEquals( convertedMap.get( "args" ), AnyValues.asMapValue( getArguments() ) );
+        assertEquals( convertedMap.get( "identifiers" ), AnyValues.asListValue( getIdentifiers() ));
+        assertEquals( convertedMap.get( "children" ), VirtualValues.EMPTY_LIST );
+        assertEquals( convertedMap.get( "rows" ), longValue( 1L ));
+        assertEquals( convertedMap.get( "dbHits" ), longValue( 2L ) );
+        assertEquals( convertedMap.get( "pageCacheHits" ), longValue( 3L ) );
+        assertEquals( convertedMap.get( "pageCacheMisses" ), longValue( 2L ) );
+        assertEquals( ((DoubleValue) convertedMap.get( "pageCacheHitRatio" )).doubleValue(),  3.0 / 5, 0.0001 );
         assertEquals( convertedMap.size(), 9 );
     }
 
@@ -60,7 +66,7 @@ public class ExecutionPlanConverterTest
 
     private Set<String> getIdentifiers()
     {
-        return Iterators.asSet("identifier1", "identifier2");
+        return Iterators.asSet( "identifier1", "identifier2" );
     }
 
     private TestProfilerStatistics getProfilerStatistics()

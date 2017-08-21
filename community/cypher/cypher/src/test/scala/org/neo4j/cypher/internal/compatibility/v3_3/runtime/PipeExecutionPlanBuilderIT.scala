@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.Toke
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compiler.v3_3.planDescription.FakeIdMap
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.FakeIdMap
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput

@@ -19,6 +19,7 @@
  */
 package org.neo4j.values;
 
+import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
@@ -34,7 +35,7 @@ public interface AnyValueWriter<E extends Exception> extends ValueWriter<E>
 
     void writeNodeReference( long nodeId ) throws E;
 
-    void writeNode( long nodeId, TextValue[] labels, MapValue properties ) throws E;
+    void writeNode( long nodeId, TextArray labels, MapValue properties ) throws E;
 
     void writeEdgeReference( long edgeId ) throws E;
 

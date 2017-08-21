@@ -47,4 +47,17 @@ public class CypherRESTConfiguredProceduresIT extends ConfiguredProceduresTestBa
     {
         return new CypherRESTInteraction( config );
     }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Long )
+        {
+            return ((Long) obj).intValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
 }

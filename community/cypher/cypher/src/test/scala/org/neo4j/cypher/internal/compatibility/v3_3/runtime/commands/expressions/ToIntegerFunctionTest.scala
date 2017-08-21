@@ -23,56 +23,57 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.values.storable.Values.{NO_VALUE, longValue}
 
 class ToIntegerFunctionTest extends CypherFunSuite {
 
   test("should return null if argument is null") {
-    assert(toInteger(null) === null)
+    assert(toInteger(null) === NO_VALUE)
   }
 
   test("should convert a string to an integer") {
-    toInteger("10") should equal(10)
+    toInteger("10") should equal(longValue(10))
   }
 
   test("should convert a double to an integer") {
-    toInteger(23.5d) should equal(23)
+    toInteger(23.5d) should equal(longValue(23))
   }
 
   test("should parse float and truncate to int if the argument is a float literal") {
-    toInteger("20.5") should equal(20)
+    toInteger("20.5") should equal(longValue(20))
   }
 
   test("should return null if the argument is a partially numeric string") {
-    assert(toInteger("20foobar2") === null)
+    assert(toInteger("20foobar2") === NO_VALUE)
   }
 
   test("should return null if the argument is a hexadecimal string") {
-    assert(toInteger("0x20") === null)
+    assert(toInteger("0x20") === NO_VALUE)
   }
 
   test("should convert a string with leading zeros to an integer") {
-    toInteger("000123121") should equal(123121)
+    toInteger("000123121") should equal(longValue(123121))
   }
 
   test("should convert a string with leading minus in a negative integer") {
-    toInteger("-12") should equal(-12)
+    toInteger("-12") should equal(longValue(-12))
   }
 
   test("should convert a string with leading minus and zeros in a negative integer") {
-    toInteger("-00012") should equal(-12)
+    toInteger("-00012") should equal(longValue(-12))
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to integer") {
-    val caughtException = evaluating { toInteger(new Object) } should produce[ParameterWrongTypeException]
+    val caughtException = evaluating { toInteger(true) } should produce[ParameterWrongTypeException]
     caughtException.getMessage should startWith("Expected a String or Number, got: ")
   }
 
   test("given an integer should give the same value back") {
-    toInteger(50) should equal(50)
+    toInteger(50) should equal(longValue(50))
   }
 
   test("should truncate floats if given a float") {
-    toInteger(20.6f) should equal(20)
+    toInteger(20.6f) should equal(longValue(20))
   }
 
   test("should fail for larger integers larger that 8 bytes") {
@@ -82,11 +83,11 @@ class ToIntegerFunctionTest extends CypherFunSuite {
 
   test("should handle floats larger than 2^31 - 1") {
     //2^33 = 8589934592
-    toInteger("8589934592.0") should equal(8589934592L)
+    toInteger("8589934592.0") should equal(longValue(8589934592L))
   }
 
   test("should handle -2^63") {
-    toInteger("-9223372036854775808") should equal(Long.MinValue)
+    toInteger("-9223372036854775808") should equal(longValue(Long.MinValue))
   }
 
   test("cannot handle -2^63-1") {
@@ -95,7 +96,7 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   test("should handle 2^63 - 1") {
-    toInteger("9223372036854775807") should equal(Long.MaxValue)
+    toInteger("9223372036854775807") should equal(longValue(Long.MaxValue))
   }
 
   test("cannot handle 2^63") {

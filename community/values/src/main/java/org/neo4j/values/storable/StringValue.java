@@ -21,12 +21,12 @@ package org.neo4j.values.storable;
 
 import static java.lang.String.format;
 
-abstract class StringValue extends TextValue
+public abstract class StringValue extends TextValue
 {
     abstract String value();
 
     @Override
-    public boolean equals( Object other )
+    public boolean eq( Object other )
     {
         return other != null && other instanceof Value && equals( (Value) other );
     }
@@ -50,7 +50,7 @@ abstract class StringValue extends TextValue
     }
 
     @Override
-    public int hashCode()
+    public int computeHash()
     {
         return value().hashCode();
     }
@@ -105,6 +105,12 @@ abstract class StringValue extends TextValue
         String value()
         {
             return value;
+        }
+
+        @Override
+        public int length()
+        {
+            return value.length();
         }
     }
 }

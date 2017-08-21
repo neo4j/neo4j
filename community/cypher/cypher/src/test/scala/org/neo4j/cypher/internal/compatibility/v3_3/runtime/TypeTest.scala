@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.{DoubleValue, LongValue}
 
 class TypeTest extends CypherFunSuite {
 
@@ -31,7 +32,7 @@ class TypeTest extends CypherFunSuite {
     val result = calc(op)
 
     //all integer operations should result in longs
-    result shouldBe a [java.lang.Long]
+    result shouldBe a [LongValue]
   }
 
   test("plus double int") {
@@ -39,7 +40,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [DoubleValue]
   }
 
   test("minus int int") {
@@ -48,7 +49,7 @@ class TypeTest extends CypherFunSuite {
     val result = calc(op)
 
     //all integer operations should result in longs
-    result shouldBe a [java.lang.Long]
+    result shouldBe a [LongValue]
   }
 
   test("minus double int") {
@@ -56,7 +57,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [DoubleValue]
   }
 
   test("multiply int int") {
@@ -65,7 +66,7 @@ class TypeTest extends CypherFunSuite {
     val result = calc(op)
 
     //all integer operations should result in longs
-    result shouldBe a [java.lang.Long]
+    result shouldBe a [LongValue]
   }
 
   test("multiply double int") {
@@ -73,7 +74,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [DoubleValue]
   }
 
   test("divide int int") {
@@ -81,7 +82,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Integer]
+    result shouldBe a [LongValue]
   }
 
   test("divide double int") {
@@ -89,7 +90,7 @@ class TypeTest extends CypherFunSuite {
 
     val result = calc(op)
 
-    result shouldBe a [java.lang.Double]
+    result shouldBe a [DoubleValue]
   }
 
   private def calc(e:Expression) = e.apply(ExecutionContext.empty)(QueryStateHelper.empty)

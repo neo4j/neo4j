@@ -23,8 +23,8 @@ import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
-import org.neo4j.values.storable.NumberValues;
 import org.neo4j.values.VirtualValue;
+import org.neo4j.values.storable.NumberValues;
 
 import static java.lang.String.format;
 
@@ -48,7 +48,12 @@ public abstract class PointValue extends VirtualValue
         writer.endPoint();
     }
 
-    abstract CoordinateReferenceSystem getCoordinateReferenceSystem();
+    public abstract CoordinateReferenceSystem getCoordinateReferenceSystem();
+
+    public double[] coordinates()
+    {
+        return new double[]{xCoordinate, yCoordinate};
+    }
 
     @Override
     public boolean equals( VirtualValue o )
@@ -68,11 +73,11 @@ public abstract class PointValue extends VirtualValue
     }
 
     @Override
-    public int hash()
+    public int computeHash()
     {
         int result = 0;
-        result = 31 * ( result + NumberValues.hash( xCoordinate ) );
-        result = 31 * ( result + NumberValues.hash( yCoordinate ) );
+        result = 31 * (result + NumberValues.hash( xCoordinate ));
+        result = 31 * (result + NumberValues.hash( yCoordinate ));
         return result;
     }
 
@@ -109,19 +114,19 @@ public abstract class PointValue extends VirtualValue
     public String toString()
     {
         return format( "Point{ %s, %.3e, %.3e}",
-            getCoordinateReferenceSystem().name, xCoordinate, yCoordinate );
+                getCoordinateReferenceSystem().name, xCoordinate, yCoordinate );
     }
 
-    static class CarthesianPointValue extends PointValue
+    static class CartesianPointValue extends PointValue
     {
 
-        CarthesianPointValue( double x, double y )
+        CartesianPointValue( double x, double y )
         {
             super( x, y );
         }
 
         @Override
-        CoordinateReferenceSystem getCoordinateReferenceSystem()
+        public CoordinateReferenceSystem getCoordinateReferenceSystem()
         {
             return CoordinateReferenceSystem.Cartesian;
         }
@@ -130,13 +135,13 @@ public abstract class PointValue extends VirtualValue
     static class GeographicPointValue extends PointValue
     {
 
-        GeographicPointValue( double latitude, double longitude )
+        GeographicPointValue( double longitude, double latitude )
         {
-            super( latitude, longitude );
+            super( longitude, latitude );
         }
 
         @Override
-        CoordinateReferenceSystem getCoordinateReferenceSystem()
+        public CoordinateReferenceSystem getCoordinateReferenceSystem()
         {
             return CoordinateReferenceSystem.WGS84;
         }

@@ -111,8 +111,9 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
   def executeUsingCostPlannerOnly(db: GraphDatabaseCypherService, query: String) = {
     val compatibilityFactory = db.getDependencyResolver.resolveDependency(classOf[CompatibilityFactory])
-    new ExecutionEngine(db, NullLogProvider.getInstance(), compatibilityFactory).execute(s"CYPHER planner=COST $query", Map.empty[String, Any]) match {
-      case e: ClosingExecutionResult => RewindableExecutionResult(e.inner)
-    }
+    RewindableExecutionResult(
+      new ExecutionEngine(db, NullLogProvider.getInstance(), compatibilityFactory)
+        .execute(s"CYPHER planner=COST $query", Map.empty[String, Any])
+    )
   }
 }

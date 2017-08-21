@@ -19,10 +19,9 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
-import java.util.Map;
-
-import org.neo4j.bolt.v1.runtime.spi.Record;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.values.result.QueryResult;
+import org.neo4j.values.virtual.MapValue;
 
 /**
  * Interface defining simple handler methods for each defined
@@ -32,9 +31,9 @@ import org.neo4j.kernel.api.exceptions.Status;
  */
 public interface BoltResponseMessageHandler<E extends Exception>
 {
-    void onSuccess( Map<String, Object> metadata ) throws E;
+    void onSuccess( MapValue metadata ) throws E;
 
-    void onRecord( Record item ) throws E;
+    void onRecord( QueryResult.Record item ) throws E;
 
     void onIgnored() throws E;
 

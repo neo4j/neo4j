@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
 import org.neo4j.graphdb.Node
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class NodeByIdSeekPipeTest extends CypherFunSuite {
 
@@ -31,26 +32,27 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek node by id") {
     // given
-    val node = mock[Node]
-    val nodeOps = mock[Operations[Node]]
-    when(nodeOps.exists(17)).thenReturn(true)
+    val id = 17
+    val node = nodeProxy(17)
+    val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[Node]]
     when(nodeOps.getById(17)).thenReturn(node)
+    when(nodeOps.exists(17)).thenReturn(true)
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].nodeOps).thenReturn(nodeOps).getMock[QueryContext]
     )
 
     // when
-    val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(17)))().createResults(queryState)
+    val result = NodeByIdSeekPipe("a", SingleSeekArg(Literal(id)))().createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(List(node))
+    result.map(_("a")).toList should equal(List(fromNodeProxy(node)))
   }
 
   test("should seek nodes by multiple ids") {
     // given
-    val node1 = mock[Node]
-    val node2 = mock[Node]
-    val node3 = mock[Node]
+    val node1 = nodeProxy(42)
+    val node2 = nodeProxy(21)
+    val node3 = nodeProxy(11)
     val nodeOps = mock[Operations[Node]]
 
     when(nodeOps.getById(42)).thenReturn(node1)
@@ -68,6 +70,12 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
     val result = NodeByIdSeekPipe("a", ManySeekArgs(ListLiteral(Literal(42), Literal(21), Literal(11))))().createResults(queryState)
 
     // then
-    result.map(_("a")).toList should equal(List(node1, node2, node3))
+    result.map(_("a")).toList should equal(List(fromNodeProxy(node1), fromNodeProxy(node2), fromNodeProxy(node3)))
+  }
+
+  private def nodeProxy(id: Long) = {
+    val node = mock[Node]
+    when(node.getId).thenReturn(id)
+    node
   }
 }

@@ -27,6 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.values.AnyValues
+import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
 import scala.collection.JavaConverters._
 
@@ -43,12 +45,13 @@ class PatternRelationship(key: String,
 
   def getOtherNode(node: PatternNode) = if (startNode == node) endNode else startNode
 
-  def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
+  def getGraphRelationships(node: PatternNode, realNode: NodeValue, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
 
     val result: Iterator[GraphRelationship] =
       state.query.
-        getRelationshipsForIds(realNode, getDirection(node), types.types(state.query)).
-        filter(r => canUseThis(r, state, f)).
+        getRelationshipsForIds(realNode.id(), getDirection(node), types.types(state.query))
+        .map(AnyValues.asEdgeValue)
+        .filter(r => canUseThis(r, state, f)).
         map(new SingleGraphRelationship(_))
 
     if (startNode == endNode)
@@ -101,7 +104,7 @@ class PatternRelationship(key: String,
     }
   }
 
-  protected def canUseThis(rel: Relationship, state: QueryState, f: => ExecutionContext): Boolean =
+  protected def canUseThis(rel: EdgeValue, state: QueryState, f: => ExecutionContext): Boolean =
     if (properties.isEmpty) {
       true
     } else {
@@ -112,7 +115,7 @@ class PatternRelationship(key: String,
           if (propertyId.isEmpty) {
             false // The property doesn't exist in the graph
           } else {
-            val value = state.query.relationshipOps.getProperty(rel.getId, propertyId.get)
+            val value = state.query.relationshipOps.getProperty(rel.id, propertyId.get)
             val expectedValue = expression(ctx)(state)
             expectedValue == value
           }
@@ -137,18 +140,18 @@ class VariableLengthPatternRelationship(pathName: String,
       endNode.key -> CTNode,
       key -> CTList(CTRelationship)) ++ relIterable.map(_ -> CTList(CTRelationship)).toMap
 
-  override def getGraphRelationships(node: PatternNode, realNode: Node, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
-    val matchedPaths: Iterator[Path] = state.query.variableLengthPathExpand(node, realNode, minHops, maxHops, getDirection(node), relType)
+  override def getGraphRelationships(node: PatternNode, realNode: NodeValue, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] = {
+    val matchedPaths: Iterator[Path] = state.query.variableLengthPathExpand(node, realNode.id(), minHops, maxHops, getDirection(node), relType)
 
     val filteredPaths = if (properties.isEmpty) {
       matchedPaths
     } else {
       matchedPaths.filter {
-        path => path.relationships().iterator().asScala.forall(r => canUseThis(r, state, f))
+        path => path.relationships().iterator().asScala.forall(r => canUseThis(AnyValues.asEdgeValue(r), state, f))
       }
     }
 
-    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(p))
+    filteredPaths.toStream.map(p => VariableLengthGraphRelationship(AnyValues.asPathValue(p)))
   }
 }
 

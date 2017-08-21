@@ -171,6 +171,12 @@ public interface NotificationDetail
                                     + "\tWITH *, relationships(p) AS %s",
                             element, element );
                 }
+
+                @Override
+                public String toString()
+                {
+                    return value();
+                }
             };
         }
 

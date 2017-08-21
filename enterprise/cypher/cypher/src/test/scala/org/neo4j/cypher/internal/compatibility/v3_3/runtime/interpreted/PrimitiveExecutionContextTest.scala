@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.Values.stringValue
 
 class PrimitiveExecutionContextTest extends CypherFunSuite {
 
@@ -33,13 +34,13 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
 
     input.setLongAt(0, 42)
     input.setLongAt(1, 666)
-    input.setRefAt(0, "21")
+    input.setRefAt(0, stringValue("21"))
 
     result.copyFrom(input)
 
     result.getLongAt(0) should equal(42)
     result.getLongAt(1) should equal(666)
-    result.getRefAt(0) should equal("21")
+    result.getRefAt(0) should equal(stringValue("21"))
   }
 
   test("copy fails if copy from larger") {

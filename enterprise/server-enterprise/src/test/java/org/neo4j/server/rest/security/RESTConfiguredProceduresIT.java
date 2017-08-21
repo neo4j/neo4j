@@ -47,4 +47,17 @@ public class RESTConfiguredProceduresIT extends ConfiguredProceduresTestBase<RES
     {
         return new RESTInteraction( config );
     }
+
+    @Override
+    protected Object valueOf( Object obj )
+    {
+        if ( obj instanceof Long )
+        {
+            return ((Long) obj).intValue();
+        }
+        else
+        {
+            return obj;
+        }
+    }
 }

@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.helpers.NullChecker.nodeIsNull
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 case class NullCheck(offset: Int, inner: Expression) extends Expression {
 
-  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any =
-    if (nodeIsNull(ctx.getLongAt(offset))) null else inner(ctx)
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    if (nodeIsNull(ctx.getLongAt(offset))) Values.NO_VALUE else inner(ctx)
 
   override def rewrite(f: (Expression) => Expression): Expression = f(this)
 

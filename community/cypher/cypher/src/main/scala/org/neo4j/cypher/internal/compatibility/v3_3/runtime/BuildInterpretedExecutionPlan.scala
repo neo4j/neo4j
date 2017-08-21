@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanIdentificationBuilder
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
 import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -34,8 +35,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.Com
 import org.neo4j.cypher.internal.frontend.v3_3.phases.{InternalNotificationLogger, Phase}
 import org.neo4j.cypher.internal.frontend.v3_3.{PeriodicCommitInOpenTransactionException, PlannerName}
 import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, UpdateCountingQueryContext}
+import org.neo4j.values.AnyValue
 
-object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
+object
+
+BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, LogicalPlanState, CompilationState] {
   override def phase = PIPE_BUILDING
 
   override def description = "create interpreted execution plan"
@@ -53,11 +57,12 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
     val columns = from.statement().returnColumns
     val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
-    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory, context.notificationLogger)
+    val func = getExecutionPlanFunction(periodicCommitInfo, from.queryText, updating, resultBuilderFactory,
+                                        context.notificationLogger, InterpretedRuntimeName)
     val execPlan = new ExecutionPlan {
       private val fingerprint = context.createFingerprintReference(fp)
 
-      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]): InternalExecutionResult =
+      override def run(queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult =
         func(queryContext, planType, params)
 
       override def isPeriodicCommit: Boolean = periodicCommitInfo.isDefined
@@ -87,9 +92,10 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
                                        queryId: AnyRef,
                                        updating: Boolean,
                                        resultBuilderFactory: ExecutionResultBuilderFactory,
-                                       notificationLogger: InternalNotificationLogger):
-  (QueryContext, ExecutionMode, Map[String, Any]) => InternalExecutionResult =
-    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, Any]) => {
+                                       notificationLogger: InternalNotificationLogger,
+                                        runtimeName: RuntimeName):
+  (QueryContext, ExecutionMode, Map[String, AnyValue]) => InternalExecutionResult =
+    (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]) => {
       val builder = resultBuilderFactory.create()
 
       val profiling = planType == ProfileMode
@@ -106,6 +112,6 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
       if (profiling)
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo))
 
-      builder.build(queryId, planType, params, notificationLogger)
+      builder.build(queryId, planType, params, notificationLogger, runtimeName)
     }
 }

@@ -750,7 +750,7 @@ order by a.COL1""")
         val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
 
         //THEN
-        result.toList shouldBe empty
+        result.asScala.toList shouldBe empty
     }
   }
 
@@ -856,9 +856,9 @@ order by a.COL1""")
 
   test("should iterate all node id sets from start during matching") {
     // given
-    val nodes: List[Node] =
+    val nodes: Vector[Node] =
       executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
-        .columnAs[List[Node]]("nodes").next().sortBy(_.getId)
+        .columnAs[Vector[Node]]("nodes").next().sortBy(_.getId)
 
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"
 
@@ -956,7 +956,7 @@ order by a.COL1""")
       writer.println("4,5,6")
     }
     val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
-    result should have size 2
+    result.asScala should have size 2
   }
 
   override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
@@ -984,12 +984,12 @@ order by a.COL1""")
     (0 until 100).foreach { _ => createLabeledNode("Person") }
 
     // WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
     planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 301).foreach { _ => createLabeledNode("Person") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
 
     //THEN
     planningListener.planRequests should equal (Seq(
@@ -1005,12 +1005,12 @@ order by a.COL1""")
 
     (0 until 100).foreach { _ => createLabeledNode("Person") }
     //WHEN
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
     planningListener.planRequests should equal(Seq(
       s"match (n:Person) return n"
     ))
     (0 until 9).foreach { _ => createLabeledNode("Dog") }
-    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).toList
+    eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
 
     //THEN
     planningListener.planRequests should equal(Seq(
@@ -1022,14 +1022,14 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any]).toList
+    val result1 = eengine.execute("match (n) return n", Map.empty[String, Any]).asScala.toList
     result1 shouldBe empty
 
     val ds = graph.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
     ds.stop()
     ds.start()
 
-    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).toList
+    val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).asScala.toList
     result2 shouldBe empty
 
     planningListener.planRequests should equal(Seq(
