@@ -314,14 +314,14 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     @Test
     public void shouldGiveNiceMessageAtFailWhenTryingToKill() throws Throwable
     {
-        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name() , "true" ) );
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "true" ) );
 
         String query = "CALL dbms.killQuery('query-9999999999')";
         Map<String,String> expected = new HashMap<>();
-        expected.put( "queryId",  "query-9999999999" );
-        expected.put( "username",  "n/a" );
-        expected.put( "message",  "No Query found with this id" );
-        assertSuccess( adminSubject, query, r -> Assert.assertThat(r.next(), equalTo( expected )));
+        expected.put( "queryId", "query-9999999999" );
+        expected.put( "username", "n/a" );
+        expected.put( "message", "No Query found with this id" );
+        assertSuccess( adminSubject, query, r -> Assert.assertThat( r.next(), equalTo( expected ) ) );
     }
 
     @Test
@@ -329,14 +329,14 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
     {
         super.setUp();
         String query = "CALL dbms.killQuery('query-9999999999')";
-        assertSuccess( adminSubject, query, r -> Assert.assertThat(r.hasNext(), is(false)));
+        assertSuccess( adminSubject, query, r -> Assert.assertThat( r.hasNext(), is( false ) ) );
     }
 
     @Test
     public void shouldGiveNiceMessageAtFailWhenTryingToKillMoreThenOne() throws Throwable
     {
         //Given
-        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name() , "true" ) );
+        configuredSetup( stringMap( GraphDatabaseSettings.kill_query_verbose.name(), "true" ) );
         String query = "CALL dbms.killQueries(['query-9999999999', 'query-9999999989'])";
 
         //Expect
@@ -353,7 +353,8 @@ public abstract class ConfiguredProceduresTestBase<S> extends ProcedureInteracti
         expected.add( secoundResultExpected );
 
         //Then
-        assertSuccess( adminSubject, query, r -> {
+        assertSuccess( adminSubject, query, r ->
+        {
             Set<Map<String,Object>> actual = r.stream().collect( toSet() );
             Assert.assertThat( actual, equalTo( expected ) );
         } );

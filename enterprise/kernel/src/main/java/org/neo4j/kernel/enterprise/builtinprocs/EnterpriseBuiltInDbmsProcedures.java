@@ -314,21 +314,18 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing the query with the given query id." )
     @Procedure( name = "dbms.killQuery", mode = DBMS )
-    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQuery( @Name( "id" ) String idText ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
         {
             long queryId = fromExternalString( idText ).kernelQueryId();
 
-            Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys =
-                    getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
+            Set<Pair<KernelTransactionHandle,ExecutingQuery>> querys = getActiveTransactions( tx -> executingQueriesWithId( queryId, tx ) ).collect( toSet() );
             Config configs = resolver.resolveDependency( Config.class );
             if ( configs.get( GraphDatabaseSettings.kill_query_verbose ) && querys.isEmpty() )
             {
-                return Stream.<QueryTerminationResult>builder()
-                        .add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
+                return Stream.<QueryTerminationResult>builder().add( new QueryFailedTerminationResult( fromExternalString( idText ) ) ).build();
             }
             return querys.stream().map( catchThrown( InvalidArgumentsException.class, this::killQueryTransaction ) );
         }
@@ -341,8 +338,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill all transactions executing a query with any of the given query ids." )
     @Procedure( name = "dbms.killQueries", mode = DBMS )
-    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts )
-            throws InvalidArgumentsException, IOException
+    public Stream<QueryTerminationResult> killQueries( @Name( "ids" ) List<String> idTexts ) throws InvalidArgumentsException, IOException
     {
         securityContext.assertCredentialsNotExpired();
         try
