@@ -39,6 +39,7 @@
     <module>graphdb-api</module>
     <module>unsafe</module>
     <module>io</module>
+    <module>kernel-api</module>
     <module>csv</module>
     <module>logging</module>
     <module>security</module>
