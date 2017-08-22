@@ -31,15 +31,9 @@ object aggregation {
 
     val variablesToKeep: Map[String, Expression] = aggregation.aggregationExpressions.flatMap {
       case (_, exp) => exp.dependencies
-    }.toList.distinct.map {
-      case id => id.name -> id
-    }.toMap
+    }.toList.distinct.map(id => id.name -> id).toMap
 
-    //  TODO: we need to project here since the pipe does not do that,
-    //  when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep, distinct = false)
-
-    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(projectedPlan, aggregation.aggregationExpressions)
+    val (rewrittenPlan, aggregations) = PatternExpressionSolver()(plan, aggregation.aggregationExpressions)
 
     context.logicalPlanProducer.planAggregation(rewrittenPlan, groupingExpressions, aggregations, aggregation.aggregationExpressions)
   }

@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.frontend.v3_3.{ast => frontEndAst, _}
 import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.{EdgeValue, NodeValue}
 
@@ -215,7 +214,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
       case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
         EagerAggregationPipe(
           source,
-          groupingExpressions.keySet,
+          Eagerly.immutableMapValues(groupingExpressions, buildExpression),
           Eagerly.immutableMapValues[String, frontEndAst.Expression, AggregationExpression](aggregatingExpressions, buildExpression(_).asInstanceOf[AggregationExpression])
         )(id = id)
 
