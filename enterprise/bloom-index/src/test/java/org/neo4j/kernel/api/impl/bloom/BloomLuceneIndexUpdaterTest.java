@@ -29,6 +29,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -46,7 +48,7 @@ public class BloomLuceneIndexUpdaterTest
     @ClassRule
     public static TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
     @Rule
-    public DatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public DatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
 
     private static final Label LABEL = Label.label( "label" );
     private static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
@@ -54,8 +56,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldFindNodeWithString() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -88,8 +92,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldRepresentPropertyChanges() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -136,8 +142,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldNotFindRemovedNodes() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -178,8 +186,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldOnlyIndexIndexedProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -212,8 +222,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldSearchAcrossMultipleProperties() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop", "prop2" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop, prop2" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -250,8 +262,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldOrderResultsBasedOnRelevance() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "first", "last" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "first, last" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "first, last" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 
@@ -296,8 +310,10 @@ public class BloomLuceneIndexUpdaterTest
     @Test
     public void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        GraphDatabaseAPI db = dbRule.getGraphDatabaseAPI();
-        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), "prop" ) )
+        GraphDatabaseAPI db = dbRule.withSetting( GraphDatabaseSettings.bloom_indexed_properties, "prop" ).getGraphDatabaseAPI();
+        Config config = db.getDependencyResolver().resolveDependency( Config.class );
+        config.augment( GraphDatabaseSettings.bloom_indexed_properties, "prop" );
+        try ( BloomIndex bloomIndex = new BloomIndex( fileSystemRule, testDirectory.graphDbDir(), config ) )
         {
             db.registerTransactionEventHandler( bloomIndex.getUpdater() );
 

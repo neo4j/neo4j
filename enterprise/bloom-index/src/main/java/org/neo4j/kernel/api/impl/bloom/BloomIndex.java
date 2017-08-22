@@ -27,10 +27,12 @@ import java.io.IOException;
 import java.nio.file.Paths;
 
 import org.neo4j.function.Factory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
 import org.neo4j.kernel.api.impl.index.builder.LuceneIndexStorageBuilder;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
+import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 
@@ -40,9 +42,9 @@ public class BloomIndex implements AutoCloseable
     private final BloomLuceneIndex relationshipIndex;
     private final String[] properties;
 
-    public BloomIndex( FileSystemAbstraction fileSystem, File file, String... properties ) throws IOException
+    public BloomIndex( FileSystemAbstraction fileSystem, File file, Config config ) throws IOException
     {
-        this.properties = properties;
+        this.properties = config.get( GraphDatabaseSettings.bloom_indexed_properties ).toArray( new String[0] );
         Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( new EnglishAnalyzer() );
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
