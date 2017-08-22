@@ -43,7 +43,7 @@ case class NodeIndexScanRegisterPipe(ident: String,
     val nodes = state.query.indexScanPrimitive(descriptor)
     PrimitiveLongHelper.map(nodes, { node =>
       val context = PrimitiveExecutionContext(pipelineInformation)
-      state.copyArgumentStateTo(context)
+      state.copyArgumentStateTo(context, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
       context.setLongAt(offset, node)
       context
     })

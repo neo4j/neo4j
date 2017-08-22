@@ -60,7 +60,7 @@ case class OptionalExpandIntoRegisterPipe(source: Pipe,
 
           val matchIterator = PrimitiveLongHelper.map(relationships, relId => {
             val outputRow = PrimitiveExecutionContext(pipelineInformation)
-            outputRow.copyFrom(inputRow)
+            outputRow.copyFrom(inputRow, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
             outputRow.setLongAt(relOffset, relId)
             outputRow
           }).filter(ctx => predicate.isTrue(ctx))
@@ -75,7 +75,7 @@ case class OptionalExpandIntoRegisterPipe(source: Pipe,
 
   private def withNulls(inputRow: ExecutionContext) = {
     val outputRow = PrimitiveExecutionContext(pipelineInformation)
-    outputRow.copyFrom(inputRow)
+    outputRow.copyFrom(inputRow, pipelineInformation.numberOfLongs, pipelineInformation.numberOfReferences)
     outputRow.setLongAt(relOffset, -1)
     outputRow.setLongAt(toOffset, -1)
     outputRow

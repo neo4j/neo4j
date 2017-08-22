@@ -36,7 +36,7 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
     input.setLongAt(1, 666)
     input.setRefAt(0, stringValue("21"))
 
-    result.copyFrom(input)
+    result.copyFrom(input, 2, 1)
 
     result.getLongAt(0) should equal(42)
     result.getLongAt(1) should equal(666)
@@ -47,13 +47,13 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
     val input = PrimitiveExecutionContext(pipeline(4, 0))
     val result = PrimitiveExecutionContext(pipeline(2, 0))
 
-    intercept[InternalException](result.copyFrom(input))
+    intercept[InternalException](result.copyFrom(input, 4, 0))
   }
 
   test("copy fails if copy from larger 2") {
     val input = PrimitiveExecutionContext(pipeline(0, 4))
     val result = PrimitiveExecutionContext(pipeline(0, 2))
 
-    intercept[InternalException](result.copyFrom(input))
+    intercept[InternalException](result.copyFrom(input, 0, 4))
   }
 }
