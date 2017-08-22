@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression])
+  def apply(in: LogicalPlan, projs: Map[String, Expression], distinct: Boolean)
            (implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val (plan, projectionsMap) = PatternExpressionSolver()(in, projs)
@@ -39,9 +39,12 @@ object projection {
     }
     val projections: Set[(String, Expression)] = projectionsMap.toIndexedSeq.toSet
 
-    if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds)
+    if (distinct) {
+      context.logicalPlanProducer.planDistinct(plan, projectionsMap, projs)
+    } else if (projections.subsetOf(projectAllCoveredIds) || projections == projectAllCoveredIds) {
       context.logicalPlanProducer.planStarProjection(plan, projectionsMap, projs)
-    else
+    } else {
       context.logicalPlanProducer.planRegularProjection(plan, projectionsMap, projs)
+    }
   }
 }

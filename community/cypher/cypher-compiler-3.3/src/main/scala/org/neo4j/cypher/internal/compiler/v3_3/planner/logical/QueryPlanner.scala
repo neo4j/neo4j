@@ -83,7 +83,7 @@ case class QueryPlanner(planSingleQuery: LogicalPlanningFunction1[PlannerQuery, 
     }
 
     if (distinct)
-      context.logicalPlanProducer.planDistinct(unionPlan)
+      context.logicalPlanProducer.planDistinctStar(unionPlan)
     else
       unionPlan
   }
