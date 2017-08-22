@@ -41,8 +41,8 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
                            uniqueConstraintsAdded: Int = 0,
                            uniqueConstraintsRemoved: Int = 0,
                            existenceConstraintsAdded: Int = 0,
-                           existenceConstraintsRemoved: Int = 0
-                          ) extends org.neo4j.graphdb.QueryStatistics {
+                           existenceConstraintsRemoved: Int = 0)
+    extends org.neo4j.graphdb.QueryStatistics {
 
   @BeanProperty
   val constraintsAdded: Int = uniqueConstraintsAdded + existenceConstraintsAdded
@@ -62,7 +62,6 @@ case class QueryStatistics(@BeanProperty nodesCreated: Int = 0,
       indexesRemoved > 0 ||
       constraintsAdded > 0 ||
       constraintsRemoved > 0
-
 
   override def toString: String = {
     val builder = new StringBuilder

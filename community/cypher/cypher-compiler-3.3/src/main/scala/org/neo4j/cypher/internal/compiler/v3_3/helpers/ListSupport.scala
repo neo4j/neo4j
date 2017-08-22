@@ -23,10 +23,11 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 
 import scala.collection.JavaConverters._
-import scala.collection.{Map, Seq}
+import scala.collection.Map
+import scala.collection.Seq
 
 object IsList extends ListSupport {
-  def unapply(x: Any):Option[Iterable[Any]] = {
+  def unapply(x: Any): Option[Iterable[Any]] = {
     val collection = isList(x)
     if (collection) {
       Some(makeTraversable(x))
@@ -38,12 +39,12 @@ object IsList extends ListSupport {
 
 trait ListSupport {
 
-  def singleOr[T](in:Iterator[T], or: => Exception):Iterator[T] = new Iterator[T] {
+  def singleOr[T](in: Iterator[T], or: => Exception): Iterator[T] = new Iterator[T] {
     var used = false
     def hasNext: Boolean = in.hasNext
 
     def next(): T = {
-      if(used) {
+      if (used) {
         throw or
       }
 
@@ -57,42 +58,47 @@ trait ListSupport {
 
   def isList(x: Any): Boolean = castToIterable.isDefinedAt(x)
 
-  def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] = try {
-    input match {
-      case single if test.isDefinedAt(single) => Some(Seq(test(single)))
+  def liftAsList[T](test: PartialFunction[Any, T])(input: Any): Option[Iterable[T]] =
+    try {
+      input match {
+        case single if test.isDefinedAt(single) => Some(Seq(test(single)))
 
-      case IsList(coll) =>
-        val mappedCollection = coll map {
-          case elem if test.isDefinedAt(elem) => test(elem)
-          case _                              => throw new NoValidValuesExceptions
-        }
+        case IsList(coll) =>
+          val mappedCollection = coll map {
+            case elem if test.isDefinedAt(elem) => test(elem)
+            case _                              => throw new NoValidValuesExceptions
+          }
 
-        Some(mappedCollection)
+          Some(mappedCollection)
 
-      case _ => None
+        case _ => None
+      }
+    } catch {
+      case _: NoValidValuesExceptions => None
     }
-  } catch {
-    case _: NoValidValuesExceptions => None
-  }
 
   def asListOf[T](test: PartialFunction[Any, T])(input: Iterable[Any]): Option[Iterable[T]] =
-    Some(input map { (elem: Any) => if (test.isDefinedAt(elem)) test(elem) else return None })
+    Some(input map { (elem: Any) =>
+      if (test.isDefinedAt(elem)) test(elem) else return None
+    })
 
-  def makeTraversable(z: Any): Iterable[Any] = if (isList(z)) {
-    castToIterable(z)
-  } else {
-    if (z == null) Iterable() else Iterable(z)
-  }
+  def makeTraversable(z: Any): Iterable[Any] =
+    if (isList(z)) {
+      castToIterable(z)
+    } else {
+      if (z == null) Iterable() else Iterable(z)
+    }
 
   protected def castToIterable: PartialFunction[Any, Iterable[Any]] = {
-    case x: Array[_]        => x
-    case x: Map[_, _]       => Iterable(x)
-    case x: JavaMap[_, _]   => Iterable(x.asScala)
-    case x: Traversable[_]  => x.toIterable
-    case x: JavaIterable[_] => x.asScala.map {
-      case y: JavaMap[_, _] => y.asScala
-      case y                => y
-    }
+    case x: Array[_]       => x
+    case x: Map[_, _]      => Iterable(x)
+    case x: JavaMap[_, _]  => Iterable(x.asScala)
+    case x: Traversable[_] => x.toIterable
+    case x: JavaIterable[_] =>
+      x.asScala.map {
+        case y: JavaMap[_, _] => y.asScala
+        case y                => y
+      }
   }
 
   implicit class RichSeq[T](inner: Seq[T]) {

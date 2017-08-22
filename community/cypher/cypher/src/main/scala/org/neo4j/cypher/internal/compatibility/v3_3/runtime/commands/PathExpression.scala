@@ -37,36 +37,43 @@ This class does pattern matching inside an Expression. It's used as a fallback w
 expression cannot be unnested from inside an expression. It is used for pattern expressions
 and pattern comprehension
  */
-case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
-                          projection: Expression, allowIntroducingNewIdentifiers: Boolean = false)
-  extends Expression with PatternGraphBuilder {
+case class PathExpression(pathPattern: Seq[Pattern],
+                          predicate: Predicate,
+                          projection: Expression,
+                          allowIntroducingNewIdentifiers: Boolean = false)
+    extends Expression
+    with PatternGraphBuilder {
   private val variables: Seq[(String, CypherType)] =
     pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
   private val symbols2 = SymbolTable(variables.toMap)
   private val variablesInClause = Pattern.variables(pathPattern)
 
-  private val matchingContext = new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), variablesInClause)
-  private val interestingPoints: Seq[String] = pathPattern.
-    flatMap(_.possibleStartPoints.map(_._1)).
-    filter(isNamed).
-    distinct
+  private val matchingContext =
+    new MatchingContext(symbols2, predicate.atoms, buildPatternGraph(symbols2, pathPattern), variablesInClause)
+  private val interestingPoints: Seq[String] =
+    pathPattern.flatMap(_.possibleStartPoints.map(_._1)).filter(isNamed).distinct
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     // If any of the points we need is null, the whole expression will return null
-    val returnNull = interestingPoints.exists(key => ctx.get(key) match {
-      case Some(Values.NO_VALUE) => true
-      case None if !allowIntroducingNewIdentifiers =>
-        throw new AssertionError("This execution plan should not exist.")
-      case _ => false
+    val returnNull = interestingPoints.exists(key =>
+      ctx.get(key) match {
+        case Some(Values.NO_VALUE) => true
+        case None if !allowIntroducingNewIdentifiers =>
+          throw new AssertionError("This execution plan should not exist.")
+        case _ => false
     })
 
     if (returnNull) {
       Values.NO_VALUE
     } else {
-      VirtualValues.list(matchingContext.
-        getMatches(ctx, state). // find matching subgraphs
-        filter(predicate.isTrue(_)(state)). // filter out graphs not matching the predicate
-        map(projection.apply(_)(state)).toArray:_*) // project from found subgraphs
+      VirtualValues.list(
+        matchingContext
+          .getMatches(ctx, state)
+          . // find matching subgraphs
+          filter(predicate.isTrue(_)(state))
+          . // filter out graphs not matching the predicate
+          map(projection.apply(_)(state))
+          .toArray: _*) // project from found subgraphs
     }
   }
 
@@ -75,7 +82,11 @@ case class PathExpression(pathPattern: Seq[Pattern], predicate: Predicate,
   override def arguments = Seq.empty
 
   override def rewrite(f: (Expression) => Expression) =
-    f(PathExpression(pathPattern.map(_.rewrite(f)), predicate.rewriteAsPredicate(f), projection, allowIntroducingNewIdentifiers))
+    f(
+      PathExpression(pathPattern.map(_.rewrite(f)),
+                     predicate.rewriteAsPredicate(f),
+                     projection,
+                     allowIntroducingNewIdentifiers))
 
   override def symbolTableDependencies = {
     val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet

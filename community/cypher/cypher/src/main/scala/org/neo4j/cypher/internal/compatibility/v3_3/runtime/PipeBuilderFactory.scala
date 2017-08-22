@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NestedPipeExpression, Pipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.NestedPipeExpression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
@@ -35,15 +36,15 @@ trait PipeBuilderFactory {
             recurse: LogicalPlan => Pipe,
             readOnly: Boolean,
             idMap: Map[LogicalPlan, Id],
-            expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeBuilder
+            expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext,
+                                                        planContext: PlanContext): PipeBuilder
 
-  protected def recursePipes(recurse: LogicalPlan => Pipe, planContext: PlanContext)
-                            (in: frontEndAst.Expression): frontEndAst.Expression = {
+  protected def recursePipes(recurse: LogicalPlan => Pipe, planContext: PlanContext)(
+      in: frontEndAst.Expression): frontEndAst.Expression = {
 
     val buildPipeExpressions = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
-        case expr@compilerAst.NestedPlanExpression(patternPlan, expression) =>
+        case expr @ compilerAst.NestedPlanExpression(patternPlan, expression) =>
           val pipe = recurse(patternPlan)
           val result = NestedPipeExpression(pipe, expression)(expr.position)
           result

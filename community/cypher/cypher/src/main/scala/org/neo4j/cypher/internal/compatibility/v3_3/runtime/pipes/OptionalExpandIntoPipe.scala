@@ -28,44 +28,50 @@ import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable.ListBuffer
 
-case class OptionalExpandIntoPipe(source: Pipe, fromName: String, relName: String, toName: String,
-                                  dir: SemanticDirection, types: LazyTypes, predicate: Predicate)
-                                 (val id: Id = new Id)
-  extends PipeWithSource(source) with CachingExpandInto {
+case class OptionalExpandIntoPipe(source: Pipe,
+                                  fromName: String,
+                                  relName: String,
+                                  toName: String,
+                                  dir: SemanticDirection,
+                                  types: LazyTypes,
+                                  predicate: Predicate)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with CachingExpandInto {
   private final val CACHE_SIZE = 100000
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new RelationshipsCache(CACHE_SIZE)
 
-    input.flatMap {
-      row =>
-        val fromNode = getRowNode(row, fromName)
-        fromNode match {
-          case fromNode: NodeValue =>
-            val toNode = getRowNode(row, toName)
+    input.flatMap { row =>
+      val fromNode = getRowNode(row, fromName)
+      fromNode match {
+        case fromNode: NodeValue =>
+          val toNode = getRowNode(row, toName)
 
-            toNode match {
-              case Values.NO_VALUE => Iterator.single(row.newWith1(relName, Values.NO_VALUE))
-              case n: NodeValue =>
-                val relationships = relCache.get(fromNode, n, dir)
-                  .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, types.types(state.query)))
+          toNode match {
+            case Values.NO_VALUE => Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+            case n: NodeValue =>
+              val relationships = relCache
+                .get(fromNode, n, dir)
+                .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, types.types(state.query)))
 
-                val it = relationships.toIterator
-                val filteredRows = ListBuffer.empty[ExecutionContext]
-                while (it.hasNext) {
-                  val candidateRow = row.newWith1(relName, it.next())
-                  if (predicate.isTrue(candidateRow)(state)) {
-                    filteredRows.append(candidateRow)
-                  }
+              val it = relationships.toIterator
+              val filteredRows = ListBuffer.empty[ExecutionContext]
+              while (it.hasNext) {
+                val candidateRow = row.newWith1(relName, it.next())
+                if (predicate.isTrue(candidateRow)(state)) {
+                  filteredRows.append(candidateRow)
                 }
+              }
 
-                if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, Values.NO_VALUE))
-                else filteredRows
-            }
+              if (filteredRows.isEmpty) Iterator.single(row.newWith1(relName, Values.NO_VALUE))
+              else filteredRows
+          }
 
-          case Values.NO_VALUE => Iterator(row.newWith1(relName, Values.NO_VALUE))
-        }
+        case Values.NO_VALUE => Iterator(row.newWith1(relName, Values.NO_VALUE))
+      }
     }
   }
 }

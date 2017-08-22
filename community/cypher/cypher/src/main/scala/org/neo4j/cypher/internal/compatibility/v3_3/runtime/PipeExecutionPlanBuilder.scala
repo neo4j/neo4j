@@ -25,8 +25,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.Exp
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{InstrumentedGraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{
+  Limit => LimitPlan,
+  LoadCSV => LoadCSVPlan,
+  Skip => SkipPlan,
+  _
+}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.InstrumentedGraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.Monitors
 import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
@@ -37,8 +43,9 @@ class PipeExecutionPlanBuilder(clock: Clock,
                                monitors: Monitors,
                                pipeBuilderFactory: PipeBuilderFactory,
                                expressionConverters: ExpressionConverters) {
-  def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): PipeInfo = {
+  def build(periodicCommit: Option[PeriodicCommit], plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(
+      implicit context: PipeExecutionBuilderContext,
+      planContext: PlanContext): PipeInfo = {
 
     val topLevelPipe = buildPipe(plan, idMap)
 
@@ -50,8 +57,7 @@ class PipeExecutionPlanBuilder(clock: Clock,
     }
 
     val periodicCommitInfo = periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
-    PipeInfo(topLevelPipe, !plan.solved.readOnly,
-             periodicCommitInfo, fingerprint, context.plannerName)
+    PipeInfo(topLevelPipe, !plan.solved.readOnly, periodicCommitInfo, fingerprint, context.plannerName)
   }
 
   /*
@@ -73,13 +79,13 @@ class PipeExecutionPlanBuilder(clock: Clock,
    Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two pipes from the pipe stack to
    build the pipe for 'a'. Thanks for reading this far - I didn't think we would make it!
    */
-  private def buildPipe(plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(implicit context: PipeExecutionBuilderContext, planContext: PlanContext): Pipe = {
-    val pipeBuilder = pipeBuilderFactory(
-      monitors = monitors,
-      recurse = p => buildPipe(p, idMap),
-      readOnly = plan.solved.all(_.queryGraph.readOnly),
-      idMap = idMap,
-      expressionConverters = expressionConverters)
+  private def buildPipe(plan: LogicalPlan, idMap: Map[LogicalPlan, Id])(implicit context: PipeExecutionBuilderContext,
+                                                                        planContext: PlanContext): Pipe = {
+    val pipeBuilder = pipeBuilderFactory(monitors = monitors,
+                                         recurse = p => buildPipe(p, idMap),
+                                         readOnly = plan.solved.all(_.queryGraph.readOnly),
+                                         idMap = idMap,
+                                         expressionConverters = expressionConverters)
 
     val planStack = new mutable.Stack[LogicalPlan]()
     val pipeStack = new mutable.Stack[Pipe]()
@@ -121,7 +127,8 @@ class PipeExecutionPlanBuilder(clock: Clock,
           pipeStack.push(newPipe)
 
         case (Some(left), Some(right)) if right == left =>
-          throw new InternalException(s"Tried to build pipes from bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
+          throw new InternalException(
+            s"Tried to build pipes from bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
 
         case (Some(left), Some(_)) if comingFrom == left =>
           val arg1 = pipeStack.pop()
@@ -148,10 +155,12 @@ class PipeExecutionPlanBuilder(clock: Clock,
 }
 
 object CommunityPipeBuilderFactory extends PipeBuilderFactory {
-  def apply(monitors: Monitors, recurse: LogicalPlan => Pipe,
-            readOnly: Boolean, idMap: Map[LogicalPlan, Id],
-            expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, planContext: PlanContext): CommunityPipeBuilder = {
+  def apply(monitors: Monitors,
+            recurse: LogicalPlan => Pipe,
+            readOnly: Boolean,
+            idMap: Map[LogicalPlan, Id],
+            expressionConverters: ExpressionConverters)(implicit context: PipeExecutionBuilderContext,
+                                                        planContext: PlanContext): CommunityPipeBuilder = {
     CommunityPipeBuilder(monitors, recurse, readOnly, idMap, expressionConverters, recursePipes(recurse, planContext))
   }
 

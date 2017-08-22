@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal
 
 import java.io.PrintWriter
-import java.{lang, util}
+import java.lang
+import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ExplainMode, NormalMode, ProfileMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExplainMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.NormalMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProfileMode
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.result.QueryResult
@@ -33,10 +37,10 @@ import scala.collection.JavaConverters._
 
 trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResult {
 
-  def columns: List[String] = List(fieldNames():_*)
+  def columns: List[String] = List(fieldNames(): _*)
   def columnAs[T](column: String): Iterator[T]
 
-  def javaColumns: java.util.List[String] = util.Arrays.asList(fieldNames():_*)
+  def javaColumns: java.util.List[String] = util.Arrays.asList(fieldNames(): _*)
   def javaColumnAs[T](column: String): ResourceIterator[T]
   def javaIterator: ResourceIterator[java.util.Map[String, Any]]
 
@@ -63,17 +67,17 @@ trait InternalExecutionResult extends Iterator[Map[String, Any]] with QueryResul
   def executionType: QueryExecutionType = {
 
     val qt = queryType match {
-      case READ_ONLY => QueryExecutionType.QueryType.READ_ONLY
-      case READ_WRITE => QueryExecutionType.QueryType.READ_WRITE
-      case WRITE => QueryExecutionType.QueryType.WRITE
+      case READ_ONLY    => QueryExecutionType.QueryType.READ_ONLY
+      case READ_WRITE   => QueryExecutionType.QueryType.READ_WRITE
+      case WRITE        => QueryExecutionType.QueryType.WRITE
       case SCHEMA_WRITE => QueryExecutionType.QueryType.SCHEMA_WRITE
-      case DBMS => QueryExecutionType.QueryType.READ_ONLY
+      case DBMS         => QueryExecutionType.QueryType.READ_ONLY
     }
 
     executionMode match {
       case ExplainMode => QueryExecutionType.explained(qt)
       case ProfileMode => QueryExecutionType.profiled(qt)
-      case NormalMode => QueryExecutionType.query(qt)
+      case NormalMode  => QueryExecutionType.query(qt)
     }
   }
 }

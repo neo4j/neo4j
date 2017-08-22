@@ -43,13 +43,19 @@ class NodeMatcherTest extends ParsingTestSupport {
   }
 
   test("should not match when properties are wrong") {
-    val matcher = new NodeMatcher(Set.empty[String].asJava, new MapMatcher(Map[String, ValueMatcher]("key" -> new ListMatcher(asList(new StringMatcher("")))).asJava))
+    val matcher = new NodeMatcher(
+      Set.empty[String].asJava,
+      new MapMatcher(Map[String, ValueMatcher]("key" -> new ListMatcher(asList(new StringMatcher("")))).asJava))
 
     matcher shouldNot accept(node(properties = Map("key" -> List("", " ").asJava)))
   }
 
   test("should not match when properties are wrong 2") {
-    val matcher = new NodeMatcher(Set.empty[String].asJava, new MapMatcher(Map[String, ValueMatcher]("key" -> new ListMatcher(asList(new StringMatcher(""), new StringMatcher(" ")))).asJava))
+    val matcher =
+      new NodeMatcher(Set.empty[String].asJava,
+                      new MapMatcher(
+                        Map[String, ValueMatcher](
+                          "key" -> new ListMatcher(asList(new StringMatcher(""), new StringMatcher(" ")))).asJava))
 
     matcher shouldNot accept(node(properties = Map("key" -> List("").asJava)))
   }

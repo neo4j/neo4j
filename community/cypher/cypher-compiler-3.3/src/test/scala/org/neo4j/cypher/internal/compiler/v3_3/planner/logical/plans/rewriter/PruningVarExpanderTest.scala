@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
 
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("simples possible query that can use PruningVarExpand") {
@@ -57,7 +58,9 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val toId = IdName("to")
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
-    val aggregatingExpression = FunctionInvocation(functionName = FunctionName("count")(pos), distinct = true, args = IndexedSeq(Variable("to")(pos)))(pos)
+    val aggregatingExpression = FunctionInvocation(functionName = FunctionName("count")(pos),
+                                                   distinct = true,
+                                                   args = IndexedSeq(Variable("to")(pos)))(pos)
     val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 1, 3)(solved)
@@ -118,7 +121,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val dir = SemanticDirection.BOTH
     val length = VarPatternLength(1, Some(3))
     val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length)(solved)
-    val originalExpand2 = VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length)(solved)
+    val originalExpand2 =
+      VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length)(solved)
     val input = Aggregation(originalExpand2, Map("c" -> Variable("c")(pos)), Map.empty)(solved)
 
     val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 1, 3)(solved)
@@ -165,7 +169,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
                      var-length-expand                   pruning-var-expand
                        \                                    \
                        argument                            argument
-    */
+     */
 
     val aId = IdName("a")
     val relRId = IdName("r")
@@ -239,7 +243,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(input)
   }
 
-  test("do not use pruning for pathExpressions when path is needed"){
+  test("do not use pruning for pathExpressions when path is needed") {
     // Simplest query:
     // match p=(from)-[r*0..1]->(to) with nodes(p) as d return distinct d
 
@@ -251,7 +255,8 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val relId = IdName("r")
     val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length)(solved)
-    val pathProjectior = NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, NilPathStep))
+    val pathProjectior =
+      NodePathStep(varFor("from"), MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, NilPathStep))
 
     val function = FunctionInvocation(FunctionName("nodes")(pos), PathExpression(pathProjectior)(pos))(pos)
     val projection = Projection(originalExpand, Map("d" -> function))(solved)

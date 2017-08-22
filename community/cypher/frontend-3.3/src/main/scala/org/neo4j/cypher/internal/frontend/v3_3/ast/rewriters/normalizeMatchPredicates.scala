@@ -17,4 +17,5 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 case object normalizeMatchPredicates
-  extends MatchPredicateNormalization(MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))
+    extends MatchPredicateNormalization(
+      MatchPredicateNormalizerChain(PropertyPredicateNormalizer, LabelPredicateNormalizer))

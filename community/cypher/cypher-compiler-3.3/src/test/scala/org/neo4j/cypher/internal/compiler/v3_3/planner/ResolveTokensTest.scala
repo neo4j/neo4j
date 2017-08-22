@@ -22,7 +22,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Match, Query, SingleQuery, Where, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Match
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SingleQuery
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Where
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ResolveTokensTest extends CypherFunSuite {
@@ -38,17 +42,18 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-        SingleQuery(Seq(
-          Match(
-            false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
-            Seq(),
-            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
-          ),
-          Return(false, ReturnItems(true, Seq()), None, None, None, _)
-        ))) =>
-            pkToken.name should equal("name")
-            pkToken.id should equal(Some(PropertyKeyId(12)))
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
+                       Seq(),
+                       Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
+        pkToken.name should equal("name")
+        pkToken.id should equal(Some(PropertyKeyId(12)))
     }
   }
 
@@ -61,17 +66,18 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-        SingleQuery(Seq(
-          Match(
-            false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
-            Seq(),
-            Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
-          ),
-          Return(false, ReturnItems(true, Seq()), None, None, None, _)
-        ))) =>
-            pkToken.name should equal("name")
-            pkToken.id should equal(None)
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
+                       Seq(),
+                       Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
+        pkToken.name should equal("name")
+        pkToken.id should equal(None)
     }
   }
 
@@ -84,15 +90,16 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-      SingleQuery(Seq(
-        Match(
-          false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
-          Seq(),
-          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
-        ),
-        Return(false, ReturnItems(true, Seq()), None, None, None, _)
-      ))) =>
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
+                       Seq(),
+                       Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
         labelToken.name should equal("Resolved")
         labelToken.id should equal(Some(LabelId(12)))
     }
@@ -107,15 +114,16 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-      SingleQuery(Seq(
-        Match(
-          false,
-          Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
-          Seq(),
-          Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
-        ),
-        Return(false, ReturnItems(true, Seq()), None, None, None, _)
-      ))) =>
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), Seq(), None)))),
+                       Seq(),
+                       Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
         labelToken.name should equal("Unresolved")
         labelToken.id should equal(None)
     }
@@ -130,19 +138,23 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-      SingleQuery(Seq(
-        Match(
-          false,
-          Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None),
-            RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
-            NodePattern(None, Seq(), None)
-          )))),
-          Seq(),
-          None
-        ),
-        Return(false, ReturnItems(true, Seq()), None, None, None, _)
-      ))) =>
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(
+                         Seq(
+                           EveryPath(
+                             RelationshipChain(
+                               NodePattern(None, Seq(), None),
+                               RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
+                               NodePattern(None, Seq(), None)
+                             )))),
+                       Seq(),
+                       None
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
         relTypeToken.name should equal("RESOLVED")
         relTypeToken.id should equal(Some(RelTypeId(12)))
     }
@@ -157,26 +169,31 @@ class ResolveTokensTest extends CypherFunSuite {
 
     query match {
       case Query(_,
-      SingleQuery(Seq(
-        Match(
-          false,
-          Pattern(Seq(EveryPath(RelationshipChain(
-            NodePattern(None, Seq(), None),
-            RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
-            NodePattern(None, Seq(), None)
-          )))),
-          Seq(),
-          None
-        ),
-        Return(false, ReturnItems(true, Seq()), None, None, None, _)
-      ))) =>
+                 SingleQuery(
+                   Seq(
+                     Match(
+                       false,
+                       Pattern(
+                         Seq(
+                           EveryPath(
+                             RelationshipChain(
+                               NodePattern(None, Seq(), None),
+                               RelationshipPattern(None, Seq(relTypeToken), None, None, SemanticDirection.OUTGOING, _),
+                               NodePattern(None, Seq(), None)
+                             )))),
+                       Seq(),
+                       None
+                     ),
+                     Return(false, ReturnItems(true, Seq()), None, None, None, _)
+                   ))) =>
         relTypeToken.name should equal("UNRESOLVED")
         relTypeToken.id should equal(None)
     }
   }
 
-  def parseTest(queryText: String)(f: Query => Unit) = test(queryText) { parser.parse(queryText) match {
-    case query: Query => f(query)
+  def parseTest(queryText: String)(f: Query => Unit) = test(queryText) {
+    parser.parse(queryText) match {
+      case query: Query => f(query)
     }
   }
 }

@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
-import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
+import org.mockito.Mockito.spy
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ProjectingSelector
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -135,9 +137,11 @@ class IDPSolverTest extends CypherFunSuite {
       val c = i.toChar
       acc :+ (Set(c) -> c.toString)
     }
-    val result = seed.foldLeft(Seq.empty[Char]) { (acc, t) =>
-      acc ++ t._1
-    }.toSet
+    val result = seed
+      .foldLeft(Seq.empty[Char]) { (acc, t) =>
+        acc ++ t._1
+      }
+      .toSet
 
     solver(seed, result)
 
@@ -159,17 +163,15 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   private object stringAppendingSolverStep extends IDPSolverStep[Char, String, Unit] {
-    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])
-                      (implicit context: Unit): Iterator[String] = {
+    override def apply(registry: IdRegistry[Char], goal: Goal, table: IDPCache[String])(
+        implicit context: Unit): Iterator[String] = {
       val goalSize = goal.size
-      for (
-        leftGoal <- goal.subsets if leftGoal.size <= goalSize;
-        lhs <- table(leftGoal);
-        rightGoal = goal &~ leftGoal; // bit set -- operator
-        rhs <- table(rightGoal);
-        candidate = lhs ++ rhs if isSorted(candidate)
-      )
-      yield candidate
+      for (leftGoal <- goal.subsets if leftGoal.size <= goalSize;
+           lhs <- table(leftGoal);
+           rightGoal = goal &~ leftGoal; // bit set -- operator
+           rhs <- table(rightGoal);
+           candidate = lhs ++ rhs if isSorted(candidate))
+        yield candidate
     }
 
     def isSorted(chars: String) =

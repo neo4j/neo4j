@@ -27,10 +27,14 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphProduce
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality.NumericCardinality
 import org.neo4j.cypher.internal.ir.v3_3._
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.mutable
 
@@ -43,9 +47,12 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
   def combiner: SelectivityCombiner = IndependenceCombiner
 
   def not(number: Double) = Selectivity.of(number).getOrElse(Selectivity.ONE).negate.factor
-  def and(numbers: Double*) = combiner.andTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
-  def or(numbers: Double*) = combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
-  def orTimes(times: Int, number: Double) = combiner.orTogetherSelectivities(1.to(times).map(_ => Selectivity.of(number).get)).get.factor
+  def and(numbers: Double*) =
+    combiner.andTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+  def or(numbers: Double*) =
+    combiner.orTogetherSelectivities(numbers.map(Selectivity.of(_).getOrElse(Selectivity.ONE))).get.factor
+  def orTimes(times: Int, number: Double) =
+    combiner.orTogetherSelectivities(1.to(times).map(_ => Selectivity.of(number).get)).get.factor
 
   def degree(above: Double, below: Double) = above / below
 
@@ -70,12 +77,16 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
     def withInboundCardinality(d: Double) = copy(inboundCardinality = Cardinality(d))
 
-    def withLabel(tuple: (Symbol, Double)): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
+    def withLabel(tuple: (Symbol, Double)): TestUnit =
+      copy(knownLabelCardinality = knownLabelCardinality + (tuple._1.name -> tuple._2))
 
-    def withLabel(label: Symbol, cardinality: Double): TestUnit = copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality))
+    def withLabel(label: Symbol, cardinality: Double): TestUnit =
+      copy(knownLabelCardinality = knownLabelCardinality + (label.name -> cardinality))
 
     def addWithLabels(cardinality: Double, labels: Symbol*) = {
-      val increments = labels.map { label => label.name -> cardinality }.toMap
+      val increments = labels.map { label =>
+        label.name -> cardinality
+      }.toMap
       copy(knownLabelCardinality = knownLabelCardinality.fuse(increments)(_ + _))
     }
 
@@ -84,12 +95,11 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
     def withGraphNodes(number: Double): TestUnit = copy(allNodes = Some(number))
 
-
     def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
       val key = (lhs.name, relType.name, rhs.name)
       assert(!knownRelationshipCardinality.contains(key), "This label/type/label combo is already known")
-      copy (
+      copy(
         knownRelationshipCardinality = knownRelationshipCardinality + (key -> cardinality)
       )
     }
@@ -98,7 +108,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       val (((lhs, relType), rhs), cardinality) = relationship
       val key = (lhs.name, relType.name, rhs.name)
       val increment = Map(key -> cardinality)
-      copy (
+      copy(
         knownRelationshipCardinality = knownRelationshipCardinality.fuse(increment)(_ + _)
       )
     }
@@ -130,21 +140,22 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         knownProperties = knownProperties + propertyName.name
       )
 
-    def prepareTestContext:(GraphStatistics, SemanticTable) = {
+    def prepareTestContext: (GraphStatistics, SemanticTable) = {
       val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
       val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
 
       val statistics = new GraphStatistics {
 
-        val nodesCardinality = allNodes.
-          getOrElse(fail("All nodes not set"))
+        val nodesCardinality = allNodes.getOrElse(fail("All nodes not set"))
 
         def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
           Cardinality({
-            labelId.map(
-              id => getLabelName(id).map(knownLabelCardinality).getOrElse(0.0)
-            ).getOrElse(nodesCardinality)
+            labelId
+              .map(
+                id => getLabelName(id).map(knownLabelCardinality).getOrElse(0.0)
+              )
+              .getOrElse(nodesCardinality)
           })
 
         def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
@@ -173,10 +184,12 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           }
         }
 
-        def getCardinality(fromLabel:String, typ:String, toLabel:String): Double =
+        def getCardinality(fromLabel: String, typ: String, toLabel: String): Double =
           knownRelationshipCardinality.getOrElse((fromLabel, typ, toLabel), 0.0)
 
-        def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+        def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                                   relTypeId: Option[RelTypeId],
+                                                   toLabel: Option[LabelId]): Cardinality =
           (fromLabel, relTypeId, toLabel) match {
             case (_, Some(id), _) if getRelationshipName(id).isEmpty => Cardinality(0)
             case (Some(id), _, _) if getLabelName(id).isEmpty        => Cardinality(0)
@@ -184,10 +197,11 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
             case (l1, t1, r1) =>
               val matchingCardinalities = knownRelationshipCardinality collect {
-                case ((l2, t2, r2), c) if
-                l1.forall(x => getLabelName(x).get == l2) &&
-                  t1.forall(x => getRelationshipName(x).get == t2) &&
-                  r1.forall(x => getLabelName(x).get == r2) => c
+                case ((l2, t2, r2), c)
+                    if l1.forall(x => getLabelName(x).get == l2) &&
+                      t1.forall(x => getRelationshipName(x).get == t2) &&
+                      r1.forall(x => getLabelName(x).get == r2) =>
+                  c
               }
 
               if (matchingCardinalities.isEmpty)
@@ -212,7 +226,9 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       val semanticTable: SemanticTable = {
         val empty = SemanticTable()
         val withNodes = knownNodeNames.foldLeft(empty) { case (table, node) => table.addNode(Variable(node)(pos)) }
-        val withNodesAndRels = knownRelNames.foldLeft(withNodes) { case (table, rel) => table.addRelationship(Variable(rel)(pos)) }
+        val withNodesAndRels = knownRelNames.foldLeft(withNodes) {
+          case (table, rel) => table.addRelationship(Variable(rel)(pos))
+        }
         withNodesAndRels
       }
 
@@ -239,7 +255,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 trait CardinalityCustomMatchers {
 
   class MapEqualityWithDouble[T](expected: Map[T, Cardinality], tolerance: Double)(implicit num: Numeric[Cardinality])
-    extends Matcher[Map[T, Cardinality]] {
+      extends Matcher[Map[T, Cardinality]] {
 
     def apply(other: Map[T, Cardinality]) = {
       MatchResult(

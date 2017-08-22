@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import scala.collection.{TraversableLike, immutable, mutable}
+import scala.collection.TraversableLike
+import scala.collection.immutable
+import scala.collection.mutable
 
 // This is deprecated. All these helper classes should move
 // to cypher compiler so that we may change API between
@@ -33,7 +35,7 @@ object Materialized {
   def mapValues[A, B, C](m: collection.Map[A, B], f: B => C): Map[A, C] = {
     val builder: mutable.Builder[(A, C), Map[A, C]] = mapBuilder(m)
 
-    for ( ((k, v)) <- m )
+    for (((k, v)) <- m)
       builder += k -> f(v)
     builder.result()
   }

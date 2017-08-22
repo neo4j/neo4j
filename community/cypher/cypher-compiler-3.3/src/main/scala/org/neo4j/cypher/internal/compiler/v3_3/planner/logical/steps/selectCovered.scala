@@ -37,4 +37,3 @@ case object selectCovered extends CandidateGenerator[LogicalPlan] {
     }
   }
 }
-

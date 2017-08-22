@@ -20,44 +20,50 @@ import org.parboiled.scala._
 import org.parboiled.scala.parserunners.ReportingParseRunner
 
 /**
- * Parser that parses a Like pattern into [[ParsedLikePattern]] which contains tokens of [[LikePatternOp]].
- *
- * A Like pattern can contain the special characters:
- *
- *  - % wildcard
- *  - _ matches exactly one character
- *
- */
+  * Parser that parses a Like pattern into [[ParsedLikePattern]] which contains tokens of [[LikePatternOp]].
+  *
+  * A Like pattern can contain the special characters:
+  *
+  *  - % wildcard
+  *  - _ matches exactly one character
+  *
+  */
 case object LikePatternParser extends Parser {
 
   def apply(input: String): ParsedLikePattern =
-    ReportingParseRunner(LikeRule).run(input).result.getOrElse(throw new IllegalArgumentException(s"$input is not valid to use with LIKE")).compact
+    ReportingParseRunner(LikeRule)
+      .run(input)
+      .result
+      .getOrElse(throw new IllegalArgumentException(s"$input is not valid to use with LIKE"))
+      .compact
 
   /** Base rule */
-  def LikeRule: Rule1[ParsedLikePattern] = rule { zeroOrMore(MatchManyRule | MatchSingleRule | MatchTextRule | MatchEscapedCharRule) ~~> ParsedLikePattern ~ EOI }
+  def LikeRule: Rule1[ParsedLikePattern] = rule {
+    zeroOrMore(MatchManyRule | MatchSingleRule | MatchTextRule | MatchEscapedCharRule) ~~> ParsedLikePattern ~ EOI
+  }
 
   def MatchManyRule: Rule1[LikePatternOp] = rule { "%" ~ push(MatchMany) }
 
   def MatchSingleRule: Rule1[LikePatternOp] = rule { "_" ~ push(MatchSingle) }
 
-  def MatchTextRule: Rule1[LikePatternOp]= oneOrMore(noneOf("%_\\")) ~> MatchText
+  def MatchTextRule: Rule1[LikePatternOp] = oneOrMore(noneOf("%_\\")) ~> MatchText
 
-  def MatchEscapedCharRule: Rule1[LikePatternOp] =  rule { "\\" ~ (ANY ~> MatchText) }
+  def MatchEscapedCharRule: Rule1[LikePatternOp] = rule { "\\" ~ (ANY ~> MatchText) }
 }
 
 /** Contains a sequence of parsed LIKE tokens*/
 case class ParsedLikePattern(ops: List[LikePatternOp]) {
- def compact: ParsedLikePattern = {
-   val newOps = ops.foldLeft(List.empty[LikePatternOp]) {
-     case (MatchText(fst) :: tl, MatchText(snd)) =>
-       MatchText(fst ++ snd) :: tl
+  def compact: ParsedLikePattern = {
+    val newOps = ops.foldLeft(List.empty[LikePatternOp]) {
+      case (MatchText(fst) :: tl, MatchText(snd)) =>
+        MatchText(fst ++ snd) :: tl
 
-     case (acc, op) =>
-       op :: acc
-   }
-   ParsedLikePattern(newOps.reverse)
- }
- override def toString = ops.mkString("\"","","\"")
+      case (acc, op) =>
+        op :: acc
+    }
+    ParsedLikePattern(newOps.reverse)
+  }
+  override def toString = ops.mkString("\"", "", "\"")
 }
 
 sealed trait LikePatternOp
@@ -65,7 +71,7 @@ sealed trait LikePatternOp
 sealed trait WildcardLikePatternOp extends LikePatternOp
 
 /** Contains a string that needs quoting for use in regular expression */
-case class MatchText(text: String) extends LikePatternOp  {
+case class MatchText(text: String) extends LikePatternOp {
   override def toString = text
 }
 
@@ -78,4 +84,3 @@ case object MatchMany extends WildcardLikePatternOp {
 case object MatchSingle extends WildcardLikePatternOp {
   override def toString = "_"
 }
-

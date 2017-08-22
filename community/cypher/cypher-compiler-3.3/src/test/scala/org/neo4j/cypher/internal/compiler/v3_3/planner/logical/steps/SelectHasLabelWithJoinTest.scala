@@ -20,27 +20,27 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{NodeByLabelScan, NodeHashJoin, Selection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Selection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-
 
 class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should solve labels with joins") {
 
     implicit val plan = new given {
       cost = {
-        case (_: Selection, _) => 1000.0
-        case (_: NodeHashJoin, _) => 20.0
+        case (_: Selection, _)       => 1000.0
+        case (_: NodeHashJoin, _)    => 20.0
         case (_: NodeByLabelScan, _) => 20.0
       }
     } getLogicalPlanFor "MATCH (n:Foo:Bar:Baz) RETURN n"
 
     plan._2 match {
       case NodeHashJoin(_,
-      NodeHashJoin(_,
-      NodeByLabelScan(_, _, _),
-      NodeByLabelScan(_, _, _)),
-      NodeByLabelScan(_, _, _)) => ()
+                        NodeHashJoin(_, NodeByLabelScan(_, _, _), NodeByLabelScan(_, _, _)),
+                        NodeByLabelScan(_, _, _)) =>
+        ()
       case _ => fail("Not what we expected!")
     }
   }

@@ -17,14 +17,17 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, InternalException, Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object addUniquenessPredicates extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
+    case m @ Match(_, pattern: Pattern, _, where: Option[Where]) =>
       val uniqueRels: Seq[UniqueRel] = collectUniqueRels(pattern)
 
       if (uniqueRels.size < 2) {
@@ -49,13 +52,16 @@ case object addUniquenessPredicates extends Rewriter {
   def collectUniqueRels(pattern: ASTNode): Seq[UniqueRel] =
     pattern.treeFold(Seq.empty[UniqueRel]) {
       case _: ShortestPaths =>
-        acc => (acc, None)
+        acc =>
+          (acc, None)
 
-      case RelationshipChain(_, patRel@RelationshipPattern(optIdent, types, _, _, _, _), _) =>
-        acc => {
-          val ident = optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
-          (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))
-        }
+      case RelationshipChain(_, patRel @ RelationshipPattern(optIdent, types, _, _, _, _), _) =>
+        acc =>
+          {
+            val ident =
+              optIdent.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns"))
+            (acc :+ UniqueRel(ident, types.toSet, patRel.isSingleLength), Some(identity))
+          }
     }
 
   private def createPredicateFor(uniqueRels: Seq[UniqueRel], pos: InputPosition): Option[Expression] = {
@@ -80,7 +86,10 @@ case object addUniquenessPredicates extends Rewriter {
           NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(equals))(pos)
 
         case (false, false) =>
-          NoneIterablePredicate(x.variable.copyId, x.variable.copyId, Some(AnyIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)))(pos)
+          NoneIterablePredicate(
+            x.variable.copyId,
+            x.variable.copyId,
+            Some(AnyIterablePredicate(y.variable.copyId, y.variable.copyId, Some(equals))(pos)))(pos)
       }
     }
 

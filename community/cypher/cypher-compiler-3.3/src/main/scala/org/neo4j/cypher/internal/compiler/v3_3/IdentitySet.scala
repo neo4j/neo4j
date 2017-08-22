@@ -27,7 +27,8 @@ object IdentitySet {
 }
 
 case class IdentitySet[T] private (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)
-  extends Set[T] with ((T) => Boolean) {
+    extends Set[T]
+    with ((T) => Boolean) {
   self =>
 
   override def apply(elem: T): Boolean = contains(elem)

@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object fuseSelections extends Rewriter {
 
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case topSelection@Selection(predicates1, Selection(predicates2, lhs)) =>
+    case topSelection @ Selection(predicates1, Selection(predicates2, lhs)) =>
       Selection(predicates1 ++ predicates2, lhs)(topSelection.solved)
   })
 }

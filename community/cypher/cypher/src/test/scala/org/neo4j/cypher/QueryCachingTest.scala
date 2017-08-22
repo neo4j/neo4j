@@ -45,11 +45,9 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       (query, query),
       (query, profileQuery),
       (query, explainQuery),
-
       (profileQuery, query),
       (profileQuery, profileQuery),
       (profileQuery, explainQuery),
-
       (explainQuery, query),
       (explainQuery, profileQuery),
       (explainQuery, explainQuery)
@@ -65,11 +63,10 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
         graph.execute(secondQuery).resultAsString()
 
         val actual = cacheListener.trace
-        val expected = List(
-          s"cacheFlushDetected",
-          s"cacheMiss: CYPHER 3.3 $query",
-          s"cacheHit: CYPHER 3.3 $query",
-          s"cacheHit: CYPHER 3.3 $query")
+        val expected = List(s"cacheFlushDetected",
+                            s"cacheMiss: CYPHER 3.3 $query",
+                            s"cacheHit: CYPHER 3.3 $query",
+                            s"cacheHit: CYPHER 3.3 $query")
 
         actual should equal(expected)
     }

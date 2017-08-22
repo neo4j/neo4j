@@ -24,10 +24,15 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpressions, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Ors, Variable}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanFromExpressions
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Ors
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.Selections
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,14 +45,15 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
-    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
-    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
     val orPlanner = OrLeafPlanner(Seq(inner1))
 
-    val expected = Aggregation(
-      left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
+    val expected = Aggregation(left = Union(p1, p2)(solved),
+                               groupingExpressions = Map("x" -> Variable("x")(pos)),
+                               aggregationExpression = Map.empty)(solved)
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
@@ -61,8 +67,10 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
-    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
-    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("e2"), Set(p2))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("e2"), Set(p2))))
     val orPlanner = OrLeafPlanner(Seq(inner1))
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
@@ -76,7 +84,8 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
-    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
     when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set.empty[LeafPlansForVariable])
     val orPlanner = OrLeafPlanner(Seq(inner1))
 
@@ -96,31 +105,30 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
-    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
-    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
-    when(inner2.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p3))))
-    when(inner2.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p4))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
+    when(inner2.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p3))))
+    when(inner2.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p4))))
     val orPlanner = OrLeafPlanner(Seq(inner1, inner2))
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    val expected1 = Aggregation(
-      left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected2 = Aggregation(
-      left = Union(p1, p4)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected3 = Aggregation(
-      left = Union(p3, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected4 = Aggregation(
-      left = Union(p3, p4)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-
+    val expected1 = Aggregation(left = Union(p1, p2)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
+    val expected2 = Aggregation(left = Union(p1, p4)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
+    val expected3 = Aggregation(left = Union(p3, p2)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
+    val expected4 = Aggregation(left = Union(p3, p4)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
 
     orPlanner.apply(queryGraph)(context) should equal(Seq(expected1, expected2, expected3, expected4))
   }
@@ -135,23 +143,23 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val e1 = Variable("e1")(pos)
     val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
-    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
-    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
-    when(inner2.producePlanFor(Matchers.eq(Set(e1)), any())(any())).thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p3))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
+    when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p2))))
+    when(inner2.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
+      .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p3))))
     when(inner2.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set.empty[LeafPlansForVariable])
     val orPlanner = OrLeafPlanner(Seq(inner1, inner2))
 
     val queryGraph = QueryGraph.empty.withSelections(Selections.from(ors))
 
-    val expected1 = Aggregation(
-      left = Union(p1, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-    val expected3 = Aggregation(
-      left = Union(p3, p2)(solved),
-      groupingExpressions = Map("x" -> Variable("x")(pos)),
-      aggregationExpression = Map.empty)(solved)
-
+    val expected1 = Aggregation(left = Union(p1, p2)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
+    val expected3 = Aggregation(left = Union(p3, p2)(solved),
+                                groupingExpressions = Map("x" -> Variable("x")(pos)),
+                                aggregationExpression = Map.empty)(solved)
 
     orPlanner.apply(queryGraph)(context) should equal(Seq(expected1, expected3))
   }

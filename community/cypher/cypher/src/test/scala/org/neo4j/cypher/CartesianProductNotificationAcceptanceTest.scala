@@ -22,16 +22,21 @@ package org.neo4j.cypher
 import java.time.Clock
 
 import org.mockito.Matchers._
-import org.mockito.Mockito.{verify, _}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.simpleExpressionEvaluator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeContext, CommunityRuntimeContextCreator}
-import org.neo4j.cypher.internal.compatibility.v3_3.{Compatibility, WrappedMonitors}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContextCreator
+import org.neo4j.cypher.internal.compatibility.v3_3.Compatibility
+import org.neo4j.cypher.internal.compatibility.v3_3.WrappedMonitors
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.CachedMetricsFactory
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.SimpleMetricsFactory
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting.RewriterStepSequencer
 import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, InternalNotificationLogger}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
@@ -81,8 +86,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     val logger = mock[InternalNotificationLogger]
 
     //when
-    runQuery(
-      """MATCH (p)-[r1]-(m),
+    runQuery("""MATCH (p)-[r1]-(m),
         |(m)-[r2]-(d), (d)-[r3]-(m2)
         |RETURN DISTINCT d""".stripMargin)
 
@@ -92,11 +96,24 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   private def runQuery(query: String) = {
     graph.inTx {
-      val tracer =CompilationPhaseTracer.NO_TRACING
+      val tracer = CompilationPhaseTracer.NO_TRACING
       val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
       val queryGraphSolver = Compatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
-      val context = CommunityRuntimeContextCreator.create(tracer, logger, planContext, parsed.queryText, Set.empty, None, monitors, metricsFactory, queryGraphSolver, configuration, defaultUpdateStrategy, Clock.systemUTC(),
-                                                         simpleExpressionEvaluator)
+      val context = CommunityRuntimeContextCreator.create(
+        tracer,
+        logger,
+        planContext,
+        parsed.queryText,
+        Set.empty,
+        None,
+        monitors,
+        metricsFactory,
+        queryGraphSolver,
+        configuration,
+        defaultUpdateStrategy,
+        Clock.systemUTC(),
+        simpleExpressionEvaluator
+      )
 
       val normalized = compiler.normalizeQuery(parsed, context)
       compiler.planPreparedQuery(normalized, context)

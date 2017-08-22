@@ -31,7 +31,7 @@ case class PipeInfo(pipe: Pipe,
                     plannerUsed: PlannerName)
 
 case class PeriodicCommitInfo(size: Option[Long]) {
-  def batchRowCount = size.getOrElse(/* defaultSize */ 1000L)
+  def batchRowCount = size.getOrElse( /* defaultSize */ 1000L)
 }
 
 trait NewRuntimeSuccessRateMonitor {

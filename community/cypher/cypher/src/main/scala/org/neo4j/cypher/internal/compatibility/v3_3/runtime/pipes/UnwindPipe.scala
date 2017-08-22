@@ -28,17 +28,19 @@ import scala.collection.JavaConverters._
 
 import scala.annotation.tailrec
 
-case class UnwindPipe(source: Pipe, collection: Expression, variable: String)
-                     (val id: Id = new Id)
-  extends PipeWithSource(source) with ListSupport {
+case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with ListSupport {
 
   collection.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     if (input.hasNext) new UnwindIterator(input, state) else Iterator.empty
   }
 
-  private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState) extends Iterator[ExecutionContext] {
+  private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState)
+      extends Iterator[ExecutionContext] {
     private var context: ExecutionContext = null
     private var unwindIterator: Iterator[AnyValue] = null
     private var nextItem: ExecutionContext = null

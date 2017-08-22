@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
 case class EmptyResultPipe(source: Pipe)(val id: Id = new Id) extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState) = {
-    while(input.hasNext) {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+    while (input.hasNext) {
       input.next()
     }
 

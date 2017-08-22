@@ -16,9 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckable}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckable
 
-case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable {
+case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition)
+    extends ASTNode
+    with ASTPhrase
+    with SemanticCheckable {
   def semanticCheck = sortItems.semanticCheck
 
   def dependencies: Set[Variable] =
@@ -39,4 +43,3 @@ case class AscSortItem(expression: Expression)(val position: InputPosition) exte
 case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem {
   override def mapExpression(f: Expression => Expression) = copy(expression = f(expression))(position)
 }
-

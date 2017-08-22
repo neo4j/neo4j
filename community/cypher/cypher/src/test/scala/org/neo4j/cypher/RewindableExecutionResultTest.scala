@@ -56,6 +56,6 @@ class RewindableExecutionResultTest extends ExecutionEngineFunSuite {
 
     val nodes = result.columnAs[Node]("n").toList
 
-    nodes should equal(List(a,b))
+    nodes should equal(List(a, b))
   }
 }

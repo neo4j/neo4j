@@ -43,7 +43,7 @@ Traverses the logical plan tree structure and builds up the corresponding output
  for it, storing it in the output stack. Pop ut 'b' from the plan stack, one output from the output stack, and build an output for 'b'.
  Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two outputs from the output stack to
  build the output for 'a'. Thanks for reading this far - I didn't think we would make it!
- */
+   */
   def create(plan: LogicalPlan): TO = {
 
     val planStack = new mutable.Stack[LogicalPlan]()

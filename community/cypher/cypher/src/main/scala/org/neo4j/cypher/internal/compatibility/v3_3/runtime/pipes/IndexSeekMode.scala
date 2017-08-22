@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekMode.{MultipleValueQuery, assertSingleValue}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekMode.MultipleValueQuery
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekMode.assertSingleValue
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{QueryExpression, RangeQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.graphdb.Node
 
 case class IndexSeekModeFactory(unique: Boolean, readOnly: Boolean) {
   def fromQueryExpression[T](qexpr: QueryExpression[T]): IndexSeekMode = qexpr match {
     case _: RangeQueryExpression[_] if unique => UniqueIndexSeekByRange
-    case _: RangeQueryExpression[_] => IndexSeekByRange
-    case _ if unique && !readOnly => LockingUniqueIndexSeek
-    case _ if unique => UniqueIndexSeek
-    case _ => IndexSeek
+    case _: RangeQueryExpression[_]           => IndexSeekByRange
+    case _ if unique && !readOnly             => LockingUniqueIndexSeek
+    case _ if unique                          => UniqueIndexSeek
+    case _                                    => IndexSeek
   }
 }
 
@@ -39,11 +41,11 @@ object IndexSeekMode {
   type MultipleValueQuery = (QueryState) => (Seq[Any]) => Iterator[Node]
 
   def assertSingleValue(values: Seq[Any]): Any = {
-    if(values.size != 1)
+    if (values.size != 1)
       throw new InternalException("Composite lookups not yet supported")
     values.head
   }
- }
+}
 
 sealed trait IndexSeekMode {
   def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery
@@ -68,8 +70,9 @@ case object UniqueIndexSeek extends IndexSeekMode with ExactSeek {
 case object LockingUniqueIndexSeek extends IndexSeekMode {
 
   override def indexFactory(descriptor: IndexDescriptor): MultipleValueQuery =
-    (state: QueryState) => (x: Seq[Any]) => {
-      state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
+    (state: QueryState) =>
+      (x: Seq[Any]) => {
+        state.query.lockingUniqueIndexSeek(descriptor, x).toIterator
     }
 
   override def name: String = "NodeUniqueIndexSeek(Locking)"

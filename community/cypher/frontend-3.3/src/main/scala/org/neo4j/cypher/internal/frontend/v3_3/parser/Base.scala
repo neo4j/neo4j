@@ -16,9 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, InternalException, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.Context
-import org.parboiled.errors.{InvalidInputError, ParseError}
+import org.parboiled.errors.InvalidInputError
+import org.parboiled.errors.ParseError
 import org.parboiled.scala._
 import org.parboiled.support.IndexRange
 
@@ -30,7 +34,9 @@ trait Base extends Parser {
   def DecimalInteger = rule { (optional("-") ~ UnsignedDecimalInteger).memoMismatches }
   def UnsignedDecimalInteger = rule { (group(("1" - "9") ~ optional(DigitString)) | "0").memoMismatches }
   def RegularDecimalReal = rule { (optional("-") ~ zeroOrMore("0" - "9") ~ "." ~ DigitString).memoMismatches }
-  def ExponentDecimalReal = rule { (optional("-") ~ oneOrMore("0" - "9" | ".") ~ (ch('e') | ch('E')) ~ optional("-") ~ DigitString).memoMismatches }
+  def ExponentDecimalReal = rule {
+    (optional("-") ~ oneOrMore("0" - "9" | ".") ~ (ch('e') | ch('E')) ~ optional("-") ~ DigitString).memoMismatches
+  }
   def DigitString = rule("'0'-'9'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
   def OctalInteger = rule { (optional("-") ~ UnsignedOctalInteger).memoMismatches }
   def UnsignedOctalInteger = rule { ("0" ~ OctalString).memoMismatches }
@@ -52,7 +58,9 @@ trait Base extends Parser {
     // U+FE58 ﹘ small em dash
     // U+FE63 ﹣ small hyphen-minus
     // U+FF0D － full-width hyphen-minus
-    anyOf(Array('\u002d', '\u00ad', '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\ufe58', '\ufe63', '\uff0d'))
+    anyOf(
+      Array('\u002d', '\u00ad', '\u2010', '\u2011', '\u2012', '\u2013', '\u2014', '\u2015', '\u2212', '\ufe58',
+        '\ufe63', '\uff0d'))
   }
   def LeftArrowHead = rule("'<'") {
     // U+003c < less-than sign
@@ -73,21 +81,22 @@ trait Base extends Parser {
 
   def CommaSep = rule("','") { WS ~ ch(',') ~ WS }
 
-  def WS = rule("whitespace") {
-    zeroOrMore(
+  def WS =
+    rule("whitespace") {
+      zeroOrMore(
         (oneOrMore(WSChar) memoMismatches)
-      | (ch('/').label("comment") ~ (
-          ch('*') ~ zeroOrMore(!"*/" ~ ANY) ~ "*/"
-        | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ (optional(ch('\r')) ~ ch('\n') | EOI)
-      ) memoMismatches)
-    )
-  }.suppressNode
+          | (ch('/').label("comment") ~ (
+            ch('*') ~ zeroOrMore(!"*/" ~ ANY) ~ "*/"
+              | ch('/') ~ zeroOrMore(!anyOf("\n\r") ~ ANY) ~ (optional(ch('\r')) ~ ch('\n') | EOI)
+          ) memoMismatches)
+      )
+    }.suppressNode
 
   def keyword(string: String): Rule0 = {
     def word(string: String): Rule0 = group(ignoreCase(string).label(string.toUpperCase) ~ !IdentifierPart)
     val strings = string.trim.split(' ')
-    group(strings.tail.foldLeft(word(strings.head)) {
-      (acc, s) => acc ~ WS ~ word(s)
+    group(strings.tail.foldLeft(word(strings.head)) { (acc, s) =>
+      acc ~ WS ~ word(s)
     })
   }
   def operator(string: String) = group(string ~ !OpCharTail)
@@ -130,7 +139,7 @@ trait Base extends Parser {
           } else {
             error match {
               case invalidInput: InvalidInputError => new InvalidInputErrorFormatter().format(invalidInput)
-              case _ => error.getClass.getSimpleName
+              case _                               => error.getClass.getSimpleName
             }
           }
 
@@ -156,7 +165,8 @@ trait Base extends Parser {
     def ~~[A, B](other: ReductionRule1[A, B]): ReductionRule1[A, B] = r ~ WS ~ other
     def ~~[A, B, C](other: ReductionRule2[A, B, C]): ReductionRule2[A, B, C] = r ~ WS ~ other
 
-    def ~>>>[R](f: String => InputPosition => R): Rule1[R] = r ~> withContext((s: String, ctx) => f(s)(ContextPosition(ctx)))
+    def ~>>>[R](f: String => InputPosition => R): Rule1[R] =
+      r ~> withContext((s: String, ctx) => f(s)(ContextPosition(ctx)))
     def ~~>>[Z, R](f: (Z) => (InputPosition => R)): ReductionRule1[Z, R] =
       r ~~> withContext((z: Z, ctx) => f(z)(ContextPosition(ctx)))
     def ~~>>[Y, Z, R](f: (Y, Z) => (InputPosition => R)): ReductionRule2[Y, Z, R] =

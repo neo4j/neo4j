@@ -20,7 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -30,8 +31,7 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     createNode(Map("prop1" -> "A", "prop2" -> 2))
 
     executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) return n").dumpToString() should
-      equal(
-        """+----------------------------+
+      equal("""+----------------------------+
           || n                          |
           |+----------------------------+
           || Node[0]{prop1:"A",prop2:2} |
@@ -54,9 +54,9 @@ class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("format collection of maps") {
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode( """RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""").dumpToString() should
-      equal(
-        """+----------------------------------------+
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode("""RETURN [{ inner: 'Map1' }, { inner: 'Map2' }]""")
+      .dumpToString() should
+      equal("""+----------------------------------------+
           || [{ inner: 'Map1' }, { inner: 'Map2' }] |
           |+----------------------------------------+
           || [{inner -> "Map1"},{inner -> "Map2"}]  |

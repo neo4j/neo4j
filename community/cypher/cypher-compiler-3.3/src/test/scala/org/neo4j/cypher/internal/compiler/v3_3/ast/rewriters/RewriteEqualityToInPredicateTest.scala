@@ -29,44 +29,31 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class RewriteEqualityToInPredicateTest extends CypherFunSuite with AstRewritingTestSupport {
 
   test("MATCH (a) WHERE id(a) = 42 (no dependencies on the RHS)") {
-    shouldRewrite(
-      "MATCH (a) WHERE id(a) = 42",
-      "MATCH (a) WHERE id(a) IN [42]")
+    shouldRewrite("MATCH (a) WHERE id(a) = 42", "MATCH (a) WHERE id(a) IN [42]")
   }
 
   test("MATCH (a) WHERE a.prop = 42 (no dependencies on the RHS)") {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop = 42",
-      "MATCH (a) WHERE a.prop IN [42]")
+    shouldRewrite("MATCH (a) WHERE a.prop = 42", "MATCH (a) WHERE a.prop IN [42]")
   }
 
   test("MATCH (a) WHERE id(a) = rand() (no dependencies on the RHS)") {
-    shouldRewrite(
-      "MATCH (a) WHERE id(a) = rand()",
-      "MATCH (a) WHERE id(a) IN [rand()]")
+    shouldRewrite("MATCH (a) WHERE id(a) = rand()", "MATCH (a) WHERE id(a) IN [rand()]")
   }
 
   test("MATCH (a) WHERE a.prop = rand() (no dependencies on the RHS)") {
-    shouldRewrite(
-      "MATCH (a) WHERE a.prop = rand()",
-      "MATCH (a) WHERE a.prop IN [rand()]")
+    shouldRewrite("MATCH (a) WHERE a.prop = rand()", "MATCH (a) WHERE a.prop IN [rand()]")
   }
 
   test("WITH x as 42 MATCH (a) WHERE id(a) = x (no dependencies on the RHS)") {
-    shouldRewrite(
-      "WITH 42 as x MATCH (a) WHERE id(a) = x",
-      "WITH 42 as x MATCH (a) WHERE id(a) IN [x]")
+    shouldRewrite("WITH 42 as x MATCH (a) WHERE id(a) = x", "WITH 42 as x MATCH (a) WHERE id(a) IN [x]")
   }
 
   test("WITH x as 42 MATCH (a) WHERE a.prop = x (no dependencies on the RHS)") {
-    shouldRewrite(
-      "WITH 42 as x MATCH (a) WHERE a.prop = x",
-      "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
+    shouldRewrite("WITH 42 as x MATCH (a) WHERE a.prop = x", "WITH 42 as x MATCH (a) WHERE a.prop IN [x]")
   }
 
   test("should not rewrite a comparison between two properties") {
-    shouldNotRewrite(
-      "MATCH (a), (b) WHERE a.prop = b.prop")
+    shouldNotRewrite("MATCH (a), (b) WHERE a.prop = b.prop")
   }
 
   private def shouldRewrite(from: String, to: String) {

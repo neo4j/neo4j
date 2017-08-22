@@ -21,8 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.spi
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 
 import scala.language.reflectiveCalls
 
@@ -40,20 +43,23 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     val nodesWithLabel = 40
     val relationships = 5000
 
-    val statistics = graphStatistics(allNodes = allNodes, idxSelectivity = indexSelectivity,
-      relCardinality = relationships, labeledNodes = nodesWithLabel)
+    val statistics = graphStatistics(allNodes = allNodes,
+                                     idxSelectivity = indexSelectivity,
+                                     relCardinality = relationships,
+                                     labeledNodes = nodesWithLabel)
     val instrumentedStatistics = InstrumentedGraphStatistics(statistics, snapshot)
     instrumentedStatistics.nodesWithLabelCardinality(None)
     instrumentedStatistics.indexSelectivity(index)
     instrumentedStatistics.nodesWithLabelCardinality(Some(label4))
     instrumentedStatistics.cardinalityByLabelsAndRelationshipType(Some(label2), None, None)
 
-    snapshot.freeze.statsValues should equal(Map(
-      NodesWithLabelCardinality(None) -> allNodes,
-      IndexSelectivity(index) -> indexSelectivity,
-      NodesWithLabelCardinality(Some(label4)) -> nodesWithLabel,
-      CardinalityByLabelsAndRelationshipType(Some(label2), None, None) -> relationships
-    ))
+    snapshot.freeze.statsValues should equal(
+      Map(
+        NodesWithLabelCardinality(None) -> allNodes,
+        IndexSelectivity(index) -> indexSelectivity,
+        NodesWithLabelCardinality(Some(label4)) -> nodesWithLabel,
+        CardinalityByLabelsAndRelationshipType(Some(label2), None, None) -> relationships
+      ))
   }
 
   test("a snapshot shouldn't diverge from equal values") {
@@ -150,11 +156,13 @@ class GraphStatisticsSnapshotTest extends CypherFunSuite {
     private var _factor: Double = 1L
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality = labelId match {
-      case None => Cardinality(allNodes * _factor)
+      case None     => Cardinality(allNodes * _factor)
       case Some(id) => Cardinality(labeledNodes * _factor)
     }
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                               relTypeId: Option[RelTypeId],
+                                               toLabel: Option[LabelId]): Cardinality =
       Cardinality(relCardinality * _factor)
 
     def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {

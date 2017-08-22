@@ -20,15 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)
-                        (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+case class ProcedureCall(left: LogicalPlan, call: ResolvedCall)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
   override val lhs = Some(left)
 
   override def rhs = None
 
   override def availableSymbols: Set[IdName] =
-    left.availableSymbols ++ call.callResults.map { result => IdName.fromVariable(result.variable) }
+    left.availableSymbols ++ call.callResults.map { result =>
+      IdName.fromVariable(result.variable)
+    }
 }

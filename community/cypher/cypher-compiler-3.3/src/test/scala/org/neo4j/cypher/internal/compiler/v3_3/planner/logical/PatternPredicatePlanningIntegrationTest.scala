@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{QueryGraph, RegularPlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -38,7 +39,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 10
         // argument
         case RegularPlannerQuery(queryGraph, _, _) if containsArgumentOnly(queryGraph) => 1
-        case _ => 4000000
+        case _                                                                         => 4000000
       }
     } getLogicalPlanFor """MATCH (a:Person)-[:KNOWS]->(b:Person) WITH a, collect(b) AS friends RETURN a, [f IN friends WHERE (f)-[:WORKS_AT]->(:ComedyClub)] AS clowns""")._2
 
@@ -48,10 +49,15 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           case ListComprehension(ExtractScope(_, Some(NestedPlanExpression(nestedPlan, _)), _), _) =>
             nestedPlan should equal(
               Selection(
-                Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub")_))_),
+                Seq(HasLabels(varFor("  UNNAMED116"), Seq(LabelName("ComedyClub") _)) _),
                 Expand(
                   Argument(Set("f"))(solved)(),
-                  "f", SemanticDirection.OUTGOING, Seq(RelTypeName("WORKS_AT")_), "  UNNAMED116", "  UNNAMED102", ExpandAll
+                  "f",
+                  SemanticDirection.OUTGOING,
+                  Seq(RelTypeName("WORKS_AT") _),
+                  "  UNNAMED116",
+                  "  UNNAMED102",
+                  ExpandAll
                 )(solved)
               )(solved)
             )
@@ -61,113 +67,159 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans with getDegree for a single pattern predicate") {
     planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(GreaterThan(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
-        AllNodesScan("a", Set.empty)(solved)
-      )(solved)
+      Selection(Seq(
+                  GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                              SignedDecimalIntegerLiteral("0") _) _),
+                AllNodesScan("a", Set.empty)(solved))(solved)
     )
   }
 
   test("should build plans containing getDegree for a single negated pattern predicate") {
     planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(LessThanOrEqual(GetDegree(Variable("a") _,Some(RelTypeName("X") _), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_),
-                AllNodesScan("a", Set.empty)(solved)
+      Selection(
+        Seq(
+          LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                          SignedDecimalIntegerLiteral("0") _) _),
+        AllNodesScan("a", Set.empty)(solved)
       )(solved)
     )
   }
 
   test("should build plans containing getDegree for two pattern predicates") {
     planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a")._2 should equal(
-      Selection(Seq(
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,SignedDecimalIntegerLiteral("0")_)_,
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_, SignedDecimalIntegerLiteral("0")_)_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+      Selection(
+        Seq(
+          GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("Y") _), OUTGOING) _,
+                      SignedDecimalIntegerLiteral("0") _) _,
+          GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                      SignedDecimalIntegerLiteral("0") _) _
+        ),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved))
   }
 
   test("should build plans containing getDegree for a pattern predicate and an expression") {
     planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+      Selection(
+        Seq(Ors(Set(
+          GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                      SignedDecimalIntegerLiteral("0") _) _,
+          GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _
+        )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved))
   }
 
   test("should build plans containing getDegree for a pattern predicate and multiple expressions") {
     planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _,
-        In(Property(Variable("a") _, PropertyKeyName("prop2") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+      Selection(
+        Seq(Ors(Set(
+          GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                      SignedDecimalIntegerLiteral("0") _) _,
+          GreaterThan(Property(Variable("a") _, PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("4") _) _,
+          In(Property(Variable("a") _, PropertyKeyName("prop2") _) _,
+             ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved))
   }
 
   test("should build plans containing getDegree for a single negated pattern predicate and an expression") {
     planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        LessThanOrEqual(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_),OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        In(Property(Variable("a") _, PropertyKeyName("prop") _) _, ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+      Selection(
+        Seq(Ors(Set(
+          LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                          SignedDecimalIntegerLiteral("0") _) _,
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _,
+             ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved))
   }
 
   test("should build plans containing getDegree for two pattern predicates and expressions") {
     planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        LessThanOrEqual(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        In(Property(Variable("a")_, PropertyKeyName("prop")_)_, ListLiteral(Seq(SignedDecimalIntegerLiteral("9")_))_)_))_),
-                AllNodesScan("a", Set.empty)(solved))(solved))
+      Selection(
+        Seq(Ors(Set(
+          GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("Y") _), OUTGOING) _,
+                      SignedDecimalIntegerLiteral("0") _) _,
+          LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                          SignedDecimalIntegerLiteral("0") _) _,
+          In(Property(Variable("a") _, PropertyKeyName("prop") _) _,
+             ListLiteral(Seq(SignedDecimalIntegerLiteral("9") _)) _) _
+        )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved))
   }
 
   test("should build plans containing getDegree for two pattern predicates with one negation") {
     planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        GreaterThan(
-          GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_,
-        LessThanOrEqual(
-          GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-          SignedDecimalIntegerLiteral("0")_)_))_),
-                AllNodesScan("a", Set.empty)(solved))(solved)
+      Selection(
+        Seq(
+          Ors(Set(
+            GreaterThan(GetDegree(Variable("a") _, Some(RelTypeName("Y") _), OUTGOING) _,
+                        SignedDecimalIntegerLiteral("0") _) _,
+            LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                            SignedDecimalIntegerLiteral("0") _) _
+          )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved)
     )
   }
 
   test("should build plans containing getDegree for two negated pattern predicates") {
     planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a")._2 should equal(
-      Selection(Seq(Ors(Set(
-        LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("Y")_), OUTGOING)_,
-                        SignedDecimalIntegerLiteral("0")_)_,
-        LessThanOrEqual(GetDegree(Variable("a")_, Some(RelTypeName("X")_), OUTGOING)_,
-                        SignedDecimalIntegerLiteral("0")_)_))_),  AllNodesScan("a", Set.empty)(solved))(solved)
+      Selection(
+        Seq(
+          Ors(Set(
+            LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("Y") _), OUTGOING) _,
+                            SignedDecimalIntegerLiteral("0") _) _,
+            LessThanOrEqual(GetDegree(Variable("a") _, Some(RelTypeName("X") _), OUTGOING) _,
+                            SignedDecimalIntegerLiteral("0") _) _
+          )) _),
+        AllNodesScan("a", Set.empty)(solved)
+      )(solved)
     )
   }
 
   test("should plan all predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE all(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
-      case Projection(
-      VarExpand(_, _, _, _, _,_, _, _, _,
-                     Seq((Variable("n"),
-                     In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))))), _) => ()
+      case Projection(VarExpand(_,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                Seq(
+                                  (Variable("n"),
+                                   In(Property(Variable("n"), PropertyKeyName("prop")),
+                                      ListLiteral(List(SignedDecimalIntegerLiteral("1337"))))))),
+                      _) =>
+        ()
 
     }
   }
 
   test("should plan none predicates along with named varlength pattern") {
     planFor("MATCH p=(a)-[r*]->(b) WHERE none(n in nodes(p) WHERE n.prop = 1337) RETURN p")._2 should beLike {
-      case Projection(
-      VarExpand(_, _, _, _, _,_, _, _, _,
-                Seq((Variable("n"),
-                Not(In(Property(Variable("n"), PropertyKeyName("prop") ), ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))))), _) => ()
+      case Projection(VarExpand(_,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                _,
+                                Seq(
+                                  (Variable("n"),
+                                   Not(In(Property(Variable("n"), PropertyKeyName("prop")),
+                                          ListLiteral(List(SignedDecimalIntegerLiteral("1337")))))))),
+                      _) =>
+        ()
 
     }
   }

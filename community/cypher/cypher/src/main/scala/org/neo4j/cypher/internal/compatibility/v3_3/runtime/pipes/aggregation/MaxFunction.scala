@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.storable.Values
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 trait MinMax extends AggregationFunction {
   def value: Expression
@@ -37,7 +38,7 @@ trait MinMax extends AggregationFunction {
   def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {
       case v if v == Values.NO_VALUE =>
-      case x: AnyValue => checkIfLargest(x)
+      case x: AnyValue               => checkIfLargest(x)
     }
   }
 

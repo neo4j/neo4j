@@ -16,29 +16,33 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Clause, Expression, SingleQuery, With}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Clause
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SingleQuery
+import org.neo4j.cypher.internal.frontend.v3_3.ast.With
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 /**
- * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
- * refer to any newly introduced variable.
- *
- * This is required due to constraints in the planner. Note that this structure is invalid for semantic checking, which requires
- * that ORDER BY and WHERE _only refer to variables introduced in the associated WITH_.
- *
- * Additionally, it splits RETURN clauses containing ORDER BY. This would typically be done earlier during normalizeReturnClauses, however
- * "RETURN * ORDER BY" is not handled at that stage, due to lacking variable information. If expandStar has already been run, then this
- * will now work as expected.
- */
+  * This rewriter ensures that WITH clauses containing a ORDER BY or WHERE are split, such that the ORDER BY or WHERE does not
+  * refer to any newly introduced variable.
+  *
+  * This is required due to constraints in the planner. Note that this structure is invalid for semantic checking, which requires
+  * that ORDER BY and WHERE _only refer to variables introduced in the associated WITH_.
+  *
+  * Additionally, it splits RETURN clauses containing ORDER BY. This would typically be done earlier during normalizeReturnClauses, however
+  * "RETURN * ORDER BY" is not handled at that stage, due to lacking variable information. If expandStar has already been run, then this
+  * will now work as expected.
+  */
 case object projectFreshSortExpressions extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = instance(that)
 
   private val clauseRewriter: (Clause => Seq[Clause]) = {
-    case clause@With(_, _, None, _, _, None) =>
+    case clause @ With(_, _, None, _, _, None) =>
       Seq(clause)
 
-    case clause@With(_, ri, orderBy, skip, limit, where) =>
+    case clause @ With(_, ri, orderBy, skip, limit, where) =>
       val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
       val evaluatedAliases = allAliases -- passedThroughAliases
@@ -47,16 +51,20 @@ case object projectFreshSortExpressions extends Rewriter {
         Seq(clause)
       } else {
         val nonItemDependencies = orderBy.map(_.dependencies).getOrElse(Set.empty) ++
-            skip.map(_.dependencies).getOrElse(Set.empty) ++
-            limit.map(_.dependencies).getOrElse(Set.empty) ++
-            where.map(_.dependencies).getOrElse(Set.empty)
+          skip.map(_.dependencies).getOrElse(Set.empty) ++
+          limit.map(_.dependencies).getOrElse(Set.empty) ++
+          where.map(_.dependencies).getOrElse(Set.empty)
         val dependenciesFromPreviousScope = nonItemDependencies -- allAliases
 
         val passedItems = dependenciesFromPreviousScope.map(_.asAlias)
         val outputItems = allAliases.toIndexedSeq.map(_.asAlias)
 
         val result = Seq(
-          clause.copy(returnItems = ri.mapItems(originalItems => originalItems ++ passedItems), orderBy = None, skip = None, limit = None, where = None)(clause.position),
+          clause.copy(returnItems = ri.mapItems(originalItems => originalItems ++ passedItems),
+                      orderBy = None,
+                      skip = None,
+                      limit = None,
+                      where = None)(clause.position),
           clause.copy(distinct = false, returnItems = ri.mapItems(_ => outputItems))(clause.position)
         )
         result
@@ -67,7 +75,7 @@ case object projectFreshSortExpressions extends Rewriter {
   }
 
   private val rewriter = Rewriter.lift {
-    case query@SingleQuery(clauses) =>
+    case query @ SingleQuery(clauses) =>
       query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
   }
 

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, FunctionInvocation}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 import scala.collection.mutable
 
@@ -30,18 +32,16 @@ case object pruningVarExpander extends Rewriter {
   private def findDistinctSet(plan: LogicalPlan): Set[LogicalPlan] = {
     val distinctSet = mutable.Set[VarExpand]()
 
-    def collectDistinctSet(plan: LogicalPlan,
-                           dependencies: Option[Set[String]]): Option[Set[String]] = {
+    def collectDistinctSet(plan: LogicalPlan, dependencies: Option[Set[String]]): Option[Set[String]] = {
 
       val lowerDistinctLand: Option[Set[String]] = plan match {
         case Aggregation(_, groupExpr, aggrExpr) if aggrExpr.values.forall(isDistinct) =>
-
           val variablesInTheDistinctSet = (groupExpr.values.flatMap(_.dependencies.map(_.name)) ++
             aggrExpr.values.flatMap(_.dependencies.map(_.name))).toSet
           Some(variablesInTheDistinctSet)
 
         case expand: VarExpand
-          if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && expand.length.max.nonEmpty =>
+            if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && expand.length.max.nonEmpty =>
           distinctSet += expand
           dependencies
 
@@ -51,10 +51,7 @@ case object pruningVarExpander extends Rewriter {
         case Selection(predicates, _) =>
           dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name)))
 
-        case _: Expand |
-             _: VarExpand |
-             _: Apply |
-             _: Optional =>
+        case _: Expand | _: VarExpand | _: Apply | _: Optional =>
           dependencies
 
         case _ =>
@@ -67,14 +64,13 @@ case object pruningVarExpander extends Rewriter {
     val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
     planStack.push((plan, None))
 
-    while(planStack.nonEmpty) {
+    while (planStack.nonEmpty) {
       val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
       val newDeps = collectDistinctSet(plan, deps)
 
       plan.lhs.foreach(p => planStack.push((p, newDeps)))
       plan.rhs.foreach(p => planStack.push((p, newDeps)))
     }
-
 
     distinctSet.toSet
   }
@@ -87,7 +83,7 @@ case object pruningVarExpander extends Rewriter {
 
   private def isDistinct(e: Expression) = e match {
     case f: FunctionInvocation => f.distinct
-    case _ => false
+    case _                     => false
   }
 
   override def apply(input: AnyRef): AnyRef = {
@@ -96,11 +92,13 @@ case object pruningVarExpander extends Rewriter {
         val distinctSet = findDistinctSet(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
-          case expand@VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, _, predicates) if distinctSet(expand) =>
+          case expand @ VarExpand(lhs, fromId, dir, _, relTypes, toId, _, length, _, predicates)
+              if distinctSet(expand) =>
             if (length.min >= 4 && length.max.get >= 5)
               // These constants were selected by benchmarking on randomized graphs, with different
               // degrees of interconnection.
-              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
+              FullPruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(
+                expand.solved)
             else if (length.max.get > 1)
               PruningVarExpand(lhs, fromId, dir, relTypes, toId, length.min, length.max.get, predicates)(expand.solved)
             else expand

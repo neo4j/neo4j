@@ -20,8 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 
 /**
- * A NotificationLogger records notifications.
- */
+  * A NotificationLogger records notifications.
+  */
 sealed trait InternalNotificationLogger {
   def offset: Option[InputPosition] = None
 
@@ -42,7 +42,8 @@ case object devNullLogger extends InternalNotificationLogger {
 /**
   * NotificationLogger that records all notifications for later retrieval.
   */
-class RecordingNotificationLogger(override val offset: Option[InputPosition] = None) extends InternalNotificationLogger {
+class RecordingNotificationLogger(override val offset: Option[InputPosition] = None)
+    extends InternalNotificationLogger {
   private val builder = Set.newBuilder[InternalNotification]
 
   def log(notification: InternalNotification) = builder += notification

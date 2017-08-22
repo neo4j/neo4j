@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -42,8 +43,12 @@ trait PrimitiveCachingExpandInto {
   /**
     * Finds all relationships connecting fromNode and toNode.
     */
-  protected def findRelationships(query: QueryContext, fromNode: Long, toNode: Long,
-                                  relCache: PrimitiveRelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): PrimitiveLongIterator = {
+  protected def findRelationships(query: QueryContext,
+                                  fromNode: Long,
+                                  toNode: Long,
+                                  relCache: PrimitiveRelationshipsCache,
+                                  dir: SemanticDirection,
+                                  relTypes: => Option[Seq[Int]]): PrimitiveLongIterator = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode)
     val toNodeIsDense = query.nodeIsDense(toNode)
@@ -81,9 +86,15 @@ trait PrimitiveCachingExpandInto {
     result
   }
 
-  private def relIterator(query: QueryContext, fromNode: Long, toNode: Long, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: PrimitiveRelationshipsCache, dir: SemanticDirection): PrimitiveLongIterator = {
-    val (start, localDirection, end) = if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
+  private def relIterator(query: QueryContext,
+                          fromNode: Long,
+                          toNode: Long,
+                          preserveDirection: Boolean,
+                          relTypes: Option[Seq[Int]],
+                          relCache: PrimitiveRelationshipsCache,
+                          dir: SemanticDirection): PrimitiveLongIterator = {
+    val (start, localDirection, end) =
+      if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
     val relationships: RelationshipIterator = query.getRelationshipsForIdsPrimitive(start, localDirection, relTypes)
 
     val connectedRelationships = mutable.ArrayBuilder.make[Long]
@@ -128,13 +139,16 @@ trait PrimitiveCachingExpandInto {
   }
 
   private def getDegree(node: Long, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
-    relTypes.map {
-      case rels if rels.isEmpty => query.nodeGetDegree(node, direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node, direction, rels.head)
-      case rels => rels.foldLeft(0)(
-        (acc, rel) => acc + query.nodeGetDegree(node, direction, rel)
-      )
-    }.getOrElse(query.nodeGetDegree(node, direction))
+    relTypes
+      .map {
+        case rels if rels.isEmpty   => query.nodeGetDegree(node, direction)
+        case rels if rels.size == 1 => query.nodeGetDegree(node, direction, rels.head)
+        case rels =>
+          rels.foldLeft(0)(
+            (acc, rel) => acc + query.nodeGetDegree(node, direction, rel)
+          )
+      }
+      .getOrElse(query.nodeGetDegree(node, direction))
   }
 }
 
@@ -143,19 +157,21 @@ protected final class PrimitiveRelationshipsCache(capacity: Int) {
   val table = new mutable.OpenHashMap[(Long, Long), Array[Long]]()
 
   def get(start: Long, end: Long, dir: SemanticDirection): Option[PrimitiveLongIterator] = {
-    table.get(key(start, end, dir)).map(rels => {
-      new PrimitiveLongIterator {
-        var index: Int = 0
+    table
+      .get(key(start, end, dir))
+      .map(rels => {
+        new PrimitiveLongIterator {
+          var index: Int = 0
 
-        override def next(): Long = {
-          val r = rels(index)
-          index = index + 1
-          r
+          override def next(): Long = {
+            val r = rels(index)
+            index = index + 1
+            r
+          }
+
+          override def hasNext: Boolean = index < rels.length
         }
-
-        override def hasNext: Boolean = index < rels.length
-      }
-    })
+      })
   }
 
   def put(start: Long, end: Long, rels: Array[Long], dir: SemanticDirection): Any = {

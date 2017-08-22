@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v2_3
 
-import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration, CypherCompilerFactory}
+import org.neo4j.cypher.internal.compiler.v2_3.CypherCompilerConfiguration
+import org.neo4j.cypher.internal.compiler.v2_3.CypherCompilerFactory
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -31,7 +32,8 @@ case class RuleCompatibility(graph: GraphDatabaseQueryService,
                              config: CypherCompilerConfiguration,
                              clock: Clock,
                              kernelMonitors: KernelMonitors,
-                             kernelAPI: KernelAPI) extends Compatibility {
+                             kernelAPI: KernelAPI)
+    extends Compatibility {
   protected val compiler = {
     val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
     val entityAccessor = new EntityAccessorWrapper(nodeManager)

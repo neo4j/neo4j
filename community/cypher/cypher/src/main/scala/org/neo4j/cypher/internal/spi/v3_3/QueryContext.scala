@@ -23,17 +23,23 @@ import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.QueryStatistics
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expander
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.KernelPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.UserDefinedAggregator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{EdgeValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.Iterator
 
@@ -142,11 +148,11 @@ trait QueryContext extends TokenContext {
 
   def getOptStatistics: Option[QueryStatistics] = None
 
-  def getImportURL(url: URL): Either[String,URL]
+  def getImportURL(url: URL): Either[String, URL]
 
   /**
-   * This should not be used. We'll remove sooner (or later). Don't do it.
-   */
+    * This should not be used. We'll remove sooner (or later). Don't do it.
+    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
 
   def edgeGetStartNode(edge: EdgeValue): NodeValue
@@ -169,10 +175,18 @@ trait QueryContext extends TokenContext {
                                direction: SemanticDirection,
                                relTypes: Seq[String]): Iterator[Path]
 
-  def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def singleShortestPath(left: Long,
+                         right: Long,
+                         depth: Int,
+                         expander: Expander,
+                         pathPredicate: KernelPredicate[Path],
                          filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path]
 
-  def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path],
+  def allShortestPath(left: Long,
+                      right: Long,
+                      depth: Int,
+                      expander: Expander,
+                      pathPredicate: KernelPredicate[Path],
                       filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path]
 
   def nodeCountByCountStore(labelId: Int): Long
@@ -195,7 +209,7 @@ trait QueryContext extends TokenContext {
 
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator
 
-    // Check if a runtime value is a node, relationship, path or some such value returned from
+  // Check if a runtime value is a node, relationship, path or some such value returned from
   // other query context values by calling down to the underlying database
   def isGraphKernelResultValue(v: Any): Boolean
 
@@ -256,4 +270,3 @@ trait QueryTransactionalContext {
 
   def databaseInfo: DatabaseInfo
 }
-

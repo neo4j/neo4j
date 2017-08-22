@@ -19,14 +19,16 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{CypherTypeException, ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 /**
- * These tests are testing the actual index implementation, thus they should all check the actual result.
- * If you only want to verify that plans using indexes are actually planned, please use
- * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
- */
-class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport{
+  * These tests are testing the actual index implementation, thus they should all check the actual result.
+  * If you only want to verify that plans using indexes are actually planned, please use
+  * [[org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanningIntegrationTest]]
+  */
+class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("should be case sensitive for CONTAINS with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
@@ -114,7 +116,8 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     result should (use("NodeIndexSeek") and evaluateTo(List(Map("l" -> london))))
   }
 
-  test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
+  test(
+    "should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
     val london = createLabeledNode(Map("name" -> "London", "country" -> "UK"), "Location")
     createLabeledNode(Map("name" -> "LONDON", "country" -> "UK"), "Location")
     graph.inTx {
@@ -129,7 +132,8 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with N
     graph.createIndex("Location", "name")
     graph.createIndex("Location", "country")
 
-    val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
+    val query =
+      "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     // RULE has bug with this query
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)

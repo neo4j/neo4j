@@ -39,7 +39,8 @@ object Transformer {
   }
 }
 
-class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO]) extends Transformer[C, FROM, TO] {
+class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID], after: Transformer[C, MID, TO])
+    extends Transformer[C, FROM, TO] {
 
   override def transform(from: FROM, context: C): TO = {
     val step1 = first.transform(from, context)
@@ -73,8 +74,8 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
   }
 }
 
-
-case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE]) extends Transformer[C, STATE, STATE] {
+case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT: Transformer[C, FROM, STATE])
+    extends Transformer[C, STATE, STATE] {
   override def transform(from: STATE, context: C): STATE = {
     if (f(from))
       thenT.transform(from, context)
@@ -86,10 +87,11 @@ case class If[-C <: BaseContext, FROM, STATE <: FROM](f: STATE => Boolean)(thenT
 }
 
 object Do {
-  def apply[C <: BaseContext, STATE](voidFunction: C => Unit) = new Do[C, STATE, STATE]((from, context) => {
-    voidFunction(context)
-    from
-  })
+  def apply[C <: BaseContext, STATE](voidFunction: C => Unit) =
+    new Do[C, STATE, STATE]((from, context) => {
+      voidFunction(context)
+      from
+    })
 }
 
 case class Do[-C <: BaseContext, FROM, TO](f: (FROM, C) => TO) extends Transformer[C, FROM, TO] {

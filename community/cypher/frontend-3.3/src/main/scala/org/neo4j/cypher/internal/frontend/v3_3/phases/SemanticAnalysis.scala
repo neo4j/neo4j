@@ -17,9 +17,12 @@
 package org.neo4j.cypher.internal.frontend.v3_3.phases
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.UnaliasedReturnItem
-import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, containsNoNodesOfType}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.StatementCondition
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticChecker, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticChecker
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState, BaseState] {
 
@@ -36,5 +39,6 @@ case class SemanticAnalysis(warn: Boolean) extends Phase[BaseContext, BaseState,
 
   override def description = "do variable binding, typing, type checking and other semantic checks"
 
-  override def postConditions = Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
+  override def postConditions =
+    Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }

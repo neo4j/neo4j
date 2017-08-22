@@ -21,28 +21,27 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.graphdb.spatial
-import org.neo4j.graphdb.spatial.{Coordinate, Point}
+import org.neo4j.graphdb.spatial.Coordinate
+import org.neo4j.graphdb.spatial.Point
 
 import scala.beans.BeanProperty
 
 abstract class ScalaPoint extends Point {
   def x: Double
   def y: Double
-  def getCoordinates:java.util.List[Coordinate] =
-    Collections.singletonList(new Coordinate(x,y))
+  def getCoordinates: java.util.List[Coordinate] =
+    Collections.singletonList(new Coordinate(x, y))
 
   @BeanProperty
   val geometryType: String = "Point"
 }
 
-case class CartesianPoint(@BeanProperty x: Double,
-                          @BeanProperty y: Double,
-                          @BeanProperty CRS: CRS) extends ScalaPoint
+case class CartesianPoint(@BeanProperty x: Double, @BeanProperty y: Double, @BeanProperty CRS: CRS) extends ScalaPoint
 
-case class GeographicPoint(longitude: Double, latitude: Double,
-                           @BeanProperty CRS: CRS) extends ScalaPoint {
+case class GeographicPoint(longitude: Double, latitude: Double, @BeanProperty CRS: CRS) extends ScalaPoint {
 
   @BeanProperty
   def x: Double = longitude
@@ -62,20 +61,26 @@ object CRS {
 
   def fromName(name: String): CRS = name match {
     case Cartesian.name => Cartesian
-    case WGS84.name => WGS84
-    case _ => throw new InvalidArgumentException(s"'$name' is not a supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
+    case WGS84.name     => WGS84
+    case _ =>
+      throw new InvalidArgumentException(
+        s"'$name' is not a supported coordinate reference system for points, supported CRS are: '${WGS84.name}', '${Cartesian.name}'")
   }
 
   def fromSRID(id: Int): CRS = id match {
     case Cartesian.`code` => Cartesian
-    case WGS84.`code` => WGS84
-    case _ => throw new InvalidArgumentException(s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.code}', '${Cartesian.code}'")
+    case WGS84.`code`     => WGS84
+    case _ =>
+      throw new InvalidArgumentException(
+        s"SRID '$id' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.code}', '${Cartesian.code}'")
   }
 
   def fromURL(url: String): CRS = url match {
     case Cartesian.`href` => Cartesian
-    case WGS84.`href` => WGS84
-    case _ => throw new InvalidArgumentException(s"HREF '$url' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.href}', '${Cartesian.href}'")
+    case WGS84.`href`     => WGS84
+    case _ =>
+      throw new InvalidArgumentException(
+        s"HREF '$url' does not match any supported coordinate reference system for points, supported CRS are: '${WGS84.href}', '${Cartesian.href}'")
   }
 }
 
@@ -88,11 +93,13 @@ object Points {
       val crs = CRS.fromName(crsName)
       crs match {
         case CRS.WGS84 => GeographicPoint(x, y, crs)
-        case _ => CartesianPoint(x, y, crs)
+        case _         => CartesianPoint(x, y, crs)
       }
     } else if (map.contains("latitude") && map.contains("longitude")) {
       val crsName = map.getOrElse("crs", CRS.WGS84.name).asInstanceOf[String]
-      if (crsName != CRS.WGS84.name) throw new InvalidArgumentException(s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
+      if (crsName != CRS.WGS84.name)
+        throw new InvalidArgumentException(
+          s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
       val latitude = safeToDouble(map("latitude"))
       val longitude = safeToDouble(map("longitude"))
       GeographicPoint(longitude, latitude, CRS.fromName(crsName))
@@ -102,6 +109,6 @@ object Points {
   }
   private def safeToDouble(value: Any) = value match {
     case n: Number => n.doubleValue()
-    case other => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")
+    case other     => throw new CypherTypeException(other.getClass.getSimpleName + " is not a valid coordinate type.")
   }
 }

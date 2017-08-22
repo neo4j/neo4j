@@ -27,11 +27,11 @@ import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.mutable
 
-case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
-                           (val id: Id = new Id)
-  extends PipeWithSource(left) {
+case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)(val id: Id = new Id)
+    extends PipeWithSource(left) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     if (input.isEmpty)
       return Iterator.empty
 
@@ -45,9 +45,10 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     if (table.isEmpty)
       return Iterator.empty
 
-    val result = for {context: ExecutionContext <- rhsIterator
-                      joinKey <- computeKey(context)}
-    yield {
+    val result = for {
+      context: ExecutionContext <- rhsIterator
+      joinKey <- computeKey(context)
+    } yield {
       val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
       seq.map(context.mergeWith)
     }
@@ -55,11 +56,14 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
     result.flatten
   }
 
-  private def buildProbeTable(input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
+  private def buildProbeTable(
+      input: Iterator[ExecutionContext]): mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]] = {
     val table = new mutable.HashMap[IndexedSeq[Long], mutable.MutableList[ExecutionContext]]
 
-    for {context <- input
-         joinKey <- computeKey(context)} {
+    for {
+      context <- input
+      joinKey <- computeKey(context)
+    } {
       val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
       seq += context
     }
@@ -74,9 +78,9 @@ case class NodeHashJoinPipe(nodeVariables: Set[String], left: Pipe, right: Pipe)
 
     for (idx <- cachedVariables.indices) {
       key(idx) = context(cachedVariables(idx)) match {
-        case n: NodeValue => n.id()
+        case n: NodeValue    => n.id()
         case Values.NO_VALUE => return None
-        case _ => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
+        case _               => throw new CypherTypeException("Created a plan that uses non-nodes when expecting a node")
       }
     }
     Some(key.toIndexedSeq)

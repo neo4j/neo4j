@@ -19,14 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{ExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{expressions => commands}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.{expressions => runtimeExpression}
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ast => runtimeAst}
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 object EnterpriseExpressionConverters extends ExpressionConverter {
-  override def toCommandExpression(expression: ast.Expression, self: ExpressionConverters): Option[commands.Expression] =
+  override def toCommandExpression(expression: ast.Expression,
+                                   self: ExpressionConverters): Option[commands.Expression] =
     expression match {
       case runtimeAst.NodeFromRegister(offset, _) =>
         Some(runtimeExpression.NodeFromRegister(offset))

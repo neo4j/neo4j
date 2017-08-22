@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.ReturnItem
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Not, True}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Not
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -42,24 +44,15 @@ class ExpressionTest extends CypherFunSuite {
   }
 
   test("merge_two_different_variables") {
-    testMerge(
-      Map("a" -> CTAny),
-      Map("b" -> CTAny),
-      Map("a" -> CTAny, "b" -> CTAny))
+    testMerge(Map("a" -> CTAny), Map("b" -> CTAny), Map("a" -> CTAny, "b" -> CTAny))
   }
 
   test("merge_two_deps_on_the_same_variable") {
-    testMerge(
-      Map("a" -> CTAny),
-      Map("a" -> CTAny),
-      Map("a" -> CTAny))
+    testMerge(Map("a" -> CTAny), Map("a" -> CTAny), Map("a" -> CTAny))
   }
 
   test("merge_two_deps_same_id_different_types") {
-    testMerge(
-      Map("a" -> CTAny),
-      Map("a" -> CTMap),
-      Map("a" -> CTAny))
+    testMerge(Map("a" -> CTAny), Map("a" -> CTMap), Map("a" -> CTAny))
   }
 
   test("should_find_inner_aggregations") {
@@ -70,7 +63,7 @@ class ExpressionTest extends CypherFunSuite {
     val aggregates = e.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    aggregates.toList should equal( List(Collect(Property(Variable("n"), PropertyKey("bar")))))
+    aggregates.toList should equal(List(Collect(Property(Variable("n"), PropertyKey("bar")))))
   }
 
   test("should_find_inner_aggregations2") {
@@ -81,7 +74,7 @@ class ExpressionTest extends CypherFunSuite {
     val aggregates = r.expression.filter(e => e.isInstanceOf[AggregationExpression])
 
     //THEN
-    aggregates.toList should equal( List(Avg(Property(Variable("a"), PropertyKey("age")))))
+    aggregates.toList should equal(List(Avg(Property(Variable("a"), PropertyKey("age")))))
   }
 
   test("should_handle_rewriting_to_non_predicates") {
@@ -113,12 +106,15 @@ class ExpressionTest extends CypherFunSuite {
       fail("Wrong keys found: " + keys + " vs. " + expected.keys.toSet)
     }
 
-    val result = keys.toSeq.map(k => (a.get(k), b.get(k)) match {
-      case (Some(x), None)    => k -> x
-      case (None, Some(x))    => k -> x
-      case (Some(x), Some(y)) => k -> x.leastUpperBound(y)
-      case (None, None)       => throw new AssertionError("only here to stop warnings")
-    }).toMap
+    val result = keys.toSeq
+      .map(k =>
+        (a.get(k), b.get(k)) match {
+          case (Some(x), None)    => k -> x
+          case (None, Some(x))    => k -> x
+          case (Some(x), Some(y)) => k -> x.leastUpperBound(y)
+          case (None, None)       => throw new AssertionError("only here to stop warnings")
+      })
+      .toMap
 
     if (result != expected) {
       fail("""

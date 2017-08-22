@@ -20,26 +20,27 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object cleanUpEager extends Rewriter {
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
 
     // E E L => E L
-    case eager@Eager(Eager(source)) =>
+    case eager @ Eager(Eager(source)) =>
       eager.copy(inner = source)(eager.solved)
 
     // E U => U E
-    case eager@Eager(unwind@UnwindCollection(source, _, _)) =>
+    case eager @ Eager(unwind @ UnwindCollection(source, _, _)) =>
       unwind.copy(left = eager.copy(inner = source)(eager.solved))(eager.solved)
 
     // E LCSV => LCSV E
-    case eager@Eager(loadCSV@LoadCSV(source, _, _, _, _, _)) =>
+    case eager @ Eager(loadCSV @ LoadCSV(source, _, _, _, _, _)) =>
       loadCSV.copy(source = eager.copy(inner = source)(eager.solved))(eager.solved)
 
     // LIMIT E => E LIMIT
-    case limit@Limit(eager@Eager(source), _, _8) =>
+    case limit @ Limit(eager @ Eager(source), _, _8) =>
       eager.copy(inner = limit.copy(left = source)(limit.solved))(limit.solved)
   })
 

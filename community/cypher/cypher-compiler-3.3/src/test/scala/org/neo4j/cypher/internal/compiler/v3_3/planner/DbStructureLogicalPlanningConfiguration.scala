@@ -21,10 +21,17 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import java.util
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
-import org.neo4j.helpers.collection.{Pair, Visitable}
-import org.neo4j.kernel.impl.util.dbstructure.{DbStructureCollector, DbStructureLookup, DbStructureVisitor}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.StatisticsCompletingGraphStatistics
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.helpers.collection.Pair
+import org.neo4j.helpers.collection.Visitable
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureCollector
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
+import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -46,9 +53,13 @@ object DbStructureLogicalPlanningConfiguration {
     new RealLogicalPlanningConfiguration {
 
       override def updateSemanticTableWithTokens(table: SemanticTable) = {
-        resolvedPropertyKeys.foreach { case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId)) }
-        resolvedLabels.foreach{ case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
-        resolvedRelTypeNames.foreach{ case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))}
+        resolvedPropertyKeys.foreach {
+          case (keyName, keyId) => table.resolvedPropertyKeyNames.put(keyName, PropertyKeyId(keyId))
+        }
+        resolvedLabels.foreach { case (keyName, keyId) => table.resolvedLabelIds.put(keyName, LabelId(keyId)) }
+        resolvedRelTypeNames.foreach {
+          case (keyName, keyId) => table.resolvedRelTypeNames.put(keyName, RelTypeId(keyId))
+        }
         table
       }
 
@@ -63,7 +74,9 @@ object DbStructureLogicalPlanningConfiguration {
   }
 
   private def indexSet(indices: util.Iterator[Pair[String, Array[String]]]): Set[(String, Seq[String])] =
-    indices.asScala.map { pair => pair.first() -> pair.other().to[Seq] }.toSet
+    indices.asScala.map { pair =>
+      pair.first() -> pair.other().to[Seq]
+    }.toSet
 
   private def resolveTokens[T](iterator: util.Iterator[Pair[Integer, String]])(f: Int => T): mutable.Map[String, T] = {
     val builder = mutable.Map.newBuilder[String, T]

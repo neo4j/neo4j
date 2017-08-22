@@ -21,15 +21,20 @@ package org.neo4j.cypher
 
 import java.util
 import java.util.concurrent.ArrayBlockingQueue
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.{CommunityCompatibilityFactory, ExecutionEngine}
-import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFailureException}
+import org.neo4j.cypher.internal.CommunityCompatibilityFactory
+import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.graphdb.TransactionTerminatedException
+import org.neo4j.graphdb.TransientTransactionFailureException
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
-import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
+import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.query.TransactionalContextFactory
 import org.neo4j.logging.NullLogProvider
 
 class KillQueryTest extends ExecutionEngineFunSuite {
@@ -61,8 +66,8 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     var exceptionsThrown = List.empty[Throwable]
 
     val tcs = new ArrayBlockingQueue[TransactionalContext](1000)
-    val queryRunner = createQueryRunner(continue, contextFactory, query, tcs, engine, e => exceptionsThrown = exceptionsThrown :+ e)
-
+    val queryRunner =
+      createQueryRunner(continue, contextFactory, query, tcs, engine, e => exceptionsThrown = exceptionsThrown :+ e)
 
     val queryKiller = createQueryKiller(continue, tcs, e => exceptionsThrown = exceptionsThrown :+ e)
 
@@ -79,7 +84,9 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     override def protocol(): String = ???
   }
 
-  private def createQueryKiller(continue: AtomicBoolean, tcs: ArrayBlockingQueue[TransactionalContext], exLogger: Throwable => Unit) = {
+  private def createQueryKiller(continue: AtomicBoolean,
+                                tcs: ArrayBlockingQueue[TransactionalContext],
+                                exLogger: Throwable => Unit) = {
     new Runnable {
       override def run(): Unit =
         try {
@@ -101,23 +108,27 @@ class KillQueryTest extends ExecutionEngineFunSuite {
     }
   }
 
-  private def createQueryRunner(continue: AtomicBoolean, contextFactory: TransactionalContextFactory, query: String, tcs: ArrayBlockingQueue[TransactionalContext], engine: ExecutionEngine, exLogger: Throwable => Unit) = {
+  private def createQueryRunner(continue: AtomicBoolean,
+                                contextFactory: TransactionalContextFactory,
+                                query: String,
+                                tcs: ArrayBlockingQueue[TransactionalContext],
+                                engine: ExecutionEngine,
+                                exLogger: Throwable => Unit) = {
     new Runnable {
       def run() {
         while (continue.get()) {
           val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
           try {
-            val transactionalContext: TransactionalContext = contextFactory.newContext(connectionInfo, tx, query, emptyMap)
+            val transactionalContext: TransactionalContext =
+              contextFactory.newContext(connectionInfo, tx, query, emptyMap)
             tcs.put(transactionalContext)
             val result = engine.execute(query, Map.empty[String, AnyRef], transactionalContext)
             result.resultAsString()
             tx.success()
-          }
-          catch {
+          } catch {
             // These are the acceptable exceptions
-            case _: TransactionTerminatedException =>
+            case _: TransactionTerminatedException       =>
             case _: TransientTransactionFailureException =>
-
             case e: Throwable =>
               tx.close()
               continue.set(false)

@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{NullPipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.NullPipeDecorator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.{CypherException => InternalCypherException}
@@ -35,16 +37,19 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
     val commandExpr = converters.toCommandExpression(expr)
 
-    implicit val emptyQueryState = new QueryState(query = null, resources = null, params = Map.empty,
-                                                  decorator = NullPipeDecorator, triadicState = mutable.Map.empty,
+    implicit val emptyQueryState = new QueryState(query = null,
+                                                  resources = null,
+                                                  params = Map.empty,
+                                                  decorator = NullPipeDecorator,
+                                                  triadicState = mutable.Map.empty,
                                                   repeatableReads = mutable.Map.empty)
 
     try {
       val foo = Some(commandExpr(ExecutionContext.empty))
       foo
-    }
-    catch {
-      case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
+    } catch {
+      case e: InternalCypherException =>
+        None // Silently disregard expressions that cannot be evaluated in an empty context
     }
   }
 }

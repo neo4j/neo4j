@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.spi
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, UnresolvedCall}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.ast.UnresolvedCall
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedName,
@@ -62,14 +63,17 @@ case class QualifiedName(namespace: Seq[String], name: String) {
 }
 
 case class CypherValue(value: AnyRef, cypherType: CypherType)
-case class FieldSignature(name: String, typ: CypherType, default: Option[CypherValue] = None, deprecated: Boolean = false) {
+case class FieldSignature(name: String,
+                          typ: CypherType,
+                          default: Option[CypherValue] = None,
+                          deprecated: Boolean = false) {
   override def toString = {
-    val nameValue = default.map( d => s"$name  =  ${d.value}").getOrElse(name)
+    val nameValue = default.map(d => s"$name  =  ${d.value}").getOrElse(name)
     s"$nameValue :: ${typ.toNeoTypeString}"
   }
 }
 
-sealed trait  ProcedureAccessMode
+sealed trait ProcedureAccessMode
 
 case class ProcedureReadOnlyAccess(allowed: Array[String]) extends ProcedureAccessMode
 case class ProcedureReadWriteAccess(allowed: Array[String]) extends ProcedureAccessMode

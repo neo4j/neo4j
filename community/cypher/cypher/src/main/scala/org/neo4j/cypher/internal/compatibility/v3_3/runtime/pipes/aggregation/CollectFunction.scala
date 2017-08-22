@@ -28,15 +28,15 @@ import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ArrayBuffer
 
-class CollectFunction(value:Expression) extends AggregationFunction {
+class CollectFunction(value: Expression) extends AggregationFunction {
   val collection = new ArrayBuffer[AnyValue]()
 
-  def apply(data: ExecutionContext)(implicit state:QueryState) {
+  def apply(data: ExecutionContext)(implicit state: QueryState) {
     value(data) match {
       case Values.NO_VALUE =>
-      case v    => collection += v
+      case v               => collection += v
     }
   }
 
-  def result(implicit state: QueryState): AnyValue = VirtualValues.list(collection.toArray:_*)
+  def result(implicit state: QueryState): AnyValue = VirtualValues.list(collection.toArray: _*)
 }

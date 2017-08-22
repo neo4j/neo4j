@@ -22,9 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Relationship, RelationshipType}
-import org.neo4j.values.storable.Values.{stringArray, stringValue}
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, edgeValue, nodeValue}
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.RelationshipType
+import org.neo4j.values.storable.Values.stringArray
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
+import org.neo4j.values.virtual.VirtualValues.edgeValue
+import org.neo4j.values.virtual.VirtualValues.nodeValue
 
 class HistoryTest extends CypherFunSuite {
 
@@ -42,7 +46,11 @@ class HistoryTest extends CypherFunSuite {
   }
 
   test("should_known_that_it_has_seen_a_relationship") {
-    val r = edgeValue(11L, nodeValue(11L, stringArray("f"), EMPTY_MAP), nodeValue(12L, stringArray("f"), EMPTY_MAP), stringValue("T"), EMPTY_MAP)
+    val r = edgeValue(11L,
+                      nodeValue(11L, stringArray("f"), EMPTY_MAP),
+                      nodeValue(12L, stringArray("f"), EMPTY_MAP),
+                      stringValue("T"),
+                      EMPTY_MAP)
     val history = new InitialHistory(ExecutionContext.empty, Seq(r))
     history.hasSeen(r) should equal(true)
   }

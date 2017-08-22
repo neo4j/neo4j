@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, MapExpression, PropertyKeyName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.MapExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
 
 /*
  * Used to simplify finding overlap between writing and reading properties
@@ -62,14 +64,15 @@ case class CreatesKnownPropertyKeys(keys: Set[PropertyKeyName]) extends CreatesP
   override def overlaps(propertyKeyName: PropertyKeyName): Boolean = keys(propertyKeyName)
 
   override def +(createsPropertyKeys: CreatesPropertyKeys) = createsPropertyKeys match {
-    case CreatesNoPropertyKeys => this
+    case CreatesNoPropertyKeys               => this
     case CreatesKnownPropertyKeys(otherKeys) => CreatesKnownPropertyKeys(keys ++ otherKeys)
-    case CreatesUnknownPropertyKeys => CreatesUnknownPropertyKeys
+    case CreatesUnknownPropertyKeys          => CreatesUnknownPropertyKeys
   }
 }
 
 object CreatesKnownPropertyKeys {
-  def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys = CreatesKnownPropertyKeys(propertyKeyNames.toSet)
+  def apply(propertyKeyNames: PropertyKeyName*): CreatesKnownPropertyKeys =
+    CreatesKnownPropertyKeys(propertyKeyNames.toSet)
 }
 
 /*

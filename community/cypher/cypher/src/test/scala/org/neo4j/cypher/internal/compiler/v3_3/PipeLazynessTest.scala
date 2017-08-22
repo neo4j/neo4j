@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import org.mockito.Mockito._
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode, SortItem}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.ShortestPath
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SingleNode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SortItem
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
@@ -48,19 +50,19 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   implicit class IsNotEager(pair: (Pipe, LazyIterator[Map[String, Any]])) {
-      def !!() = {
-        val pipe = pair._1
-        val iter = pair._2
-        iter.db = Some(graph)
-        val resultIterator = withQueryState { queryState =>
-          pipe.createResults(queryState)
-        }
-
-        if (resultIterator.hasNext)
-          resultIterator.next()
-
-        assert(iter.nonEmpty, pipe.getClass.getSimpleName)
+    def !!() = {
+      val pipe = pair._1
+      val iter = pair._2
+      iter.db = Some(graph)
+      val resultIterator = withQueryState { queryState =>
+        pipe.createResults(queryState)
       }
+
+      if (resultIterator.hasNext)
+        resultIterator.next()
+
+      assert(iter.nonEmpty, pipe.getClass.getSimpleName)
+    }
   }
 
   private def distinctPipe = {
@@ -77,8 +79,17 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   }
 
   private def shortestPathPipe = {
-    val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
-      dir = SemanticDirection.OUTGOING, allowZeroLength = true, maxDepth = None, single = true, relIterator = None)
+    val shortestPath = ShortestPath(
+      pathName = "p",
+      left = SingleNode("start"),
+      right = SingleNode("end"),
+      relTypes = Seq.empty,
+      dir = SemanticDirection.OUTGOING,
+      allowZeroLength = true,
+      maxDepth = None,
+      single = true,
+      relIterator = None
+    )
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))
@@ -92,13 +103,17 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private def startPipe = {
     val node = mock[Node]
     val (iter, src) = emptyFakes
-    val pipe = NodeStartPipe(src, "y", new EntityProducer[Node] {
-      def producerType: String = "SingleNodeMock"
+    val pipe = NodeStartPipe(
+      src,
+      "y",
+      new EntityProducer[Node] {
+        def producerType: String = "SingleNodeMock"
 
-      def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
+        def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
 
-      def arguments: Seq[Argument] = Seq.empty[Argument]
-    })()
+        def arguments: Seq[Argument] = Seq.empty[Argument]
+      }
+    )()
     (pipe, iter)
   }
 

@@ -23,8 +23,11 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ValueConvers
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{NO_VALUE, intValue, stringValue}
-import org.neo4j.values.virtual.VirtualValues.{list, map}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.values.virtual.VirtualValues.list
+import org.neo4j.values.virtual.VirtualValues.map
 
 import scala.collection.mutable
 
@@ -109,6 +112,6 @@ class CheckerTest extends CypherFunSuite {
     newChecker shouldBe a[NullListChecker.type]
   }
 
-  private def iterator(a: Any*) = list(a.map(ValueConversion.asValue):_*)
+  private def iterator(a: Any*) = list(a.map(ValueConversion.asValue): _*)
 
 }

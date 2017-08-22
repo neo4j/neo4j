@@ -19,10 +19,12 @@
  */
 package cypher.cucumber.db
 
-import cypher.cucumber.db.GraphArchive.Use.{Updating, ReadOnly}
+import cypher.cucumber.db.GraphArchive.Use.Updating
+import cypher.cucumber.db.GraphArchive.Use.ReadOnly
 import cypher.cucumber.db.GraphRecipe.CypherScript
 import org.json4s.JsonAST.JString
-import org.json4s.{CustomSerializer, Formats}
+import org.json4s.CustomSerializer
+import org.json4s.Formats
 import org.neo4j.kernel.internal.Version
 
 import scala.reflect.io.File
@@ -35,8 +37,7 @@ object GraphArchive {
                               os: OperatingSystem.Descriptor = OperatingSystem.local,
                               runtime: JavaRuntime.Descriptor = JavaRuntime.local,
                               kernel: GraphKernel.Descriptor = GraphKernel.local,
-                              dbConfig: Map[String, String] = Map.empty
-                             ) {
+                              dbConfig: Map[String, String] = Map.empty) {
 
     self =>
     override val toString = {
@@ -66,7 +67,6 @@ object GraphArchive {
   }
 }
 
-
 object GraphRecipe {
 
   final case class CypherScript(file: File, hash: String)
@@ -75,8 +75,7 @@ object GraphRecipe {
                                  scripts: Seq[T],
                                  nodes: Set[NodePropertyInfo],
                                  relationships: Set[RelationshipPropertyInfo],
-                                 labels: Set[LabelInfo]
-                                ) {
+                                 labels: Set[LabelInfo]) {
     def mapScripts[S](f: T => S) = copy(scripts = scripts.map(f))
 
     val labelImplications: Map[String, Set[String]] = labels
@@ -87,8 +86,11 @@ object GraphRecipe {
     val allUniqueNodeProperties = nodes.flatMap(_.collectIf(UniqueAdvice)(n => n.label -> n.key))
     val allIndexedNodeProperties = nodes.flatMap(_.collectIf(IndexAdvice)(n => n.label -> n.key))
 
-    val uniqueNodeProperties = allUniqueNodeProperties.filter(!allUniqueNodeProperties.coveredByImpliedLabel(_)).properties
-    val indexedNodeProperties = allIndexedNodeProperties.filter(entry => !allIndexedNodeProperties.coveredByImpliedLabel(entry) && !uniqueNodeProperties(entry)).properties
+    val uniqueNodeProperties =
+      allUniqueNodeProperties.filter(!allUniqueNodeProperties.coveredByImpliedLabel(_)).properties
+    val indexedNodeProperties = allIndexedNodeProperties
+      .filter(entry => !allIndexedNodeProperties.coveredByImpliedLabel(entry) && !uniqueNodeProperties(entry))
+      .properties
 
     // Neo4j disk size estimation
     val nodeSize = nodes.find(i => i.label == "" && i.key == "").map(_.count * 14).get
@@ -106,9 +108,11 @@ object GraphRecipe {
 
       def coveredByImpliedLabel(entry: (String, String), seen: Set[String] = Set.empty): Boolean = {
         val (label, key) = entry
-        labelImplications.get(label).exists {
-          impliedLabels =>
-            impliedLabels.exists(impliedLabel => !seen(impliedLabel) && (properties.contains(impliedLabel -> key) || coveredByImpliedLabel(impliedLabel -> key, seen + impliedLabel)))
+        labelImplications.get(label).exists { impliedLabels =>
+          impliedLabels.exists(
+            impliedLabel =>
+              !seen(impliedLabel) && (properties
+                .contains(impliedLabel -> key) || coveredByImpliedLabel(impliedLabel -> key, seen + impliedLabel)))
         }
       }
 
@@ -121,7 +125,11 @@ object GraphRecipe {
     def collectIf[T](advice: Advice)(f: this.type => T): Option[T] = if (advices(advice)) Some(f(this)) else None
   }
 
-  final case class RelationshipPropertyInfo(`type`: String, key: String, count: Int, distinct: Int, advices: Set[Advice])
+  final case class RelationshipPropertyInfo(`type`: String,
+                                            key: String,
+                                            count: Int,
+                                            distinct: Int,
+                                            advices: Set[Advice])
 
   final case class LabelInfo(label: String, count: Int, sublabels: Set[LabelInfo], advices: Set[Advice])
 
@@ -132,17 +140,19 @@ object GraphRecipe {
   case object IndexAdvice extends Advice("index")
   case object ImpliedAdvice extends Advice("implied")
 
-  class AdviceSerializer extends CustomSerializer[Advice]((formats: Formats) => (
-      {
-        case JString(ExistsAdvice.name) => ExistsAdvice
-        case JString(UniqueAdvice.name) => UniqueAdvice
-        case JString(IndexAdvice.name) => IndexAdvice
-        case JString(ImpliedAdvice.name) => ImpliedAdvice
-      },
-      {
-        case x: Advice => JString(x.name)
-      }
-    ))
+  class AdviceSerializer
+      extends CustomSerializer[Advice](
+        (formats: Formats) =>
+          (
+            {
+              case JString(ExistsAdvice.name)  => ExistsAdvice
+              case JString(UniqueAdvice.name)  => UniqueAdvice
+              case JString(IndexAdvice.name)   => IndexAdvice
+              case JString(ImpliedAdvice.name) => ImpliedAdvice
+            }, {
+              case x: Advice => JString(x.name)
+            }
+        ))
 }
 
 object OperatingSystem {
@@ -169,5 +179,3 @@ object GraphKernel {
 
   final case class Descriptor(version: String)
 }
-
-

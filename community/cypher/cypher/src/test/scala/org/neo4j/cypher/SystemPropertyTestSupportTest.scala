@@ -21,84 +21,67 @@ package org.neo4j.cypher
 
 import java.util.Properties
 
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 
-class SystemPropertyTestSupportTest extends CypherFunSuite
-{
+class SystemPropertyTestSupportTest extends CypherFunSuite {
 
-  trait SystemPropertyTestSupportFixture extends CypherTestSupport with SystemPropertyTestSupport
-  {
-    val systemProperties = new Properties( )
+  trait SystemPropertyTestSupportFixture extends CypherTestSupport with SystemPropertyTestSupport {
+    val systemProperties = new Properties()
 
-    override def getSystemProperty( propertyKey: String ): (String, String) =
-      (propertyKey, systemProperties.getProperty( propertyKey ))
+    override def getSystemProperty(propertyKey: String): (String, String) =
+      (propertyKey, systemProperties.getProperty(propertyKey))
 
-    override def setSystemProperty( property: (String, String) ): (String, String) = property match
-    {
-      case (k, v) => (k, stringValue( systemProperties.setProperty( k, v ) ))
+    override def setSystemProperty(property: (String, String)): (String, String) = property match {
+      case (k, v) => (k, stringValue(systemProperties.setProperty(k, v)))
     }
 
-    private def stringValue( value: AnyRef ) = if ( null == value )
-    {
-      null
-    } else
-    {
-      value.toString
-    }
-  }
-
-  test( "should get system properties" )
-  {
-    (new SystemPropertyTestSupportFixture
-    {
-      def apply( )
-      {
-        setSystemProperty( "os.name" -> "Linux" )
-        getSystemProperty( "os.name" ) should equal( ("os.name", "Linux") )
+    private def stringValue(value: AnyRef) =
+      if (null == value) {
+        null
+      } else {
+        value.toString
       }
-    })( )
   }
 
-  test( "should return previous value when setting system properties" )
-  {
-    (new SystemPropertyTestSupportFixture
-    {
-      def apply( )
-      {
-        setSystemProperty( "os.name" -> "Linux" )
-        setSystemProperty( "os.name" -> "Mac OS" ) should equal( ("os.name", "Linux") )
+  test("should get system properties") {
+    (new SystemPropertyTestSupportFixture {
+      def apply() {
+        setSystemProperty("os.name" -> "Linux")
+        getSystemProperty("os.name") should equal(("os.name", "Linux"))
       }
-    })( )
+    })()
   }
 
-  test( "should shadow system properties" )
-  {
-    (new SystemPropertyTestSupportFixture
-    {
-      def apply( )
-      {
-        setSystemProperty( "os.name" -> "Linux" )
-        withSystemProperties( "os.name" -> "Windows" )
-        {
-          getSystemProperty( "os.name" ) should equal( ("os.name", "Windows") )
+  test("should return previous value when setting system properties") {
+    (new SystemPropertyTestSupportFixture {
+      def apply() {
+        setSystemProperty("os.name" -> "Linux")
+        setSystemProperty("os.name" -> "Mac OS") should equal(("os.name", "Linux"))
+      }
+    })()
+  }
+
+  test("should shadow system properties") {
+    (new SystemPropertyTestSupportFixture {
+      def apply() {
+        setSystemProperty("os.name" -> "Linux")
+        withSystemProperties("os.name" -> "Windows") {
+          getSystemProperty("os.name") should equal(("os.name", "Windows"))
         }
       }
-    })( )
+    })()
   }
 
-  test( "should restore system properties" )
-  {
-    (new SystemPropertyTestSupportFixture
-    {
-      def apply( )
-      {
-        setSystemProperty( "os.name" -> "Linux" )
-        withSystemProperties( "os.name" -> "Windows" )
-        {
-          setSystemProperty( "os.name" -> "Mac OS" )
+  test("should restore system properties") {
+    (new SystemPropertyTestSupportFixture {
+      def apply() {
+        setSystemProperty("os.name" -> "Linux")
+        withSystemProperties("os.name" -> "Windows") {
+          setSystemProperty("os.name" -> "Mac OS")
         }
-        getSystemProperty( "os.name" ) should equal( ("os.name", "Linux") )
+        getSystemProperty("os.name") should equal(("os.name", "Linux"))
       }
-    })( )
+    })()
   }
 }

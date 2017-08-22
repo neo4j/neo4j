@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Closure, Expression}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Closure
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
@@ -31,9 +32,9 @@ import org.neo4j.values.virtual.ListValue
 import scala.collection.Seq
 
 abstract class InList(collectionExpression: Expression, id: String, predicate: Predicate)
-  extends Predicate
-  with ListSupport
-  with Closure {
+    extends Predicate
+    with ListSupport
+    with Closure {
 
   type CollectionPredicate = ((AnyValue) => Option[Boolean]) => Option[Boolean]
 
@@ -64,14 +65,14 @@ abstract class InList(collectionExpression: Expression, id: String, predicate: P
 }
 
 case class AllInList(collection: Expression, symbolName: String, inner: Predicate)
-  extends InList(collection, symbolName, inner) {
+    extends InList(collection, symbolName, inner) {
 
   private def forAll(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
     val iterator = collectionValue.iterator()
-    while(iterator.hasNext) {
-      predicate(iterator.next())  match {
+    while (iterator.hasNext) {
+      predicate(iterator.next()) match {
         case Some(false) => return Some(false)
         case None        => result = None
         case _           =>
@@ -84,19 +85,16 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
   def name = "all"
 
   def rewrite(f: (Expression) => Expression) =
-    f(AllInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
+    f(AllInList(collection = collection.rewrite(f), symbolName = symbolName, inner = inner.rewriteAsPredicate(f)))
 }
 
 case class AnyInList(collection: Expression, symbolName: String, inner: Predicate)
-  extends InList(collection, symbolName, inner) {
+    extends InList(collection, symbolName, inner) {
 
   private def exists(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(false)
     val iterator = collectionValue.iterator()
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       predicate(iterator.next()) match {
         case Some(true) => return Some(true)
         case None       => result = None
@@ -111,20 +109,17 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
   def name = "any"
 
   def rewrite(f: (Expression) => Expression) =
-    f(AnyInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
+    f(AnyInList(collection = collection.rewrite(f), symbolName = symbolName, inner = inner.rewriteAsPredicate(f)))
 }
 
 case class NoneInList(collection: Expression, symbolName: String, inner: Predicate)
-  extends InList(collection, symbolName, inner) {
+    extends InList(collection, symbolName, inner) {
 
   private def none(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(true)
 
     val iterator = collectionValue.iterator()
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       predicate(iterator.next()) match {
         case Some(true) => return Some(false)
         case None       => result = None
@@ -140,19 +135,16 @@ case class NoneInList(collection: Expression, symbolName: String, inner: Predica
   def name = "none"
 
   def rewrite(f: (Expression) => Expression) =
-    f(NoneInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
+    f(NoneInList(collection = collection.rewrite(f), symbolName = symbolName, inner = inner.rewriteAsPredicate(f)))
 }
 
 case class SingleInList(collection: Expression, symbolName: String, inner: Predicate)
-  extends InList(collection, symbolName, inner) {
+    extends InList(collection, symbolName, inner) {
 
   private def single(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var matched = false
     val iterator = collectionValue.iterator()
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       predicate(iterator.next()) match {
         case Some(true) if matched => return Some(false)
         case Some(true)            => matched = true
@@ -169,8 +161,5 @@ case class SingleInList(collection: Expression, symbolName: String, inner: Predi
   def name = "single"
 
   def rewrite(f: (Expression) => Expression) =
-    f(SingleInList(
-      collection = collection.rewrite(f),
-      symbolName = symbolName,
-      inner = inner.rewriteAsPredicate(f)))
+    f(SingleInList(collection = collection.rewrite(f), symbolName = symbolName, inner = inner.rewriteAsPredicate(f)))
 }

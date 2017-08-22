@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.{AstRewritingMonitor, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_3.AstRewritingMonitor
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.deMorganRewriter
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -41,12 +42,6 @@ class DeMorganRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
   test("not (P xor Q)  iff  (not P and not Q) or (P and Q)") {
     not(xor(P, Q)) <=>
-      or(
-        and(
-          not(P),
-          not(Q)),
-        and(
-          not(not(P)),
-          not(not(Q))))
+      or(and(not(P), not(Q)), and(not(not(P)), not(not(Q))))
   }
 }

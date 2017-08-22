@@ -19,14 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, Provider, READ_ONLY, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Provider
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.READ_ONLY
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, ExecutionMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.cypher.internal.v3_3.executionplan.GeneratedQueryExecution
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
@@ -39,7 +46,7 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
                               compiledCode: GeneratedQueryExecution,
                               description: Provider[InternalPlanDescription],
                               notifications: Iterable[Notification] = Iterable.empty)
-  extends StandardInternalExecutionResult(context, CompiledRuntimeName, Some(taskCloser))
+    extends StandardInternalExecutionResult(context, CompiledRuntimeName, Some(taskCloser))
     with StandardInternalExecutionResult.IterateByAccepting {
 
   compiledCode.setCompletable(this)
@@ -55,7 +62,8 @@ class CompiledExecutionResult(taskCloser: TaskCloser,
   override def executionPlanDescription(): InternalPlanDescription = {
     if (!taskCloser.isClosed) throw new ProfilerStatisticsNotReadyException
 
-    compiledCode.executionPlanDescription()
+    compiledCode
+      .executionPlanDescription()
       .addArgument(Runtime(CompiledRuntimeName.toTextOutput))
       .addArgument(RuntimeImpl(CompiledRuntimeName.name))
   }

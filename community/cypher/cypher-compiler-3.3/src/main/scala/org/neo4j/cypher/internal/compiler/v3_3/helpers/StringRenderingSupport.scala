@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
 /**
- * Subclasses prefer to use StringBuilders to render themselves
- */
+  * Subclasses prefer to use StringBuilders to render themselves
+  */
 trait StringRenderingSupport {
   override def toString = {
     val builder = new StringBuilder

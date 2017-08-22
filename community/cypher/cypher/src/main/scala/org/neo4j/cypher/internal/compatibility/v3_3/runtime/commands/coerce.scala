@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{IsList, IsMap}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -32,37 +33,41 @@ import scala.collection.JavaConverters._
 object coerce {
 
   def apply(value: AnyValue, typ: CypherType)(implicit context: QueryContext): AnyValue = {
-    val result = if (value == Values.NO_VALUE) Values.NO_VALUE else try {
-      typ match {
-        case CTAny => value
-        case CTString => value.asInstanceOf[TextValue]
-        case CTNode => value.asInstanceOf[NodeValue]
-        case CTRelationship => value.asInstanceOf[EdgeValue]
-        case CTPath => value.asInstanceOf[PathValue]
-        case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
-        case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
-        case CTMap => value match {
-          case IsMap(m) => m(context)
-          case _ => throw cantCoerce(value, typ)
+    val result =
+      if (value == Values.NO_VALUE) Values.NO_VALUE
+      else
+        try {
+          typ match {
+            case CTAny          => value
+            case CTString       => value.asInstanceOf[TextValue]
+            case CTNode         => value.asInstanceOf[NodeValue]
+            case CTRelationship => value.asInstanceOf[EdgeValue]
+            case CTPath         => value.asInstanceOf[PathValue]
+            case CTInteger      => Values.longValue(value.asInstanceOf[NumberValue].longValue())
+            case CTFloat        => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
+            case CTMap =>
+              value match {
+                case IsMap(m) => m(context)
+                case _        => throw cantCoerce(value, typ)
+              }
+            case t: ListType =>
+              value match {
+                case p: PathValue if t.innerType == CTNode         => throw cantCoerce(value, typ)
+                case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
+                case p: PathValue                                  => p.asList
+                case IsList(coll) if t.innerType == CTAny          => coll
+                case IsList(coll)                                  => VirtualValues.list(coll.iterator().asScala.map(coerce(_, t.innerType)).toArray: _*)
+                case _                                             => throw cantCoerce(value, typ)
+              }
+            case CTBoolean  => value.asInstanceOf[BooleanValue]
+            case CTNumber   => value.asInstanceOf[NumberValue]
+            case CTPoint    => value.asInstanceOf[PointValue]
+            case CTGeometry => value.asInstanceOf[PointValue]
+            case _          => throw cantCoerce(value, typ)
+          }
+        } catch {
+          case e: ClassCastException => throw cantCoerce(value, typ, Some(e))
         }
-        case t: ListType => value match {
-          case p: PathValue if t.innerType == CTNode => throw cantCoerce(value, typ)
-          case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
-          case p: PathValue => p.asList
-          case IsList(coll) if t.innerType == CTAny => coll
-          case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, t.innerType)).toArray:_*)
-          case _ => throw cantCoerce(value, typ)
-        }
-        case CTBoolean => value.asInstanceOf[BooleanValue]
-        case CTNumber => value.asInstanceOf[NumberValue]
-        case CTPoint => value.asInstanceOf[PointValue]
-        case CTGeometry => value.asInstanceOf[PointValue]
-        case _ => throw cantCoerce(value, typ)
-      }
-    }
-    catch {
-      case e: ClassCastException => throw cantCoerce(value, typ, Some(e))
-    }
     result
   }
 

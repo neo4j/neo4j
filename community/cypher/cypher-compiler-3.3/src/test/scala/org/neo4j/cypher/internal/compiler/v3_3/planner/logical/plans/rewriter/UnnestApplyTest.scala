@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, VarPatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.VarPatternLength
 
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should unnest apply with a single SingleRow on the lhs") {
@@ -79,12 +80,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val rhs = newMockedLogicalPlan("a")
 
     val input =
-      Apply(lhs,
-        OuterHashJoin(Set(IdName("a")),
-          argPlan,
-          rhs
-        )(solved)
-      )(solved)
+      Apply(lhs, OuterHashJoin(Set(IdName("a")), argPlan, rhs)(solved))(solved)
 
     rewrite(input) should equal(
       OuterHashJoin(Set(IdName("a")), lhs, rhs)(solved)
@@ -114,7 +110,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val lhs = newMockedLogicalPlan("a")
     val arg1 = Argument(Set(IdName("a")))(solved)()
     val arg2 = Argument(Set(IdName("a")))(solved)()
-    val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand =
+      Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val apply2 = Apply(arg1, expand)(solved)
     val apply = Apply(lhs, apply2)(solved)
 
@@ -122,7 +119,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = rewrite(apply)
 
     // Then
-    result should equal(Expand(lhs, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    result should equal(
+      Expand(lhs, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
   }
 
   test("apply on apply should be extracted nicely 2") {
@@ -169,7 +167,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val lhs1 = newMockedLogicalPlan("a")
     val lhs2 = newMockedLogicalPlan("a")
     val rhs = newMockedLogicalPlan("a")
-    val expand = Expand(lhs2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand =
+      Expand(lhs2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val predicates = Seq(propEquality("r", "prop", 42))
     val filter = Selection(predicates, expand)(solved)
     val apply2 = Apply(filter, rhs)(solved)
@@ -192,14 +191,31 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val lhs = newMockedLogicalPlan("a")
     val arg = Argument(Set(IdName("a")))(solved)()
-    val expand = VarExpand(arg, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved)
+    val expand = VarExpand(arg,
+                           IdName("a"),
+                           SemanticDirection.OUTGOING,
+                           SemanticDirection.OUTGOING,
+                           Seq.empty,
+                           IdName("b"),
+                           IdName("r"),
+                           VarPatternLength(1, None),
+                           ExpandAll)(solved)
     val apply = Apply(lhs, expand)(solved)
 
     // When
     val result = rewrite(apply)
 
     // Then
-    result should equal(VarExpand(lhs, IdName("a"), SemanticDirection.OUTGOING, SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), VarPatternLength(1, None), ExpandAll)(solved))
+    result should equal(
+      VarExpand(lhs,
+                IdName("a"),
+                SemanticDirection.OUTGOING,
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                IdName("b"),
+                IdName("r"),
+                VarPatternLength(1, None),
+                ExpandAll)(solved))
   }
 
   test("apply on apply on optional should be OK") {
@@ -215,7 +231,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val lhs = newMockedLogicalPlan("a")
     val arg1 = Argument(Set(IdName("a")))(solved)()
     val arg2 = Argument(Set(IdName("a")))(solved)()
-    val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand =
+      Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional = Optional(expand)(solved)
     val apply2 = Apply(arg1, optional)(solved)
     val apply = Apply(lhs, apply2)(solved)
@@ -224,11 +241,12 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = rewrite(apply)
 
     // Then
-    result should equal(Apply(
-      lhs,
-      Optional(
-        Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved)
-    )(solved))
+    result should equal(
+      Apply(
+        lhs,
+        Optional(Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(
+          solved))(solved)
+      )(solved))
   }
 
   test("AntiConditionalApply on apply on optional should be OK") {
@@ -244,7 +262,8 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val lhs = newMockedLogicalPlan("a")
     val arg1 = Argument(Set(IdName("a")))(solved)()
     val arg2 = Argument(Set(IdName("a")))(solved)()
-    val expand = Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand =
+      Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
     val optional = Optional(expand)(solved)
     val apply2 = Apply(arg1, optional)(solved)
     val aca = AntiConditionalApply(lhs, apply2, Seq(IdName("a")))(solved)
@@ -253,12 +272,13 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = rewrite(aca)
 
     // Then
-    result should equal(AntiConditionalApply(
-      lhs,
-      Optional(
-        Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))(solved),
-      Seq(IdName("a"))
-    )(solved))
+    result should equal(
+      AntiConditionalApply(
+        lhs,
+        Optional(Expand(arg2, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(
+          solved))(solved),
+        Seq(IdName("a"))
+      )(solved))
   }
 
   private def rewrite(p: LogicalPlan): LogicalPlan =

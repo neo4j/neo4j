@@ -41,12 +41,11 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should handle strings") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("1")
-        writer.println("2")
-        writer.println("3")
-        writer.println("4")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("1")
+      writer.println("2")
+      writer.println("3")
+      writer.println("4")
     }
 
     //when
@@ -65,11 +64,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should handle with headers") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("a,b")
-        writer.println("1,2")
-        writer.println("3,4")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("a,b")
+      writer.println("1,2")
+      writer.println("3,4")
     }
 
     //when
@@ -88,11 +86,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should handle with headers even for uneven files") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("a,b")
-        writer.println("1,2")
-        writer.println("3")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("a,b")
+      writer.println("1,2")
+      writer.println("3")
     }
 
     //when
@@ -121,11 +118,10 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should register a task in the cleanupper") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("a,b")
-        writer.println("1,2")
-        writer.println("3,4")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("a,b")
+      writer.println("1,2")
+      writer.println("3,4")
     }
 
     // when
@@ -137,12 +133,11 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should accept and use a custom field terminator") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("122\tfoo")
-        writer.println("23\tbar")
-        writer.println("3455\tbaz")
-        writer.println("4\tx")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("122\tfoo")
+      writer.println("23\tbar")
+      writer.println("3455\tbaz")
+      writer.println("4\tx")
     }
 
     //when
@@ -161,10 +156,9 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should treat the file as UTF-8 encoded") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("Malm\u0246")
-        writer.println("K\u0248benhavn")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("Malm\u0246")
+      writer.println("K\u0248benhavn")
     }
 
     //when
@@ -181,12 +175,11 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should propagate source description") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        // an illegal value. There's currently no other way to verify source description
-        // from a CSV resource (since it returns an iterator) than via an exception
-        // that provides it.
-        writer.println("\"quoted\" and then some")
+    val url = createCSVTempFileURL { writer =>
+      // an illegal value. There's currently no other way to verify source description
+      // from a CSV resource (since it returns an iterator) than via an exception
+      // that provides it.
+      writer.println("\"quoted\" and then some")
     }
 
     // when
@@ -204,12 +197,11 @@ class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   test("should parse multiline fields") {
     // given
-    val url = createCSVTempFileURL {
-      writer =>
-        writer.println("a\tb")
-        writer.println("1\t\"Bar\"")
-        writer.println("2\t\"Bar\n\nQuux\n\"")
-        writer.println("3\t\"Bar\n\nQuux\"")
+    val url = createCSVTempFileURL { writer =>
+      writer.println("a\tb")
+      writer.println("1\t\"Bar\"")
+      writer.println("2\t\"Bar\n\nQuux\n\"")
+      writer.println("3\t\"Bar\n\nQuux\"")
     }
 
     //when

@@ -26,10 +26,12 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherTestSupport
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValues
 import org.scalatest.mock.MockitoSugar
 
@@ -49,8 +51,8 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
   def setUpRelMockingInQueryContext(rels: Relationship*) {
     val relsByStartNode = rels.groupBy(_.getStartNode)
     val relsByEndNode = rels.groupBy(_.getEndNode)
-    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map {
-      n => n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
+    val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map { n =>
+      n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
     }.toMap
 
     setUpRelLookupMocking(SemanticDirection.OUTGOING, relsByStartNode)
@@ -61,10 +63,9 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
   def setUpRelLookupMocking(direction: SemanticDirection, relsByNode: Map[Node, Seq[Relationship]]) {
     relsByNode.foreach {
       case (node, rels) =>
-        when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(
-          new Answer[Iterator[Relationship]] {
-            def answer(invocation: InvocationOnMock) = rels.iterator
-          })
+        when(query.getRelationshipsForIds(node.getId, direction, None)).thenAnswer(new Answer[Iterator[Relationship]] {
+          def answer(invocation: InvocationOnMock) = rels.iterator
+        })
 
         when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
     }

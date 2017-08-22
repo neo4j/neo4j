@@ -19,32 +19,44 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3
 
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CommunityRuntimeBuilder, CommunityRuntimeContext, CommunityRuntimeContextCreator}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeBuilder
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CommunityRuntimeContextCreator
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{CompilationPhaseTracer, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Transformer
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
-import org.neo4j.cypher.internal.{CypherExecutionMode, PreParsedQuery}
+import org.neo4j.cypher.internal.CypherExecutionMode
+import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.AssertableLogProvider.inLog
-import org.neo4j.logging.{AssertableLogProvider, Log, NullLog}
+import org.neo4j.logging.AssertableLogProvider
+import org.neo4j.logging.Log
+import org.neo4j.logging.NullLog
 
 import scala.collection.Map
 
 class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
 
-  def createCompiler(queryCacheSize: Int = 128, statsDivergenceThreshold: Double = 0.5, queryPlanTTL: Long = 1000,
-                     clock: Clock = Clock.systemUTC(), log: Log = NullLog.getInstance):
-  CostCompatibility[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
+  def createCompiler(queryCacheSize: Int = 128,
+                     statsDivergenceThreshold: Double = 0.5,
+                     queryPlanTTL: Long = 1000,
+                     clock: Clock = Clock.systemUTC(),
+                     log: Log = NullLog.getInstance)
+    : CostCompatibility[CommunityRuntimeContext,
+                        Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = {
 
     val config = CypherCompilerConfiguration(
       queryCacheSize,
@@ -58,9 +70,18 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       legacyCsvQuoteEscaping = false,
       nonIndexedLabelWarningThreshold = 10000L
     )
-    CostCompatibility(config, clock, kernelMonitors,
-                      kernelAPI, log, CypherPlanner.default, CypherRuntime.default,
-                      CypherUpdateStrategy.default, CommunityRuntimeBuilder, CommunityRuntimeContextCreator)
+    CostCompatibility(
+      config,
+      clock,
+      kernelMonitors,
+      kernelAPI,
+      log,
+      CypherPlanner.default,
+      CypherRuntime.default,
+      CypherUpdateStrategy.default,
+      CommunityRuntimeBuilder,
+      CommunityRuntimeContextCreator
+    )
   }
 
   case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted: Int = 0) {
@@ -88,7 +109,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   var counter: CacheCounter = _
-  var compiler: CostCompatibility[CommunityRuntimeContext, Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
+  var compiler: CostCompatibility[CommunityRuntimeContext,
+                                  Transformer[CommunityRuntimeContext, LogicalPlanState, CompilationState]] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -100,14 +122,18 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   private def runQuery(query: String, debugOptions: Set[String] = Set.empty): Unit = {
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
-      val parsedQuery = compiler.produceParsedQuery(PreParsedQuery(query, query,
-                                                                   CypherVersion.default,
-                                                                   CypherExecutionMode.default,
-                                                                   CypherPlanner.default,
-                                                                   CypherRuntime.default,
-                                                                   CypherUpdateStrategy.default,
-                                                                   debugOptions)(DummyPosition(0)),
-                                                    noTracing, Set.empty)
+      val parsedQuery = compiler.produceParsedQuery(
+        PreParsedQuery(query,
+                       query,
+                       CypherVersion.default,
+                       CypherExecutionMode.default,
+                       CypherPlanner.default,
+                       CypherRuntime.default,
+                       CypherUpdateStrategy.default,
+                       debugOptions)(DummyPosition(0)),
+        noTracing,
+        Set.empty
+      )
       val context = TransactionalContextWrapper(graph.transactionalContext(query = query -> Map.empty))
       parsedQuery.plan(context, noTracing)
     }
@@ -127,16 +153,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should keep different cache entries for different literal types") {
-    runQuery("WITH 1 as x RETURN x")      // miss
-    runQuery("WITH 2 as x RETURN x")      // hit
-    runQuery("WITH 1.0 as x RETURN x")    // miss
-    runQuery("WITH 2.0 as x RETURN x")    // hit
-    runQuery("WITH 'foo' as x RETURN x")  // miss
-    runQuery("WITH 'bar' as x RETURN x")  // hit
-    runQuery("WITH {p} as x RETURN x")    // miss
-    runQuery("WITH {k} as x RETURN x")    // miss, a little surprising but not harmful
-    runQuery("WITH [1,2] as x RETURN x")  // miss
-    runQuery("WITH [3] as x RETURN x")    // hit
+    runQuery("WITH 1 as x RETURN x") // miss
+    runQuery("WITH 2 as x RETURN x") // hit
+    runQuery("WITH 1.0 as x RETURN x") // miss
+    runQuery("WITH 2.0 as x RETURN x") // hit
+    runQuery("WITH 'foo' as x RETURN x") // miss
+    runQuery("WITH 'bar' as x RETURN x") // hit
+    runQuery("WITH {p} as x RETURN x") // miss
+    runQuery("WITH {k} as x RETURN x") // miss, a little surprising but not harmful
+    runQuery("WITH [1,2] as x RETURN x") // miss
+    runQuery("WITH [3] as x RETURN x") // hit
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 6, flushes = 1))
   }
@@ -172,11 +198,15 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    (0 until 50).foreach { _ =>
+      createLabeledNode("Person")
+    }
     runQuery(query)
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    (0 until 1000).foreach { _ =>
+      createLabeledNode("Dog")
+    }
     runQuery(query)
 
     // then
@@ -192,16 +222,20 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     val query: String = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    (0 until 50).foreach { _ =>
+      createLabeledNode("Person")
+    }
     runQuery(query)
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    (0 until 1000).foreach { _ =>
+      createLabeledNode("Dog")
+    }
     runQuery(query)
 
     // then
     logProvider.assertExactly(
-      inLog(logName).info( s"Discarded stale query from the query cache: $query" )
+      inLog(logName).info(s"Discarded stale query from the query cache: $query")
     )
   }
 

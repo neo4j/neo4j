@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
   private val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
@@ -41,10 +44,8 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val produceResult = ProduceResult(Seq("x"), selection)
     val offset = 0
     val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      selection -> pipeline,
-      produceResult -> pipeline)
+    val lookup: Map[LogicalPlan, PipelineInformation] =
+      Map(allNodes -> pipeline, selection -> pipeline, produceResult -> pipeline)
     val tokenContext = mock[TokenContext]
     val tokenId = 666
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
@@ -69,12 +70,14 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val predicate = Not(Equals(varFor("r1"), varFor("r2"))(pos))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     val pipelineInformation = PipelineInformation(Map(
-      "a" -> nodeAt(0, "a"),
-      "b" -> nodeAt(1, "b"),
-      "r1" -> edgeAt(2, "r1"),
-      "c" -> nodeAt(3, "c"),
-      "r2" -> edgeAt(4, "r2")
-    ), numberOfLongs = 5, numberOfReferences = 0)
+                                                    "a" -> nodeAt(0, "a"),
+                                                    "b" -> nodeAt(1, "b"),
+                                                    "r1" -> edgeAt(2, "r1"),
+                                                    "c" -> nodeAt(3, "c"),
+                                                    "r2" -> edgeAt(4, "r2")
+                                                  ),
+                                                  numberOfLongs = 5,
+                                                  numberOfReferences = 0)
 
     val lookup: Map[LogicalPlan, PipelineInformation] = Map(
       argument -> pipelineInformation,
@@ -99,8 +102,10 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val predicate = Equals(prop("a", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     val pipelineInformation = PipelineInformation(Map(
-      "a" -> LongSlot(0, nullable = true, typ = CTNode, name = "a")
-    ), numberOfLongs = 1, numberOfReferences = 0)
+                                                    "a" -> LongSlot(0, nullable = true, typ = CTNode, name = "a")
+                                                  ),
+                                                  numberOfLongs = 1,
+                                                  numberOfReferences = 0)
 
     val lookup: Map[LogicalPlan, PipelineInformation] = Map(
       argument -> pipelineInformation,
@@ -127,10 +132,8 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val produceResult = ProduceResult(Seq("x"), selection)
     val offset = 0
     val pipeline = PipelineInformation(Map("x" -> LongSlot(offset, nullable = false, typ = CTNode, "x")), 1, 0)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      selection -> pipeline,
-      produceResult -> pipeline)
+    val lookup: Map[LogicalPlan, PipelineInformation] =
+      Map(allNodes -> pipeline, selection -> pipeline, produceResult -> pipeline)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new RegisteredRewriter(tokenContext)
@@ -152,10 +155,12 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val predicate = Equals(prop("r", "prop"), literalInt(42))(pos)
     val selection = Selection(Seq(predicate), argument)(solved)
     val pipelineInformation = PipelineInformation(Map(
-      "a" -> nodeAt(0, "a"),
-      "b" -> nodeAt(1, "b"),
-      "r" -> edgeAt(2, "r")
-    ), numberOfLongs = 3, numberOfReferences = 0)
+                                                    "a" -> nodeAt(0, "a"),
+                                                    "b" -> nodeAt(1, "b"),
+                                                    "r" -> edgeAt(2, "r")
+                                                  ),
+                                                  numberOfLongs = 3,
+                                                  numberOfReferences = 0)
 
     val lookup: Map[LogicalPlan, PipelineInformation] = Map(
       argument -> pipelineInformation,
@@ -168,7 +173,8 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     // when
     val (result, newLookup) = rewriter(selection, lookup)
 
-    result should equal(Selection(Seq(Equals(RelationshipPropertyLate(2, "prop", "r.prop"), literalInt(42))(pos)), argument)(solved))
+    result should equal(
+      Selection(Seq(Equals(RelationshipPropertyLate(2, "prop", "r.prop"), literalInt(42))(pos)), argument)(solved))
     newLookup(result) should equal(pipelineInformation)
   }
 
@@ -180,14 +186,12 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val produceResult = ProduceResult(Seq("n.prop"), projection)
     val nodeOffset = 0
     val propOffset = 0
-    val pipeline = PipelineInformation(Map(
-      "n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode, "n"),
-      "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny, "n.prop")),
-      1, 1)
-    val lookup: Map[LogicalPlan, PipelineInformation] = Map(
-      allNodes -> pipeline,
-      projection -> pipeline,
-      produceResult -> pipeline)
+    val pipeline = PipelineInformation(Map("n" -> LongSlot(nodeOffset, nullable = false, typ = CTNode, "n"),
+                                           "n.prop" -> RefSlot(propOffset, nullable = true, typ = CTAny, "n.prop")),
+                                       1,
+                                       1)
+    val lookup: Map[LogicalPlan, PipelineInformation] =
+      Map(allNodes -> pipeline, projection -> pipeline, produceResult -> pipeline)
     val tokenContext = mock[TokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new RegisteredRewriter(tokenContext)
@@ -197,8 +201,7 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
 
     //then
     val newProjection = Projection(allNodes, Map("n.prop" -> NodePropertyLate(nodeOffset, "prop", "n.prop")))(solved)
-    result should equal(
-      ProduceResult(Seq("n.prop"), newProjection))
+    result should equal(ProduceResult(Seq("n.prop"), newProjection))
     newLookup(result) should equal(pipeline)
     newLookup(newProjection) should equal(pipeline)
   }
@@ -210,9 +213,9 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = PipelineInformation.empty.
-      newLong("x", nullable = false, CTNode).
-      newReference("x.propertyKey", nullable = true, CTAny)
+    val pipeline = PipelineInformation.empty
+      .newLong("x", nullable = false, CTNode)
+      .newReference("x.propertyKey", nullable = true, CTAny)
 
     // when
     val rewriter = new RegisteredRewriter(tokenContext)
@@ -220,9 +223,10 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
 
     // then
     resultPlan should equal(
-      Projection(leaf, Map(
-        "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId, "x.propertyKey")
-      ))(solved)
+      Projection(leaf,
+                 Map(
+                   "x.propertyKey" -> NodeProperty(pipeline.getLongOffsetFor("x"), tokenId, "x.propertyKey")
+                 ))(solved)
     )
   }
 
@@ -233,9 +237,9 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     val tokenContext = mock[TokenContext]
     val tokenId = 2
     when(tokenContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(tokenId))
-    val pipeline = PipelineInformation.empty.
-      newLong("x", nullable = true, CTNode).
-      newReference("x.propertyKey", nullable = true, CTAny)
+    val pipeline = PipelineInformation.empty
+      .newLong("x", nullable = true, CTNode)
+      .newReference("x.propertyKey", nullable = true, CTAny)
 
     // when
     val rewriter = new RegisteredRewriter(tokenContext)
@@ -244,9 +248,10 @@ class RegisteredRewriterTest extends CypherFunSuite with AstConstructionTestSupp
     // then
     val nodeOffset = pipeline.getLongOffsetFor("x")
     resultPlan should equal(
-      Projection(leaf, Map(
-        "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId, "x.propertyKey"))
-      ))(solved)
+      Projection(leaf,
+                 Map(
+                   "x.propertyKey" -> NullCheck(nodeOffset, NodeProperty(nodeOffset, tokenId, "x.propertyKey"))
+                 ))(solved)
     )
   }
 

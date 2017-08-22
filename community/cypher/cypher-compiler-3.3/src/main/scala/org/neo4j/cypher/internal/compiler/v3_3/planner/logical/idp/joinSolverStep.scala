@@ -21,19 +21,23 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningSupport
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PatternRelationship
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class joinSolverStep(qg: QueryGraph)
+    extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])
-                    (implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])(
+      implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
@@ -44,12 +48,10 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     val planProducer = context.logicalPlanProducer
     val builder = Vector.newBuilder[LogicalPlan]
 
-    for (
-      leftSize <- 1.until(goalSize);
-      leftGoal <- goal.subsets(leftSize);
-      rightSize <- 1.until(goalSize);
-      rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)
-    ) {
+    for (leftSize <- 1.until(goalSize);
+         leftGoal <- goal.subsets(leftSize);
+         rightSize <- 1.until(goalSize);
+         rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)) {
       val optLhs = table(leftGoal)
       val optRhs = table(rightGoal)
       if (optLhs.isDefined && optRhs.isDefined) {
@@ -60,7 +62,8 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, arguments)
           if (overlappingSymbols == overlappingNodes) {
             if (VERBOSE) {
-              println(s"${show(leftGoal, nodes(lhs))} overlap ${show(rightGoal, nodes(rhs))} on ${showNames(overlappingNodes)}")
+              println(
+                s"${show(leftGoal, nodes(lhs))} overlap ${show(rightGoal, nodes(rhs))} on ${showNames(overlappingNodes)}")
             }
             // This loop is designed to find both LHS and RHS plans, so no need to generate them swapped here
             val matchingHints = qg.joinHints.filter(_.coveredBy(overlappingNodes))

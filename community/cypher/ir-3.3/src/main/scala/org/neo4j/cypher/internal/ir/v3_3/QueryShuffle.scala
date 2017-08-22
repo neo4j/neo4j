@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, Limit, Skip, SortItem}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Limit
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Skip
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SortItem
 
 final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               skip: Option[Expression] = None,
@@ -40,9 +43,9 @@ final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
     )
 
   private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query shuffles with different $what")
-    case (s@Some(_), None)  => s
-    case (None, s)          => s
+    case (Some(_), Some(_))  => throw new InternalException(s"Can't join two query shuffles with different $what")
+    case (s @ Some(_), None) => s
+    case (None, s)           => s
   }
 }
 

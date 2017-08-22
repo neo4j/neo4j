@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.graphdb.{Path, PropertyContainer}
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
 
 object isGraphKernelResultValue extends (Any => Boolean) {
 

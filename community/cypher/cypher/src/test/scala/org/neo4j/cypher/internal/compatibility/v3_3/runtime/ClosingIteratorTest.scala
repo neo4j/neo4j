@@ -37,7 +37,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("should not close prematurely") {
     //Given
-    val wrapee   = Iterator(Map("k" -> intValue(42)))
+    val wrapee = Iterator(Map("k" -> intValue(42)))
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
     //When
     val result = iterator.next()
@@ -49,7 +49,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("should cleanup even for empty iterator") {
     //Given
-    val wrapee   = Iterator.empty
+    val wrapee = Iterator.empty
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
@@ -62,7 +62,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("multiple has next should not close more than once") {
     //Given
-    val wrapee   = Iterator.empty
+    val wrapee = Iterator.empty
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When
@@ -107,7 +107,7 @@ class ClosingIteratorTest extends CypherFunSuite {
 
   test("close runs cleanup") {
     //Given
-    val wrapee   = Iterator(Map("k" -> intValue(42)), Map("k" -> intValue(43)))
+    val wrapee = Iterator(Map("k" -> intValue(42)), Map("k" -> intValue(43)))
     val iterator = new ClosingIterator(wrapee, taskCloser, exceptionDecorator)
 
     //When

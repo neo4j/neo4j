@@ -45,9 +45,9 @@ class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit)
     s"Failure when processing URL '$url' on line $lastProcessed" +
       (if (readAll) " (which is the last row in the file). " else ". ") +
       (if (committedAnything)
-        s"Possibly the last row committed during import is line $lastCommitted. "
-      else
-        "No rows seem to have been committed. ") +
+         s"Possibly the last row committed during import is line $lastCommitted. "
+       else
+         "No rows seem to have been committed. ") +
       "Note that this information might not be accurate."
   }
 }

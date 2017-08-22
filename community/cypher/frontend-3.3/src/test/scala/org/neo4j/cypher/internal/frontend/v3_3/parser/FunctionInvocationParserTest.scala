@@ -16,14 +16,15 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 
 class FunctionInvocationParserTest
-  extends ParserAstTest[ast.FunctionInvocation]
+    extends ParserAstTest[ast.FunctionInvocation]
     with Expressions
     with Literals
     with Base
-    with ProcedureCalls  {
+    with ProcedureCalls {
 
   implicit val parser = FunctionInvocation
 
@@ -32,26 +33,37 @@ class FunctionInvocationParserTest
   }
 
   test("foo('test', 1 + 2)") {
-    yields(ast.FunctionInvocation(ast.Namespace()(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
-      ast.StringLiteral("test")(pos),
-      ast.Add(
-        ast.SignedDecimalIntegerLiteral("1")(pos),
-        ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
-    )))
+    yields(
+      ast.FunctionInvocation(
+        ast.Namespace()(pos),
+        ast.FunctionName("foo")(pos),
+        distinct = false,
+        Vector(
+          ast.StringLiteral("test")(pos),
+          ast.Add(ast.SignedDecimalIntegerLiteral("1")(pos), ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+        )
+      ))
   }
   test("my.namespace.foo()") {
-    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector.empty))
+    yields(
+      ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos),
+                             ast.FunctionName("foo")(pos),
+                             distinct = false,
+                             Vector.empty))
   }
 
   test("my.namespace.foo('test', 1 + 2)") {
-    yields(ast.FunctionInvocation(ast.Namespace(List("my", "namespace"))(pos), ast.FunctionName("foo")(pos), distinct = false, Vector(
-      ast.StringLiteral("test")(pos),
-      ast.Add(
-        ast.SignedDecimalIntegerLiteral("1")(pos),
-        ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
-    )))
+    yields(
+      ast.FunctionInvocation(
+        ast.Namespace(List("my", "namespace"))(pos),
+        ast.FunctionName("foo")(pos),
+        distinct = false,
+        Vector(
+          ast.StringLiteral("test")(pos),
+          ast.Add(ast.SignedDecimalIntegerLiteral("1")(pos), ast.SignedDecimalIntegerLiteral("2")(pos))(pos)
+        )
+      ))
   }
-
 
   private val pos = DummyPosition(-1)
 

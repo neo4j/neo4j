@@ -20,15 +20,21 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{Do, If, Transformer}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Do
+import org.neo4j.cypher.internal.frontend.v3_3.phases.If
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Transformer
 
-class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
+class CompiledRuntimeBuilder
+    extends RuntimeBuilder[Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]] {
 
-  override def create(runtimeName: Option[RuntimeName], useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] =
+  override def create(
+      runtimeName: Option[RuntimeName],
+      useErrorsOverWarnings: Boolean): Transformer[EnterpriseRuntimeContext, LogicalPlanState, CompilationState] =
     runtimeName match {
       case None =>
         BuildCompiledExecutionPlan andThen
@@ -42,7 +48,8 @@ class CompiledRuntimeBuilder extends RuntimeBuilder[Transformer[EnterpriseRuntim
       case Some(CompiledRuntimeName) if useErrorsOverWarnings =>
         BuildCompiledExecutionPlan andThen
           If[EnterpriseRuntimeContext, LogicalPlanState, CompilationState](_.maybeExecutionPlan.isEmpty)(
-            Do[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]((_, _) => throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
+            Do[EnterpriseRuntimeContext, LogicalPlanState, CompilationState]((_, _) =>
+              throw new InvalidArgumentException("The given query is not currently supported in the selected runtime"))
           )
 
       case Some(CompiledRuntimeName) =>

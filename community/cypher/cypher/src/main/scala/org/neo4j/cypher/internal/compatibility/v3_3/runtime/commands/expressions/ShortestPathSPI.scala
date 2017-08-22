@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Path, PropertyContainer}
-
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
 
 trait KernelPredicate[T] {
   def test(obj: T): Boolean
@@ -47,7 +48,8 @@ abstract class BaseExpander() extends Expander {
 
 case class OnlyDirectionExpander(nodeFilters: Seq[KernelPredicate[PropertyContainer]],
                                  relFilters: Seq[KernelPredicate[PropertyContainer]],
-                                 direction: SemanticDirection) extends BaseExpander {
+                                 direction: SemanticDirection)
+    extends BaseExpander {
 
   override protected def newWith(newNodeFilters: Seq[KernelPredicate[PropertyContainer]],
                                  newRelFilters: Seq[KernelPredicate[PropertyContainer]]): OnlyDirectionExpander =
@@ -56,7 +58,8 @@ case class OnlyDirectionExpander(nodeFilters: Seq[KernelPredicate[PropertyContai
 
 case class TypeAndDirectionExpander(nodeFilters: Seq[KernelPredicate[PropertyContainer]],
                                     relFilters: Seq[KernelPredicate[PropertyContainer]],
-                                    typDirs: Seq[(String, SemanticDirection)]) extends BaseExpander {
+                                    typDirs: Seq[(String, SemanticDirection)])
+    extends BaseExpander {
 
   override protected def newWith(newNodeFilters: Seq[KernelPredicate[PropertyContainer]],
                                  newRelFilters: Seq[KernelPredicate[PropertyContainer]]): TypeAndDirectionExpander =

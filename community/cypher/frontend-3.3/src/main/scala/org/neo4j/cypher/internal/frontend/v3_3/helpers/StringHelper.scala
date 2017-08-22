@@ -31,13 +31,17 @@ object StringHelper {
     def fixNewLines: String = text.replaceAll("\r\n", "\n")
 
     // (line 1, column 8 (offset: 7))
-    def fixPosition: String = if (SystemUtils.IS_OS_WINDOWS) {
-      positionPattern.replaceAllIn(text, (matcher) => {
-        val line = matcher.group(1).toInt
-        val column = matcher.group(2).toInt
-        val offset = matcher.group(3).toInt + line - 1
-        s"(line $line, column $column (offset: $offset))"
-      } )
-    } else { text }
+    def fixPosition: String =
+      if (SystemUtils.IS_OS_WINDOWS) {
+        positionPattern.replaceAllIn(
+          text,
+          (matcher) => {
+            val line = matcher.group(1).toInt
+            val column = matcher.group(2).toInt
+            val offset = matcher.group(3).toInt + line - 1
+            s"(line $line, column $column (offset: $offset))"
+          }
+        )
+      } else { text }
   }
 }

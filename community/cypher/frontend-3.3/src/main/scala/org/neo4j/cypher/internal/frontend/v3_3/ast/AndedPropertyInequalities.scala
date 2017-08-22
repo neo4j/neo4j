@@ -20,7 +20,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 
-case class AndedPropertyInequalities(variable: Variable, property: Property, inequalities: NonEmptyList[InequalityExpression]) extends Expression {
+case class AndedPropertyInequalities(variable: Variable,
+                                     property: Property,
+                                     inequalities: NonEmptyList[InequalityExpression])
+    extends Expression {
   def position = variable.position
 
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =

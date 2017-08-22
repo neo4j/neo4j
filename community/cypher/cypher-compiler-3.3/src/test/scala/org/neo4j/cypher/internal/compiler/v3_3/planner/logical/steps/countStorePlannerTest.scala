@@ -20,17 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphProducer, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.RelationshipCountFromCountStore
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphProducer
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, FunctionInvocation, FunctionName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{AggregatingQueryProjection, IdName}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.cypher.internal.ir.v3_3.AggregatingQueryProjection
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
-class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {
+class countStorePlannerTest
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport
+    with QueryGraphProducer
+    with AstConstructionTestSupport {
 
   test("should ignore tail") {
     val pq = producePlannerQuery("MATCH (n)", "n")
@@ -150,13 +164,21 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery) should notBeCountPlan
   }
 
-  implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+  implicit val context = LogicalPlanningContext(
+    mock[PlanContext],
+    LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+    mock[Metrics],
+    SemanticTable(),
+    mock[QueryGraphSolver],
+    notificationLogger = mock[InternalNotificationLogger]
+  )
 
   def producePlannerQuery(query: String, variable: String) = {
     val (pq, _) = producePlannerQueryForPattern(query)
-    pq.withHorizon(AggregatingQueryProjection(
-      aggregationExpressions = Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
+    pq.withHorizon(
+      AggregatingQueryProjection(
+        aggregationExpressions =
+          Map(s"count($variable)" -> FunctionInvocation(FunctionName("count") _, Variable(variable) _) _)))
   }
 
   case class IsCountPlan(variable: String, noneExpected: Boolean) extends Matcher[Option[LogicalPlan]] {
@@ -173,7 +195,10 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
               true
             case _ =>
               false
-          }, "No count store plan produced", "")
+          },
+          "No count store plan produced",
+          ""
+        )
       }
     }
   }

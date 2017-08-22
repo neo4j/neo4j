@@ -20,20 +20,28 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.idp.expandSolverStep
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{DoNotIncludeTies, IncludeTies, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.DoNotIncludeTies
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IncludeTies
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Ascending
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Length
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.Nodes
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3.notification.ExhaustiveShortestPathForbiddenNotification
-import org.neo4j.cypher.internal.frontend.v3_3.{ExhaustiveShortestPathForbiddenException, InternalException}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, ShortestPathPattern, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ExhaustiveShortestPathForbiddenException
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.Predicate
+import org.neo4j.cypher.internal.ir.v3_3.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.v3_3._
 
 case object planShortestPaths {
 
-  def apply(inner: LogicalPlan, queryGraph: QueryGraph, shortestPaths: ShortestPathPattern)
-           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(inner: LogicalPlan, queryGraph: QueryGraph, shortestPaths: ShortestPathPattern)(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
     val predicates = queryGraph.selections.predicates.collect {
@@ -46,19 +54,29 @@ case object planShortestPaths {
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
       // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
-      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
-      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
-      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
+      case NoneIterablePredicate(_, f @ FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
+      case AllIterablePredicate(_, f @ FunctionInvocation(_, _, _, _)) if f.function == Nodes  => false
+      case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) =>
+        true
+      case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) =>
+        true
       case _ => false
     }
 
     if (needFallbackPredicates.nonEmpty) {
-      planShortestPathsWithFallback(inner, shortestPaths, predicates, safePredicates, needFallbackPredicates, queryGraph)
-    }
-    else {
-      context.logicalPlanProducer.planShortestPath(inner, shortestPaths, predicates, withFallBack = false,
-                                                   disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime  )
+      planShortestPathsWithFallback(inner,
+                                    shortestPaths,
+                                    predicates,
+                                    safePredicates,
+                                    needFallbackPredicates,
+                                    queryGraph)
+    } else {
+      context.logicalPlanProducer.planShortestPath(
+        inner,
+        shortestPaths,
+        predicates,
+        withFallBack = false,
+        disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime)
     }
   }
 
@@ -69,12 +87,13 @@ case object planShortestPaths {
     PathExpression(step)(pos)
   }
 
-  private def planShortestPathsWithFallback(inner: LogicalPlan, shortestPath: ShortestPathPattern,
-                                            predicates: Seq[Expression],
-                                            safePredicates: Seq[Expression],
-                                            unsafePredicates: Seq[Expression],
-                                            queryGraph: QueryGraph)
-                                           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def planShortestPathsWithFallback(
+      inner: LogicalPlan,
+      shortestPath: ShortestPathPattern,
+      predicates: Seq[Expression],
+      safePredicates: Seq[Expression],
+      unsafePredicates: Seq[Expression],
+      queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     // create warning for planning a shortest path fallback
     context.notificationLogger.log(ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position))
 
@@ -83,7 +102,10 @@ case object planShortestPaths {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = lpp.planArgumentRowFrom(inner)
-    val lhsSp = lpp.planShortestPath(lhsArgument, shortestPath, predicates, withFallBack = true,
+    val lhsSp = lpp.planShortestPath(lhsArgument,
+                                     shortestPath,
+                                     predicates,
+                                     withFallBack = true,
                                      disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
     val lhs = lpp.planApply(inner, lhsOption)
@@ -97,15 +119,18 @@ case object planShortestPaths {
     }
 
     // We have to force the plan to solve what we actually solve
-    val solved = lpp.estimatePlannerQuery(inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)
-      .addPredicates(predicates: _*)))
+    val solved = lpp.estimatePlannerQuery(
+      inner.solved.amendQueryGraph(_.addShortestPath(shortestPath)
+        .addPredicates(predicates: _*)))
 
     lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get)).updateSolved(solved)
   }
 
-  private def buildPlanShortestPathsFallbackPlans(shortestPath: ShortestPathPattern, rhsArgument: LogicalPlan,
-                                                  predicates: Seq[Expression], queryGraph: QueryGraph)
-                                                 (implicit context: LogicalPlanningContext): LogicalPlan = {
+  private def buildPlanShortestPathsFallbackPlans(
+      shortestPath: ShortestPathPattern,
+      rhsArgument: LogicalPlan,
+      predicates: Seq[Expression],
+      queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     // TODO: Decide the best from and to based on degree (generate two alternative plans and let planner decide)
     // (or do bidirectional var length expand)
     val pattern = shortestPath.rel
@@ -116,7 +141,8 @@ case object planShortestPaths {
     val pathName = shortestPath.name.get
 
     // Plan a fallback branch using VarExpand(Into) (right-hand-side)
-    val rhsVarExpand = expandSolverStep.planSinglePatternSide(queryGraph, pattern, rhsArgument, from)
+    val rhsVarExpand = expandSolverStep
+      .planSinglePatternSide(queryGraph, pattern, rhsArgument, from)
       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
 
     // Projection with path

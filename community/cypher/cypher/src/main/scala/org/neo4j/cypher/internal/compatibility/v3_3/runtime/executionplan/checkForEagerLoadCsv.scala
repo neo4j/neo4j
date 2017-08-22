@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EagerPipe, LoadCSVPipe, Pipe}
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{EagerLoadCsvNotification, InternalNotification}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.EagerPipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.LoadCSVPipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.frontend.v3_3.notification.EagerLoadCsvNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 
 object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
 
@@ -35,7 +38,7 @@ object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
     val resultState = pipe.treeFold[SearchState](NoEagerFound) {
       case _: LoadCSVPipe => {
         case EagerFound => (EagerWithLoadCsvFound, None)
-        case e => (e, None)
+        case e          => (e, None)
       }
       case _: EagerPipe =>
         acc =>
@@ -44,7 +47,7 @@ object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
 
     resultState match {
       case EagerWithLoadCsvFound => Some(EagerLoadCsvNotification)
-      case _ => None
+      case _                     => None
     }
   }
 }

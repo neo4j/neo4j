@@ -25,8 +25,7 @@ import org.neo4j.cypher.internal.spi.v3_3.CSVResources
 import org.scalatest.BeforeAndAfterAll
 import sun.net.www.protocol.http.HttpURLConnection
 
-class LoadCsvAcceptanceUserAgentTest
-  extends ExecutionEngineFunSuite with BeforeAndAfterAll with NewPlannerTestSupport {
+class LoadCsvAcceptanceUserAgentTest extends ExecutionEngineFunSuite with BeforeAndAfterAll with NewPlannerTestSupport {
 
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
@@ -51,7 +50,7 @@ class LoadCsvAcceptanceUserAgentTest
   private var port = -1
 
   override def beforeAll() {
-    val  builder = new HttpServerTestSupportBuilder()
+    val builder = new HttpServerTestSupportBuilder()
     builder.onPathReplyWithData(CSV_PATH, CSV_DATA_CONTENT)
     builder.onPathReplyOnlyWhen(CSV_PATH, HttpServerTestSupport.hasUserAgent(NEO_USER_AGENT))
 

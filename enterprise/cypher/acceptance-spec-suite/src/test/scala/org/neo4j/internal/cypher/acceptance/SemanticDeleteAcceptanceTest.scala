@@ -20,8 +20,11 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
-import org.scalacheck.{Gen, Shrink}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.PatternGen
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 /*
  * Creates a random pattern, matches on it and deletes all variables
@@ -46,10 +49,12 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
           //delete
           val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
-          updateWithBothPlannersAndCompatibilityMode(s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
+          updateWithBothPlannersAndCompatibilityMode(
+            s"MATCH $patternString DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(
+            List(Map("c" -> 0)))
         }
       }
     }
@@ -71,7 +76,8 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlanners(s"MATCH $patternString DETACH DELETE ${variables.mkString(",")} RETURN count(*)")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(
+            List(Map("c" -> 0)))
         }
       }
     }
@@ -94,7 +100,8 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(
+            List(Map("c" -> 0)))
         }
       }
     }
@@ -117,7 +124,8 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
 
           //now db should be empty
-          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(List(Map("c" -> 0)))
+          executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH () RETURN count(*) AS c").toList should equal(
+            List(Map("c" -> 0)))
         }
       }
     }
@@ -125,7 +133,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
   private def makeUndirected(elements: Seq[Element]): Seq[Element] = elements.map {
     case n: NodeWithRelationship => n.copy(rel = n.rel.withDirection(SemanticDirection.BOTH))
-    case other => other
+    case other                   => other
   }
 
   override protected def numberOfTestRuns: Int = 20

@@ -27,7 +27,9 @@ import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 /**
@@ -44,15 +46,16 @@ case object ProcedureCallOrSchemaCommandPlanBuilder extends Phase[CompilerContex
   override def process(from: BaseState, context: CompilerContext): LogicalPlanState = {
     val maybeLogicalPlan: Option[LogicalPlan] = from.statement() match {
       // Global call: CALL foo.bar.baz("arg1", 2)
-      case Query(None, SingleQuery(Seq(resolved@ResolvedCall(signature, args, _, _, _)))) =>
+      case Query(None, SingleQuery(Seq(resolved @ ResolvedCall(signature, args, _, _, _)))) =>
         val SemanticCheckResult(_, errors) = resolved.semanticCheck(SemanticState.clean)
-        errors.foreach { error => throw context.exceptionCreator(error.msg, error.position) }
+        errors.foreach { error =>
+          throw context.exceptionCreator(error.msg, error.position)
+        }
         Some(plans.StandAloneProcedureCall(signature, args, resolved.callResultTypes, resolved.callResultIndices))
 
       // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case CreateNodeKeyConstraint(node, label, props) =>
         Some(plans.CreateNodeKeyConstraint(IdName.fromVariable(node), label, props))
-
 
       // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
       case DropNodeKeyConstraint(_, label, props) =>

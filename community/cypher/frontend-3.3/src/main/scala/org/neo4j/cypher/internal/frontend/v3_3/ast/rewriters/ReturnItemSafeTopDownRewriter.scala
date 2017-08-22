@@ -17,9 +17,11 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable.TreeAny
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 import org.neo4j.cypher.internal.frontend.v3_3.Rewritable._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AliasedReturnItem, Expression}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -27,7 +29,7 @@ import scala.collection.mutable
 /*
 This rewriter is an alternative to the topDown rewriter that does the same thing,
 but does not rewrite ReturnItem alias, only the projected expression
-*/
+ */
 case class ReturnItemSafeTopDownRewriter(inner: Rewriter) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = {
@@ -38,7 +40,8 @@ case class ReturnItemSafeTopDownRewriter(inner: Rewriter) extends Rewriter {
   }
 
   @tailrec
-  private def tailrecApply(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+  private def tailrecApply(
+      stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
     val (currentJobs, _) = stack.top
     if (currentJobs.isEmpty) {
       val (_, newChildren) = stack.pop()
@@ -47,7 +50,7 @@ case class ReturnItemSafeTopDownRewriter(inner: Rewriter) extends Rewriter {
       } else {
         stack.pop() match {
           case (Nil, _) => throw new InternalException("only to stop warnings. should never happen")
-          case ((returnItem@AliasedReturnItem(expression, variable)) :: jobs, doneJobs) =>
+          case ((returnItem @ AliasedReturnItem(expression, variable)) :: jobs, doneJobs) =>
             val newExpression = newChildren.head.asInstanceOf[Expression]
             val newReturnItem = returnItem.copy(expression = newExpression)(returnItem.position)
             stack.push((jobs, doneJobs += newReturnItem))

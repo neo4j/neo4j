@@ -21,20 +21,28 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.TokenContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId, RelTypeId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.VisitorPhase
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 
 object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     ast.fold(()) {
       case token: PropertyKeyName =>
-        _ => resolvePropertyKeyName(token.name)
+        _ =>
+          resolvePropertyKeyName(token.name)
       case token: LabelName =>
-        _ => resolveLabelName(token.name)
+        _ =>
+          resolveLabelName(token.name)
       case token: RelTypeName =>
-        _ => resolveRelTypeName(token.name)
+        _ =>
+          resolveRelTypeName(token.name)
     }
   }
 
@@ -68,6 +76,6 @@ object ResolveTokens extends VisitorPhase[CompilerContext, BaseState] {
 
   override def visit(value: BaseState, context: CompilerContext): Unit = value.statement() match {
     case q: Query => resolve(q)(value.semanticTable(), context.planContext)
-    case _ =>
+    case _        =>
   }
 }

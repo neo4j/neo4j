@@ -30,7 +30,8 @@ trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QuerySt
 }
 
 object EntityProducer {
-  def apply[T <: PropertyContainer](nameStr: String, argument: Argument)(f:(ExecutionContext, QueryState) => Iterator[T]) =
+  def apply[T <: PropertyContainer](nameStr: String, argument: Argument)(
+      f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def producerType = nameStr
       def arguments: Seq[Argument] = Seq(argument)

@@ -39,6 +39,6 @@ case class ListReferenceType(inner: RepresentationType) extends RepresentationTy
 object RepresentationType {
   def isPrimitive(repr: RepresentationType): Boolean = repr match {
     case IntType | LongType | FloatType | BoolType => true
-    case _ => false
+    case _                                         => false
   }
 }

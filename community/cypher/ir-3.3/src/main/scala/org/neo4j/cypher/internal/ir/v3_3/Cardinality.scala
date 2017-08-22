@@ -25,9 +25,10 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier): Cardinality = amount * that.coefficient
-  def *(that: Selectivity): Cardinality = if ( that.factor == 0 ) Cardinality.EMPTY else amount * that.factor
+  def *(that: Selectivity): Cardinality = if (that.factor == 0) Cardinality.EMPTY else amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
-  def *(that: Cardinality): Cardinality = if( amount == 0 || that.amount == 0 ) Cardinality.EMPTY
+  def *(that: Cardinality): Cardinality =
+    if (amount == 0 || that.amount == 0) Cardinality.EMPTY
     else Cardinality.noInf(amount * that.amount)
   def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
   def *(that: CostPerRow): Cost = amount * that.cost
@@ -48,7 +49,7 @@ object Cardinality {
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
 
-  private def noInf(value: Double) = if( value == Double.PositiveInfinity ) Double.MaxValue else value
+  private def noInf(value: Double) = if (value == Double.PositiveInfinity) Double.MaxValue else value
 
   def min(l: Cardinality, r: Cardinality): Cardinality = Math.min(l.amount, r.amount)
 

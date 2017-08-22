@@ -19,13 +19,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 class UpdateReportingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("creating a node gets reported as such") {
     val output = updateWithBothPlannersAndCompatibilityMode("create (:A)").dumpToString()
 
-    output should include ("Nodes created: 1")
-    output should include ("Labels added: 1")
+    output should include("Nodes created: 1")
+    output should include("Labels added: 1")
   }
 }

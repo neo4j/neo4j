@@ -20,7 +20,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.Node
 
 class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
@@ -40,7 +41,8 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)")
 
     result.toList should equal(List(Map("count(*)" -> 3)))
 
@@ -65,7 +67,8 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)")
 
     result.toList should equal(List(Map("count(*)" -> 3)))
 
@@ -75,7 +78,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
   }
 
   test("should use index on variable defined from literal map") {
-    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
     graph.createIndex("Foo", "id")
     val query =
       """
@@ -88,14 +91,14 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
         | RETURN f
       """.stripMargin
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    result.columnAs[Node]("f").toSet should equal(Set(nodes(122),nodes(123)))
+    result.columnAs[Node]("f").toSet should equal(Set(nodes(122), nodes(123)))
     result.executionPlanDescription() should includeAtLeastOne(classOf[NodeIndexSeek], withVariable = "f")
   }
 
   test("should use index on other node property value where there is no incoming horizon") {
-    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
-    val n1=createLabeledNode(Map("id"->122),"Bar")
-    val n2=createLabeledNode(Map("id"->123),"Bar")
+    val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val n1 = createLabeledNode(Map("id" -> 122), "Bar")
+    val n2 = createLabeledNode(Map("id" -> 123), "Bar")
     graph.createIndex("Foo", "id")
     val query =
       """
@@ -110,9 +113,9 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
   }
 
   test("should use index on other node property value where there is an incoming horizon") {
-    val nodes = Range(0,125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
-    val n1=createLabeledNode(Map("id"->122),"Bar")
-    val n2=createLabeledNode(Map("id"->123),"Bar")
+    val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
+    val n1 = createLabeledNode(Map("id" -> 122), "Bar")
+    val n2 = createLabeledNode(Map("id" -> 123), "Bar")
     graph.createIndex("Foo", "id")
     val query =
       """

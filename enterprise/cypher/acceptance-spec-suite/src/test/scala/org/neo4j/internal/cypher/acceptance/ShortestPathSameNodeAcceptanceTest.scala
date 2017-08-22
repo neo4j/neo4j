@@ -20,14 +20,22 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compatibility.ClosingExecutionResult
-import org.neo4j.cypher.internal.{CompatibilityFactory, ExecutionEngine, RewindableExecutionResult}
+import org.neo4j.cypher.internal.CompatibilityFactory
+import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, RunWithConfigTestSupport, ShortestPathCommonEndNodesForbiddenException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.RunWithConfigTestSupport
+import org.neo4j.cypher.ShortestPathCommonEndNodesForbiddenException
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.logging.NullLogProvider
 
-class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with RunWithConfigTestSupport {
+class ShortestPathSameNodeAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with NewPlannerTestSupport
+    with RunWithConfigTestSupport {
 
   def setupModel(db: GraphDatabaseCypherService) {
     db.inTx {
@@ -63,13 +71,15 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
   }
 
-  test("shortest paths that discover at runtime that the start and end nodes are the same should throw exception by default") {
+  test(
+    "shortest paths that discover at runtime that the start and end nodes are the same should throw exception by default") {
     setupModel(graph)
     val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*]-(b)) RETURN p"
     an[ShortestPathCommonEndNodesForbiddenException] should be thrownBy executeWithAllPlanners(query)
   }
 
-  test("shortest paths that discover at runtime that the start and end nodes are the same should throw exception when configured to do so") {
+  test(
+    "shortest paths that discover at runtime that the start and end nodes are the same should throw exception when configured to do so") {
     runWithConfig(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "true") { db =>
       setupModel(db)
       val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*]-(b)) RETURN p"
@@ -79,7 +89,8 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
   }
 
-  test("shortest paths that discover at runtime that the start and end nodes are the same should not throw exception when configured to not do so") {
+  test(
+    "shortest paths that discover at runtime that the start and end nodes are the same should not throw exception when configured to not do so") {
     runWithConfig(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false") { db =>
       setupModel(db)
       val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*]-(b)) RETURN p"
@@ -87,13 +98,15 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
   }
 
-  test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception by default") {
+  test(
+    "shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception by default") {
     setupModel(graph)
     val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*0..]-(b)) RETURN p"
     executeWithAllPlanners(query).toList.length should be(9)
   }
 
-  test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should throw exception even when when configured to do so") {
+  test(
+    "shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should throw exception even when when configured to do so") {
     runWithConfig(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "true") { db =>
       setupModel(db)
       val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*0..]-(b)) RETURN p"
@@ -101,7 +114,8 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     }
   }
 
-  test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception when configured to not do so") {
+  test(
+    "shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception when configured to not do so") {
     runWithConfig(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false") { db =>
       setupModel(db)
       val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*0..]-(b)) RETURN p"

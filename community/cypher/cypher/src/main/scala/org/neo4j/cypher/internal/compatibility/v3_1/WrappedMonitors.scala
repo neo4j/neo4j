@@ -29,7 +29,7 @@ case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
     kernelMonitors.addMonitorListener(monitor, tags: _*)
   }
 
-  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+  def newMonitor[T <: AnyRef: ClassTag](tags: String*): T = {
     val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
     kernelMonitors.newMonitor(clazz, tags: _*)
   }

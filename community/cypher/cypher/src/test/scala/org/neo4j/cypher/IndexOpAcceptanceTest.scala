@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher
 
-import java.io.{File, FileOutputStream}
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.kernel.api.exceptions.schema.{DropIndexFailureException, NoSuchIndexException}
+import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException
+import org.neo4j.kernel.api.exceptions.schema.NoSuchIndexException
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
@@ -86,8 +88,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     def deleteAll(): Unit = {
       def deleteFile(dfile: File): Unit = {
         if (dfile.isDirectory)
-          dfile.listFiles.foreach {
-            f => deleteFile(f)
+          dfile.listFiles.foreach { f =>
+            deleteFile(f)
           }
         dfile.delete
       }

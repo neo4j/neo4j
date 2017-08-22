@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AndedPropertyInequalities
+import org.neo4j.cypher.internal.frontend.v3_3.ast.InequalityExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Property
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList._
 import org.neo4j.cypher.internal.ir.v3_3.Predicate
@@ -37,22 +40,21 @@ import org.neo4j.cypher.internal.ir.v3_3.Predicate
 //
 object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyList[Predicate]) {
 
-
   def apply(inputPredicates: NonEmptyList[Predicate]): NonEmptyList[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality or not
     val partitions = inputPredicates.partition { (predicate: Predicate) =>
       predicate.expr match {
         case inequality: InequalityExpression => Left(predicate -> inequality)
-        case _ => Right(predicate)
+        case _                                => Right(predicate)
       }
     }
 
     // detect if we need to transform the input
     val optInequalities = partitions match {
-      case Left(parts) => Some(parts)
+      case Left(parts)                            => Some(parts)
       case Right((Some(inequalities), remainder)) => Some(inequalities -> Some(remainder))
-      case Right((None, _)) => None
+      case Right((None, _))                       => None
     }
 
     optInequalities match {
@@ -61,15 +63,18 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
         val groupedPredicates = groupedInequalities(inequalities)
 
         // collect together all inequalities over some property lookup
-        val combinedInequalityPredicates = groupedPredicates.map {
-          case (Some((ident, prop)), groupInequalities) =>
-            val deps = groupInequalities.map { case (predicate, _) => predicate.dependencies }.toSet.flatten
-            val expr = AndedPropertyInequalities(ident, prop, groupInequalities.map { case (_, inequality) => inequality })
-            NonEmptyList(Predicate(deps, expr))
+        val combinedInequalityPredicates = groupedPredicates
+          .map {
+            case (Some((ident, prop)), groupInequalities) =>
+              val deps = groupInequalities.map { case (predicate, _) => predicate.dependencies }.toSet.flatten
+              val expr =
+                AndedPropertyInequalities(ident, prop, groupInequalities.map { case (_, inequality) => inequality })
+              NonEmptyList(Predicate(deps, expr))
 
-          case (None, predicates) =>
-            predicates.map { case (predicate, _) => predicate }
-        }.flatMap[Predicate](identity)
+            case (None, predicates) =>
+              predicates.map { case (predicate, _) => predicate }
+          }
+          .flatMap[Predicate](identity)
 
         // concatenate with remaining predicates
         optRemainder.map(_ ++ combinedInequalityPredicates).getOrElse(combinedInequalityPredicates)
@@ -80,12 +85,15 @@ object groupInequalityPredicates extends (NonEmptyList[Predicate] => NonEmptyLis
   }
 
   private def groupedInequalities(inequalities: NonEmptyList[(Predicate, InequalityExpression)]) = {
-    inequalities.groupBy { (input: (Predicate, InequalityExpression)) =>
-      val (_, inequality) = input
-      inequality.lhs match {
-        case prop@Property(ident: Variable, _) => Some(ident -> prop)
-        case _ => None
+    inequalities
+      .groupBy { (input: (Predicate, InequalityExpression)) =>
+        val (_, inequality) = input
+        inequality.lhs match {
+          case prop @ Property(ident: Variable, _) => Some(ident -> prop)
+          case _                                   => None
+        }
       }
-    }.toNonEmptyListOption.get
+      .toNonEmptyListOption
+      .get
   }
 }

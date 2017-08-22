@@ -19,8 +19,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
-import org.neo4j.graphdb.{Label, Node, RelationshipType}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.RelationshipType
 
 class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -33,16 +36,14 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlanner
   }
 
   test("should produce compatible plans with predicates") {
-    executeWithCompatibilityAndAssertSimilarPlans(
-      """
+    executeWithCompatibilityAndAssertSimilarPlans("""
         |MATCH (n:Person) WHERE n.name STARTS WITH 'Joe' AND n.age >= 42
         |RETURN count(n)
       """.stripMargin)
   }
 
   test("should produce compatible plans with unwind") {
-    executeWithCompatibilityAndAssertSimilarPlans(
-      """
+    executeWithCompatibilityAndAssertSimilarPlans("""
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
         |MATCH (n:Person) WHERE n.name STARTS WITH name AND n.age >= age
@@ -52,8 +53,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with NewPlanner
 
   // Too much has changed since 2.3, but this test might make sense against a more recent version
   ignore("should produce compatible plans for complex query") {
-    executeWithCompatibilityAndAssertSimilarPlans(
-      """
+    executeWithCompatibilityAndAssertSimilarPlans("""
         |WITH 'Joe' as name
         |UNWIND [42,43,44] as age
         |MATCH (n:Person) WHERE n.name STARTS WITH name AND n.age >= age

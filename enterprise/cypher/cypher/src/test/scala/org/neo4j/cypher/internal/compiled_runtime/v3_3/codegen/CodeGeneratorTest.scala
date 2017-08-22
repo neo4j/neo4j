@@ -29,31 +29,50 @@ import org.mockito.stubbing.Answer
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.ExecutionPlanBuilder.tracer
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{ByteCodeMode, CodeGenConfiguration, CodeGenerator, SourceCodeMode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{NormalMode, TaskCloser}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ByteCodeMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenConfiguration
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenerator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.SourceCodeMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.NormalMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{Ascending, Descending, plans}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Ascending
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Descending
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ParameterNotFoundException, SemanticDirection, SemanticTable, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterNotFoundException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import org.neo4j.cypher.internal.spi.v3_3.codegen.GeneratedQueryStructure
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionalContextWrapper}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
-import org.neo4j.graphdb.{Direction, Node, Relationship}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
+import org.neo4j.graphdb.Direction
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
+import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.NodeProxy
+import org.neo4j.kernel.impl.core.RelationshipProxy
 import org.neo4j.time.Clocks
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
-import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
 
-import scala.collection.{JavaConverters, mutable}
+import scala.collection.JavaConverters
+import scala.collection.mutable
 
 class ByteCodeGeneratorTest extends CodeGeneratorTest {
   override val generator =
@@ -78,19 +97,19 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a")
-    result should equal(List(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode),
-      Map("a" -> dNode),
-      Map("a" -> eNode),
-      Map("a" -> fNode),
-      Map("a" -> gNode),
-      Map("a" -> hNode),
-      Map("a" -> iNode)))
+    result should equal(
+      List(Map("a" -> aNode),
+           Map("a" -> bNode),
+           Map("a" -> cNode),
+           Map("a" -> dNode),
+           Map("a" -> eNode),
+           Map("a" -> fNode),
+           Map("a" -> gNode),
+           Map("a" -> hNode),
+           Map("a" -> iNode)))
   }
 
-  test("label scan") {// MATCH (a:T1) RETURN a
+  test("label scan") { // MATCH (a:T1) RETURN a
     //given
     val plan = ProduceResult(List("a"), NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved))
 
@@ -99,11 +118,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a")
-    result should equal(List(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode),
+        Map("a" -> bNode),
+        Map("a" -> cNode)
+      ))
   }
 
   test("hash join of all nodes scans") { // MATCH a RETURN a
@@ -118,22 +138,34 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a")
-    result should equal(List(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode),
-      Map("a" -> dNode),
-      Map("a" -> eNode),
-      Map("a" -> fNode),
-      Map("a" -> gNode),
-      Map("a" -> hNode),
-      Map("a" -> iNode)))
+    result should equal(
+      List(Map("a" -> aNode),
+           Map("a" -> bNode),
+           Map("a" -> cNode),
+           Map("a" -> dNode),
+           Map("a" -> eNode),
+           Map("a" -> fNode),
+           Map("a" -> gNode),
+           Map("a" -> hNode),
+           Map("a" -> iNode)))
   }
 
   test("hash join on multiple keys") {
     //given
-    val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val rhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+                     IdName("a"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r1"),
+                     ExpandAll)(solved)
+    val rhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+                     IdName("a"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r1"),
+                     ExpandAll)(solved)
     val join = NodeHashJoin(Set(IdName("a"), IdName("b")), lhs, rhs)(solved)
     val plan = ProduceResult(List("a"), join)
 
@@ -142,15 +174,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a")
-    result should equal(List(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode),
-      Map("a" -> fNode),
-      Map("a" -> gNode),
-      Map("a" -> hNode),
-      Map("a" -> iNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode),
+        Map("a" -> bNode),
+        Map("a" -> cNode),
+        Map("a" -> fNode),
+        Map("a" -> gNode),
+        Map("a" -> hNode),
+        Map("a" -> iNode)
+      ))
   }
 
   test("cartesian product of two label scans") {
@@ -165,21 +198,29 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a", "b")
-    result should equal(List(
-      Map("a" -> aNode, "b" -> fNode),
-      Map("a" -> aNode, "b" -> gNode),
-      Map("a" -> bNode, "b" -> fNode),
-      Map("a" -> bNode, "b" -> gNode),
-      Map("a" -> cNode, "b" -> fNode),
-      Map("a" -> cNode, "b" -> gNode)))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> fNode),
+        Map("a" -> aNode, "b" -> gNode),
+        Map("a" -> bNode, "b" -> fNode),
+        Map("a" -> bNode, "b" -> gNode),
+        Map("a" -> cNode, "b" -> fNode),
+        Map("a" -> cNode, "b" -> gNode)
+      ))
   }
 
   test("all nodes scan + expand") { // MATCH (a)-[r]->(b) RETURN a, b
     //given
-    val plan = ProduceResult(List("a", "b"),
-        Expand(
-          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
-          SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+             IdName("a"),
+             SemanticDirection.OUTGOING,
+             Seq.empty,
+             IdName("b"),
+             IdName("r"),
+             ExpandAll)(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -187,26 +228,33 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode),
-      Map("a" -> fNode, "b" -> dNode),
-      Map("a" -> gNode, "b" -> eNode),
-      Map("a" -> hNode, "b" -> iNode),
-      Map("a" -> iNode, "b" -> hNode)))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode),
+        Map("a" -> bNode, "b" -> dNode),
+        Map("a" -> cNode, "b" -> eNode),
+        Map("a" -> fNode, "b" -> dNode),
+        Map("a" -> gNode, "b" -> eNode),
+        Map("a" -> hNode, "b" -> iNode),
+        Map("a" -> iNode, "b" -> hNode)
+      ))
   }
 
   test("all nodes scan + expand + projection") { // MATCH (a)-[r]->(b) WITH a, b RETURN a, b, 1
     //given
-    val plan = ProduceResult(List("a", "b", "1"),
+    val plan = ProduceResult(
+      List("a", "b", "1"),
       plans.Projection(
-        Expand(
-          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
-          SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved),
-        Map("a" -> varFor("a"),
-          "b" -> varFor("b"),
-          "1" -> Parameter("  AUTOINT0", CTInteger)(pos)))(solved))
+        Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+               IdName("a"),
+               SemanticDirection.OUTGOING,
+               Seq.empty,
+               IdName("b"),
+               IdName("r"),
+               ExpandAll)(solved),
+        Map("a" -> varFor("a"), "b" -> varFor("b"), "1" -> Parameter("  AUTOINT0", CTInteger)(pos))
+      )(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan, Map("  AUTOINT0" -> Long.box(1L)))
@@ -214,22 +262,30 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getResult(compiled, "a", "b", "1")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode, "1" -> 1L),
-      Map("a" -> bNode, "b" -> dNode, "1" -> 1L),
-      Map("a" -> cNode, "b" -> eNode, "1" -> 1L),
-      Map("a" -> fNode, "b" -> dNode, "1" -> 1L),
-      Map("a" -> gNode, "b" -> eNode, "1" -> 1L),
-      Map("a" -> hNode, "b" -> iNode, "1" -> 1L),
-      Map("a" -> iNode, "b" -> hNode, "1" -> 1L)))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode, "1" -> 1L),
+        Map("a" -> bNode, "b" -> dNode, "1" -> 1L),
+        Map("a" -> cNode, "b" -> eNode, "1" -> 1L),
+        Map("a" -> fNode, "b" -> dNode, "1" -> 1L),
+        Map("a" -> gNode, "b" -> eNode, "1" -> 1L),
+        Map("a" -> hNode, "b" -> iNode, "1" -> 1L),
+        Map("a" -> iNode, "b" -> hNode, "1" -> 1L)
+      ))
   }
 
   test("label scan + expand outgoing") { // MATCH (a:T1)-[r]->(b) RETURN a, b
     //given
-    val plan = ProduceResult(List("a", "b"),
-        Expand(
-          NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
-          SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved),
+             IdName("a"),
+             SemanticDirection.OUTGOING,
+             Seq.empty,
+             IdName("b"),
+             IdName("r"),
+             ExpandAll)(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -237,18 +293,26 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode),
+        Map("a" -> bNode, "b" -> dNode),
+        Map("a" -> cNode, "b" -> eNode)
+      ))
   }
 
   test("all node scan+ expand outgoing with one type") { // MATCH (a)-[r:R1]->(b) RETURN a, b
-  //given
-  val plan = ProduceResult(List("a", "b"),
-        Expand(
-          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq(RelTypeName("R1")(null)), IdName("b"), IdName("r"), ExpandAll)(solved))
+    //given
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+             IdName("a"),
+             SemanticDirection.OUTGOING,
+             Seq(RelTypeName("R1")(null)),
+             IdName("b"),
+             IdName("r"),
+             ExpandAll)(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -256,19 +320,28 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode),
+        Map("a" -> bNode, "b" -> dNode),
+        Map("a" -> cNode, "b" -> eNode)
+      ))
   }
 
   test("all node scan+ expand outgoing with multiple types") { // MATCH (a)-[r:R1|R2]->(b) RETURN a, b
-  //given
-  val plan = ProduceResult(List("a", "b"),
-        Expand(
-          AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING,
-          Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)), IdName("b"), IdName("r"), ExpandAll)(solved))
+    //given
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(
+        AllNodesScan(IdName("a"), Set.empty)(solved),
+        IdName("a"),
+        SemanticDirection.OUTGOING,
+        Seq(RelTypeName("R1")(pos), RelTypeName("R2")(pos)),
+        IdName("b"),
+        IdName("r"),
+        ExpandAll
+      )(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -276,20 +349,26 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode),
-      Map("a" -> fNode, "b" -> dNode),
-      Map("a" -> gNode, "b" -> eNode)))
+    result should equal(
+      List(Map("a" -> aNode, "b" -> dNode),
+           Map("a" -> bNode, "b" -> dNode),
+           Map("a" -> cNode, "b" -> eNode),
+           Map("a" -> fNode, "b" -> dNode),
+           Map("a" -> gNode, "b" -> eNode)))
   }
 
   test("label scan + expand incoming") { // // MATCH (a:T1)<-[r]-(b) RETURN a, b
-  //given
-  val plan = ProduceResult(List("a", "b"),
-                Expand(
-                  NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
-                  SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    //given
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved),
+             IdName("a"),
+             SemanticDirection.INCOMING,
+             Seq.empty,
+             IdName("b"),
+             IdName("r"),
+             ExpandAll)(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -301,11 +380,17 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("label scan + expand both directions") { // MATCH (a:T1)-[r]-(b) RETURN a, b
-  //given
-  val plan = ProduceResult(List("a", "b"),
-      Expand(
-        NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"), SemanticDirection.BOTH,
-        Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved))
+    //given
+    val plan = ProduceResult(
+      List("a", "b"),
+      Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved),
+             IdName("a"),
+             SemanticDirection.BOTH,
+             Seq.empty,
+             IdName("b"),
+             IdName("r"),
+             ExpandAll)(solved)
+    )
 
     //when
     val compiled = compileAndExecute(plan)
@@ -313,19 +398,19 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode),
+        Map("a" -> bNode, "b" -> dNode),
+        Map("a" -> cNode, "b" -> eNode)
+      ))
   }
 
   test("expand into self loop") {
     //given
     val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
-    val expandInto = Expand(
-      scanT1, IdName("a"), SemanticDirection.INCOMING,
-      Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+    val expandInto =
+      Expand(scanT1, IdName("a"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
 
     val plan = ProduceResult(List("a"), expandInto)
 
@@ -341,12 +426,11 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   test("expand into on top of expand all") {
     //given
     val scanT1 = NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT1, IdName("a"), SemanticDirection.OUTGOING,
-      Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expandInto = Expand(
-      expandAll, IdName("b"), SemanticDirection.INCOMING,
-      Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(solved)
+    val expandAll =
+      Expand(scanT1, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
+    val expandInto =
+      Expand(expandAll, IdName("b"), SemanticDirection.INCOMING, Seq.empty, IdName("a"), IdName("r2"), ExpandInto)(
+        solved)
 
     val plan = ProduceResult(List("a", "b"), expandInto)
 
@@ -356,23 +440,31 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> aNode, "b" -> dNode),
-      Map("a" -> bNode, "b" -> dNode),
-      Map("a" -> cNode, "b" -> eNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> aNode, "b" -> dNode),
+        Map("a" -> bNode, "b" -> dNode),
+        Map("a" -> cNode, "b" -> eNode)
+      ))
   }
 
   test("expand into on top of expand all with relationship types") {
     //given
     val scanT2 = NodeByLabelScan(IdName("a"), lblName("T2"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT2, IdName("a"), SemanticDirection.OUTGOING,
-      Seq(RelTypeName("R2")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expandInto = Expand(
-      expandAll, IdName("b"), SemanticDirection.INCOMING,
-      Seq(RelTypeName("R2")(pos)), IdName("a"), IdName("r2"), ExpandInto)(solved)
-
+    val expandAll = Expand(scanT2,
+                           IdName("a"),
+                           SemanticDirection.OUTGOING,
+                           Seq(RelTypeName("R2")(pos)),
+                           IdName("b"),
+                           IdName("r1"),
+                           ExpandAll)(solved)
+    val expandInto = Expand(expandAll,
+                            IdName("b"),
+                            SemanticDirection.INCOMING,
+                            Seq(RelTypeName("R2")(pos)),
+                            IdName("a"),
+                            IdName("r2"),
+                            ExpandInto)(solved)
 
     val plan = ProduceResult(List("a", "b"), expandInto)
 
@@ -382,22 +474,30 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> fNode, "b" -> dNode),
-      Map("a" -> gNode, "b" -> eNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> fNode, "b" -> dNode),
+        Map("a" -> gNode, "b" -> eNode)
+      ))
   }
 
- test("expand into on top of expand all with a loop") {
+  test("expand into on top of expand all with a loop") {
     //given
     val scanT3 = NodeByLabelScan(IdName("a"), lblName("T3"), Set.empty)(solved)
-    val expandAll = Expand(
-      scanT3, IdName("a"), SemanticDirection.OUTGOING,
-      Seq(RelTypeName("R3")(pos)), IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val expandInto = Expand(
-      expandAll, IdName("b"), SemanticDirection.INCOMING,
-      Seq(RelTypeName("R3")(pos)), IdName("a"), IdName("r2"), ExpandInto)(solved)
-
+    val expandAll = Expand(scanT3,
+                           IdName("a"),
+                           SemanticDirection.OUTGOING,
+                           Seq(RelTypeName("R3")(pos)),
+                           IdName("b"),
+                           IdName("r1"),
+                           ExpandAll)(solved)
+    val expandInto = Expand(expandAll,
+                            IdName("b"),
+                            SemanticDirection.INCOMING,
+                            Seq(RelTypeName("R3")(pos)),
+                            IdName("a"),
+                            IdName("r2"),
+                            ExpandInto)(solved)
 
     val plan = ProduceResult(List("a", "b"), expandInto)
 
@@ -407,18 +507,31 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b")
 
-    result should equal(List(
-      Map("a" -> hNode, "b" -> iNode),
-      Map("a" -> iNode, "b" -> hNode)
-    ))
+    result should equal(
+      List(
+        Map("a" -> hNode, "b" -> iNode),
+        Map("a" -> iNode, "b" -> hNode)
+      ))
   }
 
   test("hash join on top of two expands from two all node scans") {
     // MATCH (a)-[r1]->(b)<-[r2]-(c) RETURN a,b,c (kind of nothing enforcing that r1 and r2 are distinct)
 
     //given
-    val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val rhs = Expand(AllNodesScan(IdName("c"), Set.empty)(solved), IdName("c"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
+    val lhs = Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+                     IdName("a"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r1"),
+                     ExpandAll)(solved)
+    val rhs = Expand(AllNodesScan(IdName("c"), Set.empty)(solved),
+                     IdName("c"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r2"),
+                     ExpandAll)(solved)
     val plan = ProduceResult(List("a", "b", "c"), NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved))
 
     val compiled = compileAndExecute(plan)
@@ -426,33 +539,44 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b", "c")
 
-    result.toSet should equal(Set(
-      Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
-      Map("a" -> aNode, "b" -> dNode, "c" -> bNode),
-      Map("a" -> aNode, "b" -> dNode, "c" -> aNode),
-      Map("a" -> bNode, "b" -> dNode, "c" -> aNode),
-      Map("a" -> bNode, "b" -> dNode, "c" -> bNode),
-      Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
-      Map("a" -> fNode, "b" -> dNode, "c" -> aNode),
-      Map("a" -> fNode, "b" -> dNode, "c" -> bNode),
-      Map("a" -> fNode, "b" -> dNode, "c" -> fNode),
-      Map("a" -> cNode, "b" -> eNode, "c" -> cNode),
-      Map("a" -> cNode, "b" -> eNode, "c" -> gNode),
-      Map("a" -> gNode, "b" -> eNode, "c" -> cNode),
-      Map("a" -> gNode, "b" -> eNode, "c" -> gNode),
-      Map("a" -> hNode, "b" -> iNode, "c" -> hNode),
-      Map("a" -> iNode, "b" -> hNode, "c" -> iNode)
-    ))
+    result.toSet should equal(
+      Set(
+        Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
+        Map("a" -> aNode, "b" -> dNode, "c" -> bNode),
+        Map("a" -> aNode, "b" -> dNode, "c" -> aNode),
+        Map("a" -> bNode, "b" -> dNode, "c" -> aNode),
+        Map("a" -> bNode, "b" -> dNode, "c" -> bNode),
+        Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
+        Map("a" -> fNode, "b" -> dNode, "c" -> aNode),
+        Map("a" -> fNode, "b" -> dNode, "c" -> bNode),
+        Map("a" -> fNode, "b" -> dNode, "c" -> fNode),
+        Map("a" -> cNode, "b" -> eNode, "c" -> cNode),
+        Map("a" -> cNode, "b" -> eNode, "c" -> gNode),
+        Map("a" -> gNode, "b" -> eNode, "c" -> cNode),
+        Map("a" -> gNode, "b" -> eNode, "c" -> gNode),
+        Map("a" -> hNode, "b" -> iNode, "c" -> hNode),
+        Map("a" -> iNode, "b" -> hNode, "c" -> iNode)
+      ))
   }
 
   test("hash join on top of two expands from two label scans") {
     // MATCH (a:T1)-[r1]->(b)<-[r2]-(c:T2) RETURN b
 
     //given
-    val lhs = Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved), IdName("a"),
-      SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved)
-    val rhs = Expand(NodeByLabelScan(IdName("c"), lblName("T2"), Set.empty)(solved), IdName("c"),
-      SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
+    val lhs = Expand(NodeByLabelScan(IdName("a"), lblName("T1"), Set.empty)(solved),
+                     IdName("a"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r1"),
+                     ExpandAll)(solved)
+    val rhs = Expand(NodeByLabelScan(IdName("c"), lblName("T2"), Set.empty)(solved),
+                     IdName("c"),
+                     SemanticDirection.OUTGOING,
+                     Seq.empty,
+                     IdName("b"),
+                     IdName("r2"),
+                     ExpandAll)(solved)
     val join = NodeHashJoin(Set(IdName("b")), lhs, rhs)(solved)
     val plan = ProduceResult(List("a", "b", "c"), join)
 
@@ -461,11 +585,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a", "b", "c")
 
-    result.toSet should equal(Set(
-      Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
-      Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
-      Map("a" -> cNode, "b" -> eNode, "c" -> gNode)
-    ))
+    result.toSet should equal(
+      Set(
+        Map("a" -> aNode, "b" -> dNode, "c" -> fNode),
+        Map("a" -> bNode, "b" -> dNode, "c" -> fNode),
+        Map("a" -> cNode, "b" -> eNode, "c" -> gNode)
+      ))
   }
 
   test("hash join on top of hash join") {
@@ -484,15 +609,18 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getNodesFromResult(compiled, "a")
 
-    result.toSet should equal(Set(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode)
-    ))
+    result.toSet should equal(
+      Set(
+        Map("a" -> aNode),
+        Map("a" -> bNode),
+        Map("a" -> cNode)
+      ))
   }
 
   test("project literal") {
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
+    val plan =
+      ProduceResult(List("a"),
+                    plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
     val compiled = compileAndExecute(plan)
 
     //then
@@ -502,7 +630,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("project parameter") {
 
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
+    val plan =
+      ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> "BAR"))
 
     //then
@@ -512,7 +641,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("project null parameters") {
 
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
+    val plan =
+      ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
     val compiled = compileAndExecute(plan, Map("FOO" -> null))
 
     //then
@@ -522,33 +652,47 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("project primitive parameters") {
 
-    val plan = ProduceResult(List("a", "r1", "x", "y", "z"),
-      plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
-                                                "r1" -> Parameter("FOO_REL",  CTRelationship)(pos),
-                                                "x" -> Parameter("FOO1", CTInteger)(pos),
-                                                "y" -> Parameter("FOO2", CTFloat)(pos),
-                                                "z" -> Parameter("FOO3", CTBoolean)(pos)))(solved))
+    val plan = ProduceResult(
+      List("a", "r1", "x", "y", "z"),
+      plans.Projection(
+        SingleRow()(solved),
+        Map(
+          "a" -> Parameter("FOO_NODE", CTNode)(pos),
+          "r1" -> Parameter("FOO_REL", CTRelationship)(pos),
+          "x" -> Parameter("FOO1", CTInteger)(pos),
+          "y" -> Parameter("FOO2", CTFloat)(pos),
+          "z" -> Parameter("FOO3", CTBoolean)(pos)
+        )
+      )(solved)
+    )
 
-    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> aNode,
-                                               "FOO_REL" -> relMap(11L).relationship,
-                                               "FOO1" -> 42L.asInstanceOf[AnyRef],
-                                               "FOO2" -> 3.14d.asInstanceOf[AnyRef],
-                                               "FOO3" -> true.asInstanceOf[AnyRef]))
+    val compiled = compileAndExecute(
+      plan,
+      Map(
+        "FOO_NODE" -> aNode,
+        "FOO_REL" -> relMap(11L).relationship,
+        "FOO1" -> 42L.asInstanceOf[AnyRef],
+        "FOO2" -> 3.14d.asInstanceOf[AnyRef],
+        "FOO3" -> true.asInstanceOf[AnyRef]
+      )
+    )
 
     //then
     val result = getResult(compiled, "a", "r1", "x", "y", "z")
-    result.toSet should equal(Set(Map("a" -> aNode, "r1" -> relMap(11L).relationship,
-                                      "x" -> 42L, "y" -> 3.14d, "z" -> true)))
+    result.toSet should equal(
+      Set(Map("a" -> aNode, "r1" -> relMap(11L).relationship, "x" -> 42L, "y" -> 3.14d, "z" -> true)))
   }
 
   test("project null primitive node and relationship parameters") {
 
-    val plan = ProduceResult(List("a", "r1"),
-      plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
-                                               "r1" -> Parameter("FOO_REL",  CTRelationship)(pos)))(solved))
+    val plan = ProduceResult(
+      List("a", "r1"),
+      plans.Projection(SingleRow()(solved),
+                       Map("a" -> Parameter("FOO_NODE", CTNode)(pos),
+                           "r1" -> Parameter("FOO_REL", CTRelationship)(pos)))(solved)
+    )
 
-    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> null,
-                                               "FOO_REL" -> null))
+    val compiled = compileAndExecute(plan, Map("FOO_NODE" -> null, "FOO_REL" -> null))
 
     //then
     val result = getResult(compiled, "a", "r1")
@@ -562,23 +706,27 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
     val result = getNodesFromResult(compiled, "a")
-    result should equal(List(
-      Map("a" -> aNode),
-      Map("a" -> bNode),
-      Map("a" -> cNode),
-      Map("a" -> dNode),
-      Map("a" -> eNode),
-      Map("a" -> fNode),
-      Map("a" -> gNode),
-      Map("a" -> hNode),
-      Map("a" -> iNode)))
+    result should equal(
+      List(Map("a" -> aNode),
+           Map("a" -> bNode),
+           Map("a" -> cNode),
+           Map("a" -> dNode),
+           Map("a" -> eNode),
+           Map("a" -> fNode),
+           Map("a" -> gNode),
+           Map("a" -> hNode),
+           Map("a" -> iNode)))
   }
 
   test("project relationships") { // MATCH (a)-[r]->(b) WITH r RETURN r
     //given
-    val expand = Expand(
-        AllNodesScan(IdName("a"), Set.empty)(solved), IdName("a"),
-        SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"), ExpandAll)(solved)
+    val expand = Expand(AllNodesScan(IdName("a"), Set.empty)(solved),
+                        IdName("a"),
+                        SemanticDirection.OUTGOING,
+                        Seq.empty,
+                        IdName("b"),
+                        IdName("r"),
+                        ExpandAll)(solved)
     val projection = plans.Projection(expand, Map("r" -> varFor("r")))(solved)
     val plan = ProduceResult(List("r"), projection)
 
@@ -588,14 +736,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     //then
     val result = getResult(compiled, "r")
 
-    result should equal(List(
-      Map("r" -> relMap(11L).relationship),
-      Map("r" -> relMap(12L).relationship),
-      Map("r" -> relMap(13L).relationship),
-      Map("r" -> relMap(14L).relationship),
-      Map("r" -> relMap(15L).relationship),
-      Map("r" -> relMap(16L).relationship),
-      Map("r" -> relMap(17L).relationship)))
+    result should equal(
+      List(
+        Map("r" -> relMap(11L).relationship),
+        Map("r" -> relMap(12L).relationship),
+        Map("r" -> relMap(13L).relationship),
+        Map("r" -> relMap(14L).relationship),
+        Map("r" -> relMap(15L).relationship),
+        Map("r" -> relMap(16L).relationship),
+        Map("r" -> relMap(17L).relationship)
+      ))
   }
 
   test("project addition of two ints") {
@@ -705,7 +855,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("number equality, double and long") {
-    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), DecimalDoubleLiteral("9007199254740992")(pos))(pos)
+    val equals =
+      Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), DecimalDoubleLiteral("9007199254740992")(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> equals))(solved))
     val compiled = compileAndExecute(plan)
 
@@ -715,7 +866,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("number equality, long and long") {
-    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos), SignedDecimalIntegerLiteral("9007199254740992")(pos))(pos)
+    val equals = Equals(SignedDecimalIntegerLiteral("9007199254740993")(pos),
+                        SignedDecimalIntegerLiteral("9007199254740992")(pos))(pos)
     val plan = ProduceResult(List("result"), plans.Projection(SingleRow()(solved), Map("result" -> equals))(solved))
     val compiled = compileAndExecute(plan)
 
@@ -805,7 +957,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("close transaction after successfully exhausting result") {
     // given
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val plan =
+      ProduceResult(List("a"),
+                    plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val closer = mock[TaskCloser]
@@ -821,7 +975,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("close transaction after prematurely terminating result exhaustion") {
     // given
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val plan =
+      ProduceResult(List("a"),
+                    plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val closer = mock[TaskCloser]
@@ -837,11 +993,13 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("close transaction after failure while handling results") {
     // given
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val plan =
+      ProduceResult(List("a"),
+                    plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val closer = mock[TaskCloser]
-    val compiled = compileAndExecute( plan, taskCloser = closer )
+    val compiled = compileAndExecute(plan, taskCloser = closer)
 
     // then
     verifyZeroInteractions(closer)
@@ -856,29 +1014,31 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("should throw the same error as the user provides") {
     // given
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
+    val plan =
+      ProduceResult(List("a"),
+                    plans.Projection(SingleRow()(solved), Map("a" -> SignedDecimalIntegerLiteral("1")(null)))(solved))
 
     // when
     val closer = mock[TaskCloser]
-    val compiled = compileAndExecute( plan, taskCloser = closer )
+    val compiled = compileAndExecute(plan, taskCloser = closer)
 
     // then
     val visitor = mock[ResultVisitor[RuntimeException]]
     val exception = new scala.RuntimeException()
     when(visitor.visit(any[ResultRow])).thenThrow(exception)
-      try {
-        compiled.accept(visitor)
-        fail("should have thrown error")
-      }
-      catch {
-        case e: Throwable => e should equal(exception)
-      }
+    try {
+      compiled.accept(visitor)
+      fail("should have thrown error")
+    } catch {
+      case e: Throwable => e should equal(exception)
+    }
 
   }
 
   test("throw error when parameter is missing") {
     //given
-    val plan = ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
+    val plan =
+      ProduceResult(List("a"), plans.Projection(SingleRow()(solved), Map("a" -> Parameter("FOO", CTAny)(pos)))(solved))
 
     //when
     val compiled = compileAndExecute(plan)
@@ -893,8 +1053,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
               |1
               |}
             """.stripMargin
-    val plan = ProduceResult(List(name), plans.Projection(SingleRow()(solved),
-      Map(name -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
+    val plan =
+      ProduceResult(List(name),
+                    plans.Projection(SingleRow()(solved), Map(name -> SignedDecimalIntegerLiteral("1")(pos)))(solved))
 
     //when
     val compiled = compileAndExecute(plan, Map("FOO" -> Long.box(3L), "BAR" -> Long.box(1L)))
@@ -977,17 +1138,18 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "count(a.prop)")
 
     //then
-    result.toList should equal(List(
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0))
-    )
+    result.toList should equal(
+      List(
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0)
+      ))
   }
 
   test("count distinct node grouping key") {
@@ -1006,17 +1168,18 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "count(a.prop)")
 
     //then
-    result.toList should equal(List(
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 1),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0),
-      Map("count(a.prop)" -> 0))
-    )
+    result.toList should equal(
+      List(
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 1),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0),
+        Map("count(a.prop)" -> 0)
+      ))
   }
 
   test("count nodes distinct node grouping key") {
@@ -1036,17 +1199,18 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     //then
 
-
-    result.toList should equal(List(Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1),
-                                    Map("count(a)" -> 1))
-    )
+    result.toList should equal(
+      List(
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1),
+        Map("count(a)" -> 1)
+      ))
   }
 
   test("count property grouping key") {
@@ -1068,8 +1232,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "a.prop", "count(a.prop)")
 
     //then
-    result.toList should equal(List(Map("a.prop" -> null, "count(a.prop)" -> 0),
-                                    Map("a.prop" -> "value", "count(a.prop)" -> 3)))
+    result.toList should equal(
+      List(Map("a.prop" -> null, "count(a.prop)" -> 0), Map("a.prop" -> "value", "count(a.prop)" -> 3)))
   }
 
   test("count distinct property grouping key") {
@@ -1091,8 +1255,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "a.prop", "count(a.prop)")
 
     //then
-    result.toList should equal(List(Map("a.prop" -> null, "count(a.prop)" -> 0),
-                                    Map("a.prop" -> "value", "count(a.prop)" -> 1)))
+    result.toList should equal(
+      List(Map("a.prop" -> null, "count(a.prop)" -> 0), Map("a.prop" -> "value", "count(a.prop)" -> 1)))
   }
 
   test("count nodes distinct property grouping key") {
@@ -1120,11 +1284,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("unwind list of integers") { // UNWIND [1, 2, 3] as x RETURN x
     // given
-    val listLiteral = ListLiteral(Seq(
-      SignedDecimalIntegerLiteral("1")(pos),
-      SignedDecimalIntegerLiteral("2")(pos),
-      SignedDecimalIntegerLiteral("3")(pos)
-    ))(pos)
+    val listLiteral = ListLiteral(
+      Seq(
+        SignedDecimalIntegerLiteral("1")(pos),
+        SignedDecimalIntegerLiteral("2")(pos),
+        SignedDecimalIntegerLiteral("3")(pos)
+      ))(pos)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
     val plan = ProduceResult(List("x"), unwind)
@@ -1139,11 +1304,12 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   test("unwind list of floats") { // UNWIND [1.0, 2.0, 3.0] as x RETURN x
     // given
-    val listLiteral = ListLiteral(Seq(
-      DecimalDoubleLiteral("1.0")(pos),
-      DecimalDoubleLiteral("2.0")(pos),
-      DecimalDoubleLiteral("3.0")(pos)
-    ))(pos)
+    val listLiteral = ListLiteral(
+      Seq(
+        DecimalDoubleLiteral("1.0")(pos),
+        DecimalDoubleLiteral("2.0")(pos),
+        DecimalDoubleLiteral("3.0")(pos)
+      ))(pos)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
     val plan = ProduceResult(List("x"), unwind)
@@ -1216,8 +1382,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("unwind null parameter list") { // UNWIND {list} as x RETURN x
-  // given
-  val parameter = Parameter("list", CTAny)(pos)
+    // given
+    val parameter = Parameter("list", CTAny)(pos)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), parameter)(solved)
     val plan = ProduceResult(List("x"), unwind)
@@ -1293,17 +1459,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "c")
 
     //then
-    result.toList should equal(List(
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1))
-    )
+    result.toList should equal(
+      List(Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1)))
   }
 
   test("count distinct with non-nullable literal") {
@@ -1324,17 +1489,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     val result = getResult(compiled, "c")
 
     //then
-    result.toList should equal(List(
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1),
-      Map("c" -> 1))
-    )
+    result.toList should equal(
+      List(Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1),
+           Map("c" -> 1)))
   }
 
   test("sort projection with list of integers") {
@@ -1343,16 +1507,13 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     WITH x AS a, x AS b, x AS c, x AS d
     RETURN b, c
     ORDER BY a, b
-    */
+     */
     // given
     val listLiteral = literalIntList(3, 1, 2, 4)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
-    val projection = plans.Projection(unwind,
-      Map("a" -> varFor("x"),
-        "b" -> varFor("x"),
-        "c" -> varFor("x"),
-        "d" -> varFor("x")))(solved)
+    val projection = plans
+      .Projection(unwind, Map("a" -> varFor("x"), "b" -> varFor("x"), "c" -> varFor("x"), "d" -> varFor("x")))(solved)
     val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
     val plan = ProduceResult(List("b", "c"), orderBy)
 
@@ -1361,11 +1522,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     val result = getResult(compiled, "b", "c")
-    result.toList should equal(List(
-      Map("b" -> 1L,"c" -> 1L),
-      Map("b" -> 2L,"c" -> 2L),
-      Map("b" -> 3L,"c" -> 3L),
-      Map("b" -> 4L,"c" -> 4L)))
+    result.toList should equal(
+      List(Map("b" -> 1L, "c" -> 1L), Map("b" -> 2L, "c" -> 2L), Map("b" -> 3L, "c" -> 3L), Map("b" -> 4L, "c" -> 4L)))
   }
 
   test("sort projection with list of floats") {
@@ -1374,7 +1532,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     WITH x, x AS `  FRESHID666`
     RETURN x
     ORDER BY `  FRESHID666`
-    */
+     */
     // given
     val listLiteral = literalFloatList(3.0, 1.0, 2.0, 4.0)
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
@@ -1387,11 +1545,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     val result = getResult(compiled, "x")
-    result.toList should equal(List(
-      Map("x" -> 1.0),
-      Map("x" -> 2.0),
-      Map("x" -> 3.0),
-      Map("x" -> 4.0)))
+    result.toList should equal(List(Map("x" -> 1.0), Map("x" -> 2.0), Map("x" -> 3.0), Map("x" -> 4.0)))
   }
 
   test("sort projection with list of booleans") {
@@ -1400,7 +1554,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     WITH x AS a
     RETURN a
     ORDER BY a
-    */
+     */
     // given
     val listLiteral = ListLiteral(Seq(True()(pos), False()(pos)))(pos)
 
@@ -1414,9 +1568,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     val result = getResult(compiled, "a")
-    result.toList should equal(List(
-      Map("a" -> false),
-      Map("a" -> true)))
+    result.toList should equal(List(Map("a" -> false), Map("a" -> true)))
   }
 
   test("sort projection with list of integer maps") {
@@ -1430,17 +1582,20 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     WITH x.a AS a, x.b AS b, x.c AS c, x.d AS d
     RETURN b, c
     ORDER BY a, b
-    */
+     */
     // given
-    val listLiteral = ListLiteral(Seq(
-      literalIntMap(("a", 3), ("b", 3), ("c", 3), ("d", 3)),
-      literalIntMap(("a", 1), ("b", 1), ("c", 1), ("d", 1)),
-      literalIntMap(("a", 1), ("b", 2), ("c", 2), ("d", 2)),
-      literalIntMap(("a", 4), ("b", 4), ("c", 4), ("d", 4))
-    ))(pos)
+    val listLiteral = ListLiteral(
+      Seq(
+        literalIntMap(("a", 3), ("b", 3), ("c", 3), ("d", 3)),
+        literalIntMap(("a", 1), ("b", 1), ("c", 1), ("d", 1)),
+        literalIntMap(("a", 1), ("b", 2), ("c", 2), ("d", 2)),
+        literalIntMap(("a", 4), ("b", 4), ("c", 4), ("d", 4))
+      ))(pos)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
-    val projection = plans.Projection(unwind, Map("a" -> prop("x", "a"), "b" -> prop("x", "b"), "c" -> prop("x", "c"), "d" -> prop("x", "d")))(solved)
+    val projection = plans.Projection(
+      unwind,
+      Map("a" -> prop("x", "a"), "b" -> prop("x", "b"), "c" -> prop("x", "c"), "d" -> prop("x", "d")))(solved)
     val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
     val plan = ProduceResult(List("b", "c"), orderBy)
 
@@ -1449,11 +1604,11 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     val result = getResult(compiled, "b", "c")
-    result.toList should equal(List(
-      Map("b" -> 2L,"c" -> 2L), // Because we sort Descending on b
-      Map("b" -> 1L,"c" -> 1L),
-      Map("b" -> 3L,"c" -> 3L),
-      Map("b" -> 4L,"c" -> 4L)))
+    result.toList should equal(
+      List(Map("b" -> 2L, "c" -> 2L), // Because we sort Descending on b
+           Map("b" -> 1L, "c" -> 1L),
+           Map("b" -> 3L, "c" -> 3L),
+           Map("b" -> 4L, "c" -> 4L)))
   }
 
   test("sort and limit projection with list of integers (should use top)") {
@@ -1463,16 +1618,13 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     RETURN b, c
     ORDER BY a, b
     LIMIT 2
-    */
+     */
     // given
     val listLiteral = literalIntList(3, 1, 2, 4)
 
     val unwind = plans.UnwindCollection(SingleRow()(solved), IdName("x"), listLiteral)(solved)
-    val projection = plans.Projection(unwind,
-      Map("a" -> varFor("x"),
-        "b" -> varFor("x"),
-        "c" -> varFor("x"),
-        "d" -> varFor("x")))(solved)
+    val projection = plans
+      .Projection(unwind, Map("a" -> varFor("x"), "b" -> varFor("x"), "c" -> varFor("x"), "d" -> varFor("x")))(solved)
     val orderBy = Sort(projection, List(Ascending(IdName("a")), Descending(IdName("b"))))(solved)
     val limit = plans.Limit(orderBy, literalInt(2), DoNotIncludeTies)(solved)
     val plan = ProduceResult(List("b", "c"), limit)
@@ -1482,9 +1634,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
     // then
     val result = getResult(compiled, "b", "c")
-    result.toList should equal(List(
-      Map("b" -> 1L,"c" -> 1L),
-      Map("b" -> 2L,"c" -> 2L)))
+    result.toList should equal(List(Map("b" -> 1L, "c" -> 1L), Map("b" -> 2L, "c" -> 2L)))
   }
 
   test("sort with negative limit from parameter (should use top)") {
@@ -1494,7 +1644,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     RETURN a
     ORDER BY a
     LIMIT {limit}
-    */
+     */
     // given
     val listLiteral = literalIntList(3, 1, 2, 4)
 
@@ -1517,7 +1667,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     UNWIND [1,2,3] as x
     RETURN x
     LIMIT {limit}
-    */
+     */
     // given
     val listLiteral = literalIntList(1, 2, 3)
 
@@ -1537,7 +1687,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     generator.generate(plan, newMockedPlanContext, semanticTable, CostBasedPlannerName.default)
   }
 
-  private def compileAndExecute(plan: LogicalPlan, params: Map[String, AnyRef] = Map.empty, taskCloser: TaskCloser = new TaskCloser) = {
+  private def compileAndExecute(plan: LogicalPlan,
+                                params: Map[String, AnyRef] = Map.empty,
+                                taskCloser: TaskCloser = new TaskCloser) = {
     compile(plan).executionResultBuilder(queryContext, NormalMode, tracer(NormalMode, queryContext), params, taskCloser)
   }
 
@@ -1566,7 +1718,7 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private val hNode = mockNode(7L, "h")
   private val iNode = mockNode(8L, "i")
 
-  private val semanticTable =  mock[SemanticTable]
+  private val semanticTable = mock[SemanticTable]
   when(semanticTable.isNode(varFor("a"))).thenReturn(true)
   when(semanticTable.isNode(varFor("b"))).thenReturn(true)
   when(semanticTable.isNode(varFor("c"))).thenReturn(true)
@@ -1587,7 +1739,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   when(semanticTable.isRelationship(varFor("z"))).thenReturn(false)
 
   private val allNodes = IndexedSeq(aNode, bNode, cNode, dNode, eNode, fNode, gNode, hNode, iNode)
-  private val nodesForLabel = Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))
+  private val nodesForLabel =
+    Map("T1" -> Seq(aNode, bNode, cNode), "T2" -> Seq(fNode, gNode), "T3" -> Seq(hNode, iNode))
 
   private val relMap = Map(
     11L -> RelationshipData(aNode, dNode, 11L, 1),
@@ -1596,7 +1749,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     14L -> RelationshipData(fNode, dNode, 14L, 2),
     15L -> RelationshipData(gNode, eNode, 15L, 2),
     16L -> RelationshipData(hNode, iNode, 16L, 3),
-    17L -> RelationshipData(iNode, hNode, 17L, 3))
+    17L -> RelationshipData(iNode, hNode, 17L, 3)
+  )
 
   val nodeManager = mock[NodeManager]
   when(nodeManager.newNodeProxyById(anyLong())).thenAnswer(new Answer[Node]() {
@@ -1614,13 +1768,13 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   import JavaConverters._
   private def toObjectConverter(a: AnyRef): AnyRef = a match {
-    case Values.NO_VALUE => null
-    case n: NodeValue => allNodes(n.id().asInstanceOf[Int])
-    case r: EdgeValue => relMap(r.id()).relationship
-    case s: TextValue => s.stringValue()
-    case b: BooleanValue => Boolean.box(b.booleanValue())
+    case Values.NO_VALUE       => null
+    case n: NodeValue          => allNodes(n.id().asInstanceOf[Int])
+    case r: EdgeValue          => relMap(r.id()).relationship
+    case s: TextValue          => s.stringValue()
+    case b: BooleanValue       => Boolean.box(b.booleanValue())
     case f: FloatingPointValue => Double.box(f.doubleValue())
-    case i: IntegralValue => Long.box(i.longValue())
+    case i: IntegralValue      => Long.box(i.longValue())
     case l: ListValue =>
       val list = new util.ArrayList[AnyRef]
       l.iterator().asScala.foreach(a => list.add(toObjectConverter(a)))
@@ -1638,7 +1792,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
   private val ro = mock[ReadOperations]
   when(queryContext.transactionalContext).thenReturn(transactionalContext)
   when(queryContext.asObject(any())).thenAnswer(new Answer[AnyRef] {
-    override def answer(invocationOnMock: InvocationOnMock): AnyRef = toObjectConverter(invocationOnMock.getArguments()(0))
+    override def answer(invocationOnMock: InvocationOnMock): AnyRef =
+      toObjectConverter(invocationOnMock.getArguments()(0))
   })
   when(transactionalContext.readOperations).thenReturn(ro)
   when(queryContext.entityAccessor).thenReturn(nodeManager.asInstanceOf[queryContext.EntityAccessor])
@@ -1650,7 +1805,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     }
   })
   when(ro.nodesGetAll()).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = primitiveIterator(allNodes.map(_.getId))
+    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator =
+      primitiveIterator(allNodes.map(_.getId))
   })
   when(ro.labelGetForName(anyString())).thenAnswer(new Answer[Int] {
     override def answer(invocationOnMock: InvocationOnMock): Int = {
@@ -1681,15 +1837,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       getRelsForNode(allNodes(node), dir, Set.empty)
     }
   })
-  when(ro.nodeGetRelationships(anyLong(), any[Direction], any[Array[Int]]())).thenAnswer(new Answer[PrimitiveLongIterator] {
-    override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
-      val arguments = invocationOnMock.getArguments
-      val node = arguments(0).asInstanceOf[Long].toInt
-      val dir = arguments(1).asInstanceOf[Direction]
-      val types = arguments(2).asInstanceOf[Array[Int]].toSet
-      getRelsForNode(allNodes(node), dir, types)
-    }
-  })
+  when(ro.nodeGetRelationships(anyLong(), any[Direction], any[Array[Int]]()))
+    .thenAnswer(new Answer[PrimitiveLongIterator] {
+      override def answer(invocationOnMock: InvocationOnMock): PrimitiveLongIterator = {
+        val arguments = invocationOnMock.getArguments
+        val node = arguments(0).asInstanceOf[Long].toInt
+        val dir = arguments(1).asInstanceOf[Direction]
+        val types = arguments(2).asInstanceOf[Array[Int]].toSet
+        getRelsForNode(allNodes(node), dir, types)
+      }
+    })
   when(ro.relationshipVisit(anyLong(), any())).thenAnswer(new Answer[Unit] {
     override def answer(invocationOnMock: InvocationOnMock): Unit = {
       val relId = invocationOnMock.getArguments.apply(0).asInstanceOf[Long]
@@ -1706,10 +1863,9 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
       val labelId = invocationOnMock.getArguments.apply(1).asInstanceOf[Int]
       val label = labelTokens.map {
         case (labelName, t) if t == labelId => Some(labelName)
-        case _ => None
+        case _                              => None
       }.head
-      label.exists(l => nodesForLabel.contains(l) && nodesForLabel(l).exists(_.getId == nodeId)
-      )
+      label.exists(l => nodesForLabel.contains(l) && nodesForLabel(l).exists(_.getId == nodeId))
     }
   })
 
@@ -1760,7 +1916,8 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
 
   private def relationshipIterator(longs: Seq[Long]) = new RelationshipIterator {
 
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean = {
       val rel = relMap(relationshipId)
       visitor.visit(relationshipId, -1, rel.from.getId, rel.to.getId)
       false
@@ -1797,17 +1954,16 @@ abstract class CodeGeneratorTest extends CypherFunSuite with LogicalPlanningTest
     res.result().asComparableResult
   }
 
-
   implicit class RichMapSeq(res: Seq[Map[String, Any]]) {
     import JavaConverters._
 
-    def asComparableResult: Seq[Map[String, Any]] = res.map((map: Map[String, Any]) =>
-      map.map {
-        case (k, a: Array[_]) => k -> a.toList
-        case (k, a: java.util.List[_]) => k -> a.asScala
-        case (k, m: java.util.Map[_,_]) => k -> m.asScala
-        case m => m
-      }
-    )
+    def asComparableResult: Seq[Map[String, Any]] =
+      res.map((map: Map[String, Any]) =>
+        map.map {
+          case (k, a: Array[_])            => k -> a.toList
+          case (k, a: java.util.List[_])   => k -> a.asScala
+          case (k, m: java.util.Map[_, _]) => k -> m.asScala
+          case m                           => m
+      })
   }
 }

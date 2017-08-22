@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import java.util
 import java.util.Arrays.asList
-import java.util.Collections.{emptyList, emptyMap, singletonMap, singleton => singletonSet}
+import java.util.Collections.emptyList
+import java.util.Collections.emptyMap
+import java.util.Collections.singletonMap
+import java.util.Collections.{singleton => singletonSet}
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
@@ -101,15 +104,15 @@ class RuntimeScalaValueConverterTest extends CypherFunSuite {
   test("should convert traversable to Iterable") {
     val it = Stream[Any](1, 2, 3)
 
-    converter.asDeepScalaValue(it) shouldBe an [Iterable[_]]
+    converter.asDeepScalaValue(it) shouldBe an[Iterable[_]]
   }
 
   test("should preserve java lists without copying") {
-    val javaList = util.Arrays.asList(1,2,3)
+    val javaList = util.Arrays.asList(1, 2, 3)
 
     val converted = converter.asDeepScalaValue(javaList)
 
-    converted shouldBe a [JavaListWrapper[_]]
-    converted.asInstanceOf[JavaListWrapper[_]].inner shouldBe an [util.ArrayList[_]]
+    converted shouldBe a[JavaListWrapper[_]]
+    converted.asInstanceOf[JavaListWrapper[_]].inner shouldBe an[util.ArrayList[_]]
   }
 }

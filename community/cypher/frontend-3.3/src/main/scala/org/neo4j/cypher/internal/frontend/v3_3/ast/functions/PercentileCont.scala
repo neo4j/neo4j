@@ -17,7 +17,10 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AggregatingFunction, ExpressionSignature, FunctionInvocation, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AggregatingFunction
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ExpressionSignature
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SimpleTypedFunction
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case object PercentileCont extends AggregatingFunction with SimpleTypedFunction {

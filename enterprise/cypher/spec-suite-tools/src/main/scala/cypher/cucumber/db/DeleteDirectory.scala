@@ -21,7 +21,10 @@ package cypher.cucumber.db
 
 import java.io.IOException
 import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path => JPath, SimpleFileVisitor}
+import java.nio.file.FileVisitResult
+import java.nio.file.Files
+import java.nio.file.{Path => JPath}
+import java.nio.file.SimpleFileVisitor
 import java.util
 import java.util.function.Consumer
 
@@ -45,17 +48,20 @@ object DeleteDirectory {
 
   def now(path: Path) = {
     if (path.exists) {
-      Files.walkFileTree(path.jfile.toPath, new SimpleFileVisitor[JPath] {
-        override def visitFile(file: JPath, attributes: BasicFileAttributes) =
-          cont(Files.delete(file))
+      Files.walkFileTree(
+        path.jfile.toPath,
+        new SimpleFileVisitor[JPath] {
+          override def visitFile(file: JPath, attributes: BasicFileAttributes) =
+            cont(Files.delete(file))
 
-        override def postVisitDirectory(dir: JPath, exc: IOException) =
-          cont(Files.delete(dir))
+          override def postVisitDirectory(dir: JPath, exc: IOException) =
+            cont(Files.delete(dir))
 
-        private def cont(f: => Unit) = {
-          f; FileVisitResult.CONTINUE
+          private def cont(f: => Unit) = {
+            f; FileVisitResult.CONTINUE
+          }
         }
-      })
+      )
     }
   }
 }

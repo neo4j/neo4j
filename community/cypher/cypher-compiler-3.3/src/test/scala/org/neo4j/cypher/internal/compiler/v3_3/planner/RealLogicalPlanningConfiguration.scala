@@ -20,20 +20,31 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.HardcodedGraphStatistics
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{CardinalityCostModel, ExpressionEvaluator, Metrics, StatisticsBackedCardinalityModel}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.CardinalityCostModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.StatisticsBackedCardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Cost, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Cost
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 case class RealLogicalPlanningConfiguration()
-  extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
+    extends LogicalPlanningConfiguration
+    with LogicalPlanningConfigurationAdHocSemanticTable {
 
-  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {
+  override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                evaluator: ExpressionEvaluator): CardinalityModel = {
     val model: Metrics.CardinalityModel = new StatisticsBackedCardinalityModel(queryGraphCardinalityModel, evaluator)
     ({
-      case (pq: PlannerQuery, card: QueryGraphSolverInput, semanticTable: SemanticTable) => model(pq, card, semanticTable)
+      case (pq: PlannerQuery, card: QueryGraphSolverInput, semanticTable: SemanticTable) =>
+        model(pq, card, semanticTable)
     })
   }
 

@@ -21,7 +21,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{CartesianProductNotification, DeprecatedStartNotification}
+import org.neo4j.cypher.internal.frontend.v3_3.notification.CartesianProductNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.DeprecatedStartNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 sealed trait Clause extends ASTNode with ASTPhrase with SemanticCheckable {
@@ -35,7 +36,12 @@ sealed trait UpdateClause extends Clause {
   override def returnColumns: List[String] = List.empty
 }
 
-case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variable, fieldTerminator: Option[StringLiteral])(val position: InputPosition) extends Clause with SemanticChecking {
+case class LoadCSV(withHeaders: Boolean,
+                   urlString: Expression,
+                   variable: Variable,
+                   fieldTerminator: Option[StringLiteral])(val position: InputPosition)
+    extends Clause
+    with SemanticChecking {
   override def name: String = "LOAD CSV"
 
   override def semanticCheck: SemanticCheck =
@@ -53,10 +59,11 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, variable: Variab
   }
 
   private def typeCheck: SemanticCheck = {
-    val typ = if (withHeaders)
-      CTMap
-    else
-      CTList(CTString)
+    val typ =
+      if (withHeaders)
+        CTMap
+      else
+        CTList(CTString)
 
     variable.declare(typ)
   }
@@ -87,7 +94,7 @@ case class NewGraph(ref: Variable, url: Option[Expression])(val position: InputP
   override def semanticCheck: SemanticCheck = {
     ref.declare(CTGraphRef) chain
       url.semanticCheck(Expression.SemanticContext.Simple)
-      url.expectType(CTString.covariant)
+    url.expectType(CTString.covariant)
   }
 }
 
@@ -97,11 +104,13 @@ case class GraphReference(ref: Variable, _url: Expression)(val position: InputPo
   override def semanticCheck: SemanticCheck = {
     ref.declare(CTGraphRef) chain
       _url.semanticCheck(Expression.SemanticContext.Simple)
-      _url.expectType(CTString.covariant)
+    _url.expectType(CTString.covariant)
   }
 }
 
-case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition) extends Clause with SemanticChecking {
+case class ReturnGraph(graphName: Option[Expression])(val position: InputPosition)
+    extends Clause
+    with SemanticChecking {
   override def name = "RETURN GRAPH"
 
   override def semanticCheck: SemanticCheck =
@@ -117,9 +126,11 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 
     val query = rewrittenQuery
     val newState = state.addNotification(DeprecatedStartNotification(position, query))
-    SemanticCheckResult(newState, Seq(SemanticError(
-      s"""START is deprecated, use: `$query` instead.
-       """.stripMargin, position)))
+    SemanticCheckResult(newState,
+                        Seq(
+                          SemanticError(s"""START is deprecated, use: `$query` instead.
+       """.stripMargin,
+                                        position)))
   }
 
   private def rewrittenQuery: String = {
@@ -132,16 +143,22 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
         s"CALL db.relationshipManualIndexSeek('$index', '$key', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
       case RelationshipByIndexQuery(variable, index, expression) =>
         s"CALL db.relationshipManualIndexSearch('$index', '${expression.asCanonicalStringVal}') YIELD relationship AS ${variable.asCanonicalStringVal}"
-      case AllNodes(variable) => s"MATCH (${variable.asCanonicalStringVal})"
-      case AllRelationships(variable) =>  s"MATCH ()-[${variable.asCanonicalStringVal}]->()"
+      case AllNodes(variable)         => s"MATCH (${variable.asCanonicalStringVal})"
+      case AllRelationships(variable) => s"MATCH ()-[${variable.asCanonicalStringVal}]->()"
       case NodeByIds(variable, ids) =>
-        if (ids.size == 1) s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
-        else s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
+        if (ids.size == 1)
+          s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
+        else
+          s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
       case RelationshipByIds(variable, ids) =>
-        if (ids.size == 1) s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
-        else s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
-      case NodeByParameter(variable, parameter) => s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
-      case RelationshipByParameter(variable, parameter) => s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
+        if (ids.size == 1)
+          s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) = ${ids.head.asCanonicalStringVal}"
+        else
+          s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${ids.map(_.asCanonicalStringVal).mkString("[", ", ", "]")}"
+      case NodeByParameter(variable, parameter) =>
+        s"MATCH (${variable.asCanonicalStringVal}) WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
+      case RelationshipByParameter(variable, parameter) =>
+        s"MATCH ()-[${variable.asCanonicalStringVal}]->() WHERE id(${variable.asCanonicalStringVal}) IN ${parameter.asCanonicalStringVal}"
     }
 
     rewritten.mkString(" ")
@@ -149,7 +166,10 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 
 }
 
-case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
+case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], where: Option[Where])(
+    val position: InputPosition)
+    extends Clause
+    with SemanticChecking {
   override def name = "MATCH"
 
   override def semanticCheck: SemanticCheck =
@@ -159,15 +179,21 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts chain
-    recordCurrentScope
+      recordCurrentScope
 
   private def uniqueHints: SemanticCheck = {
-    val errors = hints.groupBy(_.variables.toIndexedSeq).collect {
-      case pair@(variables, identHints) if identHints.size > 1 =>
-        SemanticError("Multiple hints for same variable are not supported", variables.head.position, identHints.map(_.position): _*)
-    }.toVector
+    val errors = hints
+      .groupBy(_.variables.toIndexedSeq)
+      .collect {
+        case pair @ (variables, identHints) if identHints.size > 1 =>
+          SemanticError("Multiple hints for same variable are not supported",
+                        variables.head.position,
+                        identHints.map(_.position): _*)
+      }
+      .toVector
 
-    (state: SemanticState) => SemanticCheckResult(state, errors)
+    (state: SemanticState) =>
+      SemanticCheckResult(state, errors)
   }
 
   private def checkForCartesianProducts: SemanticCheck = (state: SemanticState) => {
@@ -184,13 +210,13 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
-        if !containsLabelPredicate(variable, labelName) =>
-        SemanticError(
-          """|Cannot use index hint in this context.
-            | Must use label on node that hint is referring to.""".stripLinesAndMargins, hint.position)
-      case hint@UsingIndexHint(Variable(variable), LabelName(labelName), properties)
-        if !containsPropertyPredicates(variable, properties) =>
+      case hint @ UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+          if !containsLabelPredicate(variable, labelName) =>
+        SemanticError("""|Cannot use index hint in this context.
+            | Must use label on node that hint is referring to.""".stripLinesAndMargins,
+                      hint.position)
+      case hint @ UsingIndexHint(Variable(variable), LabelName(labelName), properties)
+          if !containsPropertyPredicates(variable, properties) =>
         SemanticError(
           """|Cannot use index hint in this context.
             | Index hints are only supported for the following predicates in WHERE
@@ -199,15 +225,18 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
             | IN condition or checking property existence.
             | The comparison cannot be performed between two property values.
             | Note that the label and property comparison must be specified on a
-            | non-optional node""".stripLinesAndMargins, hint.position)
-      case hint@UsingScanHint(Variable(variable), LabelName(labelName))
-        if !containsLabelPredicate(variable, labelName) =>
+            | non-optional node""".stripLinesAndMargins,
+          hint.position
+        )
+      case hint @ UsingScanHint(Variable(variable), LabelName(labelName))
+          if !containsLabelPredicate(variable, labelName) =>
         SemanticError(
           """|Cannot use label scan hint in this context.
             | Label scan hints require using a simple label test in WHERE (either directly or as part of a
-            | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
-      case hint@UsingJoinHint(_)
-        if pattern.length == 0 =>
+            | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins,
+          hint.position
+        )
+      case hint @ UsingJoinHint(_) if pattern.length == 0 =>
         SemanticError("Cannot use join hint for single node pattern.", hint.position)
     }
     error.getOrElse(SemanticCheckResult.success)
@@ -215,42 +244,54 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
 
   private def containsPropertyPredicates(variable: String, propertiesInHint: Seq[PropertyKeyName]): Boolean = {
     val propertiesInPredicates: Seq[String] = (where match {
-      case Some(w) => w.treeFold(Seq.empty[String]) {
-        case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
-          acc => (acc :+ name, None)
-        case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
-          acc => (acc :+ name, None)
-        case In(Property(Variable(id), PropertyKeyName(name)),_) if id == variable =>
-          acc => (acc :+ name, None)
-        case predicate@FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
-          if id == variable && predicate.function == functions.Exists =>
-          acc => (acc :+ name, None)
-        case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
-          acc => (acc :+ name, None)
-        case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
-        case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
-        case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
-          acc => (acc :+ name, None)
-        case expr: InequalityExpression =>
-          acc =>
-            val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
-              expr match {
-                case Property(Variable(id), PropertyKeyName(name)) if id == variable => acc :+ name
-                case _ => acc
+      case Some(w) =>
+        w.treeFold(Seq.empty[String]) {
+          case Equals(Property(Variable(id), PropertyKeyName(name)), other) if id == variable && applicable(other) =>
+            acc =>
+              (acc :+ name, None)
+          case Equals(other, Property(Variable(id), PropertyKeyName(name))) if id == variable && applicable(other) =>
+            acc =>
+              (acc :+ name, None)
+          case In(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+            acc =>
+              (acc :+ name, None)
+          case predicate @ FunctionInvocation(_, _, _, IndexedSeq(Property(Variable(id), PropertyKeyName(name))))
+              if id == variable && predicate.function == functions.Exists =>
+            acc =>
+              (acc :+ name, None)
+          case IsNotNull(Property(Variable(id), PropertyKeyName(name))) if id == variable =>
+            acc =>
+              (acc :+ name, None)
+          case StartsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+            acc =>
+              (acc :+ name, None)
+          case EndsWith(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+            acc =>
+              (acc :+ name, None)
+          case Contains(Property(Variable(id), PropertyKeyName(name)), _) if id == variable =>
+            acc =>
+              (acc :+ name, None)
+          case expr: InequalityExpression =>
+            acc =>
+              val newAcc: Seq[String] = Seq(expr.lhs, expr.rhs).foldLeft(acc) { (acc, expr) =>
+                expr match {
+                  case Property(Variable(id), PropertyKeyName(name)) if id == variable => acc :+ name
+                  case _                                                               => acc
+                }
               }
-            }
-            (newAcc, None)
-        case _: Where | _: And | _: Ands | _: Set[_] | _: Or | _: Ors =>
-          acc => (acc, Some(identity))
-        case _ =>
-          acc => (acc, None)
-      }
+              (newAcc, None)
+          case _: Where | _: And | _: Ands | _: Set[_] | _: Or | _: Ors =>
+            acc =>
+              (acc, Some(identity))
+          case _ =>
+            acc =>
+              (acc, None)
+        }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), _, Some(MapExpression(prop))) if variable == id =>
-        acc => (acc ++ prop.map(_._1.name), None)
+        acc =>
+          (acc ++ prop.map(_._1.name), None)
     }
 
     propertiesInHint.forall(p => propertiesInPredicates.contains(p.name))
@@ -265,24 +306,29 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[UsingHint], whe
   private def applicable(other: Expression) = {
     other match {
       case f: FunctionInvocation => f.function != functions.Id
-      case _ => true
+      case _                     => true
     }
   }
 
   private def containsLabelPredicate(variable: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
       case NodePattern(Some(Variable(id)), nodeLabels, _) if variable == id =>
-        list => list ++ nodeLabels.map(_.name)
+        list =>
+          list ++ nodeLabels.map(_.name)
     }
     labels = where match {
-      case Some(innerWhere) => innerWhere.treeFold(labels) {
-        case HasLabels(Variable(id), predicateLabels) if id == variable =>
-          acc => (acc ++ predicateLabels.map(_.name), None)
-        case _: Where | _: And | _: Ands | _: Set[_] =>
-          acc => (acc, Some(identity))
-        case _ =>
-          acc => (acc, None)
-      }
+      case Some(innerWhere) =>
+        innerWhere.treeFold(labels) {
+          case HasLabels(Variable(id), predicateLabels) if id == variable =>
+            acc =>
+              (acc ++ predicateLabels.map(_.name), None)
+          case _: Where | _: And | _: Ands | _: Set[_] =>
+            acc =>
+              (acc, Some(identity))
+          case _ =>
+            acc =>
+              (acc, None)
+        }
       case None => labels
     }
     labels.contains(label)
@@ -297,7 +343,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
       actions.semanticCheck chain checkRelTypes
 
   // Copied code from CREATE below
-  private def checkRelTypes: SemanticCheck  =
+  private def checkRelTypes: SemanticCheck =
     pattern.patternParts.foldSemanticCheck {
       case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
         SemanticError("A single relationship type must be specified for MERGE", rel.position)
@@ -311,7 +357,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
   override def semanticCheck: SemanticCheck = pattern.semanticCheck(Pattern.SemanticContext.Create) chain checkRelTypes
 
   //CREATE only support CREATE ()-[:T]->(), thus one-and-only-one type
-  private def checkRelTypes: SemanticCheck  =
+  private def checkRelTypes: SemanticCheck =
     pattern.patternParts.foldSemanticCheck {
       case EveryPath(RelationshipChain(_, rel, _)) if rel.types.size != 1 =>
         SemanticError("A single relationship type must be specified for CREATE", rel.position)
@@ -342,8 +388,8 @@ case class Delete(expressions: Seq[Expression], forced: Boolean)(val position: I
       expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
 
   private def warnAboutDeletingLabels =
-    expressions.filter(_.isInstanceOf[HasLabels]) map {
-      e => SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
+    expressions.filter(_.isInstanceOf[HasLabels]) map { e =>
+      SemanticError("DELETE doesn't support removing labels from a node. Try REMOVE.", e.position)
     }
 }
 
@@ -353,13 +399,17 @@ case class Remove(items: Seq[RemoveItem])(val position: InputPosition) extends U
   override def semanticCheck: SemanticCheck = items.semanticCheck
 }
 
-case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition) extends UpdateClause with SemanticChecking {
+case class Foreach(variable: Variable, expression: Expression, updates: Seq[Clause])(val position: InputPosition)
+    extends UpdateClause
+    with SemanticChecking {
   override def name = "FOREACH"
 
   override def semanticCheck: SemanticCheck =
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
       expression.expectType(CTList(CTAny).covariant) chain
-      updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
+      updates
+        .filter(!_.isInstanceOf[UpdateClause])
+        .map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
       withScopedState {
         val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapLists
         variable.declare(possibleInnerTypes) chain updates.semanticCheck
@@ -388,8 +438,8 @@ case class UnresolvedCall(procedureNamespace: Namespace,
                           // None: No arguments given
                           declaredArguments: Option[Seq[Expression]] = None,
                           // None: No results declared  (i.e. no "YIELD" part)
-                          declaredResult: Option[ProcedureResult] = None
-                         )(val position: InputPosition) extends CallClause {
+                          declaredResult: Option[ProcedureResult] = None)(val position: InputPosition)
+    extends CallClause {
 
   override def returnColumns: List[String] =
     declaredResult.map(_.items.map(_.variable.name).toList).getOrElse(List.empty)
@@ -397,15 +447,21 @@ case class UnresolvedCall(procedureNamespace: Namespace,
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
     val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
-    val invalidExpressionsCheck = declaredArguments.map(_.map {
-      case arg if arg.containsAggregate =>
-        error(_: SemanticState,
-              SemanticError(
-                """Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement.
+    val invalidExpressionsCheck = declaredArguments
+      .map(_.map {
+        case arg if arg.containsAggregate =>
+          error(
+            _: SemanticState,
+            SemanticError(
+              """Procedure call cannot take an aggregating function as argument, please add a 'WITH' to your statement.
                   |For example:
-                  |    MATCH (n:Person) WITH collect(n.name) AS names CALL proc(names) YIELD value RETURN value""".stripMargin, position))
-      case _ => success
-    }.foldLeft(success)(_ chain _)).getOrElse(success)
+                  |    MATCH (n:Person) WITH collect(n.name) AS names CALL proc(names) YIELD value RETURN value""".stripMargin,
+              position
+            )
+          )
+        case _ => success
+      }.foldLeft(success)(_ chain _))
+      .getOrElse(success)
 
     argumentCheck chain resultsCheck chain invalidExpressionsCheck
   }
@@ -431,7 +487,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     super.semanticCheck chain
       returnItems.semanticCheck
 
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =  (s: SemanticState) => {
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = (s: SemanticState) => {
     val specialReturnItems = createSpecialReturnItems(previousScope, s)
     val specialStateForShuffle = specialReturnItems.declareVariables(previousScope)(s).state
     val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
@@ -481,13 +537,13 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
   }
 }
 
-case class With(
-                 distinct: Boolean,
-                 returnItems: ReturnItems,
-                 orderBy: Option[OrderBy],
-                 skip: Option[Skip],
-                 limit: Option[Limit],
-                 where: Option[Where])(val position: InputPosition) extends ProjectionClause {
+case class With(distinct: Boolean,
+                returnItems: ReturnItems,
+                orderBy: Option[OrderBy],
+                skip: Option[Skip],
+                limit: Option[Limit],
+                where: Option[Where])(val position: InputPosition)
+    extends ProjectionClause {
 
   override def name = "WITH"
 
@@ -499,10 +555,15 @@ case class With(
     super.semanticCheckContinuation(previousScope) chain
       where.semanticCheck
 
-  private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
-    case li: ReturnItems => li.items.filter(_.alias.isEmpty).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
-    case _                     => Seq()
-  }
+  private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] =
+    state =>
+      returnItems match {
+        case li: ReturnItems =>
+          li.items
+            .filter(_.alias.isEmpty)
+            .map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
+        case _ => Seq()
+    }
 }
 
 case class Return(distinct: Boolean,
@@ -510,7 +571,8 @@ case class Return(distinct: Boolean,
                   orderBy: Option[OrderBy],
                   skip: Option[Skip],
                   limit: Option[Limit],
-                  excludedNames: Set[String] = Set.empty)(val position: InputPosition) extends ProjectionClause {
+                  excludedNames: Set[String] = Set.empty)(val position: InputPosition)
+    extends ProjectionClause {
 
   override def name = "RETURN"
 
@@ -518,17 +580,18 @@ case class Return(distinct: Boolean,
 
   override def semanticCheck: SemanticCheck = super.semanticCheck chain checkVariableScope
 
-  private def checkVariableScope: SemanticState => Seq[SemanticError] = s =>
-    if (returnItems.includeExisting && s.currentScope.isEmpty)
-      Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
-    else
-      Seq()
+  private def checkVariableScope: SemanticState => Seq[SemanticError] =
+    s =>
+      if (returnItems.includeExisting && s.currentScope.isEmpty)
+        Seq(SemanticError("RETURN * is not allowed when there are no variables in scope", position))
+      else
+        Seq()
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {
   override def name = "_PRAGMA WITHOUT"
   val excludedNames: Set[String] = excluded.map(_.name).toSet
 
-  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = s =>
-    SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
+  override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =
+    s => SemanticCheckResult.success(s.importScope(previousScope, excludedNames))
 }

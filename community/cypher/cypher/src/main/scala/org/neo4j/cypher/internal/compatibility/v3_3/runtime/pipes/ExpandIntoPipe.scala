@@ -27,51 +27,49 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
 /**
- * Expand when both end-points are known, find all relationships of the given
- * type in the given direction between the two end-points.
- *
- * This is done by checking both nodes and starts from any non-dense node of the two.
- * If both nodes are dense, we find the degree of each and expand from the smaller of the two
- *
- * This pipe also caches relationship information between nodes for the duration of the query
- */
+  * Expand when both end-points are known, find all relationships of the given
+  * type in the given direction between the two end-points.
+  *
+  * This is done by checking both nodes and starts from any non-dense node of the two.
+  * If both nodes are dense, we find the degree of each and expand from the smaller of the two
+  *
+  * This pipe also caches relationship information between nodes for the duration of the query
+  */
 case class ExpandIntoPipe(source: Pipe,
                           fromName: String,
                           relName: String,
                           toName: String,
                           dir: SemanticDirection,
-                          lazyTypes: LazyTypes)
-                          (val id: Id = new Id)
-  extends PipeWithSource(source) with CachingExpandInto {
+                          lazyTypes: LazyTypes)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with CachingExpandInto {
   self =>
   private final val CACHE_SIZE = 100000
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     //cache of known connected nodes
     val relCache = new RelationshipsCache(CACHE_SIZE)
 
-    input.flatMap {
-      row =>
-        val fromNode = getRowNode(row, fromName)
-        fromNode match {
-          case fromNode: NodeValue =>
-            val toNode = getRowNode(row, toName)
-            toNode match {
-              case Values.NO_VALUE => Iterator.empty
-              case n: NodeValue =>
+    input.flatMap { row =>
+      val fromNode = getRowNode(row, fromName)
+      fromNode match {
+        case fromNode: NodeValue =>
+          val toNode = getRowNode(row, toName)
+          toNode match {
+            case Values.NO_VALUE => Iterator.empty
+            case n: NodeValue =>
+              val relationships = relCache
+                .get(fromNode, n, dir)
+                .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
 
-                val relationships = relCache.get(fromNode, n, dir)
-                  .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, lazyTypes.types(state.query)))
+              if (relationships.isEmpty) Iterator.empty
+              else relationships.map(r => row.newWith1(relName, r))
+            case _ => throw new InternalException(s"$toNode must be node or null")
+          }
 
-                if (relationships.isEmpty) Iterator.empty
-                else relationships.map(r => row.newWith1(relName, r))
-              case _ => throw new InternalException(s"$toNode must be node or null")
-            }
-
-          case Values.NO_VALUE => Iterator.empty
-        }
+        case Values.NO_VALUE => Iterator.empty
+      }
     }
   }
 }
-
-

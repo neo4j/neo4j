@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, QueryGraph, SimplePatternLength}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PatternRelationship
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.SimplePatternLength
 
 class QueryGraphTest extends CypherFunSuite {
   val x = IdName("x")
@@ -103,20 +106,16 @@ class QueryGraphTest extends CypherFunSuite {
     val pattRel2 = PatternRelationship(r2, (m, c), BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2), patternNodes = Set(n, m, c))
 
-    qg.smallestGraphIncluding(Set(n, c)) should equal(
-      Set(n, m, c, r1, r2))
+    qg.smallestGraphIncluding(Set(n, c)) should equal(Set(n, m, c, r1, r2))
   }
 
   test("find smallest graph that connect three nodes") { // MATCH (n)-[r1]-(m), (n)-[r2]->(c), (n)-[r3]->(x)
     val pattRel1 = PatternRelationship(r1, (n, m), BOTH, Seq.empty, SimplePatternLength)
     val pattRel2 = PatternRelationship(r2, (n, c), BOTH, Seq.empty, SimplePatternLength)
     val pattRel3 = PatternRelationship(r3, (n, x), BOTH, Seq.empty, SimplePatternLength)
-    val qg = QueryGraph(
-      patternRelationships = Set(pattRel1, pattRel2, pattRel3),
-      patternNodes = Set(n, m, c, x))
+    val qg = QueryGraph(patternRelationships = Set(pattRel1, pattRel2, pattRel3), patternNodes = Set(n, m, c, x))
 
-    qg.smallestGraphIncluding(Set(n, m, c)) should equal(
-      Set(n, m, c, r1, r2))
+    qg.smallestGraphIncluding(Set(n, m, c)) should equal(Set(n, m, c, r1, r2))
   }
 
   test("querygraphs containing only nodes") {

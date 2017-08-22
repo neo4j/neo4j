@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.values.AnyValue
 
 object PrimitiveExecutionContext {
-  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0,0))
+  def empty = new PrimitiveExecutionContext(new PipelineInformation(Map.empty, 0, 0))
 }
 
 case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends ExecutionContext {
@@ -33,7 +34,7 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
   private val refs = new Array[AnyValue](pipeline.numberOfReferences)
 
   def copyFrom(input: ExecutionContext): Unit = input match {
-    case other@PrimitiveExecutionContext(otherPipeline) =>
+    case other @ PrimitiveExecutionContext(otherPipeline) =>
       if (otherPipeline.numberOfLongs > pipeline.numberOfLongs || otherPipeline.numberOfReferences > pipeline.numberOfReferences)
         throw new InternalException("Tried to copy more data into less.")
       else {
@@ -65,7 +66,12 @@ case class PrimitiveExecutionContext(pipeline: PipelineInformation) extends Exec
 
   override def newWith2(key1: String, value1: AnyValue, key2: String, value2: AnyValue): ExecutionContext = fail()
 
-  override def newWith3(key1: String, value1: AnyValue, key2: String, value2: AnyValue, key3: String, value3: AnyValue): ExecutionContext = fail()
+  override def newWith3(key1: String,
+                        value1: AnyValue,
+                        key2: String,
+                        value2: AnyValue,
+                        key3: String,
+                        value3: AnyValue): ExecutionContext = fail()
 
   override def mergeWith(other: ExecutionContext): ExecutionContext = fail()
 

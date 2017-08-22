@@ -25,15 +25,18 @@ import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty
 
-  def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
-    case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
-  }.toIndexedSeq
+  def predicatesGiven(ids: Set[IdName]): Seq[Expression] =
+    predicates.collect {
+      case p @ Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
+    }.toIndexedSeq
 
-  def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] = predicates.collect {
-    case p@Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
-  }.toIndexedSeq
+  def predicatesGivenForRequiredSymbol(allowed: Set[IdName], required: IdName): Seq[Expression] =
+    predicates.collect {
+      case p @ Predicate(_, predicate) if p.hasDependenciesMetForRequiredSymbol(allowed, required) => predicate
+    }.toIndexedSeq
 
-  def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filterNot(containsPatternPredicates)
+  def scalarPredicatesGiven(ids: Set[IdName]): Seq[Expression] =
+    predicatesGiven(ids).filterNot(containsPatternPredicates)
 
   def patternPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
@@ -49,10 +52,11 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
   def labelPredicates: Map[IdName, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
-      case (acc, Predicate(_, hasLabels@HasLabels(Variable(name), labels))) =>
+      case (acc, Predicate(_, hasLabels @ HasLabels(Variable(name), labels))) =>
         // FIXME: remove when we have test for checking that we construct the expected plan
         if (labels.size > 1) {
-          throw new IllegalStateException("Rewriting should introduce single label HasLabels predicates in the WHERE clause")
+          throw new IllegalStateException(
+            "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
         }
         val idName = IdName(name)
         acc.updated(idName, acc.getOrElse(idName, Set.empty) + hasLabels)
@@ -66,9 +70,9 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     predicates.foldLeft(Map.empty[IdName, Set[Property]]) {
 
       // We rewrite set property expressions to use In (and not Equals)
-      case (acc, Predicate(_, In(prop@Property(key: Variable, _), _))) =>
+      case (acc, Predicate(_, In(prop @ Property(key: Variable, _), _))) =>
         updateMap(acc, IdName.fromVariable(key), prop)
-      case (acc, Predicate(_, In(_, prop@Property(key: Variable, _)))) =>
+      case (acc, Predicate(_, In(_, prop @ Property(key: Variable, _)))) =>
         updateMap(acc, IdName.fromVariable(key), prop)
       case (acc, _) => acc
     }
@@ -82,14 +86,14 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
     labelPredicates.mapValues(_.map(_.labels.head))
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
-    flatPredicates.forall( solvedPredicates.contains )
+    flatPredicates.forall(solvedPredicates.contains)
 
   def contains(e: Expression): Boolean = predicates.exists { _.expr == e }
 
   def ++(other: Selections): Selections = {
     val otherPredicates = other.predicates
-    val keptPredicates  = predicates.filter {
-      case pred@Predicate(_, expr: PartialPredicate[_]) =>
+    val keptPredicates = predicates.filter {
+      case pred @ Predicate(_, expr: PartialPredicate[_]) =>
         !expr.coveringPredicate.asPredicates.forall(expr => otherPredicates.contains(expr) || predicates.contains(expr))
 
       case pred =>
@@ -102,13 +106,15 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
   // Value joins are equality comparisons between two expressions. As long as they depend on different, non-overlapping
   // sets of variables, they can be solved with a traditional hash join, similar to what a SQL database would
   lazy val valueJoins: Set[Equals] = flatPredicates.collect {
-    case e@Equals(l, r)
-      if l.dependencies.nonEmpty &&
-         r.dependencies.nonEmpty &&
-         r.dependencies != l.dependencies => e
+    case e @ Equals(l, r)
+        if l.dependencies.nonEmpty &&
+          r.dependencies.nonEmpty &&
+          r.dependencies != l.dependencies =>
+      e
   }.toSet
 
-  def ++(expressions: Traversable[Expression]): Selections = Selections(predicates ++ expressions.flatMap(_.asPredicates))
+  def ++(expressions: Traversable[Expression]): Selections =
+    Selections(predicates ++ expressions.flatMap(_.asPredicates))
 
   def nonEmpty: Boolean = !isEmpty
 }

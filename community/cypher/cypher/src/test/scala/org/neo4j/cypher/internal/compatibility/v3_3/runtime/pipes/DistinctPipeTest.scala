@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.ValueComparisonHelper._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Multiply, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Multiply
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringArray
@@ -66,9 +69,9 @@ class DistinctPipeTest extends CypherFunSuite {
 
   test("distinct deals with maps containing java arrays") {
     //GIVEN
-    val pipe = createDistinctPipe(List(
-      Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava),
-      Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava)))
+    val pipe = createDistinctPipe(
+      List(Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava),
+           Map("x" -> Map("prop" -> Array[String]("a", "b")).asJava)))
 
     //WHEN
     val result = pipe.createResults(QueryStateHelper.empty).toList
@@ -78,7 +81,8 @@ class DistinctPipeTest extends CypherFunSuite {
     result.head("x").asInstanceOf[MapValue].get("prop") should equal(stringArray("a", "b"))
   }
 
-  def createDistinctPipe(input: List[Map[String, Any]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {
+  def createDistinctPipe(input: List[Map[String, Any]],
+                         expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {
     val source = new FakePipe(input, "x" -> CTNumber)
     DistinctPipe(source, expressions)()
   }

@@ -22,33 +22,32 @@ import org.parboiled.scala._
 
 import scala.language.postfixOps
 
-trait Literals extends Parser
-  with Base with Strings {
+trait Literals extends Parser with Base with Strings {
 
   def Expression: Rule1[ast.Expression]
 
   def Variable: Rule1[ast.Variable] =
-    rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_) ) }.memoMismatches
+    rule("a variable") { SymbolicNameString ~~>> (ast.Variable(_)) }.memoMismatches
 
   def ProcedureName: Rule1[ast.ProcedureName] =
-    rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_) ) }.memoMismatches
+    rule("a procedure name") { SymbolicNameString ~~>> (ast.ProcedureName(_)) }.memoMismatches
 
   def FunctionName: Rule1[ast.FunctionName] =
-    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_) ) }.memoMismatches
+    rule("a function name") { SymbolicNameString ~~>> (ast.FunctionName(_)) }.memoMismatches
 
   def PropertyKeyName: Rule1[ast.PropertyKeyName] =
-    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
+    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_)) }.memoMismatches
 
   def PropertyKeyNames: Rule1[List[ast.PropertyKeyName]] =
     rule("a list of property key names") {
-      (oneOrMore(WS ~~ SymbolicNameString ~~ WS ~~>> (ast.PropertyKeyName(_) ), separator = ",") memoMismatches).suppressSubnodes
+      (oneOrMore(WS ~~ SymbolicNameString ~~ WS ~~>> (ast.PropertyKeyName(_)), separator = ",") memoMismatches).suppressSubnodes
     }
 
   def LabelName: Rule1[ast.LabelName] =
-    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_) ) }.memoMismatches
+    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_)) }.memoMismatches
 
   def RelTypeName: Rule1[ast.RelTypeName] =
-    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
+    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_)) }.memoMismatches
 
   def Operator: Rule1[ast.Variable] = rule {
     OpChar ~ zeroOrMore(OpCharTail) ~>>> (ast.Variable(_: String)) ~ !OpCharTail
@@ -60,21 +59,22 @@ trait Literals extends Parser
     ) ~~>> (ast.MapExpression(_))
   }
 
-  def LiteralEntry: Rule1[ast.MapProjectionElement] = rule("literal entry")(
-    PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (ast.LiteralEntry(_, _)))
+  def LiteralEntry: Rule1[ast.MapProjectionElement] =
+    rule("literal entry")(PropertyKeyName ~~ ch(':') ~~ Expression ~~>> (ast.LiteralEntry(_, _)))
 
-  def PropertySelector: Rule1[ast.MapProjectionElement] = rule("property selector")(
-    ch('.') ~~ Variable ~~>> (ast.PropertySelector(_)))
+  def PropertySelector: Rule1[ast.MapProjectionElement] =
+    rule("property selector")(ch('.') ~~ Variable ~~>> (ast.PropertySelector(_)))
 
-  def VariableSelector: Rule1[ast.MapProjectionElement] = rule("variable selector")(
-    Variable ~~>> (ast.VariableSelector(_)))
+  def VariableSelector: Rule1[ast.MapProjectionElement] =
+    rule("variable selector")(Variable ~~>> (ast.VariableSelector(_)))
 
-  def AllPropertiesSelector: Rule1[ast.MapProjectionElement] = rule("all properties selector")(
-    ch('.') ~~ ch('*') ~ push(ast.AllPropertiesSelector()(_)))
+  def AllPropertiesSelector: Rule1[ast.MapProjectionElement] =
+    rule("all properties selector")(ch('.') ~~ ch('*') ~ push(ast.AllPropertiesSelector()(_)))
 
   def MapProjection: Rule1[ast.MapProjection] = rule {
     group(
-      Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector, CommaSep) ~~ ch('}')
+      Variable ~~ ch('{') ~~ zeroOrMore(LiteralEntry | PropertySelector | VariableSelector | AllPropertiesSelector,
+                                        CommaSep) ~~ ch('}')
     ) ~~>> (ast.MapProjection(_, _))
   }
 
@@ -83,40 +83,43 @@ trait Literals extends Parser
   }
 
   def NewParameter: Rule1[ast.Parameter] = rule("a parameter (new syntax") {
-    ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
+    ((ch('$') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString))) memoMismatches) ~~>> (ast
+      .Parameter(_, CTAny))
   }
 
   def OldParameter: Rule1[ast.Parameter] = rule("a parameter (old syntax)") {
-    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
+    ((ch('{') ~~ (UnescapedSymbolicNameString | EscapedSymbolicNameString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch(
+      '}')) memoMismatches) ~~>> (ast.Parameter(_, CTAny))
   }
 
-  def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
+  def NumberLiteral: Rule1[ast.Literal] =
+    rule("a number")(
       DoubleLiteral
-    | SignedIntegerLiteral
-  ).memoMismatches
+        | SignedIntegerLiteral
+    ).memoMismatches
 
-  def DoubleLiteral: Rule1[ast.DecimalDoubleLiteral] = rule("a floating point number") (
-      ExponentDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
-    | RegularDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
+  def DoubleLiteral: Rule1[ast.DecimalDoubleLiteral] = rule("a floating point number")(
+    ExponentDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
+      | RegularDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
   )
 
-  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") (
-      HexInteger ~>>> (ast.SignedHexIntegerLiteral(_))
-    | OctalInteger ~>>> (ast.SignedOctalIntegerLiteral(_))
-    | DecimalInteger ~>>> (ast.SignedDecimalIntegerLiteral(_))
+  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer")(
+    HexInteger ~>>> (ast.SignedHexIntegerLiteral(_))
+      | OctalInteger ~>>> (ast.SignedOctalIntegerLiteral(_))
+      | DecimalInteger ~>>> (ast.SignedDecimalIntegerLiteral(_))
   )
 
   def UnsignedIntegerLiteral: Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
     UnsignedDecimalInteger ~>>> (ast.UnsignedDecimalIntegerLiteral(_))
   }
 
-  def RangeLiteral: Rule1[ast.Range] = rule (
-      group(
-        optional(UnsignedIntegerLiteral ~ WS) ~
+  def RangeLiteral: Rule1[ast.Range] = rule(
+    group(
+      optional(UnsignedIntegerLiteral ~ WS) ~
         ".." ~
         optional(WS ~ UnsignedIntegerLiteral)
-      ) ~~>> (ast.Range(_, _))
-    | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
+    ) ~~>> (ast.Range(_, _))
+      | UnsignedIntegerLiteral ~~>> (l => ast.Range(Some(l), Some(l)))
   )
 
   def NodeLabels: Rule1[Seq[ast.LabelName]] = rule("node labels") {
@@ -133,8 +136,8 @@ trait Literals extends Parser
 
   def StringLiteral: Rule1[ast.StringLiteral] = rule("\"...string...\"") {
     (((
-       ch('\'') ~ StringCharacters('\'') ~ ch('\'')
-     | ch('"') ~ StringCharacters('"') ~ ch('"')
+      ch('\'') ~ StringCharacters('\'') ~ ch('\'')
+        | ch('"') ~ StringCharacters('"') ~ ch('"')
     ) memoMismatches) suppressSubnodes) ~~>> (ast.StringLiteral(_))
   }
 }

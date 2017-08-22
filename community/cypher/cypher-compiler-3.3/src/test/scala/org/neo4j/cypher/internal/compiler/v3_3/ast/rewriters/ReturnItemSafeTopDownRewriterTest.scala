@@ -26,7 +26,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val rewriter = ReturnItemSafeTopDownRewriter(Rewriter.lift { case v@Variable("foo") => Variable("bar")(v.position) })
+  val rewriter = ReturnItemSafeTopDownRewriter(
+    Rewriter.lift { case v @ Variable("foo") => Variable("bar")(v.position) })
 
   test("works with where") {
     val original = Where(Equals(varFor("foo"), literalInt(42))(pos))(pos)
@@ -41,7 +42,6 @@ class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstruct
       val returnItems = ReturnItems(includeExisting = false, Seq(item))(pos)
       With(distinct = false, returnItems, None, None, None, None)(pos)
     }
-
 
     val originalReturnItem = AliasedReturnItem(Equals(varFor("foo"), literalInt(42))(pos), varFor("foo"))(pos)
     val expectedReturnItem = AliasedReturnItem(Equals(varFor("bar"), literalInt(42))(pos), varFor("foo"))(pos)

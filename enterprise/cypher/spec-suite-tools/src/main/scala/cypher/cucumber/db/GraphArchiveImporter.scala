@@ -24,7 +24,9 @@ import java.util.concurrent.TimeUnit
 import java.util.{Map => JavaMap}
 
 import cypher.cucumber.db.GraphArchive.Descriptor
-import org.neo4j.graphdb.{Label, Transaction, GraphDatabaseService}
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Transaction
+import org.neo4j.graphdb.GraphDatabaseService
 
 import scala.io.Source
 import scala.reflect.io.Path
@@ -140,5 +142,3 @@ abstract class GraphArchiveImporter {
     }
   }
 }
-
-

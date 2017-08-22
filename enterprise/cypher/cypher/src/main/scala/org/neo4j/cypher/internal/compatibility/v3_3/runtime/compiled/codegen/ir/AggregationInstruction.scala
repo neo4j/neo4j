@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
 case class AggregationInstruction(opName: String, aggregationFunctions: Iterable[AggregateExpression])
-  extends Instruction {
+    extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) {
     aggregationFunctions.foreach(_.init(generator))

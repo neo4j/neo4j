@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.scalatest.Assertions
@@ -37,27 +38,27 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
       implicit val monitor = new QueryExecutionMonitor {
         override def startQueryExecution(query: ExecutingQuery) {}
 
-        override def endSuccess(query: ExecutingQuery){}
+        override def endSuccess(query: ExecutingQuery) {}
 
-        override def endFailure(query: ExecutingQuery, throwable: Throwable){}
+        override def endFailure(query: ExecutingQuery, throwable: Throwable) {}
       }
       apply(actual.queryStatistics())
     }
   }
 
   def assertStats(
-                   result: InternalExecutionResult,
-                   nodesCreated: Int = 0,
-                   relationshipsCreated: Int = 0,
-                   propertiesWritten: Int = 0,
-                   nodesDeleted: Int = 0,
-                   relationshipsDeleted: Int = 0,
-                   labelsAdded: Int = 0,
-                   labelsRemoved: Int = 0,
-                   indexesAdded: Int = 0,
-                   indexesRemoved: Int = 0,
-                   constraintsAdded: Int = 0,
-                   constraintsRemoved: Int = 0
+      result: InternalExecutionResult,
+      nodesCreated: Int = 0,
+      relationshipsCreated: Int = 0,
+      propertiesWritten: Int = 0,
+      nodesDeleted: Int = 0,
+      relationshipsDeleted: Int = 0,
+      labelsAdded: Int = 0,
+      labelsRemoved: Int = 0,
+      indexesAdded: Int = 0,
+      indexesRemoved: Int = 0,
+      constraintsAdded: Int = 0,
+      constraintsRemoved: Int = 0
   ) = {
     assertStatsResult(
       nodesCreated,
@@ -85,8 +86,7 @@ trait QueryStatisticsTestSupport extends MockitoSugar {
                         indexesAdded: Int = 0,
                         indexesRemoved: Int = 0,
                         constraintsAdded: Int = 0,
-                        constraintsRemoved: Int = 0
-                       ): QueryStatisticsAssertions =
+                        constraintsRemoved: Int = 0): QueryStatisticsAssertions =
     QueryStatistics(
       nodesCreated,
       relationshipsCreated,

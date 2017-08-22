@@ -21,20 +21,20 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 /**
- * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
- * any ORDER BY to a preceding WITH clause
- *
- * Example:
- *
- * MATCH (n)
- * RETURN n.foo AS foo, n.bar ORDER BY foo
- *
- * This rewrite will change the query to:
- *
- * MATCH (n)
- * WITH n.foo AS `  FRESHIDxx`, n.bar AS `  FRESHIDnn` ORDER BY `  FRESHIDxx`
- * RETURN `  FRESHIDxx` AS foo, `  FRESHIDnn` AS `n.bar`
- */
+  * This rewriter makes sure that all return items in a RETURN clauses are aliased, and moves
+  * any ORDER BY to a preceding WITH clause
+  *
+  * Example:
+  *
+  * MATCH (n)
+  * RETURN n.foo AS foo, n.bar ORDER BY foo
+  *
+  * This rewrite will change the query to:
+  *
+  * MATCH (n)
+  * WITH n.foo AS `  FRESHIDxx`, n.bar AS `  FRESHIDnn` ORDER BY `  FRESHIDxx`
+  * RETURN `  FRESHIDxx` AS foo, `  FRESHIDnn` AS `n.bar`
+  */
 case class normalizeReturnClauses(mkException: (String, InputPosition) => CypherException) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
@@ -53,35 +53,44 @@ case class normalizeReturnClauses(mkException: (String, InputPosition) => Cypher
       )
 
     case clause @ Return(distinct, ri, orderBy, skip, limit, _) =>
-      clause.verifyOrderByAggregationUse((s,i) => throw mkException(s,i))
+      clause.verifyOrderByAggregationUse((s, i) => throw mkException(s, i))
       var rewrites = Map[Expression, Variable]()
 
-      val (aliasProjection, finalProjection) = ri.items.map {
-        i =>
-          val returnColumn = i.alias match {
-            case Some(alias) => alias
-            case None        => Variable(i.name)(i.expression.position.bumped())
-          }
+      val (aliasProjection, finalProjection) = ri.items.map { i =>
+        val returnColumn = i.alias match {
+          case Some(alias) => alias
+          case None        => Variable(i.name)(i.expression.position.bumped())
+        }
 
-          val newVariable = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
+        val newVariable = Variable(FreshIdNameGenerator.name(i.expression.position))(i.expression.position)
 
-          rewrites = rewrites + (returnColumn -> newVariable)
-          rewrites = rewrites + (i.expression -> newVariable)
+        rewrites = rewrites + (returnColumn -> newVariable)
+        rewrites = rewrites + (i.expression -> newVariable)
 
-          (AliasedReturnItem(i.expression, newVariable)(i.position), AliasedReturnItem(newVariable.copyId, returnColumn)(i.position))
+        (AliasedReturnItem(i.expression, newVariable)(i.position),
+         AliasedReturnItem(newVariable.copyId, returnColumn)(i.position))
       }.unzip
 
       val newOrderBy = orderBy.endoRewrite(topDown(Rewriter.lift {
         case exp: Expression if rewrites.contains(exp) => rewrites(exp).copyId
       }))
 
-      val introducedVariables = if (ri.includeExisting) aliasProjection.map(_.variable.name).toSet else Set.empty[String]
+      val introducedVariables =
+        if (ri.includeExisting) aliasProjection.map(_.variable.name).toSet else Set.empty[String]
 
       Seq(
-        With(distinct = distinct, returnItems = ri.copy(items = aliasProjection)(ri.position),
-          orderBy = newOrderBy, skip = skip, limit = limit, where = None)(clause.position),
-        Return(distinct = false, returnItems = ri.copy(items = finalProjection)(ri.position),
-          orderBy = None, skip = None, limit = None, excludedNames = introducedVariables)(clause.position)
+        With(distinct = distinct,
+             returnItems = ri.copy(items = aliasProjection)(ri.position),
+             orderBy = newOrderBy,
+             skip = skip,
+             limit = limit,
+             where = None)(clause.position),
+        Return(distinct = false,
+               returnItems = ri.copy(items = finalProjection)(ri.position),
+               orderBy = None,
+               skip = None,
+               limit = None,
+               excludedNames = introducedVariables)(clause.position)
       )
 
     case clause =>

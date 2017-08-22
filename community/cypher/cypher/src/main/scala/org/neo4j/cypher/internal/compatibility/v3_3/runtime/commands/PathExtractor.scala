@@ -23,7 +23,10 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, PathValue, VirtualValues}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -66,8 +69,8 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
   private def getFirstNode(pathPattern: Seq[Pattern]): String =
     pathPattern.head match {
       case RelatedTo(left, _, _, _, _, _) => left.name
-      case SingleNode(name, _, _) => name
-      case path: PathPattern => path.left.name
+      case SingleNode(name, _, _)         => name
+      case path: PathPattern              => path.left.name
     }
 
   override def rewrite(f: (Expression) => Expression) = f(this)

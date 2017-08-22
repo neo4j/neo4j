@@ -36,12 +36,14 @@ class ListMatcherTest extends ParsingTestSupport {
   test("should not match lists of different size") {
     new ListMatcher(emptyList()) shouldNot accept(asList(""))
     new ListMatcher(asList(new StringMatcher(""))) shouldNot accept(emptyList())
-    new ListMatcher(asList(new StringMatcher(""), new ListMatcher(emptyList()))) shouldNot accept(asList("", emptyList(), 0))
+    new ListMatcher(asList(new StringMatcher(""), new ListMatcher(emptyList()))) shouldNot accept(
+      asList("", emptyList(), 0))
   }
 
   test("should match nested lists") {
     new ListMatcher(asList(new ListMatcher(asList(NULL_MATCHER)))) should accept(asList(asList(null)))
-    new ListMatcher(asList(new ListMatcher(asList(new IntegerMatcher(0), new BooleanMatcher(false))), new StringMatcher(""))) should accept(asList(asList(0L, false), ""))
+    new ListMatcher(asList(new ListMatcher(asList(new IntegerMatcher(0), new BooleanMatcher(false))),
+                           new StringMatcher(""))) should accept(asList(asList(0L, false), ""))
   }
 
   test("should not match different lists") {

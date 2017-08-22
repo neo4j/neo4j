@@ -23,17 +23,19 @@ import org.neo4j.collection.RawIterator
 import org.neo4j.cypher._
 import org.neo4j.kernel.api.exceptions.ProcedureException
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
-import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.{Aggregator, BasicUserAggregationFunction}
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.Aggregator
+import org.neo4j.kernel.api.proc.CallableUserAggregationFunction.BasicUserAggregationFunction
 import org.neo4j.kernel.api.proc.CallableUserFunction.BasicUserFunction
 import org.neo4j.kernel.api.proc.ProcedureSignature.procedureSignature
 import org.neo4j.kernel.api.proc.UserFunctionSignature.functionSignature
-import org.neo4j.kernel.api.proc.{Context, Neo4jTypes, ProcedureSignature}
+import org.neo4j.kernel.api.proc.Context
+import org.neo4j.kernel.api.proc.Neo4jTypes
+import org.neo4j.kernel.api.proc.ProcedureSignature
 
 abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
 
   protected def registerDummyInOutProcedure(types: Neo4jTypes.AnyType*) =
     registerProcedure("my.first.proc") { builder =>
-
       for (i <- types.indices) {
         builder
           .in(s"in$i", types(i))
@@ -44,7 +46,7 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] =
           RawIterator.of[Array[AnyRef], ProcedureException](input)
       }
-  }
+    }
 
   protected def registerProcedureReturningSingleValue(value: AnyRef) =
     registerProcedure("my.first.value") { builder =>
@@ -82,7 +84,6 @@ abstract class ProcedureCallAcceptanceTest extends ExecutionEngineFunSuite {
         }
       }
     }
-
 
   protected def registerVoidProcedure() =
     registerProcedure("dbms.do_nothing") { builder =>

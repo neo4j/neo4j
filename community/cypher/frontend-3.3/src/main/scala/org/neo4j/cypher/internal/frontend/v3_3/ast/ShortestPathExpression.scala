@@ -25,6 +25,6 @@ case class ShortestPathExpression(pattern: ShortestPaths) extends Expression wit
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.declareVariables(Pattern.SemanticContext.Expression) chain
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
-    super.semanticCheck(ctx)
+      pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
+      super.semanticCheck(ctx)
 }

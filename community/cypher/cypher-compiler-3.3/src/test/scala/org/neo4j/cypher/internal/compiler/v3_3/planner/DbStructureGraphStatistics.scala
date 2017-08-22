@@ -21,18 +21,23 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.NameId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
 
 class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatistics {
 
   import NameId._
 
-  override def nodesWithLabelCardinality( label: Option[LabelId] ): Cardinality =
+  override def nodesWithLabelCardinality(label: Option[LabelId]): Cardinality =
     Cardinality(lookup.nodesWithLabelCardinality(label))
 
-  override def cardinalityByLabelsAndRelationshipType( fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId] ): Cardinality =
+  override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                                      relTypeId: Option[RelTypeId],
+                                                      toLabel: Option[LabelId]): Cardinality =
     Cardinality(lookup.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel))
 
   /*
@@ -40,8 +45,8 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
 
       indexSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
-  override def indexSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
-    val result = lookup.indexSelectivity( index.label.id, index.property.id )
+  override def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val result = lookup.indexSelectivity(index.label.id, index.property.id)
     Selectivity.of(result)
   }
 
@@ -50,8 +55,8 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
 
       indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */
-  override def indexPropertyExistsSelectivity( index: IndexDescriptor ): Option[Selectivity] = {
-    val result = lookup.indexPropertyExistsSelectivity( index.label.id, index.property.id )
+  override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
+    val result = lookup.indexPropertyExistsSelectivity(index.label.id, index.property.id)
     if (result.isNaN) None else Some(Selectivity.of(result).get)
   }
 }

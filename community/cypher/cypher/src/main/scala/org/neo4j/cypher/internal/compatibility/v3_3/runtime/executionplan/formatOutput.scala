@@ -26,12 +26,14 @@ import org.neo4j.cypher.internal.QueryStatistics
 import scala.collection.Map
 
 /**
- * Creates formatted tabular output.
- */
+  * Creates formatted tabular output.
+  */
 object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]], QueryStatistics) => Unit) {
 
-  def apply(writer: PrintWriter, columns: List[String],
-            result: Seq[Map[String, String]], queryStatistics: QueryStatistics) {
+  def apply(writer: PrintWriter,
+            columns: List[String],
+            result: Seq[Map[String, String]],
+            queryStatistics: QueryStatistics) {
 
     def makeSize(txt: String, wantedSize: Int): String = {
       val actualSize = txt.length()
@@ -45,16 +47,19 @@ object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]
     def repeat(x: String, size: Int): String = (1 to size).map((i) => x).mkString
 
     def createString(columnSizes: Map[String, Int], m: Map[String, String]) = {
-      columns.map(c => {
-        val length = columnSizes.get(c).get
-        val txt = m.get(c).get
-        val value = makeSize(txt, length)
-        value
-      }).mkString("| ", " | ", " |")
+      columns
+        .map(c => {
+          val length = columnSizes.get(c).get
+          val txt = m.get(c).get
+          val value = makeSize(txt, length)
+          value
+        })
+        .mkString("| ", " | ", " |")
     }
 
     def calculateColumnSizes(result: Seq[Map[String, String]]) = {
-      val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name => name -> name.length)
+      val columnSizes = new scala.collection.mutable.OpenHashMap[String, Int] ++ columns.map(name =>
+        name -> name.length)
 
       result.foreach((m) => {
         m.foreach((kv) => {
@@ -102,6 +107,5 @@ object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]
       }
     }
   }
-
 
 }

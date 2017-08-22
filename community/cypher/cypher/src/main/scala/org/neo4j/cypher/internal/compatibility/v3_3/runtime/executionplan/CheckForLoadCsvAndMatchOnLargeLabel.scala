@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.LabelId
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{InternalNotification, LargeLabelWithLoadCsvNotification}
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 
-case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long) extends (Pipe => Option[InternalNotification]) {
+case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonIndexedLabelWarningThreshold: Long)
+    extends (Pipe => Option[InternalNotification]) {
 
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
@@ -41,17 +43,19 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
     val resultState = pipe.reverseTreeFold[SearchState](NoneFound) {
       case _: LoadCSVPipe => {
         case LargeLabelFound => (LargeLabelWithLoadCsvFound, Some(identity))
-        case e => (e, None)
+        case e               => (e, None)
       }
       case NodeByLabelScanPipe(_, label) if cardinality(label.getOptId(planContext)) > threshold =>
-        acc => (LargeLabelFound, Some(identity))
+        acc =>
+          (LargeLabelFound, Some(identity))
       case NodeStartPipe(_, _, NodeByLabelEntityProducer(_, id), _) if cardinality(id) > threshold =>
-        acc => (LargeLabelFound, Some(identity))
+        acc =>
+          (LargeLabelFound, Some(identity))
     }
 
     resultState match {
       case LargeLabelWithLoadCsvFound => Some(LargeLabelWithLoadCsvNotification)
-      case _ => None
+      case _                          => None
     }
   }
 

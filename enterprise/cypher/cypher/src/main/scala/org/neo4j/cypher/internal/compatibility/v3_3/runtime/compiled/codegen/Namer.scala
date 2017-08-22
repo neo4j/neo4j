@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen
 
 import java.util.concurrent.atomic.AtomicInteger
 
-class Namer(classNameCounter: AtomicInteger, varPrefix: String = "v", methodPrefix: String = "m", operationPrefix: String = "OP") {
+class Namer(classNameCounter: AtomicInteger,
+            varPrefix: String = "v",
+            methodPrefix: String = "m",
+            operationPrefix: String = "OP") {
 
   private var methodNameCounter = 0
   private var varNameCounter = 0

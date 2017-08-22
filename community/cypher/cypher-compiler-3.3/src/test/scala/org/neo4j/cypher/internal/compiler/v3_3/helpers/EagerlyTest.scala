@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable
 
 class EagerlyTest extends CypherFunSuite {
   test("maps values of immutable maps to immutable maps") {
-    val result = Eagerly.immutableMapValues(immutable.Map("a" -> 1, "b" ->2), (x: Int) => x * 2)
+    val result = Eagerly.immutableMapValues(immutable.Map("a" -> 1, "b" -> 2), (x: Int) => x * 2)
     val expectation = immutable.Map("a" -> 2, "b" -> 4)
 
     result should equal(expectation)
@@ -35,7 +35,7 @@ class EagerlyTest extends CypherFunSuite {
   }
 
   test("maps values of mutable maps to immutable maps") {
-    val result = Eagerly.immutableMapValues(mutable.Map("a" -> 1, "b" ->2), (x: Int) => x * 2)
+    val result = Eagerly.immutableMapValues(mutable.Map("a" -> 1, "b" -> 2), (x: Int) => x * 2)
     val expectation = immutable.Map("a" -> 2, "b" -> 4)
 
     result should equal(expectation)
@@ -43,7 +43,7 @@ class EagerlyTest extends CypherFunSuite {
   }
 
   test("maps values of immutable maps to mutable maps") {
-    val result = Eagerly.mutableMapValues(immutable.Map("a" -> 1, "b" ->2), (x: Int) => x * 2)
+    val result = Eagerly.mutableMapValues(immutable.Map("a" -> 1, "b" -> 2), (x: Int) => x * 2)
     val expectation = mutable.Map("a" -> 2, "b" -> 4)
 
     result should equal(expectation)
@@ -51,7 +51,7 @@ class EagerlyTest extends CypherFunSuite {
   }
 
   test("maps values of mutable maps to mutable maps") {
-    val result = Eagerly.mutableMapValues(mutable.Map("a" -> 1, "b" ->2), (x: Int) => x * 2)
+    val result = Eagerly.mutableMapValues(mutable.Map("a" -> 1, "b" -> 2), (x: Int) => x * 2)
     val expectation = mutable.Map("a" -> 2, "b" -> 4)
 
     result should equal(expectation)

@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.phases
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 trait BaseState {
@@ -32,7 +33,7 @@ trait BaseState {
 
   def isPeriodicCommit: Boolean = statement() match {
     case Query(Some(_), _) => true
-    case _ => false
+    case _                 => false
   }
 
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
@@ -57,7 +58,8 @@ case class BaseStateImpl(queryText: String,
                          maybeSemantics: Option[SemanticState] = None,
                          maybeExtractedParams: Option[Map[String, Any]] = None,
                          maybeSemanticTable: Option[SemanticTable] = None,
-                         accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+                         accumulatedConditions: Set[Condition] = Set.empty)
+    extends BaseState {
   override def withStatement(s: Statement): BaseState = copy(maybeStatement = Some(s))
 
   override def withSemanticTable(s: SemanticTable): BaseState = copy(maybeSemanticTable = Some(s))

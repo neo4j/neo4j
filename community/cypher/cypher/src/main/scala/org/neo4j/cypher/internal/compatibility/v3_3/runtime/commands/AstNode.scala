@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 
 import scala.reflect.ClassTag
 
-
 trait AstNode[T] {
   def children: Seq[AstNode[_]]
 
@@ -35,12 +34,12 @@ trait AstNode[T] {
     case _          => throw new CypherTypeException("Invalid rewrite")
   }
 
-  def contains(e:Expression) = exists(e == _)
+  def contains(e: Expression) = exists(e == _)
 
   def exists(f: Expression => Boolean) = filter(f).nonEmpty
 
   def filter(isMatch: Expression => Boolean): Seq[Expression] =
-  // We use our visit method to create an traversable, from which we create the Seq
+    // We use our visit method to create an traversable, from which we create the Seq
     new Traversable[Expression] {
       def foreach[U](f: Expression => U) {
         visit {
@@ -67,7 +66,6 @@ trait AstNode[T] {
     }
   }
 
-
   def visitFirst(f: PartialFunction[AstNode[_], Any]) {
     if (f.isDefinedAt(this)) {
       f(this)
@@ -76,4 +74,3 @@ trait AstNode[T] {
     visitChildren(f)
   }
 }
-

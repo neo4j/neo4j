@@ -21,27 +21,37 @@ package org.neo4j.cypher.internal.spi.v3_1.codegen
 
 import java.util
 
-import org.neo4j.collection.primitive.{PrimitiveLongIntMap, PrimitiveLongIterator}
+import org.neo4j.collection.primitive.PrimitiveLongIntMap
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.CompositeKey
 import org.neo4j.cypher.internal.codegen._
-import org.neo4j.cypher.internal.compiler.v3_1.codegen.{QueryExecutionEvent, QueryExecutionTracer, ResultRowImpl}
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.QueryExecutionEvent
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.QueryExecutionTracer
+import org.neo4j.cypher.internal.compiler.v3_1.codegen.ResultRowImpl
 import org.neo4j.cypher.internal.compiler.v3_1.planDescription.Id
-import org.neo4j.cypher.internal.compiler.v3_1.spi.{InternalResultRow, InternalResultVisitor}
+import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultRow
+import org.neo4j.cypher.internal.compiler.v3_1.spi.InternalResultVisitor
 import org.neo4j.graphdb.Direction
 import org.neo4j.helpers.collection.MapUtil
 import org.neo4j.kernel.api.ReadOperations
 import org.neo4j.kernel.api.schema.index.IndexDescriptor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.api.{RelationshipDataExtractor, RelationshipVisitor}
-import org.neo4j.kernel.impl.core.{NodeManager, NodeProxy, RelationshipProxy}
-import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.kernel.impl.api.RelationshipDataExtractor
+import org.neo4j.kernel.impl.api.RelationshipVisitor
+import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.NodeProxy
+import org.neo4j.kernel.impl.core.RelationshipProxy
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 
 object Methods {
 
-  import GeneratedQueryStructure.{method, typeRef}
+  import GeneratedQueryStructure.method
+  import GeneratedQueryStructure.typeRef
 
   val countingTablePut = method[PrimitiveLongIntMap, Int]("put", typeRef[Long], typeRef[Int])
-  val countingTableCompositeKeyPut = method[util.HashMap[CompositeKey, Integer], Object]("put", typeRef[Object], typeRef[Object])
+  val countingTableCompositeKeyPut =
+    method[util.HashMap[CompositeKey, Integer], Object]("put", typeRef[Object], typeRef[Object])
   val countingTableGet = method[PrimitiveLongIntMap, Int]("get", typeRef[Long])
   val countingTableCompositeKeyGet = method[util.HashMap[CompositeKey, Integer], Object]("get", typeRef[Object])
   val compositeKey = method[CompiledConversionUtils, CompositeKey]("compositeKey", typeRef[Array[Long]])
@@ -49,15 +59,30 @@ object Methods {
   val hasMoreRelationship = method[RelationshipIterator, Boolean]("hasNext")
   val createMap = method[MapUtil, util.Map[String, Object]]("map", typeRef[Array[Object]])
   val format = method[String, String]("format", typeRef[String], typeRef[Array[Object]])
-  val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit", typeRef[Long], typeRef[RelationshipVisitor[RuntimeException]])
+  val relationshipVisit = method[RelationshipIterator, Boolean]("relationshipVisit",
+                                                                typeRef[Long],
+                                                                typeRef[RelationshipVisitor[RuntimeException]])
   val getRelationship = method[RelationshipDataExtractor, Long]("relationship")
   val startNode = method[RelationshipDataExtractor, Long]("startNode")
   val endNode = method[RelationshipDataExtractor, Long]("endNode")
   val typeOf = method[RelationshipDataExtractor, Int]("type")
-  val nodeGetAllRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
-  val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction], typeRef[Array[Int]])
-  val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Direction], typeRef[Long])
-  val connectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships", typeRef[ReadOperations], typeRef[Long], typeRef[Direction], typeRef[Long], typeRef[Array[Int]])
+  val nodeGetAllRelationships =
+    method[ReadOperations, RelationshipIterator]("nodeGetRelationships", typeRef[Long], typeRef[Direction])
+  val nodeGetRelationships = method[ReadOperations, RelationshipIterator]("nodeGetRelationships",
+                                                                          typeRef[Long],
+                                                                          typeRef[Direction],
+                                                                          typeRef[Array[Int]])
+  val allConnectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships",
+                                                                                     typeRef[ReadOperations],
+                                                                                     typeRef[Long],
+                                                                                     typeRef[Direction],
+                                                                                     typeRef[Long])
+  val connectingRelationships = method[CompiledExpandUtils, RelationshipIterator]("connectingRelationships",
+                                                                                  typeRef[ReadOperations],
+                                                                                  typeRef[Long],
+                                                                                  typeRef[Direction],
+                                                                                  typeRef[Long],
+                                                                                  typeRef[Array[Int]])
   val mathAdd = method[CompiledMathHelper, Object]("add", typeRef[Object], typeRef[Object])
   val mathSub = method[CompiledMathHelper, Object]("subtract", typeRef[Object], typeRef[Object])
   val mathMul = method[CompiledMathHelper, Object]("multiply", typeRef[Object], typeRef[Object])
@@ -81,8 +106,10 @@ object Methods {
   val nodeExists = method[ReadOperations, Boolean]("nodeExists", typeRef[Long])
   val nodesGetAll = method[ReadOperations, PrimitiveLongIterator]("nodesGetAll")
   val nodeGetProperty = method[ReadOperations, Value]("nodeGetProperty", typeRef[Long], typeRef[Int])
-  val nodesGetFromIndexLookup = method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
-  val nodeGetUniqueFromIndexLookup = method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
+  val nodesGetFromIndexLookup =
+    method[ReadOperations, PrimitiveLongIterator]("nodesGetFromIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
+  val nodeGetUniqueFromIndexLookup =
+    method[ReadOperations, Long]("nodeGetFromUniqueIndexSeek", typeRef[IndexDescriptor], typeRef[Object])
   val relationshipGetProperty = method[ReadOperations, Value]("relationshipGetProperty", typeRef[Long], typeRef[Int])
   val nodesGetForLabel = method[ReadOperations, PrimitiveLongIterator]("nodesGetForLabel", typeRef[Int])
   val nodeHasLabel = method[ReadOperations, Boolean]("nodeHasLabel", typeRef[Long], typeRef[Int])

@@ -23,21 +23,23 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.collectNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport{
+class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-    private val collector: (Any => Seq[Variable]) = collectNodesOfType[Variable]()
+  private val collector: (Any => Seq[Variable]) = collectNodesOfType[Variable]()
 
-    test("collect all variables") {
-      val idA = varFor("a")
-      val idB = varFor("b")
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB))_)))_, Seq(), None)_
+  test("collect all variables") {
+    val idA = varFor("a")
+    val idB = varFor("b")
+    val ast: ASTNode =
+      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(Some(idA), Seq(), Some(idB)) _))) _, Seq(), None) _
 
-      collector(ast) should equal(Seq(idA, idB))
-    }
+    collector(ast) should equal(Seq(idA, idB))
+  }
 
-    test("collect no variable") {
-      val ast: ASTNode = Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None)_)))_, Seq(), None)_
+  test("collect no variable") {
+    val ast: ASTNode =
+      Match(optional = false, Pattern(Seq(EveryPath(NodePattern(None, Seq(), None) _))) _, Seq(), None) _
 
-      collector(ast) shouldBe empty
-    }
+    collector(ast) shouldBe empty
+  }
 }

@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 class SumFunction(val value: Expression)
-  extends AggregationFunction
-  with TypeSafeMathSupport
-  with NumericExpressionOnly {
+    extends AggregationFunction
+    with TypeSafeMathSupport
+    with NumericExpressionOnly {
 
   def name = "SUM"
 

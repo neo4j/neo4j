@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class ErrorPipe(source: Pipe, exception: Exception)
-                    (val id: Id = new Id)
-  extends PipeWithSource(source) {
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+case class ErrorPipe(source: Pipe, exception: Exception)(val id: Id = new Id) extends PipeWithSource(source) {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] =
     throw exception
 }

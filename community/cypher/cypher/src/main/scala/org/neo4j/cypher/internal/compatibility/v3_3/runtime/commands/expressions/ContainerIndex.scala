@@ -20,14 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{CastSupport, IsList, IsMap, ListSupport}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.CastSupport
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsList
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.values._
 import org.neo4j.values.storable._
 
-case class ContainerIndex(expression: Expression, index: Expression) extends NullInNullOutExpression(expression)
-with ListSupport {
+case class ContainerIndex(expression: Expression, index: Expression)
+    extends NullInNullOutExpression(expression)
+    with ListSupport {
   def arguments = Seq(expression, index)
 
   def compute(value: AnyValue, ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
@@ -63,7 +68,7 @@ with ListSupport {
     val number = CastSupport.castOrFail[NumberValue](item)
 
     val longValue = number match {
-      case _: FloatValue | _: DoubleValue=>
+      case _: FloatValue | _: DoubleValue =>
         throw new CypherTypeException(s"Cannot index a list using an non-integer number, got $number")
       case _ => number.longValue()
     }

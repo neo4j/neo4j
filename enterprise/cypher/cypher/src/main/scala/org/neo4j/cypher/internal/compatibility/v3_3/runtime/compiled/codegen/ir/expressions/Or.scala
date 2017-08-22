@@ -41,14 +41,18 @@ case class Or(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExp
       case (t1, t2) if t1.isPrimitive && t2.isPrimitive =>
         structure.orExpression(lhs.generateExpression(structure), rhs.generateExpression(structure))
       case (t1, t2) if t1.isPrimitive =>
-        structure.orExpression(lhs.generateExpression(structure), structure.unbox(rhs.generateExpression(structure), t2))
+        structure
+          .orExpression(lhs.generateExpression(structure), structure.unbox(rhs.generateExpression(structure), t2))
       case (t1, t2) if t2.isPrimitive =>
-        structure.orExpression(structure.unbox(lhs.generateExpression(structure), t1), rhs.generateExpression(structure))
+        structure
+          .orExpression(structure.unbox(lhs.generateExpression(structure), t1), rhs.generateExpression(structure))
       case _ =>
         structure.unbox(
-          structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType), structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
-          CypherCodeGenType(CTBoolean, ReferenceType))
-    }
-    else structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
-                                           structure.box(rhs.generateExpression(structure), rhs.codeGenType))
+          structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                            structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
+          CypherCodeGenType(CTBoolean, ReferenceType)
+        )
+    } else
+      structure.threeValuedOrExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
+                                        structure.box(rhs.generateExpression(structure), rhs.codeGenType))
 }

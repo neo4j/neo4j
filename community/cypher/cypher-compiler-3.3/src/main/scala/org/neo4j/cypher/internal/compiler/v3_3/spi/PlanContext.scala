@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 
 /**
- * PlanContext is an internal access layer to the graph that is solely used during plan building
- *
- * As such it is similar to QueryContext. The reason for separating both interfaces is that we
- * want to control what operations can be executed at runtime.  For example, we do not give access
- * to index rule lookup in QueryContext as that should happen at query compile time.
- */
+  * PlanContext is an internal access layer to the graph that is solely used during plan building
+  *
+  * As such it is similar to QueryContext. The reason for separating both interfaces is that we
+  * want to control what operations can be executed at runtime.  For example, we do not give access
+  * to index rule lookup in QueryContext as that should happen at query compile time.
+  */
 trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor]

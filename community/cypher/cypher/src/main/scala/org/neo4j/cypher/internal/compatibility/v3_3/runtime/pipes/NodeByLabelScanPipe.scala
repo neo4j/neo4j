@@ -23,8 +23,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValues
 
-case class NodeByLabelScanPipe(ident: String, label: LazyLabel)
-                              (val id: Id = new Id) extends Pipe  {
+case class NodeByLabelScanPipe(ident: String, label: LazyLabel)(val id: Id = new Id) extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
 

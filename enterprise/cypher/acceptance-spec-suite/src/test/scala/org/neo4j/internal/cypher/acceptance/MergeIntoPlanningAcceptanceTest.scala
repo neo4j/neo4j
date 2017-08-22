@@ -22,7 +22,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.InternalExecutionResult
 
-class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
+class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("ON CREATE with update one property") {
     //given
@@ -99,5 +99,5 @@ class MergeIntoPlanningAcceptanceTest extends ExecutionEngineFunSuite{
   }
 
   //MERGE INTO is only used by the rule planner
-  override def execute(q: String, params: (String, Any)*): InternalExecutionResult= super.execute(s"$q", params:_*)
+  override def execute(q: String, params: (String, Any)*): InternalExecutionResult = super.execute(s"$q", params: _*)
 }

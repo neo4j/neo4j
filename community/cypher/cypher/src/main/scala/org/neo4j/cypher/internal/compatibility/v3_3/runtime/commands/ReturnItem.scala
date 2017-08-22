@@ -19,28 +19,27 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator.isNamed
 
 import scala.collection.Map
 
 abstract class ReturnColumn {
-  def expressions(symbols: SymbolTable): Map[String,Expression]
+  def expressions(symbols: SymbolTable): Map[String, Expression]
 
   def name: String
 }
 
 case class AllVariables() extends ReturnColumn {
-  def expressions(symbols: SymbolTable): Map[String, Expression] = symbols.variables.keys.
-    filter(isNamed).
-    map(n => n -> Variable(n)).toMap
+  def expressions(symbols: SymbolTable): Map[String, Expression] =
+    symbols.variables.keys.filter(isNamed).map(n => n -> Variable(n)).toMap
 
   def name = "*"
 }
 
-case class ReturnItem(expression: Expression, name: String)
-  extends ReturnColumn {
+case class ReturnItem(expression: Expression, name: String) extends ReturnColumn {
   def expressions(symbols: SymbolTable) = Map(name -> expression)
 
   override def toString =

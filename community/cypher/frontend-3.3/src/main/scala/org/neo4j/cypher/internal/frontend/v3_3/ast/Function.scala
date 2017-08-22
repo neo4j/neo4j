@@ -92,7 +92,9 @@ object Function {
     functions.Type
   )
 
-  val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
+  val lookup: Map[String, Function] = knownFunctions.map { f =>
+    (f.name.toLowerCase, f)
+  }.toMap
 }
 
 abstract class Function extends SemanticChecking {
@@ -122,7 +124,8 @@ abstract class Function extends SemanticChecking {
 
   def asFunctionName(implicit position: InputPosition) = FunctionName(name)(position)
 
-  def asInvocation(argument: ast.Expression, distinct: Boolean = false)(implicit position: InputPosition): FunctionInvocation =
+  def asInvocation(argument: ast.Expression, distinct: Boolean = false)(
+      implicit position: InputPosition): FunctionInvocation =
     FunctionInvocation(asFunctionName, distinct = distinct, IndexedSeq(argument))(position)
 
   def asInvocation(lhs: ast.Expression, rhs: ast.Expression)(implicit position: InputPosition): FunctionInvocation =
@@ -134,16 +137,16 @@ trait SimpleTypedFunction extends ExpressionCallTypeChecking {
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     checkMinArgs(invocation, signatureLengths.min) chain
-    checkMaxArgs(invocation, signatureLengths.max) chain
-    typeChecker.checkTypes(invocation)
+      checkMaxArgs(invocation, signatureLengths.max) chain
+      typeChecker.checkTypes(invocation)
 }
 
 abstract class AggregatingFunction extends Function {
-  override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
+  override def semanticCheckHook(ctx: ast.Expression.SemanticContext,
+                                 invocation: ast.FunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
     } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
-
 
   /*
    * Checks so that the expression is in the range [min, max]
@@ -156,12 +159,12 @@ abstract class AggregatingFunction extends Function {
         SemanticCheckResult.success
       case d: DoubleLiteral =>
         SemanticError(s"Invalid input '${d.value}' is not a valid argument, must be a number in the range 0.0 to 1.0",
-          d.position)
+                      d.position)
 
       case l: Literal =>
-        SemanticError(s"Invalid input '${
-          l.asCanonicalStringVal
-        }' is not a valid argument, must be a number in the range 0.0 to 1.0", l.position)
+        SemanticError(
+          s"Invalid input '${l.asCanonicalStringVal}' is not a valid argument, must be a number in the range 0.0 to 1.0",
+          l.position)
 
       //for other types we'll have to wait until runtime to fail
       case _ => SemanticCheckResult.success

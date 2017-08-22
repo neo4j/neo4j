@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class ExtractExpressionTest extends CypherFunSuite {
 
@@ -29,21 +31,27 @@ class ExtractExpressionTest extends CypherFunSuite {
   val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
   test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
-    val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
+    val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(
+      DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
     extract.types(result.state) should equal(CTList(CTNode) | CTList(CTNumber))
   }
 
   test("shouldRaiseSemanticErrorIfPredicateSpecified") {
-    val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, Some(True()(DummyPosition(5))), Some(extractExpression))(DummyPosition(0))
+    val extract = ExtractExpression(Variable("x")(DummyPosition(5)),
+                                    dummyExpression,
+                                    Some(True()(DummyPosition(5))),
+                                    Some(extractExpression))(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("extract(...) should not contain a WHERE predicate", DummyPosition(0))))
+    result.errors should equal(
+      Seq(SemanticError("extract(...) should not contain a WHERE predicate", DummyPosition(0))))
   }
 
   test("shouldRaiseSemanticErrorIfMissingExtractExpression") {
     val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    result.errors should equal(Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyPosition(0))))
+    result.errors should equal(
+      Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyPosition(0))))
   }
 }

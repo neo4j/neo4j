@@ -29,12 +29,13 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
     val singleRow: LogicalPlan = Argument(Set(IdName("a")))(solved)(Map.empty)
-    val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
-    val cleanPredicate: Expression = Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
+    val predicate: Expression = In(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos),
+                                   ListLiteral(Seq(SignedDecimalIntegerLiteral("1")(pos)))(pos))(pos)
+    val cleanPredicate: Expression =
+      Equals(Property(varFor("x"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
     val selection = Selection(Seq(predicate), singleRow)(solved)
 
-    selection.endoRewrite(simplifyPredicates) should equal(
-      Selection(Seq(cleanPredicate), singleRow)(solved))
+    selection.endoRewrite(simplifyPredicates) should equal(Selection(Seq(cleanPredicate), singleRow)(solved))
   }
 
   test("should not rewrite WHERE x.prop in [1, 2]") {

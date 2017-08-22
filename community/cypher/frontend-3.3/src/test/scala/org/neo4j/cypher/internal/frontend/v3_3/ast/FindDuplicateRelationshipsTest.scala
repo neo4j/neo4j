@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 
 class FindDuplicateRelationshipsTest extends CypherFunSuite {
 
@@ -56,8 +57,8 @@ class FindDuplicateRelationshipsTest extends CypherFunSuite {
   }
 
   private def relChain(ids: Variable*) =
-    ids.foldRight(node.asInstanceOf[PatternElement]) {
-      (id, n) => RelationshipChain(n, relPattern(id), node)(pos)
+    ids.foldRight(node.asInstanceOf[PatternElement]) { (id, n) =>
+      RelationshipChain(n, relPattern(id), node)(pos)
     }
 
   private def relPattern(id: Variable) =

@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, PropertyKeyName}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-case class SetProperty(source: LogicalPlan, entity: Expression, propertyKey: PropertyKeyName, value: Expression)
-                      (val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
+case class SetProperty(source: LogicalPlan, entity: Expression, propertyKey: PropertyKeyName, value: Expression)(
+    val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan {
 
   override def lhs = Some(source)
 

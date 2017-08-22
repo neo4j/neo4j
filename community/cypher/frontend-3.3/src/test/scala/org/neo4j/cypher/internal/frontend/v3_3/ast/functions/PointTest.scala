@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-class PointTest extends FunctionTestBase("point")  {
+class PointTest extends FunctionTestBase("point") {
 
   test("should accept correct types") {
     testValidTypes(CTMap)(CTPoint)

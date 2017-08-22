@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, CypherTypeException, SyntaxException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 import scala.collection.Map
 
@@ -32,34 +34,37 @@ case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
   def add(key: String, typ: CypherType): SymbolTable = SymbolTable(variables + (key -> typ))
 
   def add(value: Map[String, CypherType]): SymbolTable = {
-    value.foldLeft(this) {
-      (a: SymbolTable, b: (String, CypherType)) => a.add(b._1, b._2)
+    value.foldLeft(this) { (a: SymbolTable, b: (String, CypherType)) =>
+      a.add(b._1, b._2)
     }
   }
 
   def filter(f: String => Boolean): SymbolTable = SymbolTable(variables.filterKeys(f))
   def keys: Seq[String] = variables.keys.toIndexedSeq
-  def missingSymbolTableDependencies(x: TypeSafe) = x.symbolTableDependencies.filterNot( dep => variables.exists(_._1 == dep))
+  def missingSymbolTableDependencies(x: TypeSafe) =
+    x.symbolTableDependencies.filterNot(dep => variables.exists(_._1 == dep))
 
   def evaluateType(name: String, expectedType: CypherType): CypherType = variables.get(name) match {
     case Some(typ) if expectedType.isAssignableFrom(typ) => typ
     case Some(typ) if typ.isAssignableFrom(expectedType) => typ
-    case Some(typ)                                       => throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))
-    case None                                            => throw new SyntaxException("Unknown variable `%s`.".format(name))
+    case Some(typ) =>
+      throw new CypherTypeException("Expected `%s` to be a %s but it was a %s".format(name, expectedType, typ))
+    case None => throw new SyntaxException("Unknown variable `%s`.".format(name))
   }
 
-  def checkType(name: String, expectedType: CypherType): Boolean = try {
-    evaluateType(name, expectedType)
-    true
-  } catch {
-    case _: CypherException => false
-  }
+  def checkType(name: String, expectedType: CypherType): Boolean =
+    try {
+      evaluateType(name, expectedType)
+      true
+    } catch {
+      case _: CypherException => false
+    }
 
   def intersect(other: SymbolTable): SymbolTable = {
     val overlap = variables.keySet intersect other.variables.keySet
 
-    val mergedVariables = (overlap map {
-      key => key -> variables(key).leastUpperBound(other.variables(key))
+    val mergedVariables = (overlap map { key =>
+      key -> variables(key).leastUpperBound(other.variables(key))
     }).toMap
 
     new SymbolTable(mergedVariables)
@@ -88,6 +93,6 @@ trait Typed {
 
   /*
   Checks if internal type dependencies are met and returns the actual type of the expression
-  */
+   */
   def getType(symbols: SymbolTable): CypherType = evaluateType(CTAny, symbols)
 }

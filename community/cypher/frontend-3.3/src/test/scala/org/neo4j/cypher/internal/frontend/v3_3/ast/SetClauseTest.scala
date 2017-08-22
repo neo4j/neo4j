@@ -18,7 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class SetClauseTest extends CypherFunSuite {
 
@@ -28,7 +29,6 @@ class SetClauseTest extends CypherFunSuite {
     val property = Property(mapLiteral, PropertyKeyName("key")(DummyPosition(3)))(DummyPosition(5))
     val setItem = SetPropertyItem(property, DummyExpression(CTAny))(DummyPosition(42))
     val setClause = SetClause(Seq(setItem))(DummyPosition(6))
-
 
     val result = setClause.semanticCheck(SemanticState.clean)
 

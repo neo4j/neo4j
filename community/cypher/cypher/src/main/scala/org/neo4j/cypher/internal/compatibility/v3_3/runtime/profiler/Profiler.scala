@@ -22,16 +22,25 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.profiler
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeDecorator, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeDecorator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.spi.v3_3.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.spi.v3_3.DelegatingOperations
+import org.neo4j.cypher.internal.spi.v3_3.DelegatingQueryContext
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.helpers.MathUtil
 import org.neo4j.kernel.impl.api.RelationshipVisitor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
-import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
+import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.kernel.impl.factory.Edition
 
 import scala.collection.mutable
 
@@ -43,22 +52,28 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
   val rowStats: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
   private var parentPipe: Option[Pipe] = None
 
-
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
     val oldCount = rowStats.get(pipe.id).map(_.count).getOrElse(0L)
-    val resultIter = new ProfilingIterator(iter, oldCount, pipe.id, if (trackPageCacheStats) updatePageCacheStatistics
-    else {
-      (_) => Unit})
+    val resultIter = new ProfilingIterator(iter,
+                                           oldCount,
+                                           pipe.id,
+                                           if (trackPageCacheStats) updatePageCacheStatistics
+                                           else { (_) =>
+                                             Unit
+                                           })
 
     rowStats(pipe.id) = resultIter
     resultIter
   }
 
   def decorate(pipe: Pipe, state: QueryState): QueryState = {
-    val decoratedContext = dbHitsStats.getOrElseUpdate(pipe.id, state.query match {
-      case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner, pipe)
-      case _ => new ProfilingPipeQueryContext(state.query, pipe)
-    })
+    val decoratedContext = dbHitsStats.getOrElseUpdate(
+      pipe.id,
+      state.query match {
+        case p: ProfilingPipeQueryContext => new ProfilingPipeQueryContext(p.inner, pipe)
+        case _                            => new ProfilingPipeQueryContext(state.query, pipe)
+      }
+    )
 
     if (trackPageCacheStats) {
       val statisticProvider = decoratedContext.transactionalContext.kernelStatisticProvider
@@ -71,7 +86,8 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     val context = dbHitsStats(pipeId)
     val statisticProvider = context.transactionalContext.kernelStatisticProvider
     val currentStat = pageCacheStats(pipeId)
-    pageCacheStats(pipeId) = (statisticProvider.getPageCacheHits - currentStat._1, statisticProvider.getPageCacheMisses - currentStat._2)
+    pageCacheStats(pipeId) =
+      (statisticProvider.getPageCacheHits - currentStat._1, statisticProvider.getPageCacheMisses - currentStat._2)
   }
 
   private def trackPageCacheStats = {
@@ -82,19 +98,18 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
     if (!isProfileReady)
       throw new ProfilerStatisticsNotReadyException()
 
-    plan map {
-      input: InternalPlanDescription =>
-        val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
-        val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
-        val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
-        val hitRatio = MathUtil.portion(hits, misses)
+    plan map { input: InternalPlanDescription =>
+      val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
+      val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
+      val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
+      val hitRatio = MathUtil.portion(hits, misses)
 
-        input
-          .addArgument(Arguments.Rows(rows))
-          .addArgument(Arguments.DbHits(dbHits))
-          .addArgument(Arguments.PageCacheHits(hits))
-          .addArgument(Arguments.PageCacheMisses(misses))
-          .addArgument(Arguments.PageCacheHitRatio(hitRatio))
+      input
+        .addArgument(Arguments.Rows(rows))
+        .addArgument(Arguments.DbHits(dbHits))
+        .addArgument(Arguments.PageCacheHits(hits))
+        .addArgument(Arguments.PageCacheMisses(misses))
+        .addArgument(Arguments.PageCacheHitRatio(hitRatio))
     }
   }
 
@@ -126,7 +141,8 @@ trait Counter {
 }
 
 final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
-  extends DelegatingQueryContext(inner) with Counter {
+    extends DelegatingQueryContext(inner)
+    with Counter {
   self =>
 
   override protected def singleDbHit[A](value: A): A = {
@@ -136,10 +152,9 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
 
   override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = {
     increment()
-    value.map {
-      (v) =>
-        increment()
-        v
+    value.map { (v) =>
+      increment()
+      v
     }
   }
 
@@ -153,7 +168,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
 
   override protected def manyDbHits[A](inner: RelationshipIterator): RelationshipIterator = new RelationshipIterator {
     increment()
-    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long, visitor: RelationshipVisitor[EXCEPTION]): Boolean =
+    override def relationshipVisit[EXCEPTION <: Exception](relationshipId: Long,
+                                                           visitor: RelationshipVisitor[EXCEPTION]): Boolean =
       inner.relationshipVisit(relationshipId, visitor)
 
     override def next(): Long = {
@@ -175,8 +191,12 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 
-class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,
-                        updatePageCacheStatistics:Id => Unit) extends Iterator[ExecutionContext] with Counter {
+class ProfilingIterator(inner: Iterator[ExecutionContext],
+                        startValue: Long,
+                        pipeId: Id,
+                        updatePageCacheStatistics: Id => Unit)
+    extends Iterator[ExecutionContext]
+    with Counter {
 
   _count = startValue
 

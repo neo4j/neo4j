@@ -25,30 +25,31 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer)
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case m@Match(_, pattern, _, where) =>
+    case m @ Match(_, pattern, _, where) =>
       val predicates = pattern.fold(Vector.empty[Expression]) {
-        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
-        case _                                                          => identity
+        case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) =>
+          acc =>
+            acc ++ normalizer.extract(pattern)
+        case _ => identity
       }
 
       if (predicates.isEmpty)
         m.copy(where = m.where.map(w => {
           val pos: InputPosition = where.fold(m.position)(_.position)
-          w.copy( expression = w.expression.endoRewrite(whereRewriter))(pos)
+          w.copy(expression = w.expression.endoRewrite(whereRewriter))(pos)
         }))(m.position)
       else {
         val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
 
         val predOpt: Option[Expression] = rewrittenPredicates match {
-          case Nil => None
+          case Nil        => None
           case exp :: Nil => Some(exp)
-          case list => Some(list.reduce(And(_, _)(m.position)))
+          case list       => Some(list.reduce(And(_, _)(m.position)))
         }
 
-        val newWhere: Option[Where] = predOpt.map {
-          exp =>
-            val pos: InputPosition = where.fold(m.position)(_.position)
-            Where(exp.endoRewrite(whereRewriter))(pos)
+        val newWhere: Option[Where] = predOpt.map { exp =>
+          val pos: InputPosition = where.fold(m.position)(_.position)
+          Where(exp.endoRewrite(whereRewriter))(pos)
         }
 
         m.copy(
@@ -60,22 +61,28 @@ abstract class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer)
 
   private def whereRewriter: Rewriter = Rewriter.lift {
     // WHERE (a)-[:R]->() to WHERE GetDegree( (a)-[:R]->()) > 0
-    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None),
-                                                                    RelationshipPattern(None, types, None, None, dir, _),
-                                                                    NodePattern(None, List(), None)))) =>
-      GreaterThan(calculateUsingGetDegree(p, node, types, dir), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
+    case p @ PatternExpression(
+          RelationshipsPattern(
+            RelationshipChain(NodePattern(Some(node), List(), None),
+                              RelationshipPattern(None, types, None, None, dir, _),
+                              NodePattern(None, List(), None)))) =>
+      GreaterThan(calculateUsingGetDegree(p, node, types, dir), SignedDecimalIntegerLiteral("0")(p.position))(
+        p.position)
     // WHERE ()-[:R]->(a) to WHERE GetDegree( (a)<-[:R]-()) > 0
-    case p@PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None),
-                                                                    RelationshipPattern(None, types, None, None, dir, _),
-                                                                    NodePattern(Some(node), List(), None)))) =>
-      GreaterThan(calculateUsingGetDegree(p, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(p.position))(p.position)
+    case p @ PatternExpression(
+          RelationshipsPattern(
+            RelationshipChain(NodePattern(None, List(), None),
+                              RelationshipPattern(None, types, None, None, dir, _),
+                              NodePattern(Some(node), List(), None)))) =>
+      GreaterThan(calculateUsingGetDegree(p, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(p.position))(
+        p.position)
 
-    case a@And(lhs, rhs) =>
+    case a @ And(lhs, rhs) =>
       And(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(a.position)
 
-    case o@Or(lhs, rhs) => Or(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(o.position)
+    case o @ Or(lhs, rhs) => Or(lhs.endoRewrite(whereRewriter), rhs.endoRewrite(whereRewriter))(o.position)
 
-    case n@Not(e) => Not(e.endoRewrite(whereRewriter))(n.position)
+    case n @ Not(e) => Not(e.endoRewrite(whereRewriter))(n.position)
   }
 
   private val instance = topDown(rewriter, _.isInstanceOf[Expression])

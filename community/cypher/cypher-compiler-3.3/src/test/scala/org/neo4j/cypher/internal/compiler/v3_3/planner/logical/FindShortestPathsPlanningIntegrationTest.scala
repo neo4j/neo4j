@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Not, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Equals
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Not
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
@@ -64,12 +66,16 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val result = (new given {
       cardinality = mapCardinality {
         // node label scan
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 => 100.0
+        case RegularPlannerQuery(queryGraph, _, _)
+            if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.size == 1 =>
+          100.0
         // all node scan
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty => 10000.0
+        case RegularPlannerQuery(queryGraph, _, _)
+            if queryGraph.patternNodes.size == 1 && queryGraph.selections.predicates.isEmpty =>
+          10000.0
         // expand
         case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternRelationships.size == 1 => 100.0
-        case _                             => Double.MaxValue
+        case _                                                                                  => Double.MaxValue
       }
     } getLogicalPlanFor "MATCH (a:X)<-[r1]-(b)-[r2]->(c:X), p = shortestPath((a)-[r]->(c)) RETURN p")._2
 
@@ -79,15 +85,27 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           Seq(Not(Equals(Variable("r1") _, Variable("r2") _) _) _),
           NodeHashJoin(
             Set(IdName("b")),
-            Expand(
-              NodeByLabelScan(IdName("a"), lblName("X"), Set.empty)(solved),
-              IdName("a"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r1"), ExpandAll)(solved),
-            Expand(
-              NodeByLabelScan(IdName("c"), lblName("X"), Set.empty)(solved),
-              IdName("c"), SemanticDirection.INCOMING, Seq.empty, IdName("b"), IdName("r2"), ExpandAll)(solved)
+            Expand(NodeByLabelScan(IdName("a"), lblName("X"), Set.empty)(solved),
+                   IdName("a"),
+                   SemanticDirection.INCOMING,
+                   Seq.empty,
+                   IdName("b"),
+                   IdName("r1"),
+                   ExpandAll)(solved),
+            Expand(NodeByLabelScan(IdName("c"), lblName("X"), Set.empty)(solved),
+                   IdName("c"),
+                   SemanticDirection.INCOMING,
+                   Seq.empty,
+                   IdName("b"),
+                   IdName("r2"),
+                   ExpandAll)(solved)
           )(solved)
         )(solved),
-        ShortestPathPattern(Some(IdName("p")), PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null))(solved)
+        ShortestPathPattern(
+          Some(IdName("p")),
+          PatternRelationship("r", ("a", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength),
+          single = true)(null)
+      )(solved)
 
     result should equal(expected)
   }

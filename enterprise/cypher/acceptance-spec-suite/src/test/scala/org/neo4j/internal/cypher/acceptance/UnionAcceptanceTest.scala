@@ -28,7 +28,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     createLabeledNode(Map("a" -> "a", "b" -> "b"), "B")
 
     val query =
-    """
+      """
       |MATCH (N:A)
       |RETURN
       |N.a as A,
@@ -50,7 +50,7 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
     createLabeledNode(Map("a" -> "b", "b" -> "a"), "B")
 
     val query =
-    """
+      """
       |MATCH (N:A)
       |RETURN
       |N.a as B,
@@ -60,7 +60,6 @@ class UnionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonS
       |M.b as A,
       |M.a as B
     """.stripMargin
-
 
     val expectedToWorkIn = Configs.CommunityInterpreted - Scenarios.Compatibility3_1Cost - Scenarios.Compatibility2_3Cost
     val result = succeedWith(expectedToWorkIn, query)

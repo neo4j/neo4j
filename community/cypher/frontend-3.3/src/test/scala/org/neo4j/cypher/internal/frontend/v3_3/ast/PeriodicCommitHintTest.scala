@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, InputPosition, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class PeriodicCommitHintTest extends CypherFunSuite with Positional {
   test("negative values should fail") {
@@ -89,7 +91,7 @@ class PeriodicCommitHintTest extends CypherFunSuite with Positional {
 
     val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral("1")(pos)
     val hint = PeriodicCommitHint(Some(value))(pos)
-    val nodePattern = NodePattern(None,Seq.empty,None)(pos)
+    val nodePattern = NodePattern(None, Seq.empty, None)(pos)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(pos)
     val create = Create(pattern)(pos)
     val queryPart = SingleQuery(Seq(create))(pos)

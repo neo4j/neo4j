@@ -39,7 +39,6 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     result should be(empty)
   }
 
-
   test("EXPLAIN for Cypher 3.1") {
     val result = eengine.execute("explain match (n) return n", Map.empty[String, Object])
     result.resultAsString()

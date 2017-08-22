@@ -22,11 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.spi.v3_3.Operations
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
-abstract class IdSeekIterator[T <: PropertyContainer]
-  extends Iterator[ExecutionContext] with NumericHelper {
+abstract class IdSeekIterator[T <: PropertyContainer] extends Iterator[ExecutionContext] with NumericHelper {
 
   private var cachedEntity: T = computeNextEntity()
 
@@ -61,7 +63,7 @@ final class NodeIdSeekIterator(ident: String,
                                baseContext: ExecutionContext,
                                protected val operations: Operations[Node],
                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[Node] {
+    extends IdSeekIterator[Node] {
 
   def hasNext: Boolean = hasNextEntity
 
@@ -77,13 +79,17 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                baseContext: ExecutionContext,
                                                protected val operations: Operations[Relationship],
                                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[Relationship] {
+    extends IdSeekIterator[Relationship] {
 
   def hasNext: Boolean = hasNextEntity
 
   def next(): ExecutionContext = {
     val rel = nextEntity()
-    baseContext.newWith3(ident, AnyValues.asEdgeValue(rel), fromNode, AnyValues.asNodeValue(rel.getStartNode), toNode,
+    baseContext.newWith3(ident,
+                         AnyValues.asEdgeValue(rel),
+                         fromNode,
+                         AnyValues.asNodeValue(rel.getStartNode),
+                         toNode,
                          AnyValues.asNodeValue(rel.getEndNode))
   }
 
@@ -96,7 +102,7 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  baseContext: ExecutionContext,
                                                  protected val operations: Operations[Relationship],
                                                  protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[Relationship] {
+    extends IdSeekIterator[Relationship] {
 
   private var lastEntity: Relationship = null
   private var lastStart: Node = null
@@ -108,14 +114,22 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
   def next(): ExecutionContext = {
     if (emitSibling) {
       emitSibling = false
-      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastEnd),
-                           toNode, AnyValues.asNodeValue(lastStart))
+      baseContext.newWith3(ident,
+                           AnyValues.asEdgeValue(lastEntity),
+                           fromNode,
+                           AnyValues.asNodeValue(lastEnd),
+                           toNode,
+                           AnyValues.asNodeValue(lastStart))
     } else {
       emitSibling = true
       lastEntity = nextEntity()
       lastStart = lastEntity.getStartNode
       lastEnd = lastEntity.getEndNode
-      baseContext.newWith3(ident, AnyValues.asEdgeValue(lastEntity), fromNode, AnyValues.asNodeValue(lastStart), toNode,
+      baseContext.newWith3(ident,
+                           AnyValues.asEdgeValue(lastEntity),
+                           fromNode,
+                           AnyValues.asNodeValue(lastStart),
+                           toNode,
                            AnyValues.asNodeValue(lastEnd))
     }
   }

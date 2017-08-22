@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValues
@@ -38,7 +40,7 @@ trait StdevTest {
     })
     func.result match {
       case x: DoubleValue => x.doubleValue()
-      case _ => -99.0
+      case _              => -99.0
     }
   }
 }
@@ -91,17 +93,17 @@ class StdevPopulationTest extends CypherFunSuite with StdevTest with NumericHelp
   }
 
   test("manyOnes") {
-    val values = List(1,1)
+    val values = List(1, 1)
     getStdev(values) should equal(0.0 +- 0.000001)
   }
 
   test("oneTwoThree") {
-    val values = List(1,2,3)
+    val values = List(1, 2, 3)
     getStdev(values) should equal(0.816496580928 +- 0.000001)
   }
 
   test("oneTwoThreeFour") {
-    val values = List(1,2,3,4)
+    val values = List(1, 2, 3, 4)
     getStdev(values) should equal(1.11803398875 +- 0.000001)
   }
 

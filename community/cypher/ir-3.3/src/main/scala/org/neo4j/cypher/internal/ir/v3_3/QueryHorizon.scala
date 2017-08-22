@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AliasedReturnItem, Expression, StringLiteral, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.StringLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 
 trait QueryHorizon {
 
@@ -32,7 +35,8 @@ trait QueryHorizon {
 
   def dependencies: Set[IdName] = dependingExpressions.treeFold(Set.empty[IdName]) {
     case id: Variable =>
-      acc => (acc + IdName(id.name), Some(identity))
+      acc =>
+        (acc + IdName(id.name), Some(identity))
   }
 
   def readOnly = true
@@ -54,7 +58,11 @@ case class UnwindProjection(variable: IdName, exp: Expression) extends QueryHori
   override def preferredStrictness = None
 }
 
-case class LoadCSVProjection(variable: IdName, url: Expression, format: CSVFormat, fieldTerminator: Option[StringLiteral]) extends QueryHorizon {
+case class LoadCSVProjection(variable: IdName,
+                             url: Expression,
+                             format: CSVFormat,
+                             fieldTerminator: Option[StringLiteral])
+    extends QueryHorizon {
   override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = coveredIds + variable
 
   override def dependingExpressions = Seq(url)
@@ -93,7 +101,8 @@ object QueryProjection {
 }
 
 final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
-                                        shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
+                                        shuffle: QueryShuffle = QueryShuffle.empty)
+    extends QueryProjection {
   def keySet: Set[String] = projections.keySet
 
   def ++(other: RegularQueryProjection) =
@@ -115,7 +124,8 @@ final case class RegularQueryProjection(projections: Map[String, Expression] = M
 
 final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
                                             aggregationExpressions: Map[String, Expression] = Map.empty,
-                                            shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
+                                            shuffle: QueryShuffle = QueryShuffle.empty)
+    extends QueryProjection {
 
   assert(
     !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),
@@ -137,5 +147,6 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 
-  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] = (groupingKeys.keys ++  aggregationExpressions.keys).map(IdName.apply).toSet
+  override def exposedSymbols(coveredIds: Set[IdName]): Set[IdName] =
+    (groupingKeys.keys ++ aggregationExpressions.keys).map(IdName.apply).toSet
 }

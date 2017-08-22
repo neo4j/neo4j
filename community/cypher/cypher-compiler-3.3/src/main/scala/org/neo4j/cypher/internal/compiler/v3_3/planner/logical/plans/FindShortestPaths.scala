@@ -20,13 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, PlannerQuery, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.ShortestPathPattern
 
-case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern,
+case class FindShortestPaths(left: LogicalPlan,
+                             shortestPath: ShortestPathPattern,
                              predicates: Seq[Expression] = Seq.empty,
-                             withFallBack: Boolean = false, disallowSameNode: Boolean = true)
-                            (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+                             withFallBack: Boolean = false,
+                             disallowSameNode: Boolean = true)(val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

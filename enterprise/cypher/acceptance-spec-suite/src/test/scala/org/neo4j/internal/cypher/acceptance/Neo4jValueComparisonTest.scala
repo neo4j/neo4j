@@ -28,10 +28,10 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
     def applyChallenge(x: Any, y: Any): Option[(Any, Any)]
 
     override def apply(v1: Any, v2: Any): (Any, Any) =
-    // Try (L,R), then (R,L) and lastly fall back to identity
+      // Try (L,R), then (R,L) and lastly fall back to identity
       (applyChallenge(v1, v2) match {
         case None => applyChallenge(v2, v1)
-        case y => y
+        case y    => y
       }).getOrElse((v1, v2))
   }
 
@@ -42,20 +42,20 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
   object ChangePrecision extends TestDifficulty {
     def applyChallenge(x: Any, y: Any): Option[(Any, Any)] = (x, y) match {
       case (a: Double, _) => Some((a, a.toFloat))
-      case (a: Float, _) => Some((a, a.toDouble))
-      case (a: Int, _) => Some((a, a.toLong))
-      case (a: Long, _) => Some((a, a.toInt))
-      case _ => None
+      case (a: Float, _)  => Some((a, a.toDouble))
+      case (a: Int, _)    => Some((a, a.toLong))
+      case (a: Long, _)   => Some((a, a.toInt))
+      case _              => None
     }
   }
 
   object SlightlyMore extends TestDifficulty {
     def applyChallenge(x: Any, y: Any): Option[(Any, Any)] = (x, y) match {
       case (a: Double, _) => Some((a, Math.nextUp(a)))
-      case (a: Float, _) => Some((a, Math.nextUp(a)))
-      case (a: Int, _) => Some((a, a + 1))
-      case (a: Long, _) => Some((a, a + 1))
-      case _ => None
+      case (a: Float, _)  => Some((a, Math.nextUp(a)))
+      case (a: Int, _)    => Some((a, a + 1))
+      case (a: Long, _)   => Some((a, a + 1))
+      case _              => None
     }
   }
 
@@ -70,13 +70,13 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
     def canBeExactlyAnIntegerF(a: Float) = -LARGEST_EXACT_INT_IN_FLOAT < a && a < LARGEST_EXACT_INT_IN_FLOAT
 
     def applyChallenge(x: Any, y: Any): Option[(Any, Any)] = (x, y) match {
-      case (a: Double, _) if canFitInInt(a) => Some((Math.rint(a), a.toInt))
+      case (a: Double, _) if canFitInInt(a)            => Some((Math.rint(a), a.toInt))
       case (a: Double, _) if canBeExactlyAnIntegerD(a) => Some((Math.floor(a), a.toLong))
-      case (a: Float, _) if canBeExactlyAnIntegerF(a) => Some((Math.floor(a), a.toInt))
-      case (a: Int, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
-      case (a: Long, _) if canBeExactlyAnIntegerF(a) => Some(a, a.toFloat)
-      case (a: Long, _) if canBeExactlyAnIntegerD(a) => Some(a, a.toDouble)
-      case _ => None
+      case (a: Float, _) if canBeExactlyAnIntegerF(a)  => Some((Math.floor(a), a.toInt))
+      case (a: Int, _) if canBeExactlyAnIntegerF(a)    => Some(a, a.toFloat)
+      case (a: Long, _) if canBeExactlyAnIntegerF(a)   => Some(a, a.toFloat)
+      case (a: Long, _) if canBeExactlyAnIntegerD(a)   => Some(a, a.toDouble)
+      case _                                           => None
     }
   }
 
@@ -88,9 +88,15 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
   )
 
   val arbAnyVal: Gen[Any] = Gen.oneOf(
-    Gen.const(null), Arbitrary.arbitrary[String],
-    Arbitrary.arbitrary[Boolean], Arbitrary.arbitrary[Char], Arbitrary.arbitrary[Byte],
-    Arbitrary.arbitrary[Short], Arbitrary.arbitrary[Int], Arbitrary.arbitrary[Long], Arbitrary.arbitrary[Float],
+    Gen.const(null),
+    Arbitrary.arbitrary[String],
+    Arbitrary.arbitrary[Boolean],
+    Arbitrary.arbitrary[Char],
+    Arbitrary.arbitrary[Byte],
+    Arbitrary.arbitrary[Short],
+    Arbitrary.arbitrary[Int],
+    Arbitrary.arbitrary[Long],
+    Arbitrary.arbitrary[Float],
     Arbitrary.arbitrary[Double]
   )
 

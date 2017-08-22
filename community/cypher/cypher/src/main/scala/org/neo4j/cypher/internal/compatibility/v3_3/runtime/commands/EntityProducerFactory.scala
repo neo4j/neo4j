@@ -21,18 +21,24 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.builders.GetGraphElements
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.{GraphElementPropertyFunctions, makeValueNeoSafe}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{EntityProducer, IndexSeekModeFactory, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.EntityProducer
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.IndexSeekModeFactory
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ScanQueryExpression
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
-import org.neo4j.cypher.internal.frontend.v3_3.{IndexHintException, InternalException}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.frontend.v3_3.IndexHintException
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
-  private def asProducer[T <: PropertyContainer](startItem: StartItem)
-                                                (f: (ExecutionContext, QueryState) => Iterator[T]) =
+  private def asProducer[T <: PropertyContainer](startItem: StartItem)(
+      f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
@@ -42,13 +48,13 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     }
 
   def readNodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
-      nodeByIndex orElse
+    nodeByIndex orElse
       nodeByIndexQuery orElse
       nodeByIndexHint(readOnly = true)
 
   def readRelationshipLegacy: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] =
     relationshipByIndex orElse
-    relationshipByIndexQuery
+      relationshipByIndexQuery
 
   val nodeByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ NodeByIndex(varName, idxName, key, value, _)) =>
@@ -71,8 +77,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   }
 
   def nodeByIndexHint(readOnly: Boolean): PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
-    case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, Some(ScanQueryExpression(_)), _)) =>
-
+    case (planContext,
+          startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, Some(ScanQueryExpression(_)), _)) =>
       val indexGetter = planContext.indexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
@@ -84,7 +90,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       }
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, AnyIndex, valueExp, _)) =>
-
       val indexGetter = planContext.indexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
@@ -92,16 +97,14 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
-      val indexFactory = IndexSeekModeFactory(unique = false, readOnly = readOnly).
-        fromQueryExpression(expression).
-        indexFactory(index)
+      val indexFactory =
+        IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(expression).indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         indexQuery(expression, m, state, indexFactory(state), labelName, propertyNames)
       }
 
     case (planContext, startItem @ SchemaIndex(variable, labelName, propertyNames, UniqueIndex, valueExp, _)) =>
-
       val indexGetter = planContext.uniqueIndexGet(labelName, propertyNames)
 
       val index = indexGetter getOrElse
@@ -109,9 +112,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
 
       val expression = valueExp getOrElse
         (throw new InternalException("Something went wrong trying to build your query."))
-      val indexFactory = IndexSeekModeFactory(unique = true, readOnly = readOnly).
-        fromQueryExpression(expression).
-        indexFactory(index)
+      val indexFactory =
+        IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(expression).indexFactory(index)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
         indexQuery(expression, m, state, indexFactory(state), labelName, propertyNames)
@@ -140,8 +142,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
   val relationshipById: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
     case (planContext, startItem @ RelationshipById(varName, ids, _)) =>
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        GetGraphElements.getElements[Relationship](ids(m)(state), varName, (id) =>
-          state.query.relationshipOps.getById(id))
+        GetGraphElements
+          .getElements[Relationship](ids(m)(state), varName, (id) => state.query.relationshipOps.getById(id))
       }
   }
 

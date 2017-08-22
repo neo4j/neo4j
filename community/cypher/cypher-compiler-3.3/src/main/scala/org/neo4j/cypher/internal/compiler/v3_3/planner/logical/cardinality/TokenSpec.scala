@@ -33,16 +33,14 @@ object TokenSpec {
   type LabelSpecs = Map[IdName, Set[TokenSpec[LabelId]]]
   type RelTypeSpecs = Map[IdName, Set[TokenSpec[RelTypeId]]]
 
-  def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(implicit semanticTable: SemanticTable): Set[TokenSpec[ID]] =
+  def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(
+      implicit semanticTable: SemanticTable): Set[TokenSpec[ID]] =
     if (input.isEmpty)
       Set(Unspecified())
     else
       input.map {
         case label =>
-          label.
-            id.
-            map(SpecifiedAndKnown.apply).
-            getOrElse(SpecifiedButUnknown())
+          label.id.map(SpecifiedAndKnown.apply).getOrElse(SpecifiedButUnknown())
       }
 }
 
@@ -63,4 +61,3 @@ case class SpecifiedAndKnown[+ID <: NameId](_id: ID) extends TokenSpec[ID] {
 
   override def map[T](f: Option[ID] => T): Option[T] = Some(f(id))
 }
-

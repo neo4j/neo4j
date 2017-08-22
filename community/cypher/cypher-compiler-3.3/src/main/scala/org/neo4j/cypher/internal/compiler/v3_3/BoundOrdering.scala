@@ -42,4 +42,3 @@ final case class MaxBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[
       cmp
   }
 }
-

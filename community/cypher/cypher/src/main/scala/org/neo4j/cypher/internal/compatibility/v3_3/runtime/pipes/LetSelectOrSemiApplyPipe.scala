@@ -24,21 +24,23 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.storable.Values
 
-case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: String, predicate: Predicate, negated: Boolean)
-                                   (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class LetSelectOrSemiApplyPipe(source: Pipe,
+                                    inner: Pipe,
+                                    letVarName: String,
+                                    predicate: Predicate,
+                                    negated: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.map {
-      (outerContext) =>
-        val holds = predicate.isTrue(outerContext)(state) || {
-          val innerState = state.withInitialContext(outerContext)
-          val innerResults = inner.createResults(innerState)
-          if (negated) innerResults.isEmpty else innerResults.nonEmpty
-        }
-        outerContext += (letVarName -> Values.booleanValue(holds))
+    input.map { (outerContext) =>
+      val holds = predicate.isTrue(outerContext)(state) || {
+        val innerState = state.withInitialContext(outerContext)
+        val innerResults = inner.createResults(innerState)
+        if (negated) innerResults.isEmpty else innerResults.nonEmpty
+      }
+      outerContext += (letVarName -> Values.booleanValue(holds))
     }
   }
 

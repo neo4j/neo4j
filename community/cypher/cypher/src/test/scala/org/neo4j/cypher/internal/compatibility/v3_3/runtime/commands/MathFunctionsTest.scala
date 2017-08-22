@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.LongValue
-import org.neo4j.values.storable.Values.{doubleValue, longValue}
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.longValue
 class MathFunctionsTest extends CypherFunSuite with NumericHelper {
 
   test("absTests") {
@@ -62,8 +63,8 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
   }
 
   test("atan2Tests") {
-    asDouble(calc(Atan2Function(Literal(.7),Literal(.8)))).doubleValue() should equal(0.718829999621624 +- 0.00001)
-    asDouble(calc(Atan2Function(Literal(.8),Literal(.8)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
+    asDouble(calc(Atan2Function(Literal(.7), Literal(.8)))).doubleValue() should equal(0.718829999621624 +- 0.00001)
+    asDouble(calc(Atan2Function(Literal(.8), Literal(.8)))).doubleValue() should equal(0.785398163397448 +- 0.00001)
     intercept[CypherTypeException](calc(Atan2Function(Literal("wut"), Literal(.7))))
   }
 
@@ -159,5 +160,5 @@ class MathFunctionsTest extends CypherFunSuite with NumericHelper {
     intercept[CypherTypeException](calc(SqrtFunction(Literal("wut"))))
   }
 
-  private def calc(e:Expression) = e(ExecutionContext.empty)(QueryStateHelper.empty)
+  private def calc(e: Expression) = e(ExecutionContext.empty)(QueryStateHelper.empty)
 }

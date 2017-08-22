@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 object calculateUsingGetDegree {
 
   def apply(expr: Expression, node: Variable, types: Seq[RelTypeName], dir: SemanticDirection): Expression = {
-      types
-        .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
-        .reduceOption[Expression](Add(_, _)(expr.position))
-        .getOrElse(GetDegree(node, None, dir)(expr.position))
-    }
+    types
+      .map(typ => GetDegree(node.copyId, Some(typ), dir)(typ.position))
+      .reduceOption[Expression](Add(_, _)(expr.position))
+      .getOrElse(GetDegree(node, None, dir)(expr.position))
+  }
 }

@@ -19,8 +19,11 @@
  */
 package org.neo4j.cypher
 
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
-import java.net.{InetAddress, InetSocketAddress}
+import com.sun.net.httpserver.HttpExchange
+import com.sun.net.httpserver.HttpHandler
+import com.sun.net.httpserver.HttpServer
+import java.net.InetAddress
+import java.net.InetSocketAddress
 import java.io.IOException
 import java.util.concurrent.Executors
 import scala.collection.mutable
@@ -75,11 +78,12 @@ class HttpServerTestSupportBuilder {
     new HttpServerTestSupportImpl(port, allowedMethods, mapping.toMap, filters.toMap, transformations.toMap)
   }
 
-  private class HttpServerTestSupportImpl(port: Int, allowedMethods: Set[String],
-                                  mapping: Map[String, (HttpExchange => Unit)],
-                                  filters: Map[String, (HttpExchange => Boolean)],
-                                  transformations: Map[String, (HttpExchange => HttpExchange)])
-    extends HttpServerTestSupport {
+  private class HttpServerTestSupportImpl(port: Int,
+                                          allowedMethods: Set[String],
+                                          mapping: Map[String, (HttpExchange => Unit)],
+                                          filters: Map[String, (HttpExchange => Boolean)],
+                                          transformations: Map[String, (HttpExchange => HttpExchange)])
+      extends HttpServerTestSupport {
 
     private var optServer: Option[HttpServer] = None
 
@@ -99,24 +103,29 @@ class HttpServerTestSupportBuilder {
       optServer = Some(provideServer)
       val server = optServer.get
 
-      server.createContext("/", new HttpHandler {
-        def handle(exchange: HttpExchange) {
-          if (!allowedMethods.contains(exchange.getRequestMethod)) {
-            HttpReplyer.sendMethodNotAllowed(exchange)
-            return
-          }
-
-          val path = exchange.getRequestURI.getPath
-          if (mapping.contains(path)) {
-            if (filters.getOrElse(path, {_: HttpExchange => true})(exchange)) {
-              val reply = transformations.getOrElse(path, identity[HttpExchange](_))(exchange)
-              mapping(path)(reply)
+      server.createContext(
+        "/",
+        new HttpHandler {
+          def handle(exchange: HttpExchange) {
+            if (!allowedMethods.contains(exchange.getRequestMethod)) {
+              HttpReplyer.sendMethodNotAllowed(exchange)
+              return
             }
-          }
 
-          HttpReplyer.sendNotFound(exchange)
+            val path = exchange.getRequestURI.getPath
+            if (mapping.contains(path)) {
+              if (filters.getOrElse(path, { _: HttpExchange =>
+                    true
+                  })(exchange)) {
+                val reply = transformations.getOrElse(path, identity[HttpExchange](_))(exchange)
+                mapping(path)(reply)
+              }
+            }
+
+            HttpReplyer.sendNotFound(exchange)
+          }
         }
-      })
+      )
 
       server.setExecutor(Executors.newFixedThreadPool(1))
       server.start()
@@ -185,4 +194,3 @@ object HttpServerTestSupport {
     exchange
   }
 }
-

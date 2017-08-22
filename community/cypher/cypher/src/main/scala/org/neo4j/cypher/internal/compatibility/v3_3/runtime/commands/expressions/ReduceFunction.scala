@@ -26,14 +26,15 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values.AnyValue
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
-  extends NullInNullOutExpression(collection) with ListSupport {
+    extends NullInNullOutExpression(collection)
+    with ListSupport {
 
   def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
     val initMap = m.newWith1(acc, init(m))
     val list = makeTraversable(value)
     val iterator = list.iterator()
     var computed = initMap
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       val innerMap = computed.newWith1(id, iterator.next())
       computed = innerMap.newWith1(acc, expression(innerMap))
     }
@@ -50,5 +51,6 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
 
   def variableDependencies(expectedType: CypherType) = AnyType
 
-  def symbolTableDependencies = (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
+  def symbolTableDependencies =
+    (collection.symbolTableDependencies ++ expression.symbolTableDependencies ++ init.symbolTableDependencies) - id - acc
 }

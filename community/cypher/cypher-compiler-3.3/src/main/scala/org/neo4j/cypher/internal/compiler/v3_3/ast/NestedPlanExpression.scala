@@ -22,9 +22,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheck, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheck
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
 
-case class NestedPlanExpression(plan: LogicalPlan, projection: Expression)(val position: InputPosition) extends Expression {
+case class NestedPlanExpression(plan: LogicalPlan, projection: Expression)(val position: InputPosition)
+    extends Expression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 
   override def asCanonicalStringVal: String = {

@@ -18,7 +18,10 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, BaseState, Condition, Phase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
 import org.neo4j.cypher.internal.frontend.v3_3._
 
 object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
@@ -59,31 +62,37 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
       // ignore variable in StartItem that represents index names and key names
       case Return(_, ReturnItems(_, items), _, _, _, _) =>
         val variables = items.map(_.alias.map(Ref[Variable]).get)
-        acc => (acc ++ variables, Some(identity))
+        acc =>
+          (acc ++ variables, Some(identity))
     }
 
-  private def variableRenamings(statement: Statement, variableDefinitions: Map[SymbolUse, SymbolUse],
-                                ambiguousNames: Set[String], protectedVariables: Set[Ref[Variable]]): VariableRenamings =
+  private def variableRenamings(statement: Statement,
+                                variableDefinitions: Map[SymbolUse, SymbolUse],
+                                ambiguousNames: Set[String],
+                                protectedVariables: Set[Ref[Variable]]): VariableRenamings =
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
         val symbolDefinition = variableDefinitions(i.toSymbolUse)
         val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
         val renaming = Ref(i) -> newVariable
-        acc => (acc + renaming, Some(identity))
+        acc =>
+          (acc + renaming, Some(identity))
     }
 
-  private def statementRewriter(renamings: VariableRenamings): Rewriter = inSequence(
-    bottomUp(Rewriter.lift {
-      case item@ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
-        item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
-    }),
-    bottomUp(Rewriter.lift {
-      case v: Variable =>
-        renamings.get(Ref(v)) match {
-          case Some(newVariable) => newVariable
-          case None              => v
-        }
-    }))
+  private def statementRewriter(renamings: VariableRenamings): Rewriter =
+    inSequence(
+      bottomUp(Rewriter.lift {
+        case item @ ProcedureResultItem(None, v: Variable) if renamings.contains(Ref(v)) =>
+          item.copy(output = Some(ProcedureOutput(v.name)(v.position)))(item.position)
+      }),
+      bottomUp(Rewriter.lift {
+        case v: Variable =>
+          renamings.get(Ref(v)) match {
+            case Some(newVariable) => newVariable
+            case None              => v
+          }
+      })
+    )
 
   private def tableRewriter(renamings: VariableRenamings)(semanticTable: SemanticTable) = {
     val replacements = renamings.toIndexedSeq.collect { case (old, newVariable) => old.value -> newVariable }

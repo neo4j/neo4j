@@ -18,7 +18,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class ContainerIndexTest extends CypherFunSuite {
 
@@ -65,9 +67,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should return list inner types of expression") {
-    val index = ContainerIndex(dummyList,
-                               SignedDecimalIntegerLiteral("1")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, SignedDecimalIntegerLiteral("1")(DummyPosition(5)))(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors shouldBe empty
@@ -75,9 +75,7 @@ class ContainerIndexTest extends CypherFunSuite {
   }
 
   test("should raise error if indexing by fraction") {
-    val index = ContainerIndex(dummyList,
-                               DecimalDoubleLiteral("1.3")(DummyPosition(5))
-    )(DummyPosition(4))
+    val index = ContainerIndex(dummyList, DecimalDoubleLiteral("1.3")(DummyPosition(5)))(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
-import org.neo4j.cypher.internal.frontend.v3_3.helpers.{TreeElem, TreeZipper}
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.TreeElem
+import org.neo4j.cypher.internal.frontend.v3_3.helpers.TreeZipper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class TreeZipperTest extends CypherFunSuite {
@@ -52,11 +53,14 @@ class TreeZipperTest extends CypherFunSuite {
   }
 
   test("Can navigate right across children") {
-    root.location
-      .down.tap { _.elem should equal(Some(child1)) }
-      .right.tap { _.elem should equal(Some(child2)) }
-      .right.tap { _.elem should equal(Some(child3)) }
-      .right.tap { _.elem should equal(Some(child4)) }
+    root.location.down
+      .tap { _.elem should equal(Some(child1)) }
+      .right
+      .tap { _.elem should equal(Some(child2)) }
+      .right
+      .tap { _.elem should equal(Some(child3)) }
+      .right
+      .tap { _.elem should equal(Some(child4)) }
   }
 
   test("Can navigate leftMost across children") {
@@ -64,15 +68,22 @@ class TreeZipperTest extends CypherFunSuite {
   }
 
   test("Can navigate left across children") {
-    root.location
-      .down.rightMost.tap { _.elem should equal(Some(child4)) }
-      .left.tap { _.elem should equal(Some(child3)) }
-      .left.tap { _.elem should equal(Some(child2)) }
-      .left.tap { _.elem should equal(Some(child1)) }
+    root.location.down.rightMost
+      .tap { _.elem should equal(Some(child4)) }
+      .left
+      .tap { _.elem should equal(Some(child3)) }
+      .left
+      .tap { _.elem should equal(Some(child2)) }
+      .left
+      .tap { _.elem should equal(Some(child1)) }
   }
 
   test("Correctly infers tree structure") {
-    def assertRole(location: TestElemZipper.Location, isRoot: Boolean, isLeftMost: Boolean, isRightMost: Boolean, isLeaf: Boolean): Unit = {
+    def assertRole(location: TestElemZipper.Location,
+                   isRoot: Boolean,
+                   isLeftMost: Boolean,
+                   isRightMost: Boolean,
+                   isLeaf: Boolean): Unit = {
       location.isRoot should equal(isRoot)
       location.isLeftMost should equal(isLeftMost)
       location.isRightMost should equal(isRightMost)
@@ -81,29 +92,37 @@ class TreeZipperTest extends CypherFunSuite {
     }
 
     root
-      // root
-      .location.tap { assertRole(_, isRoot = true, isLeftMost = true, isRightMost = true, isLeaf = false) }
+    // root
+    .location
+      .tap { assertRole(_, isRoot = true, isLeftMost = true, isRightMost = true, isLeaf = false) }
 
       // child1
-      .down.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = false) }
+      .down
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = false) }
 
       // grandchild1
-      .down.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = true) }
+      .down
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = true) }
 
       // grandchild2
-      .right.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = true, isLeaf = true) }
+      .right
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = true, isLeaf = true) }
 
       // child1
-      .up.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = false) }
+      .up
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = true, isRightMost = false, isLeaf = false) }
 
       // child2
-      .right.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = false, isLeaf = true) }
+      .right
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = false, isLeaf = true) }
 
       // child3
-      .right.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = false, isLeaf = true) }
+      .right
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = false, isLeaf = true) }
 
       // child3
-      .right.tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = true, isLeaf = true) }
+      .right
+      .tapSomeOrFail { assertRole(_, isRoot = false, isLeftMost = false, isRightMost = true, isLeaf = true) }
   }
 
   test("Can replace elem without siblings") {

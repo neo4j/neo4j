@@ -23,24 +23,25 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.storable.Values
 
-case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)
-                               (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], negated: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.flatMap {
-      (outerContext) =>
-        if (condition(outerContext)) {
-          val original = outerContext.createClone()
-          val innerState = state.withInitialContext(outerContext)
-          val innerResults = inner.createResults(innerState)
-          innerResults.map { context => original mergeWith context }
-        } else Iterator.single(outerContext)
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] =
+    input.flatMap { (outerContext) =>
+      if (condition(outerContext)) {
+        val original = outerContext.createClone()
+        val innerState = state.withInitialContext(outerContext)
+        val innerResults = inner.createResults(innerState)
+        innerResults.map { context =>
+          original mergeWith context
+        }
+      } else Iterator.single(outerContext)
     }
 
   private def condition(context: ExecutionContext) = {
-    val cond = items.exists { context.get(_).get != Values.NO_VALUE}
-      if (negated) !cond else cond
+    val cond = items.exists { context.get(_).get != Values.NO_VALUE }
+    if (negated) !cond else cond
   }
 
   private def name = if (negated) "AntiConditionalApply" else "ConditionalApply"

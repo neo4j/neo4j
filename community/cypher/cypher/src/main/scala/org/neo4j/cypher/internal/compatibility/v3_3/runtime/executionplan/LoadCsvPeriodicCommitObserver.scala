@@ -22,16 +22,20 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 import java.net.URL
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherException, LoadCsvStatusWrapCypherException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherException
+import org.neo4j.cypher.internal.frontend.v3_3.LoadCsvStatusWrapCypherException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
-  extends ExternalCSVResource with ((CypherException) => CypherException) {
+    extends ExternalCSVResource
+    with ((CypherException) => CypherException) {
 
   val updateCounter = new UpdateCounter
   var outerLoadCSVIterator: Option[LoadCsvIterator] = None
 
-  def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL,
+                     fieldTerminator: Option[String],
+                     legacyCsvQuoteEscaping: Boolean): Iterator[Array[String]] = {
     val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
     if (outerLoadCSVIterator.isEmpty) {
       val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
@@ -54,6 +58,6 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
 
   def apply(e: CypherException): CypherException = outerLoadCSVIterator match {
     case Some(iterator) => new LoadCsvStatusWrapCypherException(iterator.msg, e)
-    case _ => e
+    case _              => e
   }
 }

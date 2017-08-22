@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 import java.util
 
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{ArrayValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable
 
@@ -43,7 +45,6 @@ class BuildUp(list: ListValue) extends Checker {
   // If we don't return true, this is what we will return. If the collection contains any nulls, we'll return None,
   // else we return Some(false).
   private var falseResult: Option[Boolean] = Some(false)
-
 
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value == Values.NO_VALUE) (None, this)
@@ -67,7 +68,7 @@ class BuildUp(list: ListValue) extends Checker {
         foundMatch = (nextValue, value) match {
           case (a: ArrayValue, b: ListValue) => VirtualValues.fromArray(a).equals(b)
           case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).equals(a)
-          case (a, b) => a.equals(b)
+          case (a, b)                        => a.equals(b)
         }
       }
     }

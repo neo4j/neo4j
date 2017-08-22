@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTBoolean
-import org.neo4j.cypher.internal.frontend.v3_3.{IncomparableValuesException, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.IncomparableValuesException
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGenExpression {
 
@@ -50,20 +51,25 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     (lhs, rhs, nullable) match {
       case (NodeExpression(v1), NodeExpression(v2), false) =>
-        structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name), CodeGenType.primitiveNode)
+        structure.equalityExpression(structure.loadVariable(v1.name),
+                                     structure.loadVariable(v2.name),
+                                     CodeGenType.primitiveNode)
       case (NodeExpression(v1), NodeExpression(v2), true) =>
-        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name),
+                                                       structure.loadVariable(v2.name),
                                                        CodeGenType.primitiveNode)
       case (RelationshipExpression(v1), RelationshipExpression(v2), false) =>
-        structure.equalityExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+        structure.equalityExpression(structure.loadVariable(v1.name),
+                                     structure.loadVariable(v2.name),
                                      CodeGenType.primitiveRel)
       case (RelationshipExpression(v1), RelationshipExpression(v2), true) =>
-        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name), structure.loadVariable(v2.name),
+        structure.threeValuedPrimitiveEqualsExpression(structure.loadVariable(v1.name),
+                                                       structure.loadVariable(v2.name),
                                                        CodeGenType.primitiveRel)
-      case (NodeExpression(_), RelationshipExpression(_), _) => throw new
-          IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
-      case (RelationshipExpression(_), NodeExpression(_), _) => throw new
-          IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
+      case (NodeExpression(_), RelationshipExpression(_), _) =>
+        throw new IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
+      case (RelationshipExpression(_), NodeExpression(_), _) =>
+        throw new IncomparableValuesException(symbols.CTNode.toString, symbols.CTRelationship.toString)
 
       // nullable case
       case (_, _, true) =>
@@ -73,26 +79,30 @@ case class Equals(lhs: CodeGenExpression, rhs: CodeGenExpression) extends CodeGe
 
       //both are primitive
       case (t1, t2, false) if t1.codeGenType == t2.codeGenType && t1.codeGenType.isPrimitive =>
-        structure.equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
+        structure
+          .equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
       //t1 is primitive
       case (t1, t2, false) if t1.codeGenType.ct == t2.codeGenType.ct && t1.codeGenType.isPrimitive =>
-        structure.equalityExpression(
-          lhs.generateExpression(structure), structure.unbox(rhs.generateExpression(structure), t2.codeGenType),
-          t1.codeGenType)
+        structure.equalityExpression(lhs.generateExpression(structure),
+                                     structure.unbox(rhs.generateExpression(structure), t2.codeGenType),
+                                     t1.codeGenType)
       //t2 is primitive
       case (t1, t2, false) if t1.codeGenType.ct == t2.codeGenType.ct && t2.codeGenType.isPrimitive =>
-        structure.equalityExpression(
-          structure.unbox(lhs.generateExpression(structure), t1.codeGenType), rhs.generateExpression(structure), t1.codeGenType)
+        structure.equalityExpression(structure.unbox(lhs.generateExpression(structure), t1.codeGenType),
+                                     rhs.generateExpression(structure),
+                                     t1.codeGenType)
 
       //both are strings
       case (t1, t2, false) if t1.codeGenType.ct == t2.codeGenType.ct && t1.codeGenType.ct == symbols.CTString =>
-        structure.equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
+        structure
+          .equalityExpression(lhs.generateExpression(structure), rhs.generateExpression(structure), t1.codeGenType)
 
       case _ =>
         structure.unbox(
           structure.threeValuedEqualsExpression(structure.box(lhs.generateExpression(structure), lhs.codeGenType),
                                                 structure.box(rhs.generateExpression(structure), rhs.codeGenType)),
-          CypherCodeGenType(CTBoolean, ReferenceType))
-      }
+          CypherCodeGenType(CTBoolean, ReferenceType)
+        )
+    }
   }
 }

@@ -29,8 +29,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     relate(n1, n2, "R1")
 
     // only fails when returning distinct...
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      """
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("""
         |MATCH (n1:L1)-[:R1]->(n2:L2)
         |OPTIONAL MATCH (n3)<-[r:R2]-(n2)
         |SET n3.prop = false
@@ -52,7 +51,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     node should haveProperty("property")
 
     // and
-    val result2 = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
+    val result2 =
+      executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
     result2.columnAs("count(*)").toList should be(List(1))
   }
 
@@ -66,7 +66,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     )
 
     //then
-    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing collections can not be stored in properties.")
+    result.toString should equal(
+      "org.neo4j.cypher.CypherTypeException: Collections containing collections can not be stored in properties.")
   }
 
   test("should not be able to set property to collection with null value") {
@@ -79,7 +80,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     )
 
     //then
-    result.toString should equal("org.neo4j.cypher.CypherTypeException: Collections containing null values can not be stored in properties.")
+    result.toString should equal(
+      "org.neo4j.cypher.CypherTypeException: Collections containing null values can not be stored in properties.")
   }
 
   //Not suitable for the TCK
@@ -88,7 +90,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val a = createNode()
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH (n) SET (CASE WHEN true THEN n END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -101,7 +104,8 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r = relate(createNode(), createNode())
 
     // when
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH ()-[r]->() SET (CASE WHEN true THEN r END).name = 'neo4j' RETURN count(*)")
 
     // then
     assertStats(result, propertiesWritten = 1)
@@ -114,7 +118,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val n2 = createNode()
     val n3 = createNode()
 
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH (n) WITH collect(n) AS nodes, {param} AS data FOREACH (idx IN range(0,size(nodes)-1) | SET (nodes[idx]).num = data[idx])",
+      "param" -> Array("1", "2", "3")
+    )
 
     assertStats(result, propertiesWritten = 3)
     n1 should haveProperty("num").withValue("1")
@@ -128,7 +135,10 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     val r2 = relate(createNode(), createNode())
     val r3 = relate(createNode(), createNode())
 
-    val result = updateWithBothPlannersAndCompatibilityMode("MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])", "param" ->  Array("1", "2", "3"))
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "MATCH ()-[r]->() WITH collect(r) AS rels, {param} as data FOREACH (idx IN range(0,size(rels)-1) | SET (rels[idx]).num = data[idx])",
+      "param" -> Array("1", "2", "3")
+    )
 
     assertStats(result, propertiesWritten = 3)
     r1 should haveProperty("num").withValue("1")
@@ -138,7 +148,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
   //Not suitable for the TCK
   test("should fail at runtime when the expression is not a node or a relationship") {
-    an [InvalidArgumentException] should be thrownBy
+    an[InvalidArgumentException] should be thrownBy
       updateWithBothPlanners("SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)", "node" -> 42)
   }
 
@@ -165,9 +175,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
   //Not suitable for the TCK
   test("set += works well inside foreach") {
     // given
-    val a = createNode("a"->"A")
-    val b = createNode("b"->"B")
-    val c = createNode("c"->"C")
+    val a = createNode("a" -> "A")
+    val b = createNode("b" -> "B")
+    val c = createNode("c" -> "C")
 
     // when
     val result = updateWithBothPlanners("MATCH (n) WITH collect(n) AS nodes FOREACH(x IN nodes | SET x += {x:'X'})")
@@ -184,9 +194,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
   //Not suitable for the TCK
   test("set = works well inside foreach") {
     // given
-    val a = createNode("a"->"A")
-    val b = createNode("b"->"B")
-    val c = createNode("c"->"C")
+    val a = createNode("a" -> "A")
+    val b = createNode("b" -> "B")
+    val c = createNode("c" -> "C")
 
     // when
     updateWithBothPlanners("MATCH (n) WITH collect(n) as nodes FOREACH(x IN nodes | SET x = {a:'D', x:'X'})")
@@ -273,11 +283,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     testLostUpdates(init, query, resultQuery, 10, 20)
   }
 
-  private def testLostUpdates(init: () => Unit,
-                              query: String,
-                              resultQuery: String,
-                              updates: Int,
-                              resultValue: Int) = {
+  private def testLostUpdates(init: () => Unit, query: String, resultQuery: String, updates: Int, resultValue: Int) = {
     init()
     val threads = (0 until updates).map { i =>
       new Thread(new Runnable {

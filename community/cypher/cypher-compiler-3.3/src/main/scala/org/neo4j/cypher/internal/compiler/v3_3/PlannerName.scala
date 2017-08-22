@@ -31,17 +31,17 @@ object CostBasedPlannerName {
 }
 
 /**
- * Cost based query planner uses statistics from the running database to find good
- * query execution plans using limited exhaustive search based on the IDP algorithm.
- */
+  * Cost based query planner uses statistics from the running database to find good
+  * query execution plans using limited exhaustive search based on the IDP algorithm.
+  */
 case object IDPPlannerName extends CostBasedPlannerName {
   val name = "IDP"
 }
 
 /**
- * Cost based query planner uses statistics from the running database to find good
- * query execution plans using exhaustive search based on the DP algorithm.
- */
+  * Cost based query planner uses statistics from the running database to find good
+  * query execution plans using exhaustive search based on the DP algorithm.
+  */
 case object DPPlannerName extends CostBasedPlannerName {
   val name = "DP"
 }
@@ -59,12 +59,13 @@ object PlannerNameFor {
 
   def apply(name: String): PlannerName = name.toUpperCase match {
     case IDPPlannerName.name => IDPPlannerName
-    case DPPlannerName.name => DPPlannerName
-    case "COST" => CostBasedPlannerName.default
-    case "DEFAULT" => CostBasedPlannerName.default
+    case DPPlannerName.name  => DPPlannerName
+    case "COST"              => CostBasedPlannerName.default
+    case "DEFAULT"           => CostBasedPlannerName.default
 
     // Note that conservative planner is not exposed to end users.
-    case n => throw new IllegalArgumentException(
-      s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
+    case n =>
+      throw new IllegalArgumentException(
+        s"$n is not a a valid planner, valid options are COST, ${IDPPlannerName.name} and ${DPPlannerName.name}")
   }
 }

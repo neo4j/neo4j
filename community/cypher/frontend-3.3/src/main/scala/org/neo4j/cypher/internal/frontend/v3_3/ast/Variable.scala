@@ -18,17 +18,22 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult, SemanticState, SymbolUse}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.SymbolUse
 
 case class Variable(name: String)(val position: InputPosition) extends Expression {
 
   def toSymbolUse = SymbolUse(name, position)
 
   // check the variable is defined and, if not, define it so that later errors are suppressed
-  def semanticCheck(ctx: SemanticContext) = s => this.ensureDefined()(s) match {
-    case Right(ss) => SemanticCheckResult.success(ss)
-    case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
-  }
+  def semanticCheck(ctx: SemanticContext) =
+    s =>
+      this.ensureDefined()(s) match {
+        case Right(ss)   => SemanticCheckResult.success(ss)
+        case Left(error) => SemanticCheckResult.error(declare(CTAny.covariant)(s).right.get, error)
+    }
 
   // double-dispatch helpers
   def declare(possibleTypes: TypeSpec) =

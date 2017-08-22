@@ -19,19 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Parameter
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{Forced, IfNoParameter, LiteralExtraction, literalReplacement}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.Forced
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.IfNoParameter
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.LiteralExtraction
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.literalReplacement
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
-class LiteralReplacementTest extends CypherFunSuite  {
+class LiteralReplacementTest extends CypherFunSuite {
 
   import org.neo4j.cypher.internal.compiler.v3_3.parser.ParserFixture.parser
 
   test("should extract starts with patterns") {
-    assertRewrite("RETURN x STARTS WITH 'Pattern' as X", "RETURN x STARTS WITH {`  AUTOSTRING0`} as X", Map("  AUTOSTRING0" -> "Pattern"))
+    assertRewrite("RETURN x STARTS WITH 'Pattern' as X",
+                  "RETURN x STARTS WITH {`  AUTOSTRING0`} as X",
+                  Map("  AUTOSTRING0" -> "Pattern"))
   }
 
   test("should not extract literal dynamic property lookups") {
@@ -55,7 +60,9 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(s"MATCH ({a:false})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> false))
     assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]", "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+    assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]",
+                  "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}",
+                  Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should extract literals in skip clause") {
@@ -70,7 +77,10 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(
       "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
       "create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}})",
-      Map("  AUTOINT0"->0,"  AUTOSTRING1"->"name 0","  AUTOINT2"->10000000,"  AUTOSTRING3"->"a very long string 0")
+      Map("  AUTOINT0" -> 0,
+          "  AUTOSTRING1" -> "name 0",
+          "  AUTOINT2" -> 10000000,
+          "  AUTOSTRING3" -> "a very long string 0")
     )
   }
 
@@ -87,8 +97,14 @@ class LiteralReplacementTest extends CypherFunSuite  {
       s"create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (b {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (a)-[:KNOWS {since: 0}]->(b)",
       s"create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}}) create (b {a:{`  AUTOINT4`}, b:{`  AUTOSTRING5`}, c:{`  AUTOINT6`}, d:{`  AUTOSTRING7`}}) create (a)-[:KNOWS {since: {`  AUTOINT8`}}]->(b)",
       Map(
-        "  AUTOINT0" -> 0, "  AUTOSTRING1" -> "name 0", "  AUTOINT2" -> 10000000, "  AUTOSTRING3" -> "a very long string 0",
-        "  AUTOINT4" -> 0, "  AUTOSTRING5" -> "name 0", "  AUTOINT6" -> 10000000, "  AUTOSTRING7" -> "a very long string 0",
+        "  AUTOINT0" -> 0,
+        "  AUTOSTRING1" -> "name 0",
+        "  AUTOINT2" -> 10000000,
+        "  AUTOSTRING3" -> "a very long string 0",
+        "  AUTOINT4" -> 0,
+        "  AUTOSTRING5" -> "name 0",
+        "  AUTOINT6" -> 10000000,
+        "  AUTOSTRING7" -> "a very long string 0",
         "  AUTOINT8" -> 0
       )
     )
@@ -119,7 +135,10 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assertRewrite(query, query, Map.empty)
   }
 
-  private def assertRewrite(originalQuery: String, expectedQuery: String, replacements: Map[String, Any], extractLiterals: LiteralExtraction = IfNoParameter) {
+  private def assertRewrite(originalQuery: String,
+                            expectedQuery: String,
+                            replacements: Map[String, Any],
+                            extractLiterals: LiteralExtraction = IfNoParameter) {
     val original = parser.parse(originalQuery)
     val expected = parser.parse(expectedQuery).endoRewrite(fixParameterTypeExpectations)
 
@@ -130,11 +149,12 @@ class LiteralReplacementTest extends CypherFunSuite  {
     assert(replacements === replacedLiterals)
   }
 
-  private def fixParameterTypeExpectations = bottomUp(Rewriter.lift {
-    case p@Parameter(name, _) if name.startsWith("  AUTOSTRING") => p.copy(parameterType = CTString)(p.position)
-    case p@Parameter(name, _) if name.startsWith("  AUTOINT") => p.copy(parameterType = CTInteger)(p.position)
-    case p@Parameter(name, _) if name.startsWith("  AUTOBOOL") => p.copy(parameterType = CTBoolean)(p.position)
-    case p@Parameter(name, _) if name.startsWith("  AUTODOUBLE") => p.copy(parameterType = CTFloat)(p.position)
-    case p@Parameter(name, _) if name.startsWith("  AUTOLIST") => p.copy(parameterType = CTList(CTAny))(p.position)
-  })
+  private def fixParameterTypeExpectations =
+    bottomUp(Rewriter.lift {
+      case p @ Parameter(name, _) if name.startsWith("  AUTOSTRING") => p.copy(parameterType = CTString)(p.position)
+      case p @ Parameter(name, _) if name.startsWith("  AUTOINT")    => p.copy(parameterType = CTInteger)(p.position)
+      case p @ Parameter(name, _) if name.startsWith("  AUTOBOOL")   => p.copy(parameterType = CTBoolean)(p.position)
+      case p @ Parameter(name, _) if name.startsWith("  AUTODOUBLE") => p.copy(parameterType = CTFloat)(p.position)
+      case p @ Parameter(name, _) if name.startsWith("  AUTOLIST")   => p.copy(parameterType = CTList(CTAny))(p.position)
+    })
 }

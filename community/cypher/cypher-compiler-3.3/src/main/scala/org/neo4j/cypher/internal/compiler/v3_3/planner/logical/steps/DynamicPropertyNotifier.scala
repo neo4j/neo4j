@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object DynamicPropertyNotifier {
 
-  def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph)
-             (implicit context: LogicalPlanningContext) = {
+  def process(variables: Set[Variable], notification: Set[String] => InternalNotification, qg: QueryGraph)(
+      implicit context: LogicalPlanningContext) = {
 
     val indexedLabels = variables.flatMap { variable =>
       val labels = qg.selections.labelsOnNode(IdName(variable.name))

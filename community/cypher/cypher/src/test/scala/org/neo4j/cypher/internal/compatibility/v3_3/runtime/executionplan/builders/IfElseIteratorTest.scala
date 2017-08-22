@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 
-
 class IfElseIteratorTest extends CypherFunSuite {
   val a1 = ExecutionContext.from("a" -> 1)
   val a2 = ExecutionContext.from("a" -> 2)

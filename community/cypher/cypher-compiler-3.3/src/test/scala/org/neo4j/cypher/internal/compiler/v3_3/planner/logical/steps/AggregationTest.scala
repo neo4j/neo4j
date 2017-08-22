@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Aggregation, LogicalPlan, Projection}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Aggregation
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Projection
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.AggregatingQueryProjection
@@ -66,9 +68,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val startPlan = newMockedLogicalPlan()
 
     aggregation(startPlan, projectionPlan)(context) should equal(
-      Aggregation(
-        projection(startPlan, groupingMap + ("n" -> varFor("n"))),
-        groupingMap, aggregatingMap2)(solved)
+      Aggregation(projection(startPlan, groupingMap + ("n" -> varFor("n"))), groupingMap, aggregatingMap2)(solved)
     )
   }
 

@@ -17,7 +17,8 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SemanticCheckResult}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
 
 // Scope expressions bundle together variables of a new scope
 // together with any child expressions that get evaluated in a context where
@@ -32,17 +33,21 @@ trait ScopeExpression extends Expression {
   def introducedVariables: Set[Variable]
 }
 
-case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition)
+    extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(variable)
 }
 
-case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(val position: InputPosition) extends ScopeExpression {
+case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(
+    val position: InputPosition)
+    extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(variable)
 }
 
-case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition) extends ScopeExpression {
+case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition)
+    extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
   val introducedVariables = Set(accumulator, variable)
 }

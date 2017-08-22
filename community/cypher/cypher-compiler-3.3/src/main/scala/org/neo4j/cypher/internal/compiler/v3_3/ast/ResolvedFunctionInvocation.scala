@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.functions.UserDefinedFunction
 
 object ResolvedFunctionInvocation {
 
-  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
+  def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(
+      unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
     val position = unresolved.position
     val name = QualifiedName(unresolved)
     val signature = signatureLookup(name)
@@ -48,21 +49,25 @@ object ResolvedFunctionInvocation {
   */
 case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
                                       fcnSignature: Option[UserFunctionSignature],
-                                      callArguments: IndexedSeq[Expression])
-                                     (val position: InputPosition)
-  extends Expression with UserDefinedFunctionInvocation {
+                                      callArguments: IndexedSeq[Expression])(val position: InputPosition)
+    extends Expression
+    with UserDefinedFunctionInvocation {
 
   def coerceArguments: ResolvedFunctionInvocation = fcnSignature match {
     case Some(signature) =>
-    val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
-    val coercedArguments =
-      callArguments
-        .zip(optInputFields)
-        .map {
-          case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
-        }
-    copy(callArguments = coercedArguments)(position)
+      val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
+      val coercedArguments =
+        callArguments
+          .zip(optInputFields)
+          .map {
+            case (arg, optField) =>
+              optField
+                .map { field =>
+                  CoerceTo(arg, field.typ)
+                }
+                .getOrElse(arg)
+          }
+      copy(callArguments = coercedArguments)(position)
     case None => this
   }
 
@@ -73,23 +78,33 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
       val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
       val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
-        if (expectedNumArgs == actualNumArgs) {
-          //this zip is fine since it will only verify provided args in callArguments
-          //default values are checked at load time
-          signature.inputSignature.zip(callArguments).map {
+      if (expectedNumArgs == actualNumArgs) {
+        //this zip is fine since it will only verify provided args in callArguments
+        //default values are checked at load time
+        signature.inputSignature
+          .zip(callArguments)
+          .map {
             case (field, arg) =>
               arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
-          }.foldLeft(success)(_ chain _)
-        } else {
-          val msg = (if (signature.inputSignature.isEmpty) "arguments"
-          else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
-          else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
-            signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
-          error(_: SemanticState, SemanticError( s"""Function call does not provide the required number of arguments: expected $expectedNumArgs got $actualNumArgs.
+          }
+          .foldLeft(success)(_ chain _)
+      } else {
+        val msg = (if (signature.inputSignature.isEmpty) "arguments"
+                   else if (signature.inputSignature.size == 1)
+                     s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
+                   else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
+          signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
+        error(
+          _: SemanticState,
+          SemanticError(
+            s"""Function call does not provide the required number of arguments: expected $expectedNumArgs got $actualNumArgs.
              |
              |Function ${signature.name} has signature: $signature
-             |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
-        }
+             |meaning that it expects $expectedNumArgs $msg""".stripMargin,
+            position
+          )
+        )
+      }
   }
 
   override def isAggregate: Boolean = fcnSignature.exists(_.isAggregate)

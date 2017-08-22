@@ -23,12 +23,16 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrapping._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, InternalPlanDescription, LogicalPlan2PlanDescription}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.RuntimeImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.LogicalPlan2PlanDescription
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.CypherException
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.spi.v3_3.{CSVResources, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.CSVResources
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.AnyValue
 
 import scala.collection.mutable
@@ -36,7 +40,8 @@ import scala.collection.mutable
 case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                                 columns: List[String],
                                                 logicalPlan: LogicalPlan,
-                                                idMap: Map[LogicalPlan, Id]) extends ExecutionResultBuilderFactory {
+                                                idMap: Map[LogicalPlan, Id])
+    extends ExecutionResultBuilderFactory {
   def create(): ExecutionResultBuilder =
     ExecutionWorkflowBuilder()
 
@@ -65,28 +70,35 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       exceptionDecorator = newDecorator
     }
 
-    def build(queryId: AnyRef, planType: ExecutionMode, params: Map[String, AnyValue],
-              notificationLogger: InternalNotificationLogger, runtimeName: RuntimeName): InternalExecutionResult = {
+    def build(queryId: AnyRef,
+              planType: ExecutionMode,
+              params: Map[String, AnyValue],
+              notificationLogger: InternalNotificationLogger,
+              runtimeName: RuntimeName): InternalExecutionResult = {
       taskCloser.addTask(queryContext.transactionalContext.close)
-      val state = new QueryState(queryContext, externalResource, params, pipeDecorator, queryId = queryId,
-                                 triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+      val state = new QueryState(queryContext,
+                                 externalResource,
+                                 params,
+                                 pipeDecorator,
+                                 queryId = queryId,
+                                 triadicState = mutable.Map.empty,
+                                 repeatableReads = mutable.Map.empty)
       try {
         try {
           createResults(state, planType, notificationLogger, runtimeName)
-        }
-        catch {
+        } catch {
           case e: CypherException =>
             throw exceptionDecorator(e)
         }
-      }
-      catch {
+      } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)
           throw t
       }
     }
 
-    private def createResults(state: QueryState, planType: ExecutionMode,
+    private def createResults(state: QueryState,
+                              planType: ExecutionMode,
                               notificationLogger: InternalNotificationLogger,
                               runtimeName: RuntimeName): InternalExecutionResult = {
       val queryType: InternalQueryType = getQueryType
@@ -97,7 +109,9 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       if (planType == ExplainMode) {
         //close all statements
         taskCloser.close(success = true)
-        ExplainExecutionResult(columns.toArray, planDescription, queryType,
+        ExplainExecutionResult(columns.toArray,
+                               planDescription,
+                               queryType,
                                notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
       } else {
         val results = pipeInfo.pipe.createResults(state)
@@ -115,7 +129,8 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
       resultIterator
     }
 
-    private def buildDescriptor(planDescription: InternalPlanDescription, isProfileReady: => Boolean): () => InternalPlanDescription =
+    private def buildDescriptor(planDescription: InternalPlanDescription,
+                                isProfileReady: => Boolean): () => InternalPlanDescription =
       () => pipeDecorator.decorate(planDescription, isProfileReady)
   }
 

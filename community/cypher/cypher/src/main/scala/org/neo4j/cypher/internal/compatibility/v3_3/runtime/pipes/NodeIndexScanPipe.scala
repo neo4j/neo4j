@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{LabelToken, PropertyKeyToken}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
 import org.neo4j.values.AnyValues
 
-case class NodeIndexScanPipe(ident: String,
-                             label: LabelToken,
-                             propertyKey: PropertyKeyToken)
-                            (val id: Id = new Id) extends Pipe {
+case class NodeIndexScanPipe(ident: String, label: LabelToken, propertyKey: PropertyKeyToken)(val id: Id = new Id)
+    extends Pipe {
 
   private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
 

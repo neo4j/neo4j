@@ -21,7 +21,9 @@ package cypher.feature.steps
 
 import cypher.feature.steps
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_3.parser.{Base, Expressions, Literals}
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Base
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Expressions
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Literals
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.parboiled.scala._
 
@@ -51,23 +53,28 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
   }
 
   private def ProcedureSignatureNameParts: Rule1[Seq[String]] = rule("procedure signature name parts") {
-    oneOrMore(SymbolicNameString, separator=".")
+    oneOrMore(SymbolicNameString, separator = ".")
   }
 
   private def ProcedureSignatureInputs: Rule1[Seq[(String, CypherType)]] = rule("procedure signature inputs") {
     ProcedureSignatureFields
   }
 
-  private def ProcedureSignatureOutputs: Rule1[Option[Seq[(String, CypherType)]]] = rule("procedure signature outputs") {
-    group(ProcedureSignatureFields ~~> { outputs => if (outputs.isEmpty) None else Some(outputs) }) | VoidProcedure
-  }
+  private def ProcedureSignatureOutputs: Rule1[Option[Seq[(String, CypherType)]]] =
+    rule("procedure signature outputs") {
+      group(ProcedureSignatureFields ~~> { outputs =>
+        if (outputs.isEmpty) None else Some(outputs)
+      }) | VoidProcedure
+    }
 
   private def ProcedureSignatureFields: Rule1[Seq[(String, CypherType)]] = rule("procedure signature columns") {
     "(" ~~ zeroOrMore(ProcedureSignatureField ~ WS, separator = "," ~ WS) ~ ")"
   }
 
   private def ProcedureSignatureField: Rule1[(String, CypherType)] = rule("procedure signature column") {
-    group(SymbolicNameString ~~ "::" ~~ ProcedureFieldType) ~~> { (name: String, tpe: CypherType) => name -> tpe }
+    group(SymbolicNameString ~~ "::" ~~ ProcedureFieldType) ~~> { (name: String, tpe: CypherType) =>
+      name -> tpe
+    }
   }
 
   private def VoidProcedure: Rule1[Option[Nothing]] = rule {
@@ -76,21 +83,18 @@ class ProcedureSignatureParser extends Parser with Base with Expressions with Li
 
   private def ProcedureFieldType: Rule1[CypherType] = rule("cypher type") {
     group("ANY?" ~ push(CTAny)) |
-    group("MAP?" ~ push(CTMap)) |
-    group("NODE?" ~ push(CTNode)) |
-    group("RELATIONSHIP?" ~ push(CTRelationship)) |
-    group("POINT?" ~ push(CTPoint)) |
-    group("PATH?" ~ push(CTPath)) |
-    group("LIST?" ~~ "OF" ~~ ProcedureFieldType ~~> { (tpe: CypherType) => CTList(tpe) }) |
-    group("STRING?" ~ push(CTString)) |
-    group("BOOLEAN?" ~ push(CTBoolean)) |
-    group("NUMBER?" ~ push(CTNumber)) |
-    group("INTEGER?" ~ push(CTInteger)) |
-    group("FLOAT?" ~ push(CTFloat))
+      group("MAP?" ~ push(CTMap)) |
+      group("NODE?" ~ push(CTNode)) |
+      group("RELATIONSHIP?" ~ push(CTRelationship)) |
+      group("POINT?" ~ push(CTPoint)) |
+      group("PATH?" ~ push(CTPath)) |
+      group("LIST?" ~~ "OF" ~~ ProcedureFieldType ~~> { (tpe: CypherType) =>
+        CTList(tpe)
+      }) |
+      group("STRING?" ~ push(CTString)) |
+      group("BOOLEAN?" ~ push(CTBoolean)) |
+      group("NUMBER?" ~ push(CTNumber)) |
+      group("INTEGER?" ~ push(CTInteger)) |
+      group("FLOAT?" ~ push(CTFloat))
   }
 }
-
-
-
-
-

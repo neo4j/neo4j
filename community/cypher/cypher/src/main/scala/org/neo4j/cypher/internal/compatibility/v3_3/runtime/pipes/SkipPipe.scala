@@ -20,17 +20,19 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class SkipPipe(source: Pipe, exp: Expression)
-                   (val id: Id = new Id)
-  extends PipeWithSource(source) with NumericHelper {
+case class SkipPipe(source: Pipe, exp: Expression)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with NumericHelper {
 
   exp.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    if(input.isEmpty)
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
+    if (input.isEmpty)
       return Iterator.empty
 
     val skip = asInt(exp(state.createOrGetInitialContext())(state))

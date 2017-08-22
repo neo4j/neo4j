@@ -77,9 +77,11 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.contravariant & CTNumber.covariant should equal(CTNumber.invariant)
     (CTNumber | CTInteger) & (CTNumber | CTFloat) should equal(CTNumber.invariant)
 
-    CTList(CTList(CTAny)).contravariant intersect CTList(CTAny).covariant should equal(CTList(CTAny) | CTList(CTList(CTAny)))
+    CTList(CTList(CTAny)).contravariant intersect CTList(CTAny).covariant should equal(
+      CTList(CTAny) | CTList(CTList(CTAny)))
 
-    (CTNumber.covariant | CTList(CTAny).covariant) intersect (CTNumber.covariant | CTString.covariant) should equal(CTNumber.covariant)
+    (CTNumber.covariant | CTList(CTAny).covariant) intersect (CTNumber.covariant | CTString.covariant) should equal(
+      CTNumber.covariant)
   }
 
   test("should constrain") {
@@ -128,7 +130,8 @@ class TypeSpecTest extends CypherFunSuite {
 
   test("constrain to sub type of some") {
     val constrainedToNumberOrCollectionT = CTNumber.covariant | CTList(CTAny).covariant
-    constrainedToNumberOrCollectionT constrain CTList(CTNumber) should equal(CTList(CTNumber) | CTList(CTFloat) | CTList(CTInteger))
+    constrainedToNumberOrCollectionT constrain CTList(CTNumber) should equal(
+      CTList(CTNumber) | CTList(CTFloat) | CTList(CTInteger))
   }
 
   test("constrain to super type of none") {
@@ -141,14 +144,16 @@ class TypeSpecTest extends CypherFunSuite {
 
     (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber) should equal(CTNode | CTNumber | CTAny)
     (CTNode | CTNumber) leastUpperBounds CTNumber should equal(CTNumber | CTAny)
-    (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber | CTRelationship) should equal(CTNode | CTNumber | CTMap | CTAny)
+    (CTNode | CTNumber) leastUpperBounds (CTNode | CTNumber | CTRelationship) should equal(
+      CTNode | CTNumber | CTMap | CTAny)
     (CTNode | CTNumber) leastUpperBounds CTAny should equal(CTAny.invariant)
     CTAny leastUpperBounds (CTNode | CTNumber) should equal(CTAny.invariant)
 
     CTRelationship.invariant leastUpperBounds CTNode.invariant should equal(CTMap.invariant)
     (CTRelationship | CTInteger) leastUpperBounds (CTNode | CTNumber) should equal(CTMap | CTNumber | CTAny)
 
-    (CTInteger | CTList(CTString)) leastUpperBounds (CTNumber | CTList(CTInteger)) should equal(CTNumber | CTList(CTAny) | CTAny)
+    (CTInteger | CTList(CTString)) leastUpperBounds (CTNumber | CTList(CTInteger)) should equal(
+      CTNumber | CTList(CTAny) | CTAny)
   }
 
   test("leastUpperBounds to root type") {
@@ -169,7 +174,8 @@ class TypeSpecTest extends CypherFunSuite {
 
   test("leastUpperBounds with multiple types") {
     TypeSpec.all leastUpperBounds (CTInteger | CTString) should equal(CTAny | CTNumber | CTInteger | CTString)
-    TypeSpec.all leastUpperBounds (CTList(CTString) | CTInteger) should equal(CTAny | CTNumber | CTInteger | CTList(CTAny) | CTList(CTString))
+    TypeSpec.all leastUpperBounds (CTList(CTString) | CTInteger) should equal(
+      CTAny | CTNumber | CTInteger | CTList(CTAny) | CTList(CTString))
   }
 
   test("leastUpperBounds with some super types") {
@@ -199,7 +205,8 @@ class TypeSpecTest extends CypherFunSuite {
 
     val numberOrCollectionT = CTNumber.covariant | CTList(CTAny).covariant
     numberOrCollectionT leastUpperBounds CTInteger should equal(CTAny | CTNumber | CTInteger)
-    numberOrCollectionT leastUpperBounds CTList(CTInteger) should equal(CTAny | CTList(CTAny) | CTList(CTNumber) | CTList(CTInteger))
+    numberOrCollectionT leastUpperBounds CTList(CTInteger) should equal(
+      CTAny | CTList(CTAny) | CTList(CTNumber) | CTList(CTInteger))
 
     val listOfListOfAny = CTList(CTList(CTAny)).covariant
     (TypeSpec.all leastUpperBounds listOfListOfAny) contains CTList(CTList(CTString)) should equal(true)
@@ -281,7 +288,7 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber | CTInteger | CTFloat should equal(CTNumber.covariant)
 
     CTNumber.covariant | CTInteger.covariant should equal(CTNumber.covariant)
-    CTNumber.covariant | CTString.covariant should not equal(CTNumber.covariant)
+    CTNumber.covariant | CTString.covariant should not equal (CTNumber.covariant)
 
     TypeSpec.all should equal(TypeSpec.all)
     CTAny.covariant should equal(TypeSpec.all)
@@ -293,14 +300,14 @@ class TypeSpecTest extends CypherFunSuite {
   }
 
   test("different TypeSpecs should not equal") {
-    TypeSpec.all should not equal(CTNumber.covariant)
-    CTNumber.covariant should not equal(TypeSpec.all)
+    TypeSpec.all should not equal (CTNumber.covariant)
+    CTNumber.covariant should not equal (TypeSpec.all)
 
-    CTList(CTAny).covariant should not equal(CTNumber.covariant)
-    CTNumber.covariant should not equal(CTList(CTAny).covariant)
+    CTList(CTAny).covariant should not equal (CTNumber.covariant)
+    CTNumber.covariant should not equal (CTList(CTAny).covariant)
 
-    CTNumber.invariant should not equal(TypeSpec.all)
-    TypeSpec.all should not equal(CTNumber.invariant)
+    CTNumber.invariant should not equal (TypeSpec.all)
+    TypeSpec.all should not equal (CTNumber.invariant)
   }
 
   test("should have indefinite size when allowing unconstrained any at any depth") {
@@ -341,14 +348,16 @@ class TypeSpecTest extends CypherFunSuite {
     (CTRelationship | CTInteger | CTNode).mkString(", ") should equal("Integer, Node, Relationship")
     (CTRelationship | CTInteger | CTNode).mkString("(", ", ", ")") should equal("(Integer, Node, Relationship)")
     (CTRelationship | CTAny | CTNode).mkString("(", ", ", " or ", ")") should equal("(Any, Node or Relationship)")
-    (CTRelationship | CTInteger | CTNode).mkString("[", ", ", " and ", "]") should equal("[Integer, Node and Relationship]")
+    (CTRelationship | CTInteger | CTNode).mkString("[", ", ", " and ", "]") should equal(
+      "[Integer, Node and Relationship]")
   }
 
   test("should format to string for indefinite sized set") {
     TypeSpec.all.mkString(", ") should equal("T")
     CTList(CTAny).covariant.mkString(", ") should equal("List<T>")
     (CTList(CTAny).covariant | CTBoolean).mkString(", ") should equal("Boolean, List<T>")
-    (CTList(CTList(CTAny)).covariant | CTBoolean | CTList(CTString)).mkString(", ") should equal("Boolean, List<String>, List<List<T>>")
+    (CTList(CTList(CTAny)).covariant | CTBoolean | CTList(CTString)).mkString(", ") should equal(
+      "Boolean, List<String>, List<List<T>>")
   }
 
   test("should format to string for definite sized set") {
@@ -357,8 +366,10 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.covariant.mkString(", ") should equal("Float, Integer, Number")
     (CTNumber.covariant | CTBoolean.covariant).mkString(", ") should equal("Boolean, Float, Integer, Number")
     CTNumber.contravariant.mkString(", ") should equal("Any, Number")
-    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTString).covariant).mkString(", ") should equal("Boolean, String, List<Boolean>, List<String>")
-    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTList(CTString)).covariant).mkString(", ") should equal("Boolean, String, List<Boolean>, List<List<String>>")
+    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTString).covariant)
+      .mkString(", ") should equal("Boolean, String, List<Boolean>, List<String>")
+    (CTBoolean.covariant | CTString.covariant | CTList(CTBoolean).covariant | CTList(CTList(CTString)).covariant)
+      .mkString(", ") should equal("Boolean, String, List<Boolean>, List<List<String>>")
     CTList(CTAny).contravariant.mkString(", ") should equal("Any, List<Any>")
   }
 
@@ -367,7 +378,9 @@ class TypeSpecTest extends CypherFunSuite {
     CTNumber.covariant.iterator.toSeq should equal(Seq(CTFloat, CTInteger, CTNumber))
     (CTNumber.covariant | CTBoolean.covariant).iterator.toSeq should equal(Seq(CTBoolean, CTFloat, CTInteger, CTNumber))
     CTNumber.contravariant.iterator.toSeq should equal(Seq(CTAny, CTNumber))
-    (CTBoolean | CTString | CTList(CTBoolean) | CTList(CTString)).iterator.toSeq should equal(Seq(CTBoolean, CTString, CTList(CTBoolean), CTList(CTString)))
-    (CTBoolean | CTString | CTList(CTBoolean) | CTList(CTList(CTString))).iterator.toSeq should equal(Seq(CTBoolean, CTString, CTList(CTBoolean), CTList(CTList(CTString))))
+    (CTBoolean | CTString | CTList(CTBoolean) | CTList(CTString)).iterator.toSeq should equal(
+      Seq(CTBoolean, CTString, CTList(CTBoolean), CTList(CTString)))
+    (CTBoolean | CTString | CTList(CTBoolean) | CTList(CTList(CTString))).iterator.toSeq should equal(
+      Seq(CTBoolean, CTString, CTList(CTBoolean), CTList(CTList(CTString))))
   }
 }

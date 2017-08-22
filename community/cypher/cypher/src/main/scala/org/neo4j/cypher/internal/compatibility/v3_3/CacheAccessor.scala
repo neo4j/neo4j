@@ -30,20 +30,22 @@ class QueryCache[K <: AnyRef, T <: AnyRef](cacheAccessor: CacheAccessor[K, T], c
       (produce, false)
     else {
       var planned = false
-      Iterator.continually {
-        cacheAccessor.getOrElseUpdate(cache)(key, {
-          planned = true
-          produce
-        })
-      }.flatMap { value =>
-        if (!planned && isStale(value)) {
-          cacheAccessor.remove(cache)(key, userKey)
-          None
+      Iterator
+        .continually {
+          cacheAccessor.getOrElseUpdate(cache)(key, {
+            planned = true
+            produce
+          })
         }
-        else {
-          Some((value, planned))
+        .flatMap { value =>
+          if (!planned && isStale(value)) {
+            cacheAccessor.remove(cache)(key, userKey)
+            None
+          } else {
+            Some((value, planned))
+          }
         }
-      }.next()
+        .next()
     }
   }
 }

@@ -27,14 +27,15 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.Intern
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb
 import org.neo4j.graphdb.Result.ResultVisitor
-import org.neo4j.graphdb.{Notification, ResourceIterator}
+import org.neo4j.graphdb.Notification
+import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
-class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecutionResult, runSafely: RunSafely)
-                            (implicit innerMonitor: QueryExecutionMonitor)
-  extends InternalExecutionResult {
+class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecutionResult, runSafely: RunSafely)(
+    implicit innerMonitor: QueryExecutionMonitor)
+    extends InternalExecutionResult {
 
   private val monitor = OnlyOnceQueryExecutionMonitor(innerMonitor)
 
@@ -99,7 +100,6 @@ class ClosingExecutionResult(val query: ExecutingQuery, val inner: InternalExecu
   override def fieldNames() = runSafely {
     inner.fieldNames()
   }
-
 
   override def queryStatistics() = runSafely { inner.queryStatistics() }
 

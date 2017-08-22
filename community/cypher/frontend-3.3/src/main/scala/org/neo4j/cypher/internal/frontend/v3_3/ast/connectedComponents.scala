@@ -33,9 +33,13 @@ object connectedComponents {
   val ConnectedComponent = Set
 
   def apply(patternParts: Seq[PatternPart]): IndexedSeq[ConnectedComponent] = {
-    val parts: immutable.IndexedSeq[ComponentPart] = patternParts.map(_.fold(Set.empty[Variable]) {
-      case NodePattern(Some(id), _, _) => list => list + id
-    }).toIndexedSeq
+    val parts: immutable.IndexedSeq[ComponentPart] = patternParts
+      .map(_.fold(Set.empty[Variable]) {
+        case NodePattern(Some(id), _, _) =>
+          list =>
+            list + id
+      })
+      .toIndexedSeq
 
     this.apply(parts)
   }
@@ -43,7 +47,8 @@ object connectedComponents {
   def apply(parts: IndexedSeq[ComponentPart]): IndexedSeq[ConnectedComponent] = {
 
     @tailrec
-    def loop(remaining: IndexedSeq[ComponentPart], connectedComponents: IndexedSeq[ConnectedComponent]): IndexedSeq[ConnectedComponent] = {
+    def loop(remaining: IndexedSeq[ComponentPart],
+             connectedComponents: IndexedSeq[ConnectedComponent]): IndexedSeq[ConnectedComponent] = {
       if (remaining.isEmpty) connectedComponents
       else {
         val part = remaining.head

@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, NameId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.NameId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
 
 sealed abstract class NameToken[I <: NameId] {
   def name: String
@@ -30,7 +32,8 @@ object LabelToken {
 final case class LabelToken(name: String, nameId: LabelId) extends NameToken[LabelId]
 
 object PropertyKeyToken {
-  def apply(symbolicName: PropertyKeyName, nameId: PropertyKeyId): PropertyKeyToken = PropertyKeyToken(symbolicName.name, nameId)
+  def apply(symbolicName: PropertyKeyName, nameId: PropertyKeyId): PropertyKeyToken =
+    PropertyKeyToken(symbolicName.name, nameId)
 }
 
 final case class PropertyKeyToken(name: String, nameId: PropertyKeyId) extends NameToken[PropertyKeyId]

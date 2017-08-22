@@ -17,22 +17,29 @@
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case class expandStar(state: SemanticState) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
   private val rewriter = Rewriter.lift {
-    case clause@With(_, ri, _, _, _, _) if ri.includeExisting =>
+    case clause @ With(_, ri, _, _, _, _) if ri.includeExisting =>
       clause.copy(returnItems = returnItems(clause, ri.items))(clause.position)
 
     case clause: PragmaWithout =>
-      With(distinct = false, returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
-        orderBy = None, skip = None, limit = None, where = None)(clause.position)
+      With(distinct = false,
+           returnItems = returnItems(clause, Seq.empty, clause.excludedNames),
+           orderBy = None,
+           skip = None,
+           limit = None,
+           where = None)(clause.position)
 
-    case clause@Return(_, ri, _, _, _, excludedNames) if ri.includeExisting =>
-      clause.copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
+    case clause @ Return(_, ri, _, _, _, excludedNames) if ri.includeExisting =>
+      clause
+        .copy(returnItems = returnItems(clause, ri.items, excludedNames), excludedNames = Set.empty)(clause.position)
 
     case expandedAstNode =>
       expandedAstNode
@@ -40,7 +47,9 @@ case class expandStar(state: SemanticState) extends Rewriter {
 
   private val instance = bottomUp(rewriter, _.isInstanceOf[Expression])
 
-  private def returnItems(clause: Clause, listedItems: Seq[ReturnItem], excludedNames: Set[String] = Set.empty): ReturnItems = {
+  private def returnItems(clause: Clause,
+                          listedItems: Seq[ReturnItem],
+                          excludedNames: Set[String] = Set.empty): ReturnItems = {
     val scope = state.scope(clause).getOrElse {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }

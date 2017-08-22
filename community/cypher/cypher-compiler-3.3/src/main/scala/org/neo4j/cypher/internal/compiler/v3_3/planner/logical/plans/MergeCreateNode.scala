@@ -19,12 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.StrictnessMode
 
-case class MergeCreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])
-                          (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case class MergeCreateNode(source: LogicalPlan, idName: IdName, labels: Seq[LabelName], properties: Option[Expression])(
+    val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

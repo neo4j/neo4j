@@ -21,10 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.indexSeekLeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.uniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, Predicate, QueryGraph, Selections}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.Predicate
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
+import org.neo4j.cypher.internal.ir.v3_3.Selections
 
 import scala.language.reflectiveCalls
 
@@ -32,12 +36,12 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
   val idName = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _)_
-  val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _)_
+  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
+  val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _) _
   val lit42: Expression = SignedDecimalIntegerLiteral("42") _
   val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
-  val inCollectionValue = In(property, ListLiteral(Seq(lit42))_)_
+  val inCollectionValue = In(property, ListLiteral(Seq(lit42)) _) _
 
   test("does not plan index seek when no index exist") {
     new given {
@@ -88,14 +92,14 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) =>  ()
+        case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(`lit42`), _)) => ()
       }
     }
   }
 
   test("index scan when there is a composite index on two properties") {
     new given {
-      val inCollectionValue2 = In(property2, ListLiteral(Seq(lit6))_)_
+      val inCollectionValue2 = In(property2, ListLiteral(Seq(lit6)) _) _
       qg = queryGraph(inCollectionValue, inCollectionValue2, hasLabels)
 
       indexOn("Awesome", "prop", "prop2")
@@ -105,14 +109,19 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
+        case Seq(
+            NodeIndexSeek(`idName`,
+                          LabelToken("Awesome", _),
+                          Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+                          CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))),
+                          _)) =>
+          ()
       }
     }
   }
 
-  test("index scan when there is a composite index on two properties in the presence of other nodes, labels and properties") {
+  test(
+    "index scan when there is a composite index on two properties in the presence of other nodes, labels and properties") {
     new given {
       val litFoo: Expression = StringLiteral("foo") _
 
@@ -134,15 +143,18 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop", "prop2")
 
     }.withLogicalPlanningContext { (cfg, ctx) =>
-
       // when
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
-        CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))), _)) => ()
+        case Seq(
+            NodeIndexSeek(`idName`,
+                          LabelToken("Awesome", _),
+                          Seq(PropertyKeyToken("prop", _), PropertyKeyToken("prop2", _)),
+                          CompositeQueryExpression(Seq(SingleQueryExpression(`lit42`), SingleQueryExpression(`lit6`))),
+                          _)) =>
+          ()
       }
     }
   }
@@ -157,8 +169,8 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       val lit: Expression = SignedDecimalIntegerLiteral((n * 10 + 2).toString) _
       lit
     }
-    val predicates = properties.zip(values).map{ pair =>
-      val predicate = In(pair._1, ListLiteral(Seq(pair._2))_ )_
+    val predicates = properties.zip(values).map { pair =>
+      val predicate = In(pair._1, ListLiteral(Seq(pair._2)) _) _
       Predicate(Set(idName), predicate)
     }
 
@@ -175,15 +187,21 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(NodeIndexSeek(`idName`, LabelToken("Awesome", _),
-        props@Seq(_*),
-        CompositeQueryExpression(vals@Seq(_*)), _))
-          if assertPropsAndValuesMatch(propertyNames, values, props, vals.flatMap(_.expressions)) => ()
+        case Seq(
+            NodeIndexSeek(`idName`,
+                          LabelToken("Awesome", _),
+                          props @ Seq(_*),
+                          CompositeQueryExpression(vals @ Seq(_*)),
+                          _)) if assertPropsAndValuesMatch(propertyNames, values, props, vals.flatMap(_.expressions)) =>
+          ()
       }
     }
   }
 
-  private def assertPropsAndValuesMatch(expectedProps: Seq[String], expectedVals: Seq[Expression], foundProps: Seq[PropertyKeyToken], foundVals: Seq[Expression]) = {
+  private def assertPropsAndValuesMatch(expectedProps: Seq[String],
+                                        expectedVals: Seq[Expression],
+                                        foundProps: Seq[PropertyKeyToken],
+                                        foundVals: Seq[Expression]) = {
     val expected: Map[String, Expression] = expectedProps.zip(expectedVals).toMap
     val found: Map[String, Expression] = foundProps.map(_.name).zip(foundVals).toMap
     found.equals(expected)
@@ -241,7 +259,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
@@ -263,7 +281,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("plans unique index scans such that it solves hints") {
-    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome")_, Seq(PropertyKeyName("prop")(pos)))_
+    val hint: UsingIndexHint = UsingIndexHint(varFor("n"), LabelName("Awesome") _, Seq(PropertyKeyName("prop")(pos))) _
 
     new given {
       qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))

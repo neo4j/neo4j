@@ -28,29 +28,65 @@ case object getDegreeRewriter extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance(that)
 
-  private val instance = bottomUp(rewriter,
+  private val instance = bottomUp(
+    rewriter,
     // Do not traverse into NestedPlanExpressions as they have been optimized already by an earlier call to plan
-    _.isInstanceOf[NestedPlanExpression])
+    _.isInstanceOf[NestedPlanExpression]
+  )
 
   private def rewriter = Rewriter.lift {
     // LENGTH( (a)-[]->() )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(None, List(), None))))))
-      if func.function == functions.Length || func.function == functions.Size =>
+    case func @ FunctionInvocation(_,
+                                   _,
+                                   _,
+                                   IndexedSeq(
+                                     PatternExpression(
+                                       RelationshipsPattern(
+                                         RelationshipChain(NodePattern(Some(node), List(), None),
+                                                           RelationshipPattern(None, types, None, None, dir, _),
+                                                           NodePattern(None, List(), None))))))
+        if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir)
 
     // LENGTH( ()-[]->(a) )
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(Some(node), List(), None))))))
-      if func.function == functions.Length || func.function == functions.Size =>
+    case func @ FunctionInvocation(_,
+                                   _,
+                                   _,
+                                   IndexedSeq(
+                                     PatternExpression(
+                                       RelationshipsPattern(
+                                         RelationshipChain(NodePattern(None, List(), None),
+                                                           RelationshipPattern(None, types, None, None, dir, _),
+                                                           NodePattern(Some(node), List(), None))))))
+        if func.function == functions.Length || func.function == functions.Size =>
       calculateUsingGetDegree(func, node, types, dir.reversed)
 
     // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(Some(node), List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(None, List(), None))))))
-      if func.function == functions.Exists  =>
-      GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
+    case func @ FunctionInvocation(_,
+                                   _,
+                                   _,
+                                   IndexedSeq(
+                                     PatternExpression(
+                                       RelationshipsPattern(
+                                         RelationshipChain(NodePattern(Some(node), List(), None),
+                                                           RelationshipPattern(None, types, None, None, dir, _),
+                                                           NodePattern(None, List(), None))))))
+        if func.function == functions.Exists =>
+      GreaterThan(calculateUsingGetDegree(func, node, types, dir), SignedDecimalIntegerLiteral("0")(func.position))(
+        func.position)
 
     // EXISTS( ()-[]->(a) ) rewritten to GetDegree( (a)-[]->() ) > 0
-    case func@FunctionInvocation(_, _, _, IndexedSeq(PatternExpression(RelationshipsPattern(RelationshipChain(NodePattern(None, List(), None), RelationshipPattern(None, types, None, None, dir, _), NodePattern(Some(node), List(), None))))))
-      if func.function == functions.Exists =>
-      GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed), SignedDecimalIntegerLiteral("0")(func.position))(func.position)
+    case func @ FunctionInvocation(_,
+                                   _,
+                                   _,
+                                   IndexedSeq(
+                                     PatternExpression(
+                                       RelationshipsPattern(
+                                         RelationshipChain(NodePattern(None, List(), None),
+                                                           RelationshipPattern(None, types, None, None, dir, _),
+                                                           NodePattern(Some(node), List(), None))))))
+        if func.function == functions.Exists =>
+      GreaterThan(calculateUsingGetDegree(func, node, types, dir.reversed),
+                  SignedDecimalIntegerLiteral("0")(func.position))(func.position)
   }
 }

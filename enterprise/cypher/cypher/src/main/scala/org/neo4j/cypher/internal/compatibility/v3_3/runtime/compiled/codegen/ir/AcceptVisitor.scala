@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Cod
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
-case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeGenExpression])
-  extends Instruction {
+case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeGenExpression]) extends Instruction {
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     generator.trace(produceResultOpName) { body =>
       body.incrementRows()
-      columns.foreach { case (k, v: CodeGenExpression) =>
-        body.setInRow(context.nameToIndex(k), anyValue(body, v))
+      columns.foreach {
+        case (k, v: CodeGenExpression) =>
+          body.setInRow(context.nameToIndex(k), anyValue(body, v))
       }
       body.visitorAccept()
     }
@@ -40,11 +40,12 @@ case class AcceptVisitor(produceResultOpName: String, columns: Map[String, CodeG
     if (v.nullable) {
       val variable = context.namer.newVarName()
       generator.localVariable(variable, v.generateExpression(generator))
-      generator.ternaryOperator(generator.isNull(generator.loadVariable(variable), v.codeGenType),
-                                generator.noValue(),
-                                generator.toAnyValue(generator.loadVariable(variable), v.codeGenType))
-    }
-    else generator.toAnyValue(v.generateExpression(generator), v.codeGenType)
+      generator.ternaryOperator(
+        generator.isNull(generator.loadVariable(variable), v.codeGenType),
+        generator.noValue(),
+        generator.toAnyValue(generator.loadVariable(variable), v.codeGenType)
+      )
+    } else generator.toAnyValue(v.generateExpression(generator), v.codeGenType)
   }
 
   override protected def operatorId = Set(produceResultOpName)

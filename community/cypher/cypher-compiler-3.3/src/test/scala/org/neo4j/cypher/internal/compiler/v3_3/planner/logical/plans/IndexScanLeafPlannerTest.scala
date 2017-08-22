@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.indexScanLeafPlanner
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{functions, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.functions
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
@@ -139,10 +140,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, startsWithPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, startsWithPredicate)))
           }
       }
     }
@@ -158,7 +160,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, ltPredicate)))
@@ -177,10 +179,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, neqPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, neqPredicate)))
           }
       }
     }
@@ -196,7 +199,7 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
               scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, eqPredicate)))
@@ -215,10 +218,11 @@ class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
       // then
       resultPlans should beLike {
-        case Seq(plan@NodeIndexScan(`idName`, _, _, _)) =>
+        case Seq(plan @ NodeIndexScan(`idName`, _, _, _)) =>
           plan.solved should beLike {
             case RegularPlannerQuery(scanQG, _, _) =>
-              scanQG.selections.predicates.map(_.expr) should equal(Set(PartialPredicate(existsPredicate, regexPredicate)))
+              scanQG.selections.predicates.map(_.expr) should equal(
+                Set(PartialPredicate(existsPredicate, regexPredicate)))
           }
       }
     }

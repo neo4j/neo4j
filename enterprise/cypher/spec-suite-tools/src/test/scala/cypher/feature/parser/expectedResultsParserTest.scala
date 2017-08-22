@@ -19,10 +19,12 @@
  */
 package cypher.feature.parser
 
-import java.lang.Boolean.{FALSE, TRUE}
+import java.lang.Boolean.FALSE
+import java.lang.Boolean.TRUE
 import java.lang.Long
 import java.util.Collections.emptyList
-import java.{lang, util}
+import java.lang
+import java.util
 
 import org.neo4j.graphdb.Relationship
 
@@ -176,8 +178,8 @@ class expectedResultsParserTest extends ParsingTestSupport {
     val value = "<(:T {k:0})-[:T {k:'s'}]->({k:true})-[:type]->()>"
 
     val middle = node(properties = Map("k" -> TRUE))
-    val link1 = pathLink(node(Seq("T"), Map("k" -> java.lang.Long.valueOf(0))), relationship("T", Map("k" -> "s")),
-                         middle)
+    val link1 =
+      pathLink(node(Seq("T"), Map("k" -> java.lang.Long.valueOf(0))), relationship("T", Map("k" -> "s")), middle)
     val link2 = pathLink(middle, relationship("type"), node())
 
     parse(value) should accept(path(link1, link2))

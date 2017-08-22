@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v3_3.test_helpers
 trait RandomizedTestSupport {
 
   /**
-   * Minimum number of nodes in the database.
-   * This value is needed for correct cardinality estimations.
-   */
+    * Minimum number of nodes in the database.
+    * This value is needed for correct cardinality estimations.
+    */
   private val MIN_N = 1500
 
   /**
-   * Total number of nodes in the database.
-   */
+    * Total number of nodes in the database.
+    */
   val N: Double = testRandomizer.nextDouble() * 1E6 + MIN_N
 }

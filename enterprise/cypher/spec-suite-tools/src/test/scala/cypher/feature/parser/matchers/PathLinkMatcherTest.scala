@@ -25,42 +25,48 @@ import cypher.feature.parser.matchers.MapMatcher.EMPTY
 class PathLinkMatcherTest extends ParsingTestSupport {
 
   test("should match an outgoing pathlink") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), true)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), true)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher should accept(pathLink(node(Seq("L")), relationship("T"), node()))
   }
 
   test("should match an incoming pathlink") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), false)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), false)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher should accept(pathLink(node(), relationship("T"), node(Seq("L"))))
   }
 
   test("should not match a reversed pathlink") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), false)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), false)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher shouldNot accept(pathLink(node(Seq("L")), relationship("T"), node()))
   }
 
   test("should not match a different relationship") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), true)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("L").asJava, EMPTY), true)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher shouldNot accept(pathLink(node(Seq("L")), relationship("T2"), node()))
   }
 
   test("should not match a different startNode") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher shouldNot accept(pathLink(node(Seq("L2")), relationship("T"), node()))
   }
 
   test("should not match a non-relationship") {
-    val matcher = new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
+    val matcher =
+      new PathLinkMatcher(new RelationshipMatcher("T", EMPTY), new NodeMatcher(Set("L1").asJava, EMPTY), true)
     matcher.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
 
     matcher shouldNot accept("a string")

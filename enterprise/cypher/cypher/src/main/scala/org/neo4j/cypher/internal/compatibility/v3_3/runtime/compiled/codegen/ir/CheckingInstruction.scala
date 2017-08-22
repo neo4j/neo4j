@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Cod
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
 /**
- * Generates instruction for for updating a provided flag before creating the inner instruction
- */
-case class CheckingInstruction(inner: Instruction, yieldedFlagVar: String)
-  extends Instruction {
+  * Generates instruction for for updating a provided flag before creating the inner instruction
+  */
+case class CheckingInstruction(inner: Instruction, yieldedFlagVar: String) extends Instruction {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     inner.init(generator)

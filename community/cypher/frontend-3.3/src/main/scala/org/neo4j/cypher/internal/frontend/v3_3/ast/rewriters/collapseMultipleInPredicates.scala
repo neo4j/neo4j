@@ -16,8 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, In, ListLiteral, Ors}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.In
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ListLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Ors
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 import scala.collection.immutable.Iterable
 
@@ -32,11 +36,11 @@ case object collapseMultipleInPredicates extends Rewriter {
   case class InValue(lhs: Expression, expr: Expression)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case predicate@Ors(exprs) =>
+    case predicate @ Ors(exprs) =>
       // Find all the expressions we want to rewrite
       val (const: Seq[Expression], nonRewritable: Seq[Expression]) = exprs.toList.partition {
-        case in@In(_, rhs: ListLiteral) => true
-        case _ => false
+        case in @ In(_, rhs: ListLiteral) => true
+        case _                            => false
       }
 
       // For each expression on the RHS of any IN, produce a InValue place holder
@@ -56,7 +60,7 @@ case object collapseMultipleInPredicates extends Rewriter {
       // Return the original non-rewritten predicates with our new ones
       nonRewritable ++ flattenConst match {
         case head :: Nil => head
-        case l => Ors(l.toSet)(predicate.position)
+        case l           => Ors(l.toSet)(predicate.position)
       }
   })
 }

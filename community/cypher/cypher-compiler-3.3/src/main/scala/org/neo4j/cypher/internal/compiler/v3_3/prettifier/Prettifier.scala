@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_3.prettifier
 
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
-import org.neo4j.cypher.internal.frontend.v3_3.parser.{Base, Strings}
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Base
+import org.neo4j.cypher.internal.frontend.v3_3.parser.Strings
 import org.parboiled.scala._
 
 import scala.collection.mutable
@@ -77,7 +78,7 @@ class PrettifierParser extends Parser with Base with Strings {
   }
 
   def nonBreakingKeyword: Rule1[NonBreakingKeywords] = rule("nonBreakingKeywords") {
-    group (
+    group(
       keyword("WITH HEADERS") |
         keyword("IS UNIQUE") |
         keyword("ALL") |
@@ -113,81 +114,82 @@ class PrettifierParser extends Parser with Base with Strings {
 
   def breakingKeywords: Rule1[BreakingKeywords] = rule("breakingKeywords") {
     joinWithUpdatingBreakingKeywords |
-    plainBreakingKeywords |
-    updatingBreakingKeywords
+      plainBreakingKeywords |
+      updatingBreakingKeywords
   }
 
   def plainBreakingKeywords: Rule1[BreakingKeywords] = rule("plainBreakingKeywords") {
-    group (
+    group(
       keyword("LOAD CSV") |
-      keyword("ORDER BY") |
-      keyword("CREATE INDEX ON") |
-      keyword("DROP INDEX ON") |
-      keyword("CREATE CONSTRAINT ON") |
-      keyword("DROP CONSTRAINT ON") |
-      keyword("USING PERIODIC COMMIT") |
-      keyword("USING INDEX") |
-      keyword("USING SCAN") |
-      keyword("USING JOIN ON") |
-      keyword("OPTIONAL MATCH") |
-      keyword("DETACH DELETE") |
-      keyword("START") |
-      keyword("MATCH") |
-      keyword("WHERE") |
-      keyword("WITH") |
-      keyword("RETURN") |
-      keyword("SKIP") |
-      keyword("LIMIT") |
-      keyword("ORDER BY") |
-      keyword("ASC") |
-      keyword("DESC") |
-      keyword("ON") |
-      keyword("WHEN") |
-      keyword("CASE") |
-      keyword("THEN") |
-      keyword("ELSE") |
-      keyword("ASSERT") |
-      keyword("SCAN") |
-      keyword("CALL") |
-      keyword("UNION") |
-      keyword("UNWIND")
+        keyword("ORDER BY") |
+        keyword("CREATE INDEX ON") |
+        keyword("DROP INDEX ON") |
+        keyword("CREATE CONSTRAINT ON") |
+        keyword("DROP CONSTRAINT ON") |
+        keyword("USING PERIODIC COMMIT") |
+        keyword("USING INDEX") |
+        keyword("USING SCAN") |
+        keyword("USING JOIN ON") |
+        keyword("OPTIONAL MATCH") |
+        keyword("DETACH DELETE") |
+        keyword("START") |
+        keyword("MATCH") |
+        keyword("WHERE") |
+        keyword("WITH") |
+        keyword("RETURN") |
+        keyword("SKIP") |
+        keyword("LIMIT") |
+        keyword("ORDER BY") |
+        keyword("ASC") |
+        keyword("DESC") |
+        keyword("ON") |
+        keyword("WHEN") |
+        keyword("CASE") |
+        keyword("THEN") |
+        keyword("ELSE") |
+        keyword("ASSERT") |
+        keyword("SCAN") |
+        keyword("CALL") |
+        keyword("UNION") |
+        keyword("UNWIND")
     ) ~> BreakingKeywords
   }
 
   def joinWithUpdatingBreakingKeywords: Rule1[BreakingKeywords] =
-     group( joinedBreakingKeywords ~~ updatingBreakingKeywords ) ~~> ( (k1: BreakingKeywords, k2: BreakingKeywords) =>
-       BreakingKeywords(s"${k1.text} ${k2.text}")
-     )
+    group(joinedBreakingKeywords ~~ updatingBreakingKeywords) ~~> ((k1: BreakingKeywords,
+                                                                    k2: BreakingKeywords) =>
+                                                                     BreakingKeywords(s"${k1.text} ${k2.text}"))
 
-  def joinedBreakingKeywords = group( keyword("ON CREATE") | keyword("ON MATCH") ) ~> BreakingKeywords
+  def joinedBreakingKeywords = group(keyword("ON CREATE") | keyword("ON MATCH")) ~> BreakingKeywords
 
   def updatingBreakingKeywords: Rule1[BreakingKeywords] = rule("breakingUpdateKeywords") {
-    group (
+    group(
       keyword("CREATE") |
-      keyword("SET") |
-      keyword("DELETE") |
-      keyword("REMOVE") |
-      keyword("FOREACH") |
-      keyword("MERGE")
+        keyword("SET") |
+        keyword("DELETE") |
+        keyword("REMOVE") |
+        keyword("FOREACH") |
+        keyword("MERGE")
     ) ~> BreakingKeywords
   }
-  def comma: Rule1[Comma.type] = rule("comma") { "," ~> ( _ => Comma ) }
+  def comma: Rule1[Comma.type] = rule("comma") { "," ~> (_ => Comma) }
 
   def escapedText: Rule1[EscapedText] = rule("string") {
     (((
       ch('\'') ~ StringCharacters('\'') ~ ch('\'') ~ push('\'')
-        | ch('"') ~ StringCharacters('"') ~ ch('"')  ~ push('\"')
-      ) memoMismatches) suppressSubnodes) ~~> EscapedText
+        | ch('"') ~ StringCharacters('"') ~ ch('"') ~ push('\"')
+    ) memoMismatches) suppressSubnodes) ~~> EscapedText
   }
 
-  def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore( (!anyOf(" \n\r\t\f(){}[]")) ~ ANY ) ~> AnyText }
+  def anyText: Rule1[AnyText] = rule("anyText") { oneOrMore((!anyOf(" \n\r\t\f(){}[]")) ~ ANY) ~> AnyText }
 
   def grouping: Rule1[GroupToken] = rule("grouping") {
-      validGrouping("(", ")") | validGrouping("{", "}") | validGrouping("[", "]")
+    validGrouping("(", ")") | validGrouping("{", "}") | validGrouping("[", "]")
   }
 
   def validGrouping(start: String, close: String): Rule1[GroupToken] =
-    group( start ~ optional(WS) ~ zeroOrMoreInteriorToken ~ optional(WS) ~ close ) ~~> ( (innerTokens: Seq[SyntaxToken]) => GroupToken(start, close, innerTokens) )
+    group(start ~ optional(WS) ~ zeroOrMoreInteriorToken ~ optional(WS) ~ close) ~~> ((innerTokens: Seq[SyntaxToken]) =>
+      GroupToken(start, close, innerTokens))
 
   def zeroOrMoreInteriorToken: Rule1[Seq[SyntaxToken]] = zeroOrMore(interiorToken, WS)
 
@@ -254,44 +256,44 @@ case object Prettifier extends (String => String) {
     else {
       (token, tail.head) match {
         // FOREACH : <NEXT>
-        case (_: SyntaxToken,         _) if token.text.endsWith("|") => token.toString + space
-        case (_: SyntaxToken,         _) if token.text.endsWith(":") => token.toString + space
+        case (_: SyntaxToken, _) if token.text.endsWith("|") => token.toString + space
+        case (_: SyntaxToken, _) if token.text.endsWith(":") => token.toString + space
 
         // <NON-BREAKING-KW> <NEXT>
-        case (_: NonBreakingKeywords, _:SyntaxToken)                 => token.toString + space
+        case (_: NonBreakingKeywords, _: SyntaxToken) => token.toString + space
 
         // <HEAD> <BREAKING-KW>
-        case (_:SyntaxToken,          _:BreakingKeywords)            => token.toString + newline
+        case (_: SyntaxToken, _: BreakingKeywords) => token.toString + newline
 
         // Never break between keywords
-        case (_:KeywordToken,         _:KeywordToken)                => token.toString + space
+        case (_: KeywordToken, _: KeywordToken) => token.toString + space
 
         // <KW> <OPEN-GROUP>
-        case (_:KeywordToken,         _:OpenGroup)                   => token.toString + space
+        case (_: KeywordToken, _: OpenGroup) => token.toString + space
 
         // <{> <NEXT>
-        case (_@OpenGroup("{"),       _:SyntaxToken)                 => token.toString + space
+        case (_ @OpenGroup("{"), _: SyntaxToken) => token.toString + space
 
         // <CLOSE-GROUP> <KW>
-        case (_:CloseGroup,           _:KeywordToken)                => token.toString + space
+        case (_: CloseGroup, _: KeywordToken) => token.toString + space
 
         // <GROUPING> <NEXT>
-        case (_:GroupingText,        _:SyntaxToken)                 => token.toString
+        case (_: GroupingText, _: SyntaxToken) => token.toString
 
         // <HEAD> <{>
-        case (_:SyntaxToken,            OpenGroup("{"))              => token.toString + space
+        case (_: SyntaxToken, OpenGroup("{")) => token.toString + space
 
         // <HEAD> <}>
-        case (_:SyntaxToken,            CloseGroup("}"))             => token.toString + space
+        case (_: SyntaxToken, CloseGroup("}")) => token.toString + space
 
         // <HEAD> <GROUPING>
-        case (_:SyntaxToken,          _:GroupingText)               => token.toString
+        case (_: SyntaxToken, _: GroupingText) => token.toString
 
         // <HEAD> <COMMA>
-        case (_:SyntaxToken,          Comma)                         => token.toString
+        case (_: SyntaxToken, Comma) => token.toString
 
         // default
-        case _                                                       => token.toString + space
+        case _ => token.toString + space
       }
     }
   }

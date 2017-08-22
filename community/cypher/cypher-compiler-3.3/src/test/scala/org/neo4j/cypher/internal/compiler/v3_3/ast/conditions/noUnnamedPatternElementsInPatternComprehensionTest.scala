@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.conditions
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.noUnnamedPatternElementsInPatternComprehension
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{RelationshipPattern, StringLiteral, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelationshipPattern
+import org.neo4j.cypher.internal.frontend.v3_3.ast.StringLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -29,21 +31,31 @@ class noUnnamedPatternElementsInPatternComprehensionTest extends CypherFunSuite 
   private val condition: (Any => Seq[String]) = noUnnamedPatternElementsInPatternComprehension
 
   test("should detect an unnamed pattern element in comprehension") {
-    val input: ASTNode = PatternComprehension(None, RelationshipsPattern(
-      RelationshipChain(NodePattern(None, Seq.empty, None) _,
-                        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
-                        NodePattern(None, Seq.empty, None) _) _) _, None, StringLiteral("foo") _) _
+    val input: ASTNode = PatternComprehension(
+      None,
+      RelationshipsPattern(
+        RelationshipChain(NodePattern(None, Seq.empty, None) _,
+                          RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+                          NodePattern(None, Seq.empty, None) _) _) _,
+      None,
+      StringLiteral("foo") _
+    ) _
 
     condition(input) should equal(Seq(s"Expression $input contains pattern elements which are not named"))
   }
 
   test("should not react to fully named pattern comprehension") {
-    val input: PatternComprehension = PatternComprehension(Some(varFor("p")),
-                                                           RelationshipsPattern(RelationshipChain(NodePattern(Some(varFor("a")), Seq.empty, None) _,
-                                                                                                  RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
-                                                                                                  NodePattern(Some(varFor("b")), Seq.empty, None) _) _) _,
-                                                           None,
-                                                           StringLiteral("foo")_)_
+    val input: PatternComprehension = PatternComprehension(
+      Some(varFor("p")),
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(Some(varFor("a")), Seq.empty, None) _,
+          RelationshipPattern(Some(varFor("r")), Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+          NodePattern(Some(varFor("b")), Seq.empty, None) _
+        ) _) _,
+      None,
+      StringLiteral("foo") _
+    ) _
 
     condition(input) shouldBe empty
   }

@@ -16,7 +16,10 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, ASTNode, Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ASTNode
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
 
 import scala.collection.mutable
@@ -33,24 +36,28 @@ class SemanticTable(
     val resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId],
     val resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId],
     val resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
-  ) extends Cloneable {
+) extends Cloneable {
 
-  def getTypeFor(s: String): TypeSpec = try {
-    val reducedType = types.collect {
-      case (Variable(name), typ) if name == s => typ.specified
-    }.reduce(_ & _)
+  def getTypeFor(s: String): TypeSpec =
+    try {
+      val reducedType = types
+        .collect {
+          case (Variable(name), typ) if name == s => typ.specified
+        }
+        .reduce(_ & _)
 
-    if (reducedType.isEmpty)
-      throw new InternalException(s"This semantic table contains conflicting type information for variable $s")
+      if (reducedType.isEmpty)
+        throw new InternalException(s"This semantic table contains conflicting type information for variable $s")
 
-    reducedType
-  } catch {
-    case e: UnsupportedOperationException =>
-      throw new InternalException(s"Did not find any type information for variable $s", e)
-  }
+      reducedType
+    } catch {
+      case e: UnsupportedOperationException =>
+        throw new InternalException(s"Did not find any type information for variable $s", e)
+    }
 
   def containsNode(expr: String): Boolean = types.exists {
-    case (v@Variable(name), _) => name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
+    case (v @ Variable(name), _) =>
+      name == expr && isNode(v) // NOTE: Profiling showed that checking node type last is better
     case _ => false
   }
 
@@ -86,12 +93,15 @@ class SemanticTable(
   override def clone() = copy()
 
   def copy(
-    types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
-    recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
-    resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelIds,
-    resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
-    resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
+      types: ASTAnnotationMap[Expression, ExpressionTypeInfo] = types,
+      recordedScopes: ASTAnnotationMap[ASTNode, Scope] = recordedScopes,
+      resolvedLabelIds: mutable.Map[String, LabelId] = resolvedLabelIds,
+      resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = resolvedPropertyKeyNames,
+      resolvedRelTypeNames: mutable.Map[String, RelTypeId] = resolvedRelTypeNames
   ) =
-    new SemanticTable(types, recordedScopes, resolvedLabelIds.clone(), resolvedPropertyKeyNames.clone(), resolvedRelTypeNames.clone())
+    new SemanticTable(types,
+                      recordedScopes,
+                      resolvedLabelIds.clone(),
+                      resolvedPropertyKeyNames.clone(),
+                      resolvedRelTypeNames.clone())
 }
-

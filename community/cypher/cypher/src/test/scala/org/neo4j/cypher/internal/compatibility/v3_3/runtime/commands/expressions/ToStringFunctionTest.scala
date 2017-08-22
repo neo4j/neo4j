@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.stringValue
 
 class ToStringFunctionTest extends CypherFunSuite {
 
@@ -60,7 +61,7 @@ class ToStringFunctionTest extends CypherFunSuite {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
-    val caughtException = evaluating { toStringFunction(List(1,24))} should produce[ParameterWrongTypeException]
+    val caughtException = evaluating { toStringFunction(List(1, 24)) } should produce[ParameterWrongTypeException]
     caughtException.getMessage should startWith("Expected a String, Number or Boolean, got: ")
   }
 

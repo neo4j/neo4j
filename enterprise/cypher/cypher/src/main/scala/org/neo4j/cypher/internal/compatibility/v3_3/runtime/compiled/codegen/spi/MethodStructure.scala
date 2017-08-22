@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
   */
 trait MethodStructure[E] {
 
-
   // misc
   def localVariable(variable: String, e: E): Unit
   def declareFlag(name: String, initialValue: Boolean)
@@ -52,11 +51,16 @@ trait MethodStructure[E] {
   def declareProperty(name: String): Unit
   def declareCounter(name: String, initialValue: E): Unit
   def putField(tupleDescriptor: TupleDescriptor, value: E, fieldName: String, localVar: String): Unit
-  def updateProbeTable(tupleDescriptor: TupleDescriptor, tableVar: String, tableType: RecordingJoinTableType, keyVars: Seq[String], element: E): Unit
-  def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E]=>Unit): Unit
+  def updateProbeTable(tupleDescriptor: TupleDescriptor,
+                       tableVar: String,
+                       tableType: RecordingJoinTableType,
+                       keyVars: Seq[String],
+                       element: E): Unit
+  def probe(tableVar: String, tableType: JoinTableType, keyVars: Seq[String])(block: MethodStructure[E] => Unit): Unit
   def updateProbeTableCount(tableVar: String, tableType: CountingJoinTableType, keyVar: Seq[String]): Unit
   def allocateProbeTable(tableVar: String, tableType: JoinTableType): Unit
-  def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(block: MethodStructure[E]=>Unit): Unit
+  def invokeMethod(resultType: JoinTableType, resultVar: String, methodName: String)(
+      block: MethodStructure[E] => Unit): Unit
   def coerceToBoolean(propertyExpression: E): E
 
   def incrementInteger(name: String): Unit
@@ -84,22 +88,24 @@ trait MethodStructure[E] {
 
   def toSet(value: E): E
   def newDistinctSet(name: String, codeGenTypes: Iterable[CodeGenType])
-  def distinctSetIfNotContains(name: String, structure: Map[String,(CodeGenType,E)])(block: MethodStructure[E] => Unit)
+  def distinctSetIfNotContains(name: String, structure: Map[String, (CodeGenType, E)])(
+      block: MethodStructure[E] => Unit)
   def distinctSetIterate(name: String, key: HashableTupleDescriptor)(block: (MethodStructure[E]) => Unit)
-  def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType,E)]): Unit
+  def newUniqueAggregationKey(varName: String, structure: Map[String, (CodeGenType, E)]): Unit
   def newAggregationMap(name: String, keyTypes: IndexedSeq[CodeGenType]): Unit
-  def aggregationMapGet(name: String, varName: String, key: Map[String,(CodeGenType,E)], keyVar: String)
-  def aggregationMapPut(name: String, key: Map[String,(CodeGenType,E)], keyVar: String, value: E): Unit
-  def aggregationMapIterate(name: String, key: HashableTupleDescriptor, valueVar: String)(block: MethodStructure[E] => Unit): Unit
+  def aggregationMapGet(name: String, varName: String, key: Map[String, (CodeGenType, E)], keyVar: String)
+  def aggregationMapPut(name: String, key: Map[String, (CodeGenType, E)], keyVar: String, value: E): Unit
+  def aggregationMapIterate(name: String, key: HashableTupleDescriptor, valueVar: String)(
+      block: MethodStructure[E] => Unit): Unit
   def newMapOfSets(name: String, keyTypes: IndexedSeq[CodeGenType], elementType: CodeGenType)
-  def checkDistinct(name: String, key: Map[String,(CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(block: MethodStructure[E] => Unit)
+  def checkDistinct(name: String, key: Map[String, (CodeGenType, E)], keyVar: String, value: E, valueType: CodeGenType)(
+      block: MethodStructure[E] => Unit)
 
   def allocateSortTable(name: String, tableDescriptor: SortTableDescriptor, count: E): Unit
   def sortTableAdd(name: String, tableDescriptor: SortTableDescriptor, value: E): Unit
   def sortTableSort(name: String, tableDescriptor: SortTableDescriptor): Unit
-  def sortTableIterate(name: String, tableDescriptor: SortTableDescriptor,
-                       varNameToField: Map[String, String])
-                      (block: (MethodStructure[E]) => Unit): Unit
+  def sortTableIterate(name: String, tableDescriptor: SortTableDescriptor, varNameToField: Map[String, String])(
+      block: (MethodStructure[E]) => Unit): Unit
 
   def castToCollection(value: E): E
 
@@ -131,9 +137,9 @@ trait MethodStructure[E] {
   def isNull(name: String, codeGenType: CodeGenType): E
   def notNull(expr: E, codeGenType: CodeGenType): E
   def notNull(name: String, codeGenType: CodeGenType): E
-  def box(expression:E, codeGenType: CodeGenType): E
-  def unbox(expression:E, codeGenType: CodeGenType): E
-  def toFloat(expression:E): E
+  def box(expression: E, codeGenType: CodeGenType): E
+  def unbox(expression: E, codeGenType: CodeGenType): E
+  def toFloat(expression: E): E
 
   // parameters, and external data loading
   def expectParameter(key: String, variableName: String, codeGenType: CodeGenType): Unit
@@ -154,12 +160,34 @@ trait MethodStructure[E] {
   def lookupLabelIdE(labelName: String): E
   def lookupRelationshipTypeId(typeIdVar: String, typeName: String): Unit
   def lookupRelationshipTypeIdE(typeName: String): E
-  def nodeGetRelationshipsWithDirection(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection): Unit
-  def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String, nodeVar: String, nodeVarType: CodeGenType, direction: SemanticDirection, typeVars: Seq[String]): Unit
-  def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, toNode:String, toNodeType: CodeGenType)
-  def connectingRelationships(iterVar: String, fromNode: String, fromNodeType: CodeGenType, dir: SemanticDirection, types: Seq[String], toNode: String, toNodeType: CodeGenType)
+  def nodeGetRelationshipsWithDirection(iterVar: String,
+                                        nodeVar: String,
+                                        nodeVarType: CodeGenType,
+                                        direction: SemanticDirection): Unit
+  def nodeGetRelationshipsWithDirectionAndTypes(iterVar: String,
+                                                nodeVar: String,
+                                                nodeVarType: CodeGenType,
+                                                direction: SemanticDirection,
+                                                typeVars: Seq[String]): Unit
+  def connectingRelationships(iterVar: String,
+                              fromNode: String,
+                              fromNodeType: CodeGenType,
+                              dir: SemanticDirection,
+                              toNode: String,
+                              toNodeType: CodeGenType)
+  def connectingRelationships(iterVar: String,
+                              fromNode: String,
+                              fromNodeType: CodeGenType,
+                              dir: SemanticDirection,
+                              types: Seq[String],
+                              toNode: String,
+                              toNodeType: CodeGenType)
   def nextNode(targetVar: String, iterVar: String): Unit
-  def nextRelationshipAndNode(toNodeVar: String, iterVar: String, direction: SemanticDirection, fromNodeVar: String, relVar: String): Unit
+  def nextRelationshipAndNode(toNodeVar: String,
+                              iterVar: String,
+                              direction: SemanticDirection,
+                              fromNodeVar: String,
+                              relVar: String): Unit
   def nextRelationship(iterVar: String, direction: SemanticDirection, relVar: String): Unit
   def hasNextNode(iterVar: String): E
   def hasNextRelationship(iterVar: String): E
@@ -193,6 +221,7 @@ trait MethodStructure[E] {
   def materializeRelationship(relIdVar: String, codeGenType: CodeGenType): E
   def relationship(relIdVar: String, codeGenType: CodeGenType): E
   def materializeAny(expression: E): E
+
   /** Feed single row to the given visitor */
   def visitorAccept(): Unit
   def setInRow(column: Int, value: E): Unit
@@ -212,8 +241,10 @@ sealed trait RecordingJoinTableType extends JoinTableType
 
 case object LongToCountTable extends CountingJoinTableType
 case object LongsToCountTable extends CountingJoinTableType
-case class LongToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String]) extends RecordingJoinTableType
-case class LongsToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String]) extends RecordingJoinTableType
+case class LongToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String])
+    extends RecordingJoinTableType
+case class LongsToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String])
+    extends RecordingJoinTableType
 
 sealed trait SortOrder
 case object Ascending extends SortOrder
@@ -234,8 +265,8 @@ sealed trait TupleDescriptor {
 
 case class SimpleTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
 case class HashableTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
-case class OrderableTupleDescriptor(structure: Map[String, CodeGenType],
-                                    sortItems: Iterable[SortItem]) extends TupleDescriptor
+case class OrderableTupleDescriptor(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem])
+    extends TupleDescriptor
 
 sealed trait SortTableDescriptor {
   val tupleDescriptor: TupleDescriptor

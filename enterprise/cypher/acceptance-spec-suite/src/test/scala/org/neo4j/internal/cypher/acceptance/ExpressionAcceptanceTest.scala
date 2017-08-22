@@ -34,7 +34,8 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
   test("should handle map projection with property selectors and identifier selector") {
     createNode("foo" -> 1, "bar" -> "apa")
 
-    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "WITH 42 as x MATCH (n) RETURN n{.foo,.bar,x}")
+    val result =
+      succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "WITH 42 as x MATCH (n) RETURN n{.foo,.bar,x}")
 
     result.toList.head("n") should equal(Map("foo" -> 1, "bar" -> "apa", "x" -> 42))
   }
@@ -73,7 +74,8 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
   test("projecting from a null identifier produces a null value") {
 
-    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "OPTIONAL MATCH (n) RETURN n{.foo, .bar}")
+    val result =
+      succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "OPTIONAL MATCH (n) RETURN n{.foo, .bar}")
 
     result.toList should equal(List(Map("n" -> null)))
   }
@@ -84,14 +86,14 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     relate(actor, createLabeledNode(Map("title" -> "Movie 1"), "Movie"))
     relate(actor, createLabeledNode(Map("title" -> "Movie 2"), "Movie"))
 
-    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3,
+    val result = succeedWith(
+      Configs.CommunityInterpreted - Configs.Version2_3,
       """MATCH (actor:Actor)-->(movie:Movie)
-        |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin)
+        |RETURN actor{ .name, movies: collect(movie{.title}) }""".stripMargin
+    )
     result.toList should equal(
       List(Map("actor" ->
-        Map("name" -> "Actor 1", "movies" -> Seq(
-          Map("title" -> "Movie 2"),
-          Map("title" -> "Movie 1"))))))
+        Map("name" -> "Actor 1", "movies" -> Seq(Map("title" -> "Movie 2"), Map("title" -> "Movie 1"))))))
   }
 
   test("prepending item to a list should behave correctly in all runtimes") {

@@ -22,10 +22,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.mockito.Mockito
 import org.neo4j.cypher.ValueComparisonHelper._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -34,7 +37,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps= mock[Operations[Relationship]]
+    val relOps = mock[Operations[Relationship]]
     when(relOps.exists(17)).thenReturn(true)
     when(relOps.getById(17)).thenReturn(rel)
 
@@ -71,13 +74,15 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     val relName = "a"
     // whens
     val result =
-      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)().createResults(queryState)
+      DirectedRelationshipByIdSeekPipe(relName, ManySeekArgs(ListLiteral(Literal(42), Literal(21))), to, from)()
+        .createResults(queryState)
 
     // then
-    result.toList should beEquivalentTo(List(
-      Map(relName -> r1, to -> e1, from -> s1),
-      Map(relName -> r2, to -> e2, from -> s2)
-    ))
+    result.toList should beEquivalentTo(
+      List(
+        Map(relName -> r1, to -> e1, from -> s1),
+        Map(relName -> r2, to -> e2, from -> s2)
+      ))
   }
 
   test("handle null") {
@@ -97,7 +102,7 @@ class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
     result.toList should be(empty)
   }
 
-  private def getRelWithNodes:(Node,Relationship,Node) = {
+  private def getRelWithNodes: (Node, Relationship, Node) = {
     val rel = mock[Relationship]
     val startNode = mock[Node]
     val endNode = mock[Node]

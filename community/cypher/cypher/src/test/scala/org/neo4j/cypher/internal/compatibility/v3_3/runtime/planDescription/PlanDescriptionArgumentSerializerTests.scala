@@ -22,21 +22,29 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.PlanDescriptionArgumentSerializer.serialize
 import org.neo4j.cypher.internal.compiler.v3_3.ast.NestedPlanExpression
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, Argument => LPArgument}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{DummyExpression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CTBoolean, CTList, CTNode, CTString}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{Argument => LPArgument}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.DummyExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTBoolean
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTList
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTNode
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CTString
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticDirection}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   private val pos = DummyPosition(0)
 
   test("serialization should leave numeric arguments as numbers") {
-    serialize(DbHits(12)) shouldBe a [java.lang.Number]
-    serialize(Rows(12)) shouldBe a [java.lang.Number]
-    serialize(EstimatedRows(12)) shouldBe a [java.lang.Number]
+    serialize(DbHits(12)) shouldBe a[java.lang.Number]
+    serialize(Rows(12)) shouldBe a[java.lang.Number]
+    serialize(EstimatedRows(12)) shouldBe a[java.lang.Number]
   }
 
   test("ExpandExpression should look like Cypher syntax") {
@@ -62,7 +70,8 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
   }
 
   test("projection should show multiple expressions") {
-    serialize(Expressions(Map("1" -> SignedDecimalIntegerLiteral("42")(pos), "2" -> SignedDecimalIntegerLiteral("56")(pos)))) should equal(
+    serialize(Expressions(
+      Map("1" -> SignedDecimalIntegerLiteral("42")(pos), "2" -> SignedDecimalIntegerLiteral("56")(pos)))) should equal(
       "{1 : 42, 2 : 56}")
   }
 }

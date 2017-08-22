@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.ParameterWrongTypeException
 import org.neo4j.values._
-import org.neo4j.values.storable.{LongValue, NumberValue, TextValue, Values}
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
 
 case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
 
@@ -34,7 +38,7 @@ case class ToIntegerFunction(a: Expression) extends NullInNullOutExpression(a) {
   def rewrite(f: (Expression) => Expression): Expression = f(ToIntegerFunction(a.rewrite(f)))
 
   def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = value match {
-    case v: LongValue => v
+    case v: LongValue   => v
     case v: NumberValue => Values.longValue(v.longValue())
     case v: TextValue =>
       try {

@@ -24,13 +24,16 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.NormalMode
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compiler.v3_3.spi._
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, symbols}
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 import org.neo4j.values.storable.LongValue
 
 class ProcedureCallExecutionPlanTest extends CypherFunSuite {
@@ -39,8 +42,12 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
 
   test("should be able to call procedure with single argument") {
     // Given
-    val proc = ProcedureCallExecutionPlan(readSignature, Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, converters)
+    val proc = ProcedureCallExecutionPlan(readSignature,
+                                          Seq(add(int(42), int(42))),
+                                          Seq("b" -> CTInteger),
+                                          Seq(0 -> "b"),
+                                          notifications = Set.empty,
+                                          converters)
 
     // When
     val res = proc.run(ctx, NormalMode, Map.empty)
@@ -52,8 +59,11 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should eagerize write procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(writeSignature,
-                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, converters)
+                                          Seq(add(int(42), int(42))),
+                                          Seq("b" -> CTInteger),
+                                          Seq(0 -> "b"),
+                                          notifications = Set.empty,
+                                          converters)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -65,8 +75,11 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   test("should not eagerize read procedure") {
     // Given
     val proc = ProcedureCallExecutionPlan(readSignature,
-                                          Seq(add(int(42), int(42))), Seq("b" -> CTInteger), Seq(0 -> "b"),
-                                          notifications = Set.empty, converters)
+                                          Seq(add(int(42), int(42))),
+                                          Seq("b" -> CTInteger),
+                                          Seq(0 -> "b"),
+                                          notifications = Set.empty,
+                                          converters)
 
     // When
     proc.run(ctx, NormalMode, Map.empty)
@@ -109,10 +122,11 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
       new Iterator[Array[AnyRef]] {
         override def hasNext = !iteratorExhausted
 
-        override def next() = if (hasNext) {
-          iteratorExhausted = true
-          input.toArray
-        } else throw new IllegalStateException("Iterator exhausted")
+        override def next() =
+          if (hasNext) {
+            iteratorExhausted = true
+            input.toArray
+          } else throw new IllegalStateException("Iterator exhausted")
       }
     }
   }
@@ -121,6 +135,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
-    override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArguments()(0).asInstanceOf[LongValue].value()
+    override def answer(invocationOnMock: InvocationOnMock): Long =
+      invocationOnMock.getArguments()(0).asInstanceOf[LongValue].value()
   })
 }

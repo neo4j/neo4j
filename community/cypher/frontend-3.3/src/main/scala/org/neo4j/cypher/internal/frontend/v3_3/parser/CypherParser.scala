@@ -16,13 +16,12 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, SyntaxException, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
-class CypherParser extends Parser
-  with Statement
-  with Expressions {
-
+class CypherParser extends Parser with Statement with Expressions {
 
   @throws(classOf[SyntaxException])
   def parse(queryText: String, offset: Option[InputPosition] = None): ast.Statement =

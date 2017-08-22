@@ -26,17 +26,26 @@ import org.neo4j.cypher.internal.compiler.v2_3.{CypherCompilerConfiguration => C
 import org.neo4j.cypher.internal.compiler.v3_3.CypherCompilerConfiguration
 import org.neo4j.cypher.internal.frontend.v2_3.{InputPosition => InputPosition2_3}
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, phases}
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.phases
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 object helpers {
   implicit def monitorFailure(t: Throwable)(implicit monitor: QueryExecutionMonitor, tc: TransactionalContext): Unit = {
     monitor.endFailure(tc.executingQuery(), t)
   }
 
-  def as2_3(config: CypherCompilerConfiguration) = CypherCompilerConfiguration2_3(config.queryCacheSize,
-    config.statsDivergenceThreshold, config.queryPlanTTL, config.useErrorsOverWarnings,
-    config.idpMaxTableSize, config.idpIterationDuration, config.nonIndexedLabelWarningThreshold)
+  def as2_3(config: CypherCompilerConfiguration) =
+    CypherCompilerConfiguration2_3(
+      config.queryCacheSize,
+      config.statsDivergenceThreshold,
+      config.queryPlanTTL,
+      config.useErrorsOverWarnings,
+      config.idpMaxTableSize,
+      config.idpIterationDuration,
+      config.nonIndexedLabelWarningThreshold
+    )
 
   /** This is awful but needed until 2.3 is updated no to send in the tracer here */
   def as2_3(tracer: CompilationPhaseTracer): v2_3.CompilationPhaseTracer = {
@@ -45,19 +54,15 @@ object helpers {
         val wrappedPhase =
           if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.AST_REWRITE)
             CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
-            .CODE_GENERATION)
+          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION)
             phases.CompilationPhaseTracer.CompilationPhase.CODE_GENERATION
-          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
-            .LOGICAL_PLANNING)
+          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING)
             phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
           else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.PARSING)
             phases.CompilationPhaseTracer.CompilationPhase.PARSING
-          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
-            .PIPE_BUILDING)
+          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING)
             phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
-          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase
-            .SEMANTIC_CHECK)
+          else if (phase == v2_3.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK)
             phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
           else throw new InternalException(s"Cannot handle $phase in 2.3")
 

@@ -21,20 +21,24 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses, projectFreshSortExpressions}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.expandStar
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeWithClauses
+import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.projectFreshSortExpressions
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, SemanticState, inSequence}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.inSequence
 
 class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
   val rewriterUnderTest: Rewriter = projectFreshSortExpressions
 
   test("don't adjust WITH without ORDER BY or WHERE") {
-    assertRewrite(
-      """MATCH n
+    assertRewrite("""MATCH n
         |WITH n AS n
         |RETURN n
       """.stripMargin,
-      """MATCH n
+                  """MATCH n
         |WITH n AS n
         |RETURN n
       """.stripMargin)
@@ -50,7 +54,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop ORDER BY prop
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("duplicate WITH containing ORDER BY that refers to previous variable") {
@@ -65,7 +70,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH prop AS prop, `  FRESHID42` AS `  FRESHID42` ORDER BY `  FRESHID42`
         |WITH prop AS prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("duplicate RETURN containing ORDER BY after WITH") {
@@ -91,7 +97,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop WHERE prop
         |RETURN prop AS prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("preserve DISTINCT on first WITH") {
@@ -104,7 +111,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop ORDER BY prop
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
 
     assertRewrite(
       """MATCH n
@@ -115,7 +123,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH DISTINCT n.prop AS prop
         |WITH prop AS prop WHERE prop
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("carry SKIP and LIMIT with ORDER BY") {
@@ -128,7 +137,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop ORDER BY prop SKIP 2 LIMIT 5
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("carry SKIP and LIMIT with WHERE") {
@@ -141,7 +151,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop SKIP 2 LIMIT 5 WHERE prop
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("keep WHERE with ORDER BY") {
@@ -154,7 +165,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n.prop AS prop
         |WITH prop AS prop ORDER BY prop WHERE prop
         |RETURN prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("handle RETURN * ORDERBY property") {
@@ -168,12 +180,13 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
         |WITH n AS n, `  FRESHID28` AS `  FRESHID28` ORDER BY `  FRESHID28`
         |WITH n AS n
         |RETURN n AS n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("Does not introduce WITH for ORDER BY over preserved variable") {
     assertIsNotRewritten(
-    """MATCH n
+      """MATCH n
       |WITH n AS n, n.prop AS prop
       |WITH n AS n, prop AS prop ORDER BY prop
       |RETURN n AS n
@@ -201,7 +214,8 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
   private def ast(queryText: String) = {
     val parsed = parseForRewriting(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val normalized = parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val normalized =
+      parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val checkResult = normalized.semanticCheck(SemanticState.clean)
     normalized.endoRewrite(inSequence(expandStar(checkResult.state)))
   }

@@ -20,11 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery, StrictnessMode}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.StrictnessMode
 
-case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])
-                    (val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan {
+case class RemoveLabels(source: LogicalPlan, idName: IdName, labelNames: Seq[LabelName])(
+    val solved: PlannerQuery with CardinalityEstimation)
+    extends LogicalPlan {
 
   override def lhs: Option[LogicalPlan] = Some(source)
 

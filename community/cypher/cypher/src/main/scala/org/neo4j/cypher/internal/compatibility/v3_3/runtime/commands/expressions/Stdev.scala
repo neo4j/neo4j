@@ -37,4 +37,3 @@ case class StdevP(anInner: Expression) extends AggregationWithInnerExpression(an
 
   def rewrite(f: (Expression) => Expression) = f(StdevP(anInner.rewrite(f)))
 }
-

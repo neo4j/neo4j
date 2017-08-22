@@ -20,10 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{LogicalPlan, QueryExpression}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlansForVariable, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.QueryExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 /*
  * Plan the following type of plan
@@ -52,19 +55,21 @@ object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
   }
 
-  override def constructPlan(idName: IdName,
-                              label: LabelToken,
-                              propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint],
-                              argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
+  override def constructPlan(
+      idName: IdName,
+      label: LabelToken,
+      propertyKeys: Seq[PropertyKeyToken],
+      valueExpr: QueryExpression[Expression],
+      hint: Option[UsingIndexHint],
+      argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer
+        .planNodeUniqueIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
   override def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
 
-  override def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
+  override def findIndexesFor(label: String, properties: Seq[String])(
+      implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.uniqueIndexGet(label, properties)
 }

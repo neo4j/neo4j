@@ -44,29 +44,31 @@ object Rewritable {
 
   implicit class DuplicatableAny(val that: AnyRef) extends AnyVal {
 
-    def dup(children: Seq[AnyRef]): AnyRef = try { that match {
-        case a: Rewritable =>
-          a.dup(children)
-        case p: Product =>
-          if (children.iterator eqElements p.children)
-            p
-          else
-            p.copyConstructor.invoke(p, children: _*)
-        case _: IndexedSeq[_] =>
-          children.toIndexedSeq
-        case _: Seq[_] =>
-          children
-        case _: Set[_] =>
-          children.toSet
-        case _: Map[_, _] =>
-          children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
-        case t =>
-          t
+    def dup(children: Seq[AnyRef]): AnyRef =
+      try {
+        that match {
+          case a: Rewritable =>
+            a.dup(children)
+          case p: Product =>
+            if (children.iterator eqElements p.children)
+              p
+            else
+              p.copyConstructor.invoke(p, children: _*)
+          case _: IndexedSeq[_] =>
+            children.toIndexedSeq
+          case _: Seq[_] =>
+            children
+          case _: Set[_] =>
+            children.toSet
+          case _: Map[_, _] =>
+            children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
+          case t =>
+            t
+        }
+      } catch {
+        case e: IllegalArgumentException =>
+          throw new InternalException(s"Failed rewriting $that\nTried using children: $children", e)
       }
-    } catch {
-      case e: IllegalArgumentException =>
-        throw new InternalException(s"Failed rewriting $that\nTried using children: $children", e)
-    }
   }
 
   private val productCopyConstructors = new ThreadLocal[MutableHashMap[Class[_], Method]]() {
@@ -94,7 +96,9 @@ object Rewritable {
       try {
         productClass.getMethods.find(_.getName == "copy").get
       } catch {
-        case e: NoSuchElementException => throw new InternalException(s"Failed trying to rewrite ${product.getClass()} - this class does not have a `copy` method")
+        case e: NoSuchElementException =>
+          throw new InternalException(
+            s"Failed trying to rewrite ${product.getClass()} - this class does not have a `copy` method")
       }
     }
   }
@@ -143,7 +147,8 @@ object topDown {
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(
+        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()
@@ -184,7 +189,8 @@ object bottomUp {
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
+    private def rec(
+        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef])]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren) = stack.pop()

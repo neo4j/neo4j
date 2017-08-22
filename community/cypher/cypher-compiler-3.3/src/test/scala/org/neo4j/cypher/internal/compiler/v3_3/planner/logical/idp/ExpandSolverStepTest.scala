@@ -24,11 +24,14 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanConstructionTe
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LogicalPlanningContext, Metrics, QueryGraphSolver}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticDirection, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTestSupport {
@@ -46,8 +49,14 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val table = new IDPTable[LogicalPlan]()
   private val qg = mock[QueryGraph]
 
-  private implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[CardinalityModel]),
-    mock[Metrics], mock[SemanticTable], mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+  private implicit val context = LogicalPlanningContext(
+    mock[PlanContext],
+    LogicalPlanProducer(mock[CardinalityModel]),
+    mock[Metrics],
+    mock[SemanticTable],
+    mock[QueryGraphSolver],
+    notificationLogger = mock[InternalNotificationLogger]
+  )
 
   test("does not expand based on empty table") {
     implicit val registry = IdRegistry[PatternRelationship]
@@ -61,9 +70,10 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
     when(plan1.availableSymbols).thenReturn(Set[IdName]('a, 'r1, 'b))
     table.put(register(pattern1), plan1)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(Set(
-      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
-    ))
+    expandSolverStep(qg)(registry, register(pattern1, pattern2), table).toSet should equal(
+      Set(
+        Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r2, ExpandAll)(solved)
+      ))
   }
 
   test("expands if an unsolved pattern relationships overlaps twice with a single solved plan") {
@@ -74,10 +84,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
     val patternX = PatternRelationship('r2, ('a, 'b), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(Set(
-      Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
-      Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
-    ))
+    expandSolverStep(qg)(registry, register(pattern1, patternX), table).toSet should equal(
+      Set(
+        Expand(plan1, 'a, SemanticDirection.OUTGOING, Seq.empty, 'b, 'r2, ExpandInto)(solved),
+        Expand(plan1, 'b, SemanticDirection.INCOMING, Seq.empty, 'a, 'r2, ExpandInto)(solved)
+      ))
   }
 
   test("does not expand if an unsolved pattern relationship does not overlap with a solved plan") {
@@ -99,10 +110,11 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
 
     val pattern3 = PatternRelationship('r3, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(Set(
-      Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
-      Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
-    ))
+    expandSolverStep(qg)(registry, register(pattern1, pattern2, pattern3), table).toSet should equal(
+      Set(
+        Expand(plan1, 'b, SemanticDirection.OUTGOING, Seq.empty, 'c, 'r3, ExpandInto)(solved),
+        Expand(plan1, 'c, SemanticDirection.INCOMING, Seq.empty, 'b, 'r3, ExpandInto)(solved)
+      ))
   }
 
   def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)

@@ -20,18 +20,20 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, NumericHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.NumericHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class LimitPipe(source: Pipe, exp: Expression)
-                    (val id: Id = new Id)
-  extends PipeWithSource(source) with NumericHelper {
+case class LimitPipe(source: Pipe, exp: Expression)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with NumericHelper {
 
   exp.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
 
-    if(input.isEmpty)
+    if (input.isEmpty)
       return Iterator.empty
 
     val limit = asInt(exp(state.createOrGetInitialContext())(state))

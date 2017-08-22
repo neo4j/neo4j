@@ -29,7 +29,9 @@ import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.TestableIterator
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values.{doubleArray, intArray, intValue}
+import org.neo4j.values.storable.Values.doubleArray
+import org.neo4j.values.storable.Values.intArray
+import org.neo4j.values.storable.Values.intValue
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -71,20 +73,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   test("should handle multiples on both sides") {
     // given
-    val leftSide = Iterator(
-      row("a" -> 1, "a2" -> 1),
-      row("a" -> 1, "a2" -> 2),
-      row("a" -> 2, "a2" -> 3),
-      row("a" -> 3, "a2" -> 4))
+    val leftSide =
+      Iterator(row("a" -> 1, "a2" -> 1), row("a" -> 1, "a2" -> 2), row("a" -> 2, "a2" -> 3), row("a" -> 3, "a2" -> 4))
 
-    val rightSide = Iterator(
-      row("b" -> 1, "b2" -> 1),
-      row("b" -> 2, "b2" -> 2),
-      row("b" -> 2, "b2" -> 3),
-      row("b" -> 4, "b2" -> 4))
+    val rightSide =
+      Iterator(row("b" -> 1, "b2" -> 1), row("b" -> 2, "b2" -> 2), row("b" -> 2, "b2" -> 3), row("b" -> 4, "b2" -> 4))
 
     val queryState = QueryStateHelper.empty
-
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(leftSide)
@@ -96,12 +91,13 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
-      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(1), "b2" -> intValue(1)),
-      Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(2), "b2" -> intValue(1)),
-      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(2)),
-      Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(3))
-    ))
+    result.toSet should equal(
+      Set(
+        Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(1), "b2" -> intValue(1)),
+        Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(2), "b2" -> intValue(1)),
+        Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(2)),
+        Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(3))
+      ))
   }
 
   test("should not fetch results from RHS if LHS is empty") {
@@ -140,7 +136,6 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     rhsIter.fetched should equal(0)
   }
 
-
   test("if RHS is empty, terminate building of the probe map early") {
     // given
     val queryState = QueryStateHelper.empty
@@ -172,15 +167,14 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     when(left.createResults(queryState)).thenReturn(rows("a", ints, intArray(Array(2, 3, 4))))
 
     val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
-    when(right.createResults(queryState)).thenReturn(rows("b",  doubles, intArray(Array(0, 1, 2))))
+    when(right.createResults(queryState)).thenReturn(rows("b", doubles, intArray(Array(0, 1, 2))))
 
     // when
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> ints, "b" ->  doubles)))
+    result.toList should equal(List(Map("a" -> ints, "b" -> doubles)))
   }
-
 
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)
 
@@ -192,4 +186,3 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     pipe
   }
 }
-

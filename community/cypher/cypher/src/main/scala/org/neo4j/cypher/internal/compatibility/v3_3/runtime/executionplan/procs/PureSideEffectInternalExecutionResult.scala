@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 
 import java.io.PrintWriter
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionMode, ProcedureRuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ProcedureRuntimeName
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.graphdb.Notification
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
@@ -36,7 +39,7 @@ case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
                                                  executionPlanDescription: InternalPlanDescription,
                                                  queryType: InternalQueryType,
                                                  executionMode: ExecutionMode)
-  extends StandardInternalExecutionResult(ctx, ProcedureRuntimeName, None)
+    extends StandardInternalExecutionResult(ctx, ProcedureRuntimeName, None)
     with StandardInternalExecutionResult.IterateByAccepting {
 
   override def fieldNames(): Array[String] = Array.empty
@@ -58,5 +61,3 @@ case class PureSideEffectInternalExecutionResult(ctx: QueryContext,
 
   override def withNotifications(added: Notification*): InternalExecutionResult = this
 }
-
-

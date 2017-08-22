@@ -25,14 +25,18 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{Not, Predicate, True}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Not
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.True
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
+import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
 
 class OptionalExpandAllPipeTest extends CypherFunSuite {
 
@@ -48,26 +52,28 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
   test("should support expand between two nodes with a relationship") {
     // given
     mockRelationships(relationship1)
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
+    val left = newMockedPipe("a", row("a" -> startNode))
 
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+      .createResults(queryState)
+      .toList
 
     // then
     val (single :: Nil) = result
-    single.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1),
-                              "b" -> fromNodeProxy(endNode1)))
+    single.toMap should equal(
+      Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
   }
 
   test("should support optional expand from a node with no relationships") {
     // given
     mockRelationships()
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
+    val left = newMockedPipe("a", row("a" -> startNode))
 
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+      .createResults(queryState)
+      .toList
 
     // then
     val (single :: Nil) = result
@@ -77,12 +83,17 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
   test("should support optional expand from a node with relationships that do not match the predicates") {
     // given
     mockRelationships(relationship1)
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
+    val left = newMockedPipe("a", row("a" -> startNode))
 
     val falsePredicate: Predicate = Not(True())
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, falsePredicate)().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left,
+                                       "a",
+                                       "r",
+                                       "b",
+                                       SemanticDirection.OUTGOING,
+                                       LazyTypes.empty,
+                                       falsePredicate)().createResults(queryState).toList
 
     // then
     val (single :: Nil) = result
@@ -92,31 +103,39 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
   test("should support expand between two nodes with multiple relationships") {
     // given
     mockRelationships(relationship1, relationship2)
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
+    val left = newMockedPipe("a", row("a" -> startNode))
 
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+      .createResults(queryState)
+      .toList
 
     // then
     val (first :: second :: Nil) = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
+    first.toMap should equal(
+      Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    second.toMap should equal(
+      Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship2), "b" -> fromNodeProxy(endNode2)))
   }
 
   test("should support expand between two nodes with multiple relationships and self loops") {
     // given
     mockRelationships(relationship1, selfRelationship)
-    val left = newMockedPipe("a",
-      row("a" -> startNode))
+    val left = newMockedPipe("a", row("a" -> startNode))
 
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+      .createResults(queryState)
+      .toList
 
     // then
     val (first :: second :: Nil) = result
-    first.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
-    second.toMap should equal(Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(selfRelationship), "b" -> fromNodeProxy(startNode)))
+    first.toMap should equal(
+      Map("a" -> fromNodeProxy(startNode), "r" -> fromRelationshipProxy(relationship1), "b" -> fromNodeProxy(endNode1)))
+    second.toMap should equal(
+      Map("a" -> fromNodeProxy(startNode),
+          "r" -> fromRelationshipProxy(selfRelationship),
+          "b" -> fromNodeProxy(startNode)))
   }
 
   test("given empty input, should return empty output") {
@@ -125,7 +144,9 @@ class OptionalExpandAllPipeTest extends CypherFunSuite {
     val left = newMockedPipe("a")
 
     // when
-    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
+    val result = OptionalExpandAllPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())()
+      .createResults(queryState)
+      .toList
 
     // then
     result shouldBe 'empty

@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.NameId
 import org.neo4j.values.storable.Values
 
-case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])
-                                      (val id: Id = new Id) extends Pipe {
+case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLabel]])(val id: Id = new Id)
+    extends Pipe {
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.createOrGetInitialContext()
@@ -33,11 +33,12 @@ case class NodeCountFromCountStorePipe(ident: String, labels: List[Option[LazyLa
     val it = labels.iterator
     while (it.hasNext) {
       it.next() match {
-        case Some(lazyLabel) => lazyLabel.getOptId(state.query) match {
-          case Some(idOfLabel) =>
-            count = count * state.query.nodeCountByCountStore(idOfLabel)
-          case _ => count = 0
-        }
+        case Some(lazyLabel) =>
+          lazyLabel.getOptId(state.query) match {
+            case Some(idOfLabel) =>
+              count = count * state.query.nodeCountByCountStore(idOfLabel)
+            case _ => count = 0
+          }
         case _ =>
           count *= state.query.nodeCountByCountStore(NameId.WILDCARD)
       }

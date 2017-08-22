@@ -28,7 +28,7 @@ object MapSupport {
     def fuse(other: immutable.Map[A, B])(f: (B, B) => B): immutable.Map[A, B] = {
       other.foldLeft(m) {
         case (acc, (k, v)) if acc.contains(k) => acc + (k -> f(acc(k), v))
-        case (acc, entry) => acc + entry
+        case (acc, entry)                     => acc + entry
       }
     }
   }

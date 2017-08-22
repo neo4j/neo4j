@@ -27,8 +27,7 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 object projection {
 
-  def apply(in: LogicalPlan, projs: Map[String, Expression])
-           (implicit context: LogicalPlanningContext): LogicalPlan = {
+  def apply(in: LogicalPlan, projs: Map[String, Expression])(implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val (plan, projectionsMap) = PatternExpressionSolver()(in, projs)
 

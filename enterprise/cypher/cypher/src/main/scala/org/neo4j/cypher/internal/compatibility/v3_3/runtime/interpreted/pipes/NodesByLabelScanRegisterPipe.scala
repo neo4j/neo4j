@@ -21,24 +21,30 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.LazyLabel
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 
-case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelineInformation: PipelineInformation)
-                                       (val id: Id = new Id) extends Pipe {
+case class NodesByLabelScanRegisterPipe(ident: String, label: LazyLabel, pipelineInformation: PipelineInformation)(
+    val id: Id = new Id)
+    extends Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     label.getOptId(state.query) match {
       case Some(labelId) =>
-        PrimitiveLongHelper.map(state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
-          val context = PrimitiveExecutionContext(pipelineInformation)
-          state.copyArgumentStateTo(context)
-          context.setLongAt(offset, nodeId)
-          context
-        })
+        PrimitiveLongHelper.map(
+          state.query.getNodesByLabelPrimitive(labelId.id), { nodeId =>
+            val context = PrimitiveExecutionContext(pipelineInformation)
+            state.copyArgumentStateTo(context)
+            context.setLongAt(offset, nodeId)
+            context
+          }
+        )
       case None =>
         Iterator.empty
     }

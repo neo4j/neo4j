@@ -23,12 +23,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{PathValue, VirtualValues}
+import org.neo4j.values.virtual.PathValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class RelationshipFunction(path: Expression) extends NullInNullOutExpression(path) {
   def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = value match {
-    case p: PathValue => VirtualValues.list(p.edges():_*)
-    case x       => throw new SyntaxException("Expected " + path + " to be a path.")
+    case p: PathValue => VirtualValues.list(p.edges(): _*)
+    case x            => throw new SyntaxException("Expected " + path + " to be a path.")
   }
 
   def rewrite(f: (Expression) => Expression) = f(RelationshipFunction(path.rewrite(f)))

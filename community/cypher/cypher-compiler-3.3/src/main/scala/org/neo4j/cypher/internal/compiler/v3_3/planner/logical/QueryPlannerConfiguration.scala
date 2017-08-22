@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.solveOptionalMatches.OptionalSolver
-import org.neo4j.cypher.internal.compiler.v3_3.{UpdateStrategy, defaultUpdateStrategy}
+import org.neo4j.cypher.internal.compiler.v3_3.UpdateStrategy
+import org.neo4j.cypher.internal.compiler.v3_3.defaultUpdateStrategy
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object QueryPlannerConfiguration {
@@ -30,45 +31,36 @@ object QueryPlannerConfiguration {
   private val leafPlanFromExpressions: IndexedSeq[LeafPlanner with LeafPlanFromExpressions] = IndexedSeq(
     // MATCH (n) WHERE id(n) IN ... RETURN n
     idSeekLeafPlanner,
-
     // MATCH (n) WHERE n.prop IN ... RETURN n
     uniqueIndexSeekLeafPlanner,
-
     // MATCH (n) WHERE n.prop IN ... RETURN n
     indexSeekLeafPlanner,
-
     // MATCH (n) WHERE has(n.prop) RETURN n
     // MATCH (n:Person) WHERE n.prop CONTAINS ...
     indexScanLeafPlanner,
-
     // MATCH (n:Person) RETURN n
     labelScanLeafPlanner
   )
 
-  val allLeafPlanners = leafPlanFromExpressions ++ IndexedSeq(
-    argumentLeafPlanner,
-
-    // MATCH (n) RETURN n
-    allNodesLeafPlanner,
-
-    // Handles OR between other leaf planners
-    OrLeafPlanner(leafPlanFromExpressions))
-
+  val allLeafPlanners = leafPlanFromExpressions ++ IndexedSeq(argumentLeafPlanner,
+                                                              // MATCH (n) RETURN n
+                                                              allNodesLeafPlanner,
+                                                              // Handles OR between other leaf planners
+                                                              OrLeafPlanner(leafPlanFromExpressions))
 
   val default: QueryPlannerConfiguration = QueryPlannerConfiguration(
     pickBestCandidate = pickBestPlanUsingHintsAndCost,
     applySelections = Selector(pickBestPlanUsingHintsAndCost,
-      selectPatternPredicates,
-      triadicSelectionFinder,
-      selectCovered,
-      selectHasLabelWithJoin
-    ),
+                               selectPatternPredicates,
+                               triadicSelectionFinder,
+                               selectCovered,
+                               selectHasLabelWithJoin),
     optionalSolvers = Seq(
       applyOptional,
       outerHashJoin
     ),
     leafPlanners = LeafPlannerList(allLeafPlanners),
-  updateStrategy = defaultUpdateStrategy
+    updateStrategy = defaultUpdateStrategy
   )
 }
 
@@ -89,9 +81,7 @@ case class QueryPlannerConfiguration(leafPlanners: LeafPlannerIterable,
   def withUpdateStrategy(updateStrategy: UpdateStrategy) = copy(updateStrategy = updateStrategy)
 }
 
-case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan,
-
-                           pickBest: CandidateSelector) {
+case class QueryPlannerKit(select: (LogicalPlan, QueryGraph) => LogicalPlan, pickBest: CandidateSelector) {
   def select(plans: Iterable[Seq[LogicalPlan]], qg: QueryGraph): Iterable[Seq[LogicalPlan]] =
     plans.map(_.map(plan => select(plan, qg)))
 }

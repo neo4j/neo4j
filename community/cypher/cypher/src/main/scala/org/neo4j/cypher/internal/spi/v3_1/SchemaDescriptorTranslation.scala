@@ -21,8 +21,12 @@ package org.neo4j.cypher.internal.spi.v3_1
 
 import org.neo4j.cypher.internal.compiler.v3_1.spi.SchemaTypes
 import org.neo4j.kernel.api.schema.SchemaDescriptor
-import org.neo4j.kernel.api.schema.constaints.{ConstraintDescriptorFactory, NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor => KernelUniquenessConstraint}
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor
+import org.neo4j.kernel.api.schema.constaints.{UniquenessConstraintDescriptor => KernelUniquenessConstraint}
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
   implicit def toKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
@@ -46,12 +50,14 @@ trait SchemaDescriptorTranslation {
     SchemaTypes.NodePropertyExistenceConstraint(constraint.schema().getLabelId, constraint.schema().getPropertyId)
   }
 
-  implicit def toCypher(constraint: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint = {
+  implicit def toCypher(
+      constraint: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint = {
     assertSingleProperty(constraint.schema())
-    SchemaTypes.RelationshipPropertyExistenceConstraint(constraint.schema().getRelTypeId, constraint.schema().getPropertyId)
+    SchemaTypes
+      .RelationshipPropertyExistenceConstraint(constraint.schema().getRelTypeId, constraint.schema().getPropertyId)
   }
 
-  def assertSingleProperty(schema: SchemaDescriptor):Unit =
+  def assertSingleProperty(schema: SchemaDescriptor): Unit =
     if (schema.getPropertyIds.length != 1)
       throw new UnsupportedOperationException("Cypher 3.1 does not support composite indexes or constraints")
 }

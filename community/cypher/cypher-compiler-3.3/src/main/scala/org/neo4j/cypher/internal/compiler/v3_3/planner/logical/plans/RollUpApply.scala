@@ -19,7 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 /*
 RollUp is the inverse of the Unwind operator. For each row passed in from the LHS, the whole RHS is executed.
@@ -30,9 +32,13 @@ pattern comprehension.
 
 Note about nullableIdentifiers: when any of these identifiers is null, the collection should be null.
  */
-case class RollUpApply(source: LogicalPlan, inner: LogicalPlan, collectionName: IdName, variableToCollect: IdName,
+case class RollUpApply(source: LogicalPlan,
+                       inner: LogicalPlan,
+                       collectionName: IdName,
+                       variableToCollect: IdName,
                        nullableVariables: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   override def lhs = Some(source)
 

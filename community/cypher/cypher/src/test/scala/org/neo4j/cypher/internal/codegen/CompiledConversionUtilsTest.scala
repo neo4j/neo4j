@@ -20,13 +20,16 @@
 package org.neo4j.cypher.internal.codegen
 
 import java.util
-import java.util.stream.{DoubleStream, IntStream, LongStream}
+import java.util.stream.DoubleStream
+import java.util.stream.IntStream
+import java.util.stream.LongStream
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 
 import scala.collection.JavaConverters._
 
@@ -111,7 +114,6 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     Array[AnyRef](Byte.box(1), Long.box(2), Float.box(3)) -> classOf[Array[java.lang.Float]],
     Array[AnyRef]("foo", "bar", "baz") -> classOf[Array[java.lang.String]],
     Array[AnyRef](Boolean.box(true), Boolean.box(false)) -> classOf[Array[java.lang.Boolean]],
-
     List(Byte.box(1), Byte.box(2), Byte.box(3)).asJava -> classOf[Array[java.lang.Byte]],
     List(Byte.box(1), Byte.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Short]],
     List(Byte.box(1), Long.box(2), Short.box(3)).asJava -> classOf[Array[java.lang.Long]],
@@ -141,15 +143,12 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (Array(42, 43), Array(42, 43)) -> true,
     (Array(42, 43), Array(42, 41)) -> false,
     (Array(42, 43), Array(42, 43, 44)) -> false,
-
     (Array(42, 43), util.Arrays.asList(42, 43)) -> true,
     (Array(42, 43), util.Arrays.asList(42, 41)) -> false,
     (Array(42, 43), util.Arrays.asList(42, 43, 44)) -> false,
-
     (util.Arrays.asList(42, 43), Array(42, 43)) -> true,
     (util.Arrays.asList(42, 43), Array(42, 41)) -> false,
     (util.Arrays.asList(42, 43), Array(42, 43, 44)) -> false,
-
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43)) -> true,
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 41)) -> false,
     (util.Arrays.asList(42, 43), util.Arrays.asList(42, 43, 44)) -> false
@@ -170,7 +169,8 @@ class CompiledConversionUtilsTest extends CypherFunSuite {
     (true, true) -> true,
     (true, false) -> true,
     (false, true) -> true,
-    (false, false) -> false)
+    (false, false) -> false
+  )
 
   testOr.foreach {
     case (v, expected) =>

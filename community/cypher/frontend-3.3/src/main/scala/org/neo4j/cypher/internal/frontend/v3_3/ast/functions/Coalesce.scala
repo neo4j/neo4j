@@ -25,6 +25,6 @@ case object Coalesce extends Function {
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation) =
     checkMinArgs(invocation, 1) chain
-    invocation.arguments.expectType(CTAny.covariant) chain
-    invocation.specifyType(invocation.arguments.leastUpperBoundsOfTypes)
+      invocation.arguments.expectType(CTAny.covariant) chain
+      invocation.specifyType(invocation.arguments.leastUpperBoundsOfTypes)
 }

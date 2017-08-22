@@ -23,8 +23,11 @@ import java.lang.{Iterable => JavaIterable}
 import java.util.{Map => JavaMap}
 
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{ArrayValue, Values}
-import org.neo4j.values.virtual.{ListValue, MapValue, VirtualValues}
+import org.neo4j.values.storable.ArrayValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.Seq
 
@@ -47,18 +50,21 @@ trait ListSupport {
   def isList(x: AnyValue): Boolean = castToList.isDefinedAt(x)
 
   def asListOf[T](test: PartialFunction[AnyValue, T])(input: Iterable[AnyValue]): Option[Iterable[T]] =
-    Some(input map { (elem: AnyValue) => if (test.isDefinedAt(elem)) test(elem) else return None })
+    Some(input map { (elem: AnyValue) =>
+      if (test.isDefinedAt(elem)) test(elem) else return None
+    })
 
-  def makeTraversable(z: AnyValue): ListValue = if (isList(z)) {
-    castToList(z)
-  } else {
-    if (z == Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
-  }
+  def makeTraversable(z: AnyValue): ListValue =
+    if (isList(z)) {
+      castToList(z)
+    } else {
+      if (z == Values.NO_VALUE) VirtualValues.EMPTY_LIST else VirtualValues.list(z)
+    }
 
   protected def castToList: PartialFunction[AnyValue, ListValue] = {
     case x: ArrayValue => VirtualValues.fromArray(x)
-    case x: ListValue => x
-    case x: MapValue => VirtualValues.list(x)
+    case x: ListValue  => x
+    case x: MapValue   => VirtualValues.list(x)
   }
 
   implicit class RichSeq[T](inner: Seq[T]) {

@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.PrimitiveExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 
-case class ArgumentRegisterPipe(pipelineInformation: PipelineInformation)
-                               (val id: Id = new Id)
-                                extends Pipe {
+case class ArgumentRegisterPipe(pipelineInformation: PipelineInformation)(val id: Id = new Id) extends Pipe {
 
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val context = PrimitiveExecutionContext(pipelineInformation)

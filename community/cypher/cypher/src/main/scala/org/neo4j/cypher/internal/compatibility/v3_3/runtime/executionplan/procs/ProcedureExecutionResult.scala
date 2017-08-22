@@ -22,22 +22,31 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.procs
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{InternalQueryType, ProcedureCallMode, StandardInternalExecutionResult}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.InternalQueryType
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.StandardInternalExecutionResult
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.ProfilerStatisticsNotReadyException
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.spatial.{Geometry, Point}
+import org.neo4j.graphdb.spatial.Geometry
+import org.neo4j.graphdb.spatial.Point
 import org.neo4j.values.AnyValues._
-import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
+import org.neo4j.values.result.QueryResult.Record
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.{of => _, _}
-import org.neo4j.values.virtual.VirtualValues.{fromNodeProxy, fromRelationshipProxy}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
+import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 /**
   * Execution result of a Procedure
@@ -59,7 +68,7 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
                                                indexResultNameMappings: IndexedSeq[(Int, String, CypherType)],
                                                executionPlanDescriptionGenerator: () => InternalPlanDescription,
                                                val executionMode: ExecutionMode)
-  extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
+    extends StandardInternalExecutionResult(context, ProcedureRuntimeName, Some(taskCloser)) {
 
   override def fieldNames: Array[String] = indexResultNameMappings.map(_._2).toArray
 
@@ -98,19 +107,19 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
       var i = 0
       for ((pos, _, typ) <- indexResultNameMappings) {
         fieldArray(i) = typ match {
-          case CTNode => transform(res(pos), fromNodeProxy)
+          case CTNode         => transform(res(pos), fromNodeProxy)
           case CTRelationship => transform(res(pos), fromRelationshipProxy)
-          case CTPath => transform(res(pos), asPathValue)
-          case CTInteger => transform(res(pos), longValue)
-          case CTFloat => transform(res(pos), doubleValue)
-          case CTNumber => transform(res(pos), numberValue)
-          case CTString => transform(res(pos), stringValue)
-          case CTBoolean => transform(res(pos), booleanValue)
-          case CTPoint => transform(res(pos), (p: Point) => asPointValue(p))
-          case CTGeometry => transform(res(pos), (g: Geometry) => asPointValue(g))
-          case CTMap => transform(res(pos), asMapValue)
-          case ListType(_) => transform(res(pos), asListValue)
-          case CTAny => transform(res(pos), AnyValues.of)
+          case CTPath         => transform(res(pos), asPathValue)
+          case CTInteger      => transform(res(pos), longValue)
+          case CTFloat        => transform(res(pos), doubleValue)
+          case CTNumber       => transform(res(pos), numberValue)
+          case CTString       => transform(res(pos), stringValue)
+          case CTBoolean      => transform(res(pos), booleanValue)
+          case CTPoint        => transform(res(pos), (p: Point) => asPointValue(p))
+          case CTGeometry     => transform(res(pos), (g: Geometry) => asPointValue(g))
+          case CTMap          => transform(res(pos), asMapValue)
+          case ListType(_)    => transform(res(pos), asListValue)
+          case CTAny          => transform(res(pos), AnyValues.of)
         }
         i += 1
       }
@@ -129,21 +138,26 @@ class ProcedureExecutionResult[E <: Exception](context: QueryContext,
 
   private def resultAsMap(rowData: Array[AnyRef]): util.Map[String, Any] = {
     val mapData = new util.HashMap[String, Any](rowData.length)
-    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
+    indexResultNameMappings.foreach { entry =>
+      mapData.put(entry._2, rowData(entry._1))
+    }
     mapData
   }
 
   private def resultAsRefMap(rowData: Array[AnyRef]): util.Map[String, AnyRef] = {
     val mapData = new util.HashMap[String, AnyRef](rowData.length)
-    indexResultNameMappings.foreach { entry => mapData.put(entry._2, rowData(entry._1)) }
+    indexResultNameMappings.foreach { entry =>
+      mapData.put(entry._2, rowData(entry._1))
+    }
     mapData
   }
 
   override def executionPlanDescription(): InternalPlanDescription = executionMode match {
     case ProfileMode if executionResults.hasNext => throw new ProfilerStatisticsNotReadyException()
-    case _ => executionPlanDescriptionGenerator()
-      .addArgument(Runtime(ProcedureRuntimeName.toTextOutput))
-      .addArgument(RuntimeImpl(ProcedureRuntimeName.toTextOutput))
+    case _ =>
+      executionPlanDescriptionGenerator()
+        .addArgument(Runtime(ProcedureRuntimeName.toTextOutput))
+        .addArgument(RuntimeImpl(ProcedureRuntimeName.toTextOutput))
   }
 
   override def withNotifications(notification: Notification*): InternalExecutionResult = this

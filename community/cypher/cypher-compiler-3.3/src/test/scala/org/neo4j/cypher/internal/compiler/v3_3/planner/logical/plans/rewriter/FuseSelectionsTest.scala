@@ -31,9 +31,7 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val p2 = propEquality("a", "bar", 33)
     val lhs = Argument(Set(IdName("a")))(solved)()
 
-    Selection(Seq(p1),
-      Selection(Seq(p2), lhs)(solved))(solved).
-      endoRewrite(fuseSelections) should equal(
+    Selection(Seq(p1), Selection(Seq(p2), lhs)(solved))(solved).endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2), lhs)(solved)
     )
   }
@@ -44,10 +42,8 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val p3 = propEquality("a", "baz", 42)
     val lhs = Argument(Set(IdName("a")))(solved)()
 
-    Selection(Seq(p1),
-      Selection(Seq(p2),
-        Selection(Seq(p3), lhs)(solved))(solved))(solved).
-      endoRewrite(fuseSelections) should equal(
+    Selection(Seq(p1), Selection(Seq(p2), Selection(Seq(p3), lhs)(solved))(solved))(solved)
+      .endoRewrite(fuseSelections) should equal(
       Selection(Seq(p1, p2, p3), lhs)(solved)
     )
   }

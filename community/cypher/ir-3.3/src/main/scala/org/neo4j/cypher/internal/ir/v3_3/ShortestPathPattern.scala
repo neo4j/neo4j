@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.ShortestPaths
 
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)
-                                    (val expr: ShortestPaths) {
+final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(
+    val expr: ShortestPaths) {
 
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
 
@@ -30,5 +30,7 @@ final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelations
 }
 
 object ShortestPathPattern {
-  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) => sp.rel }
+  implicit val byRelName = Ordering.by { (sp: ShortestPathPattern) =>
+    sp.rel
+  }
 }

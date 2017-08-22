@@ -21,7 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeComparisons
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Equals, Expression, InvalidNotEquals, NotEquals, Variable, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Equals
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.InvalidNotEquals
+import org.neo4j.cypher.internal.frontend.v3_3.ast.NotEquals
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NormalizeComparisonsTest extends CypherFunSuite {

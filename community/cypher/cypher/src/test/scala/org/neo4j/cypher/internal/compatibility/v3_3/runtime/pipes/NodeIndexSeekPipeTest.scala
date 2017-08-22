@@ -23,12 +23,19 @@ import org.mockito.Matchers
 import org.mockito.Matchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{ListLiteral, Literal, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.ListLiteral
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compiler.v3_3._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{CompositeQueryExpression, ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.CompositeQueryExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.WindowsStringSafe
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
@@ -74,7 +81,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))))()
+    val pipe =
+      NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -91,7 +99,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek)()
+    val pipe = NodeIndexSeekPipe("n",
+                                 label,
+                                 propertyKey,
+                                 ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))),
+                                 UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -107,10 +119,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
-      ListLiteral(
-        Literal("hello"),
-        Literal(null))))()
+    val pipe =
+      NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(Literal("hello"), Literal(null))))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -126,10 +136,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
-      ListLiteral(
-        Literal("hello"),
-        Literal(null))), UniqueIndexSeek)()
+    val pipe = NodeIndexSeekPipe("n",
+                                 label,
+                                 propertyKey,
+                                 ManyQueryExpression(ListLiteral(Literal("hello"), Literal(null))),
+                                 UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -154,17 +165,20 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should handle index lookups for IN a collection with duplicates") {
     // given
-    val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
+    val queryState = QueryStateHelper.emptyWith( // WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
         Seq("hello") -> Iterator(node)
-      )
-    )
+      ))
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(
-      Literal("hello"),
-      Literal("hello")
-    )))()
+    val pipe = NodeIndexSeekPipe("n",
+                                 label,
+                                 propertyKey,
+                                 ManyQueryExpression(
+                                   ListLiteral(
+                                     Literal("hello"),
+                                     Literal("hello")
+                                   )))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -173,18 +187,21 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should handle index lookups for IN a collection that returns the same nodes for multiple values") {
     // given
-    val queryState = QueryStateHelper.emptyWith(// WHERE n.prop IN ['hello', 'hello']
+    val queryState = QueryStateHelper.emptyWith( // WHERE n.prop IN ['hello', 'hello']
       query = indexFor(
         Seq("hello") -> Iterator(node),
         Seq("world") -> Iterator(node)
-      )
-    )
+      ))
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral(
-      Literal("hello"),
-      Literal("world")
-    )))()
+    val pipe = NodeIndexSeekPipe("n",
+                                 label,
+                                 propertyKey,
+                                 ManyQueryExpression(
+                                   ListLiteral(
+                                     Literal("hello"),
+                                     Literal("world")
+                                   )))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -193,20 +210,23 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should handle index lookups for composite index lookups over multiple values") {
     // given
-    val queryState = QueryStateHelper.emptyWith(// WHERE n.prop = 'hello' AND n.prop2 = 'world']
+    val queryState = QueryStateHelper.emptyWith( // WHERE n.prop = 'hello' AND n.prop2 = 'world']
       query = indexFor(
         Seq("hello", "world") -> Iterator(node),
         Seq("hello") -> Iterator(node, node2)
-      )
-    )
+      ))
 
     // when
-    val pipe = NodeIndexSeekPipe("n", label,
+    val pipe = NodeIndexSeekPipe(
+      "n",
+      label,
       propertyKey :+ PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(11)),
-      CompositeQueryExpression(Seq(
-        SingleQueryExpression(Literal("hello")),
-        SingleQueryExpression(Literal("world"))
-      )))()
+      CompositeQueryExpression(
+        Seq(
+          SingleQueryExpression(Literal("hello")),
+          SingleQueryExpression(Literal("world"))
+        ))
+    )()
     val result = pipe.createResults(queryState)
 
     // then
@@ -224,7 +244,8 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     intercept[CypherTypeException](pipe.createResults(queryState))
   }
 
-  test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
+  test(
+    "should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
     // given
     val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Iterator(node)))
 

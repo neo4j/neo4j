@@ -19,15 +19,17 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.SymbolTable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
-  def writeEffects: Effects = Effects(effectsSet.collect[Effect, Set[Effect]] {
-    case write: WriteEffect => write
-  })
+  def writeEffects: Effects =
+    Effects(effectsSet.collect[Effect, Set[Effect]] {
+      case write: WriteEffect => write
+    })
 
   def ++(other: Effects): Effects = Effects(effectsSet ++ other.effectsSet)
 
@@ -35,43 +37,48 @@ case class Effects(effectsSet: Set[Effect] = Set.empty) {
 
   def containsWrites = effectsSet.exists {
     case write: WriteEffect => true
-    case _ => false
+    case _                  => false
   }
 
   def containsNodeReads = effectsSet.exists {
     case _: ReadsNodes => true
-    case _ => false
+    case _             => false
   }
 
   def containsRelationshipReads = effectsSet.exists {
-    case _: ReadsRelationships => true
+    case _: ReadsRelationships       => true
     case ReadsRelationshipBoundNodes => true
-    case _ => false
+    case _                           => false
   }
 
-  def regardlessOfLeafEffects = Effects(effectsSet.map {
-    case LeafEffect(e) => e
-    case e => e
-  })
+  def regardlessOfLeafEffects =
+    Effects(effectsSet.map {
+      case LeafEffect(e) => e
+      case e             => e
+    })
 
-  def regardlessOfOptionalEffects = Effects(effectsSet.map {
-    case OptionalLeafEffect(e) => e
-    case e => e
-  })
+  def regardlessOfOptionalEffects =
+    Effects(effectsSet.map {
+      case OptionalLeafEffect(e) => e
+      case e                     => e
+    })
 
-  def asLeafEffects = Effects(effectsSet.map[Effect, Set[Effect]] {
-    effect: Effect => LeafEffect(effect)
-  })
+  def asLeafEffects =
+    Effects(effectsSet.map[Effect, Set[Effect]] { effect: Effect =>
+      LeafEffect(effect)
+    })
 
-  def leafEffectsAsOptional = Effects(effectsSet.map {
-    case LeafEffect(e) => OptionalLeafEffect(e)
-    case e => e
-  })
+  def leafEffectsAsOptional =
+    Effects(effectsSet.map {
+      case LeafEffect(e) => OptionalLeafEffect(e)
+      case e             => e
+    })
 }
 
 object AllWriteEffects extends Effects(Set(CreatesAnyNode, WriteAnyNodeProperty, WriteAnyRelationshipProperty))
 
-object AllReadEffects extends Effects(Set(ReadsAllNodes, ReadsAllRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty))
+object AllReadEffects
+    extends Effects(Set(ReadsAllNodes, ReadsAllRelationships, ReadsAnyNodeProperty, ReadsAnyRelationshipProperty))
 
 object AllEffects extends Effects((AllWriteEffects ++ AllReadEffects).effectsSet)
 
@@ -81,22 +88,24 @@ object Effects {
 
   def propertyRead(expression: Expression, symbols: SymbolTable)(propertyKey: String) = {
     (expression match {
-      case i: Variable => symbols.variables.get(i.entityName).map {
-        case _: NodeType => Effects(ReadsGivenNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
-        case _ => Effects()
-      }
+      case i: Variable =>
+        symbols.variables.get(i.entityName).map {
+          case _: NodeType         => Effects(ReadsGivenNodeProperty(propertyKey))
+          case _: RelationshipType => Effects(ReadsGivenRelationshipProperty(propertyKey))
+          case _                   => Effects()
+        }
       case _ => None
     }).getOrElse(Effects())
   }
 
   def propertyWrite(expression: Expression, symbols: SymbolTable)(propertyKey: String) =
     (expression match {
-      case i: Variable => symbols.variables.get(i.entityName).map {
-        case _: NodeType => Effects(SetGivenNodeProperty(propertyKey))
-        case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
-        case _ => Effects()
-      }
+      case i: Variable =>
+        symbols.variables.get(i.entityName).map {
+          case _: NodeType         => Effects(SetGivenNodeProperty(propertyKey))
+          case _: RelationshipType => Effects(SetGivenRelationshipProperty(propertyKey))
+          case _                   => Effects()
+        }
       case _ => None
     }).getOrElse(Effects())
 }

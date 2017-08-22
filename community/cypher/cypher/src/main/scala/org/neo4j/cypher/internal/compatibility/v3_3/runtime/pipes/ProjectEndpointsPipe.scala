@@ -24,14 +24,21 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ListSupport
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values.virtual.VirtualValues.reverse
-import org.neo4j.values.virtual.{EdgeValue, ListValue, NodeValue}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.NodeValue
 
-case class ProjectEndpointsPipe(source: Pipe, relName: String,
-                                start: String, startInScope: Boolean,
-                                end: String, endInScope: Boolean,
-                                relTypes: Option[LazyTypes], directed: Boolean, simpleLength: Boolean)
-                               (val id: Id = new Id) extends PipeWithSource(source)
-  with ListSupport  {
+case class ProjectEndpointsPipe(source: Pipe,
+                                relName: String,
+                                start: String,
+                                startInScope: Boolean,
+                                end: String,
+                                endInScope: Boolean,
+                                relTypes: Option[LazyTypes],
+                                directed: Boolean,
+                                simpleLength: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with ListSupport {
   type Projector = (ExecutionContext) => Iterator[ExecutionContext]
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
@@ -70,15 +77,21 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     }
   }
 
-  private def findSimpleLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
+  private def findSimpleLengthRelEndpoints(context: ExecutionContext,
+                                           qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val rel = Some(context(relName).asInstanceOf[EdgeValue]).filter(hasAllowedType)
-    rel.flatMap { rel => pickStartAndEnd(rel, rel, context, qtx)}
+    rel.flatMap { rel =>
+      pickStartAndEnd(rel, rel, context, qtx)
+    }
   }
 
-  private def findVarLengthRelEndpoints(context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue, ListValue)] = {
+  private def findVarLengthRelEndpoints(context: ExecutionContext,
+                                        qtx: QueryContext): Option[(NodeValue, NodeValue, ListValue)] = {
     val rels = makeTraversable(context(relName))
     if (rels.nonEmpty && allHasAllowedType(rels)) {
-      pickStartAndEnd(rels.head.asInstanceOf[EdgeValue], rels.last.asInstanceOf[EdgeValue], context, qtx).map { case (s, e) => (s, e, rels) }
+      pickStartAndEnd(rels.head.asInstanceOf[EdgeValue], rels.last.asInstanceOf[EdgeValue], context, qtx).map {
+        case (s, e) => (s, e, rels)
+      }
     } else {
       None
     }
@@ -86,7 +99,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
 
   private def allHasAllowedType(rels: ListValue): Boolean = {
     val iterator = rels.iterator()
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       val next = iterator.next().asInstanceOf[EdgeValue]
       if (!hasAllowedType(next)) return false
     }
@@ -96,8 +109,10 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def hasAllowedType(rel: EdgeValue): Boolean =
     relTypes.forall(_.names.contains(rel.`type`().stringValue()))
 
-  private def pickStartAndEnd(relStart: EdgeValue, relEnd: EdgeValue,
-                              context: ExecutionContext, qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
+  private def pickStartAndEnd(relStart: EdgeValue,
+                              relEnd: EdgeValue,
+                              context: ExecutionContext,
+                              qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val startNode = relStart.startNode()
     val endNode = relEnd.endNode()
     Some((startNode, endNode)).filter {

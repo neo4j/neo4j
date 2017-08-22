@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
-                           (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
-                              (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
+  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)(
+      implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression)
+  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)(
+      implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension)
 }
 
 trait PatternExpressionSolving {
@@ -39,8 +40,8 @@ trait PatternExpressionSolving {
 
   import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
 
-  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)
-                           (implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
+  def planPatternExpression(planArguments: Set[IdName], expr: PatternExpression)(
+      implicit context: LogicalPlanningContext): (LogicalPlan, PatternExpression) = {
     val dependencies = expr.dependencies.map(IdName.fromVariable)
     val qgArguments = planArguments intersect dependencies
     val (namedExpr, namedMap) = PatternExpressionPatternElementNamer(expr)
@@ -49,18 +50,18 @@ trait PatternExpressionSolving {
     (plan, namedExpr)
   }
 
-  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)
-                              (implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
+  def planPatternComprehension(planArguments: Set[IdName], expr: PatternComprehension)(
+      implicit context: LogicalPlanningContext): (LogicalPlan, PatternComprehension) = {
     val asQueryGraph = expr.asQueryGraph
     val qgArguments = planArguments intersect asQueryGraph.coveredIds
-    val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq:_*)
+    val qg = asQueryGraph.withArgumentIds(qgArguments).addPredicates(expr.predicate.toIndexedSeq: _*)
     val plan: LogicalPlan = planQueryGraph(qg, Map.empty)
     (plan, expr)
   }
 
-  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable])
-                            (implicit context: LogicalPlanningContext): LogicalPlan = {
-    val namedNodes = namedMap.collect { case (_: NodePattern, identifier) => identifier }
+  private def planQueryGraph(qg: QueryGraph, namedMap: Map[PatternElement, Variable])(
+      implicit context: LogicalPlanningContext): LogicalPlan = {
+    val namedNodes = namedMap.collect { case (_: NodePattern, identifier)      => identifier }
     val namedRels = namedMap.collect { case (_: RelationshipChain, identifier) => identifier }
     val patternPlanningContext = context.forExpressionPlanning(namedNodes, namedRels)
     self.plan(qg)(patternPlanningContext)
@@ -70,5 +71,6 @@ trait PatternExpressionSolving {
 trait TentativeQueryGraphSolver extends QueryGraphSolver with PatternExpressionSolving {
   def tryPlan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Option[LogicalPlan]
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan =
-    tryPlan(queryGraph).getOrElse(throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
+    tryPlan(queryGraph).getOrElse(
+      throw new InternalException("Failed to create a plan for the given QueryGraph " + queryGraph))
 }

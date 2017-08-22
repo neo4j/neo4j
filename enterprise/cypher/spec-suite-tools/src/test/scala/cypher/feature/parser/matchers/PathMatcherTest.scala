@@ -29,16 +29,17 @@ class PathMatcherTest extends ParsingTestSupport {
   }
 
   test("should match a path of two links") {
-    val linkMatcher1 = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY),
-                                           new NodeMatcher(Set("Start1").asJava, EMPTY), true)
+    val linkMatcher1 =
+      new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("Start1").asJava, EMPTY), true)
     linkMatcher1.setRightNode(new NodeMatcher(Set("End1").asJava, EMPTY))
-    val linkMatcher2 = new PathLinkMatcher(new RelationshipMatcher("T2", EMPTY),
-                                           new NodeMatcher(Set("End2").asJava, EMPTY), false)
+    val linkMatcher2 =
+      new PathLinkMatcher(new RelationshipMatcher("T2", EMPTY), new NodeMatcher(Set("End2").asJava, EMPTY), false)
     linkMatcher2.setRightNode(new NodeMatcher(Set("Start2").asJava, EMPTY))
     val pathMatcher = new PathMatcher(List(linkMatcher1, linkMatcher2).asJava)
 
-    pathMatcher should accept(path(pathLink(node(Seq("Start1")), relationship("T1"), node(Seq("End1"))),
-                                   pathLink(node(Seq("Start2")), relationship("T2"), node(Seq("End2")))))
+    pathMatcher should accept(
+      path(pathLink(node(Seq("Start1")), relationship("T1"), node(Seq("End1"))),
+           pathLink(node(Seq("Start2")), relationship("T2"), node(Seq("End2")))))
   }
 
   test("should not accept a longer path") {
@@ -49,8 +50,8 @@ class PathMatcherTest extends ParsingTestSupport {
   }
 
   test("should not accept a shorter path") {
-    val linkMatcher = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY),
-                                          new NodeMatcher(Set("Start1").asJava, EMPTY), true)
+    val linkMatcher =
+      new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("Start1").asJava, EMPTY), true)
     linkMatcher.setRightNode(new NodeMatcher(Set("End1").asJava, EMPTY))
     val pathMatcher = new PathMatcher(List(linkMatcher).asJava)
 
@@ -58,11 +59,11 @@ class PathMatcherTest extends ParsingTestSupport {
   }
 
   test("should not accept a shorter path 2") {
-    val linkMatcher1 = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY),
-                                           new NodeMatcher(Set("Start1").asJava, EMPTY), true)
+    val linkMatcher1 =
+      new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set("Start1").asJava, EMPTY), true)
     linkMatcher1.setRightNode(new NodeMatcher(Set("End1").asJava, EMPTY))
-    val linkMatcher2 = new PathLinkMatcher(new RelationshipMatcher("T2", EMPTY),
-                                           new NodeMatcher(Set("End2").asJava, EMPTY), false)
+    val linkMatcher2 =
+      new PathLinkMatcher(new RelationshipMatcher("T2", EMPTY), new NodeMatcher(Set("End2").asJava, EMPTY), false)
     linkMatcher2.setRightNode(new NodeMatcher(Set("Start2").asJava, EMPTY))
     val pathMatcher = new PathMatcher(List(linkMatcher1, linkMatcher2).asJava)
 
@@ -72,8 +73,8 @@ class PathMatcherTest extends ParsingTestSupport {
   }
 
   test("should not match a path with wrong link") {
-    val linkMatcher1 = new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY),
-                                           new NodeMatcher(Set.empty[String].asJava, EMPTY), true)
+    val linkMatcher1 =
+      new PathLinkMatcher(new RelationshipMatcher("T1", EMPTY), new NodeMatcher(Set.empty[String].asJava, EMPTY), true)
     linkMatcher1.setRightNode(new NodeMatcher(Set.empty[String].asJava, EMPTY))
     val pathMatcher = new PathMatcher(List(linkMatcher1).asJava)
 

@@ -39,18 +39,16 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     val runner = new Runnable {
       def run() {
         try {
-          (1 to nodeCount) foreach {
-            x =>
-              val r = execute(q, "id" -> x)
+          (1 to nodeCount) foreach { x =>
+            val r = execute(q, "id" -> x)
           }
-        }
-        catch {
+        } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
         }
       }
     }
 
-      val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
+    val threads: Seq[Thread] = 0 until threadCount map (x => new Thread(runner))
 
     threads.foreach(_.start())
     threads.foreach(_.join())
@@ -72,8 +70,8 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     val runner = new Runnable {
       def run() {
         try {
-          (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:{id}})", "id" -> x)
+          (0 until nodeCount) foreach { x =>
+            execute("MERGE (a:Label {id:{id}})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -104,8 +102,8 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     val runner = new Runnable {
       def run() {
         try {
-          (0 until nodeCount) foreach {
-            x => execute("MERGE (a:Label {id:{id}})", "id" -> x)
+          (0 until nodeCount) foreach { x =>
+            execute("MERGE (a:Label {id:{id}})", "id" -> x)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -140,8 +138,8 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     def createRunner(n1: Long, n2: Long) = new Runnable {
       def run() {
         try {
-          (0 until nodeCount) foreach {
-            x => execute(query, "id1" -> n1, "id2" -> n2)
+          (0 until nodeCount) foreach { x =>
+            execute(query, "id1" -> n1, "id2" -> n2)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -150,7 +148,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     }
 
     val threads: Seq[Thread] = 0 until threadCount map { x =>
-      val (from, to) = if(x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
+      val (from, to) = if (x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
       new Thread(createRunner(from, to))
     }
 
@@ -175,8 +173,8 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     def createRunner(n1: Long, n2: Long) = new Runnable {
       def run() {
         try {
-          (0 until nodeCount) foreach {
-            x => execute(query, "id1" -> n1, "id2" -> n2)
+          (0 until nodeCount) foreach { x =>
+            execute(query, "id1" -> n1, "id2" -> n2)
           }
         } catch {
           case e: Throwable => exceptionsThrown = exceptionsThrown :+ e
@@ -185,7 +183,7 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
     }
 
     val threads: Seq[Thread] = 0 until threadCount map { x =>
-      val (from, to) = if(x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
+      val (from, to) = if (x % 2 == 0) (n1.getId, n2.getId) else (n2.getId, n1.getId)
       new Thread(createRunner(from, to))
     }
 

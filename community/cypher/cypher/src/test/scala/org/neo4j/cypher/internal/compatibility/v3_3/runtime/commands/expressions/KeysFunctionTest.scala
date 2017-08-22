@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.spi.v3_3.{Operations, QueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.Operations
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
-import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
+import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
+import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.JavaConverters._
 
@@ -66,7 +68,6 @@ class KeysFunctionTest extends CypherFunSuite {
     when(queryContext.nodeOps).thenReturn(ops)
     when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator.empty)
 
-
     val state = QueryStateHelper.emptyWith(query = queryContext)
     val ctx = ExecutionContext() += ("n" -> node)
 
@@ -84,8 +85,8 @@ class KeysFunctionTest extends CypherFunSuite {
     val ctx = ExecutionContext.empty
 
     // WHEN
-    val result = KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(
-      state)
+    val result =
+      KeysFunction(LiteralMap(Map("foo" -> Literal(1), "bar" -> Literal(2), "baz" -> Literal(3))))(ctx)(state)
 
     result should equal(list(stringValue("foo"), stringValue("bar"), stringValue("baz")))
   }

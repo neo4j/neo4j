@@ -23,23 +23,27 @@ import java.util.Collections
 
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
 import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type._
 import org.neo4j.kernel.api.security.SecurityContext.AUTH_DISABLED
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
-  var database:GraphDatabaseService = _
+  var database: GraphDatabaseService = _
 
-  private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
-    val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
+  private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService,
+                                       transaction: InternalTransaction) = {
+    val contextFactory =
+      Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
     contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, "no query", Collections.emptyMap())
   }
 
@@ -65,7 +69,8 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     // pattern stats
     Set(Some(LabelId(0)), None).foreach { label1 =>
       Set(Some(LabelId(1)), None).foreach { label2 =>
-        statistics.cardinalityByLabelsAndRelationshipType(label1, Some(RelTypeId(0)), label2) should equal(Cardinality.SINGLE)
+        statistics.cardinalityByLabelsAndRelationshipType(label1, Some(RelTypeId(0)), label2) should equal(
+          Cardinality.SINGLE)
         statistics.cardinalityByLabelsAndRelationshipType(label1, None, label2) should equal(Cardinality.SINGLE)
       }
     }
@@ -88,18 +93,16 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     statistics.nodesWithLabelCardinality(None) should equal(Cardinality(200))
 
     // pattern stats
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), Some(RelTypeId(0)), Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), Some(RelTypeId(0)), None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), None, Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), None, None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      None, None, None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
+    statistics
+      .cardinalityByLabelsAndRelationshipType(Some(LabelId(0)), Some(RelTypeId(0)), Some(LabelId(1))) should equal(
+      Cardinality.SINGLE)
+    statistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(0)), Some(RelTypeId(0)), None) should equal(
+      Cardinality(100))
+    statistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(0)), None, Some(LabelId(1))) should equal(
+      Cardinality.SINGLE)
+    statistics.cardinalityByLabelsAndRelationshipType(Some(LabelId(0)), None, None) should equal(Cardinality(100))
+    statistics.cardinalityByLabelsAndRelationshipType(None, None, None) should equal(Cardinality(100))
+    statistics.cardinalityByLabelsAndRelationshipType(None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
 
     transaction.close()
   }

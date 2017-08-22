@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.ir.v3_3
 
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Hint, LabelName, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Hint
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 
 import scala.annotation.tailrec
 import scala.collection.GenTraversableOnce
@@ -43,7 +45,7 @@ sealed trait PlannerQuery {
   def lastQueryHorizon: QueryHorizon = last.horizon
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
-    case None => copy(tail = Some(newTail))
+    case None    => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
@@ -57,12 +59,12 @@ sealed trait PlannerQuery {
 
   def allHints: Set[Hint] = tail match {
     case Some(tailPlannerQuery) => queryGraph.allHints ++ tailPlannerQuery.allHints
-    case None => queryGraph.allHints
+    case None                   => queryGraph.allHints
   }
 
   def numHints: Int = tail match {
     case Some(tailPlannerQuery) => queryGraph.numHints + tailPlannerQuery.numHints
-    case None => queryGraph.numHints
+    case None                   => queryGraph.numHints
   }
 
   def amendQueryGraph(f: QueryGraph => QueryGraph): PlannerQuery = withQueryGraph(f(queryGraph))
@@ -71,21 +73,21 @@ sealed trait PlannerQuery {
 
   def updateQueryProjection(f: QueryProjection => QueryProjection): PlannerQuery = horizon match {
     case projection: QueryProjection => withHorizon(f(projection))
-    case _ => throw new InternalException("Tried updating projection when there was no projection there")
+    case _                           => throw new InternalException("Tried updating projection when there was no projection there")
   }
 
   def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
-    case None => this
+    case None            => this
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
   }
 
   def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
-    case None => f(this)
+    case None            => f(this)
     case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
   }
 
   def tailOrSelf: PlannerQuery = tail match {
-    case None => this
+    case None    => this
     case Some(t) => t.tailOrSelf
   }
 
@@ -109,9 +111,9 @@ sealed trait PlannerQuery {
   }
 
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
-    case (s@Some(_), None) => s
-    case (None, s) => s
+    case (Some(_), Some(_))  => throw new InternalException("Can't join two query graphs with different SKIP")
+    case (s @ Some(_), None) => s
+    case (None, s)           => s
   }
 
   // This is here to stop usage of copy from the outside
@@ -134,7 +136,7 @@ sealed trait PlannerQuery {
 
       pq.tail match {
         case Some(tailPQ) => recurse(nextAcc, tailPQ)
-        case None => nextAcc
+        case None         => nextAcc
       }
     }
 
@@ -148,7 +150,7 @@ sealed trait PlannerQuery {
   def allPlannerQueries: Seq[PlannerQuery] = {
     @tailrec
     def loop(acc: Seq[PlannerQuery], remaining: Option[PlannerQuery]): Seq[PlannerQuery] = remaining match {
-      case None => acc
+      case None        => acc
       case Some(inner) => loop(acc :+ inner, inner.tail)
     }
 
@@ -161,7 +163,7 @@ sealed trait PlannerQuery {
       case projection: QueryProjection =>
         projection.projections.collect {
           case (projectedName, Variable(name)) if labelInfo.contains(IdName(name)) =>
-              IdName(projectedName) -> labelInfo(IdName(name))
+            IdName(projectedName) -> labelInfo(IdName(name))
         }
       case _ => Map.empty[IdName, Set[LabelName]]
     }
@@ -180,14 +182,16 @@ object PlannerQuery {
 
 case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
                                horizon: QueryHorizon = QueryProjection.empty,
-                               tail: Option[PlannerQuery] = None) extends PlannerQuery {
+                               tail: Option[PlannerQuery] = None)
+    extends PlannerQuery {
   // This is here to stop usage of copy from the outside
   override protected def copy(queryGraph: QueryGraph = queryGraph,
                               horizon: QueryHorizon = horizon,
                               tail: Option[PlannerQuery] = tail) =
     RegularPlannerQuery(queryGraph, horizon, tail)
 
-  override def dependencies: Set[IdName] = horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
+  override def dependencies: Set[IdName] =
+    horizon.dependencies ++ queryGraph.dependencies ++ tail.map(_.dependencies).getOrElse(Set.empty)
 }
 
 trait CardinalityEstimation {
@@ -201,12 +205,15 @@ object CardinalityEstimation {
   def lift(plannerQuery: PlannerQuery, cardinality: Cardinality) = plannerQuery match {
     case _: RegularPlannerQuery =>
       new RegularPlannerQuery(plannerQuery.queryGraph, plannerQuery.horizon, plannerQuery.tail)
-        with CardinalityEstimation {
+      with CardinalityEstimation {
         val estimatedCardinality = cardinality
       }
   }
 }
 
-case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean, returns: Seq[IdName], periodicCommit: Option[PeriodicCommit]) {
+case class UnionQuery(queries: Seq[PlannerQuery],
+                      distinct: Boolean,
+                      returns: Seq[IdName],
+                      periodicCommit: Option[PeriodicCommit]) {
   def readOnly: Boolean = queries.forall(_.readOnly)
 }

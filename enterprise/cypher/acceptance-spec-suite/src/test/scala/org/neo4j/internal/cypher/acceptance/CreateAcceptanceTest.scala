@@ -20,10 +20,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.CreateTempFileTestSupport
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
-class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport
-  with CreateTempFileTestSupport {
+class CreateAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with CypherComparisonSupport
+    with CreateTempFileTestSupport {
 
   //Not TCK material
   test("should have bound node recognized after projection with WITH + LOAD CSV") {

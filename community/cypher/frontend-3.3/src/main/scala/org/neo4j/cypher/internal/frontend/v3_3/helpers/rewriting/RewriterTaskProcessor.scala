@@ -16,18 +16,20 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting
 
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 
 trait RewriterTaskProcessor extends (RewriterTask => Rewriter) {
   def sequenceName: String
 
   def apply(task: RewriterTask): Rewriter = task match {
     case RunConditions(name, conditions) => RunConditionRewriter(sequenceName, name, conditions)
-    case RunRewriter(_, rewriter) => rewriter
+    case RunRewriter(_, rewriter)        => rewriter
   }
 }
 
-case class RunConditionRewriter(sequenceName: String, name: Option[String], conditions: Set[RewriterCondition]) extends Rewriter {
+case class RunConditionRewriter(sequenceName: String, name: Option[String], conditions: Set[RewriterCondition])
+    extends Rewriter {
   def apply(input: AnyRef): AnyRef = {
     val failures = conditions.toIndexedSeq.flatMap(condition => condition(input))
     if (failures.isEmpty) {
@@ -38,13 +40,13 @@ case class RunConditionRewriter(sequenceName: String, name: Option[String], cond
   }
 
   case class RewritingConditionViolationException(optName: Option[String], failures: Seq[RewriterConditionFailure])
-    extends InternalException(buildMessage(sequenceName, optName, failures))
+      extends InternalException(buildMessage(sequenceName, optName, failures))
 
   private def buildMessage(sequenceName: String, optName: Option[String], failures: Seq[RewriterConditionFailure]) = {
     val name = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
     val builder = new StringBuilder
     builder ++= s"Error during '$sequenceName' rewriting after $name. The following conditions where violated: \n"
-    for (failure <- failures ;
+    for (failure <- failures;
          problem <- failure.problems) {
       builder ++= s"Condition '${failure.name}' violated. $problem\n"
     }

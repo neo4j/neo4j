@@ -23,9 +23,9 @@ sealed trait ZeroOneOrMany[+T]
 
 object ZeroOneOrMany {
   def apply[T](elts: Seq[T]) = elts match {
-    case Seq() => Zero
+    case Seq()    => Zero
     case Seq(one) => One(one)
-    case many => Many(many)
+    case many     => Many(many)
   }
 }
 

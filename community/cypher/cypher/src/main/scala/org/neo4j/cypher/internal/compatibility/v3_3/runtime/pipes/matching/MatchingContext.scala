@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import scala.collection.immutable
 
 /**
- * This class is responsible for deciding how to get the parts of the pattern that are not already bound
- *
- * The deciding factor is whether or not the pattern has loops in it. If it does, we have to use the much more
- * expensive pattern matching. If it doesn't, we get away with much simpler methods
- */
+  * This class is responsible for deciding how to get the parts of the pattern that are not already bound
+  *
+  * The deciding factor is whether or not the pattern has loops in it. If it does, we have to use the much more
+  * expensive pattern matching. If it doesn't, we get away with much simpler methods
+  */
 class MatchingContext(boundVariables: SymbolTable,
                       predicates: Seq[Predicate] = Seq(),
                       patternGraph: PatternGraph,
@@ -48,7 +48,7 @@ class MatchingContext(boundVariables: SymbolTable,
 
     val variablesAlreadyInContext = ids.filter(variable => boundVariables.hasVariableNamed(variable._1))
 
-    variablesAlreadyInContext.foreach( variable => boundVariables.evaluateType(variable._1, variable._2) )
+    variablesAlreadyInContext.foreach(variable => boundVariables.evaluateType(variable._1, variable._2))
 
     boundVariables.add(ids)
   }
@@ -58,7 +58,7 @@ class MatchingContext(boundVariables: SymbolTable,
   }
 
   private def decideWhichMatcherToUse(): MatcherBuilder = {
-      new PatternMatchingBuilder(patternGraph, predicates, variablesInClause)
+    new PatternMatchingBuilder(patternGraph, predicates, variablesInClause)
   }
 }
 
@@ -67,4 +67,3 @@ trait MatcherBuilder {
   def startPoint: String
   def getMatches(sourceRow: ExecutionContext, state: QueryState): Traversable[ExecutionContext]
 }
-

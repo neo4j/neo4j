@@ -23,13 +23,17 @@ import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.ir.v3_3.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, PatternRelationship, ShortestPathPattern}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PatternRelationship
+import org.neo4j.cypher.internal.ir.v3_3.ShortestPathPattern
 
 object PatternConverters {
 
   object DestructResult { def empty = DestructResult(Seq.empty, Seq.empty, Seq.empty) }
 
-  case class DestructResult(nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortestPaths: Seq[ShortestPathPattern]) {
+  case class DestructResult(nodeIds: Seq[IdName],
+                            rels: Seq[PatternRelationship],
+                            shortestPaths: Seq[ShortestPathPattern]) {
     def addNodeId(newId: IdName*): DestructResult = copy(nodeIds = nodeIds ++ newId)
     def addRel(r: PatternRelationship*): DestructResult = copy(rels = rels ++ r)
     def addShortestPaths(r: ShortestPathPattern*): DestructResult = copy(shortestPaths = shortestPaths ++ r)
@@ -59,44 +63,42 @@ object PatternConverters {
                              NodePattern(Some(rightNodeId), Seq(), None)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
-        val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        val r =
+          PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
         DestructResult(Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
-      case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), relTypes, length, None, direction, _), NodePattern(Some(rightNodeId), Seq(), None)) =>
+      case RelationshipChain(relChain: RelationshipChain,
+                             RelationshipPattern(Some(relId), relTypes, length, None, direction, _),
+                             NodePattern(Some(rightNodeId), Seq(), None)) =>
         val destructed = relChain.destructedRelationshipChain
         val leftNode = IdName(destructed.rels.last.right.name)
         val rightNode = IdName(rightNodeId.name)
-        val newRel = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
-        destructed.
-          addNodeId(rightNode).
-          addRel(newRel)
+        val newRel =
+          PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length.asPatternLength)
+        destructed.addNodeId(rightNode).addRel(newRel)
     }
   }
 
   implicit class PatternDestructor(val pattern: Pattern) extends AnyVal {
     def destructed: DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
-        case (acc, NamedPatternPart(ident, sps@ShortestPaths(element, single))) =>
+        case (acc, NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
           val desctructedElement: DestructResult = element.destructed
           val pathName = IdName(ident.name)
           val newShortest = ShortestPathPattern(Some(pathName), desctructedElement.rels.head, single)(sps)
-          acc.
-            addNodeId(desctructedElement.nodeIds:_*).
-            addShortestPaths(newShortest)
+          acc.addNodeId(desctructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
-        case (acc, sps@ShortestPaths(element, single)) =>
+        case (acc, sps @ ShortestPaths(element, single)) =>
           val destructedElement = element.destructed
-          val newShortest = ShortestPathPattern(Some(IdName(FreshIdNameGenerator.name(sps.position))), destructedElement.rels.head, single)(sps)
-          acc.
-            addNodeId(destructedElement.nodeIds:_*).
-            addShortestPaths(newShortest)
+          val newShortest = ShortestPathPattern(Some(IdName(FreshIdNameGenerator.name(sps.position))),
+                                                destructedElement.rels.head,
+                                                single)(sps)
+          acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
         case (acc, everyPath: EveryPath) =>
           val destructedElement = everyPath.element.destructed
-          acc.
-            addNodeId(destructedElement.nodeIds:_*).
-            addRel(destructedElement.rels:_*)
+          acc.addNodeId(destructedElement.nodeIds: _*).addRel(destructedElement.rels: _*)
 
         case p =>
           throw new InternalException(s"Unknown pattern element encountered $p")

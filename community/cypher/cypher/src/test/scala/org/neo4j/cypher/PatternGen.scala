@@ -22,12 +22,15 @@ package org.neo4j.cypher
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection.OUTGOING
 import org.scalacheck.Gen._
-import org.scalacheck.{Gen, Shrink}
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 import org.scalatest.prop.PropertyChecks
 
-trait PatternGen extends  PropertyChecks {
+trait PatternGen extends PropertyChecks {
   protected def minPatternLength = 2
   protected def maxPatternLength = 8
   protected def numberOfTestRuns = 100
@@ -35,7 +38,9 @@ trait PatternGen extends  PropertyChecks {
   protected def maxSize = 10
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
-    minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
+    minSuccessful = numberOfTestRuns,
+    maxDiscarded = maxDiscardedInputs,
+    maxSize = maxSize
   )
 
   val nameSeq = new AtomicInteger
@@ -51,7 +56,7 @@ trait PatternGen extends  PropertyChecks {
       if (standaloneNode.isDefined) {
         // either move it to the end of pattern
         shrink.filter(_ != standaloneNode.get) :+ standaloneNode.get
-      } else  if (shrink.nonEmpty) {
+      } else if (shrink.nonEmpty) {
         // or strip trailing relationship
         shrink.dropRight(1) :+ shrink.last.asInstanceOf[NodeWithRelationship].node
       } else {
@@ -62,20 +67,20 @@ trait PatternGen extends  PropertyChecks {
 
   def numberOfNamedNodes(elements: List[Element]): Int = elements.count {
     // either pattern with named node
-    case NodeWithRelationship(NamedNode(_), _) => true
+    case NodeWithRelationship(NamedNode(_), _)           => true
     case NodeWithRelationship(NamedLabeledNode(_, _), _) => true
     // or single named node
-    case nn: NamedNode => true
+    case nn: NamedNode         => true
     case nln: NamedLabeledNode => true
-    case _ => false
+    case _                     => false
   }
 
   def findFirstNodeName(elements: List[Element]): Option[String] = elements.collectFirst {
     // either name from node that participates in pattern
-    case NodeWithRelationship(NamedNode(name), _) => name
+    case NodeWithRelationship(NamedNode(name), _)           => name
     case NodeWithRelationship(NamedLabeledNode(name, _), _) => name
     // or name from single node
-    case NamedNode(name) => name
+    case NamedNode(name)           => name
     case NamedLabeledNode(name, _) => name
   }
 
@@ -85,10 +90,10 @@ trait PatternGen extends  PropertyChecks {
       // either name from node that participates in pattern
       case NodeWithRelationship(node, _) => findName(node)
       // or name from single node
-      case NamedNode(name) => Some(name)
-      case NamedLabeledNode(name, _) => Some(name)
+      case NamedNode(name)                            => Some(name)
+      case NamedLabeledNode(name, _)                  => Some(name)
       case NamedLabeledNodeWithProperties(name, _, _) => Some(name)
-      case _ => None
+      case _                                          => None
     }
 
     elements.flatMap(findName)
@@ -97,12 +102,12 @@ trait PatternGen extends  PropertyChecks {
   def findAllRelationshipNames(elements: List[Element]): Seq[String] = {
 
     def findName(element: Element): Option[String] = element match {
-      case NodeWithRelationship(_, rel) => findName(rel)
-      case NamedRelationship(name, _) => Some(name)
-      case NamedRelationshipWithLength(name, _, _) => Some(name)
-      case NamedTypedRelationship(name, _, _) => Some(name)
+      case NodeWithRelationship(_, rel)                        => findName(rel)
+      case NamedRelationship(name, _)                          => Some(name)
+      case NamedRelationshipWithLength(name, _, _)             => Some(name)
+      case NamedTypedRelationship(name, _, _)                  => Some(name)
       case NamedTypedWithPropertiesRelationship(name, _, _, _) => Some(name)
-      case _ => None
+      case _                                                   => None
     }
 
     elements.flatMap(findName)
@@ -163,7 +168,8 @@ trait PatternGen extends  PropertyChecks {
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
-  case class NamedRelationshipWithLength(name: String, length: String, direction: SemanticDirection) extends Relationship {
+  case class NamedRelationshipWithLength(name: String, length: String, direction: SemanticDirection)
+      extends Relationship {
     val string = formatRelationship(s"[$name $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
@@ -173,12 +179,14 @@ trait PatternGen extends  PropertyChecks {
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
-  case class TypedWithPropertiesRelationship(relType: String, direction: SemanticDirection, properties: Seq[String]) extends Relationship {
+  case class TypedWithPropertiesRelationship(relType: String, direction: SemanticDirection, properties: Seq[String])
+      extends Relationship {
     val string = formatRelationship(s"[:$relType {${properties.mkString(",")}}]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
-  case class TypedRelationshipWithLength(relType: String, length: String, direction: SemanticDirection) extends Relationship {
+  case class TypedRelationshipWithLength(relType: String, length: String, direction: SemanticDirection)
+      extends Relationship {
     val string = formatRelationship(s"[:$relType $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
@@ -188,18 +196,26 @@ trait PatternGen extends  PropertyChecks {
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
-  case class NamedTypedWithPropertiesRelationship(name: String, relType: String, direction: SemanticDirection, properties: Seq[String]) extends Relationship {
+  case class NamedTypedWithPropertiesRelationship(name: String,
+                                                  relType: String,
+                                                  direction: SemanticDirection,
+                                                  properties: Seq[String])
+      extends Relationship {
     val string = formatRelationship(s"[$name :$relType {${properties.mkString(",")}}]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
-  case class NamedTypedRelationshipWithLength(name: String, relType: String, length: String, direction: SemanticDirection) extends Relationship {
+  case class NamedTypedRelationshipWithLength(name: String,
+                                              relType: String,
+                                              length: String,
+                                              direction: SemanticDirection)
+      extends Relationship {
     val string = formatRelationship(s"[$name:$relType $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   def formatRelationship(definition: String, direction: SemanticDirection) = direction match {
-    case BOTH => s"-$definition-"
+    case BOTH     => s"-$definition-"
     case INCOMING => s"<-$definition-"
     case OUTGOING => s"-$definition->"
   }
@@ -282,7 +298,6 @@ trait PatternGen extends  PropertyChecks {
       direction <- relDirection
     } yield NamedTypedRelationshipWithLength(name, relType, length, direction)
 
-
   def nodeGen: Gen[Node]
 
   def emptyNodeGen = Gen.const(EmptyNode())
@@ -320,8 +335,8 @@ trait PatternGen extends  PropertyChecks {
 
   def relTypeName = alphaUpperChar.map(c => s"T${nameSeq.getAndIncrement()}")
 
-  def relLength = Gen.oneOf(relLengthWithoutBounds, relLengthWithLowerBound, relLengthWithUpperBound,
-    relLengthWithLowerAndUpperBound)
+  def relLength =
+    Gen.oneOf(relLengthWithoutBounds, relLengthWithLowerBound, relLengthWithUpperBound, relLengthWithLowerAndUpperBound)
 
   def relLengthWithoutBounds = Gen.const("*")
 

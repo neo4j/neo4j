@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.StringLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.NoHeaders
 
 class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -52,7 +53,8 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val eager = Eager(unwind)(solved)
     val topPlan = Projection(eager, Map.empty)(solved)
 
-    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf)(solved), IdName("i"), null)(solved), Map.empty)(solved))
+    rewrite(topPlan) should equal(
+      Projection(UnwindCollection(Eager(leaf)(solved), IdName("i"), null)(solved), Map.empty)(solved))
   }
 
   test("should move eager on top of unwind to below it repeatedly") {
@@ -68,11 +70,11 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     rewrite(topPlan) should equal(
       Projection(
         UnwindCollection(
-          UnwindCollection(
-            UnwindCollection(Eager(leaf)(solved), IdName("i"), null)(solved),
-            IdName("i"), null)(solved),
-          IdName("i"), null)(solved),
-        Map.empty)(solved))
+          UnwindCollection(UnwindCollection(Eager(leaf)(solved), IdName("i"), null)(solved), IdName("i"), null)(solved),
+          IdName("i"),
+          null)(solved),
+        Map.empty
+      )(solved))
   }
 
   test("should move eager on top of load csv to below it") {
@@ -82,19 +84,15 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val eager = Eager(loadCSV)(solved)
     val topPlan = Projection(eager, Map.empty)(solved)
 
-    rewrite(topPlan) should equal(Projection(LoadCSV(Eager(leaf)(solved), url, IdName("a"), NoHeaders, None, false)(solved), Map.empty)(solved))
+    rewrite(topPlan) should equal(
+      Projection(LoadCSV(Eager(leaf)(solved), url, IdName("a"), NoHeaders, None, false)(solved), Map.empty)(solved))
   }
 
   test("should move eager on top of limit to below it") {
     val leaf = newMockedLogicalPlan()
 
-    rewrite(
-      Projection(
-        Limit(
-          Eager(leaf)(solved), literalInt(12), DoNotIncludeTies)(solved), Map.empty)(solved)) should equal(
-      Projection(
-        Eager(
-          Limit(leaf, literalInt(12), DoNotIncludeTies)(solved))(solved), Map.empty)(solved))
+    rewrite(Projection(Limit(Eager(leaf)(solved), literalInt(12), DoNotIncludeTies)(solved), Map.empty)(solved)) should equal(
+      Projection(Eager(Limit(leaf, literalInt(12), DoNotIncludeTies)(solved))(solved), Map.empty)(solved))
   }
 
   test("should not rewrite plan with eager below load csv") {

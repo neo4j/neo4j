@@ -19,20 +19,28 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-import org.neo4j.cypher.internal.compiler.v3_3.{MinMaxOrdering, RangeBetween, RangeGreaterThan, RangeLessThan}
+import org.neo4j.cypher.internal.compiler.v3_3.MinMaxOrdering
+import org.neo4j.cypher.internal.compiler.v3_3.RangeBetween
+import org.neo4j.cypher.internal.compiler.v3_3.RangeGreaterThan
+import org.neo4j.cypher.internal.compiler.v3_3.RangeLessThan
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ExclusiveBound, InclusiveBound}
+import org.neo4j.cypher.internal.frontend.v3_3.ExclusiveBound
+import org.neo4j.cypher.internal.frontend.v3_3.InclusiveBound
 
 class SeekRangeTest extends CypherFunSuite {
 
   test("Computes correct limit for numerical less than") {
     implicit val ordering = MinMaxOrdering.BY_NUMBER
 
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(InclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(ExclusiveBound(3)))
-    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(
+      Some(InclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(
+      Some(InclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(
+      Some(ExclusiveBound(3)))
+    RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(
+      Some(ExclusiveBound(3)))
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
     RangeLessThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
@@ -58,10 +66,14 @@ class SeekRangeTest extends CypherFunSuite {
   test("Computes correct limit for numerical greater than") {
     implicit val ordering = MinMaxOrdering.BY_NUMBER
 
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(Some(ExclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(Some(InclusiveBound(4)))
-    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(Some(ExclusiveBound(3)))
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), InclusiveBound(4))).limit should equal(
+      Some(InclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(InclusiveBound(3), ExclusiveBound(4))).limit should equal(
+      Some(ExclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(4))).limit should equal(
+      Some(InclusiveBound(4)))
+    RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(3))).limit should equal(
+      Some(ExclusiveBound(3)))
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(3), InclusiveBound(null))).limit should equal(None)
     RangeGreaterThan[Number](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
@@ -114,12 +126,18 @@ class SeekRangeTest extends CypherFunSuite {
   test("Computes correct limit for string less than") {
     implicit val ordering = MinMaxOrdering.BY_STRING
 
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("")))
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(InclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(ExclusiveBound("3")))
-    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(
+      Some(ExclusiveBound("")))
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(
+      Some(ExclusiveBound("3")))
+    RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(
+      Some(ExclusiveBound("3")))
     RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
     RangeLessThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
@@ -148,19 +166,24 @@ class SeekRangeTest extends CypherFunSuite {
   test("Computes correct limit for string greater than") {
     implicit val ordering = MinMaxOrdering.BY_STRING
 
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(Some(ExclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(Some(InclusiveBound("4")))
-    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(Some(ExclusiveBound("3")))
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound("3"), ExclusiveBound("4"))).limit should equal(
+      Some(ExclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("4"))).limit should equal(
+      Some(InclusiveBound("4")))
+    RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound("3"))).limit should equal(
+      Some(ExclusiveBound("3")))
     RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound("3"), InclusiveBound(null))).limit should equal(None)
     RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(null), InclusiveBound(null))).limit should equal(None)
   }
 
   test("Computes inclusion for string greater than") {
     implicit val ordering = MinMaxOrdering.BY_STRING
-
 
     RangeGreaterThan[AnyRef](NonEmptyList(InclusiveBound(""))).includes[AnyRef]("") should be(right = true)
     RangeGreaterThan[AnyRef](NonEmptyList(ExclusiveBound(""))).includes[AnyRef]("") should be(right = false)

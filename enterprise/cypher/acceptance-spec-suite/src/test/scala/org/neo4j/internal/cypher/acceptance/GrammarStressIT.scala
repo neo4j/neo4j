@@ -20,14 +20,20 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 import org.neo4j.graphdb.Node
-import org.scalacheck.{Arbitrary, Gen, Shrink}
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 import org.scalatest.prop.PropertyChecks
 
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, TimeoutException}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.Await
+import scala.concurrent.TimeoutException
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /*
  * Tests so that the compiled runtime behaves in the same way as the interpreted runtime for randomized Cypher
@@ -46,7 +52,9 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   private val NUM_LAYERS = 3
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
-    minSuccessful = numberOfTestRuns, maxDiscarded = maxDiscardedInputs, maxSize = maxSize
+    minSuccessful = numberOfTestRuns,
+    maxDiscarded = maxDiscardedInputs,
+    maxSize = maxSize
   )
 
   //we don't want scala check to shrink patterns here since it will lead to invalid cypher
@@ -105,30 +113,35 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     }
   }
 
-  case class Identifier( name:String, isSingleEntity:Boolean)
+  case class Identifier(name: String, isSingleEntity: Boolean)
 
-  case class Pattern(startNode:NodePattern, tail:Option[(RelPattern, Pattern)]) {
+  case class Pattern(startNode: NodePattern, tail: Option[(RelPattern, Pattern)]) {
 
-    def identifiers: Set[Identifier] = startNode.name.map(Identifier(_, isSingleEntity = true)).toSet ++ tail.map((kv) => {
-      val (r, p) = kv
-      r.identifier ++ p.identifiers
-    }).getOrElse(Set.empty)
+    def identifiers: Set[Identifier] =
+      startNode.name.map(Identifier(_, isSingleEntity = true)).toSet ++ tail
+        .map((kv) => {
+          val (r, p) = kv
+          r.identifier ++ p.identifiers
+        })
+        .getOrElse(Set.empty)
 
     override def toString: String = {
       val tailString = tail match {
-        case None => ""
-        case Some((r,p)) => s"$r$p"
+        case None         => ""
+        case Some((r, p)) => s"$r$p"
       }
 
       s"$startNode$tailString"
     }
   }
-  case class NodePattern(name:Option[String], labels:Set[String], properties:Map[String, Any]) {
+  case class NodePattern(name: Option[String], labels: Set[String], properties: Map[String, Any]) {
 
     override def toString: String = {
 
-      val propString = if (properties.isEmpty) None else
-        Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
+      val propString =
+        if (properties.isEmpty) None
+        else
+          Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
       val labelString = if (labels.isEmpty) None else Some(labels.mkString(":", ":", ""))
 
       (name ++ labelString ++ propString).mkString("(", " ", ")")
@@ -136,38 +149,40 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   }
 
   object RelPattern {
-    def relPattern(name:Option[String],
-                   relType:Set[String],
-                   properties:Map[String, Any],
-                   length:LengthPattern): RelPattern = {
+    def relPattern(name: Option[String],
+                   relType: Set[String],
+                   properties: Map[String, Any],
+                   length: LengthPattern): RelPattern = {
       val idName = length match {
         case _: DefaultLength => name
-        case _ => name.map(_ + "s")
+        case _                => name.map(_ + "s")
       }
       new RelPattern(idName, relType, properties, length)
     }
   }
 
-  case class RelPattern private (
-                         name:Option[String],
-                         relType:Set[String],
-                         properties:Map[String, Any],
-                         length:LengthPattern ) {
+  case class RelPattern private (name: Option[String],
+                                 relType: Set[String],
+                                 properties: Map[String, Any],
+                                 length: LengthPattern) {
 
-    def identifier:Option[Identifier] =
+    def identifier: Option[Identifier] =
       name.map(Identifier(_, isSingleEntity))
 
     def isSingleEntity: Boolean =
       length match {
         case DefaultLength(_) => true
-        case _ => false
+        case _                => false
       }
 
     override def toString: String = {
-      val propString = if (properties.isEmpty) None else
-        Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
+      val propString =
+        if (properties.isEmpty) None
+        else
+          Some(properties.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
       val relTypeString = if (relType.isEmpty) None else Some(relType.mkString(":", "|", ""))
-      (name ++ relTypeString ++ length.varArgPattern ++ propString).mkString(s"${length.left}[", " ", s"]${length.right}")
+      (name ++ relTypeString ++ length.varArgPattern ++ propString)
+        .mkString(s"${length.left}[", " ", s"]${length.right}")
     }
   }
 
@@ -175,11 +190,11 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     def direction: SemanticDirection
     def left: String = direction match {
       case SemanticDirection.INCOMING => "<-"
-      case _ => "-"
+      case _                          => "-"
     }
     def right: String = direction match {
       case SemanticDirection.OUTGOING => "->"
-      case _ => "-"
+      case _                          => "-"
     }
     def varArgPattern: Option[String]
   }
@@ -199,40 +214,45 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
     override def varArgPattern: Option[String] = Some(s"*$min..$max")
   }
 
-  def patterns:Gen[Pattern] = Gen.choose(1, NUM_LAYERS)
-                                  .flatMap(depth => patternGen(depth, Gen.const(Set("L"+depth))))
+  def patterns: Gen[Pattern] =
+    Gen
+      .choose(1, NUM_LAYERS)
+      .flatMap(depth => patternGen(depth, Gen.const(Set("L" + depth))))
 
-  def patternGen(d:Int, labelGen:Gen[Set[String]]):Gen[Pattern] =
+  def patternGen(d: Int, labelGen: Gen[Set[String]]): Gen[Pattern] =
     for {
       nodeName <- Gen.option(Gen.const("n" + d))
       labels <- labelGen
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
-      tail <- tailPatternGen(d+1)
+      tail <- tailPatternGen(d + 1)
     } yield Pattern(NodePattern(nodeName, labels, props), tail)
 
-  def tailPatternGen(d:Int):Gen[Option[(RelPattern, Pattern)]] =
+  def tailPatternGen(d: Int): Gen[Option[(RelPattern, Pattern)]] =
     if (d <= NUM_LAYERS)
-      Gen.zip(relPatternGen(d-1), patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
+      Gen.zip(relPatternGen(d - 1), patternGen(d, maybeWrongLabelGen(d))).map(Some(_))
     else
       Gen.const(None)
 
-  def relPatternGen(d:Int):Gen[RelPattern] =
+  def relPatternGen(d: Int): Gen[RelPattern] =
     for {
-      relName <- Gen.option(Gen.const("r"+ d))
+      relName <- Gen.option(Gen.const("r" + d))
       relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
       props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
       direction <- Gen.oneOf(SemanticDirection.OUTGOING, SemanticDirection.INCOMING, SemanticDirection.BOTH)
       min <- Gen.choose(1, 2)
       max <- Gen.choose(min, min + 1)
-      len: LengthPattern <- Gen.oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min, max))
+      len: LengthPattern <- Gen
+        .oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min, max))
     } yield RelPattern.relPattern(relName, relType, props, len)
 
-  private def maybeWrongLabelGen(d:Int) =
-    Gen.listOf(
-      Gen.frequency(
-        100 -> Gen.const("L"+d),
-        1 -> Gen.const("X"+d)
-      )).map(_.toSet)
+  private def maybeWrongLabelGen(d: Int) =
+    Gen
+      .listOf(
+        Gen.frequency(
+          100 -> Gen.const("L" + d),
+          1 -> Gen.const("X" + d)
+        ))
+      .map(_.toSet)
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -245,55 +265,58 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
           }
         }
       for (i <- 1 until NUM_LAYERS) {
-        val thisLayer = nodes(i-1)
+        val thisLayer = nodes(i - 1)
         val nextLayer = nodes(i)
         for {
           n1 <- thisLayer
           n2 <- nextLayer
         } {
-          relate(n1, n2, s"T$i", Map("p"+i -> i))
+          relate(n1, n2, s"T$i", Map("p" + i -> i))
         }
       }
     }
   }
 
   def predicateForPatterns(patterns: Pattern*): Gen[String] = {
-    val identifiers = patterns.foldLeft(Set.empty[Identifier])((a,c) => a ++ c.identifiers).toIndexedSeq
+    val identifiers = patterns.foldLeft(Set.empty[Identifier])((a, c) => a ++ c.identifiers).toIndexedSeq
     if (identifiers.isEmpty) Gen.const("")
     else
-      Gen.zip(
-        Gen.oneOf(identifiers),
-        Gen.choose(1, NUM_LAYERS),
-        Gen.choose(1, NODES_PER_LAYER)
-      ).map(t => {
-        val (id, layer, n) = t
-        if (id.isSingleEntity)
-          s" WHERE ${id.name}.p$layer < $n"
-        else
-          s" WHERE all(x IN ${id.name} WHERE x.p$layer < $n)"
-      })
+      Gen
+        .zip(
+          Gen.oneOf(identifiers),
+          Gen.choose(1, NUM_LAYERS),
+          Gen.choose(1, NODES_PER_LAYER)
+        )
+        .map(t => {
+          val (id, layer, n) = t
+          if (id.isSingleEntity)
+            s" WHERE ${id.name}.p$layer < $n"
+          else
+            s" WHERE all(x IN ${id.name} WHERE x.p$layer < $n)"
+        })
   }
 
-  def matchWhere:Gen[String] =
+  def matchWhere: Gen[String] =
     for {
       pattern <- patterns
       predicateClause <- predicateForPatterns(pattern)
     } yield s"MATCH $pattern$predicateClause ${returnClause(pattern)}"
 
-  def optionalMatchWhere:Gen[String] =
+  def optionalMatchWhere: Gen[String] =
     for {
       pattern <- patterns
       optionalPattern <- patterns
       predicateClause <- predicateForPatterns(pattern)
       optionalPredicateClause <- predicateForPatterns(pattern, optionalPattern)
-    } yield s"MATCH $pattern$predicateClause OPTIONAL MATCH $optionalPattern$optionalPredicateClause ${returnClause(pattern, optionalPattern)}"
+    } yield
+      s"MATCH $pattern$predicateClause OPTIONAL MATCH $optionalPattern$optionalPredicateClause ${returnClause(pattern, optionalPattern)}"
 
   private def returnClause(pattern: Pattern*) = {
-    val identifiers = pattern.foldLeft(Set.empty[String])( (a, c) => a ++ c.identifiers.map(toReturnValue))
-    if(identifiers.nonEmpty) s"RETURN ${identifiers.mkString(", ")}" else "RETURN 42"
+    val identifiers = pattern.foldLeft(Set.empty[String])((a, c) => a ++ c.identifiers.map(toReturnValue))
+    if (identifiers.nonEmpty) s"RETURN ${identifiers.mkString(", ")}" else "RETURN 42"
   }
 
-  private def toReturnValue(id:Identifier) =
+  private def toReturnValue(id: Identifier) =
     if (id.isSingleEntity) s"id(${id.name})"
     else s"size(${id.name})"
 
@@ -303,27 +326,33 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   private def assertQuery(query: String) = {
     runWithTimeout(TIMEOUT_MS) {
       //this is an optimization just so that we only compare results when we have to
-      val runtimeUsed = graph.execute(s"EXPLAIN CYPHER runtime=compiled $query")
-        .getExecutionPlanDescription.getArguments.get("runtime").asInstanceOf[String]
+      val runtimeUsed = graph
+        .execute(s"EXPLAIN CYPHER runtime=compiled $query")
+        .getExecutionPlanDescription
+        .getArguments
+        .get("runtime")
+        .asInstanceOf[String]
       if (runtimeUsed == "COMPILED") {
         val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
         val resultCompiled = innerExecute(s"CYPHER runtime=compiled $query")
-        assertResultsAreSame(resultCompiled, resultInterpreted, query,
+        assertResultsAreSame(resultCompiled,
+                             resultInterpreted,
+                             query,
                              "Diverging results between interpreted and compiled runtime")
         resultCompiled
       } else None
     }
   }
 
-  def runWithTimeout[T](timeoutMs: Long)(f: => T) : Option[T] = {
+  def runWithTimeout[T](timeoutMs: Long)(f: => T): Option[T] = {
     import scala.concurrent.ExecutionContext.Implicits.global
     val res = Try(Await.result(scala.concurrent.Future(f), Duration.apply(timeoutMs, "ms")))
     res match {
       case Failure(_: TimeoutException) => None
-      case Failure(e) => throw e
-      case Success(r) => Some(r)
-      }
+      case Failure(e)                   => throw e
+      case Success(r)                   => Some(r)
     }
+  }
 
   def literal(implicit d: Int = NESTING_DEPTH): Gen[String] =
     if (d == 0) Gen.oneOf(floatLiteral, stringLiteral, intLiteral, boolLiteral)
@@ -336,14 +365,18 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   def boolLiteral: Gen[String] = Arbitrary.arbitrary[Boolean].map(_.toString)
 
   //remove non-printable characters
-  def stringLiteral: Gen[String] = Arbitrary.arbitrary[String]
-    .map(s => "'" + s.takeWhile(c => c != '\'' && Character.isISOControl(c)) + "'")
+  def stringLiteral: Gen[String] =
+    Arbitrary
+      .arbitrary[String]
+      .map(s => "'" + s.takeWhile(c => c != '\'' && Character.isISOControl(c)) + "'")
 
   def keyLiteral: Gen[String] = Gen.identifier
 
   def listLiteral(d: Int): Gen[String] = Gen.listOf(literal(d - 1)).map(_.mkString("[", ", ", "]"))
 
-  def mapLiteral(d: Int): Gen[String] = Gen.mapOf(Gen.zip(keyLiteral, literal(d - 1)))
-    .map(_.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
+  def mapLiteral(d: Int): Gen[String] =
+    Gen
+      .mapOf(Gen.zip(keyLiteral, literal(d - 1)))
+      .map(_.toList.map(kv => s"${kv._1}: ${kv._2}").mkString("{", ", ", "}"))
 
 }

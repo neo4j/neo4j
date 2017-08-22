@@ -18,36 +18,47 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3._
 
-case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition) extends ASTNode with ASTPhrase with SemanticCheckable with SemanticChecking {
+case class ReturnItems(includeExisting: Boolean, items: Seq[ReturnItem])(val position: InputPosition)
+    extends ASTNode
+    with ASTPhrase
+    with SemanticCheckable
+    with SemanticChecking {
   def semanticCheck =
     items.semanticCheck chain
-    ensureProjectedToUniqueIds
+      ensureProjectedToUniqueIds
 
   def aliases: Set[Variable] = items.flatMap(_.alias).toSet
 
-  def passedThrough: Set[Variable] = items.collect {
-    case item => item.alias.collect { case ident if ident == item.expression => ident }
-  }.flatten.toSet
+  def passedThrough: Set[Variable] =
+    items
+      .collect {
+        case item => item.alias.collect { case ident if ident == item.expression => ident }
+      }
+      .flatten
+      .toSet
 
   def mapItems(f: Seq[ReturnItem] => Seq[ReturnItem]) = copy(items = f(items))(position)
 
   def declareVariables(previousScope: Scope) =
-    when (includeExisting) {
-      s => SemanticCheckResult.success(s.importScope(previousScope))
-    } chain items.foldSemanticCheck(item => item.alias match {
-      case Some(variable) if item.expression == variable =>
-        val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
-        variable.declare(item.expression.types, positions)
-      case Some(variable) => variable.declare(item.expression.types)
-      case None           => (state) => SemanticCheckResult(state, Seq.empty)
+    when(includeExisting) { s =>
+      SemanticCheckResult.success(s.importScope(previousScope))
+    } chain items.foldSemanticCheck(item =>
+      item.alias match {
+        case Some(variable) if item.expression == variable =>
+          val positions = previousScope.symbol(variable.name).fold(Set.empty[InputPosition])(_.positions)
+          variable.declare(item.expression.types, positions)
+        case Some(variable) => variable.declare(item.expression.types)
+        case None =>
+          (state) =>
+            SemanticCheckResult(state, Seq.empty)
     })
 
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
-       case (acc, (k, items)) if items.size > 1 =>
+      case (acc, (k, items)) if items.size > 1 =>
         acc chain SemanticError("Multiple result columns with the same name are not supported", items.head.position)
-       case (acc, _) =>
-         acc
+      case (acc, _) =>
+        acc
     }
   }
 
@@ -63,11 +74,12 @@ sealed trait ReturnItem extends ASTNode with ASTPhrase with SemanticCheckable {
   def semanticCheck = expression.semanticCheck(Expression.SemanticContext.Results)
 }
 
-case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition) extends ReturnItem {
+case class UnaliasedReturnItem(expression: Expression, inputText: String)(val position: InputPosition)
+    extends ReturnItem {
   val alias = expression match {
-    case i: Variable => Some(i.bumpId)
+    case i: Variable      => Some(i.bumpId)
     case x: MapProjection => Some(x.name.bumpId)
-    case _ => None
+    case _                => None
   }
   val name = alias.map(_.name) getOrElse { inputText.trim }
 
@@ -76,7 +88,8 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 }
 
 //TODO variable should not be a Variable. A Variable is an expression, and the return item alias isn't
-case class AliasedReturnItem(expression: Expression, variable: Variable)(val position: InputPosition) extends ReturnItem {
+case class AliasedReturnItem(expression: Expression, variable: Variable)(val position: InputPosition)
+    extends ReturnItem {
   val alias = Some(variable)
   val name = variable.name
 

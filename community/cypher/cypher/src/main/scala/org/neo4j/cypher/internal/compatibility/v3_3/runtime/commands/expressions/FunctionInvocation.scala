@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
 import org.neo4j.values._
 
 case class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends Expression with GraphElementPropertyFunctions {
+    extends Expression
+    with GraphElementPropertyFunctions {
   private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {

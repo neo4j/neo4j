@@ -17,20 +17,22 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, ast}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
 trait ProcedureCalls {
   self: Parser with Base with Expressions with Literals =>
 
   def Call: Rule1[UnresolvedCall] = rule("CALL") {
-    group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast.UnresolvedCall(_, _, _, _))
+    group(keyword("CALL") ~~ Namespace ~ ProcedureName ~ ProcedureArguments ~~ ProcedureResult) ~~>> (ast
+      .UnresolvedCall(_, _, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
-    optional(group("(" ~~
-      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq))
+    optional(
+      group("(" ~~
+        zeroOrMore(Expression, separator = CommaSep) ~~ ")") ~~> (_.toIndexedSeq))
   }
 
   private def ProcedureResult =
@@ -38,9 +40,11 @@ trait ProcedureCalls {
       optional(
         group(
           keyword("YIELD") ~~
-          oneOrMore(ProcedureResultItem, separator = CommaSep) ~~
-          optional(group(keyword("WHERE") ~~ Expression ~~>> (ast.Where(_))))
-        ) ~~> { (a, b) => a -> b } ~~>> (procedureResult(_))
+            oneOrMore(ProcedureResultItem, separator = CommaSep) ~~
+            optional(group(keyword("WHERE") ~~ Expression ~~>> (ast.Where(_))))
+        ) ~~> { (a, b) =>
+          a -> b
+        } ~~>> (procedureResult(_))
       )
     }
 

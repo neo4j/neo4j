@@ -20,7 +20,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{TypeSpec, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.TypeSpec
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 import scala.collection.immutable.Stack
 
@@ -31,7 +32,8 @@ object Expression {
     case object Results extends SemanticContext
   }
 
-  val DefaultTypeMismatchMessageGenerator = (expected: String, existing: String) => s"expected $expected but was $existing"
+  val DefaultTypeMismatchMessageGenerator = (expected: String, existing: String) =>
+    s"expected $expected but was $existing"
 
   implicit class SemanticCheckableOption[A <: Expression](option: Option[A]) {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -41,14 +43,15 @@ object Expression {
       option.fold(success) { _.expectType(possibleTypes) }
   }
 
-  implicit class SemanticCheckableExpressionTraversable[A <: SemanticCheckableWithContext](traversable: TraversableOnce[A]) extends SemanticChecking {
+  implicit class SemanticCheckableExpressionTraversable[A <: SemanticCheckableWithContext](
+      traversable: TraversableOnce[A])
+      extends SemanticChecking {
     def semanticCheck(ctx: SemanticContext): SemanticCheck =
       traversable.foldSemanticCheck { _.semanticCheck(ctx) }
   }
 
   implicit class InferrableTypeTraversableOnce[A <: Expression](traversable: TraversableOnce[A]) {
-    def unionOfTypes: TypeGenerator = state =>
-      TypeSpec.union(traversable.map(_.types(state)).toSeq: _*)
+    def unionOfTypes: TypeGenerator = state => TypeSpec.union(traversable.map(_.types(state)).toSeq: _*)
 
     def leastUpperBoundsOfTypes: TypeGenerator =
       if (traversable.isEmpty)
@@ -76,7 +79,6 @@ trait SemanticCheckableWithContext {
   def semanticCheck(ctx: SemanticContext): SemanticCheck
 }
 
-
 abstract class Expression extends ASTNode with ASTExpression with SemanticChecking with SemanticCheckableWithContext {
 
   self =>
@@ -87,37 +89,46 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
 
   def arguments: Seq[Expression] = this.treeFold(List.empty[Expression]) {
     case e: Expression if e != this =>
-      acc => (acc :+ e, None)
+      acc =>
+        (acc :+ e, None)
   }
 
   // All variables referenced from this expression or any of its children
   // that are not introduced inside this expression
   def dependencies: Set[Variable] =
-    this.treeFold(TreeAcc[Set[Variable]](Set.empty)) {
-      case scope: ScopeExpression =>
-        acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
-          (newAcc, Some((x) => x.popScope))
-      case id: Variable => acc => {
-        val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
-        (newAcc, Some(identity))
+    this
+      .treeFold(TreeAcc[Set[Variable]](Set.empty)) {
+        case scope: ScopeExpression =>
+          acc =>
+            val newAcc = acc.pushScope(scope.introducedVariables)
+            (newAcc, Some((x) => x.popScope))
+        case id: Variable =>
+          acc =>
+            {
+              val newAcc = if (acc.inScope(id)) acc else acc.mapData(_ + id)
+              (newAcc, Some(identity))
+            }
       }
-    }.data
+      .data
 
   // All (free) occurrences of variable in this expression or any of its children
   // (i.e. excluding occurrences referring to shadowing redefinitions of variable)
   def occurrences(variable: Variable): Set[Ref[Variable]] =
-    this.treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
-      case scope: ScopeExpression => {
-        case acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
-          (newAcc, Some((x) => x.popScope))
+    this
+      .treeFold(TreeAcc[Set[Ref[Variable]]](Set.empty)) {
+        case scope: ScopeExpression => {
+          case acc =>
+            val newAcc = acc.pushScope(scope.introducedVariables)
+            (newAcc, Some((x) => x.popScope))
+        }
+        case occurrence: Variable if occurrence.name == variable.name =>
+          acc =>
+            {
+              val newAcc = if (acc.inScope(occurrence)) acc else acc.mapData(_ + Ref(occurrence))
+              (newAcc, Some(identity))
+            }
       }
-      case occurrence: Variable if occurrence.name == variable.name => acc => {
-        val newAcc = if (acc.inScope(occurrence)) acc else acc.mapData(_ + Ref(occurrence))
-        (newAcc, Some(identity))
-      }
-    }.data
+      .data
 
   def copyAndReplace(variable: Variable) = new {
     def by(replacement: => Expression): Expression = {
@@ -131,18 +142,21 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   // List of child expressions together with any of its dependencies introduced
   // by any of its parent expressions (where this expression is the root of the tree)
   def inputs: Seq[(Expression, Set[Variable])] =
-    this.treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
-      case scope: ScopeExpression=>
-        acc =>
-          val newAcc = acc.pushScope(scope.introducedVariables)
-            .mapData(pairs => pairs :+ (scope -> acc.variablesInScope))
-          (newAcc, Some((x) => x.popScope))
+    this
+      .treeFold(TreeAcc[Seq[(Expression, Set[Variable])]](Seq.empty)) {
+        case scope: ScopeExpression =>
+          acc =>
+            val newAcc = acc
+              .pushScope(scope.introducedVariables)
+              .mapData(pairs => pairs :+ (scope -> acc.variablesInScope))
+            (newAcc, Some((x) => x.popScope))
 
-      case expr: Expression =>
-        acc =>
-          val newAcc = acc.mapData(pairs => pairs :+ (expr -> acc.variablesInScope))
-          (newAcc, Some(identity))
-    }.data
+        case expr: Expression =>
+          acc =>
+            val newAcc = acc.mapData(pairs => pairs :+ (expr -> acc.variablesInScope))
+            (newAcc, Some(identity))
+      }
+      .data
 
   def specifyType(typeGen: TypeGenerator): SemanticState => Either[SemanticError, SemanticState] =
     s => specifyType(typeGen(s))(s)
@@ -154,13 +168,16 @@ abstract class Expression extends ASTNode with ASTExpression with SemanticChecki
   def expectType(typeGen: TypeGenerator, messageGen: (String, String) => String): SemanticState => SemanticCheckResult =
     s => expectType(typeGen(s), messageGen)(s)
 
-  def expectType(possibleTypes: => TypeSpec, messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator): SemanticState => SemanticCheckResult = s => {
+  def expectType(possibleTypes: => TypeSpec,
+                 messageGen: (String, String) => String = DefaultTypeMismatchMessageGenerator)
+    : SemanticState => SemanticCheckResult = s => {
     s.expectType(this, possibleTypes) match {
       case (ss, TypeSpec.none) =>
         val existingTypesString = ss.expressionType(this).specified.mkString(", ", " or ")
         val expectedTypesString = possibleTypes.mkString(", ", " or ")
-        SemanticCheckResult.error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
-      case (ss, _)             =>
+        SemanticCheckResult
+          .error(ss, SemanticError("Type mismatch: " + messageGen(expectedTypesString, existingTypesString), position))
+      case (ss, _) =>
         success(ss)
     }
   }
@@ -186,7 +203,7 @@ trait FunctionTyping extends ExpressionCallTypeChecking {
 
   override def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
     arguments.semanticCheck(ctx) chain
-    typeChecker.checkTypes(self)
+      typeChecker.checkTypes(self)
 }
 
 trait PrefixFunctionTyping extends FunctionTyping { self: Expression =>

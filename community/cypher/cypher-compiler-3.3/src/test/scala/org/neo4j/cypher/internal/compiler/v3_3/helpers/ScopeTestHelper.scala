@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, Scope, Symbol, SymbolUse}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.Scope
+import org.neo4j.cypher.internal.frontend.v3_3.Symbol
+import org.neo4j.cypher.internal.frontend.v3_3.SymbolUse
 
 object ScopeTestHelper {
 
@@ -28,7 +31,9 @@ object ScopeTestHelper {
     SymbolUse(name, pos(offset))
 
   def scope(entries: Symbol*)(children: Scope*): Scope =
-    Scope(entries.map { symbol => symbol.name -> symbol }.toMap, children.toSeq)
+    Scope(entries.map { symbol =>
+      symbol.name -> symbol
+    }.toMap, children.toSeq)
 
   def nodeSymbol(name: String, offsets: Int*): Symbol =
     typedSymbol(name, TypeSpec.exact(CTNode), offsets: _*)

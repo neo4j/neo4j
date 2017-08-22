@@ -29,7 +29,7 @@ class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[Execution
     null    -> the next value has not yet been fetched from the underlying Pipes
     None    -> this iterator has been emptied
     Some(x) -> the next value has been fetched, but not yet seen by next()
-  */
+   */
   var currentValue: Option[ExecutionContext] = null
 
   /*

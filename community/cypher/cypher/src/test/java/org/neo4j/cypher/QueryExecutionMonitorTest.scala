@@ -24,20 +24,26 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.helpers.GraphIcing
-import org.neo4j.cypher.internal.{ExecutionEngine}
+import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
 import org.neo4j.graphdb.Result
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.query.ExecutingQuery
-import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.test.TestGraphDatabaseFactory
 import scala.collection.JavaConverters._
 
 import scala.collection.immutable.Map
 import scala.language.implicitConversions
 
-class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
+class QueryExecutionMonitorTest
+    extends CypherFunSuite
+    with GraphIcing
+    with GraphDatabaseTestSupport
+    with ExecutionEngineTestSupport {
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 
   private def runQuery(query: String): (ExecutingQuery, Result) = {
@@ -74,7 +80,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     // when
     val (query, result) = runQuery("RETURN 42")
 
-
     val textResult = result.resultAsString()
 
     // then
@@ -86,7 +91,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     // when
     val (query, result) = runQuery("RETURN 42 as x")
 
-
     result.columnAs[Number]("x").asScala.toSeq
 
     // then
@@ -97,7 +101,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   test("monitor is called when using columnAs[] from Java and explicitly closing") {
     // when
     val (query, result) = runQuery("RETURN 42 as x")
-
 
     val res = result.columnAs[Number]("x")
     res.close()
@@ -111,9 +114,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
     // when
     val (query, result) = runQuery("RETURN 42 as x")
 
-
     val res = result.columnAs[Number]("x")
-    while(res.hasNext) res.next()
+    while (res.hasNext) res.next()
 
     // then
     verify(monitor, times(1)).startQueryExecution(query)
@@ -149,8 +151,8 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   }
 
   test("monitor is called when iterator closes") {
-   // given
-   val (context, result) = runQuery("RETURN 42")
+    // given
+    val (context, result) = runQuery("RETURN 42")
 
     // when
     result.close()
@@ -204,7 +206,6 @@ class QueryExecutionMonitorTest extends CypherFunSuite with GraphIcing with Grap
   test("triggering monitor in 2.3") {
     // given
     val (query, result) = runQuery("CYPHER 2.3 RETURN [1, 2, 3, 4, 5]")
-
 
     //then
     verify(monitor, times(1)).startQueryExecution(query)

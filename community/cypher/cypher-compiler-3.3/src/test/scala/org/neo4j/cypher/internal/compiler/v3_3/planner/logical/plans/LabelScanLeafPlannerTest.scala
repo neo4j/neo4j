@@ -40,15 +40,14 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")
-    val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
-    val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+    val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("Awesome") _)) _
+    val qg = QueryGraph(selections = Selections(Set(Predicate(Set(idName), hasLabels))), patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case _: NodeByLabelScan => Cost(1)
-      case _                  => Cost(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) =>
+      plan match {
+        case _: NodeByLabelScan => Cost(1)
+        case _                  => Cost(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
@@ -64,24 +63,21 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(
-      NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved))
-    )
+    resultPlans should equal(Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved)))
   }
 
   test("simple label scan with a compile-time label ID") {
     // given
     val idName = IdName("n")
     val labelId = LabelId(12)
-    val hasLabels = HasLabels(Variable("n")_, Seq(LabelName("Awesome")_))_
-    val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+    val hasLabels = HasLabels(Variable("n") _, Seq(LabelName("Awesome") _)) _
+    val qg = QueryGraph(selections = Selections(Set(Predicate(Set(idName), hasLabels))), patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) => plan match {
-      case _: NodeByLabelScan => Cost(100)
-      case _                  => Cost(Double.MaxValue)
+    when(factory.newCostModel()).thenReturn((plan: LogicalPlan, input: QueryGraphSolverInput) =>
+      plan match {
+        case _: NodeByLabelScan => Cost(100)
+        case _                  => Cost(Double.MaxValue)
     })
 
     implicit val semanticTable = newMockedSemanticTable
@@ -97,7 +93,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(
-      Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved)))
+    resultPlans should equal(Seq(NodeByLabelScan(idName, lblName("Awesome"), Set.empty)(solved)))
   }
 }

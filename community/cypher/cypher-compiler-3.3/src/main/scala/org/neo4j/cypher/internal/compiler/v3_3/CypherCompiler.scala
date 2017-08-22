@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_3.phases.{CompilerContext, _}
+import org.neo4j.cypher.internal.compiler.v3_3.phases.CompilerContext
+import org.neo4j.cypher.internal.compiler.v3_3.phases._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter.PlanRewriter
-import org.neo4j.cypher.internal.compiler.v3_3.planner.{CheckForUnresolvedTokens, ResolveTokens}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CheckForUnresolvedTokens
+import org.neo4j.cypher.internal.compiler.v3_3.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.ASTRewriter
@@ -43,9 +45,7 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
                                                       contextCreation: ContextCreator[Context]) {
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
-  def planPreparedQuery(state: BaseState,
-                        context: Context): LogicalPlanState = planPipeLine.transform(state, context)
-
+  def planPreparedQuery(state: BaseState, context: Context): LogicalPlanState = planPipeLine.transform(state, context)
 
   def parseQuery(queryText: String,
                  rawQueryText: String,
@@ -57,15 +57,26 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
     val plannerName = PlannerNameFor(plannerNameText)
     val startState = LogicalPlanState(queryText, offset, plannerName)
     //TODO: these nulls are a short cut
-    val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
-      offset, monitors, metricsFactory, null, config, updateStrategy, clock, evaluator = null)
+    val context = contextCreation.create(tracer,
+                                         notificationLogger,
+                                         planContext = null,
+                                         rawQueryText,
+                                         debugOptions,
+                                         offset,
+                                         monitors,
+                                         metricsFactory,
+                                         null,
+                                         config,
+                                         updateStrategy,
+                                         clock,
+                                         evaluator = null)
     CompilationPhases.parsing(sequencer).transform(startState, context)
   }
 
   val prepareForCaching: Transformer[CompilerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
-    ProcedureDeprecationWarnings andThen
-    ProcedureWarnings
+      ProcedureDeprecationWarnings andThen
+      ProcedureWarnings
 
   val irConstruction: Transformer[CompilerContext, BaseState, LogicalPlanState] =
     ResolveTokens andThen
@@ -74,21 +85,21 @@ case class CypherCompiler[Context <: CompilerContext](astRewriter: ASTRewriter,
 
   val costBasedPlanning: Transformer[CompilerContext, LogicalPlanState, LogicalPlanState] =
     QueryPlanner().adds(CompilationContains[LogicalPlan]) andThen
-    PlanRewriter(sequencer) andThen
-    If((s: LogicalPlanState) => s.unionQuery.readOnly) (
-      CheckForUnresolvedTokens
-    )
+      PlanRewriter(sequencer) andThen
+      If((s: LogicalPlanState) => s.unionQuery.readOnly)(
+        CheckForUnresolvedTokens
+      )
 
   val standardPipeline: Transformer[Context, BaseState, LogicalPlanState] =
     CompilationPhases.lateAstRewriting andThen
-    irConstruction andThen
-    costBasedPlanning
+      irConstruction andThen
+      costBasedPlanning
 
   val planPipeLine: Transformer[Context, BaseState, LogicalPlanState] =
     ProcedureCallOrSchemaCommandPlanBuilder andThen
-    If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
-      standardPipeline
-    )
+      If((s: LogicalPlanState) => s.maybeLogicalPlan.isEmpty)(
+        standardPipeline
+      )
 }
 
 case class CypherCompilerConfiguration(queryCacheSize: Int,

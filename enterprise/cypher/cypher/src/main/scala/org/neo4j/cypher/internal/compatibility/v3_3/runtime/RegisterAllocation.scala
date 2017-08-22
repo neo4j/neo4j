@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast => parserAst}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.{ast => parserAst}
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 import scala.collection.mutable
@@ -33,155 +34,165 @@ object RegisterAllocation {
 
     val result = new mutable.OpenHashMap[LogicalPlan, PipelineInformation]()
 
-    def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation = lp match {
-      case Aggregation(source, groupingExpressions, aggregationExpressions) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = PipelineInformation.empty
+    def allocate(lp: LogicalPlan, nullable: Boolean, argument: Option[PipelineInformation]): PipelineInformation =
+      lp match {
+        case Aggregation(source, groupingExpressions, aggregationExpressions) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = PipelineInformation.empty
 
-        def addExpressions(groupingExpressions: Map[String, Expression]) = {
-          groupingExpressions foreach {
-            case (key, parserAst.Variable(ident)) =>
-              val slotInfo = oldPipeline(ident)
-              newPipeline.add(ident, slotInfo)
-            case (key, exp) =>
-              // TODO: Support this properly. Requires actually using the expression and supporting aggregation
-              //newPipeline.newReference(key, nullable = true, CTAny)
-            throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
+          def addExpressions(groupingExpressions: Map[String, Expression]) = {
+            groupingExpressions foreach {
+              case (key, parserAst.Variable(ident)) =>
+                val slotInfo = oldPipeline(ident)
+                newPipeline.add(ident, slotInfo)
+              case (key, exp) =>
+                // TODO: Support this properly. Requires actually using the expression and supporting aggregation
+                //newPipeline.newReference(key, nullable = true, CTAny)
+                throw new CantCompileQueryException(s"Aggregations over expressions are not yet supported: $exp")
+            }
           }
-        }
 
-        addExpressions(groupingExpressions)
-        addExpressions(aggregationExpressions)
-        result += (lp -> newPipeline)
-        newPipeline
+          addExpressions(groupingExpressions)
+          addExpressions(aggregationExpressions)
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case Argument(_) =>
-        val pipeline = argument.getOrElse(throw new InternalException("Found argument without Apply"))
-        result += (lp -> pipeline)
-        pipeline
+        case Argument(_) =>
+          val pipeline = argument.getOrElse(throw new InternalException("Found argument without Apply"))
+          result += (lp -> pipeline)
+          pipeline
 
-      case Projection(source, expressions) =>
-        val pipeline = allocate(source, nullable, argument)
-        expressions foreach {
-          case (key, parserAst.Variable(ident)) =>
+        case Projection(source, expressions) =>
+          val pipeline = allocate(source, nullable, argument)
+          expressions foreach {
+            case (key, parserAst.Variable(ident)) =>
             // it's already there. no need to add a new slot for it
-          case (key, exp) =>
-            pipeline.newReference(key, nullable = true, CTAny)
-        }
-        result += (lp -> pipeline)
-        pipeline
+            case (key, exp) =>
+              pipeline.newReference(key, nullable = true, CTAny)
+          }
+          result += (lp -> pipeline)
+          pipeline
 
-      case leaf: NodeLogicalLeafPlan =>
-        val pipeline = argument.getOrElse(PipelineInformation.empty)
-        pipeline.newLong(leaf.idName.name, nullable, CTNode)
-        result += (lp -> pipeline)
-        pipeline
+        case leaf: NodeLogicalLeafPlan =>
+          val pipeline = argument.getOrElse(PipelineInformation.empty)
+          pipeline.newLong(leaf.idName.name, nullable, CTNode)
+          result += (lp -> pipeline)
+          pipeline
 
-      case ProduceResult(_, source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
+        case ProduceResult(_, source) =>
+          val pipeline = allocate(source, nullable, argument)
+          result += (lp -> pipeline)
+          pipeline
 
-      case Selection(_, source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
+        case Selection(_, source) =>
+          val pipeline = allocate(source, nullable, argument)
+          result += (lp -> pipeline)
+          pipeline
 
-      case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(relName, nullable, CTRelationship)
-        newPipeline.newLong(to, nullable, CTNode)
-        result += (lp -> newPipeline)
-        newPipeline
+        case Expand(source, _, _, _, IdName(to), IdName(relName), ExpandAll) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+          newPipeline.newLong(relName, nullable, CTRelationship)
+          newPipeline.newLong(to, nullable, CTNode)
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case Expand(source, _, _, _, _, IdName(relName), ExpandInto) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(relName, nullable, CTRelationship)
-        result += (lp -> newPipeline)
-        newPipeline
+        case Expand(source, _, _, _, _, IdName(relName), ExpandInto) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+          newPipeline.newLong(relName, nullable, CTRelationship)
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case Optional(source, _) =>
-        val pipeline = allocate(source, nullable = true, argument)
-        result += (lp -> pipeline)
-        pipeline
+        case Optional(source, _) =>
+          val pipeline = allocate(source, nullable = true, argument)
+          result += (lp -> pipeline)
+          pipeline
 
-      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandAll, _) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(rel, nullable = true, CTRelationship)
-        newPipeline.newLong(to, nullable = true, CTNode)
-        result += (lp -> newPipeline)
-        newPipeline
+        case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandAll, _) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+          newPipeline.newLong(rel, nullable = true, CTRelationship)
+          newPipeline.newLong(to, nullable = true, CTNode)
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case OptionalExpand(source, IdName(from), _,_, IdName(to), IdName(rel), ExpandInto, _) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(rel, nullable = true, CTRelationship)
-        result += (lp -> newPipeline)
-        newPipeline
+        case OptionalExpand(source, IdName(from), _, _, IdName(to), IdName(rel), ExpandInto, _) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+          newPipeline.newLong(rel, nullable = true, CTRelationship)
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case VarExpand(source, IdName(from), dir, projectedDir, types, IdName(to), IdName(edge), length, ExpandAll, predicates) =>
-        val oldPipeline = allocate(source, nullable, argument)
-        val newPipeline = oldPipeline.deepClone()
-        newPipeline.newLong(to, nullable, CTNode)
-        newPipeline.newReference(edge, nullable, CTList(CTRelationship))
-        result += (lp -> newPipeline)
-        newPipeline
+        case VarExpand(source,
+                       IdName(from),
+                       dir,
+                       projectedDir,
+                       types,
+                       IdName(to),
+                       IdName(edge),
+                       length,
+                       ExpandAll,
+                       predicates) =>
+          val oldPipeline = allocate(source, nullable, argument)
+          val newPipeline = oldPipeline.deepClone()
+          newPipeline.newLong(to, nullable, CTNode)
+          newPipeline.newReference(edge, nullable, CTList(CTRelationship))
+          result += (lp -> newPipeline)
+          newPipeline
 
-      case Skip(source, _) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
+        case Skip(source, _) =>
+          val pipeline = allocate(source, nullable, argument)
+          result += (lp -> pipeline)
+          pipeline
 
-      case Apply(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
-        result += (lp -> rhsPipeline)
-        rhsPipeline
+        case Apply(lhs, rhs) =>
+          val lhsPipeline = allocate(lhs, nullable, argument)
+          val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+          result += (lp -> rhsPipeline)
+          rhsPipeline
 
-      case SemiApply(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
-        result += (lp -> rhsPipeline)
-        rhsPipeline
+        case SemiApply(lhs, rhs) =>
+          val lhsPipeline = allocate(lhs, nullable, argument)
+          val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+          result += (lp -> rhsPipeline)
+          rhsPipeline
 
-      case AntiSemiApply(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
-        result += (lp -> rhsPipeline)
-        rhsPipeline
+        case AntiSemiApply(lhs, rhs) =>
+          val lhsPipeline = allocate(lhs, nullable, argument)
+          val rhsPipeline = allocate(rhs, nullable, Some(lhsPipeline.deepClone()))
+          result += (lp -> rhsPipeline)
+          rhsPipeline
 
-      case CartesianProduct(lhs, rhs) =>
-        val lhsPipeline = allocate(lhs, nullable, argument)
-        val rhsPipeline = allocate(rhs, nullable, argument)
-        val cartesianProductPipeline = lhsPipeline.deepClone()
-        rhsPipeline.foreachSlot {
-          case (k,slot) =>
-            cartesianProductPipeline.add(k, slot)
-        }
-        result += (lp -> cartesianProductPipeline)
-        cartesianProductPipeline
+        case CartesianProduct(lhs, rhs) =>
+          val lhsPipeline = allocate(lhs, nullable, argument)
+          val rhsPipeline = allocate(rhs, nullable, argument)
+          val cartesianProductPipeline = lhsPipeline.deepClone()
+          rhsPipeline.foreachSlot {
+            case (k, slot) =>
+              cartesianProductPipeline.add(k, slot)
+          }
+          result += (lp -> cartesianProductPipeline)
+          cartesianProductPipeline
 
-      case CreateNode(source, IdName(name), labels, properties) =>
-        val pipeline = allocate(source, nullable, argument)
-        pipeline.newLong(name,false,CTNode)
-        result += (lp -> pipeline)
-        pipeline
+        case CreateNode(source, IdName(name), labels, properties) =>
+          val pipeline = allocate(source, nullable, argument)
+          pipeline.newLong(name, false, CTNode)
+          result += (lp -> pipeline)
+          pipeline
 
-      case SingleRow() =>
-        val pipeline = argument.getOrElse(PipelineInformation.empty)
-        result += (lp -> pipeline)
-        pipeline
+        case SingleRow() =>
+          val pipeline = argument.getOrElse(PipelineInformation.empty)
+          result += (lp -> pipeline)
+          pipeline
 
-      case EmptyResult(source) =>
-        val pipeline = allocate(source, nullable, argument)
-        result += (lp -> pipeline)
-        pipeline
+        case EmptyResult(source) =>
+          val pipeline = allocate(source, nullable, argument)
+          result += (lp -> pipeline)
+          pipeline
 
-      case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
-    }
+        case p => throw new RegisterAllocationFailed(s"Don't know how to handle $p")
+      }
 
     allocate(lp, nullable = false, None)
 

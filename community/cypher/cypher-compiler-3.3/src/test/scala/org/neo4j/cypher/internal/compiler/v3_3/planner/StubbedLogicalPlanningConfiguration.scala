@@ -20,15 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, HasLabels}
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
-  extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {
+    extends LogicalPlanningConfiguration
+    with LogicalPlanningConfigurationAdHocSemanticTable {
 
   self =>
 
@@ -62,24 +67,29 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   def costModel() = cost.orElse(parent.costModel())
 
-  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, evalutor: ExpressionEvaluator): CardinalityModel = {
-    (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) => {
-      val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
-        case (name: String, cardinality: Cardinality) =>
-          semanticTable.resolvedLabelIds(name) -> cardinality
-      }
-      val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
-        case RegularPlannerQuery(queryGraph, _, _) if queryGraph.patternNodes.size == 1 &&
-          computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
-          computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
-      }
+  def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                       evalutor: ExpressionEvaluator): CardinalityModel = {
+    (pq: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable) =>
+      {
+        val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
+          case (name: String, cardinality: Cardinality) =>
+            semanticTable.resolvedLabelIds(name) -> cardinality
+        }
+        val labelScanCardinality: PartialFunction[PlannerQuery, Cardinality] = {
+          case RegularPlannerQuery(queryGraph, _, _)
+              if queryGraph.patternNodes.size == 1 &&
+                computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).isDefined =>
+            computeOptionCardinality(queryGraph, semanticTable, labelIdCardinality).get
+        }
 
-      val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
-      if (r.isDefinedAt(pq)) r.apply(pq) else parent.cardinalityModel(queryGraphCardinalityModel, evalutor)(pq, input, semanticTable)
-    }
+        val r: PartialFunction[PlannerQuery, Cardinality] = labelScanCardinality.orElse(cardinality)
+        if (r.isDefinedAt(pq)) r.apply(pq)
+        else parent.cardinalityModel(queryGraphCardinalityModel, evalutor)(pq, input, semanticTable)
+      }
   }
 
-  private def computeOptionCardinality(queryGraph: QueryGraph, semanticTable: SemanticTable,
+  private def computeOptionCardinality(queryGraph: QueryGraph,
+                                       semanticTable: SemanticTable,
                                        labelIdCardinality: Map[LabelId, Cardinality]) = {
     val labelMap: Map[IdName, Set[HasLabels]] = queryGraph.selections.labelPredicates
     val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)

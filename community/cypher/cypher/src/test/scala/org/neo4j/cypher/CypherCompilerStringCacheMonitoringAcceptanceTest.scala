@@ -20,7 +20,8 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
-import org.neo4j.cypher.internal.{ExecutionEngine, StringCacheMonitor}
+import org.neo4j.cypher.internal.ExecutionEngine
+import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.api
@@ -52,7 +53,7 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     }
   }
 
-  override def databaseConfig(): Map[Setting[_],String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_min_replan_interval -> "0")
 
   test("should monitor cache miss") {
     // given
@@ -100,11 +101,15 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     val query = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
+    (0 until 50).foreach { _ =>
+      createLabeledNode("Person")
+    }
     execute(query).toList
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
+    (0 until 1000).foreach { _ =>
+      createLabeledNode("Dog")
+    }
     execute(query).toList
 
     // then
@@ -120,17 +125,24 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
     val query = "match (n:Person:Dog) return n"
 
     createLabeledNode("Dog")
-    (0 until 50).foreach { _ => createLabeledNode("Person") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    (0 until 50).foreach { _ =>
+      createLabeledNode("Person")
+    }
+    engine
+      .execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty))
+      .resultAsString()
 
     // when
-    (0 until 1000).foreach { _ => createLabeledNode("Dog") }
-    engine.execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty)).resultAsString()
+    (0 until 1000).foreach { _ =>
+      createLabeledNode("Dog")
+    }
+    engine
+      .execute(query, Map.empty[String, Any], graph.transactionalContext(query = query -> Map.empty))
+      .resultAsString()
 
     // then
     logProvider.assertAtLeastOnce(
-      AssertableLogProvider.inLog( classOf[ExecutionEngine] ).info( s"Discarded stale query from the query cache: $query" )
+      AssertableLogProvider.inLog(classOf[ExecutionEngine]).info(s"Discarded stale query from the query cache: $query")
     )
   }
 }
-

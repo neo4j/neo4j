@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ExpressionSignature, Function, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ExpressionSignature
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Function
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SimpleTypedFunction
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case object Keys extends Function with SimpleTypedFunction {

@@ -33,14 +33,11 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
     val result = execute("CALL db.labels() YIELD label WHERE label <> 'A' RETURN *")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("label" -> "B"),
-        Map("label" -> "C")))
+    result.toList should equal(List(Map("label" -> "B"), Map("label" -> "C")))
   }
 
   test("should not be able to filter as part of standalone call") {
-    a [SyntaxException] should be thrownBy {
+    a[SyntaxException] should be thrownBy {
       execute("CALL db.labels() YIELD label WHERE label <> 'A'")
     }
   }
@@ -55,11 +52,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
     val result = execute("CALL db.labels() YIELD label RETURN *")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("label" -> "A"),
-        Map("label" -> "B"),
-        Map("label" -> "C")))
+    result.toList should equal(List(Map("label" -> "A"), Map("label" -> "B"), Map("label" -> "C")))
   }
 
   test("should be able to find labels from built-in-procedure from within a query") {
@@ -73,10 +66,9 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
 
     // Then
     result.toList should equal(
-      List(
-        Map("name" -> "Toc", "label" -> "A"),
-        Map("name" -> "Toc", "label" -> "B"),
-        Map("name" -> "Toc", "label" -> "C")))
+      List(Map("name" -> "Toc", "label" -> "A"),
+           Map("name" -> "Toc", "label" -> "B"),
+           Map("name" -> "Toc", "label" -> "C")))
   }
 
   test("db.labels works on an empty database") {
@@ -132,10 +124,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
 
     // Then
     result.toList should equal(
-      List(
-        Map("relationshipType" -> "A"),
-        Map("relationshipType" -> "B"),
-        Map("relationshipType" -> "C")))
+      List(Map("relationshipType" -> "A"), Map("relationshipType" -> "B"), Map("relationshipType" -> "C")))
   }
 
   test("db.relationshipType work on an empty database") {
@@ -170,11 +159,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
     val result = execute("CALL db.propertyKeys")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("propertyKey" -> "A"),
-        Map("propertyKey" -> "B"),
-        Map("propertyKey" -> "C")))
+    result.toList should equal(List(Map("propertyKey" -> "A"), Map("propertyKey" -> "B"), Map("propertyKey" -> "C")))
   }
 
   test("db.propertyKeys works on an empty database") {
@@ -189,34 +174,26 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest {
 
   test("removing properties from nodes and relationships does not remove them from the store") {
     // Given
-    relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
+    relate(createNode("A" -> 1), createNode("B" -> 1), "R" -> 1)
     execute("MATCH (a)-[r]-(b) REMOVE a.A, r.R, b.B")
 
     // When
     val result = execute("CALL db.propertyKeys")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("propertyKey" -> "A"),
-        Map("propertyKey" -> "B"),
-        Map("propertyKey" -> "R")))
+    result.toList should equal(List(Map("propertyKey" -> "A"), Map("propertyKey" -> "B"), Map("propertyKey" -> "R")))
   }
 
   test("removing all nodes and relationship does not remove properties from the store") {
     // Given
-    relate(createNode("A" -> 1), createNode("B" -> 1), "R" ->1)
+    relate(createNode("A" -> 1), createNode("B" -> 1), "R" -> 1)
     execute("MATCH (a) DETACH DELETE a")
 
     // When
     val result = execute("CALL db.propertyKeys")
 
     // Then
-    result.toList should equal(
-      List(
-        Map("propertyKey" -> "A"),
-        Map("propertyKey" -> "B"),
-        Map("propertyKey" -> "R")))
+    result.toList should equal(List(Map("propertyKey" -> "A"), Map("propertyKey" -> "B"), Map("propertyKey" -> "R")))
   }
 
   test("should be able to find indexes from built-in-procedure") {

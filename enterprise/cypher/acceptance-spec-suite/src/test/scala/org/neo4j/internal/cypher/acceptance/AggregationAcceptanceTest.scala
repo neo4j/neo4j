@@ -56,9 +56,9 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
   }
 
   test("distinct aggregation on array property") {
-    createNode("prop"-> Array(42))
-    createNode("prop"-> Array(42))
-    createNode("prop"-> Array(1337))
+    createNode("prop" -> Array(42))
+    createNode("prop" -> Array(42))
+    createNode("prop" -> Array(1337))
     val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a) RETURN DISTINCT a.prop")
     result.toComparableResult.toSet should equal(Set(Map("a.prop" -> List(1337)), Map("a.prop" -> List(42))))
   }
@@ -85,7 +85,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node3 = createNode()
     val r1 = relate(node1, node2)
     val r2 = relate(node1, node3)
-    val result = succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
+    val result =
+      succeedWith(Configs.AllExceptSleipnir, "MATCH (a:Person)-[r]->() WITH r as s WITH count(s) as c RETURN c")
     result.toList should equal(List(Map("c" -> 2L)))
   }
 

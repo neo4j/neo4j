@@ -20,7 +20,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.impl.api.OperationsFacade
@@ -28,7 +30,9 @@ import org.neo4j.kernel.impl.api.OperationsFacade
 import scala.collection.JavaConverters._
 
 class UniqueConstraintVerificationAcceptanceTest
-  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with ListSupport {
 
   test("should_add_constraint_with_no_existing_data") {
     //GIVEN
@@ -37,14 +41,13 @@ class UniqueConstraintVerificationAcceptanceTest
     execute("create constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
-    graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
+    graph.inTx { context: OperationsFacade =>
+      val prop = context.propertyKeyGetForName("propertyKey")
+      val label = context.labelGetForName("Label")
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+      val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
-        constraints should have size 1
+      constraints should have size 1
     }
   }
 
@@ -56,14 +59,13 @@ class UniqueConstraintVerificationAcceptanceTest
     execute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
-    graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
+    graph.inTx { context: OperationsFacade =>
+      val prop = context.propertyKeyGetForName("name")
+      val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+      val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
-        constraints should have size 1
+      constraints should have size 1
     }
   }
 
@@ -77,14 +79,13 @@ class UniqueConstraintVerificationAcceptanceTest
     execute("create constraint on (n:Person) assert n.name is unique")
 
     // THEN
-    graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("name")
-        val label = context.labelGetForName("Person")
+    graph.inTx { context: OperationsFacade =>
+      val prop = context.propertyKeyGetForName("name")
+      val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+      val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
-        constraints should have size 1
+      constraints should have size 1
     }
   }
 
@@ -96,14 +97,13 @@ class UniqueConstraintVerificationAcceptanceTest
     execute("drop constraint on (node:Label) assert node.propertyKey is unique")
 
     //THEN
-    graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("propertyKey")
-        val label = context.labelGetForName("Label")
+    graph.inTx { context: OperationsFacade =>
+      val prop = context.propertyKeyGetForName("propertyKey")
+      val label = context.labelGetForName("Label")
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+      val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
-        constraints shouldBe empty
+      constraints shouldBe empty
     }
   }
 
@@ -112,27 +112,24 @@ class UniqueConstraintVerificationAcceptanceTest
     execute("create (a:Person{id:1}), (b:Person{id:1})")
 
     // WHEN
-    try
-    {
+    try {
       execute("create constraint on (n:Person) assert n.id is unique")
 
       fail("expected exception")
     }
     // THEN
-    catch
-    {
+    catch {
       case ex: CypherExecutionException =>
         assert(ex.getCause.isInstanceOf[CreateConstraintFailureException])
     }
 
-    graph.inTx {
-      context: OperationsFacade =>
-        val prop = context.propertyKeyGetForName("id")
-        val label = context.labelGetForName("Person")
+    graph.inTx { context: OperationsFacade =>
+      val prop = context.propertyKeyGetForName("id")
+      val label = context.labelGetForName("Person")
 
-        val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
+      val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
 
-        constraints shouldBe empty
+      constraints shouldBe empty
     }
   }
 }

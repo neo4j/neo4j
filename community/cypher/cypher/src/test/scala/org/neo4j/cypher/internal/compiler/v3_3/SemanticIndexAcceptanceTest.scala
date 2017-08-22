@@ -30,7 +30,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
   override protected def initTest(): Unit = {
     super.initTest()
-    for(_ <- 1 to 1000) createLabeledNode("Label")
+    for (_ <- 1 to 1000) createLabeledNode("Label")
   }
 
   def changeLastChar(f: Char => Char)(in: String) =
@@ -82,7 +82,7 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
 
     test(s"testing string with $operator") {
       graph.createIndex("Label", "indexed")
-      forAll (Gen.alphaStr){ propertyValue: String =>
+      forAll(Gen.alphaStr) { propertyValue: String =>
         tester(propertyValue, changeLastChar(c => (c - 1).toChar), changeLastChar(c => (c + 1).toChar))
       }
     }

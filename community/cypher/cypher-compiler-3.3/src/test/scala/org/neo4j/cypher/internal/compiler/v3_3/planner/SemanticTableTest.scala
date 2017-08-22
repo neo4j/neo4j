@@ -19,10 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{ASTAnnotationMap, AstConstructionTestSupport, Expression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{ExpressionTypeInfo, InputPosition, InternalException, SemanticTable}
+import org.neo4j.cypher.internal.frontend.v3_3.ExpressionTypeInfo
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 
 class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -52,28 +58,30 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should be able to tell the type of an variable") {
-    val table = SemanticTable().
-      addNode(Variable("a")(InputPosition(1,2,3))).
-      addRelationship(Variable("b")(InputPosition(1,2,3)))
+    val table = SemanticTable()
+      .addNode(Variable("a")(InputPosition(1, 2, 3)))
+      .addRelationship(Variable("b")(InputPosition(1, 2, 3)))
 
-    table.getTypeFor("a") should be (CTNode.invariant)
-    table.getTypeFor("b") should be (CTRelationship.invariant)
+    table.getTypeFor("a") should be(CTNode.invariant)
+    table.getTypeFor("b") should be(CTRelationship.invariant)
   }
 
   test("should be able to tell the type of an variable if there is an unknown type involved") {
-    val table = SemanticTable(ASTAnnotationMap.empty.
-      updated(Variable("a")(InputPosition(0,0,0)), ExpressionTypeInfo(TypeSpec.all, None))).
-      addNode(Variable("a")(InputPosition(1, 2, 3)))
+    val table = SemanticTable(
+      ASTAnnotationMap.empty.updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(TypeSpec.all, None)))
+      .addNode(Variable("a")(InputPosition(1, 2, 3)))
 
-    table.getTypeFor("a") should be (CTNode.invariant)
+    table.getTypeFor("a") should be(CTNode.invariant)
   }
 
   test("should be able to tell the type of an variable if there is an unknown type involved other order") {
-    val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].
-      updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None)).
-      updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(TypeSpec.all, None)))
+    val table = SemanticTable(
+      ASTAnnotationMap
+        .empty[Expression, ExpressionTypeInfo]
+        .updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None))
+        .updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(TypeSpec.all, None)))
 
-    table.getTypeFor("a") should be (CTNode.invariant)
+    table.getTypeFor("a") should be(CTNode.invariant)
   }
 
   test("should fail when asking for an unknown variable") {
@@ -83,9 +91,11 @@ class SemanticTableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should fail if the semantic table is confusing") {
-    val table = SemanticTable(ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].
-      updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None)).
-      updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(CTRelationship.invariant, None)))
+    val table = SemanticTable(
+      ASTAnnotationMap
+        .empty[Expression, ExpressionTypeInfo]
+        .updated(Variable("a")(InputPosition(1, 2, 3)), ExpressionTypeInfo(CTNode.invariant, None))
+        .updated(Variable("a")(InputPosition(0, 0, 0)), ExpressionTypeInfo(CTRelationship.invariant, None)))
 
     intercept[InternalException](table.getTypeFor("a"))
   }

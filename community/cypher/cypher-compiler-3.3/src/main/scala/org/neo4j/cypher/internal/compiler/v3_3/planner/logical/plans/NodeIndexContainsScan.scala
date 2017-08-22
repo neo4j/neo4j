@@ -19,22 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelToken, PropertyKeyToken}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelToken
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyToken
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 /*
-  * This operator does a full scan of an index, returning all entries that contain a string value
-  *
-  * It's much slower than an index seek, since all index entries must be examined, but also much faster than an
-  * all-nodes scan or label scan followed by a property value filter.
-  */
+ * This operator does a full scan of an index, returning all entries that contain a string value
+ *
+ * It's much slower than an index seek, since all index entries must be examined, but also much faster than an
+ * all-nodes scan or label scan followed by a property value filter.
+ */
 case class NodeIndexContainsScan(idName: IdName,
                                  label: LabelToken,
                                  propertyKey: PropertyKeyToken,
                                  valueExpr: Expression,
-                                 argumentIds: Set[IdName])
-                                (val solved: PlannerQuery with CardinalityEstimation)
-  extends NodeLogicalLeafPlan {
+                                 argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
+    extends NodeLogicalLeafPlan {
 
   def availableSymbols = argumentIds + idName
 }

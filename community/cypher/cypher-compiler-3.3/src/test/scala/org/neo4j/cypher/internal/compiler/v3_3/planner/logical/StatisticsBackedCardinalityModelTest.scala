@@ -26,7 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.cardinality.assum
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
-class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityModelTestHelper {
+class StatisticsBackedCardinalityModelTest
+    extends CypherFunSuite
+    with LogicalPlanningTestSupport
+    with CardinalityModelTestHelper {
 
   val allNodes = 733.0
   val personCount = 324
@@ -35,11 +38,11 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1
-    givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()").
-      withGraphNodes(allNodes).
-      withLabel('Person -> i).
-      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+    givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> i)
+      .withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0) *
           allNodes * (relCount / (i * allNodes))
       )
@@ -47,11 +50,11 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("query containing a WITH and LIMIT on high cardinality") {
     val i = personCount
-    givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()").
-      withGraphNodes(allNodes).
-      withLabel('Person -> i).
-      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+    givenPattern("MATCH (a:Person) WITH a LIMIT 10 MATCH (a)-[:REL]->()")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> i)
+      .withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0) *
           allNodes * (relCount / (i * allNodes))
       )
@@ -59,11 +62,11 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
   test("query containing a WITH and LIMIT on parameterized cardinality") {
     val i = personCount
-    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} MATCH (a)-[:REL]->()").
-      withGraphNodes(allNodes).
-      withLabel('Person -> i).
-      withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} MATCH (a)-[:REL]->()")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> i)
+      .withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount) *
           allNodes * (relCount / (i * allNodes))
       )
@@ -79,28 +82,29 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
 
     val aggregation = Math.sqrt(firstQG)
 
-    givenPattern("MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c MATCH (a)-[:REL]->()").
-    withGraphNodes(allNodes).
-    withLabel('Person -> personCount).
-    withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-    withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
+    givenPattern("MATCH (a:Person)-[:REL2]->(b) WITH a, count(*) as c MATCH (a)-[:REL]->()")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> personCount)
+      .withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount)
+      .withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+        aggregation * allNodes * relCount / (personCount * allNodes))
   }
 
   test("aggregations should never increase cardinality") {
-    givenPattern("MATCH (a:Person)-[:REL]->() WITH a, count(*) as c MATCH (a)-[:REL]->()").
-      withGraphNodes(allNodes).
-      withLabel('Person -> .1).
-      withRelationshipCardinality('Person -> 'REL -> 'Person -> .5).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)
+    givenPattern("MATCH (a:Person)-[:REL]->() WITH a, count(*) as c MATCH (a)-[:REL]->()")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> .1)
+      .withRelationshipCardinality('Person -> 'REL -> 'Person -> .5)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)
   }
 
   test("query containing both SKIP and LIMIT") {
     val i = personCount
-    givenPattern( "MATCH (n:Person) WITH n SKIP 5 LIMIT 10").
-      withGraphNodes(allNodes).
-      withLabel('Person -> i).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+    givenPattern("MATCH (n:Person) WITH n SKIP 5 LIMIT 10")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> i)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0)
       )
   }
@@ -108,10 +112,10 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
   // We do not improve in this case
   ignore("query containing both SKIP and LIMIT with large skip, so skip + limit exceeds total row count boundary") {
     val i = personCount
-    givenPattern( s"MATCH (n:Person) WITH n SKIP ${personCount - 5} LIMIT 10").
-      withGraphNodes(allNodes).
-      withLabel('Person -> i).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+    givenPattern(s"MATCH (n:Person) WITH n SKIP ${personCount - 5} LIMIT 10")
+      .withGraphNodes(allNodes)
+      .withLabel('Person -> i)
+      .shouldHavePlannerQueryCardinality(produceCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 5.0)
       )
   }

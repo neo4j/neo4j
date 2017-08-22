@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
-class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
+class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
     def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
@@ -34,7 +36,8 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
   test("updating the planner query works well, thank you very much") {
     val initialPlan = TestPlan()(solved)
 
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery =
+      CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
 
     val newPlan = initialPlan.updateSolved(updatedPlannerQuery)
 
@@ -69,7 +72,8 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
   test("calling updateSolved on argument should work") {
     val argument = Argument(Set(IdName("a")))(solved)()
-    val updatedPlannerQuery = CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
+    val updatedPlannerQuery =
+      CardinalityEstimation.lift(PlannerQuery.empty.amendQueryGraph(_.addPatternNodes(IdName("a"))), 0.0)
     val newPlan = argument.updateSolved(updatedPlannerQuery)
     newPlan.solved should equal(updatedPlannerQuery)
   }

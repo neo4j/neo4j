@@ -22,12 +22,18 @@ package org.neo4j.cypher.internal.spi.v3_3
 import java.net.URL
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expander, KernelPredicate, UserDefinedAggregator}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expander
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.KernelPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.UserDefinedAggregator
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{KernelStatisticProvider, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
@@ -57,8 +63,10 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def createNodeId(): Long = singleDbHit(inner.createNodeId())
 
-  override def createRelationship(start: Node, end: Node, relType: String): Relationship = singleDbHit(inner
-    .createRelationship(start, end, relType))
+  override def createRelationship(start: Node, end: Node, relType: String): Relationship =
+    singleDbHit(
+      inner
+        .createRelationship(start, end, relType))
 
   override def createRelationship(start: Long, end: Long, relType: Int): Relationship =
     singleDbHit(inner.createRelationship(start, end, relType))
@@ -75,11 +83,15 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): Iterator[Relationship] =
-  manyDbHits(inner.getRelationshipsForIds(node, dir, types))
+  override def getRelationshipsForIds(node: Long,
+                                      dir: SemanticDirection,
+                                      types: Option[Seq[Int]]): Iterator[Relationship] =
+    manyDbHits(inner.getRelationshipsForIds(node, dir, types))
 
-  override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Seq[Int]]): RelationshipIterator =
-  manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
+  override def getRelationshipsForIdsPrimitive(node: Long,
+                                               dir: SemanticDirection,
+                                               types: Option[Seq[Int]]): RelationshipIterator =
+    manyDbHits(inner.getRelationshipsForIdsPrimitive(node, dir, types))
 
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Relationship =
     inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId)
@@ -117,7 +129,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def indexScan(index: IndexDescriptor): Iterator[Node] = manyDbHits(inner.indexScan(index))
 
-  override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator = manyDbHits(inner.indexScanPrimitive(index))
+  override def indexScanPrimitive(index: IndexDescriptor): PrimitiveLongIterator =
+    manyDbHits(inner.indexScanPrimitive(index))
 
   override def indexScanByContains(index: IndexDescriptor, value: String): scala.Iterator[Node] =
     manyDbHits(inner.indexScanByContains(index, value))
@@ -167,7 +180,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
   override def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
-  override def getImportURL(url: URL): Either[String,URL] = inner.getImportURL(url)
+  override def getImportURL(url: URL): Either[String, URL] = inner.getImportURL(url)
 
   override def edgeGetStartNode(edge: EdgeValue) = inner.edgeGetStartNode(edge)
 
@@ -195,16 +208,22 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long =
     singleDbHit(inner.relationshipCountByCountStore(startLabelId, typeId, endLabelId))
 
-  override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds:_*)
+  override def lockNodes(nodeIds: Long*): Unit = inner.lockNodes(nodeIds: _*)
 
-  override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds:_*)
+  override def lockRelationships(relIds: Long*): Unit = inner.lockRelationships(relIds: _*)
 
-  override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
+  override def singleShortestPath(left: Long,
+                                  right: Long,
+                                  depth: Int,
+                                  expander: Expander,
                                   pathPredicate: KernelPredicate[Path],
                                   filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] =
     singleDbHit(inner.singleShortestPath(left, right, depth, expander, pathPredicate, filters))
 
-  override def allShortestPath(left: Long, right: Long, depth: Int, expander: Expander,
+  override def allShortestPath(left: Long,
+                               right: Long,
+                               depth: Int,
+                               expander: Expander,
                                pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[PropertyContainer]]): Iterator[Path] =
     manyDbHits(inner.allShortestPath(left, right, depth, expander, pathPredicate, filters))
@@ -224,8 +243,7 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
   override def callFunction(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
 
-  override def aggregateFunction(name: QualifiedName,
-                                 allowed: Array[String]): UserDefinedAggregator =
+  override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator =
     singleDbHit(inner.aggregateFunction(name, allowed))
 
   override def isGraphKernelResultValue(v: Any): Boolean =
@@ -257,9 +275,11 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   override def propertyKeyIds(obj: Long): Iterator[Int] = singleDbHit(inner.propertyKeyIds(obj))
 
-  override def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))
+  override def removeProperty(obj: Long, propertyKeyId: Int): Unit =
+    singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
-  override def indexGet(name: String, key: String, value: Any): Iterator[T] = manyDbHits(inner.indexGet(name, key, value))
+  override def indexGet(name: String, key: String, value: Any): Iterator[T] =
+    manyDbHits(inner.indexGet(name, key, value))
 
   override def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
 

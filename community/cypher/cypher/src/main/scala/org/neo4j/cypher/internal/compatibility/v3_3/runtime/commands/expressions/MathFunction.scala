@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.cypher.internal.frontend.v3_3.InvalidArgumentException
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues
@@ -62,10 +63,10 @@ trait NumericHelper {
   protected def asLong(a: AnyValue): LongValue = Values.longValue(asNumber(a).longValue())
 
   private def asNumber(a: AnyValue): NumberValue = a match {
-    case null => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
+    case null            => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
     case Values.NO_VALUE => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got null")
-    case n: NumberValue => n
-    case _ => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
+    case n: NumberValue  => n
+    case _               => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + a.toString)
   }
 }
 
@@ -74,11 +75,12 @@ case class AbsFunction(argument: Expression) extends MathFunction(argument) {
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     val value = argument(ctx)
     if (Values.NO_VALUE == value) Values.NO_VALUE
-    else value match {
-      case f: IntegralValue => Values.longValue(Math.abs(f.longValue()))
-      case d: NumberValue =>  Values.doubleValue(Math.abs(d.doubleValue()))
-      case x => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + x.toString)
-    }
+    else
+      value match {
+        case f: IntegralValue => Values.longValue(Math.abs(f.longValue()))
+        case d: NumberValue   => Values.doubleValue(Math.abs(d.doubleValue()))
+        case x                => throw new CypherTypeException("Expected a numeric value for " + toString + ", but got: " + x.toString)
+      }
   }
 
   override def rewrite(f: (Expression) => Expression) = f(AbsFunction(argument.rewrite(f)))
@@ -258,9 +260,10 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
   override def rewrite(f: (Expression) => Expression) =
     f(RangeFunction(start.rewrite(f), end.rewrite(f), step.rewrite(f)))
 
-  override def symbolTableDependencies = start.symbolTableDependencies ++
-    end.symbolTableDependencies ++
-    step.symbolTableDependencies
+  override def symbolTableDependencies =
+    start.symbolTableDependencies ++
+      end.symbolTableDependencies ++
+      step.symbolTableDependencies
 }
 
 case class SignFunction(argument: Expression) extends MathFunction(argument) {

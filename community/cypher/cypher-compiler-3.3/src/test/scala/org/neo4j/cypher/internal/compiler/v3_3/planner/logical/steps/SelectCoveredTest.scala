@@ -58,7 +58,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val result = selectCovered(inner, qg)
 
     // Then
-    result should be (empty)
+    result should be(empty)
   }
 
   test("when two predicates not already solved are solvable, they should be applied") {

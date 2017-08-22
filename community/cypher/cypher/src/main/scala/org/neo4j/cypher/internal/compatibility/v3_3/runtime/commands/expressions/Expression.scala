@@ -21,14 +21,17 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expression
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.AstNode
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.{CoercedPredicate, Predicate}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.CoercedPredicate
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.TypeSafeMathSupport
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.symbols.TypeSafe
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{NumberValue, Values}
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
 
@@ -38,7 +41,7 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   def owningPipe: Pipe = _owningPipe.get
 
   def registerOwningPipe(pipe: Pipe): Unit = visit {
-    case x:Expression => x._owningPipe = Some(pipe)
+    case x: Expression => x._owningPipe = Some(pipe)
   }
   // ... TREAD WITH CAUTION
 
@@ -52,12 +55,12 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   def subExpressions: Seq[Expression] = {
     def expandAll(e: AstNode[_]): Seq[AstNode[_]] = e.children ++ e.children.flatMap(expandAll)
     expandAll(this).collect {
-      case e:Expression => e
+      case e: Expression => e
     }
   }
 
   // Expressions that do not get anything in their context from this expression.
-  def arguments:Seq[Expression]
+  def arguments: Seq[Expression]
 
   // Any expressions that this expression builds on
   def children: Seq[AstNode[_]] = arguments
@@ -71,13 +74,13 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic = ! exists {
+  val isDeterministic = !exists {
     case RandFunction() => true
     case _              => false
   }
 }
 
-case class CachedExpression(key:String, typ:CypherType) extends Expression {
+case class CachedExpression(key: String, typ: CypherType) extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) = ctx(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
@@ -89,8 +92,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
   override def toString = "Cached(%s of type %s)".format(key, typ)
 }
 
-abstract class Arithmetics(left: Expression, right: Expression)
-  extends Expression with TypeSafeMathSupport {
+abstract class Arithmetics(left: Expression, right: Expression) extends Expression with TypeSafeMathSupport {
   def throwTypeError(bVal: Any, aVal: Any): Nothing = {
     throw new CypherTypeException("Don't know how to " + this + " `" + bVal + "` with `" + aVal + "`")
   }
@@ -101,8 +103,8 @@ abstract class Arithmetics(left: Expression, right: Expression)
 
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
-      case (x: NumberValue, y: NumberValue) => calc(x, y)
-      case _ => throwTypeError(bVal, aVal)
+      case (x: NumberValue, y: NumberValue)                       => calc(x, y)
+      case _                                                      => throwTypeError(bVal, aVal)
     }
   }
 
@@ -112,21 +114,23 @@ abstract class Arithmetics(left: Expression, right: Expression)
 }
 
 trait ExpressionWInnerExpression extends Expression {
-  def inner:Expression
-  def myType:CypherType
-  def expectedInnerType:CypherType
+  def inner: Expression
+  def myType: CypherType
+  def expectedInnerType: CypherType
 }
 
 object Expression {
   def mapExpressionHasPropertyReadDependency(mapEntityName: String, mapExpression: Expression): Boolean =
     mapExpression match {
-      case LiteralMap(map) => map.exists {
-        case (k, v) => v.subExpressions.exists {
-          case Property(Variable(entityName), propertyKey) =>
-            entityName == mapEntityName && propertyKey.name == k
-          case _ => false
+      case LiteralMap(map) =>
+        map.exists {
+          case (k, v) =>
+            v.subExpressions.exists {
+              case Property(Variable(entityName), propertyKey) =>
+                entityName == mapEntityName && propertyKey.name == k
+              case _ => false
+            }
         }
-      }
       case _ => false
     }
 

@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport, SyntaxException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
+import org.neo4j.cypher.SyntaxException
 
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport with QueryStatisticsTestSupport {
 
@@ -82,7 +85,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
                   |SET m.prop = 0
                 """.stripMargin
 
-    a [SyntaxException] should be thrownBy updateWithBothPlanners(query)
+    a[SyntaxException] should be thrownBy updateWithBothPlanners(query)
   }
 
   test("foreach should let you use inner variables from create relationship patterns") {
@@ -189,8 +192,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestS
     // when
     try {
       val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
-    }
-    catch {
+    } catch {
       case e: Exception => e.getMessage should startWith("Expected to find a node at x but")
     }
   }

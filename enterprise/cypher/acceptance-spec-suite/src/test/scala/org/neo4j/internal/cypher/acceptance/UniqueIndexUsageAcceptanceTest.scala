@@ -21,7 +21,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
 
 class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should be able to use indexes") {
@@ -40,7 +41,8 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
     result shouldBe empty
@@ -52,7 +54,8 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     given()
 
     // When
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n:Matrix:Crew) WHERE n.name = 'Cypher' RETURN n")
 
     // Then
     result.executionPlanDescription().toString should include("NodeUniqueIndexSeek")
@@ -69,7 +72,8 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     for (i <- 4 to 30) createLabeledNode(Map("id" -> i), "Prop")
 
     // When
-    val result = executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("unwind [1,2,3] as x match (n:Prop) where n.id = x return n;")
 
     // Then
     result.toList should equal(List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3)))
@@ -89,8 +93,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     graph.createConstraint("Place", "name")
 
     // When
-    val result = executeWithCostPlannerAndInterpretedRuntimeOnly(
-      """
+    val result = executeWithCostPlannerAndInterpretedRuntimeOnly("""
         |MATCH ()-[f:FRIEND_OF]->()
         |WITH f.placeName AS placeName
         |OPTIONAL MATCH (p:Place)
@@ -121,10 +124,11 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
     val result = executeWithAllPlanners(query)
 
     // Then
-    result.toList should equal(List(
-      Map("m" -> n2),
-      Map("m" -> n3)
-    ))
+    result.toList should equal(
+      List(
+        Map("m" -> n2),
+        Map("m" -> n3)
+      ))
     result.executionPlanDescription().toString shouldNot include("IndexSeek")
     assertNoLockingHappened
   }
@@ -146,8 +150,7 @@ class UniqueIndexUsageAcceptanceTest extends ExecutionEngineFunSuite with NewPla
   }
 
   private def given() {
-    graph.execute(
-      """CREATE (architect:Matrix { name:'The Architect' }),
+    graph.execute("""CREATE (architect:Matrix { name:'The Architect' }),
         |       (smith:Matrix { name:'Agent Smith' }),
         |       (cypher:Matrix:Crew { name:'Cypher' }),
         |       (trinity:Crew { name:'Trinity' }),

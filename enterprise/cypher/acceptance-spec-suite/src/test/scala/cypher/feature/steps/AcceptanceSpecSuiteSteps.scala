@@ -26,5 +26,3 @@ class AcceptanceSpecSuiteSteps extends SpecSuiteSteps {
   override val specSuiteClass = classOf[AcceptanceSpecSuiteTest]
 
 }
-
-

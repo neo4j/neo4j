@@ -20,9 +20,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, PatternGen}
-import org.neo4j.graphdb.{ResourceIterator, Result}
-import org.scalacheck.{Gen, Shrink}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.PatternGen
+import org.neo4j.graphdb.ResourceIterator
+import org.neo4j.graphdb.Result
+import org.scalacheck.Gen
+import org.scalacheck.Shrink
 
 /*
  * Tests create on random patterns.
@@ -38,7 +42,6 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
     forAll(patterns) { pattern =>
       // reset naming sequence number
       nameSeq.set(0)
-
 
       whenever(pattern.nonEmpty) {
         val patternString = pattern.map(_.string).mkString
@@ -67,9 +70,16 @@ class SemanticCreateAcceptanceTest extends ExecutionEngineFunSuite with PatternG
 
   override protected def numberOfTestRuns: Int = 20
 
-  override def relGen = Gen.oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
+  override def relGen =
+    Gen.oneOf(typedRelGen, namedTypedRelGen, typedWithPropertiesRelGen, namedTypedWithPropertiesRelGen)
 
-  override def nodeGen = Gen.oneOf(emptyNodeGen, namedNodeGen, labeledNodeGen, namedLabeledNodeGen, labeledWithPropertiesNodeGen, namedLabeledWithPropertiesNodeGen)
+  override def nodeGen =
+    Gen.oneOf(emptyNodeGen,
+              namedNodeGen,
+              labeledNodeGen,
+              namedLabeledNodeGen,
+              labeledWithPropertiesNodeGen,
+              namedLabeledWithPropertiesNodeGen)
 
   override def relDirection = Gen.oneOf(SemanticDirection.INCOMING, SemanticDirection.OUTGOING)
 }

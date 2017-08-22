@@ -19,22 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, HasLabels, UsingScanHint, Variable}
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanFromExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.ast.UsingScanHint
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object labelScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression, qg: QueryGraph)(
+      implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     e match {
-      case labelPredicate@HasLabels(v@Variable(varName), labels) =>
+      case labelPredicate @ HasLabels(v @ Variable(varName), labels) =>
         val id = IdName(varName)
         if (qg.patternNodes(id) && !qg.argumentIds(id)) {
           val labelName = labels.head
           val hint = qg.hints.collectFirst {
-            case hint@UsingScanHint(Variable(`varName`), `labelName`) => hint
+            case hint @ UsingScanHint(Variable(`varName`), `labelName`) => hint
           }
-          val plan = context.logicalPlanProducer.planNodeByLabelScan(id, labelName, Seq(labelPredicate), hint, qg.argumentIds)
+          val plan =
+            context.logicalPlanProducer.planNodeByLabelScan(id, labelName, Seq(labelPredicate), hint, qg.argumentIds)
           Some(LeafPlansForVariable(IdName(varName), Set(plan)))
         } else
           None

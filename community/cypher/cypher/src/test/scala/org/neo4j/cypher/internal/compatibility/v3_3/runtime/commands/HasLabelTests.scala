@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.HasLabel
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.TokenType
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 

@@ -21,7 +21,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue, intValue, longValue}
+import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.storable.Values.doubleValue
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.longValue
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)
@@ -69,7 +72,7 @@ class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("noOverflowOnLongListOfLargeNumbers") {
-    val result = aggregateOn(longValue(Long.MaxValue / 2),longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
+    val result = aggregateOn(longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2), longValue(Long.MaxValue / 2))
 
     result should equal(doubleValue(Long.MaxValue / 2))
   }

@@ -24,15 +24,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.mutable.{Map => MutableMap}
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
-case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggregations: Map[String, AggregationExpression])
-                               (val id: Id = new Id) extends PipeWithSource(source) {
+case class EagerAggregationPipe(source: Pipe,
+                                keyExpressions: Set[String],
+                                aggregations: Map[String, AggregationExpression])(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   aggregations.values.foreach(_.registerOwningPipe(this))
 
@@ -51,7 +54,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
 
       aggregationNamesAndFunctions.toMap
-        .foreach { case (name, zeroValue) => newMap += name -> zeroValue}
+        .foreach { case (name, zeroValue) => newMap += name -> zeroValue }
       Iterator.single(ExecutionContext(newMap))
     }
 
@@ -69,12 +72,12 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
         case 2 =>
           val t2 = key.asInstanceOf[ListValue]
           newMap += keyNames.head -> t2.head +=
-                    keyNames.last -> t2.last
+            keyNames.last -> t2.last
         case 3 =>
           val t3 = key.asInstanceOf[ListValue]
           newMap += keyNames.head -> t3.value(0) +=
-                    keyNames.tail.head -> t3.value(1) +=
-                    keyNames.last -> t3.value(2)
+            keyNames.tail.head -> t3.value(1) +=
+            keyNames.last -> t3.value(2)
         case _ =>
           val listOfValues = key.asInstanceOf[ListValue]
           for (i <- 0 until keyNamesSize) {
@@ -92,8 +95,8 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Set[String], aggre
       val groupValues = keyNamesSize match {
         case 1 => ctx(keyNames.head)
         case 2 => VirtualValues.list(ctx(keyNames.head), ctx(keyNames.last))
-        case 3 =>  VirtualValues.list(ctx(keyNames.head), ctx(keyNames.tail.head), ctx(keyNames.last))
-        case _ => VirtualValues.list(keyNames.map(k => ctx(k)):_*)
+        case 3 => VirtualValues.list(ctx(keyNames.head), ctx(keyNames.tail.head), ctx(keyNames.last))
+        case _ => VirtualValues.list(keyNames.map(k => ctx(k)): _*)
       }
       val functions = result.getOrElseUpdate(groupValues, {
         val aggregateFunctions: Seq[AggregationFunction] = aggregations.map(_._2.createAggregationFunction).toIndexedSeq

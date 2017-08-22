@@ -34,9 +34,9 @@ trait CodeGenPlan {
 
 trait LeafCodeGenPlan extends CodeGenPlan {
 
-  override final def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) =
+  override final def consume(context: CodeGenContext,
+                             child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) =
     throw new UnsupportedOperationException("Leaf plan does not consume")
 }
 
 case class JoinTableMethod(name: String, tableType: JoinTableType)
-

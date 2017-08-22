@@ -21,31 +21,38 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable.maybeLeafPlans
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{LeafPlanFromExpression, LeafPlanner, LeafPlansForVariable, LogicalPlanningContext}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanFromExpression
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LeafPlansForVariable
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.notification.IndexLookupUnfulfillableNotification
-import org.neo4j.cypher.internal.ir.v3_3.{IdName, QueryGraph}
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
-  override def producePlanFor(e: Expression, qg: QueryGraph)(implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
+  override def producePlanFor(e: Expression, qg: QueryGraph)(
+      implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     implicit val semanticTable = context.semanticTable
     val lpp = context.logicalPlanProducer
 
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
-      case predicate@Contains(prop@Property(Variable(name), propertyKey), expr) =>
-        val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
+      case predicate @ Contains(prop @ Property(Variable(name), propertyKey), expr) =>
+        val plans =
+          produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexContainsScan(_, _, _, _, _, expr, _))
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE n.prop ENDS WITH 'substring' RETURN n
-      case predicate@EndsWith(prop@Property(Variable(name), propertyKey), expr) =>
-        val plans = produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
+      case predicate @ EndsWith(prop @ Property(Variable(name), propertyKey), expr) =>
+        val plans =
+          produce(name, propertyKey.name, qg, prop, predicate, lpp.planNodeIndexEndsWithScan(_, _, _, _, _, expr, _))
         maybeLeafPlans(name, plans)
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
-      case predicate@AsPropertyScannable(scannable) =>
+      case predicate @ AsPropertyScannable(scannable) =>
         val name = scannable.name
         val propertyKeyName = scannable.propertyKey.name
 
@@ -61,7 +68,8 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     val resultPlans = qg.selections.flatPredicates.flatMap(e => producePlanFor(e, qg).toSeq.flatMap(_.plans))
 
     if (resultPlans.isEmpty) {
-      DynamicPropertyNotifier.process(findNonScannableVariables(qg.selections.flatPredicates), IndexLookupUnfulfillableNotification, qg)
+      DynamicPropertyNotifier
+        .process(findNonScannableVariables(qg.selections.flatPredicates), IndexLookupUnfulfillableNotification, qg)
     }
 
     resultPlans
@@ -69,19 +77,24 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
   private def findNonScannableVariables(predicates: Seq[Expression])(implicit context: LogicalPlanningContext) =
     predicates.flatMap {
-      case predicate@AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+      case predicate @ AsDynamicPropertyNonScannable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
         Some(nonScannableId)
-      case predicate@AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
+      case predicate @ AsStringRangeNonSeekable(nonScannableId) if context.semanticTable.isNode(nonScannableId) =>
         Some(nonScannableId)
       case _ =>
         None
     }.toSet
 
-  type PlanProducer = (IdName, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[IdName]) => LogicalPlan
+  type PlanProducer =
+    (IdName, LabelToken, PropertyKeyToken, Seq[Expression], Option[UsingIndexHint], Set[IdName]) => LogicalPlan
 
-  private def produce(variableName: String, propertyKeyName: String, qg: QueryGraph, property: Property,
-                      predicate: Expression, planProducer: PlanProducer)
-                     (implicit context: LogicalPlanningContext, semanticTable: SemanticTable): Set[LogicalPlan] = {
+  private def produce(variableName: String,
+                      propertyKeyName: String,
+                      qg: QueryGraph,
+                      property: Property,
+                      predicate: Expression,
+                      planProducer: PlanProducer)(implicit context: LogicalPlanningContext,
+                                                  semanticTable: SemanticTable): Set[LogicalPlan] = {
     val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
     val idName = IdName(variableName)
 
@@ -91,8 +104,9 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
          labelId <- labelName.id)
       yield {
         val hint = qg.hints.collectFirst {
-          case hint@UsingIndexHint(Variable(`variableName`), `labelName`, properties)
-            if properties.map(_.name) == Seq(propertyKeyName) => hint
+          case hint @ UsingIndexHint(Variable(`variableName`), `labelName`, properties)
+              if properties.map(_.name) == Seq(propertyKeyName) =>
+            hint
         }
         val keyToken = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
         val labelToken = LabelToken(labelName, labelId)

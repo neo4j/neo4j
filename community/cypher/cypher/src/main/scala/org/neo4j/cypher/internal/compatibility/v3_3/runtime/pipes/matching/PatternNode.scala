@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.matching
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{RelatedTo, SingleNode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.RelatedTo
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SingleNode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.{KeyToken, UnresolvedProperty}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyToken
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.UnresolvedProperty
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
@@ -30,8 +32,10 @@ import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.Map
 
-class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val properties: Map[KeyToken, Expression] = Map.empty)
-  extends PatternElement(key) {
+class PatternNode(key: String,
+                  val labels: Seq[KeyToken] = Seq.empty,
+                  val properties: Map[KeyToken, Expression] = Map.empty)
+    extends PatternElement(key) {
 
   def this(node: SingleNode) = {
     this(node.name, node.labels, node.properties.map {
@@ -41,18 +45,25 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   def canUseThis(graphNodeId: Long, state: QueryState, ctx: ExecutionContext): Boolean =
     nodeHasLabels(graphNodeId, state.query) &&
-    nodeHasProperties(graphNodeId, ctx)(state)
+      nodeHasProperties(graphNodeId, ctx)(state)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
 
-  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] = relationships.filterNot(r => history.exists(_.matches(r))).toIndexedSeq
+  def getPRels(history: Seq[MatchingPair]): Seq[PatternRelationship] =
+    relationships.filterNot(r => history.exists(_.matches(r))).toIndexedSeq
 
-  def getGraphRelationships(node: NodeValue, pRel: PatternRelationship, state: QueryState, f: => ExecutionContext): Seq[GraphRelationship] =
+  def getGraphRelationships(node: NodeValue,
+                            pRel: PatternRelationship,
+                            state: QueryState,
+                            f: => ExecutionContext): Seq[GraphRelationship] =
     pRel.getGraphRelationships(this, node, state, f)
 
-  def relateTo(key: String, other: PatternNode, relType: Seq[String], dir: SemanticDirection,
+  def relateTo(key: String,
+               other: PatternNode,
+               relType: Seq[String],
+               dir: SemanticDirection,
                props: Map[String, Expression] = Map.empty): PatternRelationship = {
-    val relProps = props.map { case (k,v) => UnresolvedProperty(k)->v }.toMap
+    val relProps = props.map { case (k, v) => UnresolvedProperty(k) -> v }.toMap
     val rel = new PatternRelationship(key, this, other, relType, relProps, dir)
     relationships.add(rel)
     other.relationships.add(rel)
@@ -70,8 +81,16 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
                                     dir: SemanticDirection,
                                     collectionOfRels: Option[String],
                                     props: Map[String, Expression] = Map.empty): PatternRelationship = {
-    val relProps = props.map { case (k,v) => UnresolvedProperty(k)->v }.toMap
-    val rel = new VariableLengthPatternRelationship(pathName, this, end, collectionOfRels, minHops, maxHops, relType, relProps, dir)
+    val relProps = props.map { case (k, v) => UnresolvedProperty(k) -> v }.toMap
+    val rel = new VariableLengthPatternRelationship(pathName,
+                                                    this,
+                                                    end,
+                                                    collectionOfRels,
+                                                    minHops,
+                                                    maxHops,
+                                                    relType,
+                                                    relProps,
+                                                    dir)
     relationships.add(rel)
     end.relationships.add(rel)
     rel
@@ -87,9 +106,9 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
     if (!path.contains(this)) {
       val moreData = visitNode(this, data)
 
-      relationships.
-        filter(shouldFollow).
-        foreach(r => r.traverse(shouldFollow, visitNode, visitRelationship, moreData, this, path :+ this))
+      relationships
+        .filter(shouldFollow)
+        .foreach(r => r.traverse(shouldFollow, visitNode, visitRelationship, moreData, this, path :+ this))
     }
   }
 
@@ -104,13 +123,13 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
 
   private def nodeHasProperties(graphNodeId: Long, execCtx: ExecutionContext)(implicit state: QueryState): Boolean =
     properties.forall {
-    case (token, expression) =>
-      val propertyId = token.getOptId(state.query)
-      if (propertyId.isEmpty) false // The property doesn't exist in the graph
-      else {
-        val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
-        val expectedValue = expression(execCtx)
-        value == expectedValue
-      }
-  }
+      case (token, expression) =>
+        val propertyId = token.getOptId(state.query)
+        if (propertyId.isEmpty) false // The property doesn't exist in the graph
+        else {
+          val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
+          val expectedValue = expression(execCtx)
+          value == expectedValue
+        }
+    }
 }

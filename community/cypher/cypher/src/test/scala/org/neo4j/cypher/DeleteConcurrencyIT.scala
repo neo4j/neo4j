@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher
 
-import java.io.{PrintStream, PrintWriter, StringWriter}
+import java.io.PrintStream
+import java.io.PrintWriter
+import java.io.StringWriter
 
-import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
+import org.neo4j.graphdb.NotFoundException
+import org.neo4j.graphdb.TransactionFailureException
 import org.neo4j.io.NullOutputStream
 
 import scala.language.reflectiveCalls
@@ -140,7 +143,9 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
     try {
       val nodes = 10
       val ids = graph.inTx {
-        (0 until nodes).map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next()).toList
+        (0 until nodes)
+          .map(ignored => execute("CREATE (n:person) RETURN ID(n) as id").columnAs[Long]("id").next())
+          .toList
       }
 
       graph.inTx {
@@ -154,24 +159,27 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
           execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id DETACH DELETE b").toList
         })
       } ++ ids.map { id =>
-        new MyThread(() => {
-          try {
-            execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
-          } catch {
-            case _: NotFoundException => // ignore if we cannot create the relationship if b has been deleted
-            case _: CypherExecutionException => // ignore if we cannot create the relationship if b has been deleted
-          }
-        }, ignoreException = {
-          // let's ignore the commit failures if they are caused by the above exceptions
-          case ex: TransactionFailureException =>
-            val cause: Throwable = ex.getCause
-            cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
+        new MyThread(
+          () => {
+            try {
+              execute(s"MATCH (root)-[:name]->(b) WHERE ID(root) = $id CREATE (root)-[:name]->(b)").toList
+            } catch {
+              case _: NotFoundException        => // ignore if we cannot create the relationship if b has been deleted
+              case _: CypherExecutionException => // ignore if we cannot create the relationship if b has been deleted
+            }
+          },
+          ignoreException = {
+            // let's ignore the commit failures if they are caused by the above exceptions
+            case ex: TransactionFailureException =>
+              val cause: Throwable = ex.getCause
+              cause.isInstanceOf[org.neo4j.kernel.api.exceptions.TransactionFailureException] &&
               cause.getMessage == "Transaction rolled back even if marked as successful"
-          case ex: CypherExecutionException =>
-            ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
-            ex.getCause.getMessage.startsWith("Unable to load NODE with id")
-          case _ => false
-        })
+            case ex: CypherExecutionException =>
+              ex.getCause.isInstanceOf[org.neo4j.kernel.api.exceptions.EntityNotFoundException] &&
+                ex.getCause.getMessage.startsWith("Unable to load NODE with id")
+            case _ => false
+          }
+        )
       }
 
       threads.foreach(_.start())
@@ -190,7 +198,9 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
   private def prettyPrintErrors(errors: Seq[Throwable]): String = {
     val stringWriter = new StringWriter()
     val writer = new PrintWriter(stringWriter)
-    errors.foreach { e => e.printStackTrace(writer); writer.println() }
+    errors.foreach { e =>
+      e.printStackTrace(writer); writer.println()
+    }
     stringWriter.toString
   }
 

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Property, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Property
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 
 // This transforms
@@ -38,16 +39,18 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
   def apply(inputPredicates: NonEmptyList[Predicate]): NonEmptyList[Predicate] = {
 
     // categorize predicates according to whether they contain an inequality or not
-    val partitions: Either[(NonEmptyList[ComparablePredicate], Option[NonEmptyList[Predicate]]), (Option[NonEmptyList[ComparablePredicate]], NonEmptyList[Predicate])] = inputPredicates.partition {
+    val partitions: Either[(NonEmptyList[ComparablePredicate], Option[NonEmptyList[Predicate]]),
+                           (Option[NonEmptyList[ComparablePredicate]], NonEmptyList[Predicate])] =
+      inputPredicates.partition {
         case comparable: ComparablePredicate => Left(comparable)
-        case predicate => Right(predicate)
-    }
+        case predicate                       => Right(predicate)
+      }
 
     // detect if we need to transform the input
     val optInequalities = partitions match {
-      case Left((comparables, remainder)) => Some(comparables -> remainder)
+      case Left((comparables, remainder))        => Some(comparables -> remainder)
       case Right((Some(comparables), remainder)) => Some(comparables -> Some(remainder))
-      case Right((None, _)) => None
+      case Right((None, _))                      => None
     }
 
     optInequalities match {
@@ -56,13 +59,15 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
         val groupedPredicates = groupedComparablePredicates(comparables)
 
         // collect together all inequalities over some property lookup
-        val combinedComparablePredicates = groupedPredicates.map {
-          case (Some((ident, prop)), groupComparables) =>
-            NonEmptyList(AndedPropertyComparablePredicates(ident, prop, groupComparables))
+        val combinedComparablePredicates = groupedPredicates
+          .map {
+            case (Some((ident, prop)), groupComparables) =>
+              NonEmptyList(AndedPropertyComparablePredicates(ident, prop, groupComparables))
 
-          case (None, predicates) =>
-            predicates
-        }.flatMap[Predicate](identity)
+            case (None, predicates) =>
+              predicates
+          }
+          .flatMap[Predicate](identity)
 
         // concatenate with remaining predicates
         optRemainder.map(_ ++ combinedComparablePredicates).getOrElse(combinedComparablePredicates)
@@ -73,11 +78,14 @@ object groupInequalityPredicatesForLegacy extends (NonEmptyList[Predicate] => No
   }
 
   private def groupedComparablePredicates(comparables: NonEmptyList[ComparablePredicate]) = {
-    comparables.groupBy { (input: ComparablePredicate) =>
-      input.left match {
-        case prop@Property(ident: Variable, _) => Some(ident -> prop)
-        case _ => None
+    comparables
+      .groupBy { (input: ComparablePredicate) =>
+        input.left match {
+          case prop @ Property(ident: Variable, _) => Some(ident -> prop)
+          case _                                   => None
+        }
       }
-    }.toNonEmptyListOption.get
+      .toNonEmptyListOption
+      .get
   }
 }

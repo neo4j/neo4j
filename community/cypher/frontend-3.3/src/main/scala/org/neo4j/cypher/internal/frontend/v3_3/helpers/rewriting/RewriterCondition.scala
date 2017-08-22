@@ -17,7 +17,7 @@
 package org.neo4j.cypher.internal.frontend.v3_3.helpers.rewriting
 
 final case class RewriterCondition(name: String, condition: Any => Seq[String])
-  extends (Any => Option[RewriterConditionFailure]) {
+    extends (Any => Option[RewriterConditionFailure]) {
 
   def apply(input: Any): Option[RewriterConditionFailure] = {
     val conditions = condition(input)

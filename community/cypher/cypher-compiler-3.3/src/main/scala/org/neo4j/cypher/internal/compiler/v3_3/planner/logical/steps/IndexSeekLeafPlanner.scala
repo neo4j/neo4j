@@ -26,20 +26,22 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 object indexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
-  protected def constructPlan(idName: IdName,
-                              label: LabelToken,
-                              propertyKeys: Seq[PropertyKeyToken],
-                              valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint],
-                              argumentIds: Set[IdName])
-                             (implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
+  protected def constructPlan(
+      idName: IdName,
+      label: LabelToken,
+      propertyKeys: Seq[PropertyKeyToken],
+      valueExpr: QueryExpression[Expression],
+      hint: Option[UsingIndexHint],
+      argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): (Seq[Expression]) => LogicalPlan =
     (predicates: Seq[Expression]) =>
-      context.logicalPlanProducer.planNodeIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
+      context.logicalPlanProducer
+        .planNodeIndexSeek(idName, label, propertyKeys, valueExpr, predicates, hint, argumentIds)
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanningContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
 
-  protected def findIndexesFor(label: String, properties: Seq[String])(implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
+  protected def findIndexesFor(label: String, properties: Seq[String])(
+      implicit context: LogicalPlanningContext): Option[IndexDescriptor] = {
     if (uniqueIndexDefinedFor(label, properties).isDefined) None else anyIndex(label, properties)
   }
 

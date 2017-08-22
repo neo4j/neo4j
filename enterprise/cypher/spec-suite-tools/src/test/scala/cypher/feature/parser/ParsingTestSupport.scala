@@ -30,8 +30,10 @@ import org.mockito.stubbing.Answer
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.scalatest.junit.JUnitRunner
-import org.scalatest.matchers.{MatchResult, Matcher}
-import org.scalatest.{FunSuite, Matchers}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
+import org.scalatest.FunSuite
+import org.scalatest.Matchers
 
 import scala.collection.convert.DecorateAsJava
 import scala.runtime.ScalaNumberProxy
@@ -126,8 +128,8 @@ trait MatcherMatchingSupport {
   class Acceptor[T <: AnyRef](value: T) extends Matcher[cypher.feature.parser.matchers.Matcher[_ >: T]] {
     override def apply(matcher: cypher.feature.parser.matchers.Matcher[_ >: T]): MatchResult = {
       MatchResult(matches = matcher.matches(value),
-        s"$matcher did not match $value",
-        s"$matcher unexpectedly matched $value")
+                  s"$matcher did not match $value",
+                  s"$matcher unexpectedly matched $value")
     }
   }
 

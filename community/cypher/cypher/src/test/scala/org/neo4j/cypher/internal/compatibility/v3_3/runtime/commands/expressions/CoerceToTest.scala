@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
-import java.util.{ArrayList => JavaList, HashMap => JavaMap}
+import java.util.{ArrayList => JavaList}
+import java.util.{HashMap => JavaMap}
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{QueryState, QueryStateHelper}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
@@ -53,85 +55,132 @@ class CoerceToTest extends CypherFunSuite {
   test("null") {
     testedTypes
       .coerce(NO_VALUE)
-      .forRemainingTypes { typ => _.to(typ) unchanged }
+      .forRemainingTypes { typ =>
+        _.to(typ) unchanged
+      }
   }
 
   test("POINT") {
     testedTypes
       .coerce(mock[PointValue])
-      .to(CTAny).unchanged
-      .to(CTPoint).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTPoint)
+      .unchanged
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
-
 
   test("BOOLEAN") {
     testedTypes
       .coerce(TRUE)
-      .to(CTAny).unchanged
-      .to(CTBoolean).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTBoolean)
+      .unchanged
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
 
     testedTypes
       .coerce(TRUE)
-      .to(CTAny).unchanged
-      .to(CTBoolean).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTBoolean)
+      .unchanged
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("STRING") {
     testedTypes
       .coerce(EMPTY_STRING)
-      .to(CTAny).unchanged
-      .to(CTString).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTString)
+      .unchanged
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
 
     testedTypes
       .coerce(stringValue("Hello"))
-      .to(CTAny).unchanged
-      .to(CTString).unchanged
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTString)
+      .unchanged
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("NODE") {
     testedTypes
       .coerce(nodeValue(11L, stringArray("L"), EMPTY_MAP))
-      .to(CTAny).unchanged
-      .to(CTNode).unchanged
+      .to(CTAny)
+      .unchanged
+      .to(CTNode)
+      .unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss
-      .to(CTMap).changedButNotNull
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTMap)
+      .changedButNotNull
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("RELATIONSHIP") {
     testedTypes
-      .coerce(edgeValue(11L, nodeValue(11L, stringArray("L"), EMPTY_MAP), nodeValue(12L, stringArray("L"), EMPTY_MAP),
-                        stringValue("T"), EMPTY_MAP))
-      .to(CTAny).unchanged
-      .to(CTRelationship).unchanged
+      .coerce(
+        edgeValue(11L,
+                  nodeValue(11L, stringArray("L"), EMPTY_MAP),
+                  nodeValue(12L, stringArray("L"), EMPTY_MAP),
+                  stringValue("T"),
+                  EMPTY_MAP))
+      .to(CTAny)
+      .unchanged
+      .to(CTRelationship)
+      .unchanged
       // TODO: IsCollection/IsMap behaviour - Discuss
-      .to(CTMap).changedButNotNull
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTMap)
+      .changedButNotNull
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("INTEGER") {
     testedTypes
       .coerce(longValue(1L))
-      .to(CTAny).unchanged
-      .to(CTNumber).unchanged
-      .to(CTInteger).unchanged
-      .to(CTFloat).changedTo(doubleValue(1.0d))
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTNumber)
+      .unchanged
+      .to(CTInteger)
+      .unchanged
+      .to(CTFloat)
+      .changedTo(doubleValue(1.0d))
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("FLOAT") {
     testedTypes
       .coerce(doubleValue(4.2d))
-      .to(CTAny).unchanged
-      .to(CTNumber).unchanged
-      .to(CTInteger).changedTo(longValue(4L))
-      .to(CTFloat).changedButNotNull
-      .forRemainingTypes { typ => _.notTo(typ) }
+      .to(CTAny)
+      .unchanged
+      .to(CTNumber)
+      .unchanged
+      .to(CTInteger)
+      .changedTo(longValue(4L))
+      .to(CTFloat)
+      .changedButNotNull
+      .forRemainingTypes { typ =>
+        _.notTo(typ)
+      }
   }
 
   test("MAP") {
@@ -140,14 +189,22 @@ class CoerceToTest extends CypherFunSuite {
     ).foreach { value =>
       testedTypes
         .coerce(value)
-        .to(CTAny).unchanged
-        .to(CTMap).changedTo(EMPTY_MAP)
+        .to(CTAny)
+        .unchanged
+        .to(CTMap)
+        .changedTo(EMPTY_MAP)
         // TODO: IsCollection/IsMap behaviour - Discuss
-        .to(CTList(CTAny)).changedTo(list(EMPTY_MAP))
-        .to(CTList(CTMap)).changedTo(list(EMPTY_MAP))
-        .to(CTList(CTList(CTAny))).changedTo(list(list(EMPTY_MAP)))
-        .to(CTList(CTList(CTMap))).changedTo(list(list(EMPTY_MAP)))
-        .forRemainingTypes { typ => _.notTo(typ) }
+        .to(CTList(CTAny))
+        .changedTo(list(EMPTY_MAP))
+        .to(CTList(CTMap))
+        .changedTo(list(EMPTY_MAP))
+        .to(CTList(CTList(CTAny)))
+        .changedTo(list(list(EMPTY_MAP)))
+        .to(CTList(CTList(CTMap)))
+        .changedTo(list(list(EMPTY_MAP)))
+        .forRemainingTypes { typ =>
+          _.notTo(typ)
+        }
     }
   }
 
@@ -157,33 +214,61 @@ class CoerceToTest extends CypherFunSuite {
     ).foreach { value =>
       testedTypes
         .coerce(value)
-        .to(CTAny).unchanged
-        .to(CTList(CTAny)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTString))).changedTo(EMPTY_LIST)
-        .to(CTList(CTString)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTBoolean))).changedTo(EMPTY_LIST)
-        .to(CTList(CTBoolean)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTInteger))).changedTo(EMPTY_LIST)
-        .to(CTList(CTInteger)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTFloat))).changedTo(EMPTY_LIST)
-        .to(CTList(CTFloat)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTNumber))).changedTo(EMPTY_LIST)
-        .to(CTList(CTNumber)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTPoint))).changedTo(EMPTY_LIST)
-        .to(CTList(CTPoint)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTGeometry))).changedTo(EMPTY_LIST)
-        .to(CTList(CTGeometry)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTNode))).changedTo(EMPTY_LIST)
-        .to(CTList(CTNode)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTRelationship))).changedTo(EMPTY_LIST)
-        .to(CTList(CTRelationship)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTPath))).changedTo(EMPTY_LIST)
-        .to(CTList(CTPath)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTMap))).changedTo(EMPTY_LIST)
-        .to(CTList(CTMap)).changedTo(EMPTY_LIST)
-        .to(CTList(CTList(CTAny))).changedTo(EMPTY_LIST)
-        .to(CTList(CTAny)).changedTo(EMPTY_LIST)
-        .forRemainingTypes { typ => _.notTo(typ) }
+        .to(CTAny)
+        .unchanged
+        .to(CTList(CTAny))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTString)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTString))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTBoolean)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTBoolean))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTInteger)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTInteger))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTFloat)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTFloat))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTNumber)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTNumber))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTPoint)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTPoint))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTGeometry)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTGeometry))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTNode)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTNode))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTRelationship)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTRelationship))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTPath)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTPath))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTMap)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTMap))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTList(CTAny)))
+        .changedTo(EMPTY_LIST)
+        .to(CTList(CTAny))
+        .changedTo(EMPTY_LIST)
+        .forRemainingTypes { typ =>
+          _.notTo(typ)
+        }
     }
   }
 

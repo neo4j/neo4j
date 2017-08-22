@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InterpretedRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeName
 import org.neo4j.cypher.internal.compiler.v3_3.CostBasedPlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
@@ -73,8 +74,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("another troublesome query that should be run in cost") {
-    given(
-      """MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
+    given("""MATCH (s:Location {name:'DeliverySegment-257227'}), (e:Location {name:'DeliverySegment-476821'})
         |MATCH (s)<-[:DELIVERY_ROUTE]-(db1) MATCH (db2)-[:DELIVERY_ROUTE]->(e)
         |MATCH (db1)<-[:CONNECTED_TO]-()-[:CONNECTED_TO]-(db2) RETURN s""".stripMargin)
       .withCypherVersion(CypherVersion.v3_3)
@@ -107,11 +107,14 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("Rows should be properly formatted in interpreted runtime") {
     given("match (n) return n")
       .withRuntime(InterpretedRuntimeName)
-      .planDescription.getArguments.get("Rows") should equal(0)
+      .planDescription
+      .getArguments
+      .get("Rows") should equal(0)
   }
 
   test("EstimatedRows should be properly formatted") {
-    given("match (n) return n").planDescription.getArguments.get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
+    given("match (n) return n").planDescription.getArguments
+      .get("EstimatedRows") should equal(1) // on missing statistics, we fake cardinality to one
   }
 
   def given(query: String) = TestQuery(query)

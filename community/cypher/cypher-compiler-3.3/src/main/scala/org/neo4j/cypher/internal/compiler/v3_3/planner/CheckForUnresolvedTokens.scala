@@ -21,9 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner
 
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{InternalNotification, MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.MissingLabelNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.MissingPropertyNameNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.MissingRelTypeNotification
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseContext, VisitorPhase}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseContext
+import org.neo4j.cypher.internal.frontend.v3_3.phases.VisitorPhase
 
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 
@@ -34,14 +38,17 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 
     val notifications = value.statement.treeFold(Seq.empty[InternalNotification]) {
-      case label@LabelName(name) if isEmptyLabel(name) => acc =>
-        (acc :+ MissingLabelNotification(label.position, name), Some(identity))
+      case label @ LabelName(name) if isEmptyLabel(name) =>
+        acc =>
+          (acc :+ MissingLabelNotification(label.position, name), Some(identity))
 
-      case rel@RelTypeName(name) if isEmptyRelType(name) => acc =>
-        (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
+      case rel @ RelTypeName(name) if isEmptyRelType(name) =>
+        acc =>
+          (acc :+ MissingRelTypeNotification(rel.position, name), Some(identity))
 
-      case Property(_, prop@PropertyKeyName(name)) if isEmptyPropertyName(name) => acc =>
-        (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
+      case Property(_, prop @ PropertyKeyName(name)) if isEmptyPropertyName(name) =>
+        acc =>
+          (acc :+ MissingPropertyNameNotification(prop.position, name), Some(identity))
     }
 
     notifications foreach context.notificationLogger.log
@@ -49,5 +56,6 @@ object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanSta
 
   override def phase = LOGICAL_PLANNING
 
-  override def description = "find labels, relationships types and property keys that do not exist in the db and issue warnings"
+  override def description =
+    "find labels, relationships types and property keys that do not exist in the db and issue warnings"
 }

@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.mockito.Matchers.any
-import org.mockito.Mockito.{verify, verifyZeroInteractions, when}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyZeroInteractions
+import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite

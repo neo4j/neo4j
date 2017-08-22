@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 /**
- * Runs through LogicalPlan and copies duplicate plans to make sure the
- * plan doesn't contain elements that are referentially identical.
- */
+  * Runs through LogicalPlan and copies duplicate plans to make sure the
+  * plan doesn't contain elements that are referentially identical.
+  */
 case object removeIdenticalPlans extends Rewriter {
 
   override def apply(input: AnyRef) = {
@@ -34,7 +35,7 @@ case object removeIdenticalPlans extends Rewriter {
 
     val rewriter: Rewriter = bottomUp(Rewriter.lift {
       case plan: LogicalPlan if seenPlans(plan) => plan.copyPlan()
-      case plan: LogicalPlan => seenPlans = seenPlans + plan ; plan
+      case plan: LogicalPlan                    => seenPlans = seenPlans + plan; plan
     })
 
     rewriter.apply(input)

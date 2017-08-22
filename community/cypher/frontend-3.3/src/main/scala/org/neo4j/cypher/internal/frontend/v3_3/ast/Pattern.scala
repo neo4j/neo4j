@@ -52,7 +52,7 @@ object Pattern {
 
       val resultMap = seen.foldLeft(m0) {
         case (m, ident @ Variable(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
-        case (m, _)                                            => m
+        case (m, _)                                          => m
       }
 
       resultMap.values.toSet
@@ -66,7 +66,7 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
 
   lazy val length = this.fold(0) {
     case RelationshipChain(_, _, _) => _ + 1
-    case _ => identity
+    case _                          => identity
   }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -75,22 +75,24 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
       ensureNoDuplicateRelationships(this, ctx)
 
   private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
-    findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) {
-      (acc, duplicates) =>
-        val id = duplicates.head
-        val dups = duplicates.tail
+    findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) { (acc, duplicates) =>
+      val id = duplicates.head
+      val dups = duplicates.tail
 
-        acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
+      acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns",
+                              id.position,
+                              dups.map(_.position): _*)
     }
   }
 }
 
-case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode with ASTParticle {
+case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition)
+    extends ASTNode
+    with ASTParticle {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     element.declareVariables(ctx) chain
       element.semanticCheck(ctx)
 }
-
 
 sealed abstract class PatternPart extends ASTNode with ASTParticle {
   def declareVariables(ctx: SemanticContext): SemanticCheck
@@ -99,13 +101,13 @@ sealed abstract class PatternPart extends ASTNode with ASTParticle {
   def element: PatternElement
 }
 
-case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
+case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
+    extends PatternPart {
   def declareVariables(ctx: SemanticContext) = patternPart.declareVariables(ctx) chain variable.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
   def element: PatternElement = patternPart.element
 }
-
 
 sealed trait AnonymousPatternPart extends PatternPart
 
@@ -115,16 +117,17 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
   def declareVariables(ctx: SemanticContext) = (element, ctx) match {
     case (n: NodePattern, SemanticContext.Match) =>
       element.declareVariables(ctx) // single node variable is allowed to be already bound in MATCH
-    case (n: NodePattern, _)                     =>
+    case (n: NodePattern, _) =>
       n.variable.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareVariables(ctx)
-    case _                                       =>
+    case _ =>
       element.declareVariables(ctx)
   }
 
   def semanticCheck(ctx: SemanticContext) = element.semanticCheck(ctx)
 }
 
-case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition) extends AnonymousPatternPart {
+case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition)
+    extends AnonymousPatternPart {
   val name: String =
     if (single)
       "shortestPath"
@@ -154,9 +157,11 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
   private def checkContainsSingle: SemanticCheck = element match {
     case RelationshipChain(_: NodePattern, r, _: NodePattern) =>
       r.properties.map { props =>
-        SemanticError(s"$name(...) contains properties $props. This is currently not supported.", position, element.position)
+        SemanticError(s"$name(...) contains properties $props. This is currently not supported.",
+                      position,
+                      element.position)
       }
-    case _                                                    =>
+    case _ =>
       SemanticError(s"$name(...) requires a pattern containing a single relationship", position, element.position)
   }
 
@@ -168,30 +173,38 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
         SemanticError(s"$name(...) requires named nodes", position, r.position)
       else
         None
-    case _                                                    =>
+    case _ =>
       None
   }
 
-  private def checkLength: SemanticCheck = (state: SemanticState) => element match {
-    case RelationshipChain(_, rel, _) =>
-      rel.length match {
-        case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
-          SemanticCheckResult(state, Seq(SemanticError(s"$name(...) does not support a minimal length different from 0 or 1", position, element.position)))
+  private def checkLength: SemanticCheck =
+    (state: SemanticState) =>
+      element match {
+        case RelationshipChain(_, rel, _) =>
+          rel.length match {
+            case Some(Some(Range(Some(min), _))) if min.value < 0 || min.value > 1 =>
+              SemanticCheckResult(state,
+                                  Seq(
+                                    SemanticError(s"$name(...) does not support a minimal length different from 0 or 1",
+                                                  position,
+                                                  element.position)))
 
-        case Some(None) =>
-          val newState = state.addNotification(UnboundedShortestPathNotification(element.position))
-          SemanticCheckResult(newState, Seq.empty)
+            case Some(None) =>
+              val newState = state.addNotification(UnboundedShortestPathNotification(element.position))
+              SemanticCheckResult(newState, Seq.empty)
+            case _ => SemanticCheckResult(state, Seq.empty)
+          }
         case _ => SemanticCheckResult(state, Seq.empty)
-      }
-    case _ => SemanticCheckResult(state, Seq.empty)
-  }
+    }
 
   private def checkRelVariablesUnknown: SemanticCheck = state => {
     element match {
       case RelationshipChain(_, rel, _) =>
         rel.variable.flatMap(id => state.symbol(id.name)) match {
           case Some(symbol) if symbol.positions.size > 1 => {
-            SemanticCheckResult.error(state, SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions.head))
+            SemanticCheckResult.error(
+              state,
+              SemanticError(s"Bound relationships not allowed in $name(...)", rel.position, symbol.positions.head))
           }
           case _ =>
             SemanticCheckResult.success(state)
@@ -211,8 +224,9 @@ sealed abstract class PatternElement extends ASTNode with ASTParticle {
   def isSingleNode = false
 }
 
-case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition)
-  extends PatternElement {
+case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(
+    val position: InputPosition)
+    extends PatternElement {
 
   def variable: Option[Variable] = relationship.variable
 
@@ -234,9 +248,11 @@ object InvalidNodePattern {
     new InvalidNodePattern(id)(position)
 }
 
-class InvalidNodePattern(val id: Variable)(position: InputPosition) extends NodePattern(Some(id), Seq.empty, None)(position) {
-  override def semanticCheck(ctx: SemanticContext): SemanticCheck = super.semanticCheck(ctx) chain
-    SemanticError(s"Parentheses are required to identify nodes in patterns, i.e. (${id.name})", position)
+class InvalidNodePattern(val id: Variable)(position: InputPosition)
+    extends NodePattern(Some(id), Seq.empty, None)(position) {
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    super.semanticCheck(ctx) chain
+      SemanticError(s"Parentheses are required to identify nodes in patterns, i.e. (${id.name})", position)
 
   override def canEqual(other: Any): Boolean = other.isInstanceOf[InvalidNodePattern]
 
@@ -252,21 +268,20 @@ class InvalidNodePattern(val id: Variable)(position: InputPosition) extends Node
   override def allVariables: Set[Variable] = Set.empty
 }
 
-case class NodePattern(variable: Option[Variable],
-                       labels: Seq[LabelName],
-                       properties: Option[Expression])(val position: InputPosition)
-  extends PatternElement with SemanticChecking {
+case class NodePattern(variable: Option[Variable], labels: Seq[LabelName], properties: Option[Expression])(
+    val position: InputPosition)
+    extends PatternElement
+    with SemanticChecking {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
-    variable.fold(SemanticCheckResult.success) {
-      variable =>
-        ctx match {
-          case SemanticContext.Expression =>
-            variable.ensureDefined() chain
-              variable.expectType(CTNode.covariant)
-          case _                          =>
-            variable.implicitDeclaration(CTNode)
-        }
+    variable.fold(SemanticCheckResult.success) { variable =>
+      ctx match {
+        case SemanticContext.Expression =>
+          variable.ensureDefined() chain
+            variable.expectType(CTNode.covariant)
+        case _ =>
+          variable.implicitDeclaration(CTNode)
+      }
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -276,35 +291,39 @@ case class NodePattern(variable: Option[Variable],
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      SemanticError(
+        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
-    case _                                           =>
+      SemanticError(
+        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
+    case _ =>
       properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
   }
 
   override def allVariables: Set[Variable] = variable.toSet
 }
 
-
-case class RelationshipPattern(
-                                variable: Option[Variable],
-                                types: Seq[RelTypeName],
-                                length: Option[Option[Range]],
-                                properties: Option[Expression],
-                                direction: SemanticDirection,
-                                legacyTypeSeparator: Boolean = false)(val position: InputPosition) extends ASTNode with ASTParticle with SemanticChecking {
+case class RelationshipPattern(variable: Option[Variable],
+                               types: Seq[RelTypeName],
+                               length: Option[Option[Range]],
+                               properties: Option[Expression],
+                               direction: SemanticDirection,
+                               legacyTypeSeparator: Boolean = false)(val position: InputPosition)
+    extends ASTNode
+    with ASTParticle
+    with SemanticChecking {
 
   def declareVariables(ctx: SemanticContext): SemanticCheck =
-    variable.fold(SemanticCheckResult.success) {
-      variable =>
-        val possibleType = if (length.isEmpty) CTRelationship else CTList(CTRelationship)
+    variable.fold(SemanticCheckResult.success) { variable =>
+      val possibleType = if (length.isEmpty) CTRelationship else CTList(CTRelationship)
 
-        ctx match {
-          case SemanticContext.Match      => variable.implicitDeclaration(possibleType)
-          case SemanticContext.Expression => variable.ensureDefined() chain variable.expectType(possibleType.covariant)
-          case _                          => variable.declare(possibleType)
-        }
+      ctx match {
+        case SemanticContext.Match      => variable.implicitDeclaration(possibleType)
+        case SemanticContext.Expression => variable.ensureDefined() chain variable.expectType(possibleType.covariant)
+        case _                          => variable.declare(possibleType)
+      }
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
@@ -323,22 +342,26 @@ case class RelationshipPattern(
   }
 
   private def checkNoVarLengthWhenUpdating(ctx: SemanticContext): SemanticCheck =
-    when (!isSingleLength) {
+    when(!isSingleLength) {
       ctx match {
         case SemanticContext.Merge =>
           SemanticError("Variable length relationships cannot be used in MERGE", position)
         case SemanticContext.Create | SemanticContext.CreateUnique =>
           SemanticError("Variable length relationships cannot be used in CREATE", position)
-        case _                          => None
+        case _ => None
       }
     }
 
   private def checkNoParamMapsWhenMatching(ctx: SemanticContext): SemanticCheck = (properties, ctx) match {
     case (Some(e: Parameter), SemanticContext.Match) =>
-      SemanticError("Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
+      SemanticError(
+        "Parameter maps cannot be used in MATCH patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
     case (Some(e: Parameter), SemanticContext.Merge) =>
-      SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
-    case _                                           =>
+      SemanticError(
+        "Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")",
+        e.position)
+    case _ =>
       None
   }
 

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
@@ -30,10 +31,11 @@ case class NodeProjection(nodeIdVar: Variable) extends CodeGenExpression {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {}
 
-  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) ={
+  override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     if (nodeIdVar.nullable)
-      structure.nullableReference(nodeIdVar.name, CodeGenType.primitiveNode,
-        structure.materializeNode(nodeIdVar.name, nodeIdVar.codeGenType))
+      structure.nullableReference(nodeIdVar.name,
+                                  CodeGenType.primitiveNode,
+                                  structure.materializeNode(nodeIdVar.name, nodeIdVar.codeGenType))
     else
       structure.materializeNode(nodeIdVar.name, nodeIdVar.codeGenType)
   }

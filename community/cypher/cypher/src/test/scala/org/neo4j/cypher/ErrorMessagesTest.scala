@@ -203,8 +203,9 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
 
     expectError(
       "CREATE CONSTRAINT ON (person:Person) ASSERT person.name IS UNIQUE",
-      String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
-        "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
+      String.format(
+        "Unable to create CONSTRAINT ON ( person:Person ) ASSERT person.name IS UNIQUE:%n" +
+          "Both Node(0) and Node(1) have the label `Person` and property `name` = 'A'")
     )
   }
 
@@ -226,7 +227,8 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   test("report wrong usage of label scan hint") {
     expectError(
       "MATCH (n) USING SCAN n:Person WHERE n:Person OR n:Bird RETURN n",
-      "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node")
+      "Cannot use label scan hint in this context. Label scan hints require using a simple label test in WHERE (either directly or as part of a top-level AND). Note that the label must be specified on a non-optional node"
+    )
   }
 
   test("should forbid bound relationship list in shortestPath pattern parts") {
@@ -237,15 +239,16 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with CypherSerializer {
   }
 
   test("should give nice error when trying to parse multiple statements") {
-    expectError(
-      "RETURN 42; RETURN 42",
-      "Expected exactly one statement per query but got: 2")
+    expectError("RETURN 42; RETURN 42", "Expected exactly one statement per query but got: 2")
   }
 
   test("should give proper error message when trying to use Node Key constraint on community") {
-    expectError("CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
-                String.format("Unable to create CONSTRAINT ON ( person:Person ) ASSERT exists(person.firstname):%n" +
-                  "Node Key constraint requires Neo4j Enterprise Edition"))
+    expectError(
+      "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname) IS NODE KEY",
+      String.format(
+        "Unable to create CONSTRAINT ON ( person:Person ) ASSERT exists(person.firstname):%n" +
+          "Node Key constraint requires Neo4j Enterprise Edition")
+    )
   }
 
   private def expectError(query: String, expectedError: String) {

@@ -20,10 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition}
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, PlannerName, SemanticState, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{PeriodicCommit, UnionQuery}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_3.PeriodicCommit
+import org.neo4j.cypher.internal.ir.v3_3.UnionQuery
 
 /*
 This is the state that is used during query compilation. It accumulates more and more values as it passes through
@@ -42,7 +48,8 @@ case class LogicalPlanState(queryText: String,
                             maybeUnionQuery: Option[UnionQuery] = None,
                             maybeLogicalPlan: Option[LogicalPlan] = None,
                             maybePeriodicCommit: Option[Option[PeriodicCommit]] = None,
-                            accumulatedConditions: Set[Condition] = Set.empty) extends BaseState {
+                            accumulatedConditions: Set[Condition] = Set.empty)
+    extends BaseState {
 
   def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
   def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
@@ -59,14 +66,14 @@ case class LogicalPlanState(queryText: String,
 
 object LogicalPlanState {
   def apply(state: BaseState): LogicalPlanState =
-    LogicalPlanState(queryText = state.queryText,
-                     startPosition = state.startPosition,
-                     plannerName = state.plannerName,
-                     maybeStatement = state.maybeStatement,
-                     maybeSemantics = state.maybeSemantics,
-                     maybeExtractedParams = state.maybeExtractedParams,
-                     maybeSemanticTable = state.maybeSemanticTable,
-                     accumulatedConditions = state.accumulatedConditions)
+    LogicalPlanState(
+      queryText = state.queryText,
+      startPosition = state.startPosition,
+      plannerName = state.plannerName,
+      maybeStatement = state.maybeStatement,
+      maybeSemantics = state.maybeSemantics,
+      maybeExtractedParams = state.maybeExtractedParams,
+      maybeSemanticTable = state.maybeSemanticTable,
+      accumulatedConditions = state.accumulatedConditions
+    )
 }
-
-

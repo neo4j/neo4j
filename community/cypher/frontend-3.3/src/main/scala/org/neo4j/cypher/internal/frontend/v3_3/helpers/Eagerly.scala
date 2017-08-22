@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.helpers
 
-import scala.collection.{immutable, mutable}
+import scala.collection.immutable
+import scala.collection.mutable
 
 object Eagerly {
 
@@ -36,7 +37,7 @@ object Eagerly {
   def mutableMapValues[A, B, C](m: collection.Map[A, B], f: B => C): mutable.Map[A, C] =
     mapToBuilder(m, f, mutable.Map.newBuilder[A, C])
 
-  private def mapToBuilder[A, B, C, To](m: collection.Map[A, B], f: B => C, builder: mutable.Builder[(A,C ), To]): To = {
+  private def mapToBuilder[A, B, C, To](m: collection.Map[A, B], f: B => C, builder: mutable.Builder[(A, C), To]): To = {
     builder.sizeHint(m.size)
     m.foldLeft(builder) { case (acc, (k, v)) => acc += ((k, f(v))) }
     builder.result()

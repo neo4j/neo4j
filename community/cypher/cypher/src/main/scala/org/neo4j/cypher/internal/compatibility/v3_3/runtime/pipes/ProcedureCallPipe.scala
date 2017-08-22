@@ -44,25 +44,26 @@ case class ProcedureCallPipe(source: Pipe,
                              argExprs: Seq[Expression],
                              rowProcessing: ProcedureCallRowProcessing,
                              resultSymbols: Seq[(String, CypherType)],
-                             resultIndices: Seq[(Int, String)])
-                            (val id: Id = new Id)
-
-  extends PipeWithSource(source) {
+                             resultIndices: Seq[(Int, String)])(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   argExprs.foreach(_.registerOwningPipe(this))
 
-  private val maybeConverter = signature.outputSignature.map(_.map(v => ValueConversion.getValueConverter(v.typ)).toArray)
+  private val maybeConverter =
+    signature.outputSignature.map(_.map(v => ValueConversion.getValueConverter(v.typ)).toArray)
   private val rowProcessor = rowProcessing match {
     case FlatMapAndAppendToRow => internalCreateResultsByAppending _
-    case PassThroughRow => internalCreateResultsByPassingThrough _
+    case PassThroughRow        => internalCreateResultsByPassingThrough _
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
 
     rowProcessor(input, state)
   }
 
-  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByAppending(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     val builder = Seq.newBuilder[(String, AnyValue)]
     builder.sizeHint(resultIndices.length)
@@ -70,9 +71,10 @@ case class ProcedureCallPipe(source: Pipe,
       val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))
       val results = callMode.callProcedure(qtx, signature.name, argValues)
       results map { resultValues =>
-        resultIndices foreach { case (k, v) =>
-          val javaValue = maybeConverter.get(k)(resultValues(k))
-          builder += v -> javaValue
+        resultIndices foreach {
+          case (k, v) =>
+            val javaValue = maybeConverter.get(k)(resultValues(k))
+            builder += v -> javaValue
         }
         val rowEntries = builder.result()
         val output = input.newWith(rowEntries)
@@ -82,7 +84,8 @@ case class ProcedureCallPipe(source: Pipe,
     }
   }
 
-  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext],
+                                                    state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query
     input map { input =>
       val argValues = argExprs.map(arg => qtx.asObject(arg(input)(state)))

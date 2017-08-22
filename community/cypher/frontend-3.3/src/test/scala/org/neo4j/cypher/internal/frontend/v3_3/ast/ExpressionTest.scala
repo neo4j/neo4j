@@ -18,7 +18,10 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, IdentityMap, SemanticDirection, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -35,7 +38,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   test("shouldReturnSpecifiedAndConstrainedTypes") {
     val state = (
       expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTNumber.covariant)
+        expression.expectType(CTNumber.covariant)
     )(SemanticState.clean).state
 
     expression.types(state) should equal(CTInteger.invariant)
@@ -44,19 +47,20 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   test("shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
       expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTString.covariant)
+        expression.expectType(CTString.covariant)
     )(SemanticState.clean)
 
     result.errors should have size 1
     result.errors.head.position should equal(expression.position)
     expression.types(result.state) shouldBe empty
-    result.errors.head.msg should equal ("Type mismatch: expected String but was Integer or Node")
+    result.errors.head.msg should equal("Type mismatch: expected String but was Integer or Node")
   }
 
   test("shouldRaiseTypeErrorWithCustomMessageWhenMismatchBetweenSpecifiedTypeAndExpectedType") {
     val result = (
       expression.specifyType(CTNode | CTInteger) chain
-      expression.expectType(CTString.covariant, (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
+        expression.expectType(CTString.covariant,
+                              (expected: String, existing: String) => s"lhs was $expected yet rhs was $existing")
     )(SemanticState.clean)
 
     result.errors should have size 1
@@ -75,24 +79,25 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("should compute dependencies of composite expressions") {
-    Add(varFor("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), varFor("b"))_)(pos).dependencies should equal(Set(varFor("a"), varFor("b")))
+    Add(varFor("a"), Subtract(SignedDecimalIntegerLiteral("1")(pos), varFor("b")) _)(pos).dependencies should equal(
+      Set(varFor("a"), varFor("b")))
   }
 
   test("should compute dependencies for filtering expressions") {
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(varFor("k")), Seq.empty, None)_
-      )_
-    )_
+        NodePattern(Some(varFor("n")), Seq.empty, None) _,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+        NodePattern(Some(varFor("k")), Seq.empty, None) _
+      ) _
+    ) _
     val expr: Expression = ExtractExpression(
       varFor("x"),
       PatternExpression(pat),
       None,
-      Some(FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, varFor("x"))_)_)
-    )_
+      Some(FunctionInvocation(FunctionName("head") _, FunctionInvocation(FunctionName("nodes") _, varFor("x")) _) _)
+    ) _
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
@@ -101,23 +106,23 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // extract(x IN (n)-->(k) | extract(y IN [1,2,3] | y) )
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(varFor("k")), Seq.empty, None)_
-      )_
-    )_
+        NodePattern(Some(varFor("n")), Seq.empty, None) _,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+        NodePattern(Some(varFor("k")), Seq.empty, None) _
+      ) _
+    ) _
     val innerExpr: Expression = ExtractExpression(
       varFor("y"),
-      ListLiteral(Seq(literalInt(1), literalInt(2), literalInt(3)))_,
+      ListLiteral(Seq(literalInt(1), literalInt(2), literalInt(3))) _,
       None,
       Some(varFor("y"))
-    )_
+    ) _
     val expr: Expression = ExtractExpression(
       varFor("x"),
       PatternExpression(pat),
       None,
       Some(innerExpr)
-    )_
+    ) _
 
     expr.dependencies should equal(Set(varFor("n"), varFor("k")))
   }
@@ -126,11 +131,11 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     // [ (n)-->(k) | k ]
     val pat: RelationshipsPattern = RelationshipsPattern(
       RelationshipChain(
-        NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(varFor("k")), Seq.empty, None)_
-      )_
-    )_
+        NodePattern(Some(varFor("n")), Seq.empty, None) _,
+        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+        NodePattern(Some(varFor("k")), Seq.empty, None) _
+      ) _
+    ) _
     val expr = PatternComprehension(
       namedPath = None,
       pattern = pat,
@@ -149,26 +154,28 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     val sub = Subtract(lit1, identB)(pos)
     val add = Add(identA, sub)(pos)
 
-    IdentityMap(add.inputs: _*) should equal(IdentityMap(
-      identA -> Set.empty,
-      identB -> Set.empty,
-      lit1 -> Set.empty,
-      sub -> Set.empty,
-      add -> Set.empty
-    ))
+    IdentityMap(add.inputs: _*) should equal(
+      IdentityMap(
+        identA -> Set.empty,
+        identB -> Set.empty,
+        lit1 -> Set.empty,
+        sub -> Set.empty,
+        add -> Set.empty
+      ))
   }
 
   test("should compute inputs for filtering expressions") {
     // given
-    val pat = PatternExpression(RelationshipsPattern(
-      RelationshipChain(
-        NodePattern(Some(varFor("n")), Seq.empty, None)_,
-        RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)_,
-        NodePattern(Some(varFor("k")), Seq.empty, None)_
-      )_
-    )_)
+    val pat = PatternExpression(
+      RelationshipsPattern(
+        RelationshipChain(
+          NodePattern(Some(varFor("n")), Seq.empty, None) _,
+          RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING) _,
+          NodePattern(Some(varFor("k")), Seq.empty, None) _
+        ) _
+      ) _)
 
-    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x"))_
+    val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x")) _
     val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
 
     // extract(x IN (n)-->(k) | head(nodes(x)) )
@@ -177,7 +184,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       pat,
       None,
       Some(callHead)
-    )_
+    ) _
 
     // when
     val inputs = IdentityMap(expr.inputs: _*)

@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Eagerness.unnestEager
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.PropertyKeyName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3.IdName
@@ -44,7 +45,9 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val create = CreateRelationship(rhs, IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None)(solved)
     val input = Apply(lhs, create)(solved)
 
-    rewrite(input) should equal(CreateRelationship(Apply(lhs, rhs)(solved), IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None)(solved))
+    rewrite(input) should equal(
+      CreateRelationship(Apply(lhs, rhs)(solved), IdName("a"), IdName("b"), RelTypeName("R")(pos), IdName("c"), None)(
+        solved))
   }
 
   test("should unnest delete relationship from rhs of apply") {
@@ -80,7 +83,8 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val set = SetNodeProperty(rhs, IdName("a"), PropertyKeyName("prop")(pos), null)(solved)
     val input = Apply(lhs, set)(solved)
 
-    rewrite(input) should equal(SetNodeProperty(Apply(lhs, rhs)(solved), IdName("a"), PropertyKeyName("prop")(pos), null)(solved))
+    rewrite(input) should equal(
+      SetNodeProperty(Apply(lhs, rhs)(solved), IdName("a"), PropertyKeyName("prop")(pos), null)(solved))
   }
 
   test("should unnest set node property from map from rhs of apply") {
@@ -89,7 +93,8 @@ class unnestEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val set = SetNodePropertiesFromMap(rhs, IdName("a"), null, removeOtherProps = false)(solved)
     val input = Apply(lhs, set)(solved)
 
-    rewrite(input) should equal(SetNodePropertiesFromMap(Apply(lhs, rhs)(solved), IdName("a"), null, removeOtherProps = false)(solved))
+    rewrite(input) should equal(
+      SetNodePropertiesFromMap(Apply(lhs, rhs)(solved), IdName("a"), null, removeOtherProps = false)(solved))
   }
 
   test("should unnest set labels from rhs of apply") {

@@ -21,19 +21,24 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.MapSupport._
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.{CardinalityModel, QueryGraphCardinalityModel, QueryGraphSolverInput}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.CardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphCardinalityModel
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
 import org.neo4j.cypher.internal.frontend.v3_3.ast.IntegerLiteral
 import org.neo4j.cypher.internal.ir.v3_3._
 import org.neo4j.values.storable.NumberValue
 
-class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
+class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
+                                       simpleExpressionEvaluator: ExpressionEvaluator)
+    extends CardinalityModel {
 
   def apply(query: PlannerQuery, input0: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
     val output = query.fold(input0) {
       case (input, RegularPlannerQuery(graph, horizon, _)) =>
-        val QueryGraphSolverInput(newLabels, graphCardinality, lazyness) = calculateCardinalityForQueryGraph(graph, input, semanticTable)
+        val QueryGraphSolverInput(newLabels, graphCardinality, lazyness) =
+          calculateCardinalityForQueryGraph(graph, input, semanticTable)
 
         val horizonCardinality = calculateCardinalityForQueryHorizon(graphCardinality, horizon)
         QueryGraphSolverInput(newLabels, horizonCardinality, lazyness)
@@ -89,7 +94,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       in
   }
 
-  private def calculateCardinalityForQueryGraph(graph: QueryGraph, input: QueryGraphSolverInput,
+  private def calculateCardinalityForQueryGraph(graph: QueryGraph,
+                                                input: QueryGraphSolverInput,
                                                 semanticTable: SemanticTable) = {
     val newLabels = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     val newCardinality = queryGraphCardinalityModel(graph, input, semanticTable)

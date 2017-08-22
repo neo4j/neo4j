@@ -67,7 +67,7 @@ class PathImplTest extends CypherFunSuite with FakeEntityTestSupport {
       Seq(rel1)
     )
 
-    badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p:_*)))
+    badPaths.foreach(p => intercept[IllegalArgumentException](new expressions.PathImpl(p: _*)))
   }
 
   test("retrieveLastRelationshipOnLongPath") {

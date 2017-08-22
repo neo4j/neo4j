@@ -19,16 +19,21 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
-
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compiler.v3_3.CypherOrdering
 import org.neo4j.cypher.internal.compiler.v3_3.common.CypherOrderability
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{NodeIdWrapper, RelationshipIdWrapper}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.NodeIdWrapper
+import org.neo4j.cypher.internal.compiler.v3_3.spi.RelationshipIdWrapper
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{BooleanValue, NumberValue, TextValue}
-import org.neo4j.values.virtual.{EdgeValue, ListValue, MapValue, NodeValue}
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.JavaConverters._
 
@@ -44,17 +49,20 @@ trait Comparer extends CypherSerializer {
   }
 
   private def makeComparable(a: AnyValue)(implicit qtx: QueryState): AnyRef = a match {
-    case n: NodeValue => new NodeIdWrapper {
-      override def id() = n.id()
-    }
-    case r: EdgeValue => new RelationshipIdWrapper {
-      override def id() = r.id
-    }
+    case n: NodeValue =>
+      new NodeIdWrapper {
+        override def id() = n.id()
+      }
+    case r: EdgeValue =>
+      new RelationshipIdWrapper {
+        override def id() = r.id
+      }
     case x: AnyValue => qtx.query.asObject(x).asInstanceOf[AnyRef]
-    case x => x
+    case x           => x
   }
 
-  def compareForComparability(operator: Option[String], l: AnyValue, r: AnyValue)(implicit qtx: QueryState): Option[Int] = {
+  def compareForComparability(operator: Option[String], l: AnyValue, r: AnyValue)(
+      implicit qtx: QueryState): Option[Int] = {
     try {
       if ((isString(l) && isString(r)) || (isNumber(l) && isNumber(r)) || (isBoolean(l) && isBoolean(r)))
         Some(CypherOrdering.DEFAULT.compare(l, r))
@@ -70,16 +78,16 @@ trait Comparer extends CypherSerializer {
 object Comparer {
   def isString(value: AnyValue): Boolean = value match {
     case _: TextValue => true
-    case _ => value == null
+    case _            => value == null
   }
 
   def isNumber(value: AnyValue): Boolean = value match {
     case _: NumberValue => true
-    case _ => value == null
+    case _              => value == null
   }
 
   def isBoolean(value: AnyValue): Boolean = value match {
     case _: BooleanValue => true
-    case _ => value == null
+    case _               => value == null
   }
 }

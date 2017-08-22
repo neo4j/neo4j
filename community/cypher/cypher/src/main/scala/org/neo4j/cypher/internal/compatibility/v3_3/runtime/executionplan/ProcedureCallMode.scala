@@ -27,10 +27,10 @@ import scala.collection.mutable.ArrayBuffer
 
 object ProcedureCallMode {
   def fromAccessMode(mode: ProcedureAccessMode): ProcedureCallMode = mode match {
-    case ProcedureReadOnlyAccess(overrides) => LazyReadOnlyCallMode(overrides)
-    case ProcedureReadWriteAccess(overrides) => EagerReadWriteCallMode(overrides)
+    case ProcedureReadOnlyAccess(overrides)    => LazyReadOnlyCallMode(overrides)
+    case ProcedureReadWriteAccess(overrides)   => EagerReadWriteCallMode(overrides)
     case ProcedureSchemaWriteAccess(overrides) => SchemaWriteCallMode(overrides)
-    case ProcedureDbmsAccess(overrides) => DbmsCallMode(overrides)
+    case ProcedureDbmsAccess(overrides)        => DbmsCallMode(overrides)
   }
 }
 sealed trait ProcedureCallMode {

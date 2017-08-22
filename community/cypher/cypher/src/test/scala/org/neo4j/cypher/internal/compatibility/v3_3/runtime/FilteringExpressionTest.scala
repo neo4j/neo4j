@@ -22,14 +22,21 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{DummyExpression, Expression, FilteringExpression, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.DummyExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FilteringExpression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticCheckResult, SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class FilteringExpressionTest extends CypherFunSuite {
 
-  case class TestableFilteringExpression(variable: Variable, expression: Expression, innerPredicate: Option[Expression]) extends FilteringExpression {
+  case class TestableFilteringExpression(variable: Variable, expression: Expression, innerPredicate: Option[Expression])
+      extends FilteringExpression {
     def name = "Testable Filter Expression"
     def position = DummyPosition(0)
 

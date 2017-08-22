@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.{CypherOptionCompanion, CypherOption}
+import org.neo4j.cypher.CypherOptionCompanion
+import org.neo4j.cypher.CypherOption
 
 sealed abstract class CypherExecutionMode(modeName: String) extends CypherOption(modeName)
 

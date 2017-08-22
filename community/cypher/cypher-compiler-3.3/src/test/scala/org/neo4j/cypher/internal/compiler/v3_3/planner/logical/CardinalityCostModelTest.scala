@@ -23,32 +23,51 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AstConstructionTestSupport, HasLabels, LabelName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.frontend.v3_3.ast.HasLabels
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cost, LazyMode}
+import org.neo4j.cypher.internal.ir.v3_3.Cost
+import org.neo4j.cypher.internal.ir.v3_3.LazyMode
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
   test("expand should only be counted once") {
     val plan =
-      Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+      Selection(
+        List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
         Expand(
-          Selection(List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
-            Expand(
-              Argument(Set("a"))(solvedWithEstimation(10.0))(),
-              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
-          )(solvedWithEstimation(10.0)), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r1")(solvedWithEstimation(100.0))
+          Selection(
+            List(HasLabels(varFor("a"), Seq(LabelName("Awesome") _)) _),
+            Expand(Argument(Set("a"))(solvedWithEstimation(10.0))(),
+                   "a",
+                   SemanticDirection.OUTGOING,
+                   Seq.empty,
+                   "b",
+                   "r1")(solvedWithEstimation(100.0))
+          )(solvedWithEstimation(10.0)),
+          "a",
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          "b",
+          "r1"
+        )(solvedWithEstimation(100.0))
       )(solvedWithEstimation(10.0))
 
     CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(231))
   }
 
   test("should introduce increase cost when estimating an eager operator and lazyness is preferred") {
-    val plan = NodeHashJoin(Set("a"),
+    val plan = NodeHashJoin(
+      Set("a"),
       NodeByLabelScan("a", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-      Expand(
-        NodeByLabelScan("b", lblName("B"), Set.empty)(solvedWithEstimation(5.0)),
-        "b", SemanticDirection.OUTGOING, Seq.empty, "a", "r", ExpandAll)(solvedWithEstimation(15.0))
+      Expand(NodeByLabelScan("b", lblName("B"), Set.empty)(solvedWithEstimation(5.0)),
+             "b",
+             SemanticDirection.OUTGOING,
+             Seq.empty,
+             "a",
+             "r",
+             ExpandAll)(solvedWithEstimation(15.0))
     )(solvedWithEstimation(10.0))
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
@@ -66,24 +85,47 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           Expand(
             NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-            "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
+            "a1",
+            SemanticDirection.OUTGOING,
+            Seq.empty,
+            "b",
+            "r1",
+            ExpandAll
           )(solvedWithEstimation(50.0)),
-          "b", SemanticDirection.INCOMING, Seq.empty, "a2", "r2", ExpandAll
+          "b",
+          SemanticDirection.INCOMING,
+          Seq.empty,
+          "a2",
+          "r2",
+          ExpandAll
         )(solvedWithEstimation(250.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
+      )(solvedWithEstimation(250.0)),
+      Map("b" -> varFor("b"))
     )(solvedWithEstimation(250.0))
 
     val eagerPlan = Projection(
-      NodeHashJoin(Set("b"),
+      NodeHashJoin(
+        Set("b"),
         Expand(
           NodeByLabelScan("a1", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a1", SemanticDirection.OUTGOING, Seq.empty, "b", "r1", ExpandAll
+          "a1",
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          "b",
+          "r1",
+          ExpandAll
         )(solvedWithEstimation(50.0)),
         Expand(
           NodeByLabelScan("a2", lblName("A"), Set.empty)(solvedWithEstimation(10.0)),
-          "a2", SemanticDirection.OUTGOING, Seq.empty, "b", "r2", ExpandAll
+          "a2",
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          "b",
+          "r2",
+          ExpandAll
         )(solvedWithEstimation(50.0))
-      )(solvedWithEstimation(250.0)), Map("b" -> varFor("b"))
+      )(solvedWithEstimation(250.0)),
+      Map("b" -> varFor("b"))
     )(solvedWithEstimation(250.0))
 
     val whatever = QueryGraphSolverInput.empty
@@ -98,11 +140,11 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     val card10 = solvedWithEstimation(cardinality)
     val plan =
       Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
-        Argument(Set("a"))(card10)())(card10)
+                Argument(Set("a"))(card10)())(card10)
 
     val numberOfPredicates = 3
     val costForSelection = cardinality * numberOfPredicates
-    val costForArgument = cardinality *   .1
+    val costForArgument = cardinality * .1
     CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
   }
 

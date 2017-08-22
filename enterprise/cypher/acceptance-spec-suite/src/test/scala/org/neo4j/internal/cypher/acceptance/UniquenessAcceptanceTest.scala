@@ -77,73 +77,75 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     relate(leaf2, parent)
 
     // When
-    val result = execute("MATCH (x)-[r]->(parent) WHERE x.name = 'leaf1' WITH r, parent MATCH (leaf)-->(parent) RETURN r, leaf")
+    val result =
+      execute("MATCH (x)-[r]->(parent) WHERE x.name = 'leaf1' WITH r, parent MATCH (leaf)-->(parent) RETURN r, leaf")
 
     // Then
     result should have size 2
   }
 
   test("should consider uniqueness when combining simple and variable length pattern in a match") {
-      // Given
-      val leaf1 = createNode("leaf1")
-      val leaf2 = createNode("leaf2")
+    // Given
+    val leaf1 = createNode("leaf1")
+    val leaf2 = createNode("leaf2")
 
-      relate(leaf1, leaf2) // r1
-      relate(leaf2, leaf1) // r2
+    relate(leaf1, leaf2) // r1
+    relate(leaf2, leaf1) // r2
 
-      // When
-      val result = executeScalar[Number](s"MATCH (a)-->()-[*0..4]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+    // When
+    val result = executeScalar[Number](s"MATCH (a)-->()-[*0..4]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
-      // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
-      result should equal(2)
-    }
+    // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
+    result should equal(2)
+  }
 
   test("should consider uniqueness when combining variable and simple length pattern in a match") {
 
-      // Given
-      val leaf1 = createNode("leaf1")
-      val leaf2 = createNode("leaf2")
+    // Given
+    val leaf1 = createNode("leaf1")
+    val leaf2 = createNode("leaf2")
 
-      relate(leaf1, leaf2) // r1
-      relate(leaf2, leaf1) // r2
+    relate(leaf1, leaf2) // r1
+    relate(leaf2, leaf1) // r2
 
-      // When
-      val result = executeScalar[Number](s"MATCH (a)-[*0..4]-()<--(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+    // When
+    val result = executeScalar[Number](s"MATCH (a)-[*0..4]-()<--(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
-      // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
-      result should equal(2)
-    }
+    // Then find paths: leaf1-[r1]->(leaf2), leaf1-[r1]->(leaf2)<-[r2]-(leaf1)
+    result should equal(2)
+  }
 
   test("should consider uniqueness when combining two variable length patterns in a match") {
-      // Given
-      val leaf1 = createNode("leaf1")
-      val leaf2 = createNode("leaf2")
+    // Given
+    val leaf1 = createNode("leaf1")
+    val leaf2 = createNode("leaf2")
 
-      relate(leaf1, leaf2) // r1
-      relate(leaf2, leaf1) // r2
+    relate(leaf1, leaf2) // r1
+    relate(leaf2, leaf1) // r2
 
-      // When
-      val result = executeScalar[Number](s"MATCH (a)-[*1..4]->()-[*0..5]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
+    // When
+    val result =
+      executeScalar[Number](s"MATCH (a)-[*1..4]->()-[*0..5]-(c) WHERE id(a) = ${leaf1.getId} RETURN count(*)")
 
-      // Then find paths
-      // r1
-      // r1 >> r2
-      // r1-r2
-      result should equal(3)
-    }
+    // Then find paths
+    // r1
+    // r1 >> r2
+    // r1-r2
+    result should equal(3)
+  }
 
   test("should consider uniqueness when doing cartesian products") {
     // Given
     val r1 = relate(createNode(), createNode())
     val r2 = relate(createNode(), createNode())
 
-      // When
-      val result = execute("MATCH p=()-->(), q=()-->() RETURN p, q")
+    // When
+    val result = execute("MATCH p=()-->(), q=()-->() RETURN p, q")
 
-      // Then find paths
-      val rels = result.toList.map(row => row("p").asInstanceOf[Path].lastRelationship())
+    // Then find paths
+    val rels = result.toList.map(row => row("p").asInstanceOf[Path].lastRelationship())
 
-      rels should have size 2
-      rels.toSet should equal(Set(r1, r2))
-    }
+    rels should have size 2
+    rels.toSet should equal(Set(r1, r2))
+  }
 }

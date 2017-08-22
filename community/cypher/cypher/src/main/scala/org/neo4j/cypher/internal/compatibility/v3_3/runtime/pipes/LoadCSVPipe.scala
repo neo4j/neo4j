@@ -26,10 +26,14 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.ArrayBackedMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.cypher.internal.frontend.v3_3.LoadExternalResourceException
-import org.neo4j.cypher.internal.ir.v3_3.{CSVFormat, HasHeaders, NoHeaders}
+import org.neo4j.cypher.internal.ir.v3_3.CSVFormat
+import org.neo4j.cypher.internal.ir.v3_3.HasHeaders
+import org.neo4j.cypher.internal.ir.v3_3.NoHeaders
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.values._
-import org.neo4j.values.storable.{TextValue, Value, Values}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters._
@@ -39,9 +43,8 @@ case class LoadCSVPipe(source: Pipe,
                        urlExpression: Expression,
                        variable: String,
                        fieldTerminator: Option[String],
-                       legacyCsvQuoteEscaping: Boolean)
-                      (val id: Id = new Id)
-  extends PipeWithSource(source) {
+                       legacyCsvQuoteEscaping: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   urlExpression.registerOwningPipe(this)
 
@@ -62,8 +65,10 @@ case class LoadCSVPipe(source: Pipe,
   }
 
   //Uses an ArrayBackedMap to store header-to-values mapping
-  private class IteratorWithHeaders(headers: Seq[Value], context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
-    private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a == Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
+  private class IteratorWithHeaders(headers: Seq[Value], context: ExecutionContext, inner: Iterator[Array[Value]])
+      extends Iterator[ExecutionContext] {
+    private val internalMap = new ArrayBackedMap[String, AnyValue](
+      headers.map(a => if (a == Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
     private var nextContext: ExecutionContext = _
     private var needsUpdate = true
 
@@ -88,24 +93,29 @@ case class LoadCSVPipe(source: Pipe,
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
 
-        context.newWith1(variable, VirtualValues.map(internalMap.copy.mapValues(v => if (v == null) Values.NO_VALUE else v).asJava))
+        context.newWith1(
+          variable,
+          VirtualValues.map(internalMap.copy.mapValues(v => if (v == null) Values.NO_VALUE else v).asJava))
       } else null
     }
   }
 
-  private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
+  private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[Value]])
+      extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext = context.newWith1(variable, VirtualValues.list(inner.next():_*))
+    override def next(): ExecutionContext = context.newWith1(variable, VirtualValues.list(inner.next(): _*))
   }
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
       implicit val s = state
       val urlString: TextValue = urlExpression(context).asInstanceOf[TextValue]
       val url = getImportURL(urlString.stringValue(), state.query)
 
-      val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
+      val iterator: Iterator[Array[Value]] = state.resources
+        .getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)
         .map(_.map(s => Values.stringOrNoValue(s)))
       format match {
         case HasHeaders =>

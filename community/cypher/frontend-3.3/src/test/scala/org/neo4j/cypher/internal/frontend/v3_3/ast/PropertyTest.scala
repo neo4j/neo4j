@@ -18,7 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticError, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticError
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -74,6 +75,7 @@ class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
 
     val result = (Property(mapExpr, propertyKey) _).semanticCheck(Expression.SemanticContext.Simple)(beforeState)
 
-    result.errors should equal(List(SemanticError("Type mismatch: expected Any, Map, Node or Relationship but was Integer", pos)))
+    result.errors should equal(
+      List(SemanticError("Type mismatch: expected Any, Map, Node or Relationship but was Integer", pos)))
   }
 }

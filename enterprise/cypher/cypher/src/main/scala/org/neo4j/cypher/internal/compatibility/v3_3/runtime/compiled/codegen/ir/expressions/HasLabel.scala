@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
-case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: String)
-  extends CodeGenExpression {
+case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: String) extends CodeGenExpression {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
     generator.lookupLabelId(labelVariable, labelName)
@@ -35,9 +35,10 @@ case class HasLabel(nodeVariable: Variable, labelVariable: String, labelName: St
 
     structure.incrementDbHits()
     if (nodeVariable.nullable)
-      structure.nullableReference(nodeVariable.name, CodeGenType.primitiveNode,
-                                  structure.box(
-                                    structure.hasLabel(nodeVariable.name, labelVariable, localName), CodeGenType.primitiveBool))
+      structure.nullableReference(
+        nodeVariable.name,
+        CodeGenType.primitiveNode,
+        structure.box(structure.hasLabel(nodeVariable.name, labelVariable, localName), CodeGenType.primitiveBool))
     else
       structure.hasLabel(nodeVariable.name, labelVariable, localName)
   }

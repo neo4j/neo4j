@@ -21,50 +21,55 @@ package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, Rewriter, TypedRewriter, topDown}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.TypedRewriter
+import org.neo4j.cypher.internal.frontend.v3_3.topDown
 
 case object inlineProjections extends Rewriter {
 
   def apply(in: AnyRef): AnyRef = instance(in)
 
-  private val instance = Rewriter.lift { case input: Statement =>
-    val context = inliningContextCreator(input)
+  private val instance = Rewriter.lift {
+    case input: Statement =>
+      val context = inliningContextCreator(input)
 
-    val inlineVariables = TypedRewriter[ASTNode](context.variableRewriter)
-    val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
-    val inlineReturnItemsInWith = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = true))
-    val inlineReturnItemsInReturn = Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = false))
+      val inlineVariables = TypedRewriter[ASTNode](context.variableRewriter)
+      val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
+      val inlineReturnItemsInWith =
+        Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = true))
+      val inlineReturnItemsInReturn =
+        Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = false))
 
-    val inliningRewriter: Rewriter = Rewriter.lift {
-      case withClause: With if !withClause.distinct =>
-        withClause.copy(
-          returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
-          where = withClause.where.map(inlineVariables.narrowed)
-        )(withClause.position)
+      val inliningRewriter: Rewriter = Rewriter.lift {
+        case withClause: With if !withClause.distinct =>
+          withClause.copy(
+            returnItems = withClause.returnItems.rewrite(inlineReturnItemsInWith).asInstanceOf[ReturnItems],
+            where = withClause.where.map(inlineVariables.narrowed)
+          )(withClause.position)
 
-      case returnClause: Return =>
-        returnClause.copy(
-          returnItems = returnClause.returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
-        )(returnClause.position)
+        case returnClause: Return =>
+          returnClause.copy(
+            returnItems = returnClause.returnItems.rewrite(inlineReturnItemsInReturn).asInstanceOf[ReturnItems]
+          )(returnClause.position)
 
-      case m @ Match(_, mPattern, mHints, mOptWhere) =>
-        val newOptWhere = mOptWhere.map(inlineVariables.narrowed)
-        val newHints = mHints.map(inlineVariables.narrowed)
-        // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
-        // calling inlineProjections
-        val newPattern = inlinePatterns(mPattern)
-        m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
+        case m @ Match(_, mPattern, mHints, mOptWhere) =>
+          val newOptWhere = mOptWhere.map(inlineVariables.narrowed)
+          val newHints = mHints.map(inlineVariables.narrowed)
+          // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
+          // calling inlineProjections
+          val newPattern = inlinePatterns(mPattern)
+          m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
-      case _: UpdateClause  =>
-        throw new InternalException("Update clauses not excepted here")
+        case _: UpdateClause =>
+          throw new InternalException("Update clauses not excepted here")
 
-      case clause: Clause =>
-        inlineVariables.narrowed(clause)
-    }
+        case clause: Clause =>
+          inlineVariables.narrowed(clause)
+      }
 
-    input.endoRewrite(topDown(inliningRewriter, _.isInstanceOf[Expression]))
+      input.endoRewrite(topDown(inliningRewriter, _.isInstanceOf[Expression]))
   }
-
 
   private def findAllDependencies(variable: Variable, context: InliningContext): Set[Variable] = {
     val (dependencies, _) = fixedPoint[(Set[Variable], List[Variable])]({
@@ -83,12 +88,12 @@ case object inlineProjections extends Rewriter {
     dependencies
   }
 
-  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression, context: InliningContext,
+  private def aliasedReturnItemRewriter(inlineExpressions: Expression => Expression,
+                                        context: InliningContext,
                                         inlineAliases: Boolean): PartialFunction[AnyRef, AnyRef] = {
     case ri: ReturnItems =>
       val newItems = ri.items.flatMap {
-        case item: AliasedReturnItem
-          if context.okToRewrite(item.variable) && inlineAliases =>
+        case item: AliasedReturnItem if context.okToRewrite(item.variable) && inlineAliases =>
           val dependencies = findAllDependencies(item.variable, context)
           if (dependencies == Set(item.variable)) {
             IndexedSeq(item)
@@ -97,9 +102,10 @@ case object inlineProjections extends Rewriter {
               AliasedReturnItem(id.copyId, id.copyId)(item.position)
             }.toIndexedSeq
           }
-        case item: AliasedReturnItem => IndexedSeq(
-          item.copy(expression = inlineExpressions(item.expression))(item.position)
-        )
+        case item: AliasedReturnItem =>
+          IndexedSeq(
+            item.copy(expression = inlineExpressions(item.expression))(item.position)
+          )
       }
       ri.copy(items = newItems)(ri.position)
   }

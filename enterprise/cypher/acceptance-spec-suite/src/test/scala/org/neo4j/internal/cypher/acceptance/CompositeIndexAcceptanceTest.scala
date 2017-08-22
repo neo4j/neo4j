@@ -22,7 +22,8 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters._
 
@@ -36,7 +37,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("should succeed in creating and deleting composite index") {
     // When
     graph.createIndex("Person", "firstname")
-    graph.createIndex("Person", "firstname","lastname")
+    graph.createIndex("Person", "firstname", "lastname")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -52,13 +53,14 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should use composite index when all predicates are present") {
     // Given
-    graph.createIndex("User", "firstname","lastname")
+    graph.createIndex("User", "firstname", "lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should use("NodeIndexSeek")
@@ -67,7 +69,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should not use composite index when not all predicates are present") {
     // Given
-    graph.createIndex("User", "firstname","lastname")
+    graph.createIndex("User", "firstname", "lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -77,18 +79,20 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
+    val result =
+      succeedWith(Configs.AbsolutelyAll - Configs.Procs, "MATCH (n:User) WHERE n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(use("NodeIndexSeek"))
     result.toComparableResult should equal(List(Map("n" -> n3)))
   }
 
-  test("should use composite index when all predicates are present even in competition with other single property indexes with similar cardinality") {
+  test(
+    "should use composite index when all predicates are present even in competition with other single property indexes with similar cardinality") {
     // Given
     graph.createIndex("User", "firstname")
     graph.createIndex("User", "lastname")
-    graph.createIndex("User", "firstname","lastname")
+    graph.createIndex("User", "firstname", "lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -98,7 +102,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n")
 
     // Then
     result should useIndex(":User(firstname,lastname)")
@@ -111,7 +116,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     // Given
     graph.createIndex("User", "firstname")
     graph.createIndex("User", "lastname")
-    graph.createIndex("User", "firstname","lastname")
+    graph.createIndex("User", "firstname", "lastname")
     val n1 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
     val n2 = createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     val n3 = createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
@@ -121,13 +126,15 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.All,
+    val result = succeedWith(
+      Configs.All,
       """
         |MATCH (n:User)
         |USING INDEX n:User(lastname)
         |WHERE n.lastname = 'Soap' AND n.firstname = 'Joe'
         |RETURN n
-        |""".stripMargin)
+        |""".stripMargin
+    )
 
     // Then
     result should not(useIndex(":User(firstname,lastname)"))
@@ -150,7 +157,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:User) WHERE exists(n.lastname) AND n.firstname = 'Jake' RETURN n")
 
     // Then
     result should not(useIndex(":User(firstname,lastname)")) // TODO: This should change once scans of indexes is supported
@@ -161,19 +169,26 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should be able to update composite index when only one property has changed") {
     graph.createIndex("Person", "firstname", "lastname")
-    val n = graph.execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n").columnAs("n").next().asInstanceOf[Node]
+    val n = graph
+      .execute("CREATE (n:Person {firstname:'Joe', lastname:'Soap'}) RETURN n")
+      .columnAs("n")
+      .next()
+      .asInstanceOf[Node]
     graph.execute("MATCH (n:Person) SET n.lastname = 'Bloggs'")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:Person) where n.firstname = 'Joe' and n.lastname = 'Bloggs' RETURN n")
     result should use("NodeIndexSeek")
     result.toComparableResult should equal(List(Map("n" -> n)))
   }
 
-  test("should plan a composite index seek for a multiple property predicate expression when index is created after data") {
+  test(
+    "should plan a composite index seek for a multiple property predicate expression when index is created after data") {
     succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, "WITH RANGE(0,10) AS num CREATE (:Person {id:num})") // ensure label cardinality favors index
     succeedWith(Configs.Interpreted - Configs.Cost2_3, "CREATE (n:Person {firstname:'Joe', lastname:'Soap'})")
     graph.createIndex("Person", "firstname")
     graph.createIndex("Person", "firstname", "lastname")
-    val result = succeedWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
+    val result =
+      succeedWith(Configs.Interpreted, "MATCH (n:Person) WHERE n.firstname = 'Joe' AND n.lastname = 'Soap' RETURN n")
     result should useIndex(":Person(firstname,lastname)")
   }
 
@@ -188,12 +203,14 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.bar IN [0,1,2,3,4,5,6,7,8,9]
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
         |RETURN n.idx as x
-        |ORDER BY x""".stripMargin)
+        |ORDER BY x""".stripMargin
+    )
 
     // Then
     result should useIndex(":Foo(bar,baz)")
@@ -209,19 +226,22 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.bar = 1
         |  AND n.baz IN [0,1,2,3,4,5,6,7,8,9]
         |RETURN n.baz as x
-        |ORDER BY x""".stripMargin)
+        |ORDER BY x""".stripMargin
+    )
 
     // Then
     result should useIndex(":Foo(bar,baz)")
     result.toComparableResult should equal((0 to 9).map(i => Map("x" -> i)).toList)
   }
 
-  test("should use composite index correctly with a single exact together with a List of seeks, with the exact seek not being first") {
+  test(
+    "should use composite index correctly with a single exact together with a List of seeks, with the exact seek not being first") {
     // Given
     graph.createIndex("Foo", "bar", "baz")
 
@@ -230,16 +250,19 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     }
 
     // When
-    val result = succeedWith(Configs.CommunityInterpreted,
+    val result = succeedWith(
+      Configs.CommunityInterpreted,
       """MATCH (n:Foo)
         |WHERE n.baz = 1
         |  AND n.bar IN [0,1,2,3,4,5,6,7,8,9]
         |RETURN n.bar as x
-        |ORDER BY x""".stripMargin)
+        |ORDER BY x""".stripMargin
+    )
 
     // Then
     result should useIndex(":Foo(bar,baz)")
-    result.toComparableResult should equal(List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
+    result.toComparableResult should equal(
+      List(Map("x" -> 1), Map("x" -> 3), Map("x" -> 5), Map("x" -> 7), Map("x" -> 9)))
   }
 
   test("should handle missing properties when populating index") {
@@ -252,7 +275,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result =
+      succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz")
   }
@@ -267,7 +291,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // Then
     graph should haveIndexes(":L(foo,bar,baz)")
-    val result = succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
+    val result =
+      succeedWith(Configs.CommunityInterpreted, "MATCH (n:L {foo: 42, bar: 1337, baz: 1980}) RETURN count(n)")
     result.toComparableResult should equal(Seq(Map("count(n)" -> 1)))
     result should useIndex(":L(foo,bar,baz)")
   }
@@ -298,19 +323,22 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
     // For all combinations
     Seq(
-      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", true),         // all equality
-      (Configs.Interpreted, "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'", true),         // different order
-      (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)", false),       // exists()
-      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true", false),       // inequality
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", true), // all equality
+      (Configs.Interpreted, "n.surname = 'soap' AND n.age = 25 AND n.active = true AND n.name = 'joe'", true), // different order
+      (Configs.CommunityInterpreted,
+       "n.name = 'joe' AND n.surname = 'soap' AND n.age = 25 AND exists(n.active)",
+       false), // exists()
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname = 'soap' AND n.age >= 25 AND n.active = true", false), // inequality
       (Configs.Interpreted, "n.name = 'joe' AND n.surname STARTS WITH 's' AND n.age = 25 AND n.active = true", false), // prefix
-      (Configs.Interpreted, "n.name = 'joe' AND n.surname ENDS WITH 'p' AND n.age = 25 AND n.active = true", false),   // suffix
-      (Configs.Interpreted, "n.name >= 'i' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),         // inequality first
-      (Configs.Interpreted, "n.name STARTS WITH 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),// prefix first
-      (Configs.Interpreted, "n.name CONTAINS 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false),   // contains first
-      (Configs.CommunityInterpreted, "n.name = 'joe' AND n.surname STARTS WITH 'soap' AND n.age <= 25 AND exists(n.active)", false) // combination: equality, prefix, inequality, exists()
+      (Configs.Interpreted, "n.name = 'joe' AND n.surname ENDS WITH 'p' AND n.age = 25 AND n.active = true", false), // suffix
+      (Configs.Interpreted, "n.name >= 'i' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false), // inequality first
+      (Configs.Interpreted, "n.name STARTS WITH 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false), // prefix first
+      (Configs.Interpreted, "n.name CONTAINS 'j' AND n.surname = 'soap' AND n.age = 25 AND n.active = true", false), // contains first
+      (Configs.CommunityInterpreted,
+       "n.name = 'joe' AND n.surname STARTS WITH 'soap' AND n.age <= 25 AND exists(n.active)",
+       false) // combination: equality, prefix, inequality, exists()
     ).foreach {
       case (testConfig, predicates, valid) =>
-
         // When
         val query = s"MATCH (n:User) WHERE $predicates RETURN n"
         val result = try {
@@ -347,8 +375,9 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val b = createLabeledNode(Map("p1" -> 1, "p2" -> 1), "X")
 
     // 2.3 excluded because the params syntax was not supported in that version
-    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3, "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
-      "id" -> a.getId)
+    val result = succeedWith(Configs.CommunityInterpreted - Configs.Version2_3,
+                             "match (a), (b:X) where id(a) = $id AND b.p1 = a.p1 AND b.p2 = 1 return b",
+                             "id" -> a.getId)
 
     result.toComparableResult should equal(Seq(Map("b" -> b)))
     result should useIndex(":X(p1,p2)")
@@ -357,7 +386,12 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   case class haveIndexes(expectedIndexes: String*) extends Matcher[GraphDatabaseQueryService] {
     def apply(graph: GraphDatabaseQueryService): MatchResult = {
       graph.inTx {
-        val indexNames = graph.schema().getIndexes.asScala.toList.map(i => s":${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
+        val indexNames = graph
+          .schema()
+          .getIndexes
+          .asScala
+          .toList
+          .map(i => s":${i.getLabel}(${i.getPropertyKeys.asScala.toList.mkString(",")})")
         val result = expectedIndexes.forall(i => indexNames.contains(i.toString))
         MatchResult(
           result,

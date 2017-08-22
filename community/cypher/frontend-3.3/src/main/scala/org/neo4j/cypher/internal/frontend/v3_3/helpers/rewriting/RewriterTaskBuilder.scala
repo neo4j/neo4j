@@ -30,9 +30,12 @@ case object RewriterTaskBuilder {
     def allTasks = if (conditions.isEmpty) tasks else tasks :+ RunConditions(previousName, conditions)
   }
 
-  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] = steps.foldLeft(State()) {
-    case (state, ApplyRewriter(name, rewriter)) => state +(name, rewriter)
-    case (state, EnableRewriterCondition(condition)) => state + condition
-    case (state, DisableRewriterCondition(condition)) => state - condition
-  }.allTasks
+  def apply(steps: Seq[RewriterStep]): Seq[RewriterTask] =
+    steps
+      .foldLeft(State()) {
+        case (state, ApplyRewriter(name, rewriter))       => state + (name, rewriter)
+        case (state, EnableRewriterCondition(condition))  => state + condition
+        case (state, DisableRewriterCondition(condition)) => state - condition
+      }
+      .allTasks
 }

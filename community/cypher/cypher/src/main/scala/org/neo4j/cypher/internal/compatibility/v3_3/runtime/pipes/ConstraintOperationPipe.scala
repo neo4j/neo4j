@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.values.KeyT
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)
-                             (val id: Id = new Id) extends Pipe {
+class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToken, propertyKey: KeyToken)(val id: Id =
+                                                                                                            new Id)
+    extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val keyTokenId = keyToken.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
@@ -34,10 +35,14 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
     op match {
       case _: CreateUniqueConstraint => state.query.createUniqueConstraint(IndexDescriptor(keyTokenId, propertyKeyId))
       case _: DropUniqueConstraint   => state.query.dropUniqueConstraint(IndexDescriptor(keyTokenId, propertyKeyId))
-      case _: CreateNodePropertyExistenceConstraint => state.query.createNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
-      case _: DropNodePropertyExistenceConstraint => state.query.dropNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
-      case _: CreateRelationshipPropertyExistenceConstraint => state.query.createRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
-      case _: DropRelationshipPropertyExistenceConstraint => state.query.dropRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: CreateNodePropertyExistenceConstraint =>
+        state.query.createNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: DropNodePropertyExistenceConstraint =>
+        state.query.dropNodePropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: CreateRelationshipPropertyExistenceConstraint =>
+        state.query.createRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
+      case _: DropRelationshipPropertyExistenceConstraint =>
+        state.query.dropRelationshipPropertyExistenceConstraint(keyTokenId, propertyKeyId)
     }
 
     Iterator.empty

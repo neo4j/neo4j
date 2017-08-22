@@ -28,37 +28,37 @@ class NormalizedEqualsArgumentsTest extends CypherFunSuite with AstConstructionT
   private val condition: (Any => Seq[String]) = normalizedEqualsArguments
 
   test("happy if the property in equals is normalized") {
-    val ast: Equals = Equals(Property(varFor("a"), PropertyKeyName("prop")_)_, SignedDecimalIntegerLiteral("12")_)_
+    val ast: Equals = Equals(Property(varFor("a"), PropertyKeyName("prop") _) _, SignedDecimalIntegerLiteral("12") _) _
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy if the property in equals is not normalized") {
-    val ast: Equals = Equals(SignedDecimalIntegerLiteral("12")_, Property(varFor("a"), PropertyKeyName("prop")_)_)_
+    val ast: Equals = Equals(SignedDecimalIntegerLiteral("12") _, Property(varFor("a"), PropertyKeyName("prop") _) _) _
 
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }
 
   test("happy if the Id-function in equals is normalized") {
-    val ast: Equals = Equals(id("a"), SignedDecimalIntegerLiteral("12")_)_
+    val ast: Equals = Equals(id("a"), SignedDecimalIntegerLiteral("12") _) _
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy if the Id-function in equals is not normalized") {
-    val ast: Equals = Equals(SignedDecimalIntegerLiteral("12")_, id("a"))_
+    val ast: Equals = Equals(SignedDecimalIntegerLiteral("12") _, id("a")) _
 
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }
 
   test("happy if the Id-function and the property in equals are normalized") {
-    val ast: Equals = Equals(id("a"), Property(varFor("a"), PropertyKeyName("prop")_)_)_
+    val ast: Equals = Equals(id("a"), Property(varFor("a"), PropertyKeyName("prop") _) _) _
 
     condition(ast) shouldBe empty
   }
 
   test("unhappy if the Id-function and the property in equals are not normalized") {
-    val ast: Equals = Equals(Property(varFor("a"), PropertyKeyName("prop")_)_, id("a"))_
+    val ast: Equals = Equals(Property(varFor("a"), PropertyKeyName("prop") _) _, id("a")) _
 
     condition(ast) should equal(Seq(s"Equals at ${ast.position} is not normalized: $ast"))
   }

@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{MatchPattern, MatchRelationship}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.MatchPattern
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.MatchRelationship
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class MatchPatternTest extends CypherFunSuite {
@@ -29,10 +30,7 @@ class MatchPatternTest extends CypherFunSuite {
     val pattern = new MatchPattern(Seq("A", "B"), Seq())
 
     // When and then
-    pattern.disconnectedPatterns should equal(Seq(
-      new MatchPattern(Seq("A"), Seq()),
-      new MatchPattern(Seq("B"), Seq()))
-    )
+    pattern.disconnectedPatterns should equal(Seq(new MatchPattern(Seq("A"), Seq()), new MatchPattern(Seq("B"), Seq())))
   }
 
   test("should be non empty if it contains a node") {
@@ -51,13 +49,13 @@ class MatchPatternTest extends CypherFunSuite {
   test("should find deeply nested disjoint graphs") {
     // Given
     val pattern = new MatchPattern(Seq("A", "B", "C", "D"),
-        Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D")))
+                                   Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D")))
 
     // When and then
-    pattern.disconnectedPatterns should equal(Seq(
-      new MatchPattern(Seq("A", "B", "D"), Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D"))),
-      new MatchPattern(Seq("C"), Seq()))
-    )
+    pattern.disconnectedPatterns should equal(
+      Seq(new MatchPattern(Seq("A", "B", "D"),
+                           Seq(MatchRelationship(None, "A", "B"), MatchRelationship(None, "B", "D"))),
+          new MatchPattern(Seq("C"), Seq())))
   }
 
   test("should list subgraphs without specified points") {
@@ -65,9 +63,7 @@ class MatchPatternTest extends CypherFunSuite {
     val pattern = new MatchPattern(Seq("A", "B", "C"), Seq(MatchRelationship(None, "A", "B")))
 
     // When and then
-    pattern.disconnectedPatternsWithout(Seq("B")) should equal(Seq(
-      new MatchPattern(Seq("C"), Seq()))
-    )
+    pattern.disconnectedPatternsWithout(Seq("B")) should equal(Seq(new MatchPattern(Seq("C"), Seq())))
   }
 
   test("should not consider patterns bound by relationships as unbounded") {

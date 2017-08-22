@@ -21,11 +21,18 @@ package org.neo4j.cypher.internal.compiler.v3_3
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.NullPipeDecorator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeDecorator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, TransactionBoundQueryContext, TransactionalContextWrapper, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.TransactionBoundQueryContext
+import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
+import org.neo4j.cypher.internal.spi.v3_3.UpdateCountingQueryContext
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
+import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -36,16 +43,27 @@ import scala.collection.mutable
 object QueryStateHelper {
   def empty: QueryState = newWith()
 
-  def newWith(db: GraphDatabaseQueryService = null, query: QueryContext = null, resources: ExternalCSVResource = null,
-              params: Map[String, AnyValue] = Map.empty, decorator: PipeDecorator = NullPipeDecorator) =
-    new QueryState(query = query, resources = resources, params = params, decorator = decorator, triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty)
+  def newWith(db: GraphDatabaseQueryService = null,
+              query: QueryContext = null,
+              resources: ExternalCSVResource = null,
+              params: Map[String, AnyValue] = Map.empty,
+              decorator: PipeDecorator = NullPipeDecorator) =
+    new QueryState(query = query,
+                   resources = resources,
+                   params = params,
+                   decorator = decorator,
+                   triadicState = mutable.Map.empty,
+                   repeatableReads = mutable.Map.empty)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 
-  def queryStateFrom(db: GraphDatabaseQueryService, tx: InternalTransaction, params: Map[String, AnyValue] = Map.empty): QueryState = {
+  def queryStateFrom(db: GraphDatabaseQueryService,
+                     tx: InternalTransaction,
+                     params: Map[String, AnyValue] = Map.empty): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
-    val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", Collections.emptyMap()))
+    val transactionalContext = TransactionalContextWrapper(
+      contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, "X", Collections.emptyMap()))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     newWith(db = db, query = queryContext, params = params)
   }

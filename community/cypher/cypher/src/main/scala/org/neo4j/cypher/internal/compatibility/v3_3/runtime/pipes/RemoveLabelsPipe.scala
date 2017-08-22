@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
 
-case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])
-                           (val id: Id = new Id)
-  extends PipeWithSource(src) with GraphElementPropertyFunctions {
+case class RemoveLabelsPipe(src: Pipe, variable: String, labels: Seq[LazyLabel])(val id: Id = new Id)
+    extends PipeWithSource(src)
+    with GraphElementPropertyFunctions {
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {

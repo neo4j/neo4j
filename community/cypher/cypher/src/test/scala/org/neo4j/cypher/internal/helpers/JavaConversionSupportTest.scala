@@ -29,7 +29,7 @@ class JavaConversionSupportTest extends CypherFunSuite {
 
   test("shouldConvertPrimitiveLongIterators") {
     // given
-    val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
+    val iterator = PrimitiveLongCollections.iterator(12l, 14l)
 
     // when
     val result = JavaConversionSupport.asScala(iterator)
@@ -38,13 +38,12 @@ class JavaConversionSupportTest extends CypherFunSuite {
     List(12l, 14l) should equal(result.toList)
   }
 
-
   test("shouldConvertAndMapPrimitiveLongIterators") {
     // given
-    val iterator = PrimitiveLongCollections.iterator( 12l, 14l )
+    val iterator = PrimitiveLongCollections.iterator(12l, 14l)
 
     // when
-    val result = runtime.helpers.JavaConversionSupport.mapToScala(iterator){ _ + 1l }
+    val result = runtime.helpers.JavaConversionSupport.mapToScala(iterator) { _ + 1l }
 
     // then
     List(13l, 15l) should equal(result.toList)

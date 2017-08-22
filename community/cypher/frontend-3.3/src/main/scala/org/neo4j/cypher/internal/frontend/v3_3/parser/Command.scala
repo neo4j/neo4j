@@ -17,14 +17,13 @@
 package org.neo4j.cypher.internal.frontend.v3_3.parser
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Expression, LabelName, Property, Variable}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
+import org.neo4j.cypher.internal.frontend.v3_3.ast.LabelName
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Property
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Variable
 import org.parboiled.scala._
 
-trait Command extends Parser
-  with Expressions
-  with Literals
-  with Base
-  with ProcedureCalls {
+trait Command extends Parser with Expressions with Literals with Base with ProcedureCalls {
 
   def Command: Rule1[ast.Command] = rule(
     CreateUniqueConstraint
@@ -67,11 +66,13 @@ trait Command extends Parser
   }
 
   def CreateNodePropertyExistenceConstraint: Rule1[ast.CreateNodePropertyExistenceConstraint] = rule {
-    group(keyword("CREATE") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.CreateNodePropertyExistenceConstraint(_, _, _))
+    group(keyword("CREATE") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast
+      .CreateNodePropertyExistenceConstraint(_, _, _))
   }
 
   def CreateRelationshipPropertyExistenceConstraint: Rule1[ast.CreateRelationshipPropertyExistenceConstraint] = rule {
-    group(keyword("CREATE") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.CreateRelationshipPropertyExistenceConstraint(_, _, _))
+    group(keyword("CREATE") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast
+      .CreateRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   def DropUniqueConstraint: Rule1[ast.DropUniquePropertyConstraint] = rule {
@@ -88,37 +89,44 @@ trait Command extends Parser
   }
 
   def DropNodePropertyExistenceConstraint: Rule1[ast.DropNodePropertyExistenceConstraint] = rule {
-    group(keyword("DROP") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast.DropNodePropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP") ~~ NodePropertyExistenceConstraintSyntax) ~~>> (ast
+      .DropNodePropertyExistenceConstraint(_, _, _))
   }
 
   def DropRelationshipPropertyExistenceConstraint: Rule1[ast.DropRelationshipPropertyExistenceConstraint] = rule {
-    group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast.DropRelationshipPropertyExistenceConstraint(_, _, _))
+    group(keyword("DROP") ~~ RelationshipPropertyExistenceConstraintSyntax) ~~>> (ast
+      .DropRelationshipPropertyExistenceConstraint(_, _, _))
   }
 
   private def ProcedureArguments: Rule1[Option[Seq[Expression]]] = rule("arguments to a procedure") {
-    optional(group("(" ~~
-      zeroOrMore(Expression, separator = CommaSep) ~~ ")"
-    ) ~~> (_.toIndexedSeq))
+    optional(
+      group("(" ~~
+        zeroOrMore(Expression, separator = CommaSep) ~~ ")") ~~> (_.toIndexedSeq))
   }
 
-  private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
+  private def NodeKeyConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] =
+    keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+      keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS NODE KEY")
 
-  private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
+  private def UniqueConstraintSyntax: Rule3[Variable, LabelName, Property] =
+    keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+      keyword("ASSERT") ~~ PropertyExpression ~~ keyword("IS UNIQUE")
 
-  private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
+  private def UniqueCompositeConstraintSyntax: Rule3[Variable, LabelName, Seq[Property]] =
+    keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+      keyword("ASSERT") ~~ "(" ~~ PropertyExpressions ~~ ")" ~~ keyword("IS UNIQUE")
 
-  private def NodePropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
-    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
+  private def NodePropertyExistenceConstraintSyntax =
+    keyword("CONSTRAINT ON") ~~ "(" ~~ Variable ~~ NodeLabel ~~ ")" ~~
+      keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
-  private def RelationshipPropertyExistenceConstraintSyntax = keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
-    keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
+  private def RelationshipPropertyExistenceConstraintSyntax =
+    keyword("CONSTRAINT ON") ~~ RelationshipPatternSyntax ~~
+      keyword("ASSERT EXISTS") ~~ "(" ~~ PropertyExpression ~~ ")"
 
   private def RelationshipPatternSyntax = rule(
-    ("()-[" ~~ Variable~~ RelType ~~ "]-()")
-      | ("()-[" ~~ Variable~~ RelType ~~ "]->()")
-      | ("()<-[" ~~ Variable~~ RelType ~~ "]-()")
+    ("()-[" ~~ Variable ~~ RelType ~~ "]-()")
+      | ("()-[" ~~ Variable ~~ RelType ~~ "]->()")
+      | ("()<-[" ~~ Variable ~~ RelType ~~ "]-()")
   )
 }

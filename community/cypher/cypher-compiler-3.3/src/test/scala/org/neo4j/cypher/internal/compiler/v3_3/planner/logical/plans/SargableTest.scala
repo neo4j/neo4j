@@ -45,7 +45,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("Seekable finds Equals") {
-    assertMatches(Equals(expr1, expr2)_) {
+    assertMatches(Equals(expr1, expr2) _) {
       case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(SingleSeekableArg(expr2))
@@ -53,7 +53,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("Seekable finds In") {
-    assertMatches(In(expr1, expr2)_) {
+    assertMatches(In(expr1, expr2) _) {
       case WithSeekableArgs(lhs, rhs) =>
         lhs should equal(expr1)
         rhs should equal(ManySeekableArgs(expr2))
@@ -61,11 +61,11 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("ManySeekableArgs has size hint for collections") {
-    ManySeekableArgs(ListLiteral(Seq(expr1, expr2))_).sizeHint should equal(Some(2))
+    ManySeekableArgs(ListLiteral(Seq(expr1, expr2)) _).sizeHint should equal(Some(2))
   }
 
   test("IdSeekable works") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
+    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA) _
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
@@ -80,28 +80,28 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("IdSeekable does not match if rhs depends on lhs variable") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA)_
+    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("id") _, nodeA) _
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
-      case AsIdSeekable(_) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */ )
     }
   }
 
   test("IdSeekable does not match if function is not the id function") {
-    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA)_
+    val leftExpr: FunctionInvocation = FunctionInvocation(FunctionName("rand") _, nodeA) _
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
     val expr: Equals = Equals(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
-      case AsIdSeekable(_) => (/* oh noes */)
+      case AsIdSeekable(_) => (/* oh noes */ )
     }
   }
 
   test("PropertySeekable works with plain expressions") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val expr: Expression = In(leftExpr, expr2)_
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id") _) _
+    val expr: Expression = In(leftExpr, expr2) _
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
 
     assertMatches(expr) {
@@ -115,9 +115,9 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertySeekable works with collection expressions") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
-    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2))_
-    val expr: Expression = In(leftExpr, rightExpr)_
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id") _) _
+    val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2)) _
+    val expr: Expression = In(leftExpr, rightExpr) _
     Mockito.when(expr1.dependencies).thenReturn(Set.empty[Variable])
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
 
@@ -132,18 +132,18 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertySeekable does not match if rhs depends on lhs variable") {
-    val leftExpr: Property = Property(nodeA, PropertyKeyName("id")_)_
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id") _) _
     Mockito.when(expr2.dependencies).thenReturn(Set(nodeA))
-    val expr: Expression = In(leftExpr, expr2)_
+    val expr: Expression = In(leftExpr, expr2) _
 
     assertDoesNotMatch(expr) {
-      case AsPropertySeekable(_) => (/* oh noes */)
+      case AsPropertySeekable(_) => (/* oh noes */ )
     }
   }
 
   test("PropertyScannable works") {
-    val propertyExpr: Property = Property(nodeA, PropertyKeyName("name")_)_
-    val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr)_
+    val propertyExpr: Property = Property(nodeA, PropertyKeyName("name") _) _
+    val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr) _
 
     assertMatches(expr) {
       case AsPropertyScannable(scannable) =>

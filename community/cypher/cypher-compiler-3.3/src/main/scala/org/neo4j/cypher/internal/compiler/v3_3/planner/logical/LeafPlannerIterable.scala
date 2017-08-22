@@ -23,22 +23,23 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 trait LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
-                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan)(
+      implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]]
 }
 
 case class LeafPlannerList(leafPlanners: IndexedSeq[LeafPlanner]) extends LeafPlannerIterable {
-  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan )
-                (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
-    val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_,qg))
+  def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan = (plan, _) => plan)(
+      implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+    val logicalPlans = leafPlanners.flatMap(_(qg)).map(f(_, qg))
     logicalPlans.groupBy(_.availableSymbols).values
   }
 }
 
-case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable) extends LeafPlannerIterable {
+case class PriorityLeafPlannerList(priority: LeafPlannerIterable, fallback: LeafPlannerIterable)
+    extends LeafPlannerIterable {
 
-  override def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)
-                         (implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
+  override def candidates(qg: QueryGraph, f: (LogicalPlan, QueryGraph) => LogicalPlan)(
+      implicit context: LogicalPlanningContext): Iterable[Seq[LogicalPlan]] = {
     val priorityPlans = priority.candidates(qg, f)
     if (priorityPlans.nonEmpty) priorityPlans
     else fallback.candidates(qg, f)

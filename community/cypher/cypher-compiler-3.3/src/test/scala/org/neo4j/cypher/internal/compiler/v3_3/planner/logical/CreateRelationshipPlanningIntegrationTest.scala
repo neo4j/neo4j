@@ -31,10 +31,16 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     planFor("CREATE (a)-[r:R]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
-          CreateNode(
-            CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("a"), relType("R"), IdName("b"), None)(solved)
+          CreateNode(CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+                     IdName("b"),
+                     Seq.empty,
+                     None)(solved),
+          IdName("r"),
+          IdName("a"),
+          relType("R"),
+          IdName("b"),
+          None
+        )(solved)
       )(solved)
     )
   }
@@ -46,15 +52,35 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
           CreateRelationship(
             CreateRelationship(
               CreateNode(
-                CreateNode(
-                  CreateNode(
-                    CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
-                    IdName("b"),Seq.empty,None)(solved),
-                  IdName("c"),Seq.empty,None)(solved),
-                IdName("d"),Seq.empty,None)(solved),
-              IdName("r1"),IdName("a"),relType("R1"),IdName("b"),None)(solved),
-            IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved),
-          IdName("r3"),IdName("c"),relType("R3"),IdName("d"),None)(solved)
+                CreateNode(CreateNode(CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+                                      IdName("b"),
+                                      Seq.empty,
+                                      None)(solved),
+                           IdName("c"),
+                           Seq.empty,
+                           None)(solved),
+                IdName("d"),
+                Seq.empty,
+                None
+              )(solved),
+              IdName("r1"),
+              IdName("a"),
+              relType("R1"),
+              IdName("b"),
+              None
+            )(solved),
+            IdName("r2"),
+            IdName("c"),
+            relType("R2"),
+            IdName("b"),
+            None
+          )(solved),
+          IdName("r3"),
+          IdName("c"),
+          relType("R3"),
+          IdName("d"),
+          None
+        )(solved)
       )(solved)
     )
   }
@@ -64,13 +90,25 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
       EmptyResult(
         CreateRelationship(
           CreateRelationship(
-            CreateNode(
-              CreateNode(
-                CreateNode(SingleRow()(solved),IdName("a"),Seq.empty,None)(solved),
-                IdName("b"),Seq.empty,None)(solved),
-              IdName("c"),Seq.empty,None)(solved),
-            IdName("r1"),IdName("b"),relType("R1"),IdName("a"),None)(solved),
-          IdName("r2"),IdName("c"),relType("R2"),IdName("b"),None)(solved)
+            CreateNode(CreateNode(CreateNode(SingleRow()(solved), IdName("a"), Seq.empty, None)(solved),
+                                  IdName("b"),
+                                  Seq.empty,
+                                  None)(solved),
+                       IdName("c"),
+                       Seq.empty,
+                       None)(solved),
+            IdName("r1"),
+            IdName("b"),
+            relType("R1"),
+            IdName("a"),
+            None
+          )(solved),
+          IdName("r2"),
+          IdName("c"),
+          relType("R2"),
+          IdName("b"),
+          None
+        )(solved)
       )(solved)
     )
   }
@@ -78,11 +116,12 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
   test("should plan only one create node when the other node is already in scope when creating a relationship") {
     planFor("MATCH (n) CREATE (n)-[r:T]->(b)")._2 should equal(
       EmptyResult(
-        CreateRelationship(
-          CreateNode(
-            AllNodesScan(IdName("n"), Set())(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+        CreateRelationship(CreateNode(AllNodesScan(IdName("n"), Set())(solved), IdName("b"), Seq.empty, None)(solved),
+                           IdName("r"),
+                           IdName("n"),
+                           RelTypeName("T")(pos),
+                           IdName("b"),
+                           None)(solved)
       )(solved)
     )
   }
@@ -95,7 +134,12 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
             AllNodesScan(IdName("n"), Set())(solved),
             AllNodesScan(IdName("m"), Set())(solved)
           )(solved),
-          IdName("r"), IdName("n"), RelTypeName("T")(pos), IdName("m"), None)(solved)
+          IdName("r"),
+          IdName("n"),
+          RelTypeName("T")(pos),
+          IdName("m"),
+          None
+        )(solved)
       )(solved)
     )
   }
@@ -108,22 +152,34 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
             CartesianProduct(
               AllNodesScan(IdName("n"), Set())(solved),
               AllNodesScan(IdName("m"), Set())(solved)
-            )(solved), Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos)))(solved),
-          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+            )(solved),
+            Map("a" -> Variable("n")(pos), "b" -> Variable("m")(pos))
+          )(solved),
+          IdName("r"),
+          IdName("a"),
+          RelTypeName("T")(pos),
+          IdName("b"),
+          None
+        )(solved)
       )(solved)
     )
   }
 
-  test("should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
+  test(
+    "should plan only one create node when the other node is already in scope and aliased when creating a relationship") {
     planFor("MATCH (n) WITH n AS a CREATE (a)-[r:T]->(b)")._2 should equal(
       EmptyResult(
         CreateRelationship(
-          CreateNode(
-            Projection(
-              AllNodesScan(IdName("n"), Set())(solved),
-              Map("a" -> Variable("n")(pos)))(solved),
-            IdName("b"), Seq.empty, None)(solved),
-          IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(solved)
+          CreateNode(Projection(AllNodesScan(IdName("n"), Set())(solved), Map("a" -> Variable("n")(pos)))(solved),
+                     IdName("b"),
+                     Seq.empty,
+                     None)(solved),
+          IdName("r"),
+          IdName("a"),
+          RelTypeName("T")(pos),
+          IdName("b"),
+          None
+        )(solved)
       )(solved)
     )
   }

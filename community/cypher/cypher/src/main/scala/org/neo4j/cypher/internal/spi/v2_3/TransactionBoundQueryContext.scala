@@ -25,16 +25,23 @@ import java.util.function.Predicate
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.{BY_NUMBER, BY_STRING, BY_VALUE}
+import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.BY_NUMBER
+import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.BY_STRING
+import org.neo4j.cypher.internal.compiler.v2_3.MinMaxOrdering.BY_VALUE
 import org.neo4j.cypher.internal.compiler.v2_3._
 import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.commands.DirectionConverter.toGraphDb
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
-import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{KernelPredicate, OnlyDirectionExpander, TypeAndDirectionExpander}
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.KernelPredicate
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.OnlyDirectionExpander
+import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.TypeAndDirectionExpander
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.JavaConversionSupport._
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
-import org.neo4j.cypher.internal.frontend.v2_3.{Bound, EntityNotFoundException, FailedIndexException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v2_3.Bound
+import org.neo4j.cypher.internal.frontend.v2_3.EntityNotFoundException
+import org.neo4j.cypher.internal.frontend.v2_3.FailedIndexException
+import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.BeansAPIRelationshipIterator
 import org.neo4j.cypher.internal.spi.v3_3.TransactionalContextWrapper
 import org.neo4j.cypher.javacompat.internal.GraphDatabaseCypherService
@@ -43,22 +50,30 @@ import org.neo4j.graphalgo.impl.path.ShortestPath.ShortestPathPredicate
 import org.neo4j.graphdb.RelationshipType._
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.security.URLAccessValidationError
-import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
+import org.neo4j.graphdb.traversal.Evaluators
+import org.neo4j.graphdb.traversal.TraversalDescription
+import org.neo4j.graphdb.traversal.Uniqueness
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
+import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException
+import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException
 import org.neo4j.kernel.api.index.InternalIndexState
 import org.neo4j.kernel.api.schema.constaints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
-import org.neo4j.kernel.api.schema.{IndexQuery, SchemaDescriptorFactory}
-import org.neo4j.kernel.api.{exceptions, _}
+import org.neo4j.kernel.api.schema.IndexQuery
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
+import org.neo4j.kernel.api.exceptions
+import org.neo4j.kernel.api._
 import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.values.storable.Values
 
 import scala.collection.JavaConverters._
-import scala.collection.{Iterator, mutable}
+import scala.collection.Iterator
+import scala.collection.mutable
 
 final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
-  extends TransactionBoundTokenContext(tc.statement) with QueryContext with SchemaDescriptorTranslation {
+    extends TransactionBoundTokenContext(tc.statement)
+    with QueryContext
+    with SchemaDescriptorTranslation {
 
   override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
@@ -131,7 +146,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
   def indexSeek(index: SchemaTypes.IndexDescriptor, value: Any) =
     JavaConversionSupport.mapToScalaENFXSafe(
-      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(nodeOps.getById)
+      tc.statement.readOperations().indexQuery(index, IndexQuery.exact(index.propertyId, Values.of(value))))(
+      nodeOps.getById)
 
   def indexSeekByRange(index: SchemaTypes.IndexDescriptor, value: Any) = value match {
 
@@ -145,13 +161,14 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       throw new InternalException(s"Unsupported index seek by range: $range")
   }
 
-  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
+  private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor,
+                                     range: InequalitySeekRange[Any]): scala.Iterator[Node] = {
     val groupedRanges = range.groupBy { (bound: Bound[Any]) =>
       bound.endPoint match {
-        case n: Number => classOf[Number]
-        case s: String => classOf[String]
+        case n: Number    => classOf[Number]
+        case s: String    => classOf[String]
         case c: Character => classOf[String]
-        case _ => classOf[Any]
+        case _            => classOf[Any]
       }
     }
 
@@ -161,13 +178,17 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
 
     if (anyRange.nonEmpty) {
       // If we get back an exclusion test, the range could return values otherwise it is empty
-      anyRange.get.inclusionTest[Any](BY_VALUE).map { test =>
-        throw new IllegalArgumentException("Cannot compare a property against values that are neither strings nor numbers.")
-      }.getOrElse(Iterator.empty)
+      anyRange.get
+        .inclusionTest[Any](BY_VALUE)
+        .map { test =>
+          throw new IllegalArgumentException(
+            "Cannot compare a property against values that are neither strings nor numbers.")
+        }
+        .getOrElse(Iterator.empty)
     } else {
       (optNumericRange, optStringRange) match {
         case (Some(numericRange), None) => indexSeekByNumericalRange(index, numericRange)
-        case (None, Some(stringRange)) => indexSeekByStringRange(index, stringRange)
+        case (None, Some(stringRange))  => indexSeekByStringRange(index, stringRange)
 
         case (Some(numericRange), Some(stringRange)) =>
           // Consider MATCH (n:Person) WHERE n.prop < 1 AND n.prop > "London":
@@ -180,10 +201,11 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
           // Below we simulate this behaviour:
           //
           if (indexSeekByNumericalRange(index, numericRange).isEmpty
-            || indexSeekByStringRange(index, stringRange).isEmpty) {
+              || indexSeekByStringRange(index, stringRange).isEmpty) {
             Iterator.empty
           } else {
-            throw new IllegalArgumentException(s"Cannot compare a property against both numbers and strings. They are incomparable.")
+            throw new IllegalArgumentException(
+              s"Cannot compare a property against both numbers and strings. They are incomparable.")
           }
 
         case (None, None) =>
@@ -194,11 +216,13 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   }
 
   private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] = {
-    val indexedNodes = tc.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.propertyId, prefix))
+    val indexedNodes =
+      tc.statement.readOperations().indexQuery(index, IndexQuery.stringPrefix(index.propertyId, prefix))
     JavaConversionSupport.mapToScalaENFXSafe(indexedNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
+  private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor,
+                                        range: InequalitySeekRange[Number]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = (range match {
 
@@ -215,43 +239,74 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
         rangeGreaterThan.limit(BY_NUMBER).flatMap { greaterThanLimit =>
           rangeLessThan.limit(BY_NUMBER).map { lessThanLimit =>
-            readOps.indexQuery(index, IndexQuery.range(index.propertyId, greaterThanLimit.endPoint, greaterThanLimit.isInclusive, lessThanLimit.endPoint, lessThanLimit.isInclusive))
+            readOps.indexQuery(index,
+                               IndexQuery.range(index.propertyId,
+                                                greaterThanLimit.endPoint,
+                                                greaterThanLimit.isInclusive,
+                                                lessThanLimit.endPoint,
+                                                lessThanLimit.isInclusive))
           }
         }
     }).getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
-  private def indexSeekByStringRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[String]): scala.Iterator[Node] = {
+  private def indexSeekByStringRange(index: SchemaTypes.IndexDescriptor,
+                                     range: InequalitySeekRange[String]): scala.Iterator[Node] = {
     val readOps = tc.statement.readOperations()
     val matchingNodes: PrimitiveLongIterator = range match {
 
       case rangeLessThan: RangeLessThan[String] =>
-        rangeLessThan.limit(BY_STRING).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.propertyId, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive))
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        rangeLessThan
+          .limit(BY_STRING)
+          .map { limit =>
+            readOps.indexQuery(
+              index,
+              IndexQuery.range(index.propertyId, null, false, limit.endPoint.asInstanceOf[String], limit.isInclusive))
+          }
+          .getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case rangeGreaterThan: RangeGreaterThan[String] =>
-        rangeGreaterThan.limit(BY_STRING).map { limit =>
-          readOps.indexQuery(index, IndexQuery.range(index.propertyId, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false))
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+        rangeGreaterThan
+          .limit(BY_STRING)
+          .map { limit =>
+            readOps.indexQuery(
+              index,
+              IndexQuery.range(index.propertyId, limit.endPoint.asInstanceOf[String], limit.isInclusive, null, false))
+          }
+          .getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
 
       case RangeBetween(rangeGreaterThan, rangeLessThan) =>
-        rangeGreaterThan.limit(BY_STRING).flatMap { greaterThanLimit =>
-          rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
-            readOps.indexQuery(index, IndexQuery.range(index.propertyId, greaterThanLimit.endPoint.asInstanceOf[String], greaterThanLimit.isInclusive, lessThanLimit.endPoint.asInstanceOf[String], lessThanLimit.isInclusive))
+        rangeGreaterThan
+          .limit(BY_STRING)
+          .flatMap { greaterThanLimit =>
+            rangeLessThan.limit(BY_STRING).map { lessThanLimit =>
+              readOps.indexQuery(
+                index,
+                IndexQuery.range(
+                  index.propertyId,
+                  greaterThanLimit.endPoint.asInstanceOf[String],
+                  greaterThanLimit.isInclusive,
+                  lessThanLimit.endPoint.asInstanceOf[String],
+                  lessThanLimit.isInclusive
+                )
+              )
+            }
           }
-        }.getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
+          .getOrElse(EMPTY_PRIMITIVE_LONG_COLLECTION.iterator)
     }
 
     JavaConversionSupport.mapToScalaENFXSafe(matchingNodes)(nodeOps.getById)
   }
 
   def indexScan(index: SchemaTypes.IndexDescriptor) =
-    mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(nodeOps.getById)
+    mapToScalaENFXSafe(tc.statement.readOperations().indexQuery(index, IndexQuery.exists(index.propertyId)))(
+      nodeOps.getById)
 
   override def lockingExactUniqueIndexSearch(index: SchemaTypes.IndexDescriptor, value: Any): Option[Node] = {
-    val nodeId: Long = tc.statement.readOperations().nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, Values.of(value)))
+    val nodeId: Long = tc.statement
+      .readOperations()
+      .nodeGetFromUniqueIndexSeek(index, IndexQuery.exact(index.propertyId, Values.of(value)))
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -289,59 +344,67 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       }
     }
 
-    def propertyKeyIds(id: Long): Iterator[Int] = try {
-      // use the following when bumping 2.3.x dependency
-      // JavaConversionSupport.asScalaENFXSafe(tc.statement.readOperations().nodeGetPropertyKeys(id))
-      new Iterator[Int] {
-        val inner = tc.statement.readOperations().nodeGetPropertyKeys(id)
+    def propertyKeyIds(id: Long): Iterator[Int] =
+      try {
+        // use the following when bumping 2.3.x dependency
+        // JavaConversionSupport.asScalaENFXSafe(tc.statement.readOperations().nodeGetPropertyKeys(id))
+        new Iterator[Int] {
+          val inner = tc.statement.readOperations().nodeGetPropertyKeys(id)
 
-        override def hasNext: Boolean = inner.hasNext
+          override def hasNext: Boolean = inner.hasNext
 
-        override def next(): Int = try {
-          inner.next()
-        } catch {
-          case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+          override def next(): Int =
+            try {
+              inner.next()
+            } catch {
+              case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+            }
         }
+      } catch {
+        case _: exceptions.EntityNotFoundException => Iterator.empty
       }
-    } catch {
-      case _: exceptions.EntityNotFoundException => Iterator.empty
-    }
 
-    def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
-    } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
-    }
+    def getProperty(id: Long, propertyKeyId: Int): Any =
+      try {
+        tc.statement.readOperations().nodeGetProperty(id, propertyKeyId).asObject()
+      } catch {
+        case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+      }
 
-    def hasProperty(id: Long, propertyKey: Int): Boolean = try {
-      tc.statement.readOperations().nodeHasProperty(id, propertyKey)
-    } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => false
-    }
+    def hasProperty(id: Long, propertyKey: Int): Boolean =
+      try {
+        tc.statement.readOperations().nodeHasProperty(id, propertyKey)
+      } catch {
+        case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => false
+      }
 
-    def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
-      tc.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
-    } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
-    }
+    def removeProperty(id: Long, propertyKeyId: Int): Unit =
+      try {
+        tc.statement.dataWriteOperations().nodeRemoveProperty(id, propertyKeyId)
+      } catch {
+        case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+      }
 
-    def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
-      tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
-    } catch {
-      case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
-    }
+    def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit =
+      try {
+        tc.statement.dataWriteOperations().nodeSetProperty(id, propertyKeyId, Values.of(value))
+      } catch {
+        case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+      }
 
-    override def getById(id: Long) = try {
-      tc.graph.getNodeById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
-    }
+    override def getById(id: Long) =
+      try {
+        tc.graph.getNodeById(id)
+      } catch {
+        case e: NotFoundException => throw new EntityNotFoundException(s"Node with id $id", e)
+      }
 
     def all: Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodesGetAll())(getById)
 
     def indexGet(name: String, key: String, value: Any): Iterator[Node] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexGet(name, key, value))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexGet(name, key, value))(
+        getById)
 
     def indexQuery(name: String, query: Any): Iterator[Node] =
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().nodeLegacyIndexQuery(name, query))(getById)
@@ -359,63 +422,72 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
       }
     }
 
-    override def propertyKeyIds(id: Long): Iterator[Int] = try {
-      // use the following when bumping the cypher 2.3.x version
-      //JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
+    override def propertyKeyIds(id: Long): Iterator[Int] =
+      try {
+        // use the following when bumping the cypher 2.3.x version
+        //JavaConversionSupport.asScalaENFXSafe(statement.readOperations().relationshipGetPropertyKeys(id))
         new Iterator[Int] {
           val inner = tc.statement.readOperations().relationshipGetPropertyKeys(id)
 
           override def hasNext: Boolean = inner.hasNext
 
-          override def next(): Int = try {
-            inner.next()
-          } catch {
-            case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
-          }
+          override def next(): Int =
+            try {
+              inner.next()
+            } catch {
+              case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => null.asInstanceOf[Int]
+            }
         }
       } catch {
         case _: exceptions.EntityNotFoundException => Iterator.empty
       }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Any = try {
-      tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
-    } catch {
-      case _: exceptions.EntityNotFoundException => null
-    }
+    override def getProperty(id: Long, propertyKeyId: Int): Any =
+      try {
+        tc.statement.readOperations().relationshipGetProperty(id, propertyKeyId).asObject()
+      } catch {
+        case _: exceptions.EntityNotFoundException => null
+      }
 
-    override def hasProperty(id: Long, propertyKey: Int): Boolean = try {
-      tc.statement.readOperations().relationshipHasProperty(id, propertyKey)
-    } catch {
-      case _: exceptions.EntityNotFoundException => false
-    }
+    override def hasProperty(id: Long, propertyKey: Int): Boolean =
+      try {
+        tc.statement.readOperations().relationshipHasProperty(id, propertyKey)
+      } catch {
+        case _: exceptions.EntityNotFoundException => false
+      }
 
-    override def removeProperty(id: Long, propertyKeyId: Int): Unit = try {
-      tc.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
-    } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
-    }
+    override def removeProperty(id: Long, propertyKeyId: Int): Unit =
+      try {
+        tc.statement.dataWriteOperations().relationshipRemoveProperty(id, propertyKeyId)
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
 
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit = try {
-      tc.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
-    } catch {
-      case _: exceptions.EntityNotFoundException => //ignore
-    }
+    override def setProperty(id: Long, propertyKeyId: Int, value: Any): Unit =
+      try {
+        tc.statement.dataWriteOperations().relationshipSetProperty(id, propertyKeyId, Values.of(value))
+      } catch {
+        case _: exceptions.EntityNotFoundException => //ignore
+      }
 
-    override def getById(id: Long) = try {
-      tc.graph.getRelationshipById(id)
-    } catch {
-      case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
-    }
+    override def getById(id: Long) =
+      try {
+        tc.graph.getRelationshipById(id)
+      } catch {
+        case e: NotFoundException => throw new EntityNotFoundException(s"Relationship with id $id", e)
+      }
 
     override def all: Iterator[Relationship] = {
       JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipsGetAll())(getById)
     }
 
     override def indexGet(name: String, key: String, value: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(
+        tc.statement.readOperations().relationshipLegacyIndexGet(name, key, value, -1, -1))(getById)
 
     override def indexQuery(name: String, query: Any): Iterator[Relationship] =
-      JavaConversionSupport.mapToScalaENFXSafe(tc.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
+      JavaConversionSupport.mapToScalaENFXSafe(
+        tc.statement.readOperations().relationshipLegacyIndexQuery(name, query, -1, -1))(getById)
 
     override def isDeleted(r: Relationship): Boolean =
       tc.stateView.hasTxStateWithChanges && tc.stateView.txState().relationshipIsDeletedInThisTx(r.getId)
@@ -424,17 +496,21 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
   override def getOrCreatePropertyKeyId(propertyKey: String) =
     tc.statement.tokenWriteOperations().propertyKeyGetOrCreateForName(propertyKey)
 
-  override def upgrade(context: QueryContext): LockingQueryContext = new RepeatableReadQueryContext(context, new Locker {
-    private val locks = new mutable.ListBuffer[Lock]
+  override def upgrade(context: QueryContext): LockingQueryContext =
+    new RepeatableReadQueryContext(
+      context,
+      new Locker {
+        private val locks = new mutable.ListBuffer[Lock]
 
-    def releaseAllLocks() {
-      locks.foreach(_.release())
-    }
+        def releaseAllLocks() {
+          locks.foreach(_.release())
+        }
 
-    def acquireLock(p: PropertyContainer) {
-      locks += tc.acquireWriteLock(p)
-    }
-  })
+        def acquireLock(p: PropertyContainer) {
+          locks += tc.acquireWriteLock(p)
+        }
+      }
+    )
 
   abstract class BaseOperations[T <: PropertyContainer] extends Operations[T] {
     def primitiveLongIteratorToScalaIterator(primitiveIterator: PrimitiveLongIterator): Iterator[Long] =
@@ -452,63 +528,83 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     tc.statement.readOperations().schemaStateGetOrCreate(key, javaCreator)
   }
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.IndexDescriptor] = try {
-    IdempotentResult(tc.statement.schemaWriteOperations().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
-  } catch {
-    case _: AlreadyIndexedException =>
-
-      val indexDescriptor = tc.statement.readOperations().indexGetForSchema( SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
-
-      if (tc.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
-        throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
-      IdempotentResult(indexDescriptor, wasCreated = false)
-  }
-
-  def dropIndexRule(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel( labelId, propertyKeyId ))
-
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] = try {
-    IdempotentResult(
-      tc.statement.schemaWriteOperations().uniquePropertyConstraintCreate(
-        SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
-      ))
-  } catch {
-    case existing: AlreadyConstrainedException =>
-      IdempotentResult(SchemaTypes.UniquenessConstraint(labelId, propertyKeyId), wasCreated = false)
-  }
-
-  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId))
-
-  def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.NodePropertyExistenceConstraint] =
+  def addIndexRule(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.IndexDescriptor] =
     try {
       IdempotentResult(
-        tc.statement.schemaWriteOperations().nodePropertyExistenceConstraintCreate(
-          SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
-        ))
+        tc.statement.schemaWriteOperations().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)))
+    } catch {
+      case _: AlreadyIndexedException =>
+        val indexDescriptor =
+          tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
+
+        if (tc.statement.readOperations().indexGetState(indexDescriptor) == InternalIndexState.FAILED)
+          throw new FailedIndexException(indexDescriptor.userDescription(tokenNameLookup))
+        IdempotentResult(indexDescriptor, wasCreated = false)
+    }
+
+  def dropIndexRule(labelId: Int, propertyKeyId: Int) =
+    tc.statement.schemaWriteOperations().indexDrop(IndexDescriptorFactory.forLabel(labelId, propertyKeyId))
+
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.UniquenessConstraint] =
+    try {
+      IdempotentResult(
+        tc.statement
+          .schemaWriteOperations()
+          .uniquePropertyConstraintCreate(
+            SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+          ))
+    } catch {
+      case existing: AlreadyConstrainedException =>
+        IdempotentResult(SchemaTypes.UniquenessConstraint(labelId, propertyKeyId), wasCreated = false)
+    }
+
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) =
+    tc.statement
+      .schemaWriteOperations()
+      .constraintDrop(ConstraintDescriptorFactory.uniqueForLabel(labelId, propertyKeyId))
+
+  def createNodePropertyExistenceConstraint(
+      labelId: Int,
+      propertyKeyId: Int): IdempotentResult[SchemaTypes.NodePropertyExistenceConstraint] =
+    try {
+      IdempotentResult(
+        tc.statement
+          .schemaWriteOperations()
+          .nodePropertyExistenceConstraintCreate(
+            SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)
+          ))
     } catch {
       case existing: AlreadyConstrainedException =>
         IdempotentResult(SchemaTypes.NodePropertyExistenceConstraint(labelId, propertyKeyId), wasCreated = false)
     }
 
   def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.existsForLabel(labelId, propertyKeyId))
+    tc.statement
+      .schemaWriteOperations()
+      .constraintDrop(ConstraintDescriptorFactory.existsForLabel(labelId, propertyKeyId))
 
-  def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): IdempotentResult[SchemaTypes.RelationshipPropertyExistenceConstraint] =
+  def createRelationshipPropertyExistenceConstraint(
+      relTypeId: Int,
+      propertyKeyId: Int): IdempotentResult[SchemaTypes.RelationshipPropertyExistenceConstraint] =
     try {
       IdempotentResult(
-        tc.statement.schemaWriteOperations().relationshipPropertyExistenceConstraintCreate(
-          SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId)
-        ))
+        tc.statement
+          .schemaWriteOperations()
+          .relationshipPropertyExistenceConstraintCreate(
+            SchemaDescriptorFactory.forRelType(relTypeId, propertyKeyId)
+          ))
     } catch {
       case existing: AlreadyConstrainedException =>
-        IdempotentResult(SchemaTypes.RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId), wasCreated = false)
+        IdempotentResult(SchemaTypes.RelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId),
+                         wasCreated = false)
     }
 
   def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
-    tc.statement.schemaWriteOperations().constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId,propertyKeyId))
+    tc.statement
+      .schemaWriteOperations()
+      .constraintDrop(ConstraintDescriptorFactory.existsForRelType(relTypeId, propertyKeyId))
 
-  override def getImportURL(url: URL): Either[String,URL] = tc.graph match {
+  override def getImportURL(url: URL): Either[String, URL] = tc.graph match {
     case db: GraphDatabaseQueryService =>
       try {
         Right(db.validateURLAccess(url))
@@ -533,16 +629,18 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
                                         direction: SemanticDirection,
                                         relTypes: Seq[String]): Iterator[Path] = {
     val depthEval = (minHops, maxHops) match {
-      case (None, None) => Evaluators.fromDepth(1)
-      case (Some(min), None) => Evaluators.fromDepth(min)
-      case (None, Some(max)) => Evaluators.includingDepths(1, max)
+      case (None, None)           => Evaluators.fromDepth(1)
+      case (Some(min), None)      => Evaluators.fromDepth(min)
+      case (None, Some(max))      => Evaluators.includingDepths(1, max)
       case (Some(min), Some(max)) => Evaluators.includingDepths(min, max)
     }
 
     // The RULE compiler makes use of older kernel API capabilities for variable length expanding
     // TODO: Consider re-writing this using similar code to the COST var-length expand
-    val baseTraversalDescription: TraversalDescription = tc.graph.asInstanceOf[GraphDatabaseCypherService]
-      .getGraphDatabaseService.traversalDescription()
+    val baseTraversalDescription: TraversalDescription = tc.graph
+      .asInstanceOf[GraphDatabaseCypherService]
+      .getGraphDatabaseService
+      .traversalDescription()
       .evaluator(depthEval)
       .uniqueness(Uniqueness.RELATIONSHIP_PATH)
 
@@ -558,14 +656,20 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     traversalDescription.traverse(realNode).iterator().asScala
   }
 
-  override def singleShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+  override def singleShortestPath(left: Node,
+                                  right: Node,
+                                  depth: Int,
+                                  expander: expressions.Expander,
+                                  pathPredicate: KernelPredicate[Path],
                                   filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 
     Option(pathFinder.findSinglePath(left, right))
   }
 
-  private def buildPathFinder(depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+  private def buildPathFinder(depth: Int,
+                              expander: expressions.Expander,
+                              pathPredicate: KernelPredicate[Path],
                               filters: Seq[KernelPredicate[PropertyContainer]]): ShortestPath = {
     val startExpander = expander match {
       case OnlyDirectionExpander(_, _, dir) =>
@@ -577,14 +681,16 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     val expanderWithNodeFilters = expander.nodeFilters.foldLeft(startExpander) {
-      case (acc, filter) => acc.addNodeFilter(new Predicate[PropertyContainer] {
-        override def test(t: PropertyContainer): Boolean = filter.test(t)
-      })
+      case (acc, filter) =>
+        acc.addNodeFilter(new Predicate[PropertyContainer] {
+          override def test(t: PropertyContainer): Boolean = filter.test(t)
+        })
     }
     val expanderWithAllPredicates = expander.relFilters.foldLeft(expanderWithNodeFilters) {
-      case (acc, filter) => acc.addRelationshipFilter(new Predicate[PropertyContainer] {
-        override def test(t: PropertyContainer): Boolean = filter.test(t)
-      })
+      case (acc, filter) =>
+        acc.addRelationshipFilter(new Predicate[PropertyContainer] {
+          override def test(t: PropertyContainer): Boolean = filter.test(t)
+        })
     }
     val shortestPathPredicate = new ShortestPathPredicate {
       override def test(path: Path): Boolean = pathPredicate.test(path)
@@ -598,7 +704,11 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
   }
 
-  override def allShortestPath(left: Node, right: Node, depth: Int, expander: expressions.Expander, pathPredicate: KernelPredicate[Path],
+  override def allShortestPath(left: Node,
+                               right: Node,
+                               depth: Int,
+                               expander: expressions.Expander,
+                               pathPredicate: KernelPredicate[Path],
                                filters: Seq[KernelPredicate[PropertyContainer]]): scala.Iterator[Path] = {
     val pathFinder = buildPathFinder(depth, expander, pathPredicate, filters)
 

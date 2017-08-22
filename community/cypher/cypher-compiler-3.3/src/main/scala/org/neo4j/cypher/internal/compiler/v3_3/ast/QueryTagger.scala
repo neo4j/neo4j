@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.functions._
 import org.neo4j.cypher.internal.frontend.v3_3.parser.CypherParser
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 sealed class QueryTag(aName: String) {
   val name = aName.trim.toLowerCase
@@ -46,7 +48,6 @@ object QueryTags {
     UnDirectedRelTag,
     SingleNodePatternTag,
     RelPatternTag,
-
     WhereTag,
     WithTag,
     ReturnTag,
@@ -54,7 +55,6 @@ object QueryTags {
     UnionTag,
     UnwindTag,
     CallProcedureTag,
-
     UpdatesTag,
     LoadCSVTag,
     CreateTag,
@@ -67,20 +67,16 @@ object QueryTags {
     OnCreateTag,
     CreateUniqueTag,
     ForeachTag,
-
     LimitTag,
     SkipTag,
     OrderByTag,
-
     CreateIndexTag,
     CreateConstraintTag,
     DropIndexTag,
     DropConstraintTag,
-
     AggregationTag,
     MathFunctionTag,
     StringFunctionTag,
-
     CaseTag,
     ComplexExpressionTag,
     FilteringExpressionTag,
@@ -89,7 +85,9 @@ object QueryTags {
     VariableExpressionTag
   )
 
-  private val tagsByName: Map[String, QueryTag] = all.map { tag => tag.name -> tag }.toMap
+  private val tagsByName: Map[String, QueryTag] = all.map { tag =>
+    tag.name -> tag
+  }.toMap
 
   def parse(text: String) = {
     val tokens = tokenize(text.trim)
@@ -195,134 +193,155 @@ case object AggregationTag extends QueryTag("aggregation")
 object QueryTagger extends QueryTagger[String] {
 
   def apply(input: String) = Try(default(input)) match {
-    case Success(set) => set
+    case Success(set)       => set
     case Failure(exception) => Set.empty // in case there was a syntax error
   }
 
-  val default: QueryTagger[String] = fromString(forEachChild(
-    // Clauses
-    lift[ASTNode] {
-      case x: Match =>
-        val tags = Set[QueryTag](
-          MatchTag,
-          if (x.optional) OptionalMatchTag else RegularMatchTag
-        )
-        val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
-        if (containsSingleNode) tags + SingleNodePatternTag else tags
+  val default: QueryTagger[String] = fromString(
+    forEachChild(
+      // Clauses
+      lift[ASTNode] {
+        case x: Match =>
+          val tags = Set[QueryTag](
+            MatchTag,
+            if (x.optional) OptionalMatchTag else RegularMatchTag
+          )
+          val containsSingleNode = x.pattern.patternParts.exists(_.element.isSingleNode)
+          if (containsSingleNode) tags + SingleNodePatternTag else tags
 
-      case x: Where =>
-        Set(WhereTag)
+        case x: Where =>
+          Set(WhereTag)
 
-      case x: With =>
-        Set(WithTag)
+        case x: With =>
+          Set(WithTag)
 
-      case x: Return =>
-        Set(ReturnTag)
+        case x: Return =>
+          Set(ReturnTag)
 
-      case x: Start =>
-        Set(StartTag)
+        case x: Start =>
+          Set(StartTag)
 
-      case x: Union =>
-        Set(UnionTag)
+        case x: Union =>
+          Set(UnionTag)
 
-      case x: Unwind =>
-        Set(UnwindTag)
+        case x: Unwind =>
+          Set(UnwindTag)
 
-      case x: LoadCSV =>
-        Set(LoadCSVTag, UpdatesTag)
+        case x: LoadCSV =>
+          Set(LoadCSVTag, UpdatesTag)
 
-      case x: CallClause =>
-        Set(CallProcedureTag)
+        case x: CallClause =>
+          Set(CallProcedureTag)
 
-      case x: UpdateClause =>
-        val specificTag = x match {
-          case u: Create => Set(CreateTag)
-          case Delete(_, forced) => if (forced) Set(DetachDeleteTag) else Set(DeleteTag)
-          case u: SetClause => Set(SetTag)
-          case u: Remove => Set(RemoveTag)
-          case u: Merge => Set(MergeTag) ++ u.actions.map {
-            case _: OnCreate => OnCreateTag
-            case _: OnMatch => OnMatchTag
+        case x: UpdateClause =>
+          val specificTag = x match {
+            case u: Create         => Set(CreateTag)
+            case Delete(_, forced) => if (forced) Set(DetachDeleteTag) else Set(DeleteTag)
+            case u: SetClause      => Set(SetTag)
+            case u: Remove         => Set(RemoveTag)
+            case u: Merge =>
+              Set(MergeTag) ++ u.actions.map {
+                case _: OnCreate => OnCreateTag
+                case _: OnMatch  => OnMatchTag
+              }
+            case u: CreateUnique => Set(CreateUniqueTag)
+            case u: Foreach      => Set(ForeachTag)
+            case _               => Set.empty[QueryTag]
           }
-          case u: CreateUnique => Set(CreateUniqueTag)
-          case u: Foreach => Set(ForeachTag)
-          case _ => Set.empty[QueryTag]
+          specificTag ++ Set(UpdatesTag)
+      } ++
+
+        // Pattern features
+        lift[ASTNode] {
+          case x: ShortestPaths    => Set(ShortestPathTag)
+          case x: NamedPatternPart => Set(NamedPathTag)
+          case x: RelationshipPattern =>
+            Set(
+              RelPatternTag,
+              if (x.isSingleLength) SingleLengthRelTag else VarLengthRelTag,
+              if (x.isDirected) DirectedRelTag else UnDirectedRelTag
+            )
+        } ++
+
+        // <expr> unless variable or literal
+        lift[ASTNode] {
+          case x: Variable   => Set.empty
+          case x: Literal    => Set.empty
+          case x: Expression => Set(ComplexExpressionTag)
+        } ++
+
+        // subtype of <expr>
+        lift[ASTNode] {
+          case x: Variable            => Set(VariableExpressionTag)
+          case x: Literal             => Set(LiteralExpressionTag)
+          case x: Parameter           => Set(ParameterExpressionTag)
+          case x: FilteringExpression => Set(FilteringExpressionTag)
+          case x: CaseExpression      => Set(CaseTag)
+        } ++
+
+        // return clause extras
+        lift[ASTNode] {
+          case x: Limit   => Set(LimitTag)
+          case x: Skip    => Set(SkipTag)
+          case x: OrderBy => Set(OrderByTag)
+        } ++
+
+        // commands
+        lift[ASTNode] {
+          case x: CreateIndex                                   => Set(CreateIndexTag)
+          case x: DropIndex                                     => Set(DropIndexTag)
+          case x: CreateNodeKeyConstraint                       => Set(CreateConstraintTag)
+          case x: CreateUniquePropertyConstraint                => Set(CreateConstraintTag)
+          case x: CreateNodePropertyExistenceConstraint         => Set(CreateConstraintTag)
+          case x: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)
+          case x: DropUniquePropertyConstraint                  => Set(DropConstraintTag)
+          case x: DropNodePropertyExistenceConstraint           => Set(DropConstraintTag)
+          case x: DropRelationshipPropertyExistenceConstraint   => Set(DropConstraintTag)
+        } ++
+
+        // functions
+        lift[ASTNode] {
+          case f: FunctionInvocation if mathFunctions contains f.function   => Set(MathFunctionTag)
+          case f: FunctionInvocation if stringFunctions contains f.function => Set(StringFunctionTag)
+          case f: FunctionInvocation if isAggregation(f.function)           => Set(AggregationTag)
         }
-        specificTag ++ Set(UpdatesTag)
-    } ++
-
-    // Pattern features
-    lift[ASTNode] {
-      case x: ShortestPaths => Set(ShortestPathTag)
-      case x: NamedPatternPart => Set(NamedPathTag)
-      case x: RelationshipPattern =>
-        Set(
-          RelPatternTag,
-          if (x.isSingleLength) SingleLengthRelTag else VarLengthRelTag,
-          if (x.isDirected) DirectedRelTag else UnDirectedRelTag
-        )
-    } ++
-
-    // <expr> unless variable or literal
-    lift[ASTNode] {
-      case x: Variable => Set.empty
-      case x: Literal => Set.empty
-      case x: Expression => Set(ComplexExpressionTag)
-    } ++
-
-    // subtype of <expr>
-    lift[ASTNode] {
-      case x: Variable => Set(VariableExpressionTag)
-      case x: Literal => Set(LiteralExpressionTag)
-      case x: Parameter => Set(ParameterExpressionTag)
-      case x: FilteringExpression => Set(FilteringExpressionTag)
-      case x: CaseExpression => Set(CaseTag)
-    } ++
-
-    // return clause extras
-    lift[ASTNode] {
-      case x: Limit => Set(LimitTag)
-      case x: Skip => Set(SkipTag)
-      case x: OrderBy => Set(OrderByTag)
-    } ++
-
-    // commands
-    lift[ASTNode] {
-      case x: CreateIndex => Set(CreateIndexTag)
-      case x: DropIndex => Set(DropIndexTag)
-      case x: CreateNodeKeyConstraint => Set(CreateConstraintTag)
-      case x: CreateUniquePropertyConstraint => Set(CreateConstraintTag)
-      case x: CreateNodePropertyExistenceConstraint => Set(CreateConstraintTag)
-      case x: CreateRelationshipPropertyExistenceConstraint => Set(CreateConstraintTag)
-      case x: DropUniquePropertyConstraint => Set(DropConstraintTag)
-      case x: DropNodePropertyExistenceConstraint => Set(DropConstraintTag)
-      case x: DropRelationshipPropertyExistenceConstraint => Set(DropConstraintTag)
-    } ++
-
-    // functions
-    lift[ASTNode] {
-      case f: FunctionInvocation if mathFunctions contains f.function => Set(MathFunctionTag)
-      case f: FunctionInvocation if stringFunctions contains f.function => Set(StringFunctionTag)
-      case f: FunctionInvocation if isAggregation(f.function) => Set(AggregationTag)
-    }
-  ))
+    ))
 
   private def isAggregation(function: Function) = function match {
     case x: AggregatingFunction => true
-    case _ => false
+    case _                      => false
   }
 
-  private def stringFunctions: Set[Function] = Set(Replace, Substring, Left, Right, LTrim, RTrim,
-                                                   ToLower, ToUpper, Split, Reverse, ToString)
+  private def stringFunctions: Set[Function] =
+    Set(Replace, Substring, Left, Right, LTrim, RTrim, ToLower, ToUpper, Split, Reverse, ToString)
 
-  private def mathFunctions: Set[Function] = Set(Abs, Ceil, Floor, Round, Sign, Rand,
-                                                 Log, Log10, Exp, E, Sqrt,
-                                                 Sin, Cos, Tan, Cot, Asin, Acos, Atan, Atan2,
-                                                 Pi, Degrees, Radians, Haversin)
+  private def mathFunctions: Set[Function] =
+    Set(Abs,
+        Ceil,
+        Floor,
+        Round,
+        Sign,
+        Rand,
+        Log,
+        Log10,
+        Exp,
+        E,
+        Sqrt,
+        Sin,
+        Cos,
+        Tan,
+        Cot,
+        Asin,
+        Acos,
+        Atan,
+        Atan2,
+        Pi,
+        Degrees,
+        Radians,
+        Haversin)
 
   // run parser and pass statement to next query tagger
-  case class fromString(next: QueryTagger[Statement])
-    extends QueryTagger[String] {
+  case class fromString(next: QueryTagger[Statement]) extends QueryTagger[String] {
 
     val parser = new CypherParser
 
@@ -332,7 +351,9 @@ object QueryTagger extends QueryTagger[String] {
   // run inner query tagger on each child ast node and return union over all results
   case class forEachChild(inner: QueryTagger[ASTNode]) extends QueryTagger[Statement] {
     def apply(input: Statement) = input.treeFold(Set.empty[QueryTag]) {
-      case node: ASTNode => acc => (acc ++ inner(node), Some(identity))
+      case node: ASTNode =>
+        acc =>
+          (acc ++ inner(node), Some(identity))
     }
   }
 
@@ -342,4 +363,3 @@ object QueryTagger extends QueryTagger[String] {
     def ++(rhs: QueryTagger[T]): QueryTagger[T] = (input: T) => lhs(input) `union` rhs(input)
   }
 }
-

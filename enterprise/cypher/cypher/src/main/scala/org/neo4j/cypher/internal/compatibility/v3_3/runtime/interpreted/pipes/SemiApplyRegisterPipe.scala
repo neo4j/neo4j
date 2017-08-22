@@ -20,12 +20,13 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeWithSource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
 
-case class SemiApplyRegisterPipe(source: Pipe, inner: Pipe, negated: Boolean)
-                                (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class SemiApplyRegisterPipe(source: Pipe, inner: Pipe, negated: Boolean)(val id: Id = new Id)
+    extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input filter { (inputContext) =>
       val innerState = state.withInitialContext(inputContext)

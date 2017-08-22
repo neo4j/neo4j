@@ -24,13 +24,21 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.{ExecutionPlan, ProcedureCallMode}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ProcedureCallMode
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.Counter
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{ExternalCSVResource, QueryState}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Signature}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.{Id, NoChildren, PlanDescriptionImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Signature
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.NoChildren
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.PlanDescriptionImpl
 import org.neo4j.cypher.internal.compiler.v3_3.ProcedurePlannerName
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext, ProcedureSignature}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureSignature
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
 import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
@@ -54,83 +62,103 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                       resultIndices: Seq[(Int, String)],
                                       notifications: Set[Notification],
                                       converter: ExpressionConverters)
-  extends ExecutionPlan {
+    extends ExecutionPlan {
 
-    assert(resultSymbols.size == resultIndices.size)
+  assert(resultSymbols.size == resultIndices.size)
 
   private val resultMappings = resultSymbols.indices.map(i => {
-      val r = resultIndices(i)
-      (r._1, r._2, resultSymbols(i)._2)
-    })
+    val r = resultIndices(i)
+    (r._1, r._2, resultSymbols(i)._2)
+  })
 
-    private val argExprCommands: Seq[expressions.Expression] =  argExprs.map(converter.toCommandExpression) ++
-      signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
+  private val argExprCommands: Seq[expressions.Expression] = argExprs.map(converter.toCommandExpression) ++
+    signature.inputSignature.drop(argExprs.size).flatMap(_.default).map(o => Literal(o.value))
 
-    override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
-      val input = evaluateArguments(ctx, params)
+  override def run(ctx: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
+    val input = evaluateArguments(ctx, params)
 
-      val taskCloser = new TaskCloser
-      taskCloser.addTask(ctx.transactionalContext.close)
+    val taskCloser = new TaskCloser
+    taskCloser.addTask(ctx.transactionalContext.close)
 
-      planType match {
-        case NormalMode => createNormalExecutionResult(ctx, taskCloser, input, planType)
-        case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input, notifications)
-        case ProfileMode => createProfiledExecutionResult(ctx, taskCloser, input, planType)
-      }
+    planType match {
+      case NormalMode  => createNormalExecutionResult(ctx, taskCloser, input, planType)
+      case ExplainMode => createExplainedExecutionResult(ctx, taskCloser, input, notifications)
+      case ProfileMode => createProfiledExecutionResult(ctx, taskCloser, input, planType)
     }
-
-    private def createNormalExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
-                                            input: Seq[Any], planType: ExecutionMode) = {
-      val descriptionGenerator = () => createNormalPlan
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   resultMappings, descriptionGenerator, planType)
-    }
-
-    private def createExplainedExecutionResult(ctx: QueryContext, taskCloser: TaskCloser, input: Seq[Any],
-                                               notifications: Set[Notification]) = {
-      // close all statements
-      taskCloser.close(success = true)
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
-      ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
-    }
-
-    private def createProfiledExecutionResult(ctx: QueryContext, taskCloser: TaskCloser,
-                                              input: Seq[Any], planType: ExecutionMode) = {
-      val rowCounter = Counter()
-      val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-      val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-      new ProcedureExecutionResult(ctx, taskCloser, signature.name, callMode, input,
-                                   resultMappings, descriptionGenerator, planType) {
-        override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
-      }
-    }
-
-    private def evaluateArguments(ctx: QueryContext, params: Map[String, AnyValue]): Seq[Any] = {
-      val state = new QueryState(ctx, ExternalCSVResource.empty, params)
-      argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
-    }
-
-    private def createNormalPlan =
-      PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-        Seq(createSignatureArgument),
-        resultSymbols.map(_._1).toSet
-      )
-
-    private def createProfilePlanGenerator(rowCounter: Counter) = () =>
-      PlanDescriptionImpl(new Id, "ProcedureCall", NoChildren,
-        Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)),
-        resultSymbols.map(_._1).toSet
-      )
-
-    private def createSignatureArgument =
-      Signature(signature.name, Seq.empty, resultSymbols)
-
-    override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
-    override def isPeriodicCommit: Boolean = false
-    override def runtimeUsed = ProcedureRuntimeName
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
-    override def plannerUsed = ProcedurePlannerName
   }
 
+  private def createNormalExecutionResult(ctx: QueryContext,
+                                          taskCloser: TaskCloser,
+                                          input: Seq[Any],
+                                          planType: ExecutionMode) = {
+    val descriptionGenerator = () => createNormalPlan
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    new ProcedureExecutionResult(ctx,
+                                 taskCloser,
+                                 signature.name,
+                                 callMode,
+                                 input,
+                                 resultMappings,
+                                 descriptionGenerator,
+                                 planType)
+  }
+
+  private def createExplainedExecutionResult(ctx: QueryContext,
+                                             taskCloser: TaskCloser,
+                                             input: Seq[Any],
+                                             notifications: Set[Notification]) = {
+    // close all statements
+    taskCloser.close(success = true)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
+    ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
+  }
+
+  private def createProfiledExecutionResult(ctx: QueryContext,
+                                            taskCloser: TaskCloser,
+                                            input: Seq[Any],
+                                            planType: ExecutionMode) = {
+    val rowCounter = Counter()
+    val descriptionGenerator = createProfilePlanGenerator(rowCounter)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    new ProcedureExecutionResult(ctx,
+                                 taskCloser,
+                                 signature.name,
+                                 callMode,
+                                 input,
+                                 resultMappings,
+                                 descriptionGenerator,
+                                 planType) {
+      override protected def executeCall: Iterator[Array[AnyRef]] = rowCounter.track(super.executeCall)
+    }
+  }
+
+  private def evaluateArguments(ctx: QueryContext, params: Map[String, AnyValue]): Seq[Any] = {
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params)
+    argExprCommands.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty)(state)))
+  }
+
+  private def createNormalPlan =
+    PlanDescriptionImpl(new Id,
+                        "ProcedureCall",
+                        NoChildren,
+                        Seq(createSignatureArgument),
+                        resultSymbols.map(_._1).toSet)
+
+  private def createProfilePlanGenerator(rowCounter: Counter) =
+    () =>
+      PlanDescriptionImpl(new Id,
+                          "ProcedureCall",
+                          NoChildren,
+                          Seq(createSignatureArgument, DbHits(1), Rows(rowCounter.counted)),
+                          resultSymbols.map(_._1).toSet)
+
+  private def createSignatureArgument =
+    Signature(signature.name, Seq.empty, resultSymbols)
+
+  override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
+  override def isPeriodicCommit: Boolean = false
+  override def runtimeUsed = ProcedureRuntimeName
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
+  override def plannerUsed = ProcedurePlannerName
+}

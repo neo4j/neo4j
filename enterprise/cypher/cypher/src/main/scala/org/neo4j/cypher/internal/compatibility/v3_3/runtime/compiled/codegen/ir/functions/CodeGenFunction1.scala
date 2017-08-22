@@ -29,11 +29,11 @@ sealed trait CodeGenFunction1 {
 case object IdCodeGenFunction extends CodeGenFunction1 {
 
   override def apply(arg: CodeGenExpression): CodeGenExpression = arg match {
-    case NodeExpression(n) => IdOf(n)
-    case NodeProjection(n) => IdOf(n)
+    case NodeExpression(n)         => IdOf(n)
+    case NodeProjection(n)         => IdOf(n)
     case RelationshipExpression(r) => IdOf(r)
     case RelationshipProjection(r) => IdOf(r)
-    case e => throw new InternalException(s"id function only accepts nodes or relationships not $e")
+    case e                         => throw new InternalException(s"id function only accepts nodes or relationships not $e")
   }
 }
 
@@ -42,6 +42,6 @@ case object TypeCodeGenFunction extends CodeGenFunction1 {
   override def apply(arg: CodeGenExpression): CodeGenExpression = arg match {
     case r: RelationshipExpression => TypeOf(r.relId)
     case r: RelationshipProjection => TypeOf(r.relId)
-    case e => throw new InternalException(s"type function only accepts relationships $e")
+    case e                         => throw new InternalException(s"type function only accepts relationships $e")
   }
 }

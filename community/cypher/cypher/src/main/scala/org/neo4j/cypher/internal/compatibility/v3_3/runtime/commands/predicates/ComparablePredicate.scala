@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Expression, Literal, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Variable
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable._
@@ -34,14 +36,15 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
     val r = right(m)
 
     if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
-    else (l, r) match {
-      case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
-      case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
-      case (n1: NumberValue, n2: NumberValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: TextValue, n2: TextValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case (n1: BooleanValue, n2: BooleanValue) => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
-      case _ => None
-    }
+    else
+      (l, r) match {
+        case (d: FloatingPointValue, _) if d.doubleValue().isNaN => None
+        case (_, d: FloatingPointValue) if d.doubleValue().isNaN => None
+        case (n1: NumberValue, n2: NumberValue)                  => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+        case (n1: TextValue, n2: TextValue)                      => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+        case (n1: BooleanValue, n2: BooleanValue)                => Some(compare(AnyValues.COMPARATOR.compare(n1, n2)))
+        case _                                                   => None
+      }
   }
 
   def sign: String
@@ -54,12 +57,13 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
 
-  def other(e: Expression): Expression = if (e != left) {
-    assert(e == right, "This expression is neither LHS nor RHS")
-    left
-  } else {
-    right
-  }
+  def other(e: Expression): Expression =
+    if (e != left) {
+      assert(e == right, "This expression is neither LHS nor RHS")
+      left
+    } else {
+      right
+    }
 }
 
 case class Equals(a: Expression, b: Expression) extends Predicate {
@@ -76,7 +80,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
     (a1, b1) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => None
-      case _ => Some(a1.equals(b1))
+      case _                                                      => Some(a1.equals(b1))
     }
   }
 
@@ -84,7 +88,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
   def containsIsNull = (a, b) match {
     case (Variable(_), Literal(null)) => true
-    case _ => false
+    case _                            => false
   }
 
   def rewrite(f: (Expression) => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))

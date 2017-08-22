@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 object ASTAnnotationMap {
   def empty[K <: ASTNode, V]: ASTAnnotationMap[K, V] = new ASTAnnotationMap(Map.empty[(K, InputPosition), V])
   def apply[K <: ASTNode, V](elems: (K, V)*): ASTAnnotationMap[K, V] =
-    new ASTAnnotationMap[K, V](Map(elems.map { case (astnode, value) => ((astnode, astnode.position), value)}: _*))
+    new ASTAnnotationMap[K, V](Map(elems.map { case (astnode, value) => ((astnode, astnode.position), value) }: _*))
 }
 
 class ASTAnnotationMap[K <: ASTNode, V] private (store: Map[(K, InputPosition), V]) extends Map[K, V] {

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 
 case class LoadVariable(variable: Variable) extends CodeGenExpression {
@@ -34,6 +35,6 @@ case class LoadVariable(variable: Variable) extends CodeGenExpression {
 
   override def codeGenType(implicit context: CodeGenContext) = variable.codeGenType match {
     case x: CypherCodeGenType => x
-    case _ => throw new InternalException("Tried to create a Cypher value from a non-cypher-value variable")
+    case _                    => throw new InternalException("Tried to create a Cypher value from a non-cypher-value variable")
   }
 }

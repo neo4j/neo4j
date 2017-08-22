@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.{Add, Literal}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Add
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{longValue, stringValue}
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.Values.stringValue
 
 class AddTest extends CypherFunSuite {
 

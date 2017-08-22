@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 /*
  * Simple count is used when no grouping key is defined such as
  * `MATCH (n) RETURN count(n.prop)`
  */
 case class SimpleCount(variable: Variable, expression: CodeGenExpression, distinct: Boolean)
-  extends BaseAggregateExpression(expression, distinct) {
+    extends BaseAggregateExpression(expression, distinct) {
 
   def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)
@@ -44,17 +45,15 @@ case class SimpleCount(variable: Variable, expression: CodeGenExpression, distin
     }
   }
 
-  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])
-                          (block: MethodStructure[E] => Unit)
-                          (implicit context: CodeGenContext) = {
+  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(
+      block: MethodStructure[E] => Unit)(implicit context: CodeGenContext) = {
 
     structure.distinctSetIfNotContains(
-      setName(variable), Map(typeName(variable) -> (expression.codeGenType -> expression.generateExpression(structure))))(block)
+      setName(variable),
+      Map(typeName(variable) -> (expression.codeGenType -> expression.generateExpression(structure))))(block)
   }
 
   private def setName(variable: Variable) = variable.name + "Set"
 
   private def typeName(variable: Variable) = variable.name + "Type"
 }
-
-

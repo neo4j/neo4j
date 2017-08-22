@@ -80,7 +80,7 @@ object NonEmptyList {
     def asReverseNonEmptyListOption: Option[NonEmptyList[T]] =
       if (iterator.isEmpty) None else Some(loop(Last(iterator.next()), iterator))
 
-    def asNonEmptyListOption: Option[NonEmptyList[T]]  =
+    def asNonEmptyListOption: Option[NonEmptyList[T]] =
       asReverseNonEmptyListOption.map(_.reverse)
   }
 
@@ -122,7 +122,7 @@ sealed trait NonEmptyList[+T] {
 
   final def ++:[X >: T](iterator: Iterator[X]): NonEmptyList[X] = iterator.asNonEmptyListOption match {
     case Some(prefix) => prefix.reverse.mapAndPrependReversedTo[X, X](identity, self)
-    case None => self
+    case None         => self
   }
 
   def ++[X >: T](other: NonEmptyList[X]): NonEmptyList[X] =
@@ -130,20 +130,20 @@ sealed trait NonEmptyList[+T] {
 
   @tailrec
   final def containsAnyOf[X >: T](x: X*): Boolean = self match {
-    case Last(elem) => x.contains(elem)
-    case Fby(elem, tail) => x.contains(elem) || tail.containsAnyOf(x:_*)
+    case Last(elem)      => x.contains(elem)
+    case Fby(elem, tail) => x.contains(elem) || tail.containsAnyOf(x: _*)
   }
 
   @tailrec
   final def foreach(f: T => Unit): Unit = self match {
-    case Last(elem) => f(elem)
+    case Last(elem)      => f(elem)
     case Fby(elem, tail) => f(elem); tail.foreach(f)
   }
 
   final def filter[X >: T](f: X => Boolean): Option[NonEmptyList[T]] =
     foldLeft[Option[NonEmptyList[T]]](None) {
-      case (None, elem) => if (f(elem)) Some(Last(elem)) else None
-      case (acc@Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
+      case (None, elem)            => if (f(elem)) Some(Last(elem)) else None
+      case (acc @ Some(nel), elem) => if (f(elem)) Some(Fby(elem, nel)) else acc
     }.map(_.reverse)
 
   final def forall[X >: T](predicate: (X) => Boolean): Boolean =
@@ -151,14 +151,14 @@ sealed trait NonEmptyList[+T] {
 
   @tailrec
   final def exists[X >: T](predicate: (X) => Boolean): Boolean = self match {
-    case Last(elem) => predicate(elem)
+    case Last(elem)                      => predicate(elem)
     case Fby(elem, _) if predicate(elem) => true
-    case Fby(_, tail) => tail.exists(predicate)
+    case Fby(_, tail)                    => tail.exists(predicate)
   }
 
   final def map[S](f: T => S): NonEmptyList[S] = self match {
     case Fby(elem, tail) => tail.mapAndPrependReversedTo[T, S](f, Last(f(elem))).reverse
-    case Last(elem) => Last(f(elem))
+    case Last(elem)      => Last(f(elem))
   }
 
   final def collect[S](pf: PartialFunction[T, S]): Option[NonEmptyList[S]] =
@@ -169,17 +169,17 @@ sealed trait NonEmptyList[+T] {
   @tailrec
   final def mapAndPrependReversedTo[X >: T, Y](f: X => Y, acc: NonEmptyList[Y]): NonEmptyList[Y] = self match {
     case Fby(elem, tail) => tail.mapAndPrependReversedTo(f, Fby(f(elem), acc))
-    case Last(elem) => Fby(f(elem), acc)
+    case Last(elem)      => Fby(f(elem), acc)
   }
 
   final def flatMap[S](f: T => NonEmptyList[S]): NonEmptyList[S] = self match {
     case Last(elem) => f(elem)
-    case _ => reverseFlatMap(f).reverse
+    case _          => reverseFlatMap(f).reverse
   }
 
   final def reverseFlatMap[S](f: T => NonEmptyList[S]): NonEmptyList[S] = self match {
     case Fby(elem, tail) => tail.reverseFlatMapLoop(f(elem).reverse, f)
-    case Last(elem) => f(elem).reverse
+    case Last(elem)      => f(elem).reverse
   }
 
   final def foldLeft[A](acc0: A)(f: (A, T) => A): A =
@@ -187,7 +187,7 @@ sealed trait NonEmptyList[+T] {
 
   final def reduceLeft[X >: T](f: (X, X) => X): X = self match {
     case Fby(head, tail) => tail.reduceLeftLoop(head, f)
-    case Last(value) => value
+    case Last(value)     => value
   }
 
   // Partition each element into one of two lists using f
@@ -200,27 +200,28 @@ sealed trait NonEmptyList[+T] {
   // - or an option of a non empty list of As, and a non empty list of Bs
   //
   final def partition[A, B](f: T => Either[A, B])
-  : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
+    : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
     self match {
       case Fby(elem, tail) => tail.partitionLoop(f, asPartitions(f(elem)))
-      case Last(elem) => asPartitions(f(elem))
+      case Last(elem)      => asPartitions(f(elem))
     }
 
   final def groupBy[X >: T, K](f: X => K): Map[K, NonEmptyList[X]] =
-    foldLeft(Map.empty[K, NonEmptyList[X]]) {
-      (m, value) =>
-        val key = f(value)
-        val nel = m.get(key).map(cur => Fby(value, cur)).getOrElse(Last(value))
-        m.updated(key, nel)
+    foldLeft(Map.empty[K, NonEmptyList[X]]) { (m, value) =>
+      val key = f(value)
+      val nel = m.get(key).map(cur => Fby(value, cur)).getOrElse(Last(value))
+      m.updated(key, nel)
     }.mapValues(_.reverse)
 
   final def reverse: NonEmptyList[T] = self match {
     case Fby(elem, tail) => tail.mapAndPrependReversedTo[T, T](identity, Last(elem))
-    case _ => self
+    case _               => self
   }
 
   final def min[X >: T](implicit ordering: Ordering[X]): X =
-    reduceLeft { (left, right) => if (ordering.compare(left, right) <= 0) left else right }
+    reduceLeft { (left, right) =>
+      if (ordering.compare(left, right) <= 0) left else right
+    }
 
   final def max[X >: T](implicit ordering: Ordering[X]): X =
     min(ordering.reverse)
@@ -249,56 +250,61 @@ sealed trait NonEmptyList[+T] {
   @tailrec
   private def reverseFlatMapLoop[S](acc: NonEmptyList[S], f: T => NonEmptyList[S]): NonEmptyList[S] = self match {
     case Fby(elem, tail) => tail.reverseFlatMapLoop(f(elem).mapAndPrependReversedTo[S, S](identity, acc), f)
-    case Last(elem) => f(elem).mapAndPrependReversedTo[S, S](identity, acc)
+    case Last(elem)      => f(elem).mapAndPrependReversedTo[S, S](identity, acc)
   }
 
   @tailrec
   private def foldLeftLoop[A, X >: T](acc0: A, f: (A, X) => A): A = self match {
-    case Last(head) => f(acc0, head)
+    case Last(head)      => f(acc0, head)
     case Fby(head, tail) => tail.foldLeftLoop(f(acc0, head), f)
   }
 
   @tailrec
   private def reduceLeftLoop[X >: T](acc: X, f: (X, X) => X): X = self match {
     case Fby(elem, tail) => tail.reduceLeftLoop(f(acc, elem), f)
-    case Last(elem) => f(acc, elem)
+    case Last(elem)      => f(acc, elem)
   }
 
   private def asPartitions[A, B](item: Either[A, B])
-  : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
+    : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
     item match {
-      case Left(l) => Left((NonEmptyList(l), None))
+      case Left(l)  => Left((NonEmptyList(l), None))
       case Right(r) => Right((None, NonEmptyList(r)))
     }
 
   @tailrec
-  private def partitionLoop[A, B](f: T => Either[A, B],
-                                  acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
-  : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
+  private def partitionLoop[A, B](
+      f: T => Either[A, B],
+      acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
+    : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
     self match {
       case Fby(elem, tail) => tail.partitionLoop(f, appendToPartitions(f(elem), acc))
-      case Last(elem) => reversePartitions(appendToPartitions(f(elem), acc))
+      case Last(elem)      => reversePartitions(appendToPartitions(f(elem), acc))
     }
 
-  private def appendToPartitions[A, B](value: Either[A, B],
-                                       acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
-  : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
+  private def appendToPartitions[A, B](
+      value: Either[A, B],
+      acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
+    : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
     (value, acc) match {
-      case (Left(elem), Left((lefts, optRights))) => Left((Fby(elem, lefts), optRights))
-      case (Left(elem), Right((optLefts, rights))) => Right((prependToOptionalNonEmptyList(elem, optLefts), rights))
-      case (Right(elem), Left((lefts, optRights))) => Left((lefts, prependToOptionalNonEmptyList(elem, optRights)))
+      case (Left(elem), Left((lefts, optRights)))   => Left((Fby(elem, lefts), optRights))
+      case (Left(elem), Right((optLefts, rights)))  => Right((prependToOptionalNonEmptyList(elem, optLefts), rights))
+      case (Right(elem), Left((lefts, optRights)))  => Left((lefts, prependToOptionalNonEmptyList(elem, optRights)))
       case (Right(elem), Right((optLefts, rights))) => Right((optLefts, Fby(elem, rights)))
     }
 
-  private def reversePartitions[A, B](acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
-  : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
+  private def reversePartitions[A, B](
+      acc: Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])])
+    : Either[(NonEmptyList[A], Option[NonEmptyList[B]]), (Option[NonEmptyList[A]], NonEmptyList[B])] =
     acc match {
-      case Left((lefts, optRights)) => Left((lefts.reverse, optRights.map(_.reverse)))
+      case Left((lefts, optRights))  => Left((lefts.reverse, optRights.map(_.reverse)))
       case Right((optLefts, rights)) => Right((optLefts.map(_.reverse), rights.reverse))
     }
 
   private def prependToOptionalNonEmptyList[X](elem: X, optNel: Option[NonEmptyList[X]]): Option[NonEmptyList[X]] =
-    optNel.map { nel => Fby(elem, nel) } orElse Some(Last(elem))
+    optNel.map { nel =>
+      Fby(elem, nel)
+    } orElse Some(Last(elem))
 }
 
 final case class Fby[+T](head: T, tail: NonEmptyList[T]) extends NonEmptyList[T] {

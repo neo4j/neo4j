@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v3_3
 
-case class Selectivity private(factor: Double) extends Ordered[Selectivity] {
+case class Selectivity private (factor: Double) extends Ordered[Selectivity] {
   assert(factor >= 0 && factor <= 1.0)
   def *(other: Selectivity): Selectivity = Selectivity(other.factor * factor)
   def ^(a: Int): Selectivity = Selectivity(Math.pow(factor, a))
@@ -36,12 +36,12 @@ case class Selectivity private(factor: Double) extends Ordered[Selectivity] {
 
 object Selectivity {
 
-  def of(value: Double): Option[Selectivity] = if (value.isInfinite || value.isNaN || value < 0.0 || value > 1.0) None else Some(Selectivity(value))
+  def of(value: Double): Option[Selectivity] =
+    if (value.isInfinite || value.isNaN || value < 0.0 || value > 1.0) None else Some(Selectivity(value))
 
   val ZERO = Selectivity(0.0d)
   val ONE = Selectivity(1.0d)
-  val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17)    // we can get closer, but this is close enough
-
+  val CLOSEST_TO_ONE = Selectivity(1 - 5.56e-17) // we can get closer, but this is close enough
 
   implicit def turnSeqIntoSingleSelectivity(p: Seq[Selectivity]): Selectivity =
     p.reduceOption(_ * _).getOrElse(Selectivity(1))

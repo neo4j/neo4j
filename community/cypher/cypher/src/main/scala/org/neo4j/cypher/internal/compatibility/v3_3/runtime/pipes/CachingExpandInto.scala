@@ -20,34 +20,41 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
 import org.neo4j.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.virtual.{EdgeValue, NodeValue, VirtualValues}
+import org.neo4j.values.virtual.EdgeValue
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Used by pipes that needs to expand between two known nodes.
- *
- * Given a pattern (a)-->(b) it will do the following:
- * - if both a and b are dense nodes, start from the one with the lesser degree
- * - if just one of the nodes is dense, start from the non-dense node
- * - if both are non-dense, randomly pick one or the other
- * - cache all found connecting relationships.
- *
- */
+  * Used by pipes that needs to expand between two known nodes.
+  *
+  * Given a pattern (a)-->(b) it will do the following:
+  * - if both a and b are dense nodes, start from the one with the lesser degree
+  * - if just one of the nodes is dense, start from the non-dense node
+  * - if both are non-dense, randomly pick one or the other
+  * - cache all found connecting relationships.
+  *
+  */
 trait CachingExpandInto {
 
   /**
-   * Finds all relationships connecting fromNode and toNode.
-   */
-  protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Seq[Int]]): Iterator[EdgeValue] = {
+    * Finds all relationships connecting fromNode and toNode.
+    */
+  protected def findRelationships(query: QueryContext,
+                                  fromNode: NodeValue,
+                                  toNode: NodeValue,
+                                  relCache: RelationshipsCache,
+                                  dir: SemanticDirection,
+                                  relTypes: => Option[Seq[Int]]): Iterator[EdgeValue] = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.id())
     val toNodeIsDense = query.nodeIsDense(toNode.id())
@@ -85,10 +92,17 @@ trait CachingExpandInto {
     result
   }
 
-  private def relIterator(query: QueryContext, fromNode: NodeValue,  toNode: NodeValue, preserveDirection: Boolean,
-                          relTypes: Option[Seq[Int]], relCache: RelationshipsCache, dir: SemanticDirection) = {
-    val (start, localDirection, end) = if(preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
-    val relationships = query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(VirtualValues.fromRelationshipProxy)
+  private def relIterator(query: QueryContext,
+                          fromNode: NodeValue,
+                          toNode: NodeValue,
+                          preserveDirection: Boolean,
+                          relTypes: Option[Seq[Int]],
+                          relCache: RelationshipsCache,
+                          dir: SemanticDirection) = {
+    val (start, localDirection, end) =
+      if (preserveDirection) (fromNode, dir, toNode) else (toNode, dir.reversed, fromNode)
+    val relationships =
+      query.getRelationshipsForIds(start.id(), localDirection, relTypes).map(VirtualValues.fromRelationshipProxy)
     new PrefetchingIterator[EdgeValue] {
       //we do not expect two nodes to have many connecting relationships
       val connectedRelationships = new ArrayBuffer[EdgeValue](2)
@@ -108,22 +122,28 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: NodeValue, relTypes: Option[Seq[Int]], direction: SemanticDirection, query: QueryContext) = {
-    relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
-      case rels if rels.size == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
-      case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.id(), direction, rel)
-      )
-    }.getOrElse(query.nodeGetDegree(node.id(), direction))
+  private def getDegree(node: NodeValue,
+                        relTypes: Option[Seq[Int]],
+                        direction: SemanticDirection,
+                        query: QueryContext) = {
+    relTypes
+      .map {
+        case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
+        case rels if rels.size == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
+        case rels =>
+          rels.foldLeft(0)(
+            (acc, rel) => acc + query.nodeGetDegree(node.id(), direction, rel)
+          )
+      }
+      .getOrElse(query.nodeGetDegree(node.id(), direction))
   }
 
   @inline
   protected def getRowNode(row: ExecutionContext, col: String): AnyValue = {
     row.getOrElse(col, throw new InternalException(s"Expected to find a node at $col but found nothing")) match {
       case n: NodeValue => n
-      case NO_VALUE    => NO_VALUE
-      case value   => throw new InternalException(s"Expected to find a node at $col but found $value instead")
+      case NO_VALUE     => NO_VALUE
+      case value        => throw new InternalException(s"Expected to find a node at $col but found $value instead")
     }
   }
 
@@ -131,7 +151,8 @@ trait CachingExpandInto {
 
     val table = new mutable.OpenHashMap[(Long, Long), Seq[EdgeValue]]()
 
-    def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[EdgeValue]] = table.get(key(start, end, dir))
+    def get(start: NodeValue, end: NodeValue, dir: SemanticDirection): Option[Seq[EdgeValue]] =
+      table.get(key(start, end, dir))
 
     def put(start: NodeValue, end: NodeValue, rels: Seq[EdgeValue], dir: SemanticDirection) = {
       if (table.size < capacity) {

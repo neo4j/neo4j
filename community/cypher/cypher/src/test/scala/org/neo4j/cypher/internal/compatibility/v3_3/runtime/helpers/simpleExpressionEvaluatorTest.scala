@@ -21,16 +21,15 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.simpleExpressionEvaluator.isNonDeterministic
 import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{FunctionInvocation, FunctionName}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionInvocation
+import org.neo4j.cypher.internal.frontend.v3_3.ast.FunctionName
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class SimpleExpressionEvaluatorTest extends CypherFunSuite {
   private val pos = DummyPosition(-1)
 
   test("isNonDeterministic should not care about capitalization") {
-    isNonDeterministic(
-      FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
-    isNonDeterministic(
-      FunctionInvocation(FunctionName("Timestamp")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
+    isNonDeterministic(FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
+    isNonDeterministic(FunctionInvocation(FunctionName("Timestamp")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe true
   }
 }

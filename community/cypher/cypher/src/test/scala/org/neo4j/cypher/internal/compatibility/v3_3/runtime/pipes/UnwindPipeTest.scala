@@ -36,9 +36,9 @@ class UnwindPipeTest extends CypherFunSuite {
   }
 
   test("should unwind collection of numbers") {
-    unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should equal(List(
-      Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
-      Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
+    unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should equal(
+      List(Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
+           Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
   }
 
   test("should handle null") {
@@ -47,17 +47,14 @@ class UnwindPipeTest extends CypherFunSuite {
 
   test("should handle collection of collections") {
 
-    val listOfLists = List(
-      List(1, 2, 3).asJava,
-      List(4, 5, 6).asJava).asJava
+    val listOfLists = List(List(1, 2, 3).asJava, List(4, 5, 6).asJava).asJava
 
-    unwindWithInput(List(Map(
-      "x" -> listOfLists))) should equal(
-
+    unwindWithInput(List(Map("x" -> listOfLists))) should equal(
       List(
-        Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
-                                                                            list(intValue(4), intValue(5), intValue(6)))),
-        Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> list(list(intValue(1), intValue(2), intValue(3)),
-                                                                            list(intValue(4), intValue(5), intValue(6))))))
+        Map("y" -> list(intValue(1), intValue(2), intValue(3)),
+            "x" -> list(list(intValue(1), intValue(2), intValue(3)), list(intValue(4), intValue(5), intValue(6)))),
+        Map("y" -> list(intValue(4), intValue(5), intValue(6)),
+            "x" -> list(list(intValue(1), intValue(2), intValue(3)), list(intValue(4), intValue(5), intValue(6))))
+      ))
   }
 }

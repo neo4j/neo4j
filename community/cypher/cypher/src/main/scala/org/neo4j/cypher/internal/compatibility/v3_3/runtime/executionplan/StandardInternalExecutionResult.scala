@@ -19,27 +19,37 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
-import java.io.{PrintWriter, StringWriter}
+import java.io.PrintWriter
+import java.io.StringWriter
 import java.util
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.{MapBasedRow, RuntimeScalaValueConverter, RuntimeTextValueConverter}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.MapBasedRow
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeScalaValueConverter
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.RuntimeTextValueConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.{Planner, PlannerImpl, Runtime, RuntimeImpl}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Planner
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.PlannerImpl
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.Runtime
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments.RuntimeImpl
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.cypher.internal.{InternalExecutionResult, QueryStatistics}
-import org.neo4j.graphdb.Result.{ResultRow, ResultVisitor}
+import org.neo4j.cypher.internal.InternalExecutionResult
+import org.neo4j.cypher.internal.QueryStatistics
+import org.neo4j.graphdb.Result.ResultRow
+import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.graphdb._
 import org.neo4j.values.result.QueryResult
 import org.neo4j.values.result.QueryResult.QueryResultVisitor
 
-import scala.collection.{Map, mutable}
+import scala.collection.Map
+import scala.collection.mutable
 
-abstract class StandardInternalExecutionResult(context: QueryContext, runtime: RuntimeName,
+abstract class StandardInternalExecutionResult(context: QueryContext,
+                                               runtime: RuntimeName,
                                                taskCloser: Option[TaskCloser] = None)
-  extends InternalExecutionResult
+    extends InternalExecutionResult
     with Completable {
 
   self =>
@@ -106,9 +116,9 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
   }
 
   /*
-     * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
-     * where you can call both toList and dumpToString
-     */
+   * NOTE: This should ony be used for testing, it creates an InternalExecutionResult
+   * where you can call both toList and dumpToString
+   */
   def toEagerResultForTestingOnly(planner: PlannerName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
     val result = new util.ArrayList[util.Map[String, Any]]()
@@ -123,14 +133,17 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
       override protected def createInner: util.Iterator[util.Map[String, Any]] = result.iterator()
 
       override def executionPlanDescription(): InternalPlanDescription =
-        self.executionPlanDescription()
+        self
+          .executionPlanDescription()
           .addArgument(Planner(planner.toTextOutput))
           .addArgument(PlannerImpl(planner.name))
           .addArgument(Runtime(runtime.toTextOutput))
           .addArgument(RuntimeImpl(runtime.name))
 
-      override def toList: List[Predef.Map[String, Any]] = result.asScala
-        .map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue)).toList
+      override def toList: List[Predef.Map[String, Any]] =
+        result.asScala
+          .map(m => Eagerly.immutableMapValues(m.asScala, scalaValues.asDeepScalaValue))
+          .toList
 
       override def dumpToString(writer: PrintWriter): Unit =
         formatOutput(writer, columns, dumpToStringBuilder.result(), queryStatistics())
@@ -166,8 +179,8 @@ abstract class StandardInternalExecutionResult(context: QueryContext, runtime: R
     }
   }
 
-  protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])
-                                           (row: ResultRow): builder.type = {
+  protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])(
+      row: ResultRow): builder.type = {
     val textValues = new RuntimeTextValueConverter(scalaValues)(context)
     val map = new mutable.HashMap[String, String]()
     columns.foreach(c => map.put(c, textValues.asTextValue(row.get(c))))
@@ -226,7 +239,3 @@ object StandardInternalExecutionResult {
     }
   }
 }
-
-
-
-

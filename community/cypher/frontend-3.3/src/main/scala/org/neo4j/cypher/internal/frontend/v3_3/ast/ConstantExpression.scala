@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.ast
 
 object ConstantExpression {
   def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
-    case expr: Parameter => Some(expr)
-    case expr@ListLiteral(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
-    case _ => None
+    case expr: Literal                                                              => Some(expr)
+    case expr: Parameter                                                            => Some(expr)
+    case expr @ ListLiteral(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
+    case _                                                                          => None
   }
 }

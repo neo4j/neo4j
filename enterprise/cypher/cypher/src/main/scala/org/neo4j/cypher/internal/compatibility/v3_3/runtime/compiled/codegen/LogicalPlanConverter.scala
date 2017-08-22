@@ -23,13 +23,18 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.aggregation.AggregationConverter.aggregateExpressionConverter
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.SortItem
-import org.neo4j.cypher.internal.compiler.v3_3.helpers.{One, ZeroOneOrMany}
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.One
+import org.neo4j.cypher.internal.compiler.v3_3.helpers.ZeroOneOrMany
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.{SortDescription, plans}
-import org.neo4j.cypher.internal.compiler.v3_3.planner.{CantCompileQueryException, logical}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.SortDescription
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
+import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, ast, symbols}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.ast
+import org.neo4j.cypher.internal.frontend.v3_3.symbols
 import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 import org.neo4j.cypher.internal.ir.v3_3.IdName
 import ExpressionConverter.createExpression
@@ -38,30 +43,31 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.
 object LogicalPlanConverter {
 
   def asCodeGenPlan(logicalPlan: LogicalPlan): CodeGenPlan = logicalPlan match {
-    case p: SingleRow => singleRowAsCodeGenPlan(p)
-    case p: AllNodesScan => allNodesScanAsCodeGenPlan(p)
-    case p: NodeByLabelScan => nodeByLabelScanAsCodeGenPlan(p)
-    case p: NodeIndexSeek => nodeIndexSeekAsCodeGenPlan(p)
-    case p: NodeByIdSeek => nodeByIdSeekAsCodeGenPlan(p)
+    case p: SingleRow           => singleRowAsCodeGenPlan(p)
+    case p: AllNodesScan        => allNodesScanAsCodeGenPlan(p)
+    case p: NodeByLabelScan     => nodeByLabelScanAsCodeGenPlan(p)
+    case p: NodeIndexSeek       => nodeIndexSeekAsCodeGenPlan(p)
+    case p: NodeByIdSeek        => nodeByIdSeekAsCodeGenPlan(p)
     case p: NodeUniqueIndexSeek => nodeUniqueIndexSeekAsCodeGen(p)
-    case p: Expand => expandAsCodeGenPlan(p)
-    case p: NodeHashJoin => nodeHashJoinAsCodeGenPlan(p)
+    case p: Expand              => expandAsCodeGenPlan(p)
+    case p: NodeHashJoin        => nodeHashJoinAsCodeGenPlan(p)
     case p: CartesianProduct if p.findByAllClass[NodeHashJoin].nonEmpty =>
       throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
 
     case p: CartesianProduct => cartesianProductAsCodeGenPlan(p)
-    case p: Selection => selectionAsCodeGenPlan(p)
-    case p: Top => topAsCodeGenPlan(p)
-    case p: plans.Limit => limitAsCodeGenPlan(p)
-    case p: plans.Skip => skipAsCodeGenPlan(p)
-    case p: ProduceResult => produceResultsAsCodeGenPlan(p)
+    case p: Selection        => selectionAsCodeGenPlan(p)
+    case p: Top              => topAsCodeGenPlan(p)
+    case p: plans.Limit      => limitAsCodeGenPlan(p)
+    case p: plans.Skip       => skipAsCodeGenPlan(p)
+    case p: ProduceResult    => produceResultsAsCodeGenPlan(p)
     case p: plans.Projection => projectionAsCodeGenPlan(p)
-    case p: plans.Aggregation if hasLimit(p) => throw new CantCompileQueryException("Not able to combine aggregation and limit")
-    case p: plans.Aggregation => aggregationAsCodeGenPlan(p)
-    case p: plans.NodeCountFromCountStore => nodeCountFromCountStore(p)
+    case p: plans.Aggregation if hasLimit(p) =>
+      throw new CantCompileQueryException("Not able to combine aggregation and limit")
+    case p: plans.Aggregation                     => aggregationAsCodeGenPlan(p)
+    case p: plans.NodeCountFromCountStore         => nodeCountFromCountStore(p)
     case p: plans.RelationshipCountFromCountStore => relCountFromCountStore(p)
-    case p: plans.UnwindCollection => unwindAsCodeGenPlan(p)
-    case p: Sort => sortAsCodeGenPlan(p)
+    case p: plans.UnwindCollection                => unwindAsCodeGenPlan(p)
+    case p: Sort                                  => sortAsCodeGenPlan(p)
 
     case _ =>
       throw new CantCompileQueryException(s"This logicalPlan is not yet supported: $logicalPlan")
@@ -128,8 +134,9 @@ object LogicalPlanConverter {
 
     override def consume(context: CodeGenContext, child: CodeGenPlan) = {
       val produceResultOpName = context.registerOperator(produceResults)
-      val projections = produceResults.columns.map(c =>
-        c -> ExpressionConverter.createMaterializeExpressionForVariable(c)(context)).toMap
+      val projections = produceResults.columns
+        .map(c => c -> ExpressionConverter.createMaterializeExpressionForVariable(c)(context))
+        .toMap
 
       (None, List(AcceptVisitor(produceResultOpName, projections)))
     }
@@ -163,9 +170,8 @@ object LogicalPlanConverter {
   private type IndexSeekFun = (String, String, CodeGenExpression, Variable, Instruction) => Instruction
 
   // Used by both nodeIndexSeekAsCodeGenPlan and nodeUniqueIndexSeekAsCodeGenPlan
-  private def sharedIndexSeekAsCodeGenPlan(indexSeekFun: IndexSeekFun)
-                                          (idName: String, valueExpr: QueryExpression[Expression],
-                                           indexSeek: LogicalPlan) =
+  private def sharedIndexSeekAsCodeGenPlan(
+      indexSeekFun: IndexSeekFun)(idName: String, valueExpr: QueryExpression[Expression], indexSeek: LogicalPlan) =
     new CodeGenPlan with LeafCodeGenPlan {
       override val logicalPlan: LogicalPlan = indexSeek
 
@@ -187,18 +193,19 @@ object LogicalPlanConverter {
             val expression = ToSet(createExpression(e)(context))
             val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
 
-            ForEachExpression(expressionVar, expression,
-                              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-                                           actions))
+            ForEachExpression(
+              expressionVar,
+              expression,
+              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
           //Unknown, try to cast to collection and then same as above
           case ManyQueryExpression(e) =>
             val expression = ToSet(CastToCollection(createExpression(e)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                         nullable = false)
-            ForEachExpression(expressionVar, expression,
-                              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar,
-                                           actions))
+            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
+            ForEachExpression(
+              expressionVar,
+              expression,
+              indexSeekFun(opName, context.namer.newVarName(), LoadVariable(expressionVar), nodeVar, actions))
 
           //collection used in composite index search, pass entire collection to index seek
           case CompositeQueryExpression(e: ast.ListLiteral) =>
@@ -223,47 +230,54 @@ object LogicalPlanConverter {
       val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
       val opName = context.registerOperator(logicalPlan)
       val seekOperation = seek.nodeIds match {
-        case SingleSeekableArg(e) => SeekNodeById(opName, nodeVar,
-                                                  createExpression(e)(context), actions)
-        case ManySeekableArgs(e) => e match {
-          case coll: ast.ListLiteral =>
-            ZeroOneOrMany(coll.expressions) match {
-              case One(value) => SeekNodeById(opName, nodeVar,
-                                              createExpression(value)(context), actions)
-              case _ =>
-                val expression = createExpression(e)(context)
-                val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                             nullable = false)
-                ForEachExpression(expressionVar, expression,
-                                  SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
-            }
+        case SingleSeekableArg(e) => SeekNodeById(opName, nodeVar, createExpression(e)(context), actions)
+        case ManySeekableArgs(e) =>
+          e match {
+            case coll: ast.ListLiteral =>
+              ZeroOneOrMany(coll.expressions) match {
+                case One(value) => SeekNodeById(opName, nodeVar, createExpression(value)(context), actions)
+                case _ =>
+                  val expression = createExpression(e)(context)
+                  val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
+                  ForEachExpression(expressionVar,
+                                    expression,
+                                    SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+              }
 
-          case exp =>
-            val expression = ToSet(CastToCollection(createExpression(exp)(context)))
-            val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any,
-                                         nullable = false)
-            ForEachExpression(expressionVar, expression,
-                              SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
-        }
+            case exp =>
+              val expression = ToSet(CastToCollection(createExpression(exp)(context)))
+              val expressionVar = Variable(context.namer.newVarName(), CodeGenType.Any, nullable = false)
+              ForEachExpression(expressionVar,
+                                expression,
+                                SeekNodeById(opName, nodeVar, LoadVariable(expressionVar), actions))
+          }
       }
       (methodHandle, seekOperation :: tl)
     }
   }
 
   private def nodeIndexSeekAsCodeGenPlan(indexSeek: NodeIndexSeek) = {
-    def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
-                     nodeVar: Variable, actions: Instruction) =
-      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
-                                   descriptorVar, expression), actions)
+    def indexSeekFun(opName: String,
+                     descriptorVar: String,
+                     expression: CodeGenExpression,
+                     nodeVar: Variable,
+                     actions: Instruction) =
+      WhileLoop(nodeVar,
+                IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name), descriptorVar, expression),
+                actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
   }
 
   private def nodeUniqueIndexSeekAsCodeGen(indexSeek: NodeUniqueIndexSeek) = {
-    def indexSeekFun(opName: String, descriptorVar: String, expression: CodeGenExpression,
-                     nodeVar: Variable, actions: Instruction) =
-      WhileLoop(nodeVar, IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name),
-        descriptorVar, expression), actions)
+    def indexSeekFun(opName: String,
+                     descriptorVar: String,
+                     expression: CodeGenExpression,
+                     nodeVar: Variable,
+                     actions: Instruction) =
+      WhileLoop(nodeVar,
+                IndexSeek(opName, indexSeek.label.name, indexSeek.propertyKeys.map(_.name), descriptorVar, expression),
+                actions)
 
     sharedIndexSeekAsCodeGenPlan(indexSeekFun)(indexSeek.idName.name, indexSeek.valueExpr, indexSeek)
   }
@@ -299,11 +313,9 @@ object LogicalPlanConverter {
 
         context.addProbeTable(this, probeTable.joinData)
 
-
         (Some(probeTableSymbol), List(probeTable))
 
-      }
-      else if (child.logicalPlan eq logicalPlan.rhs.get) {
+      } else if (child.logicalPlan eq logicalPlan.rhs.get) {
 
         val joinNodes = nodeHashJoin.nodes.map(n => context.getVariable(n.name))
         val joinData = context.getProbeTable(this)
@@ -312,8 +324,7 @@ object LogicalPlanConverter {
         val (methodHandle, actions :: tl) = context.popParent().consume(context, this)
 
         (methodHandle, GetMatchesFromProbeTable(joinNodes, joinData, actions) :: tl)
-      }
-      else {
+      } else {
         throw new InternalException(s"Unexpected consume call by $child")
       }
     }
@@ -323,12 +334,11 @@ object LogicalPlanConverter {
 
     override val logicalPlan: LogicalPlan = expand
 
-    override def consume(context: CodeGenContext,
-                         child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = expand
-      .mode match {
-      case ExpandAll => expandAllConsume(context, child)
-      case ExpandInto => expandIntoConsume(context, child)
-    }
+    override def consume(context: CodeGenContext, child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) =
+      expand.mode match {
+        case ExpandAll  => expandAllConsume(context, child)
+        case ExpandInto => expandIntoConsume(context, child)
+      }
 
     private def expandAllConsume(context: CodeGenContext,
                                  child: CodeGenPlan): (Option[JoinTableMethod], List[Instruction]) = {
@@ -341,8 +351,8 @@ object LogicalPlanConverter {
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
-      val expandGenerator = ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
-                                                       relVar)
+      val expandGenerator =
+        ExpandAllLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
@@ -357,8 +367,8 @@ object LogicalPlanConverter {
       val (methodHandle, action :: tl) = context.popParent().consume(context, this)
       val typeVar2TypeName = expand.types.map(t => context.namer.newVarName() -> t.name).toMap
       val opName = context.registerOperator(expand)
-      val expandGenerator = ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar,
-                                                        relVar)
+      val expandGenerator =
+        ExpandIntoLoopDataGenerator(opName, fromNodeVar, expand.dir, typeVar2TypeName, toNodeVar, relVar)
 
       (methodHandle, WhileLoop(relVar, expandGenerator, action) :: tl)
     }
@@ -383,8 +393,7 @@ object LogicalPlanConverter {
         val opName = context.registerOperator(cartesianProduct)
         val (m, instruction :: tl) = context.popParent().consume(context, this)
         (m, CartesianProductInstruction(opName, instruction) :: tl)
-      }
-      else {
+      } else {
         throw new InternalException(s"Unexpected consume call by $child")
       }
     }
@@ -456,11 +465,13 @@ object LogicalPlanConverter {
       context.retainProjectedVariables(aggregation.groupingExpressions.keySet)
 
       val aggregationExpression =
-        if (aggregation.aggregationExpression.isEmpty) Seq(Distinct(opName, context.namer.newVarName(), groupingVariables))
-        else aggregation.aggregationExpression.map {
-          case (name, e) =>
-            aggregateExpressionConverter(opName, groupingVariables, name, e)
-        }
+        if (aggregation.aggregationExpression.isEmpty)
+          Seq(Distinct(opName, context.namer.newVarName(), groupingVariables))
+        else
+          aggregation.aggregationExpression.map {
+            case (name, e) =>
+              aggregateExpressionConverter(opName, groupingVariables, name, e)
+          }
 
       val instruction = AggregationInstruction(opName, aggregationExpression)
       val (methodHandle, innerBlock :: tl) = context.popParent().consume(context, this)
@@ -508,7 +519,8 @@ object LogicalPlanConverter {
       val startLabel = relCount.startLabel.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
       val endLabel = relCount.endLabel.map(l => l.id(context.semanticTable).map(_.id) -> l.name)
       val types = relCount.typeNames.map(t => t.id(context.semanticTable).map(_.id) -> t.name)
-      (methodHandle, RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel, actions) :: tl)
+      (methodHandle,
+       RelationshipCountFromCountStoreInstruction(opName, variable, startLabel, types, endLabel, actions) :: tl)
     }
   }
 
@@ -526,7 +538,7 @@ object LogicalPlanConverter {
 
       val (elementCodeGenType, loopDataGenerator) = collectionCodeGenType match {
         case CypherCodeGenType(symbols.ListType(innerType), ListReferenceType(innerReprType))
-          if RepresentationType.isPrimitive(innerReprType) =>
+            if RepresentationType.isPrimitive(innerReprType) =>
           (CypherCodeGenType(innerType, innerReprType), UnwindPrimitiveCollection(opName, collection))
         case CypherCodeGenType(symbols.ListType(innerType), _) =>
           (CypherCodeGenType(innerType, ReferenceType), ir.UnwindCollection(opName, collection))
@@ -591,7 +603,8 @@ object LogicalPlanConverter {
 
       val countExpression = createExpression(top.limit)(context)
 
-      val buildTopTableInstruction = BuildTopTable(opName, sortTableName, countExpression, tupleVariables, sortItems)(context)
+      val buildTopTableInstruction =
+        BuildTopTable(opName, sortTableName, countExpression, tupleVariables, sortItems)(context)
 
       // Update the context for parent consumers to use the new outgoing variable names
       updateContextWithSortTableInfo(context, buildTopTableInstruction.sortTableInfo)
@@ -606,13 +619,14 @@ object LogicalPlanConverter {
   }
 
   // Helper shared by sortAsCodeGenPlan and topAsCodeGenPlan
-  private def prepareSortTableInfo(context: CodeGenContext, inputSortItems: Seq[SortDescription]):
-    (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
+  private def prepareSortTableInfo(
+      context: CodeGenContext,
+      inputSortItems: Seq[SortDescription]): (Map[String, Variable], Seq[SortItem], Map[String, Variable], String) = {
 
     val variablesToKeep = context.getProjectedVariables // TODO: Intersect/replace with usedVariables(innerBlock)
 
     val sortItems = inputSortItems.map {
-      case logical.Ascending(IdName(name)) => spi.SortItem(name, spi.Ascending)
+      case logical.Ascending(IdName(name))  => spi.SortItem(name, spi.Ascending)
       case logical.Descending(IdName(name)) => spi.SortItem(name, spi.Descending)
     }
     val additionalSortVariables = sortItems.collect {

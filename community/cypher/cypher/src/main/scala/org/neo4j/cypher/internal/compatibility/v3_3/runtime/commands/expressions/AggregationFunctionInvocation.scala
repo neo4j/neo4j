@@ -27,16 +27,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.spi.UserFunctionSignature
 import org.neo4j.values.AnyValue
 
 case class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends AggregationExpression {
+    extends AggregationExpression {
   private val valueConverter = ValueConversion.getValueConverter(signature.outputType)
 
   override def createAggregationFunction: AggregationFunction = new AggregationFunction {
     private var inner: UserDefinedAggregator = null
 
-    override def result(implicit state:QueryState): AnyValue = valueConverter(aggregator.result)
+    override def result(implicit state: QueryState): AnyValue = valueConverter(aggregator.result)
 
-    override def apply(data: ExecutionContext)
-                      (implicit state: QueryState) = {
+    override def apply(data: ExecutionContext)(implicit state: QueryState) = {
       val argValues = arguments.map(arg => {
         state.query.asObject(arg(data)(state))
       })
@@ -51,8 +50,8 @@ case class AggregationFunctionInvocation(signature: UserFunctionSignature, argum
     }
   }
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(
-    AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
+  override def rewrite(f: (Expression) => Expression): Expression =
+    f(AggregationFunctionInvocation(signature, arguments.map(a => a.rewrite(f))))
 
   override def symbolTableDependencies: Set[String] = arguments.flatMap(_.symbolTableDependencies).toSet
 }

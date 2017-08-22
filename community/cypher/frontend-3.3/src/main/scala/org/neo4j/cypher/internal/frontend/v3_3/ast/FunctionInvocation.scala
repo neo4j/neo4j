@@ -27,12 +27,16 @@ object FunctionInvocation {
     FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(left, right))(name.position)
   def apply(expression: Expression, name: FunctionName): FunctionInvocation =
     FunctionInvocation(Namespace()(name.position), name, distinct = false, IndexedSeq(expression))(name.position)
-  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(position: InputPosition): FunctionInvocation =
-  FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
+  def apply(functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])(
+      position: InputPosition): FunctionInvocation =
+    FunctionInvocation(Namespace()(position), functionName, distinct, args)(position)
 }
 
-case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, distinct: Boolean, args: IndexedSeq[Expression])
-                             (val position: InputPosition) extends Expression {
+case class FunctionInvocation(namespace: Namespace,
+                              functionName: FunctionName,
+                              distinct: Boolean,
+                              args: IndexedSeq[Expression])(val position: InputPosition)
+    extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
   val function: Function = Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
 
@@ -40,7 +44,7 @@ case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, 
 
   def needsToBeResolved: Boolean = function match {
     case UnresolvedFunction => true
-    case _ => false
+    case _                  => false
   }
 
   override def asCanonicalStringVal = s"$name(${args.map(_.asCanonicalStringVal).mkString(",")})"
@@ -49,7 +53,7 @@ case class FunctionInvocation(namespace: Namespace, functionName: FunctionName, 
 case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {
   override def equals(x: Any): Boolean = x match {
     case FunctionName(other) => other.toLowerCase == name.toLowerCase
-    case _ => false
+    case _                   => false
   }
   override def hashCode = name.toLowerCase.hashCode
 }

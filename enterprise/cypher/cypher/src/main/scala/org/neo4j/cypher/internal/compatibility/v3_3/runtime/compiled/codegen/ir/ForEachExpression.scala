@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 case class ForEachExpression(varName: Variable, expression: CodeGenExpression, body: Instruction) extends Instruction {
 
@@ -31,7 +32,6 @@ case class ForEachExpression(varName: Variable, expression: CodeGenExpression, b
   }
 
   override def body[E](generator: MethodStructure[E])(implicit context: CodeGenContext) =
-
     generator.forEach(varName.name, varName.codeGenType, expression.generateExpression(generator)) { forBody =>
       body.body(forBody)
     }

@@ -16,19 +16,22 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.{SemanticContext, _}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression._
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
-import org.neo4j.cypher.internal.frontend.v3_3.{InputPosition, _}
+import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
+import org.neo4j.cypher.internal.frontend.v3_3._
 
-case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outerScope: Scope = Scope.empty)
-                        (val position: InputPosition)
-  extends Expression with SimpleTyping {
+case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outerScope: Scope = Scope.empty)(
+    val position: InputPosition)
+    extends Expression
+    with SimpleTyping {
   protected def possibleTypes = CTMap
 
   override def semanticCheck(ctx: SemanticContext) =
     items.semanticCheck(ctx) chain
-    super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
-    recordCurrentScope
+      super.semanticCheck(ctx) ifOkChain // We need to remember the scope to later rewrite this ASTNode
+      recordCurrentScope
 
   def withOuterScope(outerScope: Scope) =
     copy(outerScope = outerScope)(position)
@@ -36,7 +39,8 @@ case class MapProjection(name: Variable, items: Seq[MapProjectionElement], outer
 
 sealed trait MapProjectionElement extends SemanticCheckableWithContext with ASTNode
 
-case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition) extends MapProjectionElement {
+case class LiteralEntry(key: PropertyKeyName, exp: Expression)(val position: InputPosition)
+    extends MapProjectionElement {
   override def semanticCheck(ctx: SemanticContext) = exp.semanticCheck(ctx)
 }
 

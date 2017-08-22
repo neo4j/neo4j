@@ -64,7 +64,7 @@ class LoadCsvIteratorTest extends CypherFunSuite {
     val inner = new Iterator[Array[String]] {
       def next() = Array("yea")
 
-      def hasNext =  {
+      def hasNext = {
         called = true
         true
       }

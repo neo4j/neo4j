@@ -25,5 +25,5 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
 
   override def semanticCheck(ctx: SemanticContext) =
     pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
-    super.semanticCheck(ctx)
+      super.semanticCheck(ctx)
 }

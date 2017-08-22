@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{Bound, Bounds}
+import org.neo4j.cypher.internal.frontend.v3_3.Bound
+import org.neo4j.cypher.internal.frontend.v3_3.Bounds
 
 /*
   Seek ranges describe intervals. In practice they are used to summarize all inequalities over the
@@ -40,11 +41,12 @@ object InequalitySeekRange {
    optionally some lower bounds and some upper bounds.  Such an input may be obtained by partitioning
    inequality expressions.  See usages of this method for examples.
    */
-  def fromPartitionedBounds[V](bounds: Either[(Bounds[V], Option[Bounds[V]]), (Option[Bounds[V]], Bounds[V])]): InequalitySeekRange[V] =
+  def fromPartitionedBounds[V](
+      bounds: Either[(Bounds[V], Option[Bounds[V]]), (Option[Bounds[V]], Bounds[V])]): InequalitySeekRange[V] =
     bounds match {
-      case Left((lefts, None)) => RangeGreaterThan(lefts)
-      case Left((lefts, Some(rights))) => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
-      case Right((None, rights)) => RangeLessThan(rights)
+      case Left((lefts, None))          => RangeGreaterThan(lefts)
+      case Left((lefts, Some(rights)))  => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
+      case Right((None, rights))        => RangeLessThan(rights)
       case Right((Some(lefts), rights)) => RangeBetween(RangeGreaterThan(lefts), RangeLessThan(rights))
     }
 }
@@ -81,15 +83,17 @@ sealed trait HalfOpenSeekRange[+V] extends InequalitySeekRange[V] {
   protected def boundOrdering[X >: V](implicit ordering: MinMaxOrdering[X]): Ordering[Bound[X]]
 }
 
-final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V]) extends InequalitySeekRange[V] {
-  override def mapBounds[P](f: V => P): RangeBetween[P] = copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
+final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: RangeLessThan[V])
+    extends InequalitySeekRange[V] {
+  override def mapBounds[P](f: V => P): RangeBetween[P] =
+    copy(greaterThan = greaterThan.mapBounds(f), lessThan = lessThan.mapBounds(f))
 
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
     val greaterThanBounds = greaterThan.bounds.map(Left(_))
     val lessThanBounds = lessThan.bounds.map(Right(_))
     val allBounds = greaterThanBounds ++ lessThanBounds
     val groupedBounds = allBounds.groupBy[Either[Bound[V], Bound[V]], K] {
-      case Left(bound) => f(bound)
+      case Left(bound)  => f(bound)
       case Right(bound) => f(bound)
     }
     groupedBounds.mapValues[InequalitySeekRange[V]] { bounds =>
@@ -101,7 +105,8 @@ final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: Ra
     (lessThan.inclusionTest[X](ordering), greaterThan.inclusionTest[X](ordering)) match {
       case (_, None) => None
       case (None, _) => None
-      case (Some(lessThanTest), Some(greaterThanTest)) => Some((value: X) => lessThanTest(value) && greaterThanTest(value))
+      case (Some(lessThanTest), Some(greaterThanTest)) =>
+        Some((value: X) => lessThanTest(value) && greaterThanTest(value))
     }
   }
 }
@@ -117,14 +122,15 @@ final case class RangeGreaterThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRan
   override def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean] = {
     limit[X].map { bound =>
       val endPoint = bound.endPoint
-      (value: X) => {
-        if (value == null || endPoint == null) {
-          false
-        } else {
-          val cmp = ordering.ordering.compare(value, endPoint)
-          if (bound.isInclusive) cmp >= 0 else cmp > 0
+      (value: X) =>
+        {
+          if (value == null || endPoint == null) {
+            false
+          } else {
+            val cmp = ordering.ordering.compare(value, endPoint)
+            if (bound.isInclusive) cmp >= 0 else cmp > 0
+          }
         }
-      }
     }
   }
 
@@ -148,14 +154,15 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   override def inclusionTest[X >: V](implicit ordering: MinMaxOrdering[X]): Option[X => Boolean] = {
     limit[X].map { bound =>
       val endPoint = bound.endPoint
-      (value: X) => {
-        if (value == null || endPoint == null) {
-          false
-        } else {
-          val cmp = ordering.ordering.compare(value, endPoint)
-          if (bound.isInclusive) cmp <= 0 else cmp < 0
+      (value: X) =>
+        {
+          if (value == null || endPoint == null) {
+            false
+          } else {
+            val cmp = ordering.ordering.compare(value, endPoint)
+            if (bound.isInclusive) cmp <= 0 else cmp < 0
+          }
         }
-      }
     }
   }
 
@@ -175,7 +182,7 @@ final case class RangeLessThan[+V](bounds: Bounds[V]) extends HalfOpenSeekRange[
   - It directly maps on prefix queries of index implementations
   - It removes the need to construct a proper upper bound value for an interval that
   would describe the prefix search (which can be difficult due to unicode issues)
-*/
+ */
 final case class PrefixRange[T](prefix: T) extends SeekRange[T] {
   def map[X](f: T => X): PrefixRange[X] = copy(f(prefix))
 

@@ -21,7 +21,8 @@ package cypher.cucumber.db
 
 import java.util.UUID
 
-import scala.reflect.io.{File, Path}
+import scala.reflect.io.File
+import scala.reflect.io.Path
 
 class GraphFileRepository(root: Path) {
   self =>
@@ -34,5 +35,3 @@ class GraphFileRepository(root: Path) {
   def graphArchiveImportStatusFile(descriptor: GraphArchive.Descriptor) = graphArchivePath(descriptor) / "IMPORTED"
   def temporarySnapshotPath = DeleteDirectory.onExit(root / Path(UUID.randomUUID().toString))
 }
-
-

@@ -24,5 +24,3 @@ import cypher.CompatibilitySpecSuiteTest
 class CompatibilitySpecSuiteSteps extends SpecSuiteSteps {
   override val specSuiteClass = classOf[CompatibilitySpecSuiteTest]
 }
-
-

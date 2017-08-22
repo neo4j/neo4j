@@ -28,30 +28,31 @@ import org.neo4j.values.virtual.NodeValue
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
-case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])
-                                (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner: Pipe, nullableVariables: Set[String])(
+    val id: Id = new Id)
+    extends PipeWithSource(source) {
   val nullColumns: Seq[(String, AnyValue)] = nullableVariables.map(_ -> Values.NO_VALUE).toSeq
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
 
-    if(input.isEmpty)
+    if (input.isEmpty)
       return Iterator.empty
 
     val probeTable = buildProbeTableAndFindNullRows(input)
 
     val seenKeys = mutable.Set[IndexedSeq[Long]]()
-    val joinedRows = (
-      for {context <- inner.createResults(state)
-           joinKey <- computeKey(context)}
-      yield {
-        val seq = probeTable(joinKey)
-        seenKeys.add(joinKey)
-        seq.map(context.mergeWith)
-      }).flatten
+    val joinedRows = (for {
+      context <- inner.createResults(state)
+      joinKey <- computeKey(context)
+    } yield {
+      val seq = probeTable(joinKey)
+      seenKeys.add(joinKey)
+      seq.map(context.mergeWith)
+    }).flatten
 
-    def rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap {
-      x => probeTable(x).map(addNulls)
+    def rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap { x =>
+      probeTable(x).map(addNulls)
     }
 
     val rowsWithNullAsJoinKey = probeTable.nullRows.map(addNulls)
@@ -84,7 +85,7 @@ case class NodeOuterHashJoinPipe(nodeVariables: Set[String], source: Pipe, inner
     for (idx <- myVariables.indices) {
       key(idx) = context(myVariables(idx)) match {
         case n: NodeValue => n.id
-        case _ => return None
+        case _            => return None
       }
     }
     Some(key.toIndexedSeq)

@@ -57,7 +57,7 @@ object KeyToken {
 
     def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
 
-    override def toString:String = name
+    override def toString: String = name
   }
 
   case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
@@ -67,7 +67,7 @@ object KeyToken {
 
     override def resolve(tokenContext: TokenContext): Resolved = this
 
-    override def toString:String = s"$name($id)"
+    override def toString: String = s"$name($id)"
   }
 
   object Ordering extends Ordering[KeyToken] {

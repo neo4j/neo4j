@@ -23,8 +23,12 @@ import java.net.URL
 
 import org.neo4j.cypher.internal.compiler.v2_3.spi._
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
-import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
-import org.neo4j.graphdb.{Node, PropertyContainer, Relationship, ConstraintViolationException => KernelConstraintViolationException}
+import org.neo4j.cypher.ConstraintValidationException
+import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.Relationship
+import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
 import org.neo4j.kernel.api.TokenNameLookup
 import org.neo4j.kernel.api.exceptions.KernelException
 
@@ -126,9 +130,10 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
     translateException(super.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
-    super.withAnyOpenQueryContext(qc =>
-      translateException(
-        work(new ExceptionTranslatingQueryContext(qc))
+    super.withAnyOpenQueryContext(
+      qc =>
+        translateException(
+          work(new ExceptionTranslatingQueryContext(qc))
       ))
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =
@@ -156,7 +161,7 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
     translateException(super.relationshipEndNode(rel))
 
   class ExceptionTranslatingOperations[T <: PropertyContainer](inner: Operations[T])
-    extends DelegatingOperations[T](inner) {
+      extends DelegatingOperations[T](inner) {
     override def delete(obj: T) =
       translateException(super.delete(obj))
 
@@ -191,17 +196,21 @@ class ExceptionTranslatingQueryContext(inner: QueryContext) extends DelegatingQu
       translateException(super.isDeleted(obj))
   }
 
-  private def translateException[A](f: => A) = try {
-    f
-  } catch {
-    case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
+  private def translateException[A](f: => A) =
+    try {
+      f
+    } catch {
+      case e: KernelException =>
+        throw new CypherExecutionException(
+          e.getUserMessage(new TokenNameLookup {
+            def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+            def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
-      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
-    }), e)
-    case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
-  }
+            def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
+          }),
+          e
+        )
+      case e: KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
+    }
 }
-

@@ -19,13 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.phases
 
-import org.neo4j.cypher.internal.compiler.v3_3.ast.{ResolvedCall, ResolvedFunctionInvocation}
+import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
+import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.{StatementCondition, containsNoNodesOfType}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.StatementCondition
+import org.neo4j.cypher.internal.frontend.v3_3.ast.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.frontend.v3_3.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.frontend.v3_3.phases.{BaseState, Condition, Phase}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.phases.BaseState
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Condition
+import org.neo4j.cypher.internal.frontend.v3_3.phases.Phase
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 // Given a way to lookup procedure signatures, this phase rewrites unresolved calls into resolved calls
 case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, BaseState] {
@@ -37,27 +42,29 @@ case object RewriteProcedureCalls extends Phase[CompilerContext, BaseState, Base
   // This rewriter rewrites standalone calls in simplified syntax to calls in standard
   // syntax to prevent them from being rejected during semantic checking.
   private val fakeStandaloneCallDeclarations = Rewriter.lift {
-    case q@Query(None, part@SingleQuery(Seq(resolved@ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
-      val result = q.copy(part = part.copy(clauses = Seq(resolved.withFakedFullDeclarations))(part.position))(q.position)
+    case q @ Query(None, part @ SingleQuery(Seq(resolved @ ResolvedCall(_, _, _, _, _)))) if !resolved.fullyDeclared =>
+      val result =
+        q.copy(part = part.copy(clauses = Seq(resolved.withFakedFullDeclarations))(part.position))(q.position)
       result
   }
 
-  def resolverProcedureCall(context: PlanContext) = bottomUp(Rewriter.lift {
-    case unresolved: UnresolvedCall =>
-      val resolved = ResolvedCall(context.procedureSignature)(unresolved)
-      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-      // to the coercion expressions
-      val coerced = resolved.coerceArguments
-      coerced
+  def resolverProcedureCall(context: PlanContext) =
+    bottomUp(Rewriter.lift {
+      case unresolved: UnresolvedCall =>
+        val resolved = ResolvedCall(context.procedureSignature)(unresolved)
+        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+        // to the coercion expressions
+        val coerced = resolved.coerceArguments
+        coerced
 
-    case function: FunctionInvocation if function.needsToBeResolved =>
-      val resolved = ResolvedFunctionInvocation(context.functionSignature)(function)
+      case function: FunctionInvocation if function.needsToBeResolved =>
+        val resolved = ResolvedFunctionInvocation(context.functionSignature)(function)
 
-      // We coerce here to ensure that the semantic check run after this rewriter assigns a type
-      // to the coercion expression
-      val coerced = resolved.coerceArguments
-      coerced
-  })
+        // We coerce here to ensure that the semantic check run after this rewriter assigns a type
+        // to the coercion expression
+        val coerced = resolved.coerceArguments
+        coerced
+    })
 
   // rewriter that amends unresolved procedure calls with procedure signature information
   def rewriter(context: PlanContext): AnyRef => AnyRef =

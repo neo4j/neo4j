@@ -27,11 +27,13 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.InternalWrap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases.CompilationState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{TaskCloser, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.TaskCloser
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.IndexUsage
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
 import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
@@ -47,13 +49,14 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
 
   override def description = "creates runnable byte code"
 
-  override def postConditions = Set.empty// Can't yet guarantee that we can build an execution plan
+  override def postConditions = Set.empty // Can't yet guarantee that we can build an execution plan
 
   override def process(from: LogicalPlanState, context: EnterpriseRuntimeContext): CompilationState = {
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val codeGen = new CodeGenerator(context.codeStructure, context.clock, CodeGenConfiguration(context.debugOptions))
-      val compiled: CompiledPlan = codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName)
+      val compiled: CompiledPlan =
+        codeGen.generate(from.logicalPlan, context.planContext, from.semanticTable(), from.plannerName)
       val executionPlan: ExecutionPlan = createExecutionPlan(context, compiled)
       runtimeSuccessRateMonitor.newPlanSeen(from.logicalPlan)
       new CompilationState(from, Some(executionPlan))
@@ -67,10 +70,12 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
   private def createExecutionPlan(context: EnterpriseRuntimeContext, compiled: CompiledPlan) = new ExecutionPlan {
     private val fingerprint = context.createFingerprintReference(compiled.fingerprint)
 
-    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean = fingerprint.isStale(lastTxId, statistics)
+    override def isStale(lastTxId: () => Long, statistics: GraphStatistics): Boolean =
+      fingerprint.isStale(lastTxId, statistics)
 
     override def run(queryContext: QueryContext,
-                     executionMode: ExecutionMode, params: Map[String, AnyValue]): InternalExecutionResult = {
+                     executionMode: ExecutionMode,
+                     params: Map[String, AnyValue]): InternalExecutionResult = {
       val taskCloser = new TaskCloser
       taskCloser.addTask(queryContext.transactionalContext.close)
       try {
@@ -79,10 +84,15 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
           taskCloser.close(success = true)
           val logger = context.notificationLogger
           ExplainExecutionResult(compiled.columns.toArray,
-                                 compiled.planDescription, READ_ONLY, logger.notifications.map(asKernelNotification(logger.offset)))
+                                 compiled.planDescription,
+                                 READ_ONLY,
+                                 logger.notifications.map(asKernelNotification(logger.offset)))
         } else
-          compiled.executionResultBuilder(queryContext, executionMode, createTracer(executionMode, queryContext),
-                                          immutableMapValues(params, queryContext.asObject), taskCloser)
+          compiled.executionResultBuilder(queryContext,
+                                          executionMode,
+                                          createTracer(executionMode, queryContext),
+                                          immutableMapValues(params, queryContext.asObject),
+                                          taskCloser)
       } catch {
         case (t: Throwable) =>
           taskCloser.close(success = false)
@@ -107,21 +117,21 @@ object BuildCompiledExecutionPlan extends Phase[EnterpriseRuntimeContext, Logica
       (description: InternalPlanDescription) =>
         (new Provider[InternalPlanDescription] {
 
-          override def get(): InternalPlanDescription = description.map {
-            plan: InternalPlanDescription =>
-              val data = tracer.get(plan.id)
-              plan.
-                addArgument(Arguments.DbHits(data.dbHits())).
-                addArgument(Arguments.PageCacheHits(data.pageCacheHits())).
-                addArgument(Arguments.PageCacheMisses(data.pageCacheMisses())).
-                addArgument(Arguments.PageCacheHitRatio(data.pageCacheHitRatio())).
-                addArgument(Arguments.Rows(data.rows())).
-                addArgument(Arguments.Time(data.time()))
+          override def get(): InternalPlanDescription = description.map { plan: InternalPlanDescription =>
+            val data = tracer.get(plan.id)
+            plan
+              .addArgument(Arguments.DbHits(data.dbHits()))
+              .addArgument(Arguments.PageCacheHits(data.pageCacheHits()))
+              .addArgument(Arguments.PageCacheMisses(data.pageCacheMisses()))
+              .addArgument(Arguments.PageCacheHitRatio(data.pageCacheHitRatio()))
+              .addArgument(Arguments.Rows(data.rows()))
+              .addArgument(Arguments.Time(data.time()))
           }
         }, Some(tracer))
-    case _ => (description: InternalPlanDescription) =>
-      (new Provider[InternalPlanDescription] {
-        override def get(): InternalPlanDescription = description
-      }, None)
+    case _ =>
+      (description: InternalPlanDescription) =>
+        (new Provider[InternalPlanDescription] {
+          override def get(): InternalPlanDescription = description
+        }, None)
   }
 }

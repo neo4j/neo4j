@@ -26,19 +26,20 @@ object IdentityMap {
 
   def apply[K, V](elems: (K, V)*): IdentityMap[K, V] = {
     val idMap = new util.IdentityHashMap[K, V]()
-    elems.foreach {
-      elem => idMap.put(elem._1, elem._2)
+    elems.foreach { elem =>
+      idMap.put(elem._1, elem._2)
     }
     IdentityMap(idMap)
   }
 }
 
-case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]()) extends Map[K, V] {
+case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]())
+    extends Map[K, V] {
   self =>
 
   override def get(key: K): Option[V] =
     idMap.get(key) match {
-      case null => None
+      case null  => None
       case value => Some(value)
     }
 
@@ -59,7 +60,13 @@ case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new ut
   override def updated[V1 >: V](key: K, value: V1): IdentityMap[K, V1] = this + ((key, value))
 
   override def iterator: Iterator[(K, V)] =
-    idMap.clone().asInstanceOf[util.IdentityHashMap[K, V]].entrySet().iterator().asScala.map(e => (e.getKey, e.getValue))
+    idMap
+      .clone()
+      .asInstanceOf[util.IdentityHashMap[K, V]]
+      .entrySet()
+      .iterator()
+      .asScala
+      .map(e => (e.getKey, e.getValue))
 
   override def stringPrefix: String = "IdentityMap"
 }

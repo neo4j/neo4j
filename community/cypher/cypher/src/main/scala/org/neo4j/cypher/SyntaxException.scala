@@ -23,11 +23,12 @@ import java.lang.System.lineSeparator
 
 import org.neo4j.kernel.api.exceptions.Status
 
-class SyntaxException(message: String, val query:String,  val offset: Option[Int], cause: Throwable) extends CypherException(message, cause) {
-  def this(message: String, query:String, offset: Option[Int]) = this(message,query,offset,null)
-  def this(message: String, query:String, offset: Int) = this(message,query,Some(offset),null)
-  def this(message:String, cause: Throwable) = this(message,"",None, cause)
-  def this(message:String) = this(message,"",None,null)
+class SyntaxException(message: String, val query: String, val offset: Option[Int], cause: Throwable)
+    extends CypherException(message, cause) {
+  def this(message: String, query: String, offset: Option[Int]) = this(message, query, offset, null)
+  def this(message: String, query: String, offset: Int) = this(message, query, Some(offset), null)
+  def this(message: String, cause: Throwable) = this(message, "", None, cause)
+  def this(message: String) = this(message, "", None, null)
 
   override def toString = offset match {
     case Some(idx) =>
@@ -46,17 +47,19 @@ class SyntaxException(message: String, val query:String,  val offset: Option[Int
       case Nil => throw new IllegalArgumentException("message converted to empty list")
 
       case List(x) =>
-        val spaces = if (x.length > idx)
-          idx
-        else
-          x.length
+        val spaces =
+          if (x.length > idx)
+            idx
+          else
+            x.length
 
-        "\"" + x + "\"" + lineSeparator() +  " " * spaces + " ^"
+        "\"" + x + "\"" + lineSeparator() + " " * spaces + " ^"
 
-      case head :: tail => if (head.length > idx) {
-        "\"" + head + "\"\n" + " " * idx + " ^"
-      } else {
-        findErrorLine(idx - head.length - 1, tail) //The extra minus one is there for the now missing \n
-      }
+      case head :: tail =>
+        if (head.length > idx) {
+          "\"" + head + "\"\n" + " " * idx + " ^"
+        } else {
+          findErrorLine(idx - head.length - 1, tail) //The extra minus one is there for the now missing \n
+        }
     }
 }

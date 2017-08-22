@@ -19,10 +19,15 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.Node
 
-class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with NewPlannerTestSupport {
+class StringMatchingAcceptanceTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with NewPlannerTestSupport {
 
   var aNode: Node = null
   var bNode: Node = null
@@ -41,24 +46,24 @@ class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QuerySta
     fNode = createLabeledNode("LABEL")
   }
 
-  test("should return null when END WITH is used on non-strings"){
+  test("should return null when END WITH is used on non-strings") {
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
                                           | MATCH (a)
                                           | WHERE a.name ENDS WITH 'foo'
                                           | RETURN a.name""".stripMargin)
-    result.columnAs("a.name").toList should be (List())
+    result.columnAs("a.name").toList should be(List())
   }
 
-  test("should return null when CONTAINS is used on non-strings"){
+  test("should return null when CONTAINS is used on non-strings") {
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
                                           | MATCH (a)
                                           | WHERE a.name CONTAINS 'foo'
                                           | RETURN a.name""".stripMargin)
-    result.columnAs("a.name").toList should be (List())
+    result.columnAs("a.name").toList should be(List())
   }
 
   test("should return null when CONTAINS is used on non-strings that contains integers") {
@@ -71,13 +76,13 @@ class StringMatchingAcceptanceTest extends ExecutionEngineFunSuite with QuerySta
     result.columnAs("a.name").toList should be(List())
   }
 
-  test("should return null when STARTS WITH is used on non-strings"){
+  test("should return null when STARTS WITH is used on non-strings") {
     val result = executeWithAllPlanners("""
                                           | CREATE ({name: 1})
                                           | WITH *
                                           | MATCH (a)
                                           | WHERE a.name STARTS WITH 'foo'
                                           | RETURN a.name""".stripMargin)
-    result.columnAs("a.name").toList should be (List())
+    result.columnAs("a.name").toList should be(List())
   }
 }

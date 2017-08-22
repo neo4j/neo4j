@@ -29,7 +29,8 @@ object ListLiteral {
 }
 
 case class ListLiteral(arguments: Expression*) extends Expression {
-  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = VirtualValues.list(arguments.map(e => e(ctx)):_*)
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue =
+    VirtualValues.list(arguments.map(e => e(ctx)): _*)
 
   def rewrite(f: (Expression) => Expression): Expression = f(ListLiteral(arguments.map(f): _*))
 

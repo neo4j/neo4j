@@ -22,10 +22,19 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.phases
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan.ExecutionPlan
 import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 
-class CompilationState(ls: LogicalPlanState,
-                           val maybeExecutionPlan: Option[ExecutionPlan] = None)
-  extends LogicalPlanState(ls.queryText, ls.startPosition, ls.plannerName, ls.maybeStatement, ls.maybeSemantics,
-                           ls.maybeExtractedParams, ls.maybeSemanticTable, ls.maybeUnionQuery, ls.maybeLogicalPlan,
-                           ls.maybePeriodicCommit, ls.accumulatedConditions) {
+class CompilationState(ls: LogicalPlanState, val maybeExecutionPlan: Option[ExecutionPlan] = None)
+    extends LogicalPlanState(
+      ls.queryText,
+      ls.startPosition,
+      ls.plannerName,
+      ls.maybeStatement,
+      ls.maybeSemantics,
+      ls.maybeExtractedParams,
+      ls.maybeSemanticTable,
+      ls.maybeUnionQuery,
+      ls.maybeLogicalPlan,
+      ls.maybePeriodicCommit,
+      ls.accumulatedConditions
+    ) {
   def withMaybeExecutionPlan(e: Option[ExecutionPlan]): CompilationState = new CompilationState(ls, e)
 }

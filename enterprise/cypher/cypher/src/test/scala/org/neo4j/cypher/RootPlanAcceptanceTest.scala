@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{CompiledRuntimeName, EnterpriseInterpretedRuntimeName, InterpretedRuntimeName, RuntimeName}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.CompiledRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.EnterpriseInterpretedRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.InterpretedRuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.RuntimeName
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
 import org.neo4j.cypher.internal.javacompat.PlanDescription
@@ -64,11 +67,13 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   test("Rows should be properly formatted in compiled runtime") {
     given("match (n) return n")
       .withRuntime(CompiledRuntimeName)
-      .planDescription.getArguments.get("Rows") should equal(0)
+      .planDescription
+      .getArguments
+      .get("Rows") should equal(0)
   }
 
-  for(planner <- Seq(IDPPlannerName, DPPlannerName);
-      runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)) {
+  for (planner <- Seq(IDPPlannerName, DPPlannerName);
+       runtime <- Seq(CompiledRuntimeName, InterpretedRuntimeName)) {
 
     test(s"Should report correct planner and runtime used $planner + $runtime") {
       given("match (n) return n")
@@ -81,7 +86,8 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should show_java_source") {
-    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n", Map.empty[String, Object])
+    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source MATCH (n) RETURN n",
+                              Map.empty[String, Object])
     res.resultAsString()
     shouldContainSourceCode(res.getExecutionPlanDescription)
   }
@@ -93,7 +99,9 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should show_java_source and show_bytecode") {
-    val res = eengine.execute("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n", Map.empty[String, Object])
+    val res =
+      eengine.execute("CYPHER debug=generate_java_source debug=show_java_source debug=show_bytecode MATCH (n) RETURN n",
+                      Map.empty[String, Object])
     res.resultAsString()
     shouldContainSourceCode(res.getExecutionPlanDescription)
     shouldContainByteCode(res.getExecutionPlanDescription)
@@ -109,12 +117,12 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 
   import scala.collection.JavaConverters._
 
-  private def shouldContain(argument:String, planDescription: ExecutionPlanDescription) = {
-    if(!planDescription.getArguments.asScala.exists {
-      case (name: String, code: String) if name.startsWith(s"$argument:") =>
-        !code.isEmpty
-      case _ => false
-    }) {
+  private def shouldContain(argument: String, planDescription: ExecutionPlanDescription) = {
+    if (!planDescription.getArguments.asScala.exists {
+          case (name: String, code: String) if name.startsWith(s"$argument:") =>
+            !code.isEmpty
+          case _ => false
+        }) {
       fail("no $argument present: " + planDescription)
     }
   }

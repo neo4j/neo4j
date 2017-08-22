@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.storable.Values.{intValue, longValue, stringValue}
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.longValue
+import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
 
 class EagerAggregationPipeTest extends CypherFunSuite {
@@ -33,17 +35,21 @@ class EagerAggregationPipeTest extends CypherFunSuite {
   private def createReturnItemsFor(names: String*): Set[String] = names.toSet
 
   test("should aggregate count(*) on single grouping column") {
-    val source = new FakePipe(List(
-      Map[String, Any]("name" -> "Andres", "age" -> 36),
-      Map[String, Any]("name" -> "Peter", "age" -> 38),
-      Map[String, Any]("name" -> "Michael", "age" -> 36),
-      Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
+    val source = new FakePipe(
+      List(
+        Map[String, Any]("name" -> "Andres", "age" -> 36),
+        Map[String, Any]("name" -> "Peter", "age" -> 38),
+        Map[String, Any]("name" -> "Michael", "age" -> 36),
+        Map[String, Any]("name" -> "Michael", "age" -> 31)
+      ),
+      createSymbolTableFor("name")
+    )
 
     val grouping = createReturnItemsFor("name")
     val aggregation = Map("count(*)" -> CountStar())
     val aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
-    getResults(aggregationPipe) should contain allOf(
+    getResults(aggregationPipe) should contain allOf (
       Map[String, AnyValue]("name" -> stringValue("Andres"), "count(*)" -> longValue(1)),
       Map[String, AnyValue]("name" -> stringValue("Peter"), "count(*)" -> longValue(1)),
       Map[String, AnyValue]("name" -> stringValue("Michael"), "count(*)" -> longValue(2))
@@ -51,17 +57,21 @@ class EagerAggregationPipeTest extends CypherFunSuite {
   }
 
   test("should aggregate count(*) on two grouping columns") {
-    def source = new FakePipe(List(
-      Map[String, Any]("a" -> 1, "b" -> 1),
-      Map[String, Any]("a" -> 1, "b" -> 1),
-      Map[String, Any]("a" -> 1, "b" -> 2),
-      Map[String, Any]("a" -> 2, "b" -> 2)), createSymbolTableFor("a"), createSymbolTableFor("b"))
+    def source =
+      new FakePipe(
+        List(Map[String, Any]("a" -> 1, "b" -> 1),
+             Map[String, Any]("a" -> 1, "b" -> 1),
+             Map[String, Any]("a" -> 1, "b" -> 2),
+             Map[String, Any]("a" -> 2, "b" -> 2)),
+        createSymbolTableFor("a"),
+        createSymbolTableFor("b")
+      )
 
     val grouping = createReturnItemsFor("a", "b")
     val aggregation = Map("count(*)" -> CountStar())
     def aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
-    getResults(aggregationPipe) should contain allOf(
+    getResults(aggregationPipe) should contain allOf (
       Map[String, AnyValue]("a" -> intValue(1), "b" -> intValue(1), "count(*)" -> longValue(2)),
       Map[String, AnyValue]("a" -> intValue(1), "b" -> intValue(2), "count(*)" -> longValue(1)),
       Map[String, AnyValue]("a" -> intValue(2), "b" -> intValue(2), "count(*)" -> longValue(1))
@@ -69,18 +79,24 @@ class EagerAggregationPipeTest extends CypherFunSuite {
   }
 
   test("should aggregate count(*) on three grouping columns") {
-    def source = new FakePipe(List(
-      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 1),
-      Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 2),
-      Map[String, Any]("a" -> 1, "b" -> 2, "c" -> 3),
-      Map[String, Any]("a" -> 2, "b" -> 2, "c" -> 4)),
-      createSymbolTableFor("a"), createSymbolTableFor("b"), createSymbolTableFor("c"))
+    def source =
+      new FakePipe(
+        List(
+          Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 1),
+          Map[String, Any]("a" -> 1, "b" -> 1, "c" -> 2),
+          Map[String, Any]("a" -> 1, "b" -> 2, "c" -> 3),
+          Map[String, Any]("a" -> 2, "b" -> 2, "c" -> 4)
+        ),
+        createSymbolTableFor("a"),
+        createSymbolTableFor("b"),
+        createSymbolTableFor("c")
+      )
 
     val grouping = createReturnItemsFor("a", "b", "c")
     val aggregation = Map("count(*)" -> CountStar())
     def aggregationPipe = EagerAggregationPipe(source, grouping, aggregation)()
 
-    getResults(aggregationPipe) should contain allOf(
+    getResults(aggregationPipe) should contain allOf (
       Map[String, AnyValue]("a" -> intValue(1), "b" -> intValue(1), "c" -> intValue(1), "count(*)" -> longValue(1)),
       Map[String, AnyValue]("a" -> intValue(1), "b" -> intValue(1), "c" -> intValue(2), "count(*)" -> longValue(1)),
       Map[String, AnyValue]("a" -> intValue(1), "b" -> intValue(2), "c" -> intValue(3), "count(*)" -> longValue(1)),
@@ -89,17 +105,19 @@ class EagerAggregationPipeTest extends CypherFunSuite {
   }
 
   test("should handle grouping on null") {
-    val source = new FakePipe(List(
-      Map[String, Any]("name" -> "Apa"),
-      Map[String, Any]("name" -> "Apa"),
-      Map[String, Any]("name" -> null),
-      Map[String, Any]("name" -> null)), createSymbolTableFor("name"))
+    val source = new FakePipe(
+      List(Map[String, Any]("name" -> "Apa"),
+           Map[String, Any]("name" -> "Apa"),
+           Map[String, Any]("name" -> null),
+           Map[String, Any]("name" -> null)),
+      createSymbolTableFor("name")
+    )
 
     val returnItems = createReturnItemsFor("name")
     val grouping = Map("count(*)" -> CountStar())
     val aggregationPipe = EagerAggregationPipe(source, returnItems, grouping)()
 
-    getResults(aggregationPipe) should contain allOf(
+    getResults(aggregationPipe) should contain allOf (
       Map[String, AnyValue]("name" -> stringValue("Apa"), "count(*)" -> longValue(2)),
       Map[String, AnyValue]("name" -> Values.NO_VALUE, "count(*)" -> longValue(2))
     )
@@ -122,19 +140,28 @@ class EagerAggregationPipeTest extends CypherFunSuite {
     val aggregationPipe = EagerAggregationPipe(source, returnItems, grouping)()
 
     getResults(aggregationPipe) should contain(
-      Map[String, AnyValue]("avg(name.age)" -> Values.NO_VALUE, "sum(name.age)" -> longValue(0),
-                            "count(name.age)" -> longValue(0), "min(name.age)" -> Values.NO_VALUE,
-                            "collect(name.age)" -> VirtualValues.EMPTY_LIST, "max(name.age)" -> Values.NO_VALUE,
-                            "count(*)" -> longValue(0))
+      Map[String, AnyValue](
+        "avg(name.age)" -> Values.NO_VALUE,
+        "sum(name.age)" -> longValue(0),
+        "count(name.age)" -> longValue(0),
+        "min(name.age)" -> Values.NO_VALUE,
+        "collect(name.age)" -> VirtualValues.EMPTY_LIST,
+        "max(name.age)" -> Values.NO_VALUE,
+        "count(*)" -> longValue(0)
+      )
     )
   }
 
   test("shouldCountNonNullValues") {
-    val source = new FakePipe(List(
-      Map[String, Any]("name" -> "Andres", "age" -> 36),
-      Map[String, Any]("name" -> null, "age" -> 38),
-      Map[String, Any]("name" -> "Michael", "age" -> 36),
-      Map[String, Any]("name" -> "Michael", "age" -> 31)), createSymbolTableFor("name"))
+    val source = new FakePipe(
+      List(
+        Map[String, Any]("name" -> "Andres", "age" -> 36),
+        Map[String, Any]("name" -> null, "age" -> 38),
+        Map[String, Any]("name" -> "Michael", "age" -> 36),
+        Map[String, Any]("name" -> "Michael", "age" -> 31)
+      ),
+      createSymbolTableFor("name")
+    )
 
     val returnItems = createReturnItemsFor()
     val grouping = Map("count(name)" -> Count(Variable("name")))

@@ -24,29 +24,38 @@ import java.util.function.BiConsumer
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.Expression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers.IsMap
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.mutation.makeValueNeoSafe
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{LazyLabel, Pipe, PipeWithSource, QueryState}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.LazyLabel
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.PipeWithSource
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{ExecutionContext, PipelineInformation}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.PipelineInformation
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.cypher.internal.spi.v3_3.QueryContext
-import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
-case class CreateNodeRegisterPipe(source: Pipe, ident: String, pipelineInformation: PipelineInformation,
-                                  labels: Seq[LazyLabel], properties: Option[Expression])
-                                   (val id: Id = new Id) extends PipeWithSource(source) with Pipe{
+case class CreateNodeRegisterPipe(source: Pipe,
+                                  ident: String,
+                                  pipelineInformation: PipelineInformation,
+                                  labels: Seq[LazyLabel],
+                                  properties: Option[Expression])(val id: Id = new Id)
+    extends PipeWithSource(source)
+    with Pipe {
 
   private val offset = pipelineInformation.getLongOffsetFor(ident)
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.map {
-      row =>
-        val nodeId = state.query.createNodeId()
-        setProperties(row, state, nodeId)
-        setLabels(row, state, nodeId)
-        row.setLongAt(offset, nodeId)
-        row
+  override protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                               state: QueryState): Iterator[ExecutionContext] = {
+    input.map { row =>
+      val nodeId = state.query.createNodeId()
+      setProperties(row, state, nodeId)
+      setLabels(row, state, nodeId)
+      row.setLongAt(offset, nodeId)
+      row
     }
   }
 

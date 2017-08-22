@@ -30,20 +30,47 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
 
   test("unhappy when a node pattern is unnamed") {
     val nodePattern: NodePattern = node(None)
-    val ast: ASTNode = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
-    ))_
+    val ast: ASTNode = SingleQuery(
+      Seq(
+        Match(
+          optional = false,
+          Pattern(
+            Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern),
+                                relationship(Some(varFor("r"))),
+                                node(Some(varFor("m"))))))) _,
+          Seq.empty,
+          None
+        ) _,
+        Return(distinct = false,
+               ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
+               None,
+               None,
+               None) _
+      )) _
 
     condition(ast) shouldBe Seq(s"NodePattern at ${nodePattern.position} is unnamed")
   }
 
   test("unhappy when a relationship pattern is unnamed") {
     val relationshipPattern: RelationshipPattern = relationship(None)
-    val ast: ASTNode = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationshipPattern, node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
-    ))_
+    val ast: ASTNode = SingleQuery(
+      Seq(
+        Match(
+          optional = false,
+          Pattern(
+            Seq(
+              EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
+                              relationshipPattern,
+                              node(Some(varFor("m"))))))) _,
+          Seq.empty,
+          None
+        ) _,
+        Return(distinct = false,
+               ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
+               None,
+               None,
+               None) _
+      )) _
 
     condition(ast) shouldBe Seq(s"RelationshipPattern at ${relationshipPattern.position} is unnamed")
   }
@@ -51,42 +78,85 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   test("unhappy when there are unnamed node and relationship patterns") {
     val nodePattern: NodePattern = node(None)
     val relationshipPattern: RelationshipPattern = relationship(None)
-    val ast: ASTNode = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))), relationship(Some(varFor("r"))), nodePattern))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
-    ))_
+    val ast: ASTNode = SingleQuery(
+      Seq(
+        Match(
+          optional = false,
+          Pattern(
+            Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))),
+                                relationship(Some(varFor("r"))),
+                                nodePattern)))) _,
+          Seq.empty,
+          None
+        ) _,
+        Return(distinct = false,
+               ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
+               None,
+               None,
+               None) _
+      )) _
 
-    condition(ast) shouldBe Seq(s"NodePattern at ${nodePattern.position} is unnamed", s"RelationshipPattern at ${relationshipPattern.position} is unnamed")
+    condition(ast) shouldBe Seq(s"NodePattern at ${nodePattern.position} is unnamed",
+                                s"RelationshipPattern at ${relationshipPattern.position} is unnamed")
   }
 
   test("happy when all elements in pattern are named") {
-    val ast: ASTNode = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, None)_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
-    ))_
+    val ast: ASTNode = SingleQuery(
+      Seq(
+        Match(
+          optional = false,
+          Pattern(
+            Seq(
+              EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
+                              relationship(Some(varFor("r"))),
+                              node(Some(varFor("m"))))))) _,
+          Seq.empty,
+          None
+        ) _,
+        Return(distinct = false,
+               ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
+               None,
+               None,
+               None) _
+      )) _
 
     condition(ast) shouldBe empty
   }
 
   test("should leave where clause alone") {
-    val where: Where = Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None)))_))_
-    val ast: ASTNode = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))), relationship(Some(varFor("r"))), node(Some(varFor("m")))))))_, Seq.empty, Some(where))_,
-      Return(distinct = false, ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n"))_))_, None, None, None)_
-    ))_
+    val where: Where =
+      Where(PatternExpression(RelationshipsPattern(chain(node(None), relationship(None), node(None))) _)) _
+    val ast: ASTNode = SingleQuery(
+      Seq(
+        Match(
+          optional = false,
+          Pattern(
+            Seq(
+              EveryPath(chain(chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
+                              relationship(Some(varFor("r"))),
+                              node(Some(varFor("m"))))))) _,
+          Seq.empty,
+          Some(where)
+        ) _,
+        Return(distinct = false,
+               ReturnItems(includeExisting = false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
+               None,
+               None,
+               None) _
+      )) _
 
     condition(ast) shouldBe empty
   }
 
   private def chain(left: PatternElement, rel: RelationshipPattern, right: NodePattern): RelationshipChain = {
-    RelationshipChain(left, rel, right)_
+    RelationshipChain(left, rel, right) _
   }
 
   private def relationship(id: Option[Variable]): RelationshipPattern = {
-    RelationshipPattern(id, Seq.empty, None, None, SemanticDirection.OUTGOING)_
+    RelationshipPattern(id, Seq.empty, None, None, SemanticDirection.OUTGOING) _
   }
 
   private def node(id: Option[Variable]): NodePattern = {
-    NodePattern(id, Seq.empty, None)_
+    NodePattern(id, Seq.empty, None) _
   }
 }

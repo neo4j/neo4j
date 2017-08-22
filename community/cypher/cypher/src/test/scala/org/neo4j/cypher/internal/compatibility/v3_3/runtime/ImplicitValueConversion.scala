@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions.PathImpl
-import org.neo4j.graphdb.{Node, Path, Relationship}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.Relationship
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual.VirtualValues._
@@ -37,7 +39,7 @@ object ImplicitValueConversion {
 
   implicit def toStringValue(s: String): TextValue = stringValue(s)
 
-  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s:_*)
+  implicit def toStringArrayValue(s: Array[String]): ArrayValue = stringArray(s: _*)
 
   implicit def toByteArrayValue(s: Array[Byte]): ArrayValue = byteArray(s)
 
@@ -69,7 +71,6 @@ object ImplicitValueConversion {
 
   implicit def toMapValue(m: Map[String, _]): MapValue =
     AnyValues.asMapValue(m.asJava.asInstanceOf[java.util.Map[String, AnyRef]])
-
 
   implicit def toMapValue(m: java.util.Map[String, Any]): MapValue =
     AnyValues.asMapValue(m.asInstanceOf[java.util.Map[String, AnyRef]])

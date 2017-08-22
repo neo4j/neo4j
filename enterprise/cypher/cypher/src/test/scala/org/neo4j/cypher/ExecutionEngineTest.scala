@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher
 
-import java.io.{File, PrintWriter}
+import java.io.File
+import java.io.PrintWriter
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
@@ -37,12 +38,17 @@ import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.test.TestGraphDatabaseFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 
-class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with NewPlannerTestSupport {
+class ExecutionEngineTest
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with CreateTempFileTestSupport
+    with NewPlannerTestSupport {
   test("shouldGetRelationshipById") {
     val n = createNode()
     val r = relate(n, createNode(), "KNOWS")
@@ -72,7 +78,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("shouldGetOtherNode") {
     val node: Node = createNode()
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node")
 
     result.columnAs[Node]("node").toList should equal(List(node))
   }
@@ -81,7 +88,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val node: Node = createNode()
     val rel: Relationship = relate(createNode(), node, "yo")
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match ()-[rel]->() where id(rel) = ${rel.getId} return rel")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode(s"match ()-[rel]->() where id(rel) = ${rel.getId} return rel")
 
     result.columnAs[Relationship]("rel").toList should equal(List(rel))
   }
@@ -90,7 +98,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val node1: Node = createNode()
     val node2: Node = createNode()
 
-    val result = executeWithAllPlannersAndCompatibilityMode(s"match (node) where id(node) in [${node1.getId}, ${node2.getId}] return node")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      s"match (node) where id(node) in [${node1.getId}, ${node2.getId}] return node")
 
     result.columnAs[Node]("node").toList should equal(List(node1, node2))
   }
@@ -99,7 +108,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(s"match (node) where id(node) = ${node.getId} return node.name")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      s"match (node) where id(node) = ${node.getId} return node.name")
 
     result.columnAs[String]("node.name").toList should equal(List(name))
   }
@@ -225,7 +235,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(x) where id(n) = 0 return type(r)")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n)-[r]->(x) where id(n) = 0 return type(r)")
 
     result.columnAs[String]("type(r)").toList should equal(List("HATES", "KNOWS"))
   }
@@ -244,8 +255,8 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
 
-
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
 
     result.toSet should equal(
       Set(
@@ -267,12 +278,11 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       """.stripMargin
 
     val result = executeWithAllPlannersAndCompatibilityMode(query,
-      "a" -> Seq[Long](0),
-      "b" -> 1,
-      "c" -> Seq(2L).asJava,
-      "0" -> Seq(3).asJava,
-      "1" -> List(4)
-    )
+                                                            "a" -> Seq[Long](0),
+                                                            "b" -> 1,
+                                                            "c" -> Seq(2L).asJava,
+                                                            "0" -> Seq(3).asJava,
+                                                            "1" -> List(4))
 
     result.toList should have size 1
   }
@@ -281,7 +291,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode()
     val query = "match (pA) where id(pA) = {a} return pA"
 
-    executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "a" -> "Andres") should be (empty)
+    executeWithAllPlannersAndRuntimesAndCompatibilityMode(query, "a" -> "Andres") should be(empty)
   }
 
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
@@ -307,7 +317,10 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val b = createNode(Map("name" -> "you"))
     relate(a, b, "KNOW")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)",
+      "startId" -> a,
+      "name" -> "you")
 
     result.toList should equal(List(Map("TYPE(r)" -> "KNOW")))
   }
@@ -322,7 +335,7 @@ class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   test("shouldSupportMultipleRegexes") {
     val a = createNode(Map("name" -> "Andreas"))
 
-    val result = executeWithAllPlannersAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode("""
 match (a)
 where id(a) = 0 AND a.name =~ 'And.*' AND a.name =~ 'And.*'
 return a""")
@@ -337,7 +350,7 @@ return a""")
     val r1 = relate(a, b)
     val r2 = relate(b, c)
 
-    val result = executeWithAllPlannersAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode("""
 match (a)-[r*2]->(c)
 where id(a) = 0
 return r""")
@@ -348,7 +361,8 @@ return r""")
   test("shouldHandleCheckingThatANodeDoesNotHaveAProp") {
     val a = createNode()
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a) where id(a) = 0 and not exists(a.propertyDoesntExist) return a")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (a) where id(a) = 0 and not exists(a.propertyDoesntExist) return a")
     result.toList should equal(List(Map("a" -> a)))
   }
 
@@ -356,22 +370,24 @@ return r""")
     createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
     createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
 
-    val result = executeWithAllPlannersAndCompatibilityMode( """
+    val result = executeWithAllPlannersAndCompatibilityMode("""
 match (a)
 where id(a) IN [0, 1]
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1""")
 
-    result.toList should equal(List(
-      Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
-      Map("a.COL1" -> "B", "a.COL2" -> "B", "avg(a.num)" -> 2)
-    ))
+    result.toList should equal(
+      List(
+        Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
+        Map("a.COL1" -> "B", "a.COL2" -> "B", "avg(a.num)" -> 2)
+      ))
   }
 
   test("shouldAllowAllPredicateOnArrayProperty") {
     val a = createNode("array" -> Array(1, 2, 3, 4))
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a) where id(a) = 0 and any(x in a.array where x = 2) return a")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (a) where id(a) = 0 and any(x in a.array where x = 2) return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -379,7 +395,8 @@ order by a.COL1""")
   test("shouldAllowStringComparisonsInArray") {
     val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a) where id(a) = 0 and single(x in a.array where x =~ '.*the.*') return a")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (a) where id(a) = 0 and single(x in a.array where x =~ '.*the.*') return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -387,7 +404,8 @@ order by a.COL1""")
   test("shouldBeAbleToCompareWithTrue") {
     val a = createNode("first" -> true)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a) where id(a) = 0 and a.first = true return a")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (a) where id(a) = 0 and a.first = true return a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
@@ -395,7 +413,8 @@ order by a.COL1""")
   test("shouldToStringArraysPrettily") {
     createNode("foo" -> Array("one", "two"))
 
-    val string = executeWithAllPlannersAndRuntimesAndCompatibilityMode( """match (n) where id(n) = 0 return n.foo""").dumpToString()
+    val string =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("""match (n) where id(n) = 0 return n.foo""").dumpToString()
 
     string should include("""["one","two"]""")
   }
@@ -405,7 +424,8 @@ order by a.COL1""")
     val a = createNode()
     relate(x, a, "X")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (c) where id(c) = 0 match (n)--(c) return n")
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (c) where id(c) = 0 match (n)--(c) return n")
     result should have size 1
   }
 
@@ -425,14 +445,17 @@ order by a.COL1""")
   test("should handle parameters names as variables") {
     createNode("bar" -> "Andres")
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (foo) where id(foo) = 0 and foo.bar = {foo} return foo.bar", "foo" -> "Andres")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "match (foo) where id(foo) = 0 and foo.bar = {foo} return foo.bar",
+      "foo" -> "Andres")
     result.toList should equal(List(Map("foo.bar" -> "Andres")))
   }
 
   test("shouldHandleComparisonsWithDifferentTypes") {
     createNode("belt" -> 13)
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 and (n.belt = 'white' OR n.belt = false) return n")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 and (n.belt = 'white' OR n.belt = false) return n")
     result.toList shouldBe empty
   }
 
@@ -440,7 +463,8 @@ order by a.COL1""")
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
-    val result = executeWithAllPlannersAndCompatibilityMode("match (a), ()-[r]->() where id(a) = 0 and id(r) = 0 return a,r")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("match (a), ()-[r]->() where id(a) = 0 and id(r) = 0 return a,r")
 
     result.toList should equal(List(Map("a" -> a, "r" -> r)))
   }
@@ -464,17 +488,21 @@ order by a.COL1""")
   }
 
   test("shouldReturnASimplePath") {
-    intercept[MissingIndexException](executeWithAllPlannersAndCompatibilityMode("start a=node:missingIndex(key='value') return a").toList)
-    intercept[MissingIndexException](executeWithAllPlannersAndCompatibilityMode("start a=node:missingIndex('value') return a").toList)
-    intercept[MissingIndexException](executeWithAllPlannersAndCompatibilityMode("start a=relationship:missingIndex(key='value') return a").toList)
-    intercept[MissingIndexException](executeWithAllPlannersAndCompatibilityMode("start a=relationship:missingIndex('value') return a").toList)
+    intercept[MissingIndexException](
+      executeWithAllPlannersAndCompatibilityMode("start a=node:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](
+      executeWithAllPlannersAndCompatibilityMode("start a=node:missingIndex('value') return a").toList)
+    intercept[MissingIndexException](
+      executeWithAllPlannersAndCompatibilityMode("start a=relationship:missingIndex(key='value') return a").toList)
+    intercept[MissingIndexException](
+      executeWithAllPlannersAndCompatibilityMode("start a=relationship:missingIndex('value') return a").toList)
   }
 
   test("createEngineWithSpecifiedParserVersion") {
     val db: GraphDatabaseService = new TestGraphDatabaseFactory()
-                            .newImpermanentDatabaseBuilder(new File("target/engineWithSpecifiedParser"))
-                            .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
-                            .newGraphDatabase()
+      .newImpermanentDatabaseBuilder(new File("target/engineWithSpecifiedParser"))
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "2.3")
+      .newGraphDatabase()
     val engine = createEngine(db)
 
     try {
@@ -482,7 +510,7 @@ order by a.COL1""")
       engine.execute("create a", Map.empty[String, Any])
     } catch {
       case x: SyntaxException =>
-      case _: Throwable => fail("expected exception")
+      case _: Throwable       => fail("expected exception")
     } finally {
       db.shutdown()
     }
@@ -526,7 +554,9 @@ order by a.COL1""")
   test("with should not forget parameters") {
     graph.inTx(graph.index().forNodes("test"))
     val id = "bar"
-    val result = updateWithBothPlannersAndCompatibilityMode("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x.name as name", "id" -> id).toList
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      "start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x.name as name",
+      "id" -> id).toList
 
     result should have size 1
     result.head("c").asInstanceOf[Long] should equal(0)
@@ -535,7 +565,9 @@ order by a.COL1""")
 
   test("with should not forget parameters2") {
     val id = createNode().getId
-    val result = updateWithBothPlannersAndCompatibilityMode("match (n) where id(n) = {id} with n set n.foo={id} return n", "id" -> id).toList
+    val result =
+      updateWithBothPlannersAndCompatibilityMode("match (n) where id(n) = {id} with n set n.foo={id} return n",
+                                                 "id" -> id).toList
 
     result should have size 1
     graph.inTx {
@@ -546,7 +578,8 @@ order by a.COL1""")
   test("shouldAllowArrayComparison") {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n) where id(n) = 0 and n.lotteryNumbers = [42, 87] return n")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "match (n) where id(n) = 0 and n.lotteryNumbers = [42, 87] return n")
 
     result.toList should equal(List(Map("n" -> node)))
   }
@@ -554,34 +587,39 @@ order by a.COL1""")
   test("shouldSupportArrayOfArrayOfPrimitivesAsParameterForInKeyword") {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 and n.lotteryNumbers in [[42, 87], [13], [42]] return n")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 and n.lotteryNumbers in [[42, 87], [13], [42]] return n")
 
     result.toList should equal(List(Map("n" -> node)))
   }
 
   test("params should survive with") {
     val n = createNode()
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 WITH collect(n) as coll where length(coll)={id} RETURN coll",
+      "id" -> 1)
 
     result.toList should equal(List(Map("coll" -> List(n))))
   }
 
   test("nodes named r should not pose a problem") {
     val a = createNode()
-    val r = createNode("foo"->"bar")
+    val r = createNode("foo" -> "bar")
     val b = createNode()
 
-    relate(a,r)
-    relate(r,b)
+    relate(a, r)
+    relate(r, b)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "MATCH (a)-->(r)-->(b) WHERE id(a) = 0 AND r.foo = 'bar' RETURN b")
 
     result.toList should equal(List(Map("b" -> b)))
   }
 
   test("can use variables created inside the foreach") {
     createNode()
-    val result = updateWithBothPlanners("match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
+    val result = updateWithBothPlanners(
+      "match (n) where id(n) = 0 foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
     result.toList shouldBe empty
   }
@@ -590,13 +628,14 @@ order by a.COL1""")
     val a = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 return sum(ID(n)), n as m")
 
-    result.toList should equal(List(Map("sum(ID(n))"->0, "m"->a)))
+    result.toList should equal(List(Map("sum(ID(n))" -> 0, "m" -> a)))
   }
 
   test("extract string from node collection") {
-    createNode("name"->"a")
+    createNode("name" -> "a")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("""match (n) where id(n) = 0 with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      """match (n) where id(n) = 0 with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
     result.toList should equal(List(Map("test" -> "atest")))
   }
@@ -604,9 +643,10 @@ order by a.COL1""")
   test("filtering in match should not fail") {
     val n = createNode()
     relate(n, createNode("name" -> "Neo"))
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "MATCH (n)-->(me) WHERE id(n) = 0 AND me.name IN ['Neo'] RETURN me.name")
 
-    result.toList should equal(List(Map("me.name"->"Neo")))
+    result.toList should equal(List(Map("me.name" -> "Neo")))
   }
 
   test("unexpected traversal state should never be hit") {
@@ -617,7 +657,10 @@ order by a.COL1""")
     relate(a, b)
     relate(b, c)
 
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-[r]->(m) WHERE n = {a} AND m = {b} RETURN *", "a"->a, "b"->c)
+    val result =
+      executeWithAllPlannersAndRuntimesAndCompatibilityMode("MATCH (n)-[r]->(m) WHERE n = {a} AND m = {b} RETURN *",
+                                                            "a" -> a,
+                                                            "b" -> c)
 
     result.toList shouldBe empty
   }
@@ -630,7 +673,7 @@ order by a.COL1""")
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
-    val tx = graph.beginTransaction( Type.explicit, AnonymousContext.none() )
+    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.none())
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 
@@ -685,7 +728,8 @@ order by a.COL1""")
     val c = createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [0, 1, 2] AND not(n:foo) RETURN n")
+    val result =
+      executeWithAllPlannersAndCompatibilityMode("MATCH (n) WHERE id(n) in [0, 1, 2] AND not(n:foo) RETURN n")
 
     // THEN
     result.toList should equal(List(Map("n" -> c)))
@@ -710,7 +754,8 @@ order by a.COL1""")
     val propertyKeys = Seq("name")
 
     // WHEN
-    updateWithBothPlannersAndCompatibilityMode(s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
+    updateWithBothPlannersAndCompatibilityMode(
+      s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
 
     // THEN
     graph.inTx {
@@ -726,7 +771,8 @@ order by a.COL1""")
     createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 RETURN 1 as x UNION ALL match (n) where id(n) = 0 RETURN 2 as x")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 RETURN 1 as x UNION ALL match (n) where id(n) = 0 RETURN 2 as x")
 
     // THEN
     result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
@@ -736,7 +782,8 @@ order by a.COL1""")
     createNode()
 
     // WHEN
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 RETURN 1 as x UNION match (n) where id(n) = 0 RETURN 1 as x")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 RETURN 1 as x UNION match (n) where id(n) = 0 RETURN 1 as x")
 
     // THEN
     result.toList should equal(List(Map("x" -> 1)))
@@ -744,13 +791,12 @@ order by a.COL1""")
 
   test("read only database can process has label predicates") {
     //GIVEN
-    readOnlyEngine() {
-      engine =>
-        //WHEN
-        val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
+    readOnlyEngine() { engine =>
+      //WHEN
+      val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n", Map.empty[String, Any])
 
-        //THEN
-        result.asScala.toList shouldBe empty
+      //THEN
+      result.asScala.toList shouldBe empty
     }
   }
 
@@ -768,7 +814,8 @@ order by a.COL1""")
     relate(p4, red, "ap_has_value")
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      """
        MATCH (advertiser:Advertiser) -[:adv_has_product] ->(out) -[:ap_has_value] ->(red)<-[:aa_has_value]- (thing:Thing)
        WHERE red.name = 'red' AND out.name = 'product1'
        RETURN out.name""")
@@ -781,11 +828,10 @@ order by a.COL1""")
     //GIVEN
     val a = createNode()
     val b = createNode()
-    relate(a,b,"FOO")
+    relate(a, b, "FOO")
 
     //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode(
-      """MATCH (a), (b)
+    val result = updateWithBothPlannersAndCompatibilityMode("""MATCH (a), (b)
          WHERE id(a) = 0 AND id(b) = 1
          AND not (a)-[:FOO]->(b)
          CREATE (a)-[new:FOO]->(b)
@@ -800,8 +846,7 @@ order by a.COL1""")
     createNode()
 
     //WHEN
-    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
-      """MATCH (p) WHERE id(p) = 0
+    val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode("""MATCH (p) WHERE id(p) = 0
         WITH p
         MATCH (a) WHERE id(a) = 0
         MATCH (a)-->(b)
@@ -814,23 +859,25 @@ order by a.COL1""")
   test("should be able to coalesce nodes") {
     val n = createNode("n")
     val m = createNode("m")
-    relate(n,m,"link")
-    val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
+    relate(n, m, "link")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "match (n) where id(n) = 0 with coalesce(n,n) as n match (n)--() return n")
 
     result.toList should equal(List(Map("n" -> n)))
   }
 
   test("multiple start points should still honor predicates") {
     val e = createNode()
-    val p1 = createNode("value"->567)
-    val p2 = createNode("value"->0)
-    relate(p1,e)
-    relate(p2,e)
+    val p1 = createNode("value" -> 567)
+    val p2 = createNode("value" -> 0)
+    relate(p1, e)
+    relate(p2, e)
 
     indexNode(p1, "stuff", "key", "value")
     indexNode(p2, "stuff", "key", "value")
 
-    val result = executeWithAllPlannersAndCompatibilityMode("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
     result.toList shouldBe empty
   }
 
@@ -857,13 +904,17 @@ order by a.COL1""")
   test("should iterate all node id sets from start during matching") {
     // given
     val nodes: Vector[Node] =
-      executeWithCostPlannerAndInterpretedRuntimeOnly("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
-        .columnAs[Vector[Node]]("nodes").next().sortBy(_.getId)
+      executeWithCostPlannerAndInterpretedRuntimeOnly(
+        "CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
+        .columnAs[Vector[Node]]("nodes")
+        .next()
+        .sortBy(_.getId)
 
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode(s"MATCH (src)-[r:EDGE]-(dst) WHERE id(src) IN $nodeIds AND id(dst) IN $nodeIds RETURN r")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      s"MATCH (src)-[r:EDGE]-(dst) WHERE id(src) IN $nodeIds AND id(dst) IN $nodeIds RETURN r")
 
     // then
     val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
@@ -873,14 +924,16 @@ order by a.COL1""")
 
   test("merge should support single parameter") {
     //WHEN
-    val result = updateWithBothPlannersAndCompatibilityMode("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
+    val result =
+      updateWithBothPlannersAndCompatibilityMode("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
 
     //THEN DOESN'T THROW EXCEPTION
     result.toList shouldBe empty
   }
 
   test("merge should not support map parameters for defining properties") {
-    intercept[SyntaxException](executeWithAllPlanners("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
+    intercept[SyntaxException](
+      executeWithAllPlanners("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
   test("should not hang") {
@@ -892,9 +945,9 @@ order by a.COL1""")
     timeOutIn(2, TimeUnit.SECONDS) {
       executeWithAllPlannersAndCompatibilityMode(
         "MATCH (x)-->(a), (x)-->(b) " +
-        "WHERE x.foo > 2 AND x.prop IN ['val'] " +
-        "AND id(a) = 0 AND id(b) = 1 " +
-        "RETURN x")
+          "WHERE x.foo > 2 AND x.prop IN ['val'] " +
+          "AND id(a) = 0 AND id(b) = 1 " +
+          "RETURN x")
     }
     // then
   }
@@ -903,7 +956,8 @@ order by a.COL1""")
     // given
 
     // when
-    val result = executeWithAllPlannersAndCompatibilityMode("return 1 > null as A, 1 < null as B, 1 <= null as C, 1 >= null as D, null <= null as E, null >= null as F")
+    val result = executeWithAllPlannersAndCompatibilityMode(
+      "return 1 > null as A, 1 < null as B, 1 <= null as C, 1 >= null as D, null <= null as E, null >= null as F")
 
     // then
     result.toList should equal(List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
@@ -916,7 +970,8 @@ order by a.COL1""")
     createNode("coll" -> Array(1, 2, 3), "bool" -> true)
     createLabeledNode("LABEL")
 
-    val foundNode = executeWithAllPlannersAndRuntimesAndCompatibilityMode("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
+    val foundNode = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
+      "match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 
     foundNode should equal(n)
   }
@@ -924,7 +979,9 @@ order by a.COL1""")
   test("should be able to coerce literal collections to predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
 
-    val foundNode = executeWithAllPlannersAndCompatibilityMode("match (n:LABEL) where [1,2,3] and n.bool return n").columnAs[Node]("n").next()
+    val foundNode = executeWithAllPlannersAndCompatibilityMode("match (n:LABEL) where [1,2,3] and n.bool return n")
+      .columnAs[Node]("n")
+      .next()
 
     foundNode should equal(n)
   }
@@ -946,7 +1003,8 @@ order by a.COL1""")
   }
 
   test("should not mind rewriting NOT queries") {
-    val result = updateWithBothPlannersAndCompatibilityMode(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
+    val result = updateWithBothPlannersAndCompatibilityMode(
+      " create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
     result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 
@@ -955,12 +1013,14 @@ order by a.COL1""")
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
-    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x", Map.empty[String, Any])
+    val result = eengine.execute(s"cypher 2.3 using periodic commit load csv from '$url' as line create x return x",
+                                 Map.empty[String, Any])
     result.asScala should have size 2
   }
 
   override protected def createGraphDatabase(config: collection.Map[Setting[_], String]): GraphDatabaseCypherService = {
-    new GraphDatabaseCypherService(new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
+    new GraphDatabaseCypherService(
+      new TestEnterpriseGraphDatabaseFactory().newImpermanentDatabase(databaseConfig().asJava))
   }
 
   override def databaseConfig(): Map[Setting[_], String] = super.databaseConfig() ++ Map(
@@ -968,9 +1028,10 @@ order by a.COL1""")
     GraphDatabaseSettings.cypher_compiler_tracing -> "true"
   )
 
-  case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty) extends TimingCompilationTracer.EventListener {
+  case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty)
+      extends TimingCompilationTracer.EventListener {
     override def queryCompiled(event: QueryEvent): Unit = {
-      if(event.phases().asScala.exists(_.phase() == CompilationPhase.LOGICAL_PLANNING)) {
+      if (event.phases().asScala.exists(_.phase() == CompilationPhase.LOGICAL_PLANNING)) {
         planRequests.append(event.query())
       }
     }
@@ -981,21 +1042,27 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    (0 until 100).foreach { _ => createLabeledNode("Person") }
+    (0 until 100).foreach { _ =>
+      createLabeledNode("Person")
+    }
 
     // WHEN
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
-    planningListener.planRequests should equal(Seq(
-      s"match (n:Person) return n"
-    ))
-    (0 until 301).foreach { _ => createLabeledNode("Person") }
+    planningListener.planRequests should equal(
+      Seq(
+        s"match (n:Person) return n"
+      ))
+    (0 until 301).foreach { _ =>
+      createLabeledNode("Person")
+    }
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
 
     //THEN
-    planningListener.planRequests should equal (Seq(
-      s"match (n:Person) return n",
-      s"match (n:Person) return n"
-    ))
+    planningListener.planRequests should equal(
+      Seq(
+        s"match (n:Person) return n",
+        s"match (n:Person) return n"
+      ))
   }
 
   test("should avoid discarding plans that are still somewhat suitable") {
@@ -1003,19 +1070,25 @@ order by a.COL1""")
     val planningListener = PlanningListener()
     kernelMonitors.addMonitorListener(planningListener)
 
-    (0 until 100).foreach { _ => createLabeledNode("Person") }
+    (0 until 100).foreach { _ =>
+      createLabeledNode("Person")
+    }
     //WHEN
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
-    planningListener.planRequests should equal(Seq(
-      s"match (n:Person) return n"
-    ))
-    (0 until 9).foreach { _ => createLabeledNode("Dog") }
+    planningListener.planRequests should equal(
+      Seq(
+        s"match (n:Person) return n"
+      ))
+    (0 until 9).foreach { _ =>
+      createLabeledNode("Dog")
+    }
     eengine.execute(s"match (n:Person) return n", Map.empty[String, Any]).resultAsString()
 
     //THEN
-    planningListener.planRequests should equal(Seq(
-      s"match (n:Person) return n"
-    ))
+    planningListener.planRequests should equal(
+      Seq(
+        s"match (n:Person) return n"
+      ))
   }
 
   test("replanning should happen after data source restart") {
@@ -1032,18 +1105,20 @@ order by a.COL1""")
     val result2 = eengine.execute("match (n) return n", Map.empty[String, Any]).asScala.toList
     result2 shouldBe empty
 
-    planningListener.planRequests should equal(Seq(
-      s"match (n) return n",
-      s"match (n) return n"
-    ))
+    planningListener.planRequests should equal(
+      Seq(
+        s"match (n) return n",
+        s"match (n) return n"
+      ))
   }
 
   private def readOnlyEngine()(run: ExecutionEngine => Unit) = {
     FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase( new File( "target/readonly" ) )
+    val old = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabase(new File("target/readonly"))
     old.shutdown()
-    val db = new TestEnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( new File( "target/readonly" ) )
-      .setConfig( GraphDatabaseSettings.read_only, "true" )
+    val db = new TestEnterpriseGraphDatabaseFactory()
+      .newEmbeddedDatabaseBuilder(new File("target/readonly"))
+      .setConfig(GraphDatabaseSettings.read_only, "true")
       .newGraphDatabase()
     try {
       val engine = createEngine(db)

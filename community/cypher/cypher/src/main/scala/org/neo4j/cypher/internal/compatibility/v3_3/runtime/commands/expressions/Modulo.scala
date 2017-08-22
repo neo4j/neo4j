@@ -20,14 +20,17 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.expressions
 
 import org.neo4j.values._
-import org.neo4j.values.storable.{DoubleValue, FloatValue, NumberValue, Values}
+import org.neo4j.values.storable.DoubleValue
+import org.neo4j.values.storable.FloatValue
+import org.neo4j.values.storable.NumberValue
+import org.neo4j.values.storable.Values
 
 case class Modulo(a: Expression, b: Expression) extends Arithmetics(a, b) {
   def calc(a: NumberValue, b: NumberValue): AnyValue = (a, b) match {
     case (l1: DoubleValue, _) => Values.doubleValue(l1.doubleValue() % b.doubleValue())
     case (_, l2: DoubleValue) => Values.doubleValue(a.doubleValue() % l2.doubleValue())
-    case (l1: FloatValue, _) => Values.floatValue(l1.value() % b.doubleValue().toFloat)
-    case (_, l2: FloatValue) => Values.floatValue(a.doubleValue().toFloat % l2.value())
+    case (l1: FloatValue, _)  => Values.floatValue(l1.value() % b.doubleValue().toFloat)
+    case (_, l2: FloatValue)  => Values.floatValue(a.doubleValue().toFloat % l2.value())
 
     //no floating point values, then we treat everything else as longs
     case _ => Values.longValue(a.longValue() % b.longValue())

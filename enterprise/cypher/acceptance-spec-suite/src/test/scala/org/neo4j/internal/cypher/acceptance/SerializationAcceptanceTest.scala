@@ -111,7 +111,7 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
 
       result.dumpToString() should include(":T[0]{deleted}")
       result.dumpToString() should include("Node[0]{deleted}")
-      result.dumpToString() should not include("Node[1]{deleted}")
+      result.dumpToString() should not include ("Node[1]{deleted}")
     }
   }
 
@@ -124,8 +124,8 @@ class SerializationAcceptanceTest extends ExecutionEngineFunSuite with QueryStat
       val result = execute(query)
 
       result.dumpToString() should include(":T[0]{deleted}")
-      result.dumpToString() should not include("Node[0]{deleted}")
-      result.dumpToString() should not include("Node[1]{deleted}")
+      result.dumpToString() should not include ("Node[0]{deleted}")
+      result.dumpToString() should not include ("Node[1]{deleted}")
     }
   }
 

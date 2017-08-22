@@ -24,10 +24,15 @@ import org.neo4j.cypher.internal.compiler.v3_3.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters._
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Query, Statement}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Query
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Statement
 import org.neo4j.cypher.internal.frontend.v3_3.phases.LateAstRewriting
-import org.neo4j.cypher.internal.frontend.v3_3.{SemanticCheckResult, SemanticChecker, SemanticTable, inSequence}
-import org.neo4j.cypher.internal.ir.v3_3.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticChecker
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.frontend.v3_3.inSequence
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 import org.scalatest.mock.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {
@@ -40,7 +45,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val q = query + " RETURN 1 AS Result"
     val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
-    val cleanedStatement: Statement = ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val cleanedStatement: Statement =
+      ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val onError = SyntaxExceptionCreator.throwOnError(mkException)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)
@@ -48,7 +54,8 @@ trait QueryGraphProducer extends MockitoSugar {
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
     val state = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
     val context = ContextHelper.create()
-    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting).transform(state, context)
+    val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting)
+      .transform(state, context)
 
     (toUnionQuery(output.statement().asInstanceOf[Query], output.semanticTable()).queries.head, output.semanticTable())
   }

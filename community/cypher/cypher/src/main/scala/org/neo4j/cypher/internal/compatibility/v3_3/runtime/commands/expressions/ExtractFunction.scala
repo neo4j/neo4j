@@ -26,9 +26,9 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
 
 case class ExtractFunction(collection: Expression, id: String, expression: Expression)
-  extends NullInNullOutExpression(collection)
-  with ListSupport
-  with Closure {
+    extends NullInNullOutExpression(collection)
+    with ListSupport
+    with Closure {
   def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
     val list = makeTraversable(value)
     VirtualValues.transform(list, new java.util.function.Function[AnyValue, AnyValue]() {
@@ -39,7 +39,6 @@ case class ExtractFunction(collection: Expression, id: String, expression: Expre
   def rewrite(f: (Expression) => Expression) = f(ExtractFunction(collection.rewrite(f), id, expression.rewrite(f)))
 
   override def children = Seq(collection, expression)
-
 
   def arguments: Seq[Expression] = Seq(collection)
 

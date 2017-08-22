@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 import org.neo4j.values.AnyValue
 
-
 case class CoerceTo(expr: Expression, typ: CypherType) extends Expression {
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = coerce(expr(ctx), typ)(state.query)

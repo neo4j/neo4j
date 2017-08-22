@@ -23,13 +23,17 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.Pipe
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.FakeIdMap
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.{EagerResultIterator, _}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.EagerResultIterator
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime._
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.frontend.v3_3.phases.devNullLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, PlannerQuery}
-import org.neo4j.cypher.internal.spi.v3_3.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
+import org.neo4j.cypher.internal.spi.v3_3.QueryContext
+import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
@@ -52,7 +56,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [PipeExecutionResult]
+    result shouldBe a[PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result shouldBe a[EagerResultIterator]
   }
 
@@ -70,7 +74,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", NormalMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [PipeExecutionResult]
+    result shouldBe a[PipeExecutionResult]
     result.asInstanceOf[PipeExecutionResult].result should not be an[EagerResultIterator]
   }
 
@@ -89,6 +93,6 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
 
     // THEN
     val result = builder.build("42", ExplainMode, Map.empty, devNullLogger, InterpretedRuntimeName)
-    result shouldBe a [ExplainExecutionResult]
+    result shouldBe a[ExplainExecutionResult]
   }
 }

@@ -22,7 +22,8 @@ sealed trait SemanticErrorDef {
   def references: Seq[InputPosition]
 }
 
-final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*) extends SemanticErrorDef
+final case class SemanticError(msg: String, position: InputPosition, references: InputPosition*)
+    extends SemanticErrorDef
 
 sealed trait UnsupportedOpenCypher extends SemanticErrorDef
 

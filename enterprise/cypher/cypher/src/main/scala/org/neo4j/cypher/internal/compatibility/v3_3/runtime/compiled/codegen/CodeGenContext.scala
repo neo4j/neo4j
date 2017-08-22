@@ -30,8 +30,10 @@ import scala.collection.mutable
 
 case class Variable(name: String, codeGenType: CodeGenType, nullable: Boolean = false)
 
-class CodeGenContext(val semanticTable: SemanticTable, idMap: Map[LogicalPlan, Id],
-                     lookup: Map[String, Int], val namer: Namer = Namer()) {
+class CodeGenContext(val semanticTable: SemanticTable,
+                     idMap: Map[LogicalPlan, Id],
+                     lookup: Map[String, Int],
+                     val namer: Namer = Namer()) {
 
   private val variables: mutable.Map[String, Variable] = mutable.Map()
   private val projectedVariables: mutable.Map[String, Variable] = mutable.Map.empty

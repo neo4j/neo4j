@@ -19,13 +19,10 @@ package org.neo4j.cypher.internal.frontend.v3_3.parser
 import org.neo4j.cypher.internal.frontend.v3_3.ast
 import org.parboiled.scala._
 
-trait Statement extends Parser
-  with Query
-  with Command
-  with Base {
+trait Statement extends Parser with Query with Command with Base {
 
-  def Statement: Rule1[ast.Statement] = rule (
-       Command
-     | Query
+  def Statement: Rule1[ast.Statement] = rule(
+    Command
+      | Query
   )
 }

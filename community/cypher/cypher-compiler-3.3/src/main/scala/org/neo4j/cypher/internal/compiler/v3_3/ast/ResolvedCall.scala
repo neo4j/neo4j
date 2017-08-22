@@ -19,19 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast
 
-import org.neo4j.cypher.internal.compiler.v3_3.spi.{ProcedureReadOnlyAccess, ProcedureSignature, QualifiedName}
+import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureReadOnlyAccess
+import org.neo4j.cypher.internal.compiler.v3_3.spi.ProcedureSignature
+import org.neo4j.cypher.internal.compiler.v3_3.spi.QualifiedName
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticCheckResult._
 import org.neo4j.cypher.internal.frontend.v3_3._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.symbols.{CypherType, _}
+import org.neo4j.cypher.internal.frontend.v3_3.symbols.CypherType
+import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
     val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
     val position = unresolved.position
     val signature = signatureLookup(QualifiedName(unresolved))
-    val nonDefaults = signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
+    val nonDefaults =
+      signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
     val callArguments = declaredArguments.getOrElse(nonDefaults)
     val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
     val callFilter = declaredResult.flatMap(_.where)
@@ -41,10 +45,15 @@ object ResolvedCall {
       ResolvedCall(signature, callArguments, callResults, declaredArguments.nonEmpty, declaredResult.nonEmpty)(position)
   }
 
-  private def signatureResults(signature: ProcedureSignature, position: InputPosition): IndexedSeq[ProcedureResultItem] =
-    signature.outputSignature.getOrElse(Seq.empty).filter(!_.deprecated).map {
-      field => ProcedureResultItem(Variable(field.name)(position))(position)
-  }.toIndexedSeq
+  private def signatureResults(signature: ProcedureSignature,
+                               position: InputPosition): IndexedSeq[ProcedureResultItem] =
+    signature.outputSignature
+      .getOrElse(Seq.empty)
+      .filter(!_.deprecated)
+      .map { field =>
+        ProcedureResultItem(Variable(field.name)(position))(position)
+      }
+      .toIndexedSeq
 }
 
 case class ResolvedCall(signature: ProcedureSignature,
@@ -53,9 +62,8 @@ case class ResolvedCall(signature: ProcedureSignature,
                         // true if given by the user originally
                         declaredArguments: Boolean = true,
                         // true if given by the user originally
-                        declaredResults: Boolean = true)
-                       (val position: InputPosition)
-  extends CallClause {
+                        declaredResults: Boolean = true)(val position: InputPosition)
+    extends CallClause {
 
   def qualifiedName: QualifiedName = signature.name
 
@@ -66,12 +74,16 @@ case class ResolvedCall(signature: ProcedureSignature,
 
   def coerceArguments: ResolvedCall = {
     val optInputFields = signature.inputSignature.map(Some(_)).toStream ++ Stream.continually(None)
-    val coercedArguments=
+    val coercedArguments =
       callArguments
         .zip(optInputFields)
         .map {
           case (arg, optField) =>
-            optField.map { field => CoerceTo(arg, field.typ) }.getOrElse(arg)
+            optField
+              .map { field =>
+                CoerceTo(arg, field.typ)
+              }
+              .getOrElse(arg)
         }
     copy(callArguments = coercedArguments)(position)
   }
@@ -80,7 +92,11 @@ case class ResolvedCall(signature: ProcedureSignature,
     callResults.map(_.variable.name).toList
 
   def callResultIndices: Seq[(Int, String)] = {
-    val outputIndices: Map[String, Int] = signature.outputSignature.map { outputs => outputs.map(_.name).zip(outputs.indices).toMap }.getOrElse(Map.empty)
+    val outputIndices: Map[String, Int] = signature.outputSignature
+      .map { outputs =>
+        outputs.map(_.name).zip(outputs.indices).toMap
+      }
+      .getOrElse(Map.empty)
     callResults.map(result => outputIndices(result.outputName) -> result.variable.name)
   }
 
@@ -101,23 +117,37 @@ case class ResolvedCall(signature: ProcedureSignature,
       if (expectedNumArgs == actualNumArgs) {
         //this zip is fine since it will only verify provided args in callArguments
         //default values are checked at load time
-        signature.inputSignature.zip(callArguments).map {
-          case (field, arg) =>
-            arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
-        }.foldLeft(success)(_ chain _)
+        signature.inputSignature
+          .zip(callArguments)
+          .map {
+            case (field, arg) =>
+              arg.semanticCheck(SemanticContext.Results) chain arg.expectType(field.typ.covariant)
+          }
+          .foldLeft(success)(_ chain _)
       } else {
         val msg = (if (signature.inputSignature.isEmpty) "arguments"
-        else if (signature.inputSignature.size == 1) s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
-        else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
+                   else if (signature.inputSignature.size == 1)
+                     s"argument of type ${signature.inputSignature.head.typ.toNeoTypeString}"
+                   else s"arguments of type ${signature.inputSignature.map(_.typ.toNeoTypeString).mkString(", ")}") +
           signature.description.map(d => s"${System.lineSeparator()}Description: $d").getOrElse("")
-        error(_: SemanticState, SemanticError(
-          s"""Procedure call does not provide the required number of arguments: got $actualNumArgs expected $expectedNumArgs.
+        error(
+          _: SemanticState,
+          SemanticError(
+            s"""Procedure call does not provide the required number of arguments: got $actualNumArgs expected $expectedNumArgs.
              |
              |Procedure ${signature.name} has signature: $signature
-             |meaning that it expects $expectedNumArgs $msg""".stripMargin, position))
+             |meaning that it expects $expectedNumArgs $msg""".stripMargin,
+            position
+          )
+        )
       }
     } else {
-      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)", position))
+      error(
+        _: SemanticState,
+        SemanticError(
+          s"Procedure call inside a query does not support passing arguments implicitly (pass explicitly after procedure name instead)",
+          position)
+      )
     }
   }
 
@@ -131,13 +161,24 @@ case class ResolvedCall(signature: ProcedureSignature,
       callResults.foldSemanticCheck(_.semanticCheck(callOutputTypes))
     // CALL wo YIELD of non-VOID or non-empty procedure in query => Error
     else
-      error(_: SemanticState, SemanticError(s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)", position))
+      error(
+        _: SemanticState,
+        SemanticError(
+          s"Procedure call inside a query does not support naming results implicitly (name explicitly using `YIELD` instead)",
+          position)
+      )
 
   private val callOutputTypes: Map[String, CypherType] =
-    signature.outputSignature.map { _.map { field => field.name -> field.typ }.toMap }.getOrElse(Map.empty)
+    signature.outputSignature
+      .map {
+        _.map { field =>
+          field.name -> field.typ
+        }.toMap
+      }
+      .getOrElse(Map.empty)
 
   override def containsNoUpdates = signature.accessMode match {
     case ProcedureReadOnlyAccess(_) => true
-    case _ => false
+    case _                          => false
   }
 }

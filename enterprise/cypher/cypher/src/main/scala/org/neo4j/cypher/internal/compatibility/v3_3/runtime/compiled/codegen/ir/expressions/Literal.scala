@@ -29,12 +29,12 @@ case class Literal(value: Object) extends CodeGenExpression {
 
   override def generateExpression[E](structure: MethodStructure[E])(implicit context: CodeGenContext) = {
     val convertedValue = value match {
-      case n: java.lang.Byte => n.longValue()
-      case n: java.lang.Short => n.longValue()
+      case n: java.lang.Byte      => n.longValue()
+      case n: java.lang.Short     => n.longValue()
       case n: java.lang.Character => n.toLong
-      case n: java.lang.Integer => n.longValue()
-      case n: java.lang.Float => n.doubleValue()
-      case _ => value
+      case n: java.lang.Integer   => n.longValue()
+      case n: java.lang.Float     => n.doubleValue()
+      case _                      => value
     }
     structure.constantExpression(convertedValue.asInstanceOf[AnyRef])
   }

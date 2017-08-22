@@ -23,18 +23,21 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.{TextValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.storable.TextValue
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class ReverseFunction(argument: Expression) extends NullInNullOutExpression(argument) {
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
     argument(m) match {
       case x if x == Values.NO_VALUE => Values.NO_VALUE
-      case string: TextValue => Values.stringValue(new java.lang.StringBuilder(string.stringValue()).reverse.toString)
-      case seq: ListValue => VirtualValues.reverse(seq)
-      case a => throw new CypherTypeException(
-        "Expected a string or a list; consider converting it to a string with toString() or creating a list."
-          .format(toString(), a.toString))
+      case string: TextValue         => Values.stringValue(new java.lang.StringBuilder(string.stringValue()).reverse.toString)
+      case seq: ListValue            => VirtualValues.reverse(seq)
+      case a =>
+        throw new CypherTypeException(
+          "Expected a string or a list; consider converting it to a string with toString() or creating a list."
+            .format(toString(), a.toString))
     }
   }
 

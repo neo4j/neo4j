@@ -21,9 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans._
 import org.neo4j.cypher.internal.frontend.v3_3.ast.Expression
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, QueryGraph}
-
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 /*
 A join on given variable is similar to a logical AND - any predicates evaluated on the LHS will in effect
@@ -37,14 +39,14 @@ case object predicateRemovalThroughJoins extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case n@NodeHashJoin(nodeIds, lhs, rhs@Selection(rhsPredicates, rhsLeaf)) =>
+    case n @ NodeHashJoin(nodeIds, lhs, rhs @ Selection(rhsPredicates, rhsLeaf)) =>
       val lhsPredicates = predicatesDependingOnTheJoinIds(lhs.solved.lastQueryGraph, nodeIds)
       val newSelection = rhsPredicates.filterNot(lhsPredicates)
 
       if (newSelection.isEmpty)
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)
       else {
-        val newRhsPlannerQuery = rhsLeaf.solved.amendQueryGraph(_.addPredicates(newSelection:_*))
+        val newRhsPlannerQuery = rhsLeaf.solved.amendQueryGraph(_.addPredicates(newSelection: _*))
         val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
         NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
       }

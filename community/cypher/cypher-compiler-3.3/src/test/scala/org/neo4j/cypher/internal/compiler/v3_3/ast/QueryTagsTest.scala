@@ -31,13 +31,13 @@ class QueryTagsTest extends CypherFunSuite {
   }
 
   test("Fails when parsing unknown token") {
-    an [IllegalArgumentException] should be thrownBy {
+    an[IllegalArgumentException] should be thrownBy {
       QueryTags.parse(":match:duck")
     }
   }
 
   test("Fails when parsing empty token") {
-    an [IllegalArgumentException] should be thrownBy {
+    an[IllegalArgumentException] should be thrownBy {
       QueryTags.parse(":match::")
     }
   }

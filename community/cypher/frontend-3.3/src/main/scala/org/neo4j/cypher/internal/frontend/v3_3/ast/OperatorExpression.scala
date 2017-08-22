@@ -48,11 +48,11 @@ trait BinaryOperatorExpression extends OperatorExpression {
   }
 }
 
-trait MultiOperatorExpression  extends OperatorExpression {
+trait MultiOperatorExpression extends OperatorExpression {
   self: Expression =>
 
   def exprs: Set[Expression]
 
-  override def asCanonicalStringVal: String = s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
+  override def asCanonicalStringVal: String =
+    s"$canonicalOperatorSymbol( ${exprs.map(_.asCanonicalStringVal).mkString(", ")}"
 }
-

@@ -81,13 +81,13 @@ class TopPipeTest extends CypherFunSuite {
   }
 
   test("duplicates should be sorted correctly for small lists") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
+    val in = List(Map("a" -> 0), Map("a" -> 1), Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = TopNPipe(input, List(Descending("a")), Literal(2))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx("a")).toList
 
-    result should equal(list(1,1))
+    result should equal(list(1, 1))
   }
 
   test("should handle empty input") {
@@ -100,12 +100,12 @@ class TopPipeTest extends CypherFunSuite {
   }
 
   test("should handle null input") {
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)), "a" -> CTInteger)
 
     val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx("a")).toList
 
-    result should equal(list(10,null))
+    result should equal(list(10, null))
   }
 
   test("returning top 1 from 5 possible should return lowest") {
@@ -161,7 +161,7 @@ class TopPipeTest extends CypherFunSuite {
   }
 
   test("duplicates should be sorted correctly for small lists with top 1") {
-    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
+    val in = List(Map("a" -> 0), Map("a" -> 1), Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = Top1Pipe(input, List(Descending("a")))()
@@ -180,12 +180,12 @@ class TopPipeTest extends CypherFunSuite {
   }
 
   test("top 1 should handle null input") {
-    val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
+    val input = new FakePipe(Seq(Map("a" -> 10), Map("a" -> null)), "a" -> CTInteger)
 
     val pipe = TopNPipe(input, List(Ascending("a")), Literal(5))()
     val result = pipe.createResults(QueryStateHelper.emptyWithValueSerialization).map(ctx => ctx("a")).toList
 
-    result should equal(list(10,null))
+    result should equal(list(10, null))
   }
 
   private def list(a: Any*) = a.map(AnyValues.of).toList
@@ -194,7 +194,7 @@ class TopPipeTest extends CypherFunSuite {
 
     val r = new Random(1337)
 
-    val in = (0 until count).map(i => Map("a" -> i)).sortBy( x => 50 - r.nextInt(100))
+    val in = (0 until count).map(i => Map("a" -> i)).sortBy(x => 50 - r.nextInt(100))
     new FakePipe(in, "a" -> CTInteger)
   }
 }

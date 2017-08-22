@@ -20,8 +20,11 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes
-import org.neo4j.kernel.api.schema.constaints.{NodeExistenceConstraintDescriptor, RelExistenceConstraintDescriptor, UniquenessConstraintDescriptor}
-import org.neo4j.kernel.api.schema.index.{IndexDescriptorFactory, IndexDescriptor => KernelIndexDescriptor}
+import org.neo4j.kernel.api.schema.constaints.NodeExistenceConstraintDescriptor
+import org.neo4j.kernel.api.schema.constaints.RelExistenceConstraintDescriptor
+import org.neo4j.kernel.api.schema.constaints.UniquenessConstraintDescriptor
+import org.neo4j.kernel.api.schema.index.IndexDescriptorFactory
+import org.neo4j.kernel.api.schema.index.{IndexDescriptor => KernelIndexDescriptor}
 
 trait SchemaDescriptorTranslation {
   implicit def cypherToKernel(index: SchemaTypes.IndexDescriptor): KernelIndexDescriptor =
@@ -45,7 +48,8 @@ trait SchemaDescriptorTranslation {
     else
       throw new UnsupportedOperationException("Cypher 2.3 does not support composite constraints")
 
-  implicit def kernelToCypher(index: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint =
+  implicit def kernelToCypher(
+      index: RelExistenceConstraintDescriptor): SchemaTypes.RelationshipPropertyExistenceConstraint =
     if (index.schema().getPropertyIds.length == 1)
       SchemaTypes.RelationshipPropertyExistenceConstraint(index.schema().getRelTypeId, index.schema().getPropertyId)
     else

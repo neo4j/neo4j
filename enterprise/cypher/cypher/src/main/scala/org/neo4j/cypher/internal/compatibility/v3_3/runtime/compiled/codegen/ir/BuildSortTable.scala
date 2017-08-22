@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions.CodeGenExpression
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi._
 
-case class BuildSortTable(opName: String, tableName: String, columnVariables: Map[String, Variable],
-                          sortItems: Iterable[SortItem], estimateCardinality: Double)
-                         (implicit context: CodeGenContext)
-  extends BuildSortTableBase(opName, tableName, columnVariables, sortItems)
-{
+case class BuildSortTable(opName: String,
+                          tableName: String,
+                          columnVariables: Map[String, Variable],
+                          sortItems: Iterable[SortItem],
+                          estimateCardinality: Double)(implicit context: CodeGenContext)
+    extends BuildSortTableBase(opName, tableName, columnVariables, sortItems) {
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     // Use estimated cardinality to decide initial capacity
@@ -40,17 +41,19 @@ case class BuildSortTable(opName: String, tableName: String, columnVariables: Ma
   override protected def tableDescriptor = FullSortTableDescriptor(tupleDescriptor)
 }
 
-case class BuildTopTable(opName: String, tableName: String, countExpression: CodeGenExpression,
-                         columnVariables: Map[String, Variable], sortItems: Iterable[SortItem])
-                        (implicit context: CodeGenContext)
-  extends BuildSortTableBase(opName, tableName, columnVariables, sortItems)
-{
+case class BuildTopTable(opName: String,
+                         tableName: String,
+                         countExpression: CodeGenExpression,
+                         columnVariables: Map[String, Variable],
+                         sortItems: Iterable[SortItem])(implicit context: CodeGenContext)
+    extends BuildSortTableBase(opName, tableName, columnVariables, sortItems) {
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     countExpression.init(generator)
 
     // Return early on limit <= 0 (this unifies the behaviour with the normal limit implementation)
     val variableName = context.namer.newVarName()
-    generator.declareCounter(variableName, generator.box(countExpression.generateExpression(generator), countExpression.codeGenType))
+    generator.declareCounter(variableName,
+                             generator.box(countExpression.generateExpression(generator), countExpression.codeGenType))
     generator.ifStatement(generator.checkInteger(variableName, LessThanEqual, 0L)) { onTrue =>
       onTrue.returnSuccessfully()
     }
@@ -60,11 +63,11 @@ case class BuildTopTable(opName: String, tableName: String, countExpression: Cod
   override protected def tableDescriptor = TopTableDescriptor(tupleDescriptor)
 }
 
-abstract class BuildSortTableBase(opName: String, tableName: String, columnVariables: Map[String, Variable],
-                                  sortItems: Iterable[SortItem])
-                                 (implicit context: CodeGenContext)
-  extends Instruction
-{
+abstract class BuildSortTableBase(opName: String,
+                                  tableName: String,
+                                  columnVariables: Map[String, Variable],
+                                  sortItems: Iterable[SortItem])(implicit context: CodeGenContext)
+    extends Instruction {
   override def body[E](generator: MethodStructure[E])(implicit ignored: CodeGenContext): Unit = {
     generator.trace(opName, Some(this.getClass.getSimpleName)) { body =>
       val tuple = body.newTableValue(context.namer.newVarName(), tupleDescriptor)
@@ -86,11 +89,10 @@ abstract class BuildSortTableBase(opName: String, tableName: String, columnVaria
     case (queryVariableName: String, incoming: Variable) =>
       val fieldName = CodeGenContext.sanitizedName(queryVariableName) // < Name the field after the query variable
       (fieldName,
-        FieldAndVariableInfo(
-          fieldName = fieldName,
-          queryVariableName = queryVariableName,
-          incomingVariable = incoming,
-          outgoingVariable = incoming.copy(name = context.namer.newVarName())))
+       FieldAndVariableInfo(fieldName = fieldName,
+                            queryVariableName = queryVariableName,
+                            incomingVariable = incoming,
+                            outgoingVariable = incoming.copy(name = context.namer.newVarName())))
   }
 
   private val outgoingVariableNameToVariableInfo: Map[String, FieldAndVariableInfo] =

@@ -19,17 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.spi
 
-import java.lang.Math.{abs, max}
+import java.lang.Math.abs
+import java.lang.Math.max
 
 import org.neo4j.cypher.internal.compiler.v3_3.IndexDescriptor
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, RelTypeId}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.RelTypeId
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 
 import scala.collection.mutable
 
 sealed trait StatisticsKey
 case class NodesWithLabelCardinality(labelId: Option[LabelId]) extends StatisticsKey
-case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId], relType: Option[RelTypeId], rhs: Option[LabelId]) extends StatisticsKey
+case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId],
+                                                  relType: Option[RelTypeId],
+                                                  rhs: Option[LabelId])
+    extends StatisticsKey
 case class IndexSelectivity(index: IndexDescriptor) extends StatisticsKey
 case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends StatisticsKey
 
@@ -68,11 +74,14 @@ case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map
   }
 }
 
-case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot) extends GraphStatistics {
+case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: MutableGraphStatisticsSnapshot)
+    extends GraphStatistics {
   def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
     snapshot.map.getOrElseUpdate(NodesWithLabelCardinality(labelId), inner.nodesWithLabelCardinality(labelId).amount)
 
-  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+  def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId],
+                                             relTypeId: Option[RelTypeId],
+                                             toLabel: Option[LabelId]): Cardinality =
     snapshot.map.getOrElseUpdate(
       CardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel),
       inner.cardinalityByLabelsAndRelationshipType(fromLabel, relTypeId, toLabel).amount

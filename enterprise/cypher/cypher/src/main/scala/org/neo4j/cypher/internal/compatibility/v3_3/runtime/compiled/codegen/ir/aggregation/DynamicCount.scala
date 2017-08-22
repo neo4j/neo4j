@@ -21,15 +21,21 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir
 
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.Instruction
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions._
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.{HashableTupleDescriptor, MethodStructure}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{CodeGenContext, Variable}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.HashableTupleDescriptor
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
 
 /*
  * Dynamic count is used when a grouping key is defined. such as
  * `MATCH (n) RETURN n.prop1 count(n.prop2)`
  */
-class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpression,
-                   groupingKey: Iterable[Variable], distinct: Boolean) extends BaseAggregateExpression(expression, distinct) {
+class DynamicCount(opName: String,
+                   variable: Variable,
+                   expression: CodeGenExpression,
+                   groupingKey: Iterable[Variable],
+                   distinct: Boolean)
+    extends BaseAggregateExpression(expression, distinct) {
 
   private var mapName: String = null
   private var keyVar: String = null
@@ -54,8 +60,8 @@ class DynamicCount(opName: String, variable: Variable, expression: CodeGenExpres
     structure.aggregationMapPut(mapName, createKey(structure), keyVar, structure.loadVariable(valueVar))
   }
 
-  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(block: MethodStructure[E] => Unit)
-                          (implicit context: CodeGenContext) = {
+  def distinctCondition[E](value: E, valueType: CodeGenType, structure: MethodStructure[E])(
+      block: MethodStructure[E] => Unit)(implicit context: CodeGenContext) = {
     structure.checkDistinct(seenSet, createKey(structure), keyVar, value, valueType) { inner =>
       block(inner)
     }

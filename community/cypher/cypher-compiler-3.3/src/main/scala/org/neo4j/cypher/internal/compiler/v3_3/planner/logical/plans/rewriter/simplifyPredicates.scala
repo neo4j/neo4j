@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast._
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object simplifyPredicates extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)
 
   private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case in@In(exp, ListLiteral(values@Seq(idValueExpr))) if values.size == 1 =>
+    case in @ In(exp, ListLiteral(values @ Seq(idValueExpr))) if values.size == 1 =>
       Equals(exp, idValueExpr)(in.position)
 
     // This form is used to make composite index seeks and scans

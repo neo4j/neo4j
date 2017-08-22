@@ -27,9 +27,9 @@ import scala.collection.JavaConverters._
 object ScalaCompatibility {
 
   def asScalaCompatible(value: Any): Any = value match {
-    case m: JavaMap[_, _] => m.asScala.toMap.map { case (k, v) => asScalaCompatible(k) -> asScalaCompatible(v) }
+    case m: JavaMap[_, _]   => m.asScala.toMap.map { case (k, v) => asScalaCompatible(k) -> asScalaCompatible(v) }
     case c: JavaIterable[_] => c.asScala.map(asScalaCompatible)
-    case t: Traversable[_] => t.toIterable
-    case anything => anything
+    case t: Traversable[_]  => t.toIterable
+    case anything           => anything
   }
 }

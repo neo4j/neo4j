@@ -22,10 +22,14 @@ package org.neo4j.internal.cypher.acceptance
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v3_3.helpers.ListSupport
-import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.CypherExecutionException
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 
 class UniqueConstraintValidationAcceptanceTest
-  extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with ListSupport {
+    extends ExecutionEngineFunSuite
+    with QueryStatisticsTestSupport
+    with ListSupport {
 
   test("should enforce uniqueness constraint on create node with label and property") {
     // GIVEN
@@ -37,11 +41,9 @@ class UniqueConstraintValidationAcceptanceTest
       execute("create ( node:Label1 { key1:'value1' } )")
 
       fail("should have thrown exception")
-    }
-    catch
-    {
+    } catch {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
+        assertThat(e.getMessage, containsString("`key1` = 'value1'"))
     }
   }
 
@@ -55,11 +57,9 @@ class UniqueConstraintValidationAcceptanceTest
       execute("match (node2:Label1) where node2.seq = 2 set node2.key1 = 'value1'")
 
       fail("should have thrown exception")
-    }
-    catch
-    {
+    } catch {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
+        assertThat(e.getMessage, containsString("`key1` = 'value1'"))
     }
   }
 
@@ -73,11 +73,9 @@ class UniqueConstraintValidationAcceptanceTest
       execute("match (node2) where node2.seq = 2 set node2:Label1")
 
       fail("should have thrown exception")
-    }
-    catch
-    {
+    } catch {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
+        assertThat(e.getMessage, containsString("`key1` = 'value1'"))
     }
   }
 
@@ -90,11 +88,9 @@ class UniqueConstraintValidationAcceptanceTest
       execute("create ( node1:Label1 { key1:'value1' } ), ( node2:Label1 { key1:'value1' } )")
 
       fail("should have thrown exception")
-    }
-    catch
-    {
+    } catch {
       case e: CypherExecutionException =>
-        assertThat(e.getMessage, containsString( "`key1` = 'value1'" ))
+        assertThat(e.getMessage, containsString("`key1` = 'value1'"))
     }
   }
 
@@ -104,8 +100,10 @@ class UniqueConstraintValidationAcceptanceTest
     execute("create ( node:Label1 { seq:1, key1:'value1' } )")
 
     var seq = 2
-    for (resolve <- List("delete toRemove", "remove toRemove.key1", "remove toRemove:Label1", "set toRemove.key1 = 'value2'"))
-    {
+    for (resolve <- List("delete toRemove",
+                         "remove toRemove.key1",
+                         "remove toRemove:Label1",
+                         "set toRemove.key1 = 'value2'")) {
       // WHEN
       val q = "match (toRemove:Label1 {key1:'value1'}) " +
         resolve +

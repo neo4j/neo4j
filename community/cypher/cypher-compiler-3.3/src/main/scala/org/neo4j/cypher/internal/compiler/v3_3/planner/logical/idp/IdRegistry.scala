@@ -117,5 +117,3 @@ class DefaultIdRegistry[I] extends IdRegistry[I] {
 
   override def compacted() = compactionMap.nonEmpty
 }
-
-

@@ -21,20 +21,32 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.ast.ResolvedCall
 import org.neo4j.cypher.internal.compiler.v3_3.planner.ProcedureCallProjection
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.{ProcedureCall, Projection, SingleRow}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.v3_3.spi.PlanContext
 import org.neo4j.cypher.internal.frontend.v3_3.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.frontend.v3_3.{DummyPosition, SemanticTable}
-import org.neo4j.cypher.internal.ir.v3_3.{Cardinality, CardinalityEstimation, RegularPlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.frontend.v3_3.DummyPosition
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticTable
+import org.neo4j.cypher.internal.ir.v3_3.Cardinality
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.RegularPlannerQuery
+import org.neo4j.cypher.internal.ir.v3_3.RegularQueryProjection
 
 class PlanEventHorizonTest extends CypherFunSuite {
 
   val pos = DummyPosition(1)
-  implicit val context = LogicalPlanningContext(mock[PlanContext], LogicalPlanProducer(mock[Metrics.CardinalityModel]),
-    mock[Metrics], SemanticTable(), mock[QueryGraphSolver], notificationLogger = mock[InternalNotificationLogger])
+  implicit val context = LogicalPlanningContext(
+    mock[PlanContext],
+    LogicalPlanProducer(mock[Metrics.CardinalityModel]),
+    mock[Metrics],
+    SemanticTable(),
+    mock[QueryGraphSolver],
+    notificationLogger = mock[InternalNotificationLogger]
+  )
 
   test("should do projection if necessary") {
     // Given
@@ -46,7 +58,8 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val producedPlan = PlanEventHorizon(pq, inputPlan)
 
     // Then
-    producedPlan should equal(Projection(inputPlan, Map("a" -> literal))(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
+    producedPlan should equal(
+      Projection(inputPlan, Map("a" -> literal))(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
   }
 
   test("should plan procedure calls") {
@@ -60,6 +73,7 @@ class PlanEventHorizonTest extends CypherFunSuite {
     val producedPlan = PlanEventHorizon(pq, inputPlan)
 
     // Then
-    producedPlan should equal(ProcedureCall(inputPlan, call)(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
+    producedPlan should equal(
+      ProcedureCall(inputPlan, call)(CardinalityEstimation.lift(RegularPlannerQuery(), Cardinality(1))))
   }
 }

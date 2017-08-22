@@ -22,7 +22,9 @@ package cypher.feature.steps
 import java.util
 
 import cypher.cucumber.BlacklistPlugin.blacklisted
-import org.neo4j.graphdb.{QueryStatistics, Result, Transaction}
+import org.neo4j.graphdb.QueryStatistics
+import org.neo4j.graphdb.Result
+import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 
 import scala.util.Try
@@ -66,9 +68,24 @@ class ScenarioExecutionBuilder {
     if (skip) {
       SkippedScenario(name)
     } else if (expectedError != null) {
-      NegativeScenario(name, blacklisted(name.toLowerCase), db, params, initF, Option(procReg), executions.head, expectedError)
+      NegativeScenario(name,
+                       blacklisted(name.toLowerCase),
+                       db,
+                       params,
+                       initF,
+                       Option(procReg),
+                       executions.head,
+                       expectedError)
     } else {
-      RegularScenario(name, blacklisted(name.toLowerCase), db, params, initF, Option(procReg), executions, expectations, sideEffects)
+      RegularScenario(name,
+                      blacklisted(name.toLowerCase),
+                      db,
+                      params,
+                      initF,
+                      Option(procReg),
+                      executions,
+                      expectations,
+                      sideEffects)
     }
   }
 }
@@ -82,11 +99,15 @@ case class SkippedScenario(name: String) extends ScenarioExecution {
   override def run(): Unit = () // skip
 }
 
-case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabaseAPI, params: util.Map[String, Object],
-                            init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+case class NegativeScenario(name: String,
+                            blacklisted: Boolean,
+                            db: GraphDatabaseAPI,
+                            params: util.Map[String, Object],
+                            init: Seq[(GraphDatabaseAPI) => Unit],
+                            procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                             execution: (GraphDatabaseAPI, util.Map[String, Object]) => Result,
-                            errorExpectation: (Try[Result], Transaction) => Unit
-                           ) extends ScenarioExecution {
+                            errorExpectation: (Try[Result], Transaction) => Unit)
+    extends ScenarioExecution {
   override def run(): Unit = {
     if (blacklisted) {
       // TODO: Report when a blacklisted negative scenario does fail with the expected error
@@ -106,12 +127,16 @@ case class NegativeScenario(name: String, blacklisted: Boolean, db: GraphDatabas
   }
 }
 
-case class RegularScenario(name: String, blacklisted: Boolean,
-                           db: GraphDatabaseAPI, params: util.Map[String, Object],
-                           init: Seq[(GraphDatabaseAPI) => Unit], procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
+case class RegularScenario(name: String,
+                           blacklisted: Boolean,
+                           db: GraphDatabaseAPI,
+                           params: util.Map[String, Object],
+                           init: Seq[(GraphDatabaseAPI) => Unit],
+                           procedureRegistration: Option[(GraphDatabaseAPI) => Unit],
                            executions: Seq[(GraphDatabaseAPI, util.Map[String, Object]) => Result],
-                           expectations: Seq[(Result) => Unit], sideEffects: (QueryStatistics) => Unit
-                          ) extends ScenarioExecution {
+                           expectations: Seq[(Result) => Unit],
+                           sideEffects: (QueryStatistics) => Unit)
+    extends ScenarioExecution {
   override def run(): Unit = {
     if (name.equals("Many CREATE clauses") && blacklisted) {
       // TODO: This scenario causes StackOverflowException in the compiled runtime ... not sure how to handle
@@ -153,16 +178,16 @@ case class RegularScenario(name: String, blacklisted: Boolean,
           } catch {
             case t: Throwable if blacklisted =>
               seenBlackListedFail = true
-              // expected
+            // expected
+          } finally {
+            tx.close()
           }
-          finally {
-              tx.close()
-          }
-          if(name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the registered runtime, this should go away
+          if (name == "Add labels inside FOREACH") // TODO: Once this is supported for reals in the registered runtime, this should go away
             return
       }
 
-      if (blacklisted && !seenBlackListedFail) throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
+      if (blacklisted && !seenBlackListedFail)
+        throw new BlacklistException(s"Scenario '$name' was blacklisted, but succeeded")
     } finally {
       db.shutdown()
     }

@@ -24,7 +24,8 @@ import java.util
 import java.util.{Map => JavaMap}
 
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.Eagerly.immutableMapValues
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
 import scala.collection.JavaConverters._
 import scala.collection.immutable
@@ -42,28 +43,28 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
     if (map == null) null else map.asScala.toMap
 
   def asDeepScalaValue(value: Any): Any = value match {
-    case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => immutableMapValues(javaMap.asScala, asDeepScalaValue)
-    case javaList: java.util.LinkedList[_] => copyJavaList(javaList,() => new util.LinkedList[Any]())
-    case javaList: java.util.List[_] => copyJavaList(javaList,() => new util.ArrayList[Any](javaList.size()))
-    case javaIterable: JavaIterable[_] => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
-    case map: collection.Map[_, _] => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
-    case traversable: TraversableOnce[_] => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
-    case anything => anything
+    case anything if skip(anything)        => anything
+    case javaMap: JavaMap[_, _]            => immutableMapValues(javaMap.asScala, asDeepScalaValue)
+    case javaList: java.util.LinkedList[_] => copyJavaList(javaList, () => new util.LinkedList[Any]())
+    case javaList: java.util.List[_]       => copyJavaList(javaList, () => new util.ArrayList[Any](javaList.size()))
+    case javaIterable: JavaIterable[_]     => javaIterable.asScala.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
+    case map: collection.Map[_, _]         => immutableMapValues(map, asDeepScalaValue): immutable.Map[_, _]
+    case traversable: TraversableOnce[_]   => traversable.map(asDeepScalaValue).toIndexedSeq: IndexedSeq[_]
+    case anything                          => anything
   }
 
   def asShallowScalaValue(value: Any): Any = value match {
-    case anything if skip(anything) => anything
-    case javaMap: JavaMap[_, _] => javaMap.asScala.toMap: immutable.Map[_, _]
+    case anything if skip(anything)    => anything
+    case javaMap: JavaMap[_, _]        => javaMap.asScala.toMap: immutable.Map[_, _]
     case javaIterable: JavaIterable[_] => javaIterable.asScala.toIndexedSeq: IndexedSeq[_]
-    case map: collection.Map[_, _] => map.toMap: immutable.Map[_, _]
-    case anything => anything
+    case map: collection.Map[_, _]     => map.toMap: immutable.Map[_, _]
+    case anything                      => anything
   }
 
   private def copyJavaList(list: java.util.List[_], newList: () => java.util.List[Any]) = {
     val copy = newList()
     val iterator = list.iterator()
-    while(iterator.hasNext) {
+    while (iterator.hasNext) {
       copy.add(iterator.next())
     }
     JavaListWrapper(copy, this)

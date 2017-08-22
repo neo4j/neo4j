@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 import org.mockito.Mockito.verifyZeroInteractions
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
-import org.neo4j.values.result.QueryResult.{QueryResultVisitor, Record}
-import org.neo4j.values.storable.Values.{intValue, stringValue}
+import org.neo4j.values.result.QueryResult.QueryResultVisitor
+import org.neo4j.values.result.QueryResult.Record
+import org.neo4j.values.storable.Values.intValue
+import org.neo4j.values.storable.Values.stringValue
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -41,7 +43,8 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     feedIteratorToVisitable(input.iterator).accept(recordingVisitor)
 
     // Then
-    recordingVisitor.recorded.toList should equal(List("a" -> stringValue("1"), "b" -> intValue(2), "a" -> stringValue("11"), "b" -> intValue(22)))
+    recordingVisitor.recorded.toList should equal(
+      List("a" -> stringValue("1"), "b" -> intValue(2), "a" -> stringValue("11"), "b" -> intValue(22)))
   }
 
   test("should stop when visitor asks to stop") {
@@ -68,7 +71,8 @@ class RowIteratorVisitationTest extends CypherFunSuite {
     verifyZeroInteractions(visitor)
   }
 
-  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue) extends QueryResultVisitor[RuntimeException] {
+  private case class RecordingResultVisitor(columns: String*)(rowsToAccept: Int = Int.MaxValue)
+      extends QueryResultVisitor[RuntimeException] {
 
     require(rowsToAccept >= 0)
 

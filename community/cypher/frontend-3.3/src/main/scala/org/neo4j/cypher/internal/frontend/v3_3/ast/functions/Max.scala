@@ -16,7 +16,9 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_3.ast.functions
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{AggregatingFunction, ExpressionSignature, SimpleTypedFunction}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.AggregatingFunction
+import org.neo4j.cypher.internal.frontend.v3_3.ast.ExpressionSignature
+import org.neo4j.cypher.internal.frontend.v3_3.ast.SimpleTypedFunction
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 
 case object Max extends AggregatingFunction with SimpleTypedFunction {

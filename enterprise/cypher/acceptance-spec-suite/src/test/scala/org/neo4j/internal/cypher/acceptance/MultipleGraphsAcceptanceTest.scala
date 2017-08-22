@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, NewPlannerTestSupport, SyntaxException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.NewPlannerTestSupport
+import org.neo4j.cypher.SyntaxException
 
 class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
@@ -52,7 +54,9 @@ class MultipleGraphsAcceptanceTest extends ExecutionEngineFunSuite with NewPlann
   }
 
   private final case class expect(query: String) {
-    import scala.util.{Failure, Success, Try}
+    import scala.util.Failure
+    import scala.util.Success
+    import scala.util.Try
 
     def doesNotSupport(clause: String) = {
       Try(executeWithCostPlannerAndInterpretedRuntimeOnly(query)) match {

@@ -28,8 +28,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.PatternException
 case class SortItem(expression: Expression, ascending: Boolean) {
   def apply(ctx: ExecutionContext)(implicit qtx: QueryState) =
     if (!expression.isDeterministic)
-      throw new PatternException("ORDER BY expressions must be deterministic. " +
-        "For instance, you cannot use the rand() function in the expression")
+      throw new PatternException(
+        "ORDER BY expressions must be deterministic. " +
+          "For instance, you cannot use the rand() function in the expression")
     else
       expression.apply(ctx)
 }

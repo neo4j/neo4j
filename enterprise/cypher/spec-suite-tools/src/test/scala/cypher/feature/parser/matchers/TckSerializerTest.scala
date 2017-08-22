@@ -49,7 +49,8 @@ class TckSerializerTest extends ParsingTestSupport {
   test("should serialize maps") {
     serialize(Map.empty.asJava) should equal("{}")
     serialize(Map("key" -> true, "key2" -> 1000).asJava) should equal("{key: true, key2: 1000}")
-    serialize(Map("key" -> Map("inner" -> 50.0).asJava, "key2" -> List("foo").asJava).asJava) should equal("{key: {inner: 50.0}, key2: ['foo']}")
+    serialize(Map("key" -> Map("inner" -> 50.0).asJava, "key2" -> List("foo").asJava).asJava) should equal(
+      "{key: {inner: 50.0}, key2: ['foo']}")
   }
 
   test("should serialize node") {
@@ -65,17 +66,20 @@ class TckSerializerTest extends ParsingTestSupport {
   }
 
   test("should serialize empty path") {
-    serialize(singleNodePath(node(Seq("Label"), Map("prop" -> Boolean.box(true))))) should equal("<(:Label {prop: true})>")
+    serialize(singleNodePath(node(Seq("Label"), Map("prop" -> Boolean.box(true))))) should equal(
+      "<(:Label {prop: true})>")
   }
 
   test("should serialize paths") {
-    serialize(path(pathLink(node(Seq("Start")), relationship("T"), node(Seq("End"))))) should equal("<(:Start {})-[:T {}]->(:End {})>")
+    serialize(path(pathLink(node(Seq("Start")), relationship("T"), node(Seq("End"))))) should equal(
+      "<(:Start {})-[:T {}]->(:End {})>")
   }
 
   test("should serialize longer path") {
     val middle: Node = node(Seq("Middle"))
-    serialize(path(pathLink(node(Seq("Start")), relationship("T1"), middle),
-                   pathLink(node(Seq("End")), relationship("T2"), middle))) should
+    serialize(
+      path(pathLink(node(Seq("Start")), relationship("T1"), middle),
+           pathLink(node(Seq("End")), relationship("T2"), middle))) should
       equal("<(:Start {})-[:T1 {}]->(:Middle {})<-[:T2 {}]-(:End {})>")
   }
 

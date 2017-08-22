@@ -20,7 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans
 
 import org.neo4j.cypher.internal.frontend.v3_3.ast.RelTypeName
-import org.neo4j.cypher.internal.ir.v3_3.{CardinalityEstimation, IdName, PatternLength, PlannerQuery}
+import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
+import org.neo4j.cypher.internal.ir.v3_3.IdName
+import org.neo4j.cypher.internal.ir.v3_3.PatternLength
+import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 case class ProjectEndpoints(left: LogicalPlan,
                             rel: IdName,
@@ -31,7 +34,8 @@ case class ProjectEndpoints(left: LogicalPlan,
                             types: Option[Seq[RelTypeName]],
                             directed: Boolean,
                             length: PatternLength)(val solved: PlannerQuery with CardinalityEstimation)
-  extends LogicalPlan with LazyLogicalPlan {
+    extends LogicalPlan
+    with LazyLogicalPlan {
 
   val lhs = Some(left)
   def rhs = None

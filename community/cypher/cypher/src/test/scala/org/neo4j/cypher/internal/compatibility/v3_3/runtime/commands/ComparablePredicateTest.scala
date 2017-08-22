@@ -25,7 +25,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v3_3.CypherOrdering
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class ComparablePredicateTest extends CypherFunSuite {
 
@@ -50,9 +51,10 @@ class ComparablePredicateTest extends CypherFunSuite {
     Double.NaN,
     null
   ).flatMap {
-    case v if v == null => Seq(v)
-    case v if  v.doubleValue().isNaN => Seq(v.doubleValue(), v.floatValue(), v)
-    case v => Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
+    case v if v == null             => Seq(v)
+    case v if v.doubleValue().isNaN => Seq(v.doubleValue(), v.floatValue(), v)
+    case v =>
+      Seq[Number](v.doubleValue(), v.floatValue(), v.longValue(), v.intValue(), v.shortValue(), v.byteValue(), v)
   }
 
   val textualValues = Seq(
@@ -67,10 +69,10 @@ class ComparablePredicateTest extends CypherFunSuite {
     "\uD801\uDC37"
   ).flatMap {
     case v if v == null => Seq(v)
-    case v: String => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
+    case v: String      => Seq(v, v.toUpperCase, v.toLowerCase, reverse(v))
   }
 
-  val allValues = numericalValues// ++ textualValues
+  val allValues = numericalValues // ++ textualValues
 
   test("should compare values using <") {
     for (left <- allValues)
@@ -116,10 +118,10 @@ class ComparablePredicateTest extends CypherFunSuite {
         assert(actual.isDefined, s"$left $operator $right")
         val expected = CypherOrdering.DEFAULT.compare(left, right)
         val result = operator match {
-          case "<" => (expected < 0) == actual.get
+          case "<"  => (expected < 0) == actual.get
           case "<=" => (expected <= 0) == actual.get
           case ">=" => (expected >= 0) == actual.get
-          case ">" => (expected > 0) == actual.get
+          case ">"  => (expected > 0) == actual.get
         }
         buildResult(result, expected, actual)
       }
@@ -127,9 +129,9 @@ class ComparablePredicateTest extends CypherFunSuite {
 
     def isIncomparable(left: Any, right: Any): Boolean = {
       left == null || (left.isInstanceOf[Number] && left.asInstanceOf[Number].doubleValue().isNaN) ||
-        right == null || (right.isInstanceOf[Number] && right.asInstanceOf[Number].doubleValue().isNaN) ||
-        left.isInstanceOf[Number] && right.isInstanceOf[String] ||
-        left.isInstanceOf[String] && right.isInstanceOf[Number]
+      right == null || (right.isInstanceOf[Number] && right.asInstanceOf[Number].doubleValue().isNaN) ||
+      left.isInstanceOf[Number] && right.isInstanceOf[String] ||
+      left.isInstanceOf[String] && right.isInstanceOf[Number]
     }
 
     def buildResult(result: Boolean, expected: Any, actual: Any) = {
@@ -142,8 +144,3 @@ class ComparablePredicateTest extends CypherFunSuite {
   }
 
 }
-
-
-
-
-

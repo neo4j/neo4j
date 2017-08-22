@@ -29,7 +29,8 @@ class CypherStatementWithOptionsTest extends CypherFunSuite {
   }
 
   test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](CypherStatementWithOptions("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
+    intercept[InvalidArgumentException](
+      CypherStatementWithOptions("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
   }
 
   test("should not allow multiple versions") {

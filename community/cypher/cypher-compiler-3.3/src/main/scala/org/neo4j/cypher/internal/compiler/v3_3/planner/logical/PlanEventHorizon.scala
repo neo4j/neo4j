@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_3.planner._
 import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.{aggregation, projection, sortSkipAndLimit}
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.aggregation
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.projection
+import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.steps.sortSkipAndLimit
 import org.neo4j.cypher.internal.frontend.v3_3.InternalException
 import org.neo4j.cypher.internal.ir.v3_3._
 
@@ -30,8 +32,7 @@ Planning event horizons means planning the WITH clauses between query patterns. 
 away when going from a string query to a QueryGraph. The remaining WITHs are the ones containing ORDER BY/LIMIT,
 aggregation and UNWIND.
  */
-case object PlanEventHorizon
-  extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
+case object PlanEventHorizon extends LogicalPlanningFunction2[PlannerQuery, LogicalPlan, LogicalPlan] {
 
   override def apply(query: PlannerQuery, plan: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val selectedPlan = context.config.applySelections(plan, query.queryGraph)

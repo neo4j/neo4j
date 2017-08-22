@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.ir.expressions
 
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.{Variable, CodeGenContext}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.Variable
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.CodeGenContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.compiled.codegen.spi.MethodStructure
 
 case class MapProperty(mapVariable: Variable, propertyKeyName: String) extends CodeGenExpression {

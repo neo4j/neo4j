@@ -36,12 +36,14 @@ class UnorderedListMatcherTest extends ParsingTestSupport {
   test("should not match lists of different size") {
     new UnorderedListMatcher(emptyList()) shouldNot accept(asList(""))
     new UnorderedListMatcher(asList(new StringMatcher(""))) shouldNot accept(emptyList())
-    new UnorderedListMatcher(asList(new StringMatcher(""), new ListMatcher(emptyList()))) shouldNot accept(asList("", emptyList(), 0))
+    new UnorderedListMatcher(asList(new StringMatcher(""), new ListMatcher(emptyList()))) shouldNot accept(
+      asList("", emptyList(), 0))
   }
 
   test("should match nested lists") {
     new UnorderedListMatcher(asList(new UnorderedListMatcher(asList(NULL_MATCHER)))) should accept(asList(asList(null)))
-    new UnorderedListMatcher(asList(new UnorderedListMatcher(asList(new IntegerMatcher(0), new BooleanMatcher(false))), new StringMatcher(""))) should accept(asList(asList(0L, false), ""))
+    new UnorderedListMatcher(asList(new UnorderedListMatcher(asList(new IntegerMatcher(0), new BooleanMatcher(false))),
+                                    new StringMatcher(""))) should accept(asList(asList(0L, false), ""))
   }
 
   test("should not match different lists") {
@@ -56,7 +58,8 @@ class UnorderedListMatcherTest extends ParsingTestSupport {
   test("should not match arrays of different size") {
     new UnorderedListMatcher(emptyList()) shouldNot accept(Array(""))
     new UnorderedListMatcher(asList(new StringMatcher(""))) shouldNot accept(Array())
-    new UnorderedListMatcher(asList(new StringMatcher(""), new UnorderedListMatcher(emptyList()))) shouldNot accept(Array("", Array(), 0))
+    new UnorderedListMatcher(asList(new StringMatcher(""), new UnorderedListMatcher(emptyList()))) shouldNot accept(
+      Array("", Array(), 0))
   }
 
   test("should not match different arrays") {
@@ -66,7 +69,8 @@ class UnorderedListMatcherTest extends ParsingTestSupport {
   test("should match lists in any order") {
     new UnorderedListMatcher(asList(new IntegerMatcher(1L), new IntegerMatcher(2L))) should accept(asList(1L, 2L))
     new UnorderedListMatcher(asList(new IntegerMatcher(1L), new IntegerMatcher(2L))) should accept(asList(2L, 1L))
-    new UnorderedListMatcher(asList(new BooleanMatcher(false), new IntegerMatcher(2L), new StringMatcher("foo"))) should accept(asList("foo", false, 2L))
+    new UnorderedListMatcher(asList(new BooleanMatcher(false), new IntegerMatcher(2L), new StringMatcher("foo"))) should accept(
+      asList("foo", false, 2L))
   }
 
 }

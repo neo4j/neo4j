@@ -21,7 +21,9 @@ package org.neo4j.cypher.internal.compatibility.v3_2
 
 import java.util.Collections
 
-import org.neo4j.cypher.internal.compiler.v3_2.{CRS, Geometry, Point}
+import org.neo4j.cypher.internal.compiler.v3_2.CRS
+import org.neo4j.cypher.internal.compiler.v3_2.Geometry
+import org.neo4j.cypher.internal.compiler.v3_2.Point
 import org.neo4j.cypher.internal.compiler.v3_2.helpers.RuntimeTypeConverter
 import org.neo4j.cypher.internal.compiler.v3_2.Coordinate
 import org.neo4j.cypher.internal.frontend.v3_2.helpers.Eagerly
@@ -31,20 +33,20 @@ import scala.collection.JavaConverters._
 
 object typeConversions extends RuntimeTypeConverter {
   override def asPublicType = {
-    case point: Point => asPublicPoint(point)
+    case point: Point       => asPublicPoint(point)
     case geometry: Geometry => asPublicGeometry(geometry)
-    case other => other
+    case other              => other
   }
 
   override def asPrivateType = {
-    case map: Map[_, _] => asPrivateMap(map.asInstanceOf[Map[String, Any]])
-    case seq: Seq[_] => seq.map(asPrivateType)
-    case javaMap: java.util.Map[_, _] => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
+    case map: Map[_, _]                      => asPrivateMap(map.asInstanceOf[Map[String, Any]])
+    case seq: Seq[_]                         => seq.map(asPrivateType)
+    case javaMap: java.util.Map[_, _]        => Eagerly.immutableMapValues(javaMap.asScala, asPrivateType)
     case javaIterable: java.lang.Iterable[_] => javaIterable.asScala.map(asPrivateType)
-    case arr: Array[Any] => arr.map(asPrivateType)
-    case point: spatial.Point => asPrivatePoint(point)
-    case geometry: spatial.Geometry => asPrivateGeometry(geometry)
-    case value => value
+    case arr: Array[Any]                     => arr.map(asPrivateType)
+    case point: spatial.Point                => asPrivatePoint(point)
+    case geometry: spatial.Geometry          => asPrivateGeometry(geometry)
+    case value                               => value
   }
 
   private def asPublicPoint(point: Point) = new spatial.Point {
@@ -52,8 +54,9 @@ object typeConversions extends RuntimeTypeConverter {
 
     override def getCRS: spatial.CRS = asPublicCRS(point.crs)
 
-    override def getCoordinates: java.util.List[spatial.Coordinate] = Collections
-      .singletonList(new spatial.Coordinate(point.coordinate.values: _*))
+    override def getCoordinates: java.util.List[spatial.Coordinate] =
+      Collections
+        .singletonList(new spatial.Coordinate(point.coordinate.values: _*))
   }
 
   private def asPublicGeometry(geometry: Geometry) = new spatial.Geometry {
@@ -61,9 +64,13 @@ object typeConversions extends RuntimeTypeConverter {
 
     override def getCRS: spatial.CRS = asPublicCRS(geometry.crs)
 
-    override def getCoordinates = geometry.coordinates.map { c =>
-      new spatial.Coordinate(c.values: _*)
-    }.toIndexedSeq.asJava
+    override def getCoordinates =
+      geometry.coordinates
+        .map { c =>
+          new spatial.Coordinate(c.values: _*)
+        }
+        .toIndexedSeq
+        .asJava
   }
 
   private def asPublicCRS(crs: CRS) = new spatial.CRS {
@@ -75,7 +82,7 @@ object typeConversions extends RuntimeTypeConverter {
   }
 
   def asPrivateMap(incoming: Map[String, Any]): Map[String, Any] =
-    Eagerly.immutableMapValues[String,Any, Any](incoming, asPrivateType)
+    Eagerly.immutableMapValues[String, Any, Any](incoming, asPrivateType)
 
   private def asPrivatePoint(point: spatial.Point) = new Point {
     override def x: Double = point.getCoordinate.getCoordinate.get(0)
@@ -86,7 +93,7 @@ object typeConversions extends RuntimeTypeConverter {
   }
 
   private def asPrivateCoordinate(coordinate: spatial.Coordinate) =
-    Coordinate(coordinate.getCoordinate.asScala.map(v=>v.doubleValue()):_*)
+    Coordinate(coordinate.getCoordinate.asScala.map(v => v.doubleValue()): _*)
 
   private def asPrivateGeometry(geometry: spatial.Geometry) = new Geometry {
     override def coordinates: Array[Coordinate] = geometry.getCoordinates.asScala.toArray.map(asPrivateCoordinate)

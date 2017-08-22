@@ -24,7 +24,8 @@ import org.neo4j.cypher.internal.InternalExecutionResult
 import org.neo4j.cypher.internal.compiler.v3_3._
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.frontend.v3_3.PlannerName
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -78,21 +79,22 @@ class PreParsingAcceptanceTest extends ExecutionEngineFunSuite {
     execute(query) should havePlanner(DPPlannerName)
   }
 
-  private def havePlanner(expected: PlannerName): Matcher[InternalExecutionResult] = new Matcher[InternalExecutionResult] {
-    override def apply(result: InternalExecutionResult): MatchResult = {
-      // exhaust the iterator so we can collect the plan description
-      result.length
-      result.executionPlanDescription() match {
-        case planDesc =>
-          val actual = planDesc.arguments.collectFirst {
-            case Arguments.PlannerImpl(name) => name
-          }
-          MatchResult(
-            matches = actual.isDefined && actual.get == expected.name,
-            rawFailureMessage = s"PlannerName should be $expected, but was $actual",
-            rawNegatedFailureMessage = s"PlannerName should not be $actual"
-          )
+  private def havePlanner(expected: PlannerName): Matcher[InternalExecutionResult] =
+    new Matcher[InternalExecutionResult] {
+      override def apply(result: InternalExecutionResult): MatchResult = {
+        // exhaust the iterator so we can collect the plan description
+        result.length
+        result.executionPlanDescription() match {
+          case planDesc =>
+            val actual = planDesc.arguments.collectFirst {
+              case Arguments.PlannerImpl(name) => name
+            }
+            MatchResult(
+              matches = actual.isDefined && actual.get == expected.name,
+              rawFailureMessage = s"PlannerName should be $expected, but was $actual",
+              rawNegatedFailureMessage = s"PlannerName should not be $actual"
+            )
+        }
       }
     }
-  }
 }

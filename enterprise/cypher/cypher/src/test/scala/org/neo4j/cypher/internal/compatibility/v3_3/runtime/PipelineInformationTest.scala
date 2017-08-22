@@ -62,10 +62,10 @@ class PipelineInformationTest extends CypherFunSuite {
 
   test("deepClone creates an immutable copy") {
     // given
-    val pipeline = PipelineInformation(Map(
-      "x" -> LongSlot(0, nullable = false, CTNode, "x"),
-      "y" -> LongSlot(1, nullable = false, CTNode, "y")),
-      numberOfLongs = 2, numberOfReferences = 0)
+    val pipeline = PipelineInformation(
+      Map("x" -> LongSlot(0, nullable = false, CTNode, "x"), "y" -> LongSlot(1, nullable = false, CTNode, "y")),
+      numberOfLongs = 2,
+      numberOfReferences = 0)
     val clone: PipelineInformation = pipeline.deepClone()
     pipeline should equal(clone)
 

@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3.ast.rewriters
 
-import org.neo4j.cypher.internal.frontend.v3_3.ast.{Return, _}
-import org.neo4j.cypher.internal.frontend.v3_3.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.frontend.v3_3.ast.Return
+import org.neo4j.cypher.internal.frontend.v3_3.ast._
+import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
+import org.neo4j.cypher.internal.frontend.v3_3.bottomUp
 
 case object reattachAliasedExpressions extends Rewriter {
   override def apply(in: AnyRef): AnyRef = findingRewriter.apply(in)
@@ -45,7 +47,7 @@ case object reattachAliasedExpressions extends Rewriter {
     }.toMap
 
     bottomUp(Rewriter.lift {
-      case id@Variable(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
+      case id @ Variable(name) if aliasedExpressions.contains(name) => aliasedExpressions(name)
     })
   }
 }

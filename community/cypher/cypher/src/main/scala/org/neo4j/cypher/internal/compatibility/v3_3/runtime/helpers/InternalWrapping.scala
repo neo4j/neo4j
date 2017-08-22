@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.frontend.v3_3.InputPosition
-import org.neo4j.cypher.internal.frontend.v3_3.notification.{DeprecatedPlannerNotification, InternalNotification, PlannerUnsupportedNotification, RuntimeUnsupportedNotification, _}
+import org.neo4j.cypher.internal.frontend.v3_3.notification.DeprecatedPlannerNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.InternalNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.PlannerUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.frontend.v3_3.notification._
 import org.neo4j.graphdb
-import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
+import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationDetail
 
 import scala.collection.JavaConverters._
 
@@ -31,9 +36,11 @@ object InternalWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification) = notification match {
     case DeprecatedStartNotification(pos, message) =>
-      NotificationCode.START_DEPRECATED.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.startDeprecated(message))
+      NotificationCode.START_DEPRECATED
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.startDeprecated(message))
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
+      NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition,
+                                                      NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
     case PlannerUnsupportedNotification =>
@@ -41,41 +48,55 @@ object InternalWrapping {
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKeys) =>
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
+      NotificationCode.INDEX_HINT_UNFULFILLABLE
+        .notification(graphdb.InputPosition.empty, NotificationDetail.Factory.index(label, propertyKeys: _*))
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNFULFILLABLE
+        .notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case JoinHintUnsupportedNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNSUPPORTED.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
+      NotificationCode.JOIN_HINT_UNSUPPORTED
+        .notification(graphdb.InputPosition.empty, NotificationDetail.Factory.joinKey(variables.asJava))
     case IndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(graphdb.InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
+      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY
+        .notification(graphdb.InputPosition.empty, NotificationDetail.Factory.indexSeekOrScan(labels.asJava))
     case EagerLoadCsvNotification =>
       NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
       NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
+      NotificationCode.MISSING_LABEL
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.label(label))
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
+      NotificationCode.MISSING_REL_TYPE
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.relationshipType(relType))
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
+      NotificationCode.MISSING_PROPERTY_NAME
+        .notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.propertyName(name))
     case UnboundedShortestPathNotification(pos) =>
       NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
       NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_FUNCTION.notification(pos.withOffset(offset).asInputPosition,
+                                                        NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedName(oldName, newName))
+      NotificationCode.DEPRECATED_PROCEDURE.notification(pos.withOffset(offset).asInputPosition,
+                                                         NotificationDetail.Factory.deprecatedName(oldName, newName))
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.deprecatedField(procedure, field))
+      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.deprecatedField(procedure, field))
     case DeprecatedVarLengthBindingNotification(pos, variable) =>
-      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
+      NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(
+        pos.withOffset(offset).asInputPosition,
+        NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedRelTypeSeparatorNotification(pos) =>
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedPlannerNotification =>
       NotificationCode.DEPRECATED_PLANNER.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.procedureWarning(name, warning))
+      NotificationCode.PROCEDURE_WARNING.notification(pos.withOffset(offset).asInputPosition,
+                                                      NotificationDetail.Factory.procedureWarning(name, warning))
   }
 
   private implicit class ConvertibleCompilerInputPosition(pos: frontend.v3_3.InputPosition) {

@@ -28,7 +28,9 @@ import scala.collection.mutable
 
 object TopDownWithState {
 
-  private class TopDownWithStateRewriter[STATE](rewriterCreator: STATE => Rewriter, stateChange: AnyRef => Option[STATE]) extends Rewriter {
+  private class TopDownWithStateRewriter[STATE](rewriterCreator: STATE => Rewriter,
+                                                stateChange: AnyRef => Option[STATE])
+      extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialState = stateChange(that).getOrElse(
         throw new IllegalArgumentException("Need the initial object to return an initial state"))
@@ -40,7 +42,8 @@ object TopDownWithState {
     }
 
     @tailrec
-    private def rec(stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef], STATE)]): mutable.MutableList[AnyRef] = {
+    private def rec(
+        stack: mutable.ArrayStack[(List[AnyRef], mutable.MutableList[AnyRef], STATE)]): mutable.MutableList[AnyRef] = {
       val (currentJobs, _, _) = stack.top
       if (currentJobs.isEmpty) {
         val (_, newChildren, state) = stack.pop()

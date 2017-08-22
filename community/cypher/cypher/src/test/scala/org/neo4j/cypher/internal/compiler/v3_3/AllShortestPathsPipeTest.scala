@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_3
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.{ShortestPath, SingleNode}
-import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.{FakePipe, ShortestPathPipe}
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.ShortestPath
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.SingleNode
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.FakePipe
+import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.ShortestPathPipe
 import org.neo4j.cypher.internal.compiler.v3_3.QueryStateHelper.queryStateFrom
 import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.symbols._
@@ -36,9 +38,16 @@ class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
   def runThroughPipeAndGetPath(a: Node, b: Node) = {
     val source = new FakePipe(List(mutable.Map("a" -> a, "b" -> b)), "a" -> CTNode, "b" -> CTNode)
 
-    val pipe = ShortestPathPipe(source, ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(),
-                                                     SemanticDirection.BOTH, allowZeroLength = false, Some(15),
-                                                     single = false, relIterator = None))()
+    val pipe = ShortestPathPipe(source,
+                                ShortestPath("p",
+                                             SingleNode("a"),
+                                             SingleNode("b"),
+                                             Seq(),
+                                             SemanticDirection.BOTH,
+                                             allowZeroLength = false,
+                                             Some(15),
+                                             single = false,
+                                             relIterator = None))()
     graph.withTx { tx =>
       pipe.createResults(queryStateFrom(graph, tx)).toList.map(m => m("p").asInstanceOf[PathValue])
     }

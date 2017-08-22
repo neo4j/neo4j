@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_3
 
-import org.neo4j.cypher.internal.frontend.v3_3.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.frontend.v3_3.LabelId
+import org.neo4j.cypher.internal.frontend.v3_3.PropertyKeyId
 
 object IndexDescriptor {
   def apply(label: Int, property: Int): IndexDescriptor = IndexDescriptor(LabelId(label), Seq(PropertyKeyId(property)))
 
-  def apply(label: Int, properties: Seq[Int]): IndexDescriptor = IndexDescriptor(LabelId(label), properties.map(PropertyKeyId))
+  def apply(label: Int, properties: Seq[Int]): IndexDescriptor =
+    IndexDescriptor(LabelId(label), properties.map(PropertyKeyId))
 
   def apply(label: LabelId, property: PropertyKeyId): IndexDescriptor = IndexDescriptor(label, Seq(property))
 
@@ -32,9 +34,11 @@ object IndexDescriptor {
 }
 
 case class IndexDescriptor(label: LabelId, properties: Seq[PropertyKeyId]) {
-  def this(label: Int, property: Int) = this( LabelId(label), Array(PropertyKeyId(property)) )
+  def this(label: Int, property: Int) = this(LabelId(label), Array(PropertyKeyId(property)))
 
   def isComposite: Boolean = properties.length > 1
 
-  def property: PropertyKeyId = if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index") else properties(0)
+  def property: PropertyKeyId =
+    if (isComposite) throw new IllegalArgumentException("Cannot get single property of multi-property index")
+    else properties(0)
 }

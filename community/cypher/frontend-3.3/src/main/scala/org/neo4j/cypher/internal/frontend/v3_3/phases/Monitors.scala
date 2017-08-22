@@ -20,5 +20,5 @@ import scala.reflect.ClassTag
 
 trait Monitors {
   def addMonitorListener[T](monitor: T, tags: String*)
-  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T
+  def newMonitor[T <: AnyRef: ClassTag](tags: String*): T
 }

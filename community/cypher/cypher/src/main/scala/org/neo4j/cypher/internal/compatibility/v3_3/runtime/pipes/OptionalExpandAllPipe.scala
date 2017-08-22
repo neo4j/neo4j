@@ -22,44 +22,53 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.ExecutionContext
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.commands.predicates.Predicate
 import org.neo4j.cypher.internal.compatibility.v3_3.runtime.planDescription.Id
-import org.neo4j.cypher.internal.frontend.v3_3.{InternalException, SemanticDirection}
+import org.neo4j.cypher.internal.frontend.v3_3.InternalException
+import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{NodeValue, VirtualValues}
-import org.neo4j.values.{AnyValue, AnyValues}
+import org.neo4j.values.virtual.NodeValue
+import org.neo4j.values.virtual.VirtualValues
+import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValues
 
-case class OptionalExpandAllPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: SemanticDirection,
-                                 types: LazyTypes, predicate: Predicate)
-                                (val id: Id = new Id)
-  extends PipeWithSource(source) {
+case class OptionalExpandAllPipe(source: Pipe,
+                                 fromName: String,
+                                 relName: String,
+                                 toName: String,
+                                 dir: SemanticDirection,
+                                 types: LazyTypes,
+                                 predicate: Predicate)(val id: Id = new Id)
+    extends PipeWithSource(source) {
 
   predicate.registerOwningPipe(this)
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+  protected def internalCreateResults(input: Iterator[ExecutionContext],
+                                      state: QueryState): Iterator[ExecutionContext] = {
     implicit val s = state
 
-    input.flatMap {
-      row =>
-        val fromNode = getFromNode(row)
-        fromNode match {
-          case n: NodeValue =>
-            val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
-            val matchIterator = relationships.map { r =>
-                val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
-                row.newWith2(relName, AnyValues.asEdgeValue(r), toName, VirtualValues.fromNodeProxy(other))
-            }.filter(ctx => predicate.isTrue(ctx))
-
-            if (matchIterator.isEmpty) {
-              Iterator(withNulls(row))
-            } else {
-              matchIterator
+    input.flatMap { row =>
+      val fromNode = getFromNode(row)
+      fromNode match {
+        case n: NodeValue =>
+          val relationships = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
+          val matchIterator = relationships
+            .map { r =>
+              val other = if (n.id() == r.getStartNodeId) r.getEndNode else r.getStartNode
+              row.newWith2(relName, AnyValues.asEdgeValue(r), toName, VirtualValues.fromNodeProxy(other))
             }
+            .filter(ctx => predicate.isTrue(ctx))
 
-          case value if value == Values.NO_VALUE =>
+          if (matchIterator.isEmpty) {
             Iterator(withNulls(row))
+          } else {
+            matchIterator
+          }
 
-          case value =>
-            throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
-        }
+        case value if value == Values.NO_VALUE =>
+          Iterator(withNulls(row))
+
+        case value =>
+          throw new InternalException(s"Expected to find a node at $fromName but found $value instead")
+      }
     }
   }
 
