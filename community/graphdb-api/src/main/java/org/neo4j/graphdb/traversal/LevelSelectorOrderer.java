@@ -76,7 +76,6 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         TraversalBranch otherBranch = otherState.branch;
         if ( otherBranch != null )
         {
-            closeBranch( branch );
             otherState.branch = null;
             return otherBranch;
         }
@@ -84,20 +83,11 @@ public class LevelSelectorOrderer extends AbstractSelectorOrderer<LevelSelectorO
         otherBranch = otherSelector.next( metadata );
         if ( otherBranch != null )
         {
-            closeBranch( branch );
             return otherBranch;
         }
         else
         {
             return branch;
-        }
-    }
-
-    private void closeBranch( TraversalBranch branch )
-    {
-        if ( branch != null )
-        {
-            branch.close();
         }
     }
 

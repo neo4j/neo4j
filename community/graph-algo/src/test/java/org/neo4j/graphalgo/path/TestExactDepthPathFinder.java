@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphalgo.path;
 
+import common.Neo4jAlgoTestCase;
 import org.junit.Test;
 
 import org.neo4j.graphalgo.GraphAlgoFactory;
@@ -29,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpander;
 import org.neo4j.graphdb.PathExpanders;
-import common.Neo4jAlgoTestCase;
+
 import static org.junit.Assert.assertNotNull;
 
 public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
@@ -64,9 +65,11 @@ public class TestExactDepthPathFinder extends Neo4jAlgoTestCase
     {
         createGraph();
         PathFinder<Path> finder = newFinder();
-        Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) );
-        assertNotNull( path );
-        assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
+        try ( Path path = finder.findSinglePath( graph.getNode( "SOURCE" ), graph.getNode( "TARGET" ) ) )
+        {
+            assertNotNull( path );
+            assertPathDef( path, "SOURCE", "z", "9", "0", "TARGET" );
+        }
     }
 
     @Test

@@ -88,8 +88,7 @@ class TraversalBranchImpl implements TraversalBranch
         }
         else
         {
-            closeRelationships();
-            relationships = Iterators.emptyResourceIterator();
+            resetRelationships();
         }
     }
 
@@ -144,8 +143,7 @@ class TraversalBranchImpl implements TraversalBranch
                 context.unnecessaryRelationshipTraversed();
             }
         }
-        relationships.close();
-        relationships = Iterators.emptyResourceIterator();
+        resetRelationships();
         return null;
     }
 
@@ -157,24 +155,16 @@ class TraversalBranchImpl implements TraversalBranch
     @Override
     public void prune()
     {
-        closeRelationships();
-        relationships = Iterators.emptyResourceIterator();
+        resetRelationships();
     }
 
-    @Override
-    public void close()
-    {
-        //TODO: not sure its a right place to close parent
-        parent.close();
-        closeRelationships();
-    }
-
-    private void closeRelationships()
+    private void resetRelationships()
     {
         if ( relationships != null )
         {
             relationships.close();
         }
+        relationships = Iterators.emptyResourceIterator();
     }
 
     @Override

@@ -73,10 +73,6 @@ class MonoDirectionalTraverserIterator extends AbstractTraverserIterator
                 numberOfPathsReturned++;
                 return result;
             }
-            else
-            {
-                result.close();
-            }
         }
     }
 
