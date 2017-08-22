@@ -168,7 +168,7 @@ public enum PropertyType
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
-            return Values.stringValue( LongerShortString.decode( block ) );
+            return LongerShortString.decode( block );
         }
 
         @Override

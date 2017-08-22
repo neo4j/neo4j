@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -188,18 +189,18 @@ class StorePropertyPayloadCursor
         return Double.longBitsToDouble( data[position + 1] );
     }
 
-    String shortStringValue()
+    TextValue shortStringValue()
     {
         assertOfType( SHORT_STRING );
         return LongerShortString.decode( data, position, currentBlocksUsed() );
     }
 
-    String stringValue()
+    TextValue stringValue()
     {
         assertOfType( STRING );
         readFromStore( stringRecordCursor );
         buffer.flip();
-        return UTF8.decode( buffer.array(), 0, buffer.limit() );
+        return Values.stringValue( UTF8.decode( buffer.array(), 0, buffer.limit() ) );
     }
 
     Value shortArrayValue()
@@ -238,9 +239,9 @@ class StorePropertyPayloadCursor
         case DOUBLE:
             return Values.doubleValue( doubleValue() );
         case SHORT_STRING:
-            return Values.stringValue( shortStringValue() );
+            return shortStringValue();
         case STRING:
-            return Values.stringValue( stringValue() );
+            return stringValue();
         case SHORT_ARRAY:
             return shortArrayValue();
         case ARRAY:
