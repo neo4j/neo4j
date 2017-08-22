@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.api.impl.bloom;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriterConfig;
 
 import java.io.File;
@@ -45,10 +47,8 @@ public class BloomIndex implements AutoCloseable
     public BloomIndex( FileSystemAbstraction fileSystem, File file, Config config ) throws IOException
     {
         this.properties = config.get( GraphDatabaseSettings.bloom_indexed_properties ).toArray( new String[0] );
-        EnglishAnalyzer analyzer = new EnglishAnalyzer();
-        Factory<IndexWriterConfig> population = () -> {
-            return IndexWriterConfigs.population( analyzer );
-        };
+        Analyzer analyzer = new StandardAnalyzer();
+        Factory<IndexWriterConfig> population = () -> IndexWriterConfigs.population( analyzer );
         WritableIndexPartitionFactory partitionFactory = new WritableIndexPartitionFactory( population );
 
         LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
