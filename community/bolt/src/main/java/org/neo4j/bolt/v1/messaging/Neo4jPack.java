@@ -359,6 +359,12 @@ public class Neo4jPack
         }
 
         @Override
+        public void writeUTF8( byte[] bytes, int offset, int length ) throws IOException
+        {
+            packUTF8(bytes, offset, length);
+        }
+
+        @Override
         public void writeString( String value ) throws IOException
         {
             pack( value );
@@ -374,24 +380,6 @@ public class Neo4jPack
         public void writeString( char[] value, int offset, int length ) throws IOException
         {
             pack( String.valueOf( value, offset, length ) );
-        }
-
-        @Override
-        public void beginUTF8( int size ) throws IOException
-        {
-            throw new UnsupportedOperationException( "pack stream cannot handle UTF8 values" );
-        }
-
-        @Override
-        public void copyUTF8( long fromAddress, int length ) throws IOException
-        {
-            throw new UnsupportedOperationException( "pack stream cannot handle UTF8 values" );
-        }
-
-        @Override
-        public void endUTF8() throws IOException
-        {
-            throw new UnsupportedOperationException( "pack stream cannot handle UTF8 values" );
         }
 
         @Override

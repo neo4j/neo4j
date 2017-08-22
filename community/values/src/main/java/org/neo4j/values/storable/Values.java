@@ -107,6 +107,11 @@ public final class Values
 
     public static final Value NO_VALUE = NoValue.NO_VALUE;
 
+    public static final TextValue utf8Value(byte[] bytes, int offset, int length)
+    {
+        return new StringValue.UTF8StringValue( bytes, offset, length );
+    }
+
     public static TextValue stringValue( String value )
     {
         return new StringValue.Direct( value );

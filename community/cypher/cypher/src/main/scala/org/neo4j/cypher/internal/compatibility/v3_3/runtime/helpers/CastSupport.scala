@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_3.runtime.helpers
 
 import org.neo4j.cypher.internal.frontend.v3_3.CypherTypeException
+import org.neo4j.string.UTF8
 import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
@@ -105,15 +106,24 @@ object CastSupport {
 
   /*Returns a converter given a type value*/
   def getConverter(x: AnyValue): Converter = x match {
-    case _: CharValue => Converter(transform(new ArrayConverterWriter(classOf[Char], a => Values.charArray(a.asInstanceOf[Array[Char]]))))
-    case _: TextValue => Converter(transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]:_*))))
-    case _: BooleanValue => Converter(transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
-    case _: ByteValue => Converter(transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
-    case _: ShortValue => Converter(transform(new ArrayConverterWriter(classOf[Short], a => Values.shortArray(a.asInstanceOf[Array[Short]]))))
-    case _: IntValue => Converter(transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
-    case _: LongValue => Converter(transform(new ArrayConverterWriter(classOf[Long], a => Values.longArray(a.asInstanceOf[Array[Long]]))))
-    case _: FloatValue => Converter(transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
-    case _: DoubleValue => Converter(transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
+    case _: CharValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Char], a => Values.charArray(a.asInstanceOf[Array[Char]]))))
+    case _: TextValue => Converter(
+      transform(new ArrayConverterWriter(classOf[String], a => Values.stringArray(a.asInstanceOf[Array[String]]: _*))))
+    case _: BooleanValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Boolean], a => Values.booleanArray(a.asInstanceOf[Array[Boolean]]))))
+    case _: ByteValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Byte], a => Values.byteArray(a.asInstanceOf[Array[Byte]]))))
+    case _: ShortValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Short], a => Values.shortArray(a.asInstanceOf[Array[Short]]))))
+    case _: IntValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Int], a => Values.intArray(a.asInstanceOf[Array[Int]]))))
+    case _: LongValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Long], a => Values.longArray(a.asInstanceOf[Array[Long]]))))
+    case _: FloatValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Float], a => Values.floatArray(a.asInstanceOf[Array[Float]]))))
+    case _: DoubleValue => Converter(
+      transform(new ArrayConverterWriter(classOf[Double], a => Values.doubleArray(a.asInstanceOf[Array[Double]]))))
     case _ => throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")
   }
 
@@ -121,7 +131,9 @@ object CastSupport {
     value.writeTo(writer)
     writer.array
   }
-  private class ArrayConverterWriter(typ: Class[_], transformer: (AnyRef) => ArrayValue) extends AnyValueWriter[RuntimeException] {
+
+  private class ArrayConverterWriter(typ: Class[_], transformer: (AnyRef) => ArrayValue)
+    extends AnyValueWriter[RuntimeException] {
 
     private var _array: AnyRef = null
     private var index = 0
@@ -184,13 +196,8 @@ object CastSupport {
 
     override def writeString(value: Char): Unit = write(value)
 
-    override def writeString(value: Array[Char], offset: Int, length: Int): Unit = write(new String(value, offset, length))
-
-    override def beginUTF8(size: Int): Unit = fail()
-
-    override def copyUTF8(fromAddress: Long, length: Int): Unit = fail()
-
-    override def endUTF8(): Unit = fail()
+    override def writeString(value: Array[Char], offset: Int, length: Int): Unit = write(
+      new String(value, offset, length))
 
     override def beginArray(size: Int, arrayType: ValueWriter.ArrayType): Unit = fail()
 
@@ -199,6 +206,9 @@ object CastSupport {
     override def writeByteArray(value: Array[Byte]): Unit = {
       _array = value
     }
+
+    override def writeUTF8(bytes: Array[Byte], offset: Int, length: Int): Unit =
+      write(UTF8.decode(bytes, offset, length));
   }
 
 }

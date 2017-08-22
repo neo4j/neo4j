@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -236,6 +237,24 @@ public class Neo4jPackTest
         assertThat( unpacked, instanceOf( ListValue.class ) );
         assertThat( unpacked,
                 equalTo( VirtualValues.list( stringValue( "W" ), stringValue( "H" ), stringValue( "Y" ) ) ) );
+    }
+
+    @Test
+    public void shouldPackUtf8() throws IOException
+    {
+        // Given
+        String value = "\uD83D\uDE31";
+        byte[] bytes = value.getBytes( StandardCharsets.UTF_8 );
+        TextValue textValue = Values.utf8Value( bytes, 0, bytes.length );
+        PackedOutputArray output = new PackedOutputArray();
+        Neo4jPack.Packer packer = new Neo4jPack.Packer( output );
+        packer.pack( textValue );
+
+        // When
+        AnyValue unpacked = unpacked( output.bytes() );
+
+        // Then
+        assertThat( unpacked, equalTo( textValue ) );
     }
 
     private static class Unpackable

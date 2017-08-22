@@ -34,6 +34,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ReverseArrayIterator;
+import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.TextArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.CoordinateReferenceSystem;
@@ -45,10 +46,11 @@ import static org.neo4j.helpers.collection.Iterators.iteratorsEqual;
 
 /**
  * Base class for converting AnyValue to normal java objects.
- *
+ * <p>
  * This base class takes care of converting all "normal" java types such as
  * number types, booleans, strings, arrays and lists. It leaves to the extending
  * class to handle neo4j specific types such as nodes, edges and points.
+ *
  * @param <E>
  */
 public abstract class BaseToObjectValueWriter<E extends Exception> implements AnyValueWriter<E>
@@ -64,7 +66,8 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
 
     protected abstract Relationship newRelationshipProxyById( long id );
 
-    protected abstract Point newGeographicPoint( double longitude, double latitude, String name, int code, String href );
+    protected abstract Point newGeographicPoint( double longitude, double latitude, String name, int code,
+            String href );
 
     protected abstract Point newCartesianPoint( double x, double y, String name, int code, String href );
 
@@ -349,21 +352,9 @@ public abstract class BaseToObjectValueWriter<E extends Exception> implements An
     }
 
     @Override
-    public void beginUTF8( int size ) throws RuntimeException
+    public void writeUTF8( byte[] bytes, int offset, int length ) throws E
     {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copyUTF8( long fromAddress, int length ) throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void endUTF8() throws RuntimeException
-    {
-        throw new UnsupportedOperationException();
+        writeValue( UTF8.decode( bytes, offset, length ) );
     }
 
     @Override
