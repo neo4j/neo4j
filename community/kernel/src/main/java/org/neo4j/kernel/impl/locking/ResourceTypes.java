@@ -23,7 +23,7 @@ import java.lang.reflect.Array;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.hashing.IncrementalXXH64;
+import org.neo4j.hashing.HashFunction;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.api.schema.IndexQuery;
@@ -31,8 +31,6 @@ import org.neo4j.kernel.impl.util.concurrent.LockWaitStrategies;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.lock.WaitStrategy;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
-
-import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.DEFAULT_HASHING;
 
 public enum ResourceTypes implements ResourceType
 {
@@ -47,6 +45,8 @@ public enum ResourceTypes implements ResourceType
             FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
 
     private static final Map<Integer,ResourceType> idToType = new HashMap<>();
+    private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
+    private static final HashFunction indexEntryHash_4_x = HashFunction.incrementalXXH64();
 
     static
     {
@@ -79,7 +79,7 @@ public enum ResourceTypes implements ResourceType
     }
 
     /**
-     * The schema index entry hashing method used up until 2.2.0.
+     * The index entry hashing method used for entries in legacy indexes.
      */
     public static long legacyIndexResourceId( String name, String key )
     {
@@ -142,7 +142,7 @@ public enum ResourceTypes implements ResourceType
 
     private static int hash( long value )
     {
-        return DEFAULT_HASHING.hash( value );
+        return indexEntryHash_2_2_0.hashSingleValueToInt( value );
     }
 
     public static long graphPropertyResource()
@@ -165,13 +165,13 @@ public enum ResourceTypes implements ResourceType
      * future release, where we will also upgrade the HA protocol version. Currently this is indicated by the "4_x"
      * name suffix, but any version where the HA protocol version changes anyway would be just as good an opportunity.
      *
-     * @see IncrementalXXH64
+     * @see HashFunction#incrementalXXH64()
      */
-    public static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate... predicates )
+    private static long indexEntryResourceId_4_x( long labelId, IndexQuery.ExactPredicate... predicates )
     {
-        long hash = IncrementalXXH64.init( 0x0123456789abcdefL );
+        long hash = indexEntryHash_4_x.initialise( 0x0123456789abcdefL );
 
-        hash = IncrementalXXH64.update( hash, labelId );
+        hash = indexEntryHash_4_x.update( hash, labelId );
 
         for ( IndexQuery.ExactPredicate predicate : predicates )
         {
@@ -179,18 +179,18 @@ public enum ResourceTypes implements ResourceType
             Object value = predicate.value();
             Class<?> type = value.getClass();
 
-            hash = IncrementalXXH64.update( hash, propertyKeyId );
+            hash = indexEntryHash_4_x.update( hash, propertyKeyId );
 
             if ( type == String.class )
             {
                 String str = (String) value;
                 int length = str.length();
 
-                hash = IncrementalXXH64.update( hash, length );
+                hash = indexEntryHash_4_x.update( hash, length );
 
                 for ( int i = 0; i < length; i++ )
                 {
-                    hash = IncrementalXXH64.update( hash, str.charAt( i ) );
+                    hash = indexEntryHash_4_x.update( hash, str.charAt( i ) );
                 }
             }
             else if ( type.isArray() )
@@ -198,7 +198,7 @@ public enum ResourceTypes implements ResourceType
                 int length = Array.getLength( value );
                 Class<?> componentType = type.getComponentType();
 
-                hash = IncrementalXXH64.update( hash, length );
+                hash = indexEntryHash_4_x.update( hash, length );
 
                 if ( componentType == String.class )
                 {
@@ -207,11 +207,11 @@ public enum ResourceTypes implements ResourceType
                         String str = (String) Array.get( value, i );
                         int len = str.length();
 
-                        hash = IncrementalXXH64.update( hash, len );
+                        hash = indexEntryHash_4_x.update( hash, len );
 
                         for ( int j = 0; i < len; j++ )
                         {
-                            hash = IncrementalXXH64.update( hash, str.charAt( j ) );
+                            hash = indexEntryHash_4_x.update( hash, str.charAt( j ) );
                         }
                     }
                 }
@@ -219,7 +219,7 @@ public enum ResourceTypes implements ResourceType
                 {
                     for ( int i = 0; i < length; i++ )
                     {
-                        hash = IncrementalXXH64.update(
+                        hash = indexEntryHash_4_x.update(
                                 hash, Double.doubleToLongBits( (Double) Array.get( value, i ) ) );
                     }
                 }
@@ -227,20 +227,20 @@ public enum ResourceTypes implements ResourceType
                 {
                     for ( int i = 0; i < length; i++ )
                     {
-                        hash = IncrementalXXH64.update( hash, ((Number) Array.get( value, i )).longValue() );
+                        hash = indexEntryHash_4_x.update( hash, ((Number) Array.get( value, i )).longValue() );
                     }
                 }
             }
             else if ( type == Double.class )
             {
-                hash = IncrementalXXH64.update( hash, Double.doubleToLongBits( (Double) value ) );
+                hash = indexEntryHash_4_x.update( hash, Double.doubleToLongBits( (Double) value ) );
             }
             else
             {
-                hash = IncrementalXXH64.update( hash, ((Number) value).longValue() );
+                hash = indexEntryHash_4_x.update( hash, ((Number) value).longValue() );
             }
         }
 
-        return IncrementalXXH64.finalise( hash );
+        return indexEntryHash_4_x.finalise( hash );
     }
 }

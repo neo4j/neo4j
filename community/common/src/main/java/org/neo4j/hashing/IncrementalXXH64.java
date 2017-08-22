@@ -20,29 +20,12 @@
 package org.neo4j.hashing;
 
 /**
- * The (our) incremental XXH64 hash function.
- * <p>
- * This hash function is based on xxHash (XXH64 variant), but modified to work incrementally on 8-byte blocks
- * instead of on 32-byte blocks. Basically, the 32-byte block hash loop has been removed, so we use the 8-byte
- * block tail-loop for the entire input.
- * <p>
- * This hash function is roughly twice as fast as its predecessor, about 30% faster than optimised murmurhash3
- * implementations though not as fast as optimised xxHash implementations due to the smaller block size.
- * It is allocation free, unlike its predecessor. And it retains most of the excellent statistical properties of
- * xxHash, failing only the "TwoBytes" and "Zeroes" keyset tests in SMHasher, passing 12 out of 14 tests.
- * <p>
- * The hasher is used by first {@link IncrementalXXH64#init(long) initialising} the state with a seed, which can be any
- * arbitrary 64-bit integer, including zero. The produced state is then recursively cycled through the
- * {@link IncrementalXXH64#update(long, long) update} function and merged with an input word as many times as desired.
- * When the input has been consumed, the final hash value is then produced from the last intermediate hash value with
- * the {@link IncrementalXXH64#finalise(long) finalise} function.
- * <p>
- * The xxHash algorithm is originally by Yann Collet, http://cyan4973.github.io/xxHash/, and this implementation is
- * with inspiration from Vsevolod Tolstopyatovs implementation in https://github.com/OpenHFT/Zero-Allocation-Hashing.
- * Credit for SMHasher goes to Austin Appleby, https://github.com/aappleby/smhasher.
+ * @see HashFunction#incrementalXXH64()
  */
-public class IncrementalXXH64
+class IncrementalXXH64 implements HashFunction
 {
+    static final HashFunction INSTANCE = new IncrementalXXH64();
+
     private static final long Prime1 = -7046029288634856825L;
     private static final long Prime2 = -4417276706812531889L;
     private static final long Prime3 = 1609587929392839161L;
@@ -53,12 +36,14 @@ public class IncrementalXXH64
     {
     }
 
-    public static long init( long seed )
+    @Override
+    public long initialise( long seed )
     {
         return seed + Prime5;
     }
 
-    public static long update( long hash, long block )
+    @Override
+    public long update( long hash, long block )
     {
         hash += 8;
         block *= Prime2;
@@ -69,7 +54,8 @@ public class IncrementalXXH64
         return hash;
     }
 
-    public static long finalise( long hash )
+    @Override
+    public long finalise( long hash )
     {
         hash ^= hash >>> 33;
         hash *= Prime2;
