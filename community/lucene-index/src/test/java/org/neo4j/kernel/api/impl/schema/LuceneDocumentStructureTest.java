@@ -36,10 +36,13 @@ import org.junit.rules.ExpectedException;
 import static junit.framework.TestCase.assertEquals;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.LuceneTestUtil.newSeekQuery;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
+import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.useFieldForUniquenessVerification;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Array;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Bool;
 import static org.neo4j.kernel.api.impl.schema.ValueEncoding.Number;
@@ -251,5 +254,16 @@ public class LuceneDocumentStructureTest
 
         // then
         assertThat( "Should contain term value", prefixQuery.toString(), containsString( "Prefix" ) );
+    }
+
+    @Test
+    public void checkFieldUsageForUniquenessVerification() throws Exception
+    {
+        assertFalse( useFieldForUniquenessVerification( "id" ) );
+        assertFalse( useFieldForUniquenessVerification( "1number" ) );
+        assertTrue( useFieldForUniquenessVerification( "number" ) );
+        assertFalse( useFieldForUniquenessVerification( "1string" ) );
+        assertFalse( useFieldForUniquenessVerification( "10string" ) );
+        assertTrue( useFieldForUniquenessVerification( "string" ) );
     }
 }
