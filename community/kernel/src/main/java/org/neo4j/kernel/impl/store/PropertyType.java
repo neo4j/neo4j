@@ -140,7 +140,7 @@ public enum PropertyType
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
-            return Values.of( store.getArrayFor( block ) );
+            return store.getArrayFor( block );
         }
 
         @Override
@@ -182,7 +182,7 @@ public enum PropertyType
         @Override
         public Value value( PropertyBlock block, PropertyStore store )
         {
-            return Values.of( ShortArray.decode( block ) );
+            return ShortArray.decode( block );
         }
 
         @Override

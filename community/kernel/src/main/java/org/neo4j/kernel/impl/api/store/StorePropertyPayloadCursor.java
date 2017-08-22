@@ -202,14 +202,14 @@ class StorePropertyPayloadCursor
         return UTF8.decode( buffer.array(), 0, buffer.limit() );
     }
 
-    Object shortArrayValue()
+    Value shortArrayValue()
     {
         assertOfType( SHORT_ARRAY );
         Bits bits = valueAsBits();
         return ShortArray.decode( bits );
     }
 
-    Object arrayValue()
+    Value arrayValue()
     {
         assertOfType( ARRAY );
         readFromStore( arrayRecordCursor );
@@ -242,9 +242,9 @@ class StorePropertyPayloadCursor
         case STRING:
             return Values.stringValue( stringValue() );
         case SHORT_ARRAY:
-            return Values.of( shortArrayValue() );
+            return shortArrayValue();
         case ARRAY:
-            return Values.of( arrayValue() );
+            return arrayValue();
         default:
             throw new IllegalStateException( "No such type:" + type() );
         }
@@ -308,7 +308,7 @@ class StorePropertyPayloadCursor
         return ByteBuffer.allocate( newCapacity ).order( ByteOrder.LITTLE_ENDIAN );
     }
 
-    private static Object readArrayFromBuffer( ByteBuffer buffer )
+    private static Value readArrayFromBuffer( ByteBuffer buffer )
     {
         if ( buffer.limit() <= 0 )
         {
@@ -330,7 +330,7 @@ class StorePropertyPayloadCursor
                     result[i] = UTF8.decode( buffer.array(), buffer.position(), byteLength );
                     buffer.position( buffer.position() + byteLength );
                 }
-                return result;
+                return Values.stringArray( result );
             }
             else
             {
@@ -341,20 +341,18 @@ class StorePropertyPayloadCursor
                 {
                     return type.createEmptyArray();
                 }
-                Object result;
                 if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
                 {   // Optimization for byte arrays (probably large ones)
                     byte[] byteArray = new byte[buffer.limit() - buffer.position()];
                     buffer.get( byteArray );
-                    result = byteArray;
+                    return Values.byteArray( byteArray );
                 }
                 else
                 {   // Fallback to the generic approach, which is a slower
                     Bits bits = Bits.bitsFromBytes( buffer.array(), buffer.position() );
                     int length = ((buffer.limit() - buffer.position()) * 8 - (8 - bitsUsedInLastByte)) / requiredBits;
-                    result = type.createArray( length, bits, requiredBits );
+                    return type.createArray( length, bits, requiredBits );
                 }
-                return result;
             }
         }
         finally

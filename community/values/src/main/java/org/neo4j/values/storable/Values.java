@@ -51,6 +51,14 @@ public final class Values
     public static final TextValue EMPTY_STRING = Values.stringValue( "" );
     public static final DoubleValue E = Values.doubleValue( Math.E );
     public static final DoubleValue PI = Values.doubleValue( Math.PI );
+    public static final Value EMPTY_SHORT_ARRAY = Values.shortArray( new short[0] );
+    public static final Value EMPTY_BOOLEAN_ARRAY = Values.booleanArray( new boolean[0] );
+    public static final Value EMPTY_BYTE_ARRAY = Values.byteArray( new byte[0] );
+    public static final Value EMPTY_CHAR_ARRAY = Values.charArray( new char[0] );
+    public static final Value EMPTY_INT_ARRAY = Values.intArray( new int[0] );
+    public static final Value EMPTY_LONG_ARRAY = Values.longArray( new long[0] );
+    public static final Value EMPTY_FLOAT_ARRAY = Values.floatArray( new float[0] );
+    public static final Value EMPTY_DOUBLE_ARRAY = Values.doubleArray( new double[0] );
 
     private Values()
     {
