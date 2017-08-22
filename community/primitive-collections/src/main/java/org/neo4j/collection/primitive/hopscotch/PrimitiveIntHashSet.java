@@ -134,7 +134,7 @@ public class PrimitiveIntHashSet extends AbstractIntHopScotchCollection<Object> 
         @Override
         public boolean visited( int value ) throws RuntimeException
         {
-            hash += DEFAULT_HASHING.hash( value );
+            hash += DEFAULT_HASHING.hashSingleValueToInt( value );
             return false;
         }
 

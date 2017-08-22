@@ -19,6 +19,8 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import org.neo4j.hashing.HashFunction;
+
 import static java.lang.Long.numberOfLeadingZeros;
 import static java.lang.Long.numberOfTrailingZeros;
 
@@ -274,7 +276,7 @@ public class HopScotchHashingAlgorithm
 
     private static int indexOf( HashFunction hashFunction, long key, int tableMask )
     {
-        return hashFunction.hash( key ) & tableMask;
+        return hashFunction.hashSingleValueToInt( key ) & tableMask;
     }
 
     private static <VALUE> void growTable( Table<VALUE> oldTable, Monitor monitor,
@@ -375,18 +377,12 @@ public class HopScotchHashingAlgorithm
         /*No additional logic*/
     };
 
-    public interface HashFunction
-    {
-        int hash( long value );
-    }
-
     /**
      * The default hash function for primitive collections. This hash function is quite fast but has mediocre
      * statistics.
      * @see org.neo4j.hashing.HashFunction#xorShift32()
      */
-    static final HashFunction DEFAULT_HASHING =
-            org.neo4j.hashing.HashFunction.xorShift32()::hashSingleValueToInt;
+    static final HashFunction DEFAULT_HASHING = HashFunction.xorShift32();
 
     public interface ResizeMonitor<VALUE>
     {
