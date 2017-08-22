@@ -38,8 +38,16 @@ public class SecurityProcedures extends AuthProceduresBase
     @Context
     public EnterpriseAuthManager authManager;
 
+    @Deprecated
+    @Description( "Show the current user. Deprecated by dbms.showCurrentUser." )
+    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS, deprecatedBy = "dbms.showCurrentUser" )
+    public Stream<UserManagementProcedures.UserResult> showCurrentUserDeprecated() throws InvalidArgumentsException, IOException
+    {
+        return showCurrentUser();
+    }
+
     @Description( "Show the current user." )
-    @Procedure( name = "dbms.security.showCurrentUser", mode = DBMS )
+    @Procedure( name = "dbms.showCurrentUser", mode = DBMS )
     public Stream<UserManagementProcedures.UserResult> showCurrentUser() throws InvalidArgumentsException, IOException
     {
         return Stream.of( userResultForSubject() );
