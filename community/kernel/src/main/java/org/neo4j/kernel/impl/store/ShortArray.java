@@ -818,8 +818,5 @@ public enum ShortArray
 
     public abstract void writeAll( Object array, int length, int requiredBits, Bits result );
 
-    public Value createEmptyArray()
-    {
-        return Values.of(Array.newInstance( primitiveClass, 0 ));
-    }
+    public abstract Value createEmptyArray();
 }
