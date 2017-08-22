@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,6 +46,7 @@ public class ReplicatedTokenRequestSerializer
 {
     private ReplicatedTokenRequestSerializer()
     {
+        throw new AssertionError();
     }
 
     public static void marshal( ReplicatedTokenRequest content, WritableChannel channel ) throws IOException
@@ -103,7 +105,7 @@ public class ReplicatedTokenRequestSerializer
             e.printStackTrace(); // TODO: Handle or throw.
         }
 
-        byte[] commandsBytes = commandBuffer.array().clone();
+        byte[] commandsBytes = Arrays.copyOf( commandBuffer.array(), commandBuffer.writerIndex() );
         commandBuffer.release();
 
         return commandsBytes;
