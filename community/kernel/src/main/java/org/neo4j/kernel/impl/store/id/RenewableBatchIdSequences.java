@@ -36,7 +36,7 @@ public class RenewableBatchIdSequences implements Resource
             if ( type.isRecordStore() )
             {
                 RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
-                if ( type.isLimitedIdStore() )
+                if ( type.isLimitedIdStore() || batchSize == 1 )
                 {
                     // This is a token store or otherwise meta-data store, so let's not add batching for it
                     types[type.ordinal()] = store;
@@ -65,9 +65,10 @@ public class RenewableBatchIdSequences implements Resource
     {
         for ( StoreType type : StoreType.values() )
         {
-            if ( type.isRecordStore() && !type.isLimitedIdStore() )
+            IdSequence generator = idGenerator( type );
+            if ( generator instanceof RenewableBatchIdSequence )
             {
-                ((Resource)idGenerator( type )).close();
+                ((RenewableBatchIdSequence)generator).close();
             }
         }
     }

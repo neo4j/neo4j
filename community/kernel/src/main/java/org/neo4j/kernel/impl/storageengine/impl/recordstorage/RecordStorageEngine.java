@@ -151,7 +151,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final Supplier<StorageStatement> storeStatementSupplier;
     private final IdController idController;
     private final int denseNodeThreshold;
-    private final int txIdBatchSize;
+    private final int recordIdBatchSize;
 
     public RecordStorageEngine(
             File storeDir,
@@ -230,7 +230,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             indexUpdatesSync = new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
-            txIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
+            recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
         }
         catch ( Throwable failure )
         {
@@ -257,7 +257,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public RecordStorageCommandCreationContext allocateCommandCreationContext()
     {
-        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, txIdBatchSize );
+        return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
     }
 
     @Override
