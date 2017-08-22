@@ -37,7 +37,7 @@ object aggregation {
 
     //  TODO: we need to project here since the pipe does not do that,
     //  when moving to the new runtime the aggregation pipe MUST do the projection itself
-    val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep)
+    val projectedPlan = projection(plan, groupingExpressions ++ variablesToKeep, distinct = false)
 
     val (rewrittenPlan, aggregations) = PatternExpressionSolver()(projectedPlan, aggregation.aggregationExpressions)
 

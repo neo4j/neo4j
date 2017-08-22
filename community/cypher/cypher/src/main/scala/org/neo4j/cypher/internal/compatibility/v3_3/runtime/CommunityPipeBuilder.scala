@@ -203,6 +203,15 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
             DistinctPipe(source, commandExpressions)(id = id)
         }
 
+      case Distinct(_, groupingExpressions) =>
+        val commandExpressions = Eagerly.immutableMapValues(groupingExpressions, buildExpression)
+        source match {
+          case ProjectionPipe(inner, es) if es == commandExpressions =>
+            DistinctPipe(inner, commandExpressions)(id = id)
+          case _ =>
+            DistinctPipe(source, commandExpressions)(id = id)
+        }
+
       case Aggregation(_, groupingExpressions, aggregatingExpressions) =>
         EagerAggregationPipe(
           source,

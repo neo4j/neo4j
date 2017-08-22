@@ -46,7 +46,11 @@ case object PlanEventHorizon
         if (queryProjection.projections.isEmpty && query.tail.isEmpty)
           context.logicalPlanProducer.planEmptyProjection(plan)
         else
-          projection(sortedAndLimited, queryProjection.projections)
+          projection(sortedAndLimited, queryProjection.projections, distinct = false)
+
+      case queryProjection: DistinctQueryProjection =>
+        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
+        projection(sortedAndLimited, queryProjection.projections, distinct = true)
 
       case UnwindProjection(variable, expression) =>
         context.logicalPlanProducer.planUnwind(plan, variable, expression)

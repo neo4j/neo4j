@@ -128,6 +128,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case Aggregation(_, groupingExpressions, aggregationExpressions) if aggregationExpressions.isEmpty =>
         PlanDescriptionImpl(id, "Distinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
 
+      case Distinct(_, groupingExpressions) =>
+        PlanDescriptionImpl(id, "Distinct", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)), variables)
+
       case Aggregation(_, groupingExpressions, _) =>
         PlanDescriptionImpl(id, "EagerAggregation", children, Seq(KeyNames(groupingExpressions.keySet.toIndexedSeq)),
                             variables)
