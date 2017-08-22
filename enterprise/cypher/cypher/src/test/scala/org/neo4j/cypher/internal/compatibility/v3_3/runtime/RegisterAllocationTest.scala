@@ -193,8 +193,11 @@ class RegisterAllocationTest extends CypherFunSuite with LogicalPlanningTestSupp
     allocations should have size 2
     val labelScanAllocations = allocations(allNodesScan)
     labelScanAllocations should equal(
-      PipelineInformation(Map("x" -> LongSlot(0, nullable = false, CTNode, "x")), numberOfLongs = 1, numberOfReferences =
-        0))
+      PipelineInformation(Map(
+        "x" -> LongSlot(0, nullable = false, CTNode, "x"),
+        "r_NODES" -> LongSlot(1, nullable = false, CTNode, "r_NODES"),
+        "r_EDGES" -> LongSlot(2, nullable = false, CTRelationship, "r_EDGES")),
+        numberOfLongs = 3, numberOfReferences = 0))
 
     val expandAllocations = allocations(expand)
     expandAllocations should equal(
