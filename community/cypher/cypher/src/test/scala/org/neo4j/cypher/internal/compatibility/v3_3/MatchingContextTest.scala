@@ -88,9 +88,9 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("twoUndirectedRel") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(b, c, "rel", "r2")
 
@@ -105,9 +105,9 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("singleHopDoubleMatch") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(a, c, "rel", "r2")
 
@@ -121,8 +121,8 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("twoBoundNodesShouldWork") {
-    val a  = createNode("a")
-    val b  = createNode("b")
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "rel", "r1")
 
     val patterns: Seq[Pattern] = Seq(RelatedTo("pA", "pB", "pR", "rel", SemanticDirection.OUTGOING))
@@ -132,8 +132,8 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("boundNodeAndRel") {
-    val a  = createNode("a")
-    val b  = createNode("b")
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "rel", "r1")
     relate(a, b, "rel", "r2")
 
@@ -145,9 +145,9 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("doubleHopDoubleMatch") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel")
     val r2 = relate(a, c, "rel")
 
@@ -164,10 +164,10 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("theDreadedDiamondTest") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
-    val d  = createNode("d")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "x", "r1")
     val r2 = relate(a, c, "x", "r2")
     val r3 = relate(b, d, "x", "r3")
@@ -231,10 +231,10 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("pinnedNodeMakesNoMatches") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
-    val d  = createNode("d")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "x")
     val r2 = relate(a, c, "x")
     val r3 = relate(b, d, "x")
@@ -254,9 +254,9 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("directionConstraintFiltersMatches") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
     val r1 = relate(a, b, "rel")
     val r2 = relate(c, a, "rel")
 
@@ -270,8 +270,8 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("typeConstraintFiltersMatches") {
-    val a  = createNode("a")
-    val b  = createNode("b")
+    val a = createNode("a")
+    val b = createNode("b")
     val r1 = relate(a, b, "t1")
     relate(a, b, "t2")
 
@@ -304,10 +304,10 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("variableLengthPathWithOneHopBefore") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
-    val d  = createNode("d")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "rel")
     relate(b, c, "rel")
     relate(c, d, "rel")
@@ -324,10 +324,10 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
   }
 
   test("variableLengthPathWithOneHopBeforeWithDifferentType") {
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
-    val d  = createNode("d")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "t1")
     relate(b, c, "t1")
     relate(c, d, "t2")
@@ -408,10 +408,10 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
     Should match two subgraphs, one where p is b-c, and one where it is b-d-c
      */
 
-    val a  = createNode("a")
-    val b  = createNode("b")
-    val c  = createNode("c")
-    val d  = createNode("d")
+    val a = createNode("a")
+    val b = createNode("b")
+    val c = createNode("c")
+    val d = createNode("d")
     val r1 = relate(a, b, "rel", "r1")
     val r2 = relate(a, c, "rel", "r2")
     relate(b, d, "rel", "r3")
@@ -479,11 +479,11 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
                                         rels: Seq[String],
                                         predicates: Seq[Predicate] = Seq[Predicate]()) {
     val nodeVariables2 = nodes.map(_ -> CTNode)
-    val relVariables2  = rels.map(_  -> CTRelationship)
+    val relVariables2 = rels.map(_ -> CTRelationship)
 
     val variables2 = (nodeVariables2 ++ relVariables2).toMap
-    val symbols2   = SymbolTable(variables2)
-    val variables  = Pattern.variables(patterns)
+    val symbols2 = SymbolTable(variables2)
+    val variables = Pattern.variables(patterns)
     matchingContext = new MatchingContext(symbols2, predicates, buildPatternGraph(symbols2, patterns), variables)
   }
 

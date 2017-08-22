@@ -37,8 +37,8 @@ trait QueryPlanTestSupport {
     new Matcher[InternalExecutionResult] {
       override def apply(result: InternalExecutionResult): MatchResult = {
         val plan: InternalPlanDescription = result.executionPlanDescription()
-        val planText                      = replaceAnonVariables(plan.toString.trim.fixNewLines)
-        val expectedText                  = replaceAnonVariables(expectedPlan.trim.fixNewLines)
+        val planText = replaceAnonVariables(plan.toString.trim.fixNewLines)
+        val expectedText = replaceAnonVariables(expectedPlan.trim.fixNewLines)
         MatchResult(
           matches = planText.startsWith(expectedText),
           rawFailureMessage = s"Plan does not match expected\n\nPlan:\n$planText\n\nExpected:\n$expectedText",
@@ -149,12 +149,12 @@ trait QueryPlanTestSupport {
 
     override def apply(result: InternalPlanDescription): MatchResult = {
       val operatorOccurrences = result.flatten.filter { description =>
-        val nameCondition     = description.name == joinStr
+        val nameCondition = description.name == joinStr
         val variableCondition = withVariable == "" || description.variables.contains(withVariable)
         nameCondition && variableCondition
       }
       val numberOfOperatorOccurrences = operatorOccurrences.length
-      val matches                     = verifyOccurences(numberOfOperatorOccurrences)
+      val matches = verifyOccurences(numberOfOperatorOccurrences)
 
       MatchResult(matches,
                   matchResultMsg(negated = false, result, numberOfOperatorOccurrences),

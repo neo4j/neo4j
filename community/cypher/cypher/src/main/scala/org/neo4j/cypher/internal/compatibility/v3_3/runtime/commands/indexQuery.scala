@@ -74,7 +74,7 @@ object indexQuery extends GraphElementPropertyFunctions {
     case CompositeQueryExpression(innerExpressions) =>
       assert(innerExpressions.size == propertyNames.size)
       val seekValues = innerExpressions.map(expressionValues(m, state))
-      val combined   = combine(seekValues)
+      val combined = combine(seekValues)
       val results = combined map { values =>
         lookupNodes(values, index)
       }
@@ -130,8 +130,8 @@ object indexQuery extends GraphElementPropertyFunctions {
 }
 
 class IteratorOfIterarors[T](inner: Seq[Iterator[T]]) extends Iterator[T] {
-  private var _buffer: Option[T]    = None
-  private var _innerIterator        = inner.toIterator
+  private var _buffer: Option[T] = None
+  private var _innerIterator = inner.toIterator
   private var _current: Iterator[T] = Iterator.empty
 
   fillBuffer()

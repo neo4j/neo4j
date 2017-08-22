@@ -28,7 +28,7 @@ class OptionalPipeTest extends CypherFunSuite {
 
   test("should return results if it finds them") {
     val source = new FakePipe(Iterator(Map("a" -> 1)), "a" -> CTNumber)
-    val state  = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     val result = OptionalPipe(Set("a"), source)().createResults(state).toList
 
@@ -37,7 +37,7 @@ class OptionalPipeTest extends CypherFunSuite {
 
   test("should return nulls if it finds no results") {
     val source = new FakePipe(Iterator.empty, "a" -> CTNumber)
-    val state  = QueryStateHelper.empty
+    val state = QueryStateHelper.empty
 
     val result = OptionalPipe(Set("a"), source)().createResults(state).toList
 

@@ -32,8 +32,8 @@ class CypherIsolationIntegrationTest extends ExecutionEngineFunSuite {
 
     // When
     val unlocked = updateAndCount(n, "x", "MATCH (n) SET n.x = n.x + 1")
-    val locked1  = updateAndCount(n, "y", "MATCH (n) SET n._LOCK_ = true SET n.y = n.y + 1")
-    val locked2  = updateAndCount(n, "z", "MATCH (n) SET n._LOCK_ = true SET n.z = n.z + 1 REMOVE n._LOCK_")
+    val locked1 = updateAndCount(n, "y", "MATCH (n) SET n._LOCK_ = true SET n.y = n.y + 1")
+    val locked2 = updateAndCount(n, "z", "MATCH (n) SET n._LOCK_ = true SET n.z = n.z + 1 REMOVE n._LOCK_")
 
     // Then
     locked1 should equal(THREADS * UPDATES)

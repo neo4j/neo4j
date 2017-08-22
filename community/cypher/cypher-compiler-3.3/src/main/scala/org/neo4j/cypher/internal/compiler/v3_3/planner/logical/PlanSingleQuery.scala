@@ -40,9 +40,9 @@ case class PlanSingleQuery(
       case Some(plan) =>
         (plan, context.recurse(plan))
       case None =>
-        val partPlan         = planPart(in, context)
-        val planWithUpdates  = planUpdates(in, partPlan, true /*first QG*/ )(context)
-        val projectedPlan    = planEventHorizon(in, planWithUpdates)
+        val partPlan = planPart(in, context)
+        val planWithUpdates = planUpdates(in, partPlan, true /*first QG*/ )(context)
+        val projectedPlan = planEventHorizon(in, planWithUpdates)
         val projectedContext = context.recurse(projectedPlan)
         (projectedPlan, projectedContext)
     }

@@ -75,7 +75,7 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int])(implicit val tag: ClassTa
     */
   override def +[B1 >: V](kv: (K, B1)): Map[K, B1] = {
     val (key, value) = kv
-    val index        = keyToIndexMap.get(key)
+    val index = keyToIndexMap.get(key)
     index match {
       //key already existed in map, copy over values and create new map
       case Some(i) =>
@@ -88,8 +88,8 @@ class ArrayBackedMap[K, V](keyToIndexMap: Map[K, Int])(implicit val tag: ClassTa
       //key was not in map, create new map and add new key-value pair at the end of the its valueArray
       case None => {
         val newHeadersMap = keyToIndexMap.updated(key, valueArray.length)
-        val newMap        = new ArrayBackedMap[K, V](newHeadersMap)
-        val newArray      = new Array[V](valueArray.length + 1)
+        val newMap = new ArrayBackedMap[K, V](newHeadersMap)
+        val newArray = new Array[V](valueArray.length + 1)
         System.arraycopy(valueArray, 0, newArray, 0, valueArray.length)
         newArray(valueArray.length) = value.asInstanceOf[V]
         newMap.putValues(newArray)

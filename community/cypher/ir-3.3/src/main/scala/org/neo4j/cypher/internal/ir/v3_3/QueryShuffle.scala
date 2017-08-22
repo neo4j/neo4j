@@ -30,10 +30,10 @@ final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
                               limit: Option[Expression] = None) {
 
   def withSortItems(sortItems: Seq[SortItem]): QueryShuffle = copy(sortItems = sortItems)
-  def withSkip(skip: Option[Skip]): QueryShuffle            = copy(skip = skip.map(_.expression))
-  def withSkipExpression(skip: Expression): QueryShuffle    = copy(skip = Some(skip))
-  def withLimit(limit: Option[Limit]): QueryShuffle         = copy(limit = limit.map(_.expression))
-  def withLimitExpression(limit: Expression): QueryShuffle  = copy(limit = Some(limit))
+  def withSkip(skip: Option[Skip]): QueryShuffle = copy(skip = skip.map(_.expression))
+  def withSkipExpression(skip: Expression): QueryShuffle = copy(skip = Some(skip))
+  def withLimit(limit: Option[Limit]): QueryShuffle = copy(limit = limit.map(_.expression))
+  def withLimitExpression(limit: Expression): QueryShuffle = copy(limit = Some(limit))
 
   def ++(other: QueryShuffle): QueryShuffle =
     copy(

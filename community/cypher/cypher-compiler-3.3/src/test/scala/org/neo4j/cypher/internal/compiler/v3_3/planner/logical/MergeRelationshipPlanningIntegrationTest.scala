@@ -28,31 +28,31 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  private val aId   = IdName("a")
-  private val bId   = IdName("b")
-  private val rId   = IdName("r")
+  private val aId = IdName("a")
+  private val bId = IdName("b")
+  private val rId = IdName("r")
   private val argId = IdName("arg")
 
   test("should plan simple expand") {
     val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set.empty)(solved)
-    val expand          = Expand(nodeByLabelScan, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
+    val expand = Expand(nodeByLabelScan, aId, OUTGOING, Seq(RelTypeName("R")(pos)), bId, rId)(solved)
 
-    val optional    = Optional(expand)(solved)
-    val argument    = SingleRow()(solved)
+    val optional = Optional(expand)(solved)
+    val argument = SingleRow()(solved)
     val createNodeA = MergeCreateNode(argument, aId, Seq(LabelName("A")(pos)), None)(solved)
     val createNodeB = MergeCreateNode(createNodeA, bId, Seq.empty, None)(solved)
 
     val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
 
-    val mergeNode   = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
     val emptyResult = EmptyResult(mergeNode)(solved)
 
     planFor("MERGE (a:A)-[r:R]->(b)")._2 should equal(emptyResult)
   }
 
   test("should plan simple expand with argument dependency") {
-    val leaf            = SingleRow()(solved)
-    val projection      = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
+    val leaf = SingleRow()(solved)
+    val projection = Projection(leaf, Map("arg" -> SignedDecimalIntegerLiteral("42")(pos)))(solved)
     val nodeByLabelScan = NodeByLabelScan(aId, LabelName("A")(pos), Set(argId))(solved)
     val selection = Selection(Seq(
                                 In(Property(Variable("a")(pos), PropertyKeyName("p")(pos))(pos),
@@ -71,8 +71,8 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val onCreate = MergeCreateRelationship(createNodeB, rId, aId, RelTypeName("R")(pos), bId, None)(solved)
 
-    val mergeNode   = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
-    val apply       = Apply(projection, mergeNode)(solved)
+    val mergeNode = AntiConditionalApply(optional, onCreate, Seq(aId, bId, rId))(solved)
+    val apply = Apply(projection, mergeNode)(solved)
     val emptyResult = EmptyResult(apply)(solved)
 
     planFor("WITH 42 AS arg MERGE (a:A {p: arg})-[r:R]->(b)")._2 should equal(emptyResult)

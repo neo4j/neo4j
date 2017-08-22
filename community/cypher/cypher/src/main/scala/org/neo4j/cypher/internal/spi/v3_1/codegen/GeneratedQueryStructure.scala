@@ -104,7 +104,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       conf: CodeGenConfiguration)(block: MethodStructure[_] => Unit)(implicit codeGenContext: CodeGenContext) = {
 
     val sourceSaver = new SourceSaver
-    val generator   = createGenerator(conf, sourceSaver)
+    val generator = createGenerator(conf, sourceSaver)
     val execution = using(
       generator.generateClass(conf.packageName,
                               className + "Execution",
@@ -211,7 +211,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   def typeReference(manifest: Manifest[_]): TypeReference = {
     val arguments = manifest.typeArguments
-    val base      = TypeReference.typeReference(manifest.runtimeClass)
+    val base = TypeReference.typeReference(manifest.runtimeClass)
     if (arguments.nonEmpty) {
       TypeReference.parameterizedType(base, arguments.map(typeReference): _*)
     } else {

@@ -51,7 +51,7 @@ trait PrimitiveCachingExpandInto {
                                   relTypes: => Option[Seq[Int]]): PrimitiveLongIterator = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode)
-    val toNodeIsDense   = query.nodeIsDense(toNode)
+    val toNodeIsDense = query.nodeIsDense(toNode)
 
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
@@ -98,7 +98,7 @@ trait PrimitiveCachingExpandInto {
     val relationships: RelationshipIterator = query.getRelationshipsForIdsPrimitive(start, localDirection, relTypes)
 
     val connectedRelationships = mutable.ArrayBuilder.make[Long]
-    var connected: Boolean     = false
+    var connected: Boolean = false
 
     val relVisitor = new RelationshipVisitor[InternalException] {
       override def visit(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): Unit =

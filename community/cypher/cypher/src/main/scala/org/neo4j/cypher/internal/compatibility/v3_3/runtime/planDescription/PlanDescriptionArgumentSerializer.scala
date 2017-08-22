@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticDirection
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.UnNamedNameGenerator._
 
 object PlanDescriptionArgumentSerializer {
-  private val SEPARATOR       = ", "
+  private val SEPARATOR = ", "
   private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)(\d+)""".r
-  private val DEDUP_PATTERN   = """  (.+)@\d+""".r
+  private val DEDUP_PATTERN = """  (.+)@\d+""".r
   def serialize(arg: Argument): AnyRef = {
 
     arg match {
@@ -64,7 +64,7 @@ object PlanDescriptionArgumentSerializer {
       case ByteCode(className, byteCode)            => byteCode
       case RuntimeImpl(runtimeName)                 => runtimeName
       case ExpandExpression(from, rel, typeNames, to, dir: SemanticDirection, min, max) =>
-        val left  = if (dir == SemanticDirection.INCOMING) "<-" else "-"
+        val left = if (dir == SemanticDirection.INCOMING) "<-" else "-"
         val right = if (dir == SemanticDirection.OUTGOING) "->" else "-"
         val types = typeNames.mkString(":", "|:", "")
         val lengthDescr = (min, max) match {
@@ -80,11 +80,11 @@ object PlanDescriptionArgumentSerializer {
         s"count( ($node) )" + (if (ident.startsWith(" ")) "" else s" AS $ident")
       case CountRelationshipsExpression(ident, startLabel, typeNames, endLabel) =>
         val start = startLabel.map(l => ":" + l).mkString
-        val end   = endLabel.map(l => ":" + l).mkString
+        val end = endLabel.map(l => ":" + l).mkString
         val types = typeNames.mkString(":", "|:", "")
         s"count( ($start)-[$types]->($end) )" + (if (ident.unnamed) "" else s" AS $ident")
       case Signature(procedureName, args, results) =>
-        val argString    = args.mkString(", ")
+        val argString = args.mkString(", ")
         val resultString = results.map { case (name, typ) => s"$name :: $typ" }.mkString(", ")
         s"$procedureName($argString) :: ($resultString)"
 

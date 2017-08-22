@@ -35,11 +35,11 @@ import org.neo4j.cypher.internal.ir.v3_3.Cardinality
 import org.neo4j.cypher.internal.ir.v3_3.HasHeaders
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest extends CypherFunSuite {
-  private val THRESHOLD           = 100
-  private val labelOverThreshold  = "A"
+  private val THRESHOLD = 100
+  private val labelOverThreshold = "A"
   private val labelUnderThrehsold = "B"
-  private val indexFor            = Map(labelOverThreshold -> 1, labelUnderThrehsold -> 2)
-  private val planContext         = mock[PlanContext]
+  private val indexFor = Map(labelOverThreshold -> 1, labelUnderThrehsold -> 2)
+  private val planContext = mock[PlanContext]
   when(planContext.getOptLabelId(anyString)).thenAnswer(new Answer[Option[Int]] {
     override def answer(invocationOnMock: InvocationOnMock): Option[Int] = {
       val label = invocationOnMock.getArguments()(0).asInstanceOf[String]

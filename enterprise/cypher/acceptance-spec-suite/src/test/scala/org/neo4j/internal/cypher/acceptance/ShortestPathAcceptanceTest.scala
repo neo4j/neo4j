@@ -35,7 +35,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   var nodeD: Node = _
 
   override def databaseConfig =
-    Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes     -> "false",
+    Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false",
         GraphDatabaseSettings.cypher_idp_solver_duration_threshold -> "10000")
   // Added an increased duration to make up for the test running in parallel, should preferably be solved in a different way
 
@@ -160,8 +160,8 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     /* a-x-d */
     val nodeX = createLabeledNode("X")
-    val r1    = relate(nodeA, nodeX)
-    val r2    = relate(nodeX, nodeD)
+    val r1 = relate(nodeA, nodeX)
+    val r2 = relate(nodeX, nodeD)
 
     val result = executeWithAllPlannersAndCompatibilityMode(
       "MATCH (src:A), (dst:D) RETURN shortestPath((src:A)-[*]->(dst:D)) as path")
@@ -584,7 +584,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     //given
     //({prop: "bar"})-[:R]->({prop: "bar"})…-[:R]->({prop: "foo"})
     val start = createNode(Map("prop" -> "start"))
-    val end   = createNode(Map("prop" -> "end"))
+    val end = createNode(Map("prop" -> "end"))
     val nodes = start +: (for (i <- 1 to 15) yield createNode(Map("prop" -> "bar"))) :+ end
     nodes.sliding(2).foreach {
       case Seq(node1, node2) => relate(node1, node2, "R")
@@ -701,10 +701,10 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     // Given the graph:
     // (p1)-[:KNOWS {prop:1337}]-> (p2)
     // (p1)-[:KNOWS {prop:42}]->(intermediate)-[:KNOWS {prop:42}]->(p2)
-    val p1           = createLabeledNode(Map("id" -> 1), "Person")
-    val p2           = createLabeledNode(Map("id" -> 2), "Person")
+    val p1 = createLabeledNode(Map("id" -> 1), "Person")
+    val p2 = createLabeledNode(Map("id" -> 2), "Person")
     val intermediate = createLabeledNode(Map("id" -> 3), "Person")
-    relate(p1, p2, "KNOWS", Map("prop"           -> 1337))
+    relate(p1, p2, "KNOWS", Map("prop" -> 1337))
     relate(p1, intermediate, "KNOWS", Map("prop" -> 42))
     relate(intermediate, p2, "KNOWS", Map("prop" -> 42))
 
@@ -736,12 +736,12 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     val p8: Node = createPersonNode(8)
     val p9: Node = createPersonNode(9)
 
-    val p0Post1    = createPostNode(0)
-    val p1Post1    = createPostNode(1)
-    val p3Post1    = createPostNode(2)
-    val p5Post1    = createPostNode(3)
-    val p6Post1    = createPostNode(4)
-    val p7Post1    = createPostNode(5)
+    val p0Post1 = createPostNode(0)
+    val p1Post1 = createPostNode(1)
+    val p3Post1 = createPostNode(2)
+    val p5Post1 = createPostNode(3)
+    val p6Post1 = createPostNode(4)
+    val p7Post1 = createPostNode(5)
     val p0Comment1 = createCommentNode(6)
     val p1Comment1 = createCommentNode(7)
     val p1Comment2 = createCommentNode(8)
@@ -800,9 +800,9 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
   def shortestPathModel(): Map[String, Node] = {
     val nodes = Map[String, Node]("source" -> createLabeledNode(Map("name" -> "x"), "X"),
                                   "target" -> createLabeledNode("Y"),
-                                  "node3"  -> createNode(),
-                                  "node4"  -> createNode(),
-                                  "node5"  -> createNode())
+                                  "node3" -> createNode(),
+                                  "node4" -> createNode(),
+                                  "node5" -> createNode())
     relate(createLabeledNode("X"), createLabeledNode("Y"), "NOTAREL")
 
     relate(nodes("source"), nodes("target"), "REL", Map("blocked" -> true))
@@ -818,26 +818,26 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
   def largerShortestPathModel(): Map[String, Node] = {
     val nodes = Map[String, Node](
-      "Donald" -> createLabeledNode(Map("id" -> "Donald", "name"   -> "Donald Duck", "age" -> 15), "A"),
-      "Daisy"  -> createLabeledNode(Map("id" -> "Daisy", "name"    -> "Daisy Duck"), "D"),
-      "Huey"   -> createLabeledNode(Map("id" -> "Huey", "name"     -> "Huey Duck"), "B"),
-      "Dewey"  -> createLabeledNode(Map("id" -> "Dewey", "name"    -> "Dewey Duck"), "B"),
-      "Louie"  -> createLabeledNode(Map("id" -> "Louie", "name"    -> "Louie Duck"), "B"),
-      "Goofy"  -> createLabeledNode(Map("id" -> "Goofy", "blocked" -> true), "C"),
-      "Mickey" -> createLabeledNode(Map("id" -> "Mickey", "age"    -> 10), "A"),
-      "Minnie" -> createLabeledNode(Map("id" -> "Minnie", "age"    -> 20, "blocked" -> true), "A"),
-      "Pluto"  -> createLabeledNode(Map("id" -> "Pluto", "age"     -> 2), "E")
+      "Donald" -> createLabeledNode(Map("id" -> "Donald", "name" -> "Donald Duck", "age" -> 15), "A"),
+      "Daisy" -> createLabeledNode(Map("id" -> "Daisy", "name" -> "Daisy Duck"), "D"),
+      "Huey" -> createLabeledNode(Map("id" -> "Huey", "name" -> "Huey Duck"), "B"),
+      "Dewey" -> createLabeledNode(Map("id" -> "Dewey", "name" -> "Dewey Duck"), "B"),
+      "Louie" -> createLabeledNode(Map("id" -> "Louie", "name" -> "Louie Duck"), "B"),
+      "Goofy" -> createLabeledNode(Map("id" -> "Goofy", "blocked" -> true), "C"),
+      "Mickey" -> createLabeledNode(Map("id" -> "Mickey", "age" -> 10), "A"),
+      "Minnie" -> createLabeledNode(Map("id" -> "Minnie", "age" -> 20, "blocked" -> true), "A"),
+      "Pluto" -> createLabeledNode(Map("id" -> "Pluto", "age" -> 2), "E")
     )
 
-    relate(nodes("Donald"), nodes("Goofy"), "REL", Map("blocked"     -> true))
-    relate(nodes("Donald"), nodes("Huey"), "REL", Map("likesLevel"   -> 20))
-    relate(nodes("Huey"), nodes("Dewey"), "REL", Map("likesLevel"    -> 11))
-    relate(nodes("Dewey"), nodes("Louie"), "REL", Map("likesLevel"   -> 13))
-    relate(nodes("Louie"), nodes("Daisy"), "REL", Map("likesLevel"   -> 26))
-    relate(nodes("Goofy"), nodes("Daisy"), "REL", Map("likesLevel"   -> 45))
-    relate(nodes("Donald"), nodes("Mickey"), "REL", Map("blocked"    -> true, "likesLevel" -> 2))
+    relate(nodes("Donald"), nodes("Goofy"), "REL", Map("blocked" -> true))
+    relate(nodes("Donald"), nodes("Huey"), "REL", Map("likesLevel" -> 20))
+    relate(nodes("Huey"), nodes("Dewey"), "REL", Map("likesLevel" -> 11))
+    relate(nodes("Dewey"), nodes("Louie"), "REL", Map("likesLevel" -> 13))
+    relate(nodes("Louie"), nodes("Daisy"), "REL", Map("likesLevel" -> 26))
+    relate(nodes("Goofy"), nodes("Daisy"), "REL", Map("likesLevel" -> 45))
+    relate(nodes("Donald"), nodes("Mickey"), "REL", Map("blocked" -> true, "likesLevel" -> 2))
     relate(nodes("Mickey"), nodes("Minnie"), "REL", Map("likesLevel" -> 25))
-    relate(nodes("Minnie"), nodes("Daisy"), "REL", Map("likesLevel"  -> 20))
+    relate(nodes("Minnie"), nodes("Daisy"), "REL", Map("likesLevel" -> 20))
     relate(nodes("Donald"), nodes("Pluto"))
     relate(nodes("Pluto"), nodes("Minnie"))
 

@@ -229,17 +229,17 @@ trait MethodStructure[E] {
 }
 
 sealed trait Comparator
-case object Equal            extends Comparator
-case object LessThan         extends Comparator
-case object LessThanEqual    extends Comparator
-case object GreaterThan      extends Comparator
+case object Equal extends Comparator
+case object LessThan extends Comparator
+case object LessThanEqual extends Comparator
+case object GreaterThan extends Comparator
 case object GreaterThanEqual extends Comparator
 
 sealed trait JoinTableType
-sealed trait CountingJoinTableType  extends JoinTableType
+sealed trait CountingJoinTableType extends JoinTableType
 sealed trait RecordingJoinTableType extends JoinTableType
 
-case object LongToCountTable  extends CountingJoinTableType
+case object LongToCountTable extends CountingJoinTableType
 case object LongsToCountTable extends CountingJoinTableType
 case class LongToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[String, String])
     extends RecordingJoinTableType
@@ -247,7 +247,7 @@ case class LongsToListTable(tupleDescriptor: TupleDescriptor, localMap: Map[Stri
     extends RecordingJoinTableType
 
 sealed trait SortOrder
-case object Ascending  extends SortOrder
+case object Ascending extends SortOrder
 case object Descending extends SortOrder
 
 case class SortItem(fieldName: String, sortOrder: SortOrder)
@@ -263,7 +263,7 @@ sealed trait TupleDescriptor {
   val structure: Map[String, CodeGenType]
 }
 
-case class SimpleTupleDescriptor(structure: Map[String, CodeGenType])   extends TupleDescriptor
+case class SimpleTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
 case class HashableTupleDescriptor(structure: Map[String, CodeGenType]) extends TupleDescriptor
 case class OrderableTupleDescriptor(structure: Map[String, CodeGenType], sortItems: Iterable[SortItem])
     extends TupleDescriptor
@@ -273,4 +273,4 @@ sealed trait SortTableDescriptor {
 }
 
 case class FullSortTableDescriptor(tupleDescriptor: OrderableTupleDescriptor) extends SortTableDescriptor
-case class TopTableDescriptor(tupleDescriptor: OrderableTupleDescriptor)      extends SortTableDescriptor
+case class TopTableDescriptor(tupleDescriptor: OrderableTupleDescriptor) extends SortTableDescriptor

@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object BooleanType {
   val instance = new BooleanType() {
-    val parentType               = CTAny
-    override val toString        = "Boolean"
+    val parentType = CTAny
+    override val toString = "Boolean"
     override val toNeoTypeString = "BOOLEAN?"
 
   }

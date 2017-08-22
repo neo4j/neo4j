@@ -47,7 +47,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase()
-    val triadic              = produceTriadicTestPlan(expand1)
+    val triadic = produceTriadicTestPlan(expand1)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -72,7 +72,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:A]->(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("A"))
-    val triadic              = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("A"))
+    val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("A"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -81,7 +81,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)-[r2:B]->(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("B"))
-    val triadic              = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"))
+    val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -90,7 +90,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1:A]->(b)<-[r2:B]-(c) WHERE NOT (a)-[:A]->(c)")
     val (expand1, selection) = produceTriadicTestCase(r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = INCOMING)
-    val triadic              = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = INCOMING)
+    val triadic = produceTriadicTestPlan(expand1, r1Types = Seq("A"), r2Types = Seq("B"), r2Direction = INCOMING)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -109,7 +109,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c) WHERE (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase()
-    val triadic              = produceTriadicTestPlan(expand1, predicateExpressionCase = true)
+    val triadic = produceTriadicTestPlan(expand1, predicateExpressionCase = true)
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -169,7 +169,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b:Y)-[r2]->(c:Y) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(bLabels = Seq("Y"), cLabels = Seq("Y"))
-    val triadic              = produceTriadicTestPlan(expand1, bLabels = Seq("Y"), cLabels = Seq("Y"))
+    val triadic = produceTriadicTestPlan(expand1, bLabels = Seq("Y"), cLabels = Seq("Y"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -194,7 +194,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b)-[r2]->(c:Z) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(cLabels = Seq("Z"))
-    val triadic              = produceTriadicTestPlan(expand1, cLabels = Seq("Z"))
+    val triadic = produceTriadicTestPlan(expand1, cLabels = Seq("Z"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -203,7 +203,7 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
     implicit val (plannerQuery, semanticTable) =
       producePlannerQueryForPattern("MATCH (a:X)-[r1]->(b:Y:Z)-[r2]->(c:Z) WHERE NOT (a)-->(c)")
     val (expand1, selection) = produceTriadicTestCase(bLabels = Seq("Y", "Z"), cLabels = Seq("Z"))
-    val triadic              = produceTriadicTestPlan(expand1, bLabels = Seq("Y", "Z"), cLabels = Seq("Z"))
+    val triadic = produceTriadicTestPlan(expand1, bLabels = Seq("Y", "Z"), cLabels = Seq("Z"))
 
     triadicSelectionFinder(selection, plannerQuery.lastQueryGraph) should contain only triadic
   }
@@ -267,8 +267,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
       Expand(expand1, IdName("b"), r2Direction, r2Types.map(RelTypeName(_)(pos)), IdName("c"), IdName("r2"), ExpandAll)(
         solved)
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
-    val labelPredicates        = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
-    val selection              = Selection(labelPredicates :+ relationshipUniqueness, expand2)(solved)
+    val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
+    val selection = Selection(labelPredicates :+ relationshipUniqueness, expand2)(solved)
     (expand1, selection)
   }
 
@@ -289,8 +289,8 @@ class TriadicSelectionFinderTest extends CypherFunSuite with LogicalPlanningTest
                           IdName("r2"),
                           ExpandAll)(solved)
     val relationshipUniqueness = Not(Equals(Variable("r1")(pos), Variable("r2")(pos))(pos))(pos)
-    val labelPredicates        = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
-    val selectionB             = Selection(labelPredicates :+ relationshipUniqueness, expand2B)(solved)
+    val labelPredicates = cLabels.map(lbl => HasLabels(Variable("c")(pos), Seq(LabelName(lbl)(pos)))(pos))
+    val selectionB = Selection(labelPredicates :+ relationshipUniqueness, expand2B)(solved)
     TriadicSelection(predicateExpressionCase, expand1, IdName("a"), IdName("b"), IdName("c"), selectionB)(solved)
   }
 }

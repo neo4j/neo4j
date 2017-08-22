@@ -91,7 +91,7 @@ case class UnaliasedReturnItem(expression: Expression, inputText: String)(val po
 case class AliasedReturnItem(expression: Expression, variable: Variable)(val position: InputPosition)
     extends ReturnItem {
   val alias = Some(variable)
-  val name  = variable.name
+  val name = variable.name
 
   def makeSureIsNotUnaliased(state: SemanticState): SemanticCheckResult = SemanticCheckResult.success(state)
 }

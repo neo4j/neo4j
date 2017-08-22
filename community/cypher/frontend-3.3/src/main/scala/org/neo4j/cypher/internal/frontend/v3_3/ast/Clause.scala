@@ -124,7 +124,7 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
 
   override def semanticCheck: SemanticCheck = (state: SemanticState) => {
 
-    val query    = rewrittenQuery
+    val query = rewrittenQuery
     val newState = state.addNotification(DeprecatedStartNotification(position, query))
     SemanticCheckResult(newState,
                         Seq(
@@ -446,7 +446,7 @@ case class UnresolvedCall(procedureNamespace: Namespace,
 
   override def semanticCheck: SemanticCheck = {
     val argumentCheck = declaredArguments.map(_.semanticCheck(SemanticContext.Results)).getOrElse(success)
-    val resultsCheck  = declaredResult.map(_.semanticCheck).getOrElse(success)
+    val resultsCheck = declaredResult.map(_.semanticCheck).getOrElse(success)
     val invalidExpressionsCheck = declaredArguments
       .map(_.map {
         case arg if arg.containsAggregate =>
@@ -488,10 +488,10 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
       returnItems.semanticCheck
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck = (s: SemanticState) => {
-    val specialReturnItems     = createSpecialReturnItems(previousScope, s)
+    val specialReturnItems = createSpecialReturnItems(previousScope, s)
     val specialStateForShuffle = specialReturnItems.declareVariables(previousScope)(s).state
-    val shuffleResult          = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
-    val shuffleErrors          = shuffleResult.errors
+    val shuffleResult = (orderBy.semanticCheck chain checkSkip chain checkLimit)(specialStateForShuffle)
+    val shuffleErrors = shuffleResult.errors
 
     // We still need to declare the return items, and register the use of variables in the ORDER BY clause. But we
     // don't want to see errors from ORDER BY - we'll get them through shuffleErrors instead
@@ -499,7 +499,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     val fixedOrderByResult =
       if (specialReturnItems.includeExisting) {
         val shuffleScope = shuffleResult.state.currentScope.scope
-        val definedHere  = specialReturnItems.items.map(_.name).toSet
+        val definedHere = specialReturnItems.items.map(_.name).toSet
         orderByResult.copy(orderByResult.state.mergeScope(shuffleScope, definedHere))
       } else
         orderByResult
@@ -515,7 +515,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
     // Except when we are doing DISTINCT or aggregation, in which case we only see the scope introduced by the
     // projecting clause
     val includePreviousScope = !(returnItems.containsAggregate || distinct)
-    val specialReturnItems   = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
+    val specialReturnItems = returnItems.copy(includeExisting = includePreviousScope)(returnItems.position)
     specialReturnItems
   }
 
@@ -531,7 +531,7 @@ sealed trait ProjectionClause extends HorizonClause with SemanticChecking {
 
   def verifyOrderByAggregationUse(fail: (String, InputPosition) => Nothing): Unit = {
     val aggregationInProjection = returnItems.items.map(_.expression).exists(containsAggregate)
-    val aggregationInOrderBy    = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
+    val aggregationInOrderBy = orderBy.exists(_.sortItems.map(_.expression).exists(containsAggregate))
     if (!aggregationInProjection && aggregationInOrderBy)
       fail(s"Cannot use aggregation in ORDER BY if there are no aggregate expressions in the preceding $name", position)
   }
@@ -589,7 +589,7 @@ case class Return(distinct: Boolean,
 }
 
 case class PragmaWithout(excluded: Seq[Variable])(val position: InputPosition) extends HorizonClause {
-  override def name              = "_PRAGMA WITHOUT"
+  override def name = "_PRAGMA WITHOUT"
   val excludedNames: Set[String] = excluded.map(_.name).toSet
 
   override def semanticCheckContinuation(previousScope: Scope): SemanticCheck =

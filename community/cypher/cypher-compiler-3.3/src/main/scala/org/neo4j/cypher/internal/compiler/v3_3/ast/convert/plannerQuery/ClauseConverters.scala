@@ -76,7 +76,7 @@ object ClauseConverters {
 
     def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
 
-    val projectionMap   = turnIntoMap(groupingKeys)
+    val projectionMap = turnIntoMap(groupingKeys)
     val aggregationsMap = turnIntoMap(aggregatingItems)
 
     if (projectionMap.values.exists(containsAggregate))
@@ -142,7 +142,7 @@ object ClauseConverters {
     }
 
   private def dedup(nodePatterns: Vector[CreateNodePattern]) = {
-    val seen   = mutable.Set.empty[IdName]
+    val seen = mutable.Set.empty[IdName]
     val result = mutable.ListBuffer.empty[CreateNodePattern]
     nodePatterns.foreach { pattern =>
       if (!seen(pattern.nodeName)) result.append(pattern)
@@ -165,7 +165,7 @@ object ClauseConverters {
 
     //CREATE ()-[:R]->()
     case RelationshipChain(leftNode: NodePattern, rel, rightNode) =>
-      val leftIdName  = IdName.fromVariable(leftNode.variable.get)
+      val leftIdName = IdName.fromVariable(leftNode.variable.get)
       val rightIdName = IdName.fromVariable(rightNode.variable.get)
 
       //Semantic checking enforces types.size == 1
@@ -186,7 +186,7 @@ object ClauseConverters {
     //CREATE ()->[:R]->()-[:R]->...->()
     case RelationshipChain(left, rel, rightNode) =>
       val (nodes, rels) = allCreatePatterns(left)
-      val rightIdName   = IdName.fromVariable(rightNode.variable.get)
+      val rightIdName = IdName.fromVariable(rightNode.variable.get)
 
       (nodes :+
          CreateNodePattern(rightIdName, rightNode.labels, rightNode.properties),
@@ -287,9 +287,9 @@ object ClauseConverters {
       //MERGE (n :L1:L2 {prop: 42})
       case (acc, EveryPath(NodePattern(Some(id), labels, props))) =>
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
-        val labelPredicates             = labels.map(l => HasLabels(id, Seq(l))(id.position))
-        val propertyPredicates          = toPropertySelection(id, toPropertyMap(props))
-        val createNodePattern           = CreateNodePattern(IdName.fromVariable(id), labels, props)
+        val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
+        val propertyPredicates = toPropertySelection(id, toPropertyMap(props))
+        val createNodePattern = CreateNodePattern(IdName.fromVariable(id), labels, props)
 
         val matchGraph = QueryGraph(
           patternNodes = Set(IdName.fromVariable(id)),
@@ -388,7 +388,7 @@ object ClauseConverters {
     Handles all other WITH clauses
        */
       case With(distinct, projection, orderBy, skip, limit, where) =>
-        val selections  = asSelections(where)
+        val selections = asSelections(where)
         val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 
         val shuffle =

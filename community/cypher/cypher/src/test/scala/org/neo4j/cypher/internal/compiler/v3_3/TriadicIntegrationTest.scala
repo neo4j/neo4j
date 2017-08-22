@@ -92,7 +92,7 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
                |USING INDEX a:Person(name)
                |WHERE a.name = 'a' AND b.age = 39 AND exists(c.name) AND (a)-[:FRIEND]->(c)
                |RETURN a.name AS l, b.name as m, c.name AS r""".stripMargin
-    val result              = profile(queryWithPredicates)
+    val result = profile(queryWithPredicates)
 
     // then
     result.toSet should equal(Set(Map("l" -> "a", "m" -> "c", "r" -> "d")))
@@ -195,42 +195,42 @@ class TriadicIntegrationTest extends ExecutionEngineFunSuite {
     println(execute("MATCH (n) RETURN count(*)").toList)
     Map(
       "non-triadic1" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post)<-[:POSTED]-(u) RETURN u, a",
         "command" -> "Expand(Into)",
-        "count"   -> 3),
+        "count" -> 3),
       "non-triadic2" -> Map("query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a)<-[:POSTED]-(u) RETURN u, a",
                             "command" -> "Expand(Into)",
-                            "count"   -> 3),
+                            "count" -> 3),
       "triadic-neg1" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count"   -> 7),
+        "count" -> 7),
       "triadic-neg2" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count"   -> 7),
+        "count" -> 7),
       "triadic-neg3" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a:Post) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count"   -> 7),
+        "count" -> 7),
       "triadic-neg4" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a) WHERE NOT (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "AntiSemiApply",
-        "count"   -> 7),
+        "count" -> 7),
       "triadic-pos1" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q:Post)-[:ANSWER]->(a:Post) WHERE (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count"   -> 3),
+        "count" -> 3),
       "triadic-pos2" -> Map(
-        "query"   -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a",
+        "query" -> "MATCH (u:User)-[:POSTED]->(q)-[:ANSWER]->(a) WHERE (u)-[:POSTED]->(a) RETURN u, a",
         "command" -> "TriadicSelection",
-        "count"   -> 3)
+        "count" -> 3)
     ).collect {
       case (name, config: Map[String, Any]) =>
-        val query   = config("query").asInstanceOf[String]
-        val count   = config("count").asInstanceOf[Int]
+        val query = config("query").asInstanceOf[String]
+        val count = config("count").asInstanceOf[Int]
         val command = config("command").asInstanceOf[String]
-        val result  = execute(query)
+        val result = execute(query)
         result should haveCount(count)
         result should use(command)
     }

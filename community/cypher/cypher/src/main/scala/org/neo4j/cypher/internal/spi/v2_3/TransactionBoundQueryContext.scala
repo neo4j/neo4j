@@ -75,9 +75,9 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     with QueryContext
     with SchemaDescriptorTranslation {
 
-  override val nodeOps         = new NodeOperations
+  override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
-  private val nodeManager      = tc.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+  private val nodeManager = tc.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
 
   def isOpen = tc.isOpen
 
@@ -173,8 +173,8 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper)
     }
 
     val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange  = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
-    val anyRange        = groupedRanges.get(classOf[Any])
+    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val anyRange = groupedRanges.get(classOf[Any])
 
     if (anyRange.nonEmpty) {
       // If we get back an exclusion test, the range could return values otherwise it is empty

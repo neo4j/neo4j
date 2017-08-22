@@ -57,7 +57,7 @@ case class UsingIndexHint(variable: Variable, label: LabelName, properties: Seq[
     val position: InputPosition)
     extends UsingHint
     with NodeHint {
-  def variables     = NonEmptyList(variable)
+  def variables = NonEmptyList(variable)
   def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 
   override def toString: String =
@@ -67,7 +67,7 @@ case class UsingIndexHint(variable: Variable, label: LabelName, properties: Seq[
 case class UsingScanHint(variable: Variable, label: LabelName)(val position: InputPosition)
     extends UsingHint
     with NodeHint {
-  def variables     = NonEmptyList(variable)
+  def variables = NonEmptyList(variable)
   def semanticCheck = variable.ensureDefined chain variable.expectType(CTNode.covariant)
 
   override def toString: String = s"USING SCAN ${variable.name}:${label.name}"
@@ -117,7 +117,7 @@ case class NodeByIndexQuery(variable: Variable, index: String, query: Expression
     with NodeHint
 
 case class NodeByParameter(variable: Variable, parameter: Parameter)(val position: InputPosition) extends NodeStartItem
-case class AllNodes(variable: Variable)(val position: InputPosition)                              extends NodeStartItem
+case class AllNodes(variable: Variable)(val position: InputPosition) extends NodeStartItem
 
 sealed trait RelationshipStartItem extends StartItem {
   def semanticCheck = variable.declare(CTRelationship)

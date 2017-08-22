@@ -33,9 +33,9 @@ import scala.collection.mutable
 
 class TriadicSelectionPipeTest extends CypherFunSuite {
   test("triadic from input with no cycles") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22))
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22))
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -49,9 +49,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   test("triadic from input with cycles and negative predicate") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -65,9 +65,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   test("triadic from input with cycles and positive predicate") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
-    val pipe       = TriadicSelectionPipe(true, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12, 2), 2 -> List(21, 22))
+    val pipe = TriadicSelectionPipe(true, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -81,9 +81,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   test("triadic from input with two different sources and no cycles") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2), 3 -> List(2, 4))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2), 3 -> List(2, 4))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     //println(pipe.createResults(queryState).toList)
     val ids = pipe
@@ -104,7 +104,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
                                             2 -> List(21, 22),
                                             4 -> List(41, 42, 1) // different 'a' so should pass predicate
     )
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -124,7 +124,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
                                             2 -> List(21, 22),
                                             4 -> List(41, 42, 1) // different 'a' so should fail predicate
     )
-    val pipe       = TriadicSelectionPipe(true, input, "a", "b", "c", target)()
+    val pipe = TriadicSelectionPipe(true, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -138,9 +138,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   test("triadic from input with repeats") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2, 1), 3 -> List(2, 4, 4))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2, 1), 3 -> List(2, 4, 4))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -154,9 +154,9 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
   }
 
   test("traidic ignores nulls") {
-    val input      = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2, null), 3 -> List(2, null, 4))
-    val target     = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
-    val pipe       = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
+    val input = createFakePipeWith(Array("a", "b"), 0 -> List(1, 2, null), 3 -> List(2, null, 4))
+    val target = createFakeArgumentPipeWith(Array("b", "c"), 1 -> List(11, 12), 2 -> List(21, 22), 4 -> List(41, 42))
+    val pipe = TriadicSelectionPipe(false, input, "a", "b", "c", target)()
     val queryState = QueryStateHelper.empty
     val ids = pipe
       .createResults(queryState)
@@ -171,7 +171,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
 
   private def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
-    val iter    = in.iterator()
+    val iter = in.iterator()
     while (iter.hasNext) {
       builder += iter.next()
     }
@@ -201,7 +201,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       case (x, related) =>
         related.map {
           case a: Int => Map(keys(1) -> nodeWithId(a), keys(0) -> nodeWithId(x))
-          case null   => Map(keys(1) -> null, keys(0)          -> nodeWithId(x))
+          case null   => Map(keys(1) -> null, keys(0) -> nodeWithId(x))
         }
     }
   }

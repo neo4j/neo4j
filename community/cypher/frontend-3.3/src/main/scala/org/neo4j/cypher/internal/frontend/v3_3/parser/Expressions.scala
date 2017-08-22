@@ -108,7 +108,7 @@ trait Expressions extends Parser with Literals with Patterns with Base {
         _ =>
           second(first)
       case more =>
-        var lhs    = first
+        var lhs = first
         val result = ListBuffer.empty[ast.Expression]
         for (rhs <- more) {
           result.append(rhs(lhs))

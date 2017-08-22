@@ -36,15 +36,15 @@ case class PlanWithTail(
       implicit context: LogicalPlanningContext): LogicalPlan = {
     remaining match {
       case Some(plannerQuery) =>
-        val lhsContext        = context.recurse(lhs)
-        val partPlan          = planPart(plannerQuery, lhsContext)
+        val lhsContext = context.recurse(lhs)
+        val partPlan = planPart(plannerQuery, lhsContext)
         val firstPlannerQuery = false
-        val planWithUpdates   = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
+        val planWithUpdates = planUpdates(plannerQuery, partPlan, firstPlannerQuery)(context)
 
         val applyPlan = context.logicalPlanProducer.planTailApply(lhs, planWithUpdates)
 
-        val applyContext     = lhsContext.recurse(applyPlan)
-        val projectedPlan    = planEventHorizon(plannerQuery, applyPlan)(applyContext)
+        val applyContext = lhsContext.recurse(applyPlan)
+        val projectedPlan = planEventHorizon(plannerQuery, applyPlan)(applyContext)
         val projectedContext = applyContext.recurse(projectedPlan)
 
         this.apply(projectedPlan, plannerQuery.tail)(projectedContext)

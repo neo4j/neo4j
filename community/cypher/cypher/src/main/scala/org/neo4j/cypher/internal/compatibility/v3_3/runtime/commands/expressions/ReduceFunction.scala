@@ -30,8 +30,8 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
     with ListSupport {
 
   def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState) = {
-    val initMap  = m.newWith1(acc, init(m))
-    val list     = makeTraversable(value)
+    val initMap = m.newWith1(acc, init(m))
+    val list = makeTraversable(value)
     val iterator = list.iterator()
     var computed = initMap
     while (iterator.hasNext) {

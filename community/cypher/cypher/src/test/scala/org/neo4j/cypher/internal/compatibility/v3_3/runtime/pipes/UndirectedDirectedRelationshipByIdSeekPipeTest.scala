@@ -39,11 +39,11 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   test("should seek relationship by id") {
     // given
     val (startNode, rel, endNode) = getRelWithNodes
-    val relOps                    = mock[Operations[Relationship]]
+    val relOps = mock[Operations[Relationship]]
     when(relOps.exists(17)).thenReturn(true)
     when(relOps.getById(17)).thenReturn(rel)
 
-    val to   = "to"
+    val to = "to"
     val from = "from"
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relOps).getMock[QueryContext]
@@ -56,17 +56,17 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
     // then
     result.toList should beEquivalentTo(
-      List(Map("a" -> rel, "to" -> endNode, "from"   -> startNode),
+      List(Map("a" -> rel, "to" -> endNode, "from" -> startNode),
            Map("a" -> rel, "to" -> startNode, "from" -> endNode)))
   }
 
   test("should seek relationships by multiple ids") {
     // given
-    val (s1, r1, e1)    = getRelWithNodes
-    val (s2, r2, e2)    = getRelWithNodes
+    val (s1, r1, e1) = getRelWithNodes
+    val (s2, r2, e2) = getRelWithNodes
     val relationshipOps = mock[Operations[Relationship]]
-    val to              = "to"
-    val from            = "from"
+    val to = "to"
+    val from = "from"
 
     when(relationshipOps.getById(42)).thenReturn(r1)
     when(relationshipOps.exists(42)).thenReturn(true)
@@ -94,8 +94,8 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
   test("handle null") {
     // given
-    val to              = "to"
-    val from            = "from"
+    val to = "to"
+    val from = "from"
     val relationshipOps = mock[Operations[Relationship]]
     val queryState = QueryStateHelper.emptyWith(
       query = when(mock[QueryContext].relationshipOps).thenReturn(relationshipOps).getMock[QueryContext]
@@ -110,9 +110,9 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
   }
 
   private def getRelWithNodes: (Node, Relationship, Node) = {
-    val rel       = mock[Relationship]
+    val rel = mock[Relationship]
     val startNode = mock[Node]
-    val endNode   = mock[Node]
+    val endNode = mock[Node]
     when(rel.getStartNode).thenReturn(startNode)
     when(rel.getEndNode).thenReturn(endNode)
     (startNode, rel, endNode)

@@ -54,7 +54,7 @@ object Templates {
   import GeneratedQueryStructure.typeRef
 
   def createNewInstance(valueType: TypeReference, args: (TypeReference, Expression)*): Expression = {
-    val argTypes      = args.map(_._1)
+    val argTypes = args.map(_._1)
     val argExpression = args.map(_._2)
     Expression.invoke(Expression.newInstance(valueType),
                       MethodReference.constructorReference(valueType, argTypes: _*),
@@ -62,7 +62,7 @@ object Templates {
   }
 
   val newLongObjectMap = Expression.invoke(method[Primitive, PrimitiveLongObjectMap[_]]("longObjectMap"))
-  val newCountingMap   = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
+  val newCountingMap = Expression.invoke(method[Primitive, PrimitiveLongIntMap]("longIntMap"))
 
   def asList[T](values: Seq[Expression])(implicit manifest: Manifest[T]): Expression =
     Expression.invoke(methodReference(typeRef[util.Arrays], typeRef[util.List[T]], "asList", typeRef[Array[Object]]),
@@ -122,7 +122,7 @@ object Templates {
 
   val incoming = Expression.getStatic(staticField[Direction, Direction](Direction.INCOMING.name()))
   val outgoing = Expression.getStatic(staticField[Direction, Direction](Direction.OUTGOING.name()))
-  val both     = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
+  val both = Expression.getStatic(staticField[Direction, Direction](Direction.BOTH.name()))
   val newResultRow = Expression
     .invoke(Expression.newInstance(typeRef[ResultRowImpl]),
             MethodReference.constructorReference(typeRef[ResultRowImpl]))

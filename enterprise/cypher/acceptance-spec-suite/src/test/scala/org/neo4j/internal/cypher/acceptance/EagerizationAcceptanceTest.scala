@@ -46,7 +46,7 @@ class EagerizationAcceptanceTest
     with NewPlannerTestSupport
     with CreateTempFileTestSupport {
 
-  val VERBOSE                          = false
+  val VERBOSE = false
   val VERBOSE_INCLUDE_PLAN_DESCRIPTION = true
 
   val EagerRegEx: Regex = "Eager(?!(Aggregation))".r
@@ -183,12 +183,12 @@ class EagerizationAcceptanceTest
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement   = transaction.acquireStatement()
+          val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
-            val nodeX   = input(0).asInstanceOf[Node]
-            val nodeY   = input(1).asInstanceOf[Node]
-            val rel     = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
+            val nodeX = input(0).asInstanceOf[Node]
+            val nodeY = input(1).asInstanceOf[Node]
+            val rel = statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
             RawIterator.of(Array(new java.lang.Long(rel)))
           } finally {
             statement.close()
@@ -221,11 +221,11 @@ class EagerizationAcceptanceTest
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement   = transaction.acquireStatement()
+          val statement = transaction.acquireStatement()
           try {
             val relType = statement.tokenWriteOperations().relationshipTypeGetOrCreateForName("KNOWS")
-            val nodeX   = input(0).asInstanceOf[Node]
-            val nodeY   = input(1).asInstanceOf[Node]
+            val nodeX = input(0).asInstanceOf[Node]
+            val nodeY = input(1).asInstanceOf[Node]
             statement.dataWriteOperations().relationshipCreate(relType, nodeX.getId, nodeY.getId)
             counter += 1
             RawIterator.empty()
@@ -257,12 +257,12 @@ class EagerizationAcceptanceTest
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement   = transaction.acquireStatement()
+          val statement = transaction.acquireStatement()
           try {
-            val idX        = input(0).asInstanceOf[Node].getId
-            val idY        = input(1).asInstanceOf[Node].getId
+            val idX = input(0).asInstanceOf[Node].getId
+            val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
-            val result     = Array.newBuilder[Array[AnyRef]]
+            val result = Array.newBuilder[Array[AnyRef]]
             val relationshipIterator =
               statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
             while (relationshipIterator.hasNext) {
@@ -310,10 +310,10 @@ class EagerizationAcceptanceTest
       new BasicProcedure(builder.build) {
         override def apply(ctx: Context, input: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
           val transaction = ctx.get(proc.Context.KERNEL_TRANSACTION)
-          val statement   = transaction.acquireStatement()
+          val statement = transaction.acquireStatement()
           try {
-            val idX        = input(0).asInstanceOf[Node].getId
-            val idY        = input(1).asInstanceOf[Node].getId
+            val idX = input(0).asInstanceOf[Node].getId
+            val idY = input(1).asInstanceOf[Node].getId
             val nodeCursor = statement.readOperations().nodeCursorById(idX)
             val relationshipIterator =
               statement.readOperations().nodeGetRelationships(nodeCursor.get().id(), Direction.OUTGOING)
@@ -579,8 +579,8 @@ class EagerizationAcceptanceTest
   }
 
   test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship") {
-    val a    = createNode()
-    val b    = createNode()
+    val a = createNode()
+    val b = createNode()
     val rel1 = relate(a, b, "T", Map("id" -> 1))
     val rel2 = relate(a, b, "T", Map("id" -> 2))
     val query =
@@ -600,8 +600,8 @@ class EagerizationAcceptanceTest
   }
 
   test("should introduce eagerness between MATCH and DELETE + DELETE and MERGE for relationship, direction reversed") {
-    val a    = createNode()
-    val b    = createNode()
+    val a = createNode()
+    val b = createNode()
     val rel1 = relate(a, b, "T", Map("id" -> 1))
     val query =
       """
@@ -733,7 +733,7 @@ class EagerizationAcceptanceTest
   }
 
   test("should not introduce eagerness for leaf create match") {
-    val query  = "CREATE () WITH * MATCH () RETURN count(*)"
+    val query = "CREATE () WITH * MATCH () RETURN count(*)"
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 1)
     result should not(use("ReadOnly"))
@@ -1613,7 +1613,7 @@ class EagerizationAcceptanceTest
 
   test("never ending query should end - this is the query that prompted Eagerness in the first place") {
     createNode()
-    val query  = "MATCH (a) CREATE ()"
+    val query = "MATCH (a) CREATE ()"
     val result = updateWithBothPlannersAndCompatibilityMode(query)
     assertStats(result, nodesCreated = 1)
     assertNumberOfEagerness(query, 0)
@@ -1760,7 +1760,7 @@ class EagerizationAcceptanceTest
   test("should not use eager if on create modifies relationships which don't affect the match clauses") {
     createLabeledNode("LeftLabel")
     createLabeledNode("RightLabel")
-    val query  = """MATCH (src:LeftLabel), (dst:RightLabel)
+    val query = """MATCH (src:LeftLabel), (dst:RightLabel)
               |MERGE (src)-[r:IS_RELATED_TO ]->(dst)
               |ON CREATE SET r.p3 = 42""".stripMargin
     val result = updateWithBothPlannersAndCompatibilityMode(query)
@@ -2118,7 +2118,7 @@ class EagerizationAcceptanceTest
 
   test("matching node property, writing with += should be eager") {
     relate(createNode(Map("prop" -> 5)), createNode())
-    val query  = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop: 5} RETURN count(*)"
+    val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
@@ -2128,7 +2128,7 @@ class EagerizationAcceptanceTest
 
   test("matching node property, writing with += should not be eager when we can avoid it") {
     relate(createNode(Map("prop" -> 5)), createNode())
-    val query  = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
+    val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
@@ -2152,7 +2152,7 @@ class EagerizationAcceptanceTest
 
   test("matching rel property, writing with += should not be eager when we can avoid it") {
     relate(createNode(Map("prop" -> 5)), createNode())
-    val query  = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
+    val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = updateWithBothPlanners(query)
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
@@ -2603,7 +2603,7 @@ class EagerizationAcceptanceTest
   test("should always be eager after deleted relationships if there are any subsequent expands that might load them") {
     val device = createLabeledNode("Device")
     val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
-      val name   = s"c$index"
+      val name = s"c$index"
       val cookie = createLabeledNode(Map("name" -> name), "Cookie")
       relate(device, cookie)
       relate(cookie, createNode())
@@ -2630,7 +2630,7 @@ class EagerizationAcceptanceTest
 
   test("should always be eager after deleted nodes if there are any subsequent matches that might load them") {
     val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
-      val name   = s"c$index"
+      val name = s"c$index"
       val cookie = createLabeledNode(Map("name" -> name), "Cookie")
       nodes + (name -> cookie)
     }
@@ -2646,7 +2646,7 @@ class EagerizationAcceptanceTest
 
   test("should always be eager after deleted paths if there are any subsequent matches that might load them") {
     val cookies = (0 until 2).foldLeft(Map.empty[String, Node]) { (nodes, index) =>
-      val name   = s"c$index"
+      val name = s"c$index"
       val cookie = createLabeledNode(Map("name" -> name), "Cookie")
       nodes + (name -> cookie)
     }
@@ -2752,9 +2752,9 @@ class EagerizationAcceptanceTest
     withClue("The optimum must be smaller than the expected, otherwise just use expected") {
       expectedEagerCount shouldBe >=(optimalEagerCount)
     }
-    val q      = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
+    val q = if (query.contains("EXPLAIN")) query else "EXPLAIN CYPHER " + query
     val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
-    val plan   = result.getExecutionPlanDescription().toString
+    val plan = result.getExecutionPlanDescription().toString
     result.close()
     val eagers = EagerRegEx.findAllIn(plan).length
     if (VERBOSE && expectedEagerCount > 0) {

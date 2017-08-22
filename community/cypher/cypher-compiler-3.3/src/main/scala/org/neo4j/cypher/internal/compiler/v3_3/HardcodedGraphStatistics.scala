@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.ir.v3_3.Selectivity
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
-  val NODES_CARDINALITY                 = Cardinality(10000)
-  val NODES_WITH_LABEL_SELECTIVITY      = Selectivity.of(0.2).get
-  val NODES_WITH_LABEL_CARDINALITY      = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
-  val RELATIONSHIPS_CARDINALITY         = Cardinality(50000)
-  val INDEX_SELECTIVITY                 = Selectivity.of(.02).get
+  val NODES_CARDINALITY = Cardinality(10000)
+  val NODES_WITH_LABEL_SELECTIVITY = Selectivity.of(0.2).get
+  val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
+  val RELATIONSHIPS_CARDINALITY = Cardinality(50000)
+  val INDEX_SELECTIVITY = Selectivity.of(.02).get
   val INDEX_PROPERTY_EXISTS_SELECTIVITY = Selectivity.of(.5).get
 
   def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =

@@ -115,7 +115,7 @@ class GroupInequalityPredicatesTest extends CypherFunSuite with AstConstructionT
     }, expr)
 
   private def anded(property: Property, first: InequalityExpression, others: InequalityExpression*) = {
-    val variable     = property.map.asInstanceOf[Variable]
+    val variable = property.map.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
     val deps = others
       .foldLeft(first.dependencies) { (acc, elem) =>

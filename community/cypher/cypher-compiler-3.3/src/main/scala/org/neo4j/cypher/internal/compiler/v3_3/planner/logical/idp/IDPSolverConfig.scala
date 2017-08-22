@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
   * The IDP inner loop can be optimized and tweaked in several ways, and this trait encapsulates those settings
   */
 trait IDPSolverConfig {
-  def maxTableSize: Int            = 128
+  def maxTableSize: Int = 128
   def iterationDurationLimit: Long = 1000
   def solvers(queryGraph: QueryGraph)
     : Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
@@ -36,8 +36,8 @@ trait IDPSolverConfig {
 
 /* The Dynamic Programming (DP) approach is IDP with no optimizations */
 case object DPSolverConfig extends IDPSolverConfig {
-  override def maxTableSize                    = Integer.MAX_VALUE
-  override def iterationDurationLimit          = Long.MaxValue
+  override def maxTableSize = Integer.MAX_VALUE
+  override def iterationDurationLimit = Long.MaxValue
   override def solvers(queryGraph: QueryGraph) = Seq(joinSolverStep(_), expandSolverStep(_))
 }
 
@@ -78,7 +78,7 @@ case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends IDPSo
 case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => Boolean)
     extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
 
-  private val join   = joinSolverStep(qg)
+  private val join = joinSolverStep(qg)
   private val expand = expandSolverStep(qg)
 
   override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan])(

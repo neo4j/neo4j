@@ -36,7 +36,7 @@ case object ToBoolean extends Function {
       invocation.specifyType(CTBoolean)
 
   private def checkTypeOfArgument(invocation: FunctionInvocation): SemanticCheck = (s: SemanticState) => {
-    val argument      = invocation.args.head
+    val argument = invocation.args.head
     val specifiedType = s.expressionType(argument).specified
     val correctType = Seq(CTString, CTBoolean, CTAny).foldLeft(false) {
       case (acc, t) => acc || specifiedType.contains(t)

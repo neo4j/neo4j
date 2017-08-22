@@ -38,7 +38,7 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
 
   val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
-    def reverse()                                      = this
+    def reverse() = this
   }
 
   def baseTraversal(params: ExecutionContext, state: QueryState): TraversalDescription =

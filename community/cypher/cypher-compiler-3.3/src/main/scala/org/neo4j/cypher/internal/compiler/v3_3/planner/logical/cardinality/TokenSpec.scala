@@ -30,7 +30,7 @@ sealed trait TokenSpec[+ID <: NameId] {
 }
 
 object TokenSpec {
-  type LabelSpecs   = Map[IdName, Set[TokenSpec[LabelId]]]
+  type LabelSpecs = Map[IdName, Set[TokenSpec[LabelId]]]
   type RelTypeSpecs = Map[IdName, Set[TokenSpec[RelTypeId]]]
 
   def mapFrom[T <: SymbolicNameWithId[ID], ID <: NameId](input: Set[T])(

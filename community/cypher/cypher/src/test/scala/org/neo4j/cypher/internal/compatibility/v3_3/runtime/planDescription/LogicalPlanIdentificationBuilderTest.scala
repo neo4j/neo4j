@@ -40,8 +40,8 @@ class LogicalPlanIdentificationBuilderTest extends CypherFunSuite {
   }
 
   test("plan and it's children are identified") {
-    val A  = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val B  = AllNodesScan(IdName("b"), Set.empty)(solved)
+    val A = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val B = AllNodesScan(IdName("b"), Set.empty)(solved)
     val AB = Apply(A, B)(solved)
 
     val map = LogicalPlanIdentificationBuilder(AB)
@@ -51,12 +51,12 @@ class LogicalPlanIdentificationBuilderTest extends CypherFunSuite {
   }
 
   test("plan and decedents") {
-    val A  = AllNodesScan(IdName("a"), Set.empty)(solved)
-    val B  = AllNodesScan(IdName("b"), Set.empty)(solved)
+    val A = AllNodesScan(IdName("a"), Set.empty)(solved)
+    val B = AllNodesScan(IdName("b"), Set.empty)(solved)
     val AB = Apply(A, B)(solved)
 
-    val C  = AllNodesScan(IdName("c"), Set.empty)(solved)
-    val D  = AllNodesScan(IdName("d"), Set.empty)(solved)
+    val C = AllNodesScan(IdName("c"), Set.empty)(solved)
+    val D = AllNodesScan(IdName("d"), Set.empty)(solved)
     val CD = Apply(C, D)(solved)
 
     val ABCD = Apply(AB, CD)(solved)

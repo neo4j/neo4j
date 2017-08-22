@@ -58,7 +58,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
-    val b  = fakeLogicalPlanFor("b")
+    val b = fakeLogicalPlanFor("b")
 
     val GIVEN = new given {
       cost = {
@@ -72,31 +72,31 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   test("picks the right plan by cost and secondly by the covered ids") {
     val ab = fakeLogicalPlanFor("a", "b")
-    val c  = fakeLogicalPlanFor("c")
+    val c = fakeLogicalPlanFor("c")
 
     assertTopPlan(winner = ab, ab, c)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solves a hint over plan that solves no hint") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
-    val b                               = fakeLogicalPlanFor("a")
+    val a = fakeLogicalPlanFor("a").updateSolved(f)
+    val b = fakeLogicalPlanFor("a")
 
     assertTopPlan(winner = a, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
+    val a = fakeLogicalPlanFor("a").updateSolved(f)
     val g: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Seq(hint1, hint2)))
-    val b                               = fakeLogicalPlanFor("a").updateSolved(g)
+    val b = fakeLogicalPlanFor("a").updateSolved(g)
 
     assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
   }
 
   test("Prefers plans that solve more hints in tails") {
     val f: PlannerQuery => PlannerQuery = (query: PlannerQuery) => query.amendQueryGraph(_.addHints(Some(hint1)))
-    val a                               = fakeLogicalPlanFor("a").updateSolved(f)
+    val a = fakeLogicalPlanFor("a").updateSolved(f)
     val g: PlannerQuery => PlannerQuery =
       (query: PlannerQuery) => query.withTail(PlannerQuery.empty.amendQueryGraph(_.addHints(Seq(hint1, hint2))))
     val b = fakeLogicalPlanFor("a").updateSolved(g)
@@ -105,7 +105,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   }
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(GIVEN: given) {
-    val environment      = LogicalPlanningEnvironment(GIVEN)
+    val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, GIVEN.expressionEvaluator)
     implicit val context = LogicalPlanningContext(null,
                                                   LogicalPlanProducer(metrics.cardinality),

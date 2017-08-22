@@ -60,15 +60,15 @@ class PatternMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predica
     val toList = undirectedBoundRelationships
       .map(patternRel => {
         val rel = bindings(patternRel.key).asInstanceOf[EdgeValue]
-        val x   = patternRel.key -> Set(MatchingPair(patternRel, rel))
+        val x = patternRel.key -> Set(MatchingPair(patternRel, rel))
 
         // Outputs the first direction of the pattern relationship
         val a1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.startNode()))
-        val a2 = patternRel.endNode.key   -> Set(MatchingPair(patternRel.endNode, rel.endNode()))
+        val a2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.endNode()))
 
         // Outputs the second direction of the pattern relationship
         val b1 = patternRel.startNode.key -> Set(MatchingPair(patternRel.startNode, rel.endNode()))
-        val b2 = patternRel.endNode.key   -> Set(MatchingPair(patternRel.endNode, rel.startNode()))
+        val b2 = patternRel.endNode.key -> Set(MatchingPair(patternRel.endNode, rel.startNode()))
 
         Seq(Map(x, a1, a2), Map(x, b1, b2))
       })
@@ -99,8 +99,8 @@ class PatternMatchingBuilder(patternGraph: PatternGraph, predicates: Seq[Predica
       patternRels.flatMap(pRel => {
         def extractMatchingPairs(startNode: PatternNode, endNode: PatternNode): Seq[(String, Set[MatchingPair])] = {
           val t1 = startNode.key -> Set(MatchingPair(startNode, rel.startNode()))
-          val t2 = endNode.key   -> Set(MatchingPair(endNode, rel.endNode()))
-          val t3 = pRel.key      -> Set(MatchingPair(pRel, rel))
+          val t2 = endNode.key -> Set(MatchingPair(endNode, rel.endNode()))
+          val t3 = pRel.key -> Set(MatchingPair(pRel, rel))
 
           // Check that found end nodes correspond to what is already in scope
           if (bindings.get(t1._1).forall(_ == t1._2.head.entity) &&

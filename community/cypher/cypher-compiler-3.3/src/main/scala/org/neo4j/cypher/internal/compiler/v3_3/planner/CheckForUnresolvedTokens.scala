@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.VisitorPhase
 object CheckForUnresolvedTokens extends VisitorPhase[BaseContext, LogicalPlanState] {
 
   override def visit(value: LogicalPlanState, context: BaseContext): Unit = {
-    val table                             = value.semanticTable
-    def isEmptyLabel(label: String)       = !table.resolvedLabelIds.contains(label)
-    def isEmptyRelType(relType: String)   = !table.resolvedRelTypeNames.contains(relType)
+    val table = value.semanticTable
+    def isEmptyLabel(label: String) = !table.resolvedLabelIds.contains(label)
+    def isEmptyRelType(relType: String) = !table.resolvedRelTypeNames.contains(relType)
     def isEmptyPropertyName(name: String) = !table.resolvedPropertyKeyNames.contains(name)
 
     val notifications = value.statement.treeFold(Seq.empty[InternalNotification]) {

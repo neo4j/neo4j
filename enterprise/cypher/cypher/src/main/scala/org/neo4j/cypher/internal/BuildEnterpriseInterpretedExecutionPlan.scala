@@ -64,8 +64,8 @@ object BuildEnterpriseInterpretedExecutionPlan
     val runtimeSuccessRateMonitor = context.monitors.newMonitor[NewRuntimeSuccessRateMonitor]()
     try {
       val (logicalPlan, pipelines) = rewritePlan(context, from.logicalPlan)
-      val idMap                    = LogicalPlanIdentificationBuilder(logicalPlan)
-      val converters               = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+      val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
+      val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
       val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock,
                                                               context.monitors,
                                                               expressionConverters = converters,
@@ -76,18 +76,18 @@ object BuildEnterpriseInterpretedExecutionPlan
       val pipeInfo = executionPlanBuilder
         .build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
       val PipeInfo(pipe: Pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-      val columns                                                         = from.statement().returnColumns
-      val resultBuilderFactory                                            = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
+      val columns = from.statement().returnColumns
+      val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
       val func = BuildInterpretedExecutionPlan.getExecutionPlanFunction(periodicCommitInfo,
                                                                         from.queryText,
                                                                         updating,
                                                                         resultBuilderFactory,
                                                                         context.notificationLogger,
                                                                         EnterpriseInterpretedRuntimeName)
-      val fingerprint    = context.createFingerprintReference(fp)
+      val fingerprint = context.createFingerprintReference(fp)
       val periodicCommit = periodicCommitInfo.isDefined
-      val indexes        = logicalPlan.indexUsage
-      val execPlan       = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
+      val indexes = logicalPlan.indexUsage
+      val execPlan = RegisteredExecutionPlan(fingerprint, periodicCommit, planner, indexes, func, pipe, context.config)
       new CompilationState(from, Some(execPlan))
     } catch {
       case e: CypherException =>
@@ -98,8 +98,8 @@ object BuildEnterpriseInterpretedExecutionPlan
 
   private def rewritePlan(context: EnterpriseRuntimeContext, beforeRewrite: LogicalPlan) = {
     val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val registeredRewriter                                     = new RegisteredRewriter(context.planContext)
-    val (logicalPlan, pipelines)                               = registeredRewriter(beforeRewrite, beforePipelines)
+    val registeredRewriter = new RegisteredRewriter(context.planContext)
+    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
     (logicalPlan, pipelines)
   }
 

@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_3.runtime.executionplan
 
 class UpdateCounter {
   private var uncommittedRows = 0L
-  private var totalRows       = 0L
+  private var totalRows = 0L
 
   def +=(increment: Long) {
     assert(increment > 0L, s"increment must be positive but was: $increment")

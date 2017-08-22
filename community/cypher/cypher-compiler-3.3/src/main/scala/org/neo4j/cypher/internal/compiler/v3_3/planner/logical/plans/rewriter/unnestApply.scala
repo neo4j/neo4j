@@ -83,7 +83,7 @@ case object unnestApply extends Rewriter {
     case original @ Apply(lhs, Apply(sel @ Selection(predicates, lhs2), rhs))
         if predicates.forall(lhs.satisfiesExpressionDependencies) =>
       val selectionLHS = Selection(predicates, lhs)(original.solved)
-      val apply2       = Apply(lhs2, rhs)(original.solved)
+      val apply2 = Apply(lhs2, rhs)(original.solved)
       Apply(selectionLHS, apply2)(original.solved)
 
     // L Ax (π R) => π(L Ax R)

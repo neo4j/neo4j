@@ -342,12 +342,12 @@ final case class CompactedPlanDescription(similar: Seq[InternalPlanDescription])
   override def children: Children = similar.last.children
 
   override val arguments: Seq[Argument] = {
-    var dbHits: Option[Long]              = None
-    var pageCacheHits: Option[Long]       = None
-    var pageCacheMisses: Option[Long]     = None
+    var dbHits: Option[Long] = None
+    var pageCacheHits: Option[Long] = None
+    var pageCacheMisses: Option[Long] = None
     var pageCacheHitRatio: Option[Double] = None
-    var time: Option[Long]                = None
-    var rows: Option[Long]                = None
+    var time: Option[Long] = None
+    var rows: Option[Long] = None
 
     similar
       .foldLeft(Set.empty[Argument]) { (acc, plan) =>

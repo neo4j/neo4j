@@ -76,8 +76,8 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
   class AllNodesProcedure extends CallableProcedure {
     import scala.collection.JavaConverters._
 
-    private val results                           = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
-    val procedureName                             = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
+    private val results = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
+    val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(procedureName,
                                                                paramSignature,
@@ -99,9 +99,9 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 
     override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations       = statement.readOperations
-      val nodes                = readOperations.nodesGetAll()
-      var count                = 0
+      val readOperations = statement.readOperations
+      val nodes = readOperations.nodesGetAll()
+      var count = 0
       new RawIterator[Array[AnyRef], ProcedureException] {
         override def next(): Array[AnyRef] = {
           count = count + 1

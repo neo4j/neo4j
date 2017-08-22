@@ -42,7 +42,7 @@ case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression
     val firstNode = getFirstNode(pathPattern)
 
     val nodes = ArrayBuffer.empty[NodeValue]
-    val rels  = ArrayBuffer.empty[EdgeValue]
+    val rels = ArrayBuffer.empty[EdgeValue]
     nodes.append(getNode(firstNode))
     for (path <- pathPattern) {
       path match {

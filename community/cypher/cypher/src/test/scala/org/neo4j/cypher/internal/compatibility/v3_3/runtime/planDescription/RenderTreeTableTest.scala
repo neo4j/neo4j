@@ -77,7 +77,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   test("node feeding from two nodes") {
     val leaf1 = PlanDescriptionImpl(new Id, "LEAF1", NoChildren, Seq.empty, Set())
     val leaf2 = PlanDescriptionImpl(new Id, "LEAF2", NoChildren, Seq.empty, Set())
-    val plan  = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(leaf1, leaf2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+----------+
         || Operator |
@@ -92,9 +92,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("node feeding of node that is feeding of node") {
-    val leaf         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq.empty, Set())
+    val leaf = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq.empty, Set())
     val intermediate = PlanDescriptionImpl(new Id, "INTERMEDIATE", SingleChild(leaf), Seq.empty, Set())
-    val plan         = PlanDescriptionImpl(new Id, "ROOT", SingleChild(intermediate), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", SingleChild(intermediate), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+---------------+
         || Operator      |
@@ -109,11 +109,11 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("root with two leafs, one of which is deep") {
-    val leaf1        = PlanDescriptionImpl(new Id, "LEAF1", NoChildren, Seq.empty, Set())
-    val leaf2        = PlanDescriptionImpl(new Id, "LEAF2", NoChildren, Seq.empty, Set())
-    val leaf3        = PlanDescriptionImpl(new Id, "LEAF3", NoChildren, Seq.empty, Set())
+    val leaf1 = PlanDescriptionImpl(new Id, "LEAF1", NoChildren, Seq.empty, Set())
+    val leaf2 = PlanDescriptionImpl(new Id, "LEAF2", NoChildren, Seq.empty, Set())
+    val leaf3 = PlanDescriptionImpl(new Id, "LEAF3", NoChildren, Seq.empty, Set())
     val intermediate = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty, Set())
-    val plan         = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(leaf3, intermediate), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(leaf3, intermediate), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+-----------------+
         || Operator        |
@@ -132,13 +132,13 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("root with two intermediate nodes coming from four leaf nodes") {
-    val leaf1         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
-    val leaf2         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
-    val leaf3         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
-    val leaf4         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
+    val leaf1 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
+    val leaf2 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
+    val leaf3 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
+    val leaf4 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
     val intermediate1 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty, Set())
     val intermediate2 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(leaf3, leaf4), Seq.empty, Set())
-    val plan          = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+-----------------+-----------+
         || Operator        | Variables |
@@ -220,7 +220,7 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
         |""".stripMargin)
   }
 
-  val solved    = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   val singleRow = SingleRow()(solved)
 
   test("single node is represented nicely") {
@@ -338,9 +338,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Var length expand contains information about its relations") {
-    val expandDescr     = ExpandExpression("from", "rel", Seq.empty, "to", SemanticDirection.INCOMING, 0, None)
-    val estimatedRows   = EstimatedRows(1)
-    val arguments       = Seq(estimatedRows, expandDescr)
+    val expandDescr = ExpandExpression("from", "rel", Seq.empty, "to", SemanticDirection.INCOMING, 0, None)
+    val estimatedRows = EstimatedRows(1)
+    val arguments = Seq(estimatedRows, expandDescr)
     val planDescription = PlanDescriptionImpl(new Id, "VarLengthExpand(All)", NoChildren, arguments, Set("rel", "to"))
     renderAsTreeTable(planDescription) should equal(
       """+-----------------------+----------------+-----------+-------------------------+
@@ -594,9 +594,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("compact two pairs of similar nodes with variables") {
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq.empty, Set("a"))
-    val p1   = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
-    val p2   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("c"))
-    val p3   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("d"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("c"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("d"))
 
     renderAsTreeTable(p3) should equal("""+--------------+-----------+
         || Operator     | Variables |
@@ -610,9 +610,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("compact two pairs of similar nodes with same variables") {
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq.empty, Set("a"))
-    val p1   = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
-    val p2   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("a"))
-    val p3   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("a"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b"))
 
     renderAsTreeTable(p3) should equal("""+--------------+-----------+
         || Operator     | Variables |
@@ -626,9 +626,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
 
   test("compact two pairs of similar nodes with one new variable") {
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq.empty, Set("a"))
-    val p1   = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
-    val p2   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("a"))
-    val p3   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b", "c"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, Set("b"))
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("a"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("b", "c"))
 
     renderAsTreeTable(p3) should equal("""+--------------+-----------+
         || Operator     | Variables |
@@ -644,9 +644,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
 
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq.empty, Set("var_a"))
-    val p1   = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, repeating)
-    val p2   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("var_a"))
-    val p3   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, repeating + "var_A" + "var_B")
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, repeating)
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, Set("var_a"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, repeating + "var_A" + "var_B")
 
     renderAsTreeTable(p3) should equal(
       """+--------------+--------------------------------------------------------------------------------------------------+
@@ -663,9 +663,9 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
 
     val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(LabelName("123")), Set("var_a"))
-    val p1   = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, repeating)
-    val p2   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, repeating + "var_A" + "var_B")
-    val p3   = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("var_a"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq.empty, repeating)
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq.empty, repeating + "var_A" + "var_B")
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq.empty, Set("var_a"))
 
     renderAsTreeTable(p3) should equal(
       """+--------------+--------------------------------------------------------------------------------------------------+-------+
@@ -683,14 +683,14 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   test(
     "compact only the sufficiently similar pair of two simular pairs of nodes with many repeating variables and many columns") {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
-    val l         = LabelName("123")
-    val t         = Time(12345678)
-    val r         = Rows(2)
-    val d         = DbHits(2)
-    val leaf      = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
-    val p1        = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq(t, r, d), repeating)
-    val p2        = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq(t, r, d), Set("var_a"))
-    val p3        = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq(t, r, d), repeating + "var_A" + "var_B")
+    val l = LabelName("123")
+    val t = Time(12345678)
+    val r = Rows(2)
+    val d = DbHits(2)
+    val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq(t, r, d), repeating)
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq(t, r, d), Set("var_a"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq(t, r, d), repeating + "var_A" + "var_B")
 
     renderAsTreeTable(p3) should equal(
       """+--------------+------+---------+-----------+--------------------------------------------------------------------------------------------------+-------+
@@ -708,14 +708,14 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   test(
     "do not compact two similar pairs of nodes with non-empty other column and many repeating variables and many columns") {
     val repeating = ('b' to 'z').toSet[Char].map(c => s"var_$c")
-    val l         = LabelName("123")
-    val t         = Time(12345678)
-    val r         = Rows(2)
-    val d         = DbHits(2)
-    val leaf      = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
-    val p1        = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq(l, t, r, d), repeating)
-    val p2        = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq(l, t, r, d), Set("var_a"))
-    val p3        = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq(l, t, r, d), repeating + "var_A" + "var_B")
+    val l = LabelName("123")
+    val t = Time(12345678)
+    val r = Rows(2)
+    val d = DbHits(2)
+    val leaf = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(l, t, r, d), Set("var_a"))
+    val p1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf), Seq(l, t, r, d), repeating)
+    val p2 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p1), Seq(l, t, r, d), Set("var_a"))
+    val p3 = PlanDescriptionImpl(new Id, "OPERATOR", SingleChild(p2), Seq(l, t, r, d), repeating + "var_A" + "var_B")
 
     renderAsTreeTable(p3) should equal(
       """+-----------+------+---------+-----------+------------------------------------------------------------------------------------------------+-------+
@@ -733,17 +733,17 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("no compaction on complex plan with no repeated names") {
-    val leaf1         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
-    val leaf2         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
-    val leaf3         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
-    val leaf4         = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
-    val branch1       = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf1), Seq.empty, Set("a"))
-    val branch2       = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf2), Seq.empty, Set("b"))
-    val branch3       = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf3), Seq.empty, Set("c"))
-    val branch4       = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf4), Seq.empty, Set("d"))
+    val leaf1 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("a"))
+    val leaf2 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("b"))
+    val leaf3 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("c"))
+    val leaf4 = PlanDescriptionImpl(new Id, "LEAF", NoChildren, Seq(), Set("d"))
+    val branch1 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf1), Seq.empty, Set("a"))
+    val branch2 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf2), Seq.empty, Set("b"))
+    val branch3 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf3), Seq.empty, Set("c"))
+    val branch4 = PlanDescriptionImpl(new Id, "BRANCH", SingleChild(leaf4), Seq.empty, Set("d"))
     val intermediate1 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch1, branch2), Seq.empty, Set())
     val intermediate2 = PlanDescriptionImpl(new Id, "INTERMEDIATE", TwoChildren(branch3, branch4), Seq.empty, Set())
-    val plan          = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+-----------------+-----------+
         || Operator        | Variables |
@@ -774,17 +774,17 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("compaction on complex plan with repeated names") {
-    val leaf1         = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf2         = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf3         = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val leaf4         = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
-    val branch1       = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf1), Seq.empty, Set())
-    val branch2       = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf2), Seq.empty, Set())
-    val branch3       = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf3), Seq.empty, Set())
-    val branch4       = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf4), Seq.empty, Set())
+    val leaf1 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf2 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf3 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val leaf4 = PlanDescriptionImpl(new Id, "NODE", NoChildren, Seq(), Set())
+    val branch1 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf1), Seq.empty, Set())
+    val branch2 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf2), Seq.empty, Set())
+    val branch3 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf3), Seq.empty, Set())
+    val branch4 = PlanDescriptionImpl(new Id, "NODE", SingleChild(leaf4), Seq.empty, Set())
     val intermediate1 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch1, branch2), Seq.empty, Set())
     val intermediate2 = PlanDescriptionImpl(new Id, "NODE", TwoChildren(branch3, branch4), Seq.empty, Set())
-    val plan          = PlanDescriptionImpl(new Id, "NODE", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
+    val plan = PlanDescriptionImpl(new Id, "NODE", TwoChildren(intermediate1, intermediate2), Seq.empty, Set())
 
     renderAsTreeTable(plan) should equal("""+--------------+
         || Operator     |
@@ -807,36 +807,36 @@ class RenderTreeTableTest extends CypherFunSuite with BeforeAndAfterAll {
   }
 
   test("Variable line compaction with no variables") {
-    val line      = Line("NODE", Map.empty, Set.empty)
+    val line = Line("NODE", Map.empty, Set.empty)
     val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("")
   }
 
   test("Variable line compaction with only new variables") {
-    val line      = Line("NODE", Map.empty, Set("a", "b"))
+    val line = Line("NODE", Map.empty, Set("a", "b"))
     val compacted = CompactedLine(line, Set.empty)
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with only old variables") {
-    val line      = Line("NODE", Map.empty, Set("a", "b"))
+    val line = Line("NODE", Map.empty, Set("a", "b"))
     val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("a, b")
   }
 
   test("Variable line compaction with old and new variables") {
-    val line      = Line("NODE", Map.empty, Set("a", "b", "c", "d"))
+    val line = Line("NODE", Map.empty, Set("a", "b", "c", "d"))
     val compacted = CompactedLine(line, Set("a", "b"))
     compacted.formattedVariables should be("c, d -- a, b")
   }
 
   test("Variable line compaction with many old and new variables and all compaction lengths") {
-    val newvars   = ('a' to 'e').toSet[Char].map(c => s"var_$c")
+    val newvars = ('a' to 'e').toSet[Char].map(c => s"var_$c")
     val repeating = ('f' to 'z').toSet[Char].map(c => s"var_$c")
-    val line      = Line("NODE", Map.empty, repeating ++ newvars, None)
+    val line = Line("NODE", Map.empty, repeating ++ newvars, None)
     val compacted = CompactedLine(line, repeating)
-    val maxlen    = compacted.formatVariables(1000).length
-    val mintext   = "var_a, ..."
+    val maxlen = compacted.formatVariables(1000).length
+    val mintext = "var_a, ..."
     Range(maxlen, 1, -1).foreach { length =>
       val formatted = compacted.formatVariables(length)
       if (formatted.length < maxlen)

@@ -31,7 +31,7 @@ class ReturnItemSafeTopDownRewriterTest extends CypherFunSuite with AstConstruct
 
   test("works with where") {
     val original = Where(Equals(varFor("foo"), literalInt(42))(pos))(pos)
-    val result   = original.endoRewrite(rewriter)
+    val result = original.endoRewrite(rewriter)
 
     result should equal(Where(Equals(varFor("bar"), literalInt(42))(pos))(pos))
   }

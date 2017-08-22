@@ -76,6 +76,6 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
       legacy.GenericCase(IndexedSeq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
-  private val converters                                  = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
   def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(astNode)
 }

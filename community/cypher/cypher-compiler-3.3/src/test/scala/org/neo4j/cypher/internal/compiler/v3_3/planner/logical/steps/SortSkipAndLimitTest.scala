@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("110") _
-  val y: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem    = ast.AscSortItem(ast.Variable("n") _) _
+  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
+  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
+  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
@@ -110,7 +110,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    val sorted  = Sort(startPlan, Seq(sortDescription))(solved)
+    val sorted = Sort(startPlan, Seq(sortDescription))(solved)
     val skipped = Skip(sorted, y)(solved)
     val limited = Limit(skipped, x, DoNotIncludeTies)(solved)
 
@@ -127,7 +127,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       shuffle = QueryShuffle(sortItems, skip, limit)
     )
 
-    val qg    = QueryGraph(patternNodes = Set(IdName("n")))
+    val qg = QueryGraph(patternNodes = Set(IdName("n")))
     val query = RegularPlannerQuery(queryGraph = qg, horizon = projection)
 
     val context = newMockedLogicalPlanningContext(

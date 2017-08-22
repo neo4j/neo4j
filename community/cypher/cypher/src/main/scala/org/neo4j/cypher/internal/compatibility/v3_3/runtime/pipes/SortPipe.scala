@@ -46,10 +46,10 @@ private class InnerOrdering(order: Seq[SortDescription])(implicit qtx: QueryStat
   }
 
   private def nextCmp(it: Iterator[SortDescription], a: ExecutionContext, b: ExecutionContext) = {
-    val sort   = it.next()
+    val sort = it.next()
     val column = sort.id
-    val aVal   = a(column)
-    val bVal   = b(column)
+    val aVal = a(column)
+    val bVal = b(column)
     cmp = sort.compareAny(aVal, bVal)
   }
 }

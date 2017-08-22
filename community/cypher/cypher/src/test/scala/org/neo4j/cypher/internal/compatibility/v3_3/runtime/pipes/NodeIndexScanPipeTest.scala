@@ -34,10 +34,10 @@ import org.neo4j.values.virtual.VirtualValues.fromNodeProxy
 
 class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val label       = LabelToken(LabelName("LabelName") _, LabelId(11))
+  private val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   private val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10))
-  private val descriptor  = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
-  private val node        = nodeProxy(11)
+  private val descriptor = IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  private val node = nodeProxy(11)
 
   private def nodeProxy(id: Long) = {
     val node = mock[Node]
@@ -52,7 +52,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe   = NodeIndexScanPipe("n", label, propertyKey)()
+    val pipe = NodeIndexScanPipe("n", label, propertyKey)()
     val result = pipe.createResults(queryState)
 
     // then

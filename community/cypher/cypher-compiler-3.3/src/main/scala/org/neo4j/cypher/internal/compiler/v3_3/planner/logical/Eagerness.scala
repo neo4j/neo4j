@@ -109,7 +109,7 @@ object Eagerness {
 
   def headWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)(
       implicit context: LogicalPlanningContext): LogicalPlan = {
-    val alwaysEager       = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.config.updateStrategy.alwaysEager
     val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInHead(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
@@ -119,7 +119,7 @@ object Eagerness {
 
   def tailWriteReadEagerize(inputPlan: LogicalPlan, query: PlannerQuery)(
       implicit context: LogicalPlanningContext): LogicalPlan = {
-    val alwaysEager       = context.config.updateStrategy.alwaysEager
+    val alwaysEager = context.config.updateStrategy.alwaysEager
     val conflictInHorizon = query.queryGraph.overlapsHorizon(query.horizon)
     if (alwaysEager || conflictInHorizon || query.tail.isDefined && writeReadConflictInTail(query, query.tail.get))
       context.logicalPlanProducer.planEager(inputPlan)
@@ -197,14 +197,14 @@ object Eagerness {
 
   private def deletedRelationshipsOverlap(deleted: Set[IdName], to: QueryGraph)(
       implicit context: LogicalPlanningContext): Boolean = {
-    val relsToRead  = to.allPatternRelationshipsRead
+    val relsToRead = to.allPatternRelationshipsRead
     val relsDeleted = deleted.filter(id => context.semanticTable.isRelationship(id.name))
     relsToRead.nonEmpty && relsDeleted.nonEmpty
   }
 
   private def deletedNodesOverlap(deleted: Set[IdName], to: QueryGraph)(
       implicit context: LogicalPlanningContext): Boolean = {
-    val nodesToRead  = to.allPatternNodesRead
+    val nodesToRead = to.allPatternNodesRead
     val nodesDeleted = deleted.filter(id => context.semanticTable.isNode(id.name))
     nodesToRead.nonEmpty && nodesDeleted.nonEmpty
   }
@@ -243,17 +243,17 @@ object Eagerness {
    * by the writes.
    */
   private def nodeOverlap(currentNode: IdName, headQueryGraph: QueryGraph, tail: PlannerQuery): Boolean = {
-    val labelsOnCurrentNode     = headQueryGraph.allKnownLabelsOnNode(currentNode)
+    val labelsOnCurrentNode = headQueryGraph.allKnownLabelsOnNode(currentNode)
     val propertiesOnCurrentNode = headQueryGraph.allKnownPropertiesOnIdentifier(currentNode).map(_.propertyKey)
-    val labelsToCreate          = tail.queryGraph.createLabels
-    val propertiesToCreate      = tail.queryGraph.createNodeProperties
-    val labelsToRemove          = tail.queryGraph.labelsToRemoveFromOtherNodes(currentNode)
+    val labelsToCreate = tail.queryGraph.createLabels
+    val propertiesToCreate = tail.queryGraph.createNodeProperties
+    val labelsToRemove = tail.queryGraph.labelsToRemoveFromOtherNodes(currentNode)
 
     val tailCreatesNodes = tail.exists(_.queryGraph.createsNodes)
     tail.queryGraph.updatesNodes &&
     (labelsOnCurrentNode.isEmpty && propertiesOnCurrentNode.isEmpty && tailCreatesNodes || //MATCH () CREATE/MERGE (...)?
-    (labelsOnCurrentNode intersect labelsToCreate).nonEmpty ||                             //MATCH (:A) CREATE (:A)?
-    propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) ||                         //MATCH ({prop:42}) CREATE ({prop:...})
+    (labelsOnCurrentNode intersect labelsToCreate).nonEmpty || //MATCH (:A) CREATE (:A)?
+    propertiesOnCurrentNode.exists(propertiesToCreate.overlaps) || //MATCH ({prop:42}) CREATE ({prop:...})
 
     //MATCH (n:A), (m:B) REMOVE n:B
     //MATCH (n:A), (m:A) REMOVE m:A

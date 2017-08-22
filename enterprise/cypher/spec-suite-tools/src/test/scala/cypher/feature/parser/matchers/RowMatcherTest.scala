@@ -27,14 +27,14 @@ class RowMatcherTest extends ParsingTestSupport {
 
   test("should match an empty row") {
     val matcher = new RowMatcher(Map.empty[String, ValueMatcher].asJava)
-    val actual  = Map.empty[String, AnyRef]
+    val actual = Map.empty[String, AnyRef]
 
     matcher should accept(actual.asJava)
   }
 
   test("should match a row with one column") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava)
-    val actual  = Map[String, AnyRef]("key" -> "value")
+    val actual = Map[String, AnyRef]("key" -> "value")
 
     matcher should accept(actual.asJava)
   }
@@ -48,10 +48,10 @@ class RowMatcherTest extends ParsingTestSupport {
   }
 
   test("should match a row with nodes and relationships") {
-    val nodeMatcher         = new NodeMatcher(Set.empty[String].asJava, MapMatcher.EMPTY)
-    val relPropsMatcher     = new MapMatcher(Map[String, ValueMatcher]("visited" -> new BooleanMatcher(true)).asJava)
+    val nodeMatcher = new NodeMatcher(Set.empty[String].asJava, MapMatcher.EMPTY)
+    val relPropsMatcher = new MapMatcher(Map[String, ValueMatcher]("visited" -> new BooleanMatcher(true)).asJava)
     val relationshipMatcher = new RelationshipMatcher("T", relPropsMatcher)
-    val matcher             = new RowMatcher(Map[String, ValueMatcher]("n" -> nodeMatcher, "r" -> relationshipMatcher).asJava)
+    val matcher = new RowMatcher(Map[String, ValueMatcher]("n" -> nodeMatcher, "r" -> relationshipMatcher).asJava)
 
     val actual = Map[String, AnyRef]("n" -> node(), "r" -> relationship("T", Map("visited" -> TRUE)))
 
@@ -60,21 +60,21 @@ class RowMatcherTest extends ParsingTestSupport {
 
   test("should not match if different amount of columns") {
     val matcher = new RowMatcher(Map.empty[String, ValueMatcher].asJava)
-    val actual  = Map[String, AnyRef]("key" -> "value")
+    val actual = Map[String, AnyRef]("key" -> "value")
 
     matcher shouldNot accept(actual.asJava)
   }
 
   test("should not match if different amount of columns 2") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("")).asJava)
-    val actual  = Map.empty[String, AnyRef]
+    val actual = Map.empty[String, AnyRef]
 
     matcher shouldNot accept(actual.asJava)
   }
 
   test("should not match if values are different") {
     val matcher = new RowMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value1")).asJava)
-    val actual  = Map[String, AnyRef]("key" -> "value2")
+    val actual = Map[String, AnyRef]("key" -> "value2")
 
     matcher shouldNot accept(actual.asJava)
   }

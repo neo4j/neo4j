@@ -31,7 +31,7 @@ class NoDuplicatesInReturnItemsTest extends CypherFunSuite with AstConstructionT
     val return1: ReturnItem = AliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, varFor("a")) _
     val return2: ReturnItem = AliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, varFor("b")) _
     val return3: ReturnItem = UnaliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, "42") _
-    val ast: ReturnItems    = ReturnItems(false, Seq(return1, return2, return3)) _
+    val ast: ReturnItems = ReturnItems(false, Seq(return1, return2, return3)) _
 
     condition(ast) shouldBe empty
   }
@@ -40,7 +40,7 @@ class NoDuplicatesInReturnItemsTest extends CypherFunSuite with AstConstructionT
     val return1: ReturnItem = AliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, varFor("a")) _
     val return2: ReturnItem = AliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, varFor("a")) _
     val return3: ReturnItem = UnaliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, "42") _
-    val ast: ReturnItems    = ReturnItems(false, Seq(return1, return2, return3)) _
+    val ast: ReturnItems = ReturnItems(false, Seq(return1, return2, return3)) _
 
     condition(ast) should equal(Seq(s"ReturnItems at ${ast.position} contain duplicate return item: $ast"))
   }
@@ -49,7 +49,7 @@ class NoDuplicatesInReturnItemsTest extends CypherFunSuite with AstConstructionT
     val return1: ReturnItem = AliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, varFor("a")) _
     val return2: ReturnItem = UnaliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, "42") _
     val return3: ReturnItem = UnaliasedReturnItem(UnsignedDecimalIntegerLiteral("42") _, "42") _
-    val ast: ReturnItems    = ReturnItems(false, Seq(return1, return2, return3)) _
+    val ast: ReturnItems = ReturnItems(false, Seq(return1, return2, return3)) _
 
     condition(ast) should equal(Seq(s"ReturnItems at ${ast.position} contain duplicate return item: $ast"))
   }

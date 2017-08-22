@@ -40,9 +40,9 @@ class SingleComponentPlannerTest
     val bNode = IdName("b")
     val pattern =
       PatternRelationship(IdName("r1"), (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg               = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode))
-    val aPlan            = newMockedLogicalPlan("a")
-    val bPlan            = newMockedLogicalPlan("b")
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode))
+    val aPlan = newMockedLogicalPlan("a")
+    val bPlan = newMockedLogicalPlan("b")
     implicit val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
 
     // when
@@ -73,8 +73,8 @@ class SingleComponentPlannerTest
     val hint2 = UsingIndexHint(varFor("b"), lblName("X"), Seq(PropertyKeyName("p")(pos)))(pos)
     val qg =
       QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint1, hint2))
-    val aPlan            = newMockedLogicalPlan("a")
-    val bPlan            = newMockedLogicalPlan("b")
+    val aPlan = newMockedLogicalPlan("a")
+    val bPlan = newMockedLogicalPlan("b")
     implicit val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
 
     // when
@@ -106,10 +106,10 @@ class SingleComponentPlannerTest
     val bNode = IdName("b")
     val pattern =
       PatternRelationship(IdName("r1"), (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint             = UsingJoinHint(Seq(varFor("a")))(pos)
-    val qg               = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
-    val aPlan            = newMockedLogicalPlan("a")
-    val bPlan            = newMockedLogicalPlan("b")
+    val hint = UsingJoinHint(Seq(varFor("a")))(pos)
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
+    val aPlan = newMockedLogicalPlan("a")
+    val bPlan = newMockedLogicalPlan("b")
     implicit val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
 
     // when
@@ -145,10 +145,10 @@ class SingleComponentPlannerTest
     val bNode = IdName("b")
     val pattern =
       PatternRelationship(IdName("r1"), (aNode, bNode), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val hint             = UsingJoinHint(Seq(varFor("b")))(pos)
-    val qg               = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
-    val aPlan            = newMockedLogicalPlan("a")
-    val bPlan            = newMockedLogicalPlan("b")
+    val hint = UsingJoinHint(Seq(varFor("b")))(pos)
+    val qg = QueryGraph(patternRelationships = Set(pattern), patternNodes = Set(aNode, bNode), hints = Set(hint))
+    val aPlan = newMockedLogicalPlan("a")
+    val bPlan = newMockedLogicalPlan("b")
     implicit val context = newMockedLogicalPlanningContext(planContext = mock[PlanContext])
 
     // when

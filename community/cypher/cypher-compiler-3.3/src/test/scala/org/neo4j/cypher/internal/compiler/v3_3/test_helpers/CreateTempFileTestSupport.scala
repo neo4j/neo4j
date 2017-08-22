@@ -129,7 +129,7 @@ trait CreateTempFileTestSupport extends CypherTestSupport {
 
   def zipWriter(file: File): PrintWriter = {
     val zos = new ZipOutputStream(new FileOutputStream(file.jfile))
-    val ze  = new ZipEntry(file.name)
+    val ze = new ZipEntry(file.name)
     zos.putNextEntry(ze)
 
     new PrintWriter(new OutputStreamWriter(zos))

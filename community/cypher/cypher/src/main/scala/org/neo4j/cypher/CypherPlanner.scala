@@ -24,11 +24,11 @@ sealed abstract class CypherPlanner(plannerName: String) extends CypherOption(pl
 case object CypherPlanner extends CypherOptionCompanion[CypherPlanner] {
 
   case object default extends CypherPlanner("default")
-  case object cost    extends CypherPlanner("cost")
-  case object greedy  extends CypherPlanner("greedy")
-  case object idp     extends CypherPlanner("idp")
-  case object dp      extends CypherPlanner("dp")
-  case object rule    extends CypherPlanner("rule")
+  case object cost extends CypherPlanner("cost")
+  case object greedy extends CypherPlanner("greedy")
+  case object idp extends CypherPlanner("idp")
+  case object dp extends CypherPlanner("dp")
+  case object rule extends CypherPlanner("rule")
 
   val all: Set[CypherPlanner] = Set(cost, greedy, idp, dp, rule)
 }

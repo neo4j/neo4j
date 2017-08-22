@@ -55,12 +55,12 @@ trait LogicalPlanningTestSupport
     with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  val monitors          = mock[Monitors]
-  val parser            = new CypherParser
+  val monitors = mock[Monitors]
+  val parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  val astRewriter       = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
-  val mockRel           = newPatternRelationship("a", "b", "r")
-  val solved            = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  val mockRel = newPatternRelationship("a", "b", "r")
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
 
   def solvedWithEstimation(cardinality: Cardinality) = CardinalityEstimation.lift(PlannerQuery.empty, cardinality)
 
@@ -227,14 +227,14 @@ trait LogicalPlanningTestSupport
       outputSignature = Some(IndexedSeq(FieldSignature("all", CTInteger))),
       accessMode = ProcedureReadOnlyAccess(Array.empty)
     )
-    val mkException                                             = new SyntaxExceptionCreator(query, Some(pos))
-    val procs: (QualifiedName) => ProcedureSignature            = procLookup.getOrElse(_ => signature)
+    val mkException = new SyntaxExceptionCreator(query, Some(pos))
+    val procs: (QualifiedName) => ProcedureSignature = procLookup.getOrElse(_ => signature)
     val funcs: (QualifiedName) => Option[UserFunctionSignature] = fcnLookup.getOrElse(_ => None)
-    val planContext                                             = new TestSignatureResolvingPlanContext(procs, funcs)
-    val state                                                   = LogicalPlanState(query, None, CostBasedPlannerName.default)
+    val planContext = new TestSignatureResolvingPlanContext(procs, funcs)
+    val state = LogicalPlanState(query, None, CostBasedPlannerName.default)
 
     val context = ContextHelper.create(exceptionCreator = mkException, planContext = planContext)
-    val output  = pipeLine.transform(state, context)
+    val output = pipeLine.transform(state, context)
 
     output.unionQuery
   }

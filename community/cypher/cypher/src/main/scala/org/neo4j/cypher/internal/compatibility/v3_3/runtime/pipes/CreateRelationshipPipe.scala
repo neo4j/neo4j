@@ -51,9 +51,9 @@ abstract class BaseRelationshipPipe(src: Pipe,
     input.map(createRelationship(_, state))
 
   private def createRelationship(context: ExecutionContext, state: QueryState): ExecutionContext = {
-    val start        = getNode(context, startNode)
-    val end          = getNode(context, endNode)
-    val typeId       = typ.typ(state.query)
+    val start = getNode(context, startNode)
+    val end = getNode(context, endNode)
+    val typeId = typ.typ(state.query)
     val relationship = state.query.createRelationship(start.id(), end.id(), typeId)
     relationship.getType // we do this to make sure the relationship is loaded from the store into this object
     setProperties(context, state, relationship.getId)

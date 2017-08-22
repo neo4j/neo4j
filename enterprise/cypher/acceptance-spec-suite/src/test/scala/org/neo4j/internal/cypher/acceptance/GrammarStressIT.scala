@@ -43,13 +43,13 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   //Since we can create pretty tricky patterns we add a timeout
   //to keep the running time of the test down
-  private val TIMEOUT_MS         = 5000
+  private val TIMEOUT_MS = 5000
   private val NESTING_DEPTH: Int = 10
-  private def numberOfTestRuns   = 100
+  private def numberOfTestRuns = 100
   private def maxDiscardedInputs = 500
-  private def maxSize            = 10
-  private val NODES_PER_LAYER    = 10
-  private val NUM_LAYERS         = 3
+  private def maxSize = 10
+  private val NODES_PER_LAYER = 10
+  private val NUM_LAYERS = 3
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns,
@@ -222,9 +222,9 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
   def patternGen(d: Int, labelGen: Gen[Set[String]]): Gen[Pattern] =
     for {
       nodeName <- Gen.option(Gen.const("n" + d))
-      labels   <- labelGen
-      props    <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
-      tail     <- tailPatternGen(d + 1)
+      labels <- labelGen
+      props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.choose(1, NODES_PER_LAYER)))
+      tail <- tailPatternGen(d + 1)
     } yield Pattern(NodePattern(nodeName, labels, props), tail)
 
   def tailPatternGen(d: Int): Gen[Option[(RelPattern, Pattern)]] =
@@ -235,12 +235,12 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   def relPatternGen(d: Int): Gen[RelPattern] =
     for {
-      relName   <- Gen.option(Gen.const("r" + d))
-      relType   <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
-      props     <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
+      relName <- Gen.option(Gen.const("r" + d))
+      relType <- Gen.listOf(Gen.frequency(100 -> Gen.const("T" + d), 1 -> Gen.const("Y" + d))).map(_.toSet)
+      props <- Gen.mapOf(Gen.zip(Gen.const("p" + d), Gen.frequency(100 -> Gen.const(d), 1 -> Gen.const("'x'"))))
       direction <- Gen.oneOf(SemanticDirection.OUTGOING, SemanticDirection.INCOMING, SemanticDirection.BOTH)
-      min       <- Gen.choose(1, 2)
-      max       <- Gen.choose(min, min + 1)
+      min <- Gen.choose(1, 2)
+      max <- Gen.choose(min, min + 1)
       len: LengthPattern <- Gen
         .oneOf(DefaultLength(direction), MaxLength(direction, max), MinMaxLength(direction, min, max))
     } yield RelPattern.relPattern(relName, relType, props, len)
@@ -250,7 +250,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
       .listOf(
         Gen.frequency(
           100 -> Gen.const("L" + d),
-          1   -> Gen.const("X" + d)
+          1 -> Gen.const("X" + d)
         ))
       .map(_.toSet)
 
@@ -298,15 +298,15 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
 
   def matchWhere: Gen[String] =
     for {
-      pattern         <- patterns
+      pattern <- patterns
       predicateClause <- predicateForPatterns(pattern)
     } yield s"MATCH $pattern$predicateClause ${returnClause(pattern)}"
 
   def optionalMatchWhere: Gen[String] =
     for {
-      pattern                 <- patterns
-      optionalPattern         <- patterns
-      predicateClause         <- predicateForPatterns(pattern)
+      pattern <- patterns
+      optionalPattern <- patterns
+      predicateClause <- predicateForPatterns(pattern)
       optionalPredicateClause <- predicateForPatterns(pattern, optionalPattern)
     } yield
       s"MATCH $pattern$predicateClause OPTIONAL MATCH $optionalPattern$optionalPredicateClause ${returnClause(pattern, optionalPattern)}"
@@ -334,7 +334,7 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with N
         .asInstanceOf[String]
       if (runtimeUsed == "COMPILED") {
         val resultInterpreted = innerExecute(s"CYPHER runtime=interpreted $query")
-        val resultCompiled    = innerExecute(s"CYPHER runtime=compiled $query")
+        val resultCompiled = innerExecute(s"CYPHER runtime=compiled $query")
         assertResultsAreSame(resultCompiled,
                              resultInterpreted,
                              query,

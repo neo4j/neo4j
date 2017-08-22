@@ -95,7 +95,7 @@ object literalReplacement {
       acc =>
         if (acc.contains(l)) (acc, None)
         else {
-          val parameter           = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
+          val parameter = ast.Parameter(s"  AUTOLIST${acc.size}", CTList(CTAny))(l.position)
           val values: Seq[AnyRef] = l.expressions.map(_.asInstanceOf[Literal].value).toIndexedSeq
           (acc + (l -> LiteralReplacement(parameter, values)), None)
         }
@@ -127,6 +127,6 @@ object literalReplacement {
 }
 
 sealed trait LiteralExtraction
-case object Forced        extends LiteralExtraction
+case object Forced extends LiteralExtraction
 case object IfNoParameter extends LiteralExtraction
-case object Never         extends LiteralExtraction
+case object Never extends LiteralExtraction

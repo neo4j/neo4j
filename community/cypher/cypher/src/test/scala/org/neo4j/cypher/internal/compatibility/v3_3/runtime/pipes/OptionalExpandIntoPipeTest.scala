@@ -40,16 +40,16 @@ import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
 
 class OptionalExpandIntoPipeTest extends CypherFunSuite {
 
-  val startNode        = newMockedNode(1)
-  val endNode1         = newMockedNode(2)
-  val endNode2         = newMockedNode(3)
-  val endNode3         = newMockedNode(4)
-  val relationship1    = newMockedRelationship(1, startNode, endNode1)
-  val relationship2    = newMockedRelationship(2, startNode, endNode2)
-  val relationship3    = newMockedRelationship(3, startNode, endNode3)
+  val startNode = newMockedNode(1)
+  val endNode1 = newMockedNode(2)
+  val endNode2 = newMockedNode(3)
+  val endNode3 = newMockedNode(4)
+  val relationship1 = newMockedRelationship(1, startNode, endNode1)
+  val relationship2 = newMockedRelationship(2, startNode, endNode2)
+  val relationship3 = newMockedRelationship(3, startNode, endNode3)
   val selfRelationship = newMockedRelationship(4, startNode, startNode)
-  val query            = mock[QueryContext]
-  val queryState       = QueryStateHelper.emptyWith(query = query)
+  val query = mock[QueryContext]
+  val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("should support expand between two nodes with a relationship") {
     // given
@@ -201,7 +201,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
   test("expand into null should return nulled row") {
     // given
     val node: Node = mock[Node]
-    val input      = new FakePipe(Iterator(Map("a" -> node, "b" -> null)))
+    val input = new FakePipe(Iterator(Map("a" -> node, "b" -> null)))
 
     // when
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input,
@@ -219,7 +219,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
   test("expand null into something should return nulled row") {
     // given
     val node: Node = mock[Node]
-    val input      = new FakePipe(Iterator(Map("a" -> null, "b" -> node)))
+    val input = new FakePipe(Iterator(Map("a" -> null, "b" -> node)))
 
     // when
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input,

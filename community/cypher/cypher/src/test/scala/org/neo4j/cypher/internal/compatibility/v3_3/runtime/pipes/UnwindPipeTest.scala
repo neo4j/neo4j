@@ -30,15 +30,15 @@ import scala.collection.JavaConverters._
 class UnwindPipeTest extends CypherFunSuite {
 
   private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
-    val source     = new FakePipe(data, "x" -> CTList(CTInteger))
+    val source = new FakePipe(data, "x" -> CTList(CTInteger))
     val unwindPipe = UnwindPipe(source, Variable("x"), "y")()
     unwindPipe.createResults(QueryStateHelper.empty).toList
   }
 
   test("should unwind collection of numbers") {
     unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should equal(
-      List(Map("y"               -> intValue(1), "x" -> list(intValue(1), intValue(2))),
-           Map("y"               -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
+      List(Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
+           Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
   }
 
   test("should handle null") {

@@ -43,14 +43,14 @@ case class EagerAggregationPipe(source: Pipe,
 
     implicit val s = state
 
-    val result                               = MutableMap[AnyValue, Seq[AggregationFunction]]()
-    val keyNames                             = keyExpressions.toList
+    val result = MutableMap[AnyValue, Seq[AggregationFunction]]()
+    val keyNames = keyExpressions.toList
     val aggregationNames: IndexedSeq[String] = aggregations.keys.toIndexedSeq
-    val keyNamesSize                         = keyNames.size
-    val mapSize                              = keyNamesSize + aggregationNames.size
+    val keyNamesSize = keyNames.size
+    val mapSize = keyNamesSize + aggregationNames.size
 
     def createEmptyResult(params: Map[String, Any]): Iterator[ExecutionContext] = {
-      val newMap                       = MutableMaps.empty
+      val newMap = MutableMaps.empty
       val aggregationNamesAndFunctions = aggregationNames zip aggregations.map(_._2.createAggregationFunction.result)
 
       aggregationNamesAndFunctions.toMap
@@ -72,12 +72,12 @@ case class EagerAggregationPipe(source: Pipe,
         case 2 =>
           val t2 = key.asInstanceOf[ListValue]
           newMap += keyNames.head -> t2.head +=
-            keyNames.last         -> t2.last
+            keyNames.last -> t2.last
         case 3 =>
           val t3 = key.asInstanceOf[ListValue]
           newMap += keyNames.head -> t3.value(0) +=
-            keyNames.tail.head    -> t3.value(1) +=
-            keyNames.last         -> t3.value(2)
+            keyNames.tail.head -> t3.value(1) +=
+            keyNames.last -> t3.value(2)
         case _ =>
           val listOfValues = key.asInstanceOf[ListValue]
           for (i <- 0 until keyNamesSize) {

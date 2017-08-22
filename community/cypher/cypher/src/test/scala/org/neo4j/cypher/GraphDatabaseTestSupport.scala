@@ -49,7 +49,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherFunSuite =>
 
   var graph: GraphDatabaseCypherService = null
-  var nodes: List[Node]                 = null
+  var nodes: List[Node] = null
 
   def databaseConfig(): Map[Setting[_], String] = Map()
 
@@ -222,40 +222,40 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def registerProcedure[T <: CallableProcedure](qualifiedName: String)(f: ProcedureSignature.Builder => T): T = {
-    val parts     = qualifiedName.split('.')
+    val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
-    val name      = parts.last
+    val name = parts.last
     registerProcedure(namespace: _*)(name)(f)
   }
 
   def registerProcedure[T <: CallableProcedure](namespace: String*)(name: String)(
       f: ProcedureSignature.Builder => T): T = {
     val builder = ProcedureSignature.procedureSignature(namespace.toArray, name)
-    val proc    = f(builder)
+    val proc = f(builder)
     kernelAPI.registerProcedure(proc)
     proc
   }
 
   def registerUserDefinedFunction[T <: CallableUserFunction](qualifiedName: String)(
       f: UserFunctionSignature.Builder => T): T = {
-    val parts     = qualifiedName.split('.')
+    val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
-    val name      = parts.last
+    val name = parts.last
     registerUserFunction(namespace: _*)(name)(f)
   }
 
   def registerUserDefinedAggregationFunction[T <: CallableUserAggregationFunction](qualifiedName: String)(
       f: UserFunctionSignature.Builder => T): T = {
-    val parts     = qualifiedName.split('.')
+    val parts = qualifiedName.split('.')
     val namespace = parts.reverse.tail.reverse
-    val name      = parts.last
+    val name = parts.last
     registerUserAggregationFunction(namespace: _*)(name)(f)
   }
 
   def registerUserFunction[T <: CallableUserFunction](namespace: String*)(name: String)(
       f: UserFunctionSignature.Builder => T): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
-    val func    = f(builder)
+    val func = f(builder)
     kernelAPI.registerUserFunction(func)
     func
   }
@@ -263,7 +263,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   def registerUserAggregationFunction[T <: CallableUserAggregationFunction](namespace: String*)(name: String)(
       f: UserFunctionSignature.Builder => T): T = {
     val builder = UserFunctionSignature.functionSignature(namespace.toArray, name)
-    val func    = f(builder)
+    val func = f(builder)
     kernelAPI.registerUserAggregationFunction(func)
     func
   }

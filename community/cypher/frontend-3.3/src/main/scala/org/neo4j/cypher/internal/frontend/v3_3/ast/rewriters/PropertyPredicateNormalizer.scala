@@ -57,8 +57,8 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   }
 
   private def varLengthPropertyPredicates(id: Variable, props: Expression, patternPosition: InputPosition): Expression = {
-    val idName      = FreshIdNameGenerator.name(patternPosition)
-    val newId       = Variable(idName)(id.position)
+    val idName = FreshIdNameGenerator.name(patternPosition)
+    val newId = Variable(idName)(id.position)
     val expressions = propertyPredicates(newId, props)
     val conjunction = conjunct(expressions)
     AllIterablePredicate(newId, id.copyId, Some(conjunction))(props.position)

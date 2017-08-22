@@ -87,8 +87,8 @@ class PipeExecutionPlanBuilder(clock: Clock,
                                          idMap = idMap,
                                          expressionConverters = expressionConverters)
 
-    val planStack  = new mutable.Stack[LogicalPlan]()
-    val pipeStack  = new mutable.Stack[Pipe]()
+    val planStack = new mutable.Stack[LogicalPlan]()
+    val pipeStack = new mutable.Stack[Pipe]()
     var comingFrom = plan
     def populate(plan: LogicalPlan) = {
       var current = plan

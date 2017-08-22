@@ -44,21 +44,21 @@ class LiteralReplacementTest extends CypherFunSuite {
   }
 
   test("should extract literals in return clause") {
-    assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0"           -> 1))
-    assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0"   -> 1.1))
-    assertRewrite(s"RETURN true as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0"      -> true))
-    assertRewrite(s"RETURN false as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0"     -> false))
-    assertRewrite("RETURN 'apa' as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0"   -> "apa"))
+    assertRewrite(s"RETURN 1 as result", s"RETURN {`  AUTOINT0`} as result", Map("  AUTOINT0" -> 1))
+    assertRewrite(s"RETURN 1.1 as result", s"RETURN {`  AUTODOUBLE0`} as result", Map("  AUTODOUBLE0" -> 1.1))
+    assertRewrite(s"RETURN true as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0" -> true))
+    assertRewrite(s"RETURN false as result", s"RETURN {`  AUTOBOOL0`} as result", Map("  AUTOBOOL0" -> false))
+    assertRewrite("RETURN 'apa' as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("RETURN \"apa\" as result", "RETURN {`  AUTOSTRING0`} as result", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("RETURN [1, 2, 3] as result", "RETURN {`  AUTOLIST0`} as result", Map("  AUTOLIST0"   -> Seq(1, 2, 3)))
+    assertRewrite("RETURN [1, 2, 3] as result", "RETURN {`  AUTOLIST0`} as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
   }
 
   test("should extract literals in match clause") {
-    assertRewrite(s"MATCH ({a:1})", s"MATCH ({a:{`  AUTOINT0`}})", Map("  AUTOINT0"           -> 1))
-    assertRewrite(s"MATCH ({a:1.1})", s"MATCH ({a:{`  AUTODOUBLE0`}})", Map("  AUTODOUBLE0"   -> 1.1))
-    assertRewrite(s"MATCH ({a:true})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0"      -> true))
-    assertRewrite(s"MATCH ({a:false})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0"     -> false))
-    assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0"   -> "apa"))
+    assertRewrite(s"MATCH ({a:1})", s"MATCH ({a:{`  AUTOINT0`}})", Map("  AUTOINT0" -> 1))
+    assertRewrite(s"MATCH ({a:1.1})", s"MATCH ({a:{`  AUTODOUBLE0`}})", Map("  AUTODOUBLE0" -> 1.1))
+    assertRewrite(s"MATCH ({a:true})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> true))
+    assertRewrite(s"MATCH ({a:false})", s"MATCH ({a:{`  AUTOBOOL0`}})", Map("  AUTOBOOL0" -> false))
+    assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:{`  AUTOSTRING0`}})", Map("  AUTOSTRING0" -> "apa"))
     assertRewrite("MATCH (n) WHERE ID(n) IN [1, 2, 3]",
                   "MATCH (n) WHERE ID(n) IN {`  AUTOLIST0`}",
@@ -77,9 +77,9 @@ class LiteralReplacementTest extends CypherFunSuite {
     assertRewrite(
       "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
       "create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}})",
-      Map("  AUTOINT0"    -> 0,
+      Map("  AUTOINT0" -> 0,
           "  AUTOSTRING1" -> "name 0",
-          "  AUTOINT2"    -> 10000000,
+          "  AUTOINT2" -> 10000000,
           "  AUTOSTRING3" -> "a very long string 0")
     )
   }
@@ -97,15 +97,15 @@ class LiteralReplacementTest extends CypherFunSuite {
       s"create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (b {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (a)-[:KNOWS {since: 0}]->(b)",
       s"create (a {a:{`  AUTOINT0`}, b:{`  AUTOSTRING1`}, c:{`  AUTOINT2`}, d:{`  AUTOSTRING3`}}) create (b {a:{`  AUTOINT4`}, b:{`  AUTOSTRING5`}, c:{`  AUTOINT6`}, d:{`  AUTOSTRING7`}}) create (a)-[:KNOWS {since: {`  AUTOINT8`}}]->(b)",
       Map(
-        "  AUTOINT0"    -> 0,
+        "  AUTOINT0" -> 0,
         "  AUTOSTRING1" -> "name 0",
-        "  AUTOINT2"    -> 10000000,
+        "  AUTOINT2" -> 10000000,
         "  AUTOSTRING3" -> "a very long string 0",
-        "  AUTOINT4"    -> 0,
+        "  AUTOINT4" -> 0,
         "  AUTOSTRING5" -> "name 0",
-        "  AUTOINT6"    -> 10000000,
+        "  AUTOINT6" -> 10000000,
         "  AUTOSTRING7" -> "a very long string 0",
-        "  AUTOINT8"    -> 0
+        "  AUTOINT8" -> 0
       )
     )
   }

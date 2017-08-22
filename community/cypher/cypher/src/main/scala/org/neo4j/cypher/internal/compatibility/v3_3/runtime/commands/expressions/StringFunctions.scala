@@ -150,8 +150,8 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
     extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal        = asString(value)
-    val searchVal      = asString(search(m))
+    val origVal = asString(value)
+    val searchVal = asString(search(m))
     val replaceWithVal = asString(replaceWith(m))
 
     if (searchVal == null || replaceWithVal == null) {
@@ -175,7 +175,7 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
 case class SplitFunction(orig: Expression, separator: Expression) extends NullInNullOutExpression(orig) {
 
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal      = asString(orig(m))
+    val origVal = asString(orig(m))
     val separatorVal = asString(separator(m))
 
     if (origVal == null || separatorVal == null) {
@@ -210,7 +210,7 @@ case class SplitFunction(orig: Expression, separator: Expression) extends NullIn
 case class LeftFunction(orig: Expression, length: Expression) extends NullInNullOutExpression(orig) with NumericHelper {
 
   override def compute(value: AnyValue, m: ExecutionContext)(implicit state: QueryState): AnyValue = {
-    val origVal  = asString(orig(m))
+    val origVal = asString(orig(m))
     val startVal = 0
     // if length goes off the end of the string, let's be nice and handle that.
     val lengthVal =

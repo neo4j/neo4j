@@ -60,7 +60,7 @@ case class CostCompatibility(graph: GraphDatabaseQueryService,
       case _                          => None
     }
 
-    val logger   = new StringInfoLogger(log)
+    val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
     CypherCompilerFactory.costBasedCompiler(graph,
                                             config,

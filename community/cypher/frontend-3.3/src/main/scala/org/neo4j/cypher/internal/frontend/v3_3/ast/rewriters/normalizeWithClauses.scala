@@ -53,13 +53,13 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
   private val clauseRewriter: (Clause => Seq[Clause]) = {
     case clause @ With(_, ri, None, _, _, None) =>
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
-      val initialReturnItems                         = unaliasedReturnItems ++ aliasedReturnItems
+      val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       Seq(clause.copy(returnItems = ri.copy(items = initialReturnItems)(ri.position))(clause.position))
 
     case clause @ With(distinct, ri, orderBy, skip, limit, where) =>
       clause.verifyOrderByAggregationUse((s, i) => throw mkException(s, i))
       val (unaliasedReturnItems, aliasedReturnItems) = partitionReturnItems(ri.items)
-      val initialReturnItems                         = unaliasedReturnItems ++ aliasedReturnItems
+      val initialReturnItems = unaliasedReturnItems ++ aliasedReturnItems
       val (introducedReturnItems, updatedOrderBy, updatedWhere) =
         aliasOrderByAndWhere(aliasedReturnItems.map(i => i.expression -> i.alias.get.copyId).toMap, orderBy, where)
       val requiredVariablesForOrderBy = updatedOrderBy
@@ -186,7 +186,7 @@ case class normalizeWithClauses(mkException: (String, InputPosition) => CypherEx
 
   private def aliasSortItem(existingAliases: Map[Expression, Variable],
                             sortItem: SortItem): (Option[AliasedReturnItem], SortItem) = {
-    val expression                             = sortItem.expression
+    val expression = sortItem.expression
     val (maybeReturnItem, replacementVariable) = aliasExpression(existingAliases, expression)
 
     val newSortItem = sortItem.endoRewrite(topDown(Rewriter.lift {

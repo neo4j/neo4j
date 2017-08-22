@@ -43,9 +43,9 @@ case object projectFreshSortExpressions extends Rewriter {
       Seq(clause)
 
     case clause @ With(_, ri, orderBy, skip, limit, where) =>
-      val allAliases           = ri.aliases
+      val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
-      val evaluatedAliases     = allAliases -- passedThroughAliases
+      val evaluatedAliases = allAliases -- passedThroughAliases
 
       if (evaluatedAliases.isEmpty) {
         Seq(clause)

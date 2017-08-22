@@ -64,7 +64,7 @@ class PatternNode(key: String,
                dir: SemanticDirection,
                props: Map[String, Expression] = Map.empty): PatternRelationship = {
     val relProps = props.map { case (k, v) => UnresolvedProperty(k) -> v }.toMap
-    val rel      = new PatternRelationship(key, this, other, relType, relProps, dir)
+    val rel = new PatternRelationship(key, this, other, relType, relProps, dir)
     relationships.add(rel)
     other.relationships.add(rel)
     rel
@@ -127,7 +127,7 @@ class PatternNode(key: String,
         val propertyId = token.getOptId(state.query)
         if (propertyId.isEmpty) false // The property doesn't exist in the graph
         else {
-          val value         = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
+          val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
           val expectedValue = expression(execCtx)
           value == expectedValue
         }

@@ -47,7 +47,7 @@ class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with Ast
 
   test("should execute read-only procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber) {}
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -56,7 +56,7 @@ class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with Ast
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0   -> "r")
+      resultIndices = Seq(0 -> "r")
     )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
@@ -71,7 +71,7 @@ class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with Ast
 
   test("should execute read-write procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val pipe = ProcedureCallPipe(
       source = lhs,
@@ -80,7 +80,7 @@ class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with Ast
       argExprs = Seq(Variable("a")),
       rowProcessing = FlatMapAndAppendToRow,
       resultSymbols = Seq("r" -> CTString),
-      resultIndices = Seq(0   -> "r")
+      resultIndices = Seq(0 -> "r")
     )()
 
     val qtx = new FakeQueryContext(procedureName, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
@@ -94,7 +94,7 @@ class ProcedureCallPipeTest extends CypherFunSuite with PipeTestSupport with Ast
 
   test("should execute void procedure calls") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val pipe = ProcedureCallPipe(
       source = lhs,

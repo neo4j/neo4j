@@ -105,7 +105,7 @@ class ProbeTable() {
 
   def addNull(context: ExecutionContext) = rowsWithNullInKey += context
 
-  val EMPTY                        = mutable.MutableList.empty
+  val EMPTY = mutable.MutableList.empty
   def apply(key: IndexedSeq[Long]) = table.getOrElse(key, EMPTY)
 
   def keySet: collection.Set[IndexedSeq[Long]] = table.keySet

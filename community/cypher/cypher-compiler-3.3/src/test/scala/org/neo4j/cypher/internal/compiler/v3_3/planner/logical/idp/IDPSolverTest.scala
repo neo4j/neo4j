@@ -56,7 +56,7 @@ class IDPSolverTest extends CypherFunSuite {
 
   test("Compacts table at size limit") {
     var table: IDPTable[String] = null
-    val monitor                 = mock[IDPSolverMonitor]
+    val monitor = mock[IDPSolverMonitor]
     val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep,
@@ -108,7 +108,7 @@ class IDPSolverTest extends CypherFunSuite {
   }
 
   case class TestIDPSolverMonitor() extends IDPSolverMonitor {
-    var maxStartIteration  = 0
+    var maxStartIteration = 0
     var foundPlanIteration = 0
 
     override def startIteration(iteration: Int): Unit = maxStartIteration = iteration
@@ -120,7 +120,7 @@ class IDPSolverTest extends CypherFunSuite {
 
   def runTimeLimitedSolver(iterationDuration: Int): Int = {
     var table: IDPTable[String] = null
-    val monitor                 = TestIDPSolverMonitor()
+    val monitor = TestIDPSolverMonitor()
     val solver = new IDPSolver[Char, String, Unit](
       monitor = monitor,
       generator = stringAppendingSolverStep,
@@ -151,7 +151,7 @@ class IDPSolverTest extends CypherFunSuite {
 
   test("Compacts table at time limit") {
     val shortSolverIterations = runTimeLimitedSolver(10)
-    val longSolverIterations  = runTimeLimitedSolver(1000)
+    val longSolverIterations = runTimeLimitedSolver(1000)
     shortSolverIterations should be > longSolverIterations
   }
 
@@ -167,7 +167,7 @@ class IDPSolverTest extends CypherFunSuite {
         implicit context: Unit): Iterator[String] = {
       val goalSize = goal.size
       for (leftGoal <- goal.subsets if leftGoal.size <= goalSize;
-           lhs      <- table(leftGoal);
+           lhs <- table(leftGoal);
            rightGoal = goal &~ leftGoal; // bit set -- operator
            rhs <- table(rightGoal);
            candidate = lhs ++ rhs if isSorted(candidate))

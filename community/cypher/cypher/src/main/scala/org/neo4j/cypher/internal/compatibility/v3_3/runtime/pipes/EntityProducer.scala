@@ -33,8 +33,8 @@ object EntityProducer {
   def apply[T <: PropertyContainer](nameStr: String, argument: Argument)(
       f: (ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
-      def producerType                              = nameStr
-      def arguments: Seq[Argument]                  = Seq(argument)
+      def producerType = nameStr
+      def arguments: Seq[Argument] = Seq(argument)
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
     }
 }

@@ -34,7 +34,7 @@ object simpleExpressionEvaluator extends ExpressionEvaluator {
 
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
-    val converters  = new ExpressionConverters(CommunityExpressionConverter)
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
     val commandExpr = converters.toCommandExpression(expr)
 
     implicit val emptyQueryState = new QueryState(query = null,

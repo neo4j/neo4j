@@ -67,14 +67,14 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def distinctPipe = {
     val iter = new LazyIterator[Map[String, Any]](10, (n) => Map("x" -> n))
-    val src  = new FakePipe(iter, "x" -> CTNumber)
+    val src = new FakePipe(iter, "x" -> CTNumber)
     val pipe = new DistinctPipe(src, Map("x" -> Variable("x")))()
     (pipe, iter)
   }
 
   private def filterPipe = {
     val (iter, src) = emptyFakes
-    val pipe        = new FilterPipe(src, True())()
+    val pipe = new FilterPipe(src, True())()
     (pipe, iter)
   }
 
@@ -93,7 +93,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
     val n1 = mock[Node]
     when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
     val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))
-    val src  = new FakePipe(iter, "start" -> CTNode, "end" -> CTNode)
+    val src = new FakePipe(iter, "start" -> CTNode, "end" -> CTNode)
     val pipe = new ShortestPathPipe(src, shortestPath)()
     (pipe, iter)
   }
@@ -101,7 +101,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
   private val sortByX: List[SortItem] = List(SortItem(Variable("x"), ascending = true))
 
   private def startPipe = {
-    val node        = mock[Node]
+    val node = mock[Node]
     val (iter, src) = emptyFakes
     val pipe = NodeStartPipe(
       src,
@@ -119,7 +119,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def unionPipe = {
     val (iter, src) = emptyFakes
-    val (_, src2)   = emptyFakes
+    val (_, src2) = emptyFakes
 
     val pipe = UnionPipe(src, src2)()
 
@@ -128,7 +128,7 @@ class PipeLazynessTest extends GraphDatabaseFunSuite with QueryStateTestSupport 
 
   private def emptyFakes: (LazyIterator[Map[String, Any]], FakePipe) = {
     val iter = new LazyIterator[Map[String, Any]](10, (x) => Map("x" -> x))
-    val src  = new FakePipe(iter, "x" -> CTNumber)
+    val src = new FakePipe(iter, "x" -> CTNumber)
     (iter, src)
   }
 }

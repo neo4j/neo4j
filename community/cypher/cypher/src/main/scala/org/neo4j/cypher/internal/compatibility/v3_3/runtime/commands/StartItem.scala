@@ -46,8 +46,8 @@ abstract class StartItem(val variableName: String, val arguments: Seq[Argument])
 
 trait ReadOnlyStartItem {
   // AstNode implementations
-  def children: Seq[AstNode[_]]                         = Nil
-  def symbolTableDependencies: Set[String]              = Set.empty
+  def children: Seq[AstNode[_]] = Nil
+  def symbolTableDependencies: Set[String] = Set.empty
   def rewrite(f: (Expression) => Expression): this.type = this
 }
 
@@ -86,7 +86,7 @@ trait Hint
 
 sealed abstract class SchemaIndexKind
 
-case object AnyIndex    extends SchemaIndexKind
+case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
 case class SchemaIndex(variable: String,

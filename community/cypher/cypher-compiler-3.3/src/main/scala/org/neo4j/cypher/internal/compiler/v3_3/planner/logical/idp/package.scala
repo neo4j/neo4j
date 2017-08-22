@@ -22,6 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_3.planner.logical
 import scala.collection.immutable.BitSet
 
 package object idp {
-  type Goal                       = BitSet
+  type Goal = BitSet
   type Seed[SolvableItem, Result] = Iterable[(Set[SolvableItem], Result)]
 }

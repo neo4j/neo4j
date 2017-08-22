@@ -40,9 +40,9 @@ import scala.collection.JavaConverters._
 
 class ContainerIndexTest extends CypherFunSuite {
 
-  val qtx                    = mock[QueryContext]
-  implicit val state         = QueryStateHelper.empty.withQueryContext(qtx)
-  val ctx                    = ExecutionContext.empty
+  val qtx = mock[QueryContext]
+  implicit val state = QueryStateHelper.empty.withQueryContext(qtx)
+  val ctx = ExecutionContext.empty
   val expectedNull: AnyValue = Values.NO_VALUE
 
   test("handles collection lookup") {

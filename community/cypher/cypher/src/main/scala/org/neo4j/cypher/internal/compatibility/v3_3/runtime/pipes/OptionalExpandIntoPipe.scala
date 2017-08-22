@@ -57,7 +57,7 @@ case class OptionalExpandIntoPipe(source: Pipe,
                 .get(fromNode, n, dir)
                 .getOrElse(findRelationships(state.query, fromNode, n, relCache, dir, types.types(state.query)))
 
-              val it           = relationships.toIterator
+              val it = relationships.toIterator
               val filteredRows = ListBuffer.empty[ExecutionContext]
               while (it.hasNext) {
                 val candidateRow = row.newWith1(relName, it.next())

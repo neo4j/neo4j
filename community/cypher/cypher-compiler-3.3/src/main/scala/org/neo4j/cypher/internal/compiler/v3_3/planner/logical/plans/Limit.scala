@@ -34,5 +34,5 @@ case class Limit(left: LogicalPlan, count: Expression, ties: Ties)(val solved: P
 
 // Using a trait instead of a bool to make the code more readable
 sealed trait Ties
-case object IncludeTies      extends Ties
+case object IncludeTies extends Ties
 case object DoNotIncludeTies extends Ties

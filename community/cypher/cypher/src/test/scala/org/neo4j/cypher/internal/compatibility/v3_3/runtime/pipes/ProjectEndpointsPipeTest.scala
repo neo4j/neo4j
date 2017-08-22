@@ -41,7 +41,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
   val node3 = newMockedNode(3)
   val node4 = newMockedNode(4)
 
-  val query      = mock[QueryContext]
+  val query = mock[QueryContext]
   val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("projects endpoints of a directed, simple relationship") {
@@ -385,7 +385,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
 
-    val rels         = Seq(rel1, rel2, rel3)
+    val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)
 
     val left = newMockedPipe("r", row("r" -> rels))
@@ -405,7 +405,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // then
     result should beEquivalentTo(
       List(
-        Map("r" -> rels, "a"         -> node1, "b" -> node4),
+        Map("r" -> rels, "a" -> node1, "b" -> node4),
         Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
       ))
   }
@@ -417,7 +417,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
 
-    val rels         = Seq(rel1, rel2, rel3)
+    val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)
 
     val left = newMockedPipe("r", row("r" -> rels, "b" -> node3))
@@ -445,7 +445,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     val rel2 = newMockedRelationship(23, node2, node3)
     val rel3 = newMockedRelationship(34, node3, node4)
 
-    val rels         = Seq(rel1, rel2, rel3)
+    val rels = Seq(rel1, rel2, rel3)
     val reversedRels = Seq(rel3, rel2, rel1)
 
     val left = newMockedPipe("r", row("r" -> rels, "b" -> node1), row("r" -> rels, "b" -> node4))
@@ -465,7 +465,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
     // then
     result should beEquivalentTo(
       List(
-        Map("r" -> rels, "a"         -> node1, "b" -> node4),
+        Map("r" -> rels, "a" -> node1, "b" -> node4),
         Map("r" -> reversedRels, "a" -> node4, "b" -> node1)
       ))
   }

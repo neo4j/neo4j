@@ -71,7 +71,7 @@ class JsonProducer(tagger: QueryTagger[String]) extends OutputProducer {
   private def sortByValue(map: Map[String, Integer]) = ListMap(map.toList.sortBy(_._2): _*)
 
   override def dumpTagCombinationStats: (java.util.List[java.util.List[java.lang.Integer]], java.util.List[String]) = {
-    val tags     = QueryTags.all.toList.map(_.toString)
+    val tags = QueryTags.all.toList.map(_.toString)
     val indexMap = tags.zipWithIndex.toMap
 
     val innerList = tags.indices.map(_ => Int.box(0))

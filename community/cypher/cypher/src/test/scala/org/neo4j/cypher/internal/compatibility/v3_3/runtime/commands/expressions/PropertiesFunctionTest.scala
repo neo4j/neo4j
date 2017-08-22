@@ -39,9 +39,9 @@ class PropertiesFunctionTest extends CypherFunSuite {
 
   import Mockito._
 
-  val query   = mock[QueryContext]
+  val query = mock[QueryContext]
   val nodeOps = mock[Operations[Node]]
-  val relOps  = mock[Operations[Relationship]]
+  val relOps = mock[Operations[Relationship]]
 
   when(query.nodeOps).thenReturn(nodeOps)
   when(query.relationshipOps).thenReturn(relOps)

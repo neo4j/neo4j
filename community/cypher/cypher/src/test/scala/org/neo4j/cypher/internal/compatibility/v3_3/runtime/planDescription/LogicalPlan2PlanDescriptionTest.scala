@@ -45,7 +45,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     val rhsLP = AllNodesScan(IdName("b"), Set.empty)(2)
 
     val pos = InputPosition(0, 0, 0)
-    val id  = new Id
+    val id = new Id
     val modeCombinations = Table(
       "logical plan" -> "expected plan description",
       AllNodesScan(IdName("a"), Set.empty)(1) ->
@@ -149,7 +149,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     forAll(modeCombinations) {
       case (logicalPlan: LogicalPlan, expectedPlanDescription: PlanDescriptionImpl) =>
-        val idMap                   = LogicalPlanIdentificationBuilder(logicalPlan)
+        val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
         val producedPlanDescription = LogicalPlan2PlanDescription(logicalPlan, idMap, IDPPlannerName)
 
         def shouldBeEqual(a: InternalPlanDescription, b: InternalPlanDescription) = {

@@ -32,7 +32,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
   def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel
 
-  def givenPattern(pattern: String)   = TestUnit(pattern)
+  def givenPattern(pattern: String) = TestUnit(pattern)
   def givenPredicate(pattern: String) = TestUnit("MATCH " + pattern)
 
   implicit class RichTestUnit(testUnit: CardinalityTestHelper#TestUnit) {
@@ -42,9 +42,9 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
       val (queryGraph, rewrittenSemanticTable) = testUnit.createQueryGraph(semanticTable)
-      val cardinalityModel                     = createCardinalityModel(statistics)
-      val input                                = QueryGraphSolverInput(Map.empty, testUnit.inboundCardinality, testUnit.strictness)
-      val result                               = cardinalityModel(queryGraph, input, rewrittenSemanticTable)
+      val cardinalityModel = createCardinalityModel(statistics)
+      val input = QueryGraphSolverInput(Map.empty, testUnit.inboundCardinality, testUnit.strictness)
+      val result = cardinalityModel(queryGraph, input, rewrittenSemanticTable)
       result should equal(Cardinality(number))
     }
 
@@ -53,9 +53,9 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
 
       val (statistics, semanticTable) = testUnit.prepareTestContext
 
-      val graphCardinalityModel     = createCardinalityModel(statistics)
+      val graphCardinalityModel = createCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
-      val (plannerQuery, _)         = producePlannerQueryForPattern(testUnit.query)
+      val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
       cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(
         Cardinality(number))
     }
@@ -65,10 +65,10 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
     def forQuery(q: String) = cardinalityData.forQuery(givenPattern(q))
   }
 
-  val DEFAULT_PREDICATE_SELECTIVITY      = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
-  val DEFAULT_EQUALITY_SELECTIVITY       = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
-  val DEFAULT_RANGE_SELECTIVITY          = GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor
+  val DEFAULT_PREDICATE_SELECTIVITY = GraphStatistics.DEFAULT_PREDICATE_SELECTIVITY.factor
+  val DEFAULT_EQUALITY_SELECTIVITY = GraphStatistics.DEFAULT_EQUALITY_SELECTIVITY.factor
+  val DEFAULT_RANGE_SELECTIVITY = GraphStatistics.DEFAULT_RANGE_SELECTIVITY.factor
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = GraphStatistics.DEFAULT_REL_UNIQUENESS_SELECTIVITY.factor
-  val DEFAULT_RANGE_SEEK_FACTOR          = GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
-  val DEFAULT_NUMBER_OF_INDEX_LOOKUPS    = GraphStatistics.DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt
+  val DEFAULT_RANGE_SEEK_FACTOR = GraphStatistics.DEFAULT_RANGE_SEEK_FACTOR
+  val DEFAULT_NUMBER_OF_INDEX_LOOKUPS = GraphStatistics.DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt
 }

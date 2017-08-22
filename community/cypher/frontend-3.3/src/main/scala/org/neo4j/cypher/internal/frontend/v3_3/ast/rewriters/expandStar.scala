@@ -54,11 +54,11 @@ case class expandStar(state: SemanticState) extends Rewriter {
       throw new IllegalStateException(s"${clause.name} should note its Scope in the SemanticState")
     }
 
-    val clausePos   = clause.position
+    val clausePos = clause.position
     val symbolNames = scope.symbolNames -- excludedNames
     val expandedItems = symbolNames.toIndexedSeq.sorted.map { id =>
       val idPos = scope.symbolTable(id).definition.position
-      val expr  = Variable(id)(idPos)
+      val expr = Variable(id)(idPos)
       val alias = expr.copyId
       AliasedReturnItem(expr, alias)(clausePos)
     }

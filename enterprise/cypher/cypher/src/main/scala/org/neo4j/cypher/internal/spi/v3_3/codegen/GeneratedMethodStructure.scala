@@ -126,7 +126,7 @@ class GeneratedMethodStructure(
     case LongToListTable(tupleDescriptor, localMap) =>
       // compute the participating types
       val valueType = aux.typeReference(tupleDescriptor)
-      val listType  = parameterizedType(classOf[util.ArrayList[_]], valueType)
+      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
       val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
       // the methods we use on those types
       val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
@@ -138,7 +138,7 @@ class GeneratedMethodStructure(
     case LongsToListTable(tupleDescriptor, localMap) =>
       // compute the participating types
       val valueType = aux.typeReference(tupleDescriptor)
-      val listType  = parameterizedType(classOf[util.ArrayList[_]], valueType)
+      val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
       val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
       // the methods we use on those types
       val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
@@ -159,8 +159,8 @@ class GeneratedMethodStructure(
                                        fromNodeVar: String,
                                        relVar: String) = {
     val extractor = relExtractor(relVar)
-    val start     = invoke(generator.load(extractor), startNode)
-    val end       = invoke(generator.load(extractor), endNode)
+    val start = invoke(generator.load(extractor), startNode)
+    val end = invoke(generator.load(extractor), endNode)
 
     generator.expression(
       pop(
@@ -386,7 +386,7 @@ class GeneratedMethodStructure(
       block: MethodStructure[Expression] => V) =
     if (!tracing) block(this)
     else {
-      val suffix    = maybeSuffix.map("_" + _).getOrElse("")
+      val suffix = maybeSuffix.map("_" + _).getOrElse("")
       val eventName = s"event_$planStepId${suffix}"
       generator.assign(typeRef[QueryExecutionEvent], eventName, traceEvent(planStepId))
       val result = block(copy(events = eventName :: events, generator = generator))
@@ -790,8 +790,8 @@ class GeneratedMethodStructure(
     val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == LongType) {
       val (keyName, keyType) = key.head
-      val localName          = context.namer.newVarName()
-      val variable           = generator.declare(typeRef[PrimitiveLongIterator], localName)
+      val localName = context.namer.newVarName()
+      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
       generator
         .assign(variable, invoke(generator.load(name), method[PrimitiveLongSet, PrimitiveLongIterator]("iterator")))
       using(generator.whileLoop(invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) {
@@ -802,8 +802,8 @@ class GeneratedMethodStructure(
       }
     } else {
       val localName = context.namer.newVarName()
-      val next      = context.namer.newVarName()
-      val variable  = generator.declare(typeRef[java.util.Iterator[Object]], localName)
+      val next = context.namer.newVarName()
+      val variable = generator.declare(typeRef[java.util.Iterator[Object]], localName)
       val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
       generator
         .assign(variable, invoke(generator.load(name), method[util.HashSet[Object], util.Iterator[Object]]("iterator")))
@@ -880,7 +880,7 @@ class GeneratedMethodStructure(
   }
 
   override def allocateSortTable(name: String, tableDescriptor: SortTableDescriptor, count: Expression): Unit = {
-    val tableType     = sortTableType(tableDescriptor)
+    val tableType = sortTableType(tableDescriptor)
     val localVariable = generator.declare(tableType, name)
     locals += name -> localVariable
     val boxedInteger = box(count, CodeGenType.Any) // TODO: we shouldn't need to box here, we know it's either 'int' or 'long'
@@ -907,8 +907,8 @@ class GeneratedMethodStructure(
       tableDescriptor: SortTableDescriptor,
       varNameToField: Map[String, String])(block: (MethodStructure[Expression]) => Unit): Unit = {
     val tupleDescriptor = tableDescriptor.tupleDescriptor
-    val tupleType       = aux.typeReference(tupleDescriptor)
-    val elementName     = context.namer.newVarName()
+    val tupleType = aux.typeReference(tupleDescriptor)
+    val elementName = context.namer.newVarName()
 
     using(generator.forEach(Parameter.param(tupleType, elementName), generator.load(tableName))) { body =>
       varNameToField.foreach {
@@ -966,7 +966,7 @@ class GeneratedMethodStructure(
                              valueType: CodeGenType)(block: MethodStructure[Expression] => Unit) = {
     if (key.size == 1 && key.head._2._1.repr == LongType) {
       val (_, (_, keyExpression)) = key.head
-      val tmp                     = context.namer.newVarName()
+      val tmp = context.namer.newVarName()
 
       if (valueType.repr == LongType) {
         val localVariable = generator.declare(typeRef[PrimitiveLongSet], tmp)
@@ -1130,8 +1130,8 @@ class GeneratedMethodStructure(
     val key = keyTupleDescriptor.structure
     if (key.size == 1 && key.head._2.repr == LongType) {
       val (keyName, keyType) = key.head
-      val localName          = context.namer.newVarName()
-      val variable           = generator.declare(typeRef[PrimitiveLongIterator], localName)
+      val localName = context.namer.newVarName()
+      val variable = generator.declare(typeRef[PrimitiveLongIterator], localName)
       generator
         .assign(variable, invoke(generator.load(name), method[PrimitiveLongLongMap, PrimitiveLongIterator]("iterator")))
       using(generator.whileLoop(invoke(generator.load(localName), method[PrimitiveLongIterator, Boolean]("hasNext")))) {
@@ -1145,7 +1145,7 @@ class GeneratedMethodStructure(
       }
     } else {
       val localName = context.namer.newVarName()
-      val next      = context.namer.newVarName()
+      val next = context.namer.newVarName()
       val variable = generator
         .declare(typeRef[java.util.Iterator[java.util.Map.Entry[Object, java.lang.Long]]], localName)
       val keyStruct = aux.hashableTypeReference(keyTupleDescriptor)
@@ -1249,7 +1249,7 @@ class GeneratedMethodStructure(
     tableType match {
       case LongToCountTable =>
         assert(keyVars.size == 1)
-        val keyVar    = keyVars.head
+        val keyVar = keyVars.head
         val countName = context.namer.newVarName()
         generator
           .assign(typeRef[Int], countName, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
@@ -1266,7 +1266,7 @@ class GeneratedMethodStructure(
 
       case LongsToCountTable =>
         val countName = context.namer.newVarName()
-        val keyName   = context.namer.newVarName()
+        val keyName = context.namer.newVarName()
         generator.assign(typeRef[CompositeKey],
                          keyName,
                          invoke(compositeKey, newArray(typeRef[Long], keyVars.map(generator.load): _*)))
@@ -1295,14 +1295,14 @@ class GeneratedMethodStructure(
     case LongToCountTable =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      val times  = generator.declare(typeRef[Int], context.namer.newVarName())
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
         body.assign(times, subtract(times, constant(1)))
       }
     case LongsToCountTable =>
-      val times        = generator.declare(typeRef[Int], context.namer.newVarName())
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
       val intermediate = generator.declare(typeRef[java.lang.Integer], context.namer.newVarName())
       generator.assign(
         intermediate,
@@ -1327,7 +1327,7 @@ class GeneratedMethodStructure(
 
       val hashTable = extractHashTable(tableType)
       // generate the code
-      val list        = generator.declare(hashTable.listType, context.namer.newVarName())
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
       using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
@@ -1342,8 +1342,8 @@ class GeneratedMethodStructure(
       }
 
     case tableType @ LongsToListTable(tupleDescriptor, localVars) =>
-      val hashTable   = extractHashTable(tableType)
-      val list        = generator.declare(hashTable.listType, context.namer.newVarName())
+      val hashTable = extractHashTable(tableType)
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
 
       generator.assign(
@@ -1376,11 +1376,11 @@ class GeneratedMethodStructure(
                                 element: Expression) = tableType match {
     case _: LongToListTable =>
       assert(keyVars.size == 1)
-      val keyVar    = keyVars.head
+      val keyVar = keyVars.head
       val hashTable = extractHashTable(tableType)
       // generate the code
       val listName = context.namer.newVarName()
-      val list     = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       // list = tableVar.get(keyVar);
       generator
         .assign(list, cast(hashTable.listType, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))))
@@ -1400,8 +1400,8 @@ class GeneratedMethodStructure(
       val hashTable = extractHashTable(tableType)
       // generate the code
       val listName = context.namer.newVarName()
-      val keyName  = context.namer.newVarName()
-      val list     = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      val keyName = context.namer.newVarName()
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator.assign(typeRef[CompositeKey],
                        keyName,
                        invoke(compositeKey, newArray(typeRef[Long], keyVars.map(generator.load): _*)))
@@ -1463,7 +1463,7 @@ class GeneratedMethodStructure(
   }
 
   override def relType(relVar: String, typeVar: String) = {
-    val variable  = locals(typeVar)
+    val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relExtractor(relVar)), typeOf)
     handleKernelExceptions(generator, fields.ro, _finalizers) { inner =>
       val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
@@ -1572,15 +1572,15 @@ class GeneratedMethodStructure(
 
   override def indexSeek(iterVar: String, descriptorVar: String, value: Expression, codeGenType: CodeGenType) = {
     val predicate = generator.declare(typeRef[IndexQuery], s"${iterVar}Query")
-    val local     = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
+    val local = generator.declare(typeRef[PrimitiveLongIterator], iterVar)
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value)
       else
         invoke(methodReference(typeRef[CompiledConversionUtils], typeRef[Object], "makeValueNeoSafe", typeRef[Object]),
                value)
     handleKernelExceptions(generator, fields.ro, _finalizers) { body =>
-      val descriptor    = body.load(descriptorVar)
-      val schema        = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
+      val descriptor = body.load(descriptorVar)
+      val schema = invoke(descriptor, method[IndexDescriptor, LabelSchemaDescriptor]("schema"))
       val propertyKeyId = invoke(schema, method[LabelSchemaDescriptor, Int]("getPropertyId"))
       body.assign(predicate, invoke(indexQueryExact, propertyKeyId, boxedValue))
       body.assign(local, invoke(readOperations, indexQuery, descriptor, newArray(typeRef[IndexQuery], predicate)))

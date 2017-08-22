@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.ir.v3_3.Selections
 
 class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
-  val aIsPerson: HasLabels     = identHasLabel("a", "Person")
+  val aIsPerson: HasLabels = identHasLabel("a", "Person")
   val aIsProgrammer: HasLabels = identHasLabel("a", "Programmer")
-  val bIsAnimal: HasLabels     = identHasLabel("b", "Animal")
-  val compareTwoNodes: Equals  = compareBothSides("a", "b")
+  val bIsAnimal: HasLabels = identHasLabel("b", "Animal")
+  val compareTwoNodes: Equals = compareBothSides("a", "b")
 
   test("can flat predicates to a sequence") {
     val selections = Selections(Set(Predicate(idNames("a"), aIsPerson)))
@@ -108,7 +108,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("does not take on a predicate if it is only half covered") {
     val aAndB = idNames("a", "b")
-    val a     = Set(aAndB.head)
+    val a = Set(aAndB.head)
 
     val selections = Selections(
       Set(
@@ -119,8 +119,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
   }
 
   test("prunes away sub predicates") {
-    val covering   = And(aIsPerson, aIsProgrammer)(pos)
-    val covered    = aIsProgrammer
+    val covering = And(aIsPerson, aIsProgrammer)(pos)
+    val covered = aIsProgrammer
     val selections = Selections(Set(Predicate(idNames("a"), PartialPredicate(covered, covering))))
 
     val result = selections ++ Selections(Set(Predicate(idNames("a"), covering)))
@@ -130,10 +130,10 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("should recognize value joins") {
     // given WHERE x.id = z.id
-    val lhs                = prop("x", "id")
-    val rhs                = prop("z", "id")
+    val lhs = prop("x", "id")
+    val rhs = prop("z", "id")
     val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections         = Selections.from(equalityComparison)
+    val selections = Selections.from(equalityComparison)
 
     // when
     val result = selections.valueJoins
@@ -155,10 +155,10 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
 
   test("if both lhs and rhs come from the same variable, it's not a value join") {
     // given WHERE x.id1 = x.id2
-    val lhs                = prop("x", "id1")
-    val rhs                = prop("x", "id2")
+    val lhs = prop("x", "id1")
+    val rhs = prop("x", "id2")
     val equalityComparison = Equals(lhs, rhs)(pos)
-    val selections         = Selections.from(equalityComparison)
+    val selections = Selections.from(equalityComparison)
 
     // when
     val result = selections.valueJoins
@@ -171,8 +171,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with
     // given WHERE x.id1 = z.id AND x.id1 = x.id2 AND x.id2 = 42
     val x_id1 = prop("x", "id1")
     val x_id2 = prop("x", "id2")
-    val z_id  = prop("z", "id")
-    val lit   = literalInt(42)
+    val z_id = prop("z", "id")
+    val lit = literalInt(42)
 
     val pred1 = Equals(x_id1, x_id2)(pos)
     val pred2 = Equals(x_id1, z_id)(pos)

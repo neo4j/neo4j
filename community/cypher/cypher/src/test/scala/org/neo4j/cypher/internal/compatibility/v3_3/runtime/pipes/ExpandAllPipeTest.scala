@@ -36,14 +36,14 @@ import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
 
 class ExpandAllPipeTest extends CypherFunSuite {
 
-  val startNode        = newMockedNode(1)
-  val endNode1         = newMockedNode(2)
-  val endNode2         = newMockedNode(3)
-  val relationship1    = newMockedRelationship(1, startNode, endNode1)
-  val relationship2    = newMockedRelationship(2, startNode, endNode2)
+  val startNode = newMockedNode(1)
+  val endNode1 = newMockedNode(2)
+  val endNode2 = newMockedNode(3)
+  val relationship1 = newMockedRelationship(1, startNode, endNode1)
+  val relationship2 = newMockedRelationship(2, startNode, endNode2)
   val selfRelationship = newMockedRelationship(3, startNode, startNode)
-  val query            = mock[QueryContext]
-  val queryState       = QueryStateHelper.emptyWith(query = query)
+  val query = mock[QueryContext]
+  val queryState = QueryStateHelper.emptyWith(query = query)
 
   test("should support expand between two nodes with a relationship") {
     // given
@@ -174,8 +174,8 @@ class ExpandAllPipeTest extends CypherFunSuite {
 
   private def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
-    val startId      = startNode.getId
-    val endId        = endNode.getId
+    val startId = startNode.getId
+    val endId = endNode.getId
     when(relationship.getId).thenReturn(id)
     when(relationship.getStartNode).thenReturn(startNode)
     when(relationship.getStartNodeId).thenReturn(startId)

@@ -50,7 +50,7 @@ class ExtractExpressionTest extends CypherFunSuite {
 
   test("shouldRaiseSemanticErrorIfMissingExtractExpression") {
     val extract = ExtractExpression(Variable("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
-    val result  = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+    val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     result.errors should equal(
       Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyPosition(0))))
   }

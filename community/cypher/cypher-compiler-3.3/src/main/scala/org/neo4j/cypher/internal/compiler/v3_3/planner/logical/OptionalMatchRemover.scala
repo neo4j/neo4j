@@ -52,8 +52,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
           if validAggregations(aggregations) =>
         // The variables that are needed by the return/with clause
 
-        val projectionDeps            = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
-        val updateDeps                = graph.mutatingPatterns.flatMap(_.dependencies)
+        val projectionDeps = (distinctExpressions.values ++ aggregations.values).flatMap(_.dependencies)
+        val updateDeps = graph.mutatingPatterns.flatMap(_.dependencies)
         val dependencies: Set[IdName] = projectionDeps.map(IdName.fromVariable).toSet ++ updateDeps
 
         val optionalMatches = graph.optionalMatches.flatMapWithTail {
@@ -68,7 +68,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
                 graph.coveredIds
 
             val mustInclude = allDeps -- original.argumentIds
-            val mustKeep    = original.smallestGraphIncluding(mustInclude)
+            val mustKeep = original.smallestGraphIncluding(mustInclude)
 
             if (mustKeep.isEmpty)
               // We did not find anything in this OPTIONAL MATCH. Since there are no variable deps from this clause,
@@ -88,7 +88,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
               val (patternsToKeep, patternsToFilter) =
                 original.patternRelationships.partition(r => elementsToKeep(r.name))
-              val patternNodes      = original.patternNodes.filter(elementsToKeep.apply)
+              val patternNodes = original.patternNodes.filter(elementsToKeep.apply)
               val patternPredicates = patternsToFilter.map(toAst(elementsToKeep, predicatesForPatterns, _))
 
               val newOptionalGraph = original
@@ -122,7 +122,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
                                   kept: Set[IdName]): (Map[IdName, LabelsAndEquality], Set[Expression]) = {
 
     val patternPredicates = mutable.Map.empty[IdName, LabelsAndEquality]
-    val predicatesToKeep  = mutable.Set.empty[Expression]
+    val predicatesToKeep = mutable.Set.empty[Expression]
 
     def addLabel(idName: IdName, labelName: LabelName) = {
       val current = patternPredicates.getOrElse(idName, LabelsAndEquality.empty)
@@ -169,15 +169,15 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
 
     def createNode(name: IdName): NodePattern = {
       val labelsAndProps = predicates.getOrElse(name, LabelsAndEquality.empty)
-      val props          = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(pos))
+      val props = if (labelsAndProps.equality.isEmpty) None else Some(MapExpression(labelsAndProps.equality)(pos))
       NodePattern(createVariable(name), labels = labelsAndProps.labels, properties = props)(pos)
     }
 
-    val relName    = createVariable(pattern.name)
-    val leftNode   = createNode(pattern.nodes._1)
-    val rightNode  = createNode(pattern.nodes._2)
+    val relName = createVariable(pattern.name)
+    val leftNode = createNode(pattern.nodes._1)
+    val rightNode = createNode(pattern.nodes._2)
     val relPattern = RelationshipPattern(relName, pattern.types, length = None, properties = None, pattern.dir)(pos)
-    val chain      = RelationshipChain(leftNode, relPattern, rightNode)(pos)
+    val chain = RelationshipChain(leftNode, relPattern, rightNode)(pos)
     PatternExpression(RelationshipsPattern(chain)(pos))
   }
 
@@ -211,7 +211,7 @@ trait PlannerQueryRewriter extends Phase[CompilerContext, LogicalPlanState, Logi
 
   override def process(from: LogicalPlanState, context: CompilerContext): LogicalPlanState = {
     val query: UnionQuery = from.unionQuery
-    val rewritten         = query.endoRewrite(instance(context))
+    val rewritten = query.endoRewrite(instance(context))
     from.copy(maybeUnionQuery = Some(rewritten))
   }
 }

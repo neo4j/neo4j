@@ -105,7 +105,7 @@ object Rewritable {
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
     def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that)
-    def endoRewrite(rewriter: Rewriter): T  = rewrite(rewriter).asInstanceOf[T]
+    def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
   }
 }
 
@@ -141,7 +141,7 @@ object topDown {
   private class TopDownRewriter(rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
-      val result       = rec(initialStack)
+      val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
@@ -156,7 +156,7 @@ object topDown {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob                 = job.dup(newChildren)
+          val doneJob = job.dup(newChildren)
           stack.push((jobs, doneJobs += doneJob))
           rec(stack)
         }
@@ -183,7 +183,7 @@ object bottomUp {
   private class BottomUpRewriter(val rewriter: Rewriter, val stopper: AnyRef => Boolean) extends Rewriter {
     override def apply(that: AnyRef): AnyRef = {
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
-      val result       = rec(initialStack)
+      val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
@@ -198,8 +198,8 @@ object bottomUp {
           newChildren
         } else {
           val (job :: jobs, doneJobs) = stack.pop()
-          val doneJob                 = job.dup(newChildren)
-          val rewrittenDoneJob        = doneJob.rewrite(rewriter)
+          val doneJob = job.dup(newChildren)
+          val rewrittenDoneJob = doneJob.rewrite(rewriter)
           stack.push((jobs, doneJobs += rewrittenDoneJob))
           rec(stack)
         }

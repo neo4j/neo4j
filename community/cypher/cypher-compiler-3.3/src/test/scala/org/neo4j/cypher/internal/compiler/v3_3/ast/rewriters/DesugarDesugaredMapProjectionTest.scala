@@ -73,11 +73,11 @@ class DesugarDesugaredMapProjectionTest extends CypherFunSuite {
   def assertRewrite(originalQuery: String, expectedQuery: String) {
     test(originalQuery + " is rewritten to " + expectedQuery) {
       def rewrite(q: String): Statement = {
-        val mkException         = new SyntaxExceptionCreator(originalQuery, None)
-        val sequence: Rewriter  = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
-        val originalAst         = parser.parse(q).endoRewrite(sequence)
+        val mkException = new SyntaxExceptionCreator(originalQuery, None)
+        val sequence: Rewriter = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
+        val originalAst = parser.parse(q).endoRewrite(sequence)
         val semanticCheckResult = originalAst.semanticCheck(SemanticState.clean)
-        val withScopes          = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
+        val withScopes = originalAst.endoRewrite(recordScopes(semanticCheckResult.state))
 
         withScopes.endoRewrite(desugarMapProjection(semanticCheckResult.state))
       }

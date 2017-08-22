@@ -31,7 +31,7 @@ import scala.language.postfixOps
 case class SymbolUse(name: String, position: InputPosition) {
   override def toString = s"SymbolUse($nameWithPosition)"
 
-  def asVariable       = Variable(name)(position)
+  def asVariable = Variable(name)(position)
   def nameWithPosition = s"$name@${position.toOffsetString}"
 }
 
@@ -59,9 +59,9 @@ case class Symbol(name: String, positions: Set[InputPosition], types: TypeSpec) 
 }
 
 case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
-  lazy val actualUnCoerced  = expected.fold(specified)(specified intersect)
+  lazy val actualUnCoerced = expected.fold(specified)(specified intersect)
   lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
-  lazy val wasCoerced       = actualUnCoerced != actual
+  lazy val wasCoerced = actualUnCoerced != actual
 
   def expect(types: TypeSpec) = copy(expected = Some(types))
 }
@@ -117,7 +117,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   def variableDefinitions: Map[SymbolUse, SymbolUse] =
     symbolTable.values.flatMap { symbol =>
-      val name       = symbol.name
+      val name = symbol.name
       val definition = symbol.definition
       symbol.positions.map { pos =>
         SymbolUse(name, pos) -> definition
@@ -144,7 +144,7 @@ case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) extends
 
   private def dumpTree(indent: String, builder: StringBuilder): Unit = {
     symbolTable.keys.toSeq.sorted.foreach { key =>
-      val symbol     = symbolTable(key)
+      val symbol = symbolTable(key)
       val symbolText = symbol.positions.map(_.toOffsetString).toSeq.sorted.mkString(" ")
       builder.append(s"$indent$key: $symbolText$EOL")
     }
@@ -160,17 +160,17 @@ object SemanticState {
   val clean = SemanticState(Scope.empty.location, ASTAnnotationMap.empty, ASTAnnotationMap.empty)
 
   implicit class ScopeLocation(val location: ScopeZipper.Location) extends AnyVal {
-    def scope: Scope                  = location.elem
-    def rootScope: Scope              = location.root.elem
+    def scope: Scope = location.elem
+    def rootScope: Scope = location.root.elem
     def parent: Option[ScopeLocation] = location.up.map(ScopeLocation)
 
-    def newChildScope: ScopeLocation   = location.insertChild(Scope.empty)
+    def newChildScope: ScopeLocation = location.insertChild(Scope.empty)
     def newSiblingScope: ScopeLocation = location.insertRight(Scope.empty).get
 
     def isEmpty: Boolean = scope.isEmpty
 
     def localSymbol(name: String): Option[Symbol] = scope.symbol(name)
-    def symbol(name: String): Option[Symbol]      = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
+    def symbol(name: String): Option[Symbol] = localSymbol(name) orElse location.up.flatMap(_.symbol(name))
 
     def symbolNames: Set[String] = scope.symbolNames
 
@@ -197,12 +197,12 @@ case class SemanticState(currentScope: ScopeLocation,
                          notifications: Set[InternalNotification] = Set.empty) {
   def scopeTree = currentScope.rootScope
 
-  def newChildScope   = copy(currentScope = currentScope.newChildScope)
+  def newChildScope = copy(currentScope = currentScope.newChildScope)
   def newSiblingScope = copy(currentScope = currentScope.newSiblingScope)
-  def popScope        = copy(currentScope = currentScope.parent.get)
+  def popScope = copy(currentScope = currentScope.parent.get)
 
   def symbol(name: String): Option[Symbol] = currentScope.symbol(name)
-  def symbolTypes(name: String)            = symbol(name).map(_.types).getOrElse(TypeSpec.all)
+  def symbolTypes(name: String) = symbol(name).map(_.types).getOrElse(TypeSpec.all)
 
   def importScope(scope: Scope, exclude: Set[String] = Set.empty): SemanticState =
     copy(currentScope = currentScope.importScope(scope, exclude))

@@ -59,9 +59,9 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       val plannables: Set[IndexPlannableExpression] =
         predicates.collect(indexPlannableExpression(qg.argumentIds, arguments, qg.hints))
       val result = plannables.map(_.name).flatMap { name =>
-        val idName          = IdName(name)
+        val idName = IdName(name)
         val labelPredicates = labelPredicateMap.getOrElse(idName, Set.empty)
-        val nodePlannables  = plannables.filter(p => p.name == name)
+        val nodePlannables = plannables.filter(p => p.name == name)
         maybeLeafPlans(
           name,
           producePlansForSpecificVariable(idName, nodePlannables, labelPredicates, qg.hints, qg.argumentIds))
@@ -102,10 +102,10 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       hints: Set[Hint],
       argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): Set[LogicalPlan] = {
     implicit val semanticTable: SemanticTable = context.semanticTable
-    for (labelPredicate                            <- labelPredicates;
-         labelName                                 <- labelPredicate.labels;
-         labelId: LabelId                          <- labelName.id.toSeq;
-         indexDescriptor: IndexDescriptor          <- findIndexesForLabel(labelId);
+    for (labelPredicate <- labelPredicates;
+         labelName <- labelPredicate.labels;
+         labelId: LabelId <- labelName.id.toSeq;
+         indexDescriptor: IndexDescriptor <- findIndexesForLabel(labelId);
          plannables: Seq[IndexPlannableExpression] <- plannablesForIndex(indexDescriptor, nodePlannables))
       yield createLogicalPlan(idName, hints, argumentIds, labelPredicate, labelName, labelId, plannables)
   }
@@ -120,7 +120,7 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
       implicit context: LogicalPlanningContext,
       semanticTable: SemanticTable): LogicalPlan = {
     val hint = {
-      val name          = idName.name
+      val name = idName.name
       val propertyNames = plannables.map(_.propertyKeyName.name)
       hints.collectFirst {
         case hint @ UsingIndexHint(Variable(`name`), `labelName`, properties)
@@ -166,14 +166,14 @@ abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFro
     // n.prop STARTS WITH "prefix%..."
     case predicate @ AsStringRangeSeekable(seekable) =>
       val partialPredicate = PartialPredicate(seekable.expr, predicate)
-      val queryExpression  = seekable.asQueryExpression
-      val propertyKey      = seekable.propertyKey
+      val queryExpression = seekable.asQueryExpression
+      val propertyKey = seekable.propertyKey
       IndexPlannableExpression(seekable.name, propertyKey, partialPredicate, queryExpression, hints, argumentIds)
 
     // n.prop <|<=|>|>= value
     case predicate @ AsValueRangeSeekable(seekable) =>
       val queryExpression = seekable.asQueryExpression
-      val keyName         = seekable.propertyKeyName
+      val keyName = seekable.propertyKeyName
       IndexPlannableExpression(seekable.name, keyName, predicate, queryExpression, hints, argumentIds)
   }
 

@@ -44,7 +44,7 @@ class PathMatcherTest extends ParsingTestSupport {
 
   test("should not accept a longer path") {
     val matcher: PathMatcher = new PathMatcher(new NodeMatcher(Set("L").asJava, EMPTY))
-    val expected             = path(pathLink(node(Seq("Start1")), relationship("T1"), node(Seq("End1"))))
+    val expected = path(pathLink(node(Seq("Start1")), relationship("T1"), node(Seq("End1"))))
 
     matcher shouldNot accept(expected)
   }

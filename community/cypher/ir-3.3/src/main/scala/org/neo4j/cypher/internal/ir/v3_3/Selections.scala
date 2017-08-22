@@ -121,5 +121,5 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
 object Selections {
   def from(expressions: Traversable[Expression]): Selections = new Selections(expressions.flatMap(_.asPredicates).toSet)
-  def from(expressions: Expression): Selections              = new Selections(expressions.asPredicates)
+  def from(expressions: Expression): Selections = new Selections(expressions.asPredicates)
 }

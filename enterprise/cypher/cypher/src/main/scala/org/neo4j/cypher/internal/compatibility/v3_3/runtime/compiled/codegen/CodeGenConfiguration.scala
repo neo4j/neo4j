@@ -54,13 +54,13 @@ case class CodeGenConfiguration(mode: CodeGenMode = CodeGenMode.default,
 
 object CodeGenConfiguration {
   def apply(debugOptions: Set[String]): CodeGenConfiguration = {
-    val mode             = if (debugOptions.contains("generate_java_source")) SourceCodeMode else ByteCodeMode
+    val mode = if (debugOptions.contains("generate_java_source")) SourceCodeMode else ByteCodeMode
     val show_java_source = debugOptions.contains("show_java_source")
     if (show_java_source && mode != SourceCodeMode) {
       throw new InternalException("Can only 'debug=show_java_source' if 'debug=generate_java_source'.")
     }
     val show_bytecode = debugOptions.contains("show_bytecode")
-    val saveSource    = Option(System.getProperty("org.neo4j.cypher.DEBUG.generated_source_location")).map(Paths.get(_))
+    val saveSource = Option(System.getProperty("org.neo4j.cypher.DEBUG.generated_source_location")).map(Paths.get(_))
     CodeGenConfiguration(mode, show_java_source, show_bytecode, saveSource)
   }
 }

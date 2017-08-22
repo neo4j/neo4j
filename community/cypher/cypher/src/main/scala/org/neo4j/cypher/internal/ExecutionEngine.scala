@@ -59,16 +59,16 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   require(queryService != null, "Can't work with a null graph database")
 
   // true means we run inside REST server
-  protected val isServer                     = false
-  private val resolver                       = queryService.getDependencyResolver
-  private val kernel                         = resolver.resolveDependency(classOf[KernelAPI])
-  private val lastCommittedTxId              = LastCommittedTxIdProvider(queryService)
+  protected val isServer = false
+  private val resolver = queryService.getDependencyResolver
+  private val kernel = resolver.resolveDependency(classOf[KernelAPI])
+  private val lastCommittedTxId = LastCommittedTxIdProvider(queryService)
   private val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
   private val compilationTracer: CompilationTracer =
     new TimingCompilationTracer(kernelMonitors.newMonitor(classOf[TimingCompilationTracer.EventListener]))
   private val queryDispatcher: CompilerEngineDelegator = createCompilerDelegator()
 
-  private val log          = logProvider.getLog(getClass)
+  private val log = logProvider.getLog(getClass)
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   kernelMonitors.addMonitorListener(new StringCacheMonitor {
     override def cacheDiscard(ignored: String, query: String) {
@@ -81,9 +81,9 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
   private val preParsedQueries = new LFUCache[String, PreParsedQuery](getPlanCacheSize)
-  private val parsedQueries    = new LFUCache[String, ParsedQuery](getPlanCacheSize)
+  private val parsedQueries = new LFUCache[String, ParsedQuery](getPlanCacheSize)
 
-  private val javaValues  = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+  private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
   private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   def profile(query: String, scalaParams: Map[String, Any], context: TransactionalContext): Result = {
@@ -94,7 +94,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def profile(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
-    val scalaParams                             = scalaValues.asShallowScalaMap(javaParams)
+    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
     preparedPlanExecution.profile(wrappedContext, scalaParams)
   }
@@ -107,7 +107,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   def execute(query: String, javaParams: JavaMap[String, AnyRef], context: TransactionalContext): Result = {
     // we got deep java parameters => convert to shallow scala parameters for passing into the engine
-    val scalaParams                             = scalaValues.asShallowScalaMap(javaParams)
+    val scalaParams = scalaValues.asShallowScalaMap(javaParams)
     val (preparedPlanExecution, wrappedContext) = planQuery(context)
     preparedPlanExecution.execute(wrappedContext, scalaParams)
   }
@@ -133,7 +133,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   protected def planQuery(
       transactionalContext: TransactionalContext): (PreparedPlanExecution, TransactionalContextWrapper) = {
     val executingQuery = transactionalContext.executingQuery()
-    val queryText      = executingQuery.queryText()
+    val queryText = executingQuery.queryText()
     executionMonitor.startQueryExecution(executingQuery)
     val phaseTracer = compilationTracer.compileQuery(queryText)
     try {
@@ -147,7 +147,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
           throw e
       }
       val executionMode = preParsedQuery.executionMode
-      val cacheKey      = preParsedQuery.statementWithVersionAndPlanner
+      val cacheKey = preParsedQuery.statementWithVersionAndPlanner
 
       var n = 0
       while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {

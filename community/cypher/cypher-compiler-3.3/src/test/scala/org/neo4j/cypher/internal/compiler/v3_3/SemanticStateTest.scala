@@ -31,7 +31,7 @@ class SemanticStateTest extends CypherFunSuite {
   test("should declare variable once") {
     val variable1 = Variable("foo")(DummyPosition(0))
     val variable2 = Variable("foo")(DummyPosition(3))
-    val state     = SemanticState.clean.declareVariable(variable1, CTNode).right.get
+    val state = SemanticState.clean.declareVariable(variable1, CTNode).right.get
 
     state.declareVariable(variable2, CTNode) match {
       case Right(_) => fail("Expected an error from second declaration")
@@ -117,14 +117,14 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should record type for expression when specifying type") {
     val expression = DummyExpression(CTInteger | CTString)
-    val state      = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
+    val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
     state.expressionType(expression).specified should equal(expression.possibleTypes)
     state.expressionType(expression).actual should equal(expression.possibleTypes)
   }
 
   test("should expect type for expression") {
     val expression = DummyExpression(CTInteger | CTString | CTMap)
-    val state      = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
+    val state = SemanticState.clean.specifyType(expression, expression.possibleTypes).right.get
 
     state.expectType(expression, CTNumber.covariant) match {
       case (s, typ) =>
@@ -160,23 +160,23 @@ class SemanticStateTest extends CypherFunSuite {
 
   test("should return types of variable") {
     val variable = Variable("foo")(DummyPosition(0))
-    val s1       = SemanticState.clean.declareVariable(variable, CTNode).right.get
+    val s1 = SemanticState.clean.declareVariable(variable, CTNode).right.get
     s1.expressionType(variable).actual should equal(CTNode: TypeSpec)
   }
 
   test("should return types of variable at later expression") {
     val variable1 = Variable("foo")(DummyPosition(0))
     val variable2 = Variable("foo")(DummyPosition(3))
-    val s1        = SemanticState.clean.declareVariable(variable1, CTNode).right.get
-    val s2        = s1.implicitVariable(variable2, CTNode).right.get
+    val s1 = SemanticState.clean.declareVariable(variable1, CTNode).right.get
+    val s2 = s1.implicitVariable(variable2, CTNode).right.get
     s2.expressionType(variable2).actual should equal(CTNode: TypeSpec)
   }
 
   test("should maintain separate TypeInfo for equivalent expressions") {
     val exp1 = Property(Variable("n")(DummyPosition(0)), PropertyKeyName("prop")(DummyPosition(3)))(DummyPosition(0))
     val exp2 = Property(Variable("n")(DummyPosition(6)), PropertyKeyName("prop")(DummyPosition(9)))(DummyPosition(6))
-    val s1   = SemanticState.clean.specifyType(exp1, CTNode).right.get
-    val s2   = s1.specifyType(exp2, CTRelationship).right.get
+    val s1 = SemanticState.clean.specifyType(exp1, CTNode).right.get
+    val s2 = s1.specifyType(exp2, CTRelationship).right.get
 
     s2.expressionType(exp1).specified should equal(CTNode: TypeSpec)
     s2.expressionType(exp2).specified should equal(CTRelationship: TypeSpec)

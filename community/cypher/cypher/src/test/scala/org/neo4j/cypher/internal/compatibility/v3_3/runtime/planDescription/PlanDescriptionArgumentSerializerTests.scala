@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.ir.v3_3.CardinalityEstimation
 import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
-  val solved      = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   private val pos = DummyPosition(0)
 
   test("serialization should leave numeric arguments as numbers") {
@@ -62,7 +62,7 @@ class PlanDescriptionArgumentSerializerTests extends CypherFunSuite {
 
   test("serialize nested plan expression") {
     val argument: LogicalPlan = LPArgument(Set.empty)(solved)(Map.empty)
-    val expression            = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
+    val expression = DummyExpression(CTList(CTNode) | CTBoolean | CTList(CTString), DummyPosition(5))
 
     val nested = NestedPlanExpression(argument, expression)(pos)
 

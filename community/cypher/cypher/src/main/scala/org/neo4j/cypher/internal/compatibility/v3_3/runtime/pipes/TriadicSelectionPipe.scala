@@ -55,8 +55,8 @@ case class TriadicSelectionPipe(positivePredicate: Boolean,
 
       // 2. pass through 'right'
     }.flatMap { (outerContext) =>
-        val original     = outerContext.createClone()
-        val innerState   = state.withInitialContext(outerContext)
+        val original = outerContext.createClone()
+        val innerState = state.withInitialContext(outerContext)
         val innerResults = right.createResults(innerState)
         innerResults.map { context =>
           context mergeWith original
@@ -79,7 +79,7 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
   def getValue(row: ROW): Option[Long]
 
   var current: Iterator[ROW] = null
-  var nextRow: ROW           = null
+  var nextRow: ROW = null
 
   override def next() = if (hasNext) current.next() else Iterator.empty.next()
 
@@ -99,7 +99,7 @@ abstract class LazyGroupingIterator[ROW >: Null <: AnyRef](val input: Iterator[R
         setState(null)
         false
       } else {
-        val buffer   = new ListBuffer[ROW]
+        val buffer = new ListBuffer[ROW]
         val valueSet = Primitive.longSet()
         setState(valueSet)
         buffer += firstRow

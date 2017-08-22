@@ -46,8 +46,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = LazyTypes(Seq.empty[String])
 
   test("node without any relationships produces empty result") {
-    val n1            = createNode()
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val n1 = createNode()
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -60,11 +60,11 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
-      val queryState                    = queryStateFrom(graph, tx, Map.empty)
+      val queryState = queryStateFrom(graph, tx, Map.empty)
       val toList: Seq[ExecutionContext] = pipeUnderTest.createResults(queryState).toList
       toList should beEquivalentTo(List(Map("from" -> n1, "to" -> n2)))
     }
@@ -74,7 +74,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 0, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -97,9 +97,9 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
-    val min           = 3
-    val max           = 5
+    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val min = 3
+    val max = 5
     val pipeUnderTest = createPipe(src, min, max, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -123,7 +123,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2)
     relate(n1, n1)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 2, 2, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
@@ -143,10 +143,10 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     Even though n1-n2 is traversed first, the length 4 path over n1_2 should be found
      */
-    val n1   = createNode()
-    val n2   = createNode()
-    val n3   = createNode()
-    val n4   = createNode()
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+    val n4 = createNode()
     val n1_2 = createNode()
 
     relate(n1, n1_2)
@@ -156,7 +156,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n2, n3)
     relate(n3, n4)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 4, 4, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
@@ -176,10 +176,10 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     Even though n1-n2 is traversed first, the length 4 path over n1_2 should be found
      */
-    val n1    = createNode()
-    val n2    = createNode()
-    val n3    = createNode()
-    val n4    = createNode()
+    val n1 = createNode()
+    val n2 = createNode()
+    val n3 = createNode()
+    val n4 = createNode()
     val n1_2a = createNode()
     val n1_2b = createNode()
 
@@ -191,7 +191,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n2, n3)
     relate(n3, n4)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 5, 5, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
@@ -216,8 +216,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2, "k" -> 1)
     relate(n2, n3, "k" -> 2)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate     = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, predicate, True())
 
     graph.withTx { tx =>
@@ -242,8 +242,8 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2)
     relate(n2, n3)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate     = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, True(), predicate)
 
     graph.withTx { tx =>
@@ -276,7 +276,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n5 = nodes(5)
     relate(n1, n4)
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -287,7 +287,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   }
 
   test("multiple start nodes") {
-    val nodes      = (0 to 10) map (_ => createNode())
+    val nodes = (0 to 10) map (_ => createNode())
     val nodeValues = nodes.map(fromNodeProxy)
     nodes.tail.foldLeft(nodes.head) {
       case (x: Node, y: Node) =>
@@ -295,7 +295,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
+    val src = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -317,7 +317,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
-    var tx    = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
+    var tx = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
     var count = 0
 
     def checkAndSwitch() = {
@@ -352,10 +352,10 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   }
 
   private def testNode(startNode: Node, r: Random) = {
-    val min           = r.nextInt(3)
-    val max           = min + 1 + r.nextInt(3)
-    val sourcePipe    = new FakePipe(Iterator(Map("from" -> startNode)))
-    val sourcePipe2   = new FakePipe(Iterator(Map("from" -> startNode)))
+    val min = r.nextInt(3)
+    val max = min + 1 + r.nextInt(3)
+    val sourcePipe = new FakePipe(Iterator(Map("from" -> startNode)))
+    val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
     val pipe = VarLengthExpandPipe(sourcePipe2,
                                    "from",
@@ -382,7 +382,7 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val oldThing = distinctAfterVarLengthExpand.toSet
     val newThing = distinctExpand.toSet
     if (oldThing != newThing) {
-      val missingFromNew   = oldThing -- newThing
+      val missingFromNew = oldThing -- newThing
       val shouldNotBeInNew = newThing -- oldThing
       var message =
         s"""startNode: $startNode
@@ -405,9 +405,9 @@ class FullPruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   test("random and compare") {
     // runs DistinctVarExpand and VarExpand side-by-side and checks that the reachable nodes are the same
     val POPULATION: Int = 1 * 1000
-    val seed            = System.currentTimeMillis()
-    val nodes           = setUpGraph(seed, POPULATION, 20)
-    val r               = new Random
+    val seed = System.currentTimeMillis()
+    val nodes = setUpGraph(seed, POPULATION, 20)
+    val r = new Random
 
     val start = System.currentTimeMillis()
 

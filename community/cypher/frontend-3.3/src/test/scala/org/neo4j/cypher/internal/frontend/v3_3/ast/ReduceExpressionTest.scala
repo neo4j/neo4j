@@ -78,7 +78,7 @@ class ReduceExpressionTest extends CypherFunSuite {
 
   test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {
     val accumulatorType = CTString | CTNumber
-    val listType        = CTList(CTInteger)
+    val listType = CTList(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {

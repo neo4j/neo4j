@@ -29,18 +29,18 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class IndexScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName                = IdName("n")
+  val idName = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression  = Property(varFor("n"), PropertyKeyName("prop") _) _
+  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
 
-  val existsPredicate: Expression     = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
+  val existsPredicate: Expression = FunctionInvocation(FunctionName(functions.Exists.name) _, property) _
   val startsWithPredicate: Expression = StartsWith(property, StringLiteral("") _) _
-  val ltPredicate: Expression         = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
-  val neqPredicate: Expression        = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
-  val eqPredicate: Expression         = Equals(property, SignedDecimalIntegerLiteral("12") _) _
-  val regexPredicate: Expression      = RegexMatch(property, StringLiteral("Johnny") _) _
-  val stringLiteral: Expression       = StringLiteral("apa") _
-  val containsPredicate: Expression   = Contains(property, stringLiteral) _
+  val ltPredicate: Expression = LessThan(property, SignedDecimalIntegerLiteral("12") _) _
+  val neqPredicate: Expression = NotEquals(property, SignedDecimalIntegerLiteral("12") _) _
+  val eqPredicate: Expression = Equals(property, SignedDecimalIntegerLiteral("12") _) _
+  val regexPredicate: Expression = RegexMatch(property, StringLiteral("Johnny") _) _
+  val stringLiteral: Expression = StringLiteral("apa") _
+  val containsPredicate: Expression = Contains(property, stringLiteral) _
 
   test("does not plan index scan when no index exist") {
     new given {

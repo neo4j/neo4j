@@ -46,8 +46,8 @@ class UpdateGraphTest extends CypherFunSuite {
   test("overlap when reading and creating the same label") {
     //MATCH (a:L) CREATE (b:L)
     val selections = Selections.from(HasLabels(Variable("a")(pos), Seq(LabelName("L")(pos)))(pos))
-    val qg         = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
-    val ug         = QueryGraph(mutatingPatterns = Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), selections = selections)
+    val ug = QueryGraph(mutatingPatterns = Seq(CreateNodePattern(IdName("b"), Seq(LabelName("L")(pos)), None)))
 
     ug.overlaps(qg) shouldBe true
   }

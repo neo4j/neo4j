@@ -51,7 +51,7 @@ class KeysFunctionTest extends CypherFunSuite {
     when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx   = ExecutionContext() += ("n" -> node)
+    val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx)(state)
@@ -62,14 +62,14 @@ class KeysFunctionTest extends CypherFunSuite {
 
   test("test without Property Keys ") {
     // GIVEN
-    val node         = mock[Node]
+    val node = mock[Node]
     val queryContext = mock[QueryContext]
-    val ops          = mock[Operations[Node]]
+    val ops = mock[Operations[Node]]
     when(queryContext.nodeOps).thenReturn(ops)
     when(ops.propertyKeyIds(node.getId)).thenReturn(Iterator.empty)
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx   = ExecutionContext() += ("n" -> node)
+    val ctx = ExecutionContext() += ("n" -> node)
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx)(state)
@@ -81,8 +81,8 @@ class KeysFunctionTest extends CypherFunSuite {
   test("test using a literal map") {
     // GIVEN
     val queryContext = mock[QueryContext]
-    val state        = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx          = ExecutionContext.empty
+    val state = QueryStateHelper.emptyWith(query = queryContext)
+    val ctx = ExecutionContext.empty
 
     // WHEN
     val result =

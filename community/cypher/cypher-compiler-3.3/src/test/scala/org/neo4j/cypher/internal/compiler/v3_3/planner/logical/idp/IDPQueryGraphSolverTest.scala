@@ -78,7 +78,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val allNodeScanA = AllNodesScan("a", Set.empty)(solved)
       val allNodeScanB = AllNodesScan("b", Set.empty)(solved)
       val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
-      val plan         = queryGraphSolver.plan(cfg.qg)
+      val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         CartesianProduct(
           allNodeScanC,
@@ -89,7 +89,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      val qgs   = cfg.qg.connectedComponents.toArray
+      val qgs = cfg.qg.connectedComponents.toArray
       val plans = Array(allNodeScanA, allNodeScanB, allNodeScanC)
 
       (0 to 2).foreach { i =>
@@ -556,7 +556,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test(
     "should plan a very long relationship pattern without combinatorial explosion using various compaction strategies") {
-    val monitor                      = mock[IDPQueryGraphSolverMonitor]
+    val monitor = mock[IDPQueryGraphSolverMonitor]
     val numberOfPatternRelationships = 15
 
     val solverConfigsToTest = Seq(
@@ -711,7 +711,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should plan cartesian product between 3 pattern nodes and using a single predicate between 2 pattern nodes") {
-    val monitor           = mock[IDPQueryGraphSolverMonitor]
+    val monitor = mock[IDPQueryGraphSolverMonitor]
     val predicate: Equals = Equals(varFor("b"), varFor("c"))(pos)
 
     new given {
@@ -723,7 +723,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val allNodeScanA = AllNodesScan("a", Set.empty)(solved)
       val allNodeScanB = AllNodesScan("b", Set.empty)(solved)
       val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
-      val plan         = queryGraphSolver.plan(cfg.qg)
+      val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         CartesianProduct(
           allNodeScanA,
@@ -735,7 +735,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         )(solved)
       )
 
-      val qgs   = cfg.qg.connectedComponents.toArray
+      val qgs = cfg.qg.connectedComponents.toArray
       val plans = Array(allNodeScanA, allNodeScanB, allNodeScanC)
 
       (0 to 2).foreach { i =>
@@ -747,7 +747,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should plan cartesian product between 1 pattern nodes and 1 pattern relationship") {
-    val monitor           = mock[IDPQueryGraphSolverMonitor]
+    val monitor = mock[IDPQueryGraphSolverMonitor]
     val predicate: Equals = Equals(varFor("b"), varFor("c"))(pos)
 
     new given {
@@ -765,7 +765,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
         Expand(AllNodesScan("b", Set.empty)(solved), "b", SemanticDirection.INCOMING, Seq.empty, "a", "r", ExpandAll)(
           solved)
       val allNodeScanC = AllNodesScan("c", Set.empty)(solved)
-      val plan         = queryGraphSolver.plan(cfg.qg)
+      val plan = queryGraphSolver.plan(cfg.qg)
       plan should equal(
         ValueHashJoin(
           allNodeScanC,
@@ -794,7 +794,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     }.withLogicalPlanningContext { (cfg, ctx) =>
       implicit val x = ctx
 
-      val qgs                        = cfg.qg.connectedComponents
+      val qgs = cfg.qg.connectedComponents
       val allNodeScanA: AllNodesScan = AllNodesScan("a", Set.empty)(solved)
       val expandAtoB =
         Expand(Argument(Set("a"))(solved)(), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")(solved)

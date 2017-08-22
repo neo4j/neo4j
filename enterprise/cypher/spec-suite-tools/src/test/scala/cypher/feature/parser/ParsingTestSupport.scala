@@ -94,7 +94,7 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
 
   def result(maps: Map[String, AnyRef]*): Result = {
     val result = mock(classOf[Result])
-    val cols   = if (maps.isEmpty) Seq.empty[String] else maps.head.keys
+    val cols = if (maps.isEmpty) Seq.empty[String] else maps.head.keys
     maps.foreach(_.keys should equal(cols))
 
     val itr = maps.map(_.asJava).iterator
@@ -110,7 +110,7 @@ abstract class ParsingTestSupport extends FunSuite with Matchers with DecorateAs
 
     when(result.accept(org.mockito.Matchers.any())).thenAnswer(new Answer[Unit] {
       override def answer(invocationOnMock: InvocationOnMock): Unit = {
-        val visitor  = invocationOnMock.getArgumentAt(0, classOf[ResultVisitor[_]])
+        val visitor = invocationOnMock.getArgumentAt(0, classOf[ResultVisitor[_]])
         var continue = true
         while (continue && itr.hasNext) {
           val row = new MapRow(itr.next())
@@ -133,10 +133,10 @@ trait MatcherMatchingSupport {
     }
   }
 
-  def accept[T <: AnyRef](value: T)                   = new Acceptor[T](value)
+  def accept[T <: AnyRef](value: T) = new Acceptor[T](value)
   def accept[T <: AnyVal](value: ScalaNumberProxy[T]) = new Acceptor(value.underlying())
-  def accept(value: Boolean)                          = new Acceptor[java.lang.Boolean](value)
-  def accept(value: Null)                             = new Acceptor[Null](value)
+  def accept(value: Boolean) = new Acceptor[java.lang.Boolean](value)
+  def accept(value: Null) = new Acceptor[Null](value)
 
   case class acceptOrdered(value: Result) extends Matcher[ResultMatcher] {
     override def apply(matcher: ResultMatcher): MatchResult = {

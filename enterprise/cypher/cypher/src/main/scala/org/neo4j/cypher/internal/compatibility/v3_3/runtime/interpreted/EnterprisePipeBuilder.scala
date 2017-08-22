@@ -65,7 +65,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id                  = idMap.getOrElse(plan, new Id)
+    val id = idMap.getOrElse(plan, new Id)
     val pipelineInformation = pipelines(plan)
 
     plan match {
@@ -111,7 +111,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
     implicit val table: SemanticTable = context.semanticTable
 
-    val id       = idMap.getOrElse(plan, new Id)
+    val id = idMap.getOrElse(plan, new Id)
     val pipeline = pipelines(plan)
 
     plan match {
@@ -121,22 +121,22 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandAll) =>
         val fromSlot = pipeline(from)
-        val relSlot  = pipeline(relName)
-        val toSlot   = pipeline(to)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
         ExpandAllRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(
           id)
 
       case Expand(_, IdName(from), dir, types, IdName(to), IdName(relName), ExpandInto) =>
         val fromSlot = pipeline(from)
-        val relSlot  = pipeline(relName)
-        val toSlot   = pipeline(to)
+        val relSlot = pipeline(relName)
+        val toSlot = pipeline(to)
         ExpandIntoRegisterPipe(source, fromSlot.offset, relSlot.offset, toSlot.offset, dir, LazyTypes(types), pipeline)(
           id)
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandAll, predicates) =>
-        val fromOffset           = pipeline(fromName).offset
-        val relOffset            = pipeline(relName).offset
-        val toOffset             = pipeline(toName).offset
+        val fromOffset = pipeline(fromName).offset
+        val relOffset = pipeline(relName).offset
+        val toOffset = pipeline(toName).offset
         val predicate: Predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandAllRegisterPipe(source,
                                       fromOffset,
@@ -149,9 +149,9 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
 
       case OptionalExpand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName), ExpandInto, predicates) =>
         val fromOffset = pipeline(fromName).offset
-        val relOffset  = pipeline(relName).offset
-        val toOffset   = pipeline(toName).offset
-        val predicate  = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
+        val relOffset = pipeline(relName).offset
+        val toOffset = pipeline(toName).offset
+        val predicate = predicates.map(buildPredicate).reduceOption(_ andWith _).getOrElse(True())
         OptionalExpandIntoRegisterPipe(source,
                                        fromOffset,
                                        relOffset,
@@ -181,8 +181,8 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
           case ExpandInto => false
         }
         val fromOffset = pipeline.getLongOffsetFor(fromName)
-        val toOffset   = pipeline.getLongOffsetFor(toName)
-        val relOffset  = pipeline.getReferenceOffsetFor(relName)
+        val toOffset = pipeline.getLongOffsetFor(toName)
+        val relOffset = pipeline.getReferenceOffsetFor(relName)
         VarLengthExpandRegisterPipe(source,
                                     fromOffset,
                                     relOffset,
@@ -197,7 +197,7 @@ class EnterprisePipeBuilder(fallback: PipeBuilder,
                                     pipeline)(id = id)
 
       case Optional(inner, symbols) =>
-        val nullableKeys    = inner.availableSymbols -- symbols
+        val nullableKeys = inner.availableSymbols -- symbols
         val nullableOffsets = nullableKeys.map(k => pipeline.getLongOffsetFor(k.name))
         OptionalRegisteredPipe(source, nullableOffsets.toSeq, pipeline)(id)
 

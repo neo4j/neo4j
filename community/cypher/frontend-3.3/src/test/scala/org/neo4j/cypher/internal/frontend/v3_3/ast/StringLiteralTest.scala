@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class StringLiteralTest extends CypherFunSuite {
   test("has type CTString") {
-    val literal        = StringLiteral("foo")(DummyPosition(0))
-    val result         = literal.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
+    val literal = StringLiteral("foo")(DummyPosition(0))
+    val result = literal.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
     val expressionType = result.state.expressionType(literal).actual
 
     assert(expressionType === CTString.invariant)

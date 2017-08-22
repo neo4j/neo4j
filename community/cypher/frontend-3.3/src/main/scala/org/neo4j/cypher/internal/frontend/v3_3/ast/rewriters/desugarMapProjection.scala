@@ -40,10 +40,10 @@ case class desugarMapProjection(state: SemanticState) extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
     case e @ MapProjection(id, items, scope) =>
       def propertySelect(propertyPosition: InputPosition, name: String): LiteralEntry = {
-        val key           = PropertyKeyName(name)(propertyPosition)
-        val idPos         = scope.symbolTable(id.name).definition.position
+        val key = PropertyKeyName(name)(propertyPosition)
+        val idPos = scope.symbolTable(id.name).definition.position
         val newIdentifier = Variable(id.name)(idPos)
-        val value         = Property(newIdentifier, key)(propertyPosition)
+        val value = Property(newIdentifier, key)(propertyPosition)
         LiteralEntry(key, value)(propertyPosition)
       }
 

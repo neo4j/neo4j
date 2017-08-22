@@ -53,7 +53,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId       = getLabelId(labelName)
+    val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     getOnlineIndex(
@@ -63,14 +63,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   def hasIndexRule(labelName: String): Boolean = {
     val labelId = getLabelId(labelName)
 
-    val indexDescriptors       = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor] = evalOrNone {
-    val labelId       = getLabelId(labelName)
+    val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     val schema =
@@ -90,7 +90,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint] = evalOrNone {
-    val labelId       = getLabelId(labelName)
+    val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     import scala.collection.JavaConverters._
@@ -109,7 +109,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
-      val propId  = getPropertyKeyId(propertyKey)
+      val propId = getPropertyKeyId(propertyKey)
       tc.statement.readOperations().constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propId)).hasNext
     } catch {
       case _: KernelException => false
@@ -163,14 +163,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       else
         Some(ks.outputSignature().asScala.map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()))).toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
-    val mode            = asCypherProcMode(ks.mode(), ks.allowed())
-    val description     = asOption(ks.description())
+    val mode = asCypherProcMode(ks.mode(), ks.allowed())
+    val description = asOption(ks.description())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn            = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
     if (maybeFunction.isPresent) {
       val ks = maybeFunction.get
@@ -179,9 +179,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         .asScala
         .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
         .toIndexedSeq
-      val output          = asCypherType(ks.outputType())
+      val output = asCypherType(ks.outputType())
       val deprecationInfo = asOption(ks.deprecated())
-      val description     = asOption(ks.description())
+      val description = asOption(ks.description())
 
       Some(UserFunctionSignature(name, input, output, deprecationInfo, ks.allowed(), description))
     } else None

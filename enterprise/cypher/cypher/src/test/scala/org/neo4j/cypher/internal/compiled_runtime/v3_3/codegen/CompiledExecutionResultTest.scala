@@ -182,7 +182,7 @@ class CompiledExecutionResultTest extends CypherFunSuite {
       override def accept[E <: Exception](visitor: QueryResultVisitor[E]): Unit = {
         try {
           val fields = new Array[AnyValue](row.size())
-          var i      = 0
+          var i = 0
           row.asScala.foreach {
             case (k, v) =>
               fields(i) = AnyValues.of(v)

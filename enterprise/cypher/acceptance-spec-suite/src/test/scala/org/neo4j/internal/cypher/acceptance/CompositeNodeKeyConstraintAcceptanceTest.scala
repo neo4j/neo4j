@@ -71,8 +71,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
     graph.execute("CREATE CONSTRAINT ON (n:User) ASSERT (n.firstname,n.lastname) IS NODE KEY")
 
     // Then
-    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
   }
 
@@ -114,8 +114,8 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("composite NODE KEY constraint should not fail when we have nodes with different properties") {
     // When
-    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Soap"), "User")
-    createLabeledNode(Map("firstname" -> "Joe", "lastname"  -> "Smoke"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Soap"), "User")
+    createLabeledNode(Map("firstname" -> "Joe", "lastname" -> "Smoke"), "User")
     createLabeledNode(Map("firstname" -> "Jake", "lastname" -> "Soap"), "User")
 
     // Then

@@ -40,8 +40,8 @@ import scala.language.postfixOps
 class CoerceToTest extends CypherFunSuite {
 
   implicit var openCases: Counter = Counter()
-  implicit val qtx                = mock[QueryContext]
-  implicit val state              = QueryStateHelper.emptyWith(qtx)
+  implicit val qtx = mock[QueryContext]
+  implicit val state = QueryStateHelper.emptyWith(qtx)
 
   val basicTypes = Set(CTAny, CTBoolean, CTString, CTNumber, CTInteger, CTFloat, CTPoint)
   val graphTypes = Set(CTNode, CTRelationship, CTPath)
@@ -310,7 +310,7 @@ class CoerceToTest extends CypherFunSuite {
 
         override def arguments: Seq[Expression] = Seq.empty
 
-        override def symbolTableDependencies: Set[String]                      = Set.empty
+        override def symbolTableDependencies: Set[String] = Set.empty
         def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = in
 
       }

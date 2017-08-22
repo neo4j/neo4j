@@ -46,9 +46,9 @@ Traverses the logical plan tree structure and builds up the corresponding output
    */
   def create(plan: LogicalPlan): TO = {
 
-    val planStack   = new mutable.Stack[LogicalPlan]()
+    val planStack = new mutable.Stack[LogicalPlan]()
     val outputStack = new mutable.Stack[TO]()
-    var comingFrom  = plan
+    var comingFrom = plan
 
     def populate(plan: LogicalPlan) = {
       var current = plan
@@ -84,8 +84,8 @@ Traverses the logical plan tree structure and builds up the corresponding output
           outputStack.push(output)
 
         case (Some(left), Some(_)) if comingFrom eq left =>
-          val arg1   = outputStack.pop()
-          val arg2   = outputStack.pop()
+          val arg1 = outputStack.pop()
+          val arg2 = outputStack.pop()
           val output = build(current, arg1, arg2)
 
           outputStack.push(output)

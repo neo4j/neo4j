@@ -49,7 +49,7 @@ class ListSliceTest extends CypherFunSuite {
   }
 
   test("should_handle_out_of_bounds_by_returning_null") {
-    val fullSeq             = Seq(1, 2, 3, 4)
+    val fullSeq = Seq(1, 2, 3, 4)
     implicit val collection = Literal(fullSeq)
 
     slice(from = 2, to = 10) should equal(list(longValue(3), longValue(4)))
@@ -61,9 +61,9 @@ class ListSliceTest extends CypherFunSuite {
     slice(from = -10, to = -1) should equal(list(longValue(1), longValue(2), longValue(3)))
   }
 
-  private val ctx            = ExecutionContext.empty
+  private val ctx = ExecutionContext.empty
   private implicit val state = QueryStateHelper.empty
-  private val NO_VALUE       = -666
+  private val NO_VALUE = -666
 
   private def slice(from: Int = NO_VALUE, to: Int = NO_VALUE)(implicit collection: Expression) = {
     val f = if (from == NO_VALUE) None else Some(Literal(from))

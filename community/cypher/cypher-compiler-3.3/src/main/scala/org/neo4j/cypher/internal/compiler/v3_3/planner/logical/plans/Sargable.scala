@@ -176,7 +176,7 @@ case class IdSeekable(expr: FunctionInvocation, ident: Variable, args: SeekableA
 case class PropertySeekable(expr: Property, ident: Variable, args: SeekableArgs) extends EqualitySeekable[Property] {
 
   def propertyKey: PropertyKeyName = expr.propertyKey
-  def dependencies: Set[Variable]  = args.dependencies
+  def dependencies: Set[Variable] = args.dependencies
 }
 
 sealed trait RangeSeekable[T <: Expression, V] extends Seekable[T] {

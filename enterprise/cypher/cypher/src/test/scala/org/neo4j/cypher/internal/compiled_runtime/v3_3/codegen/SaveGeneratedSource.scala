@@ -81,5 +81,5 @@ trait SaveGeneratedSource extends CypherTestSupport {
 
 private object SaveGeneratedSource {
   private val GENERATED_SOURCE_LOCATION = "org.neo4j.cypher.DEBUG.generated_source_location"
-  private val RELATIVE                  = Set("", "..")
+  private val RELATIVE = Set("", "..")
 }

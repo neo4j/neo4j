@@ -605,10 +605,10 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("joins with identical scans") {
     //given
     val corp = createLabeledNode("Company")
-    val a1   = createLabeledNode("Artist")
-    val a2   = createLabeledNode("Artist")
-    val c    = createLabeledNode("Concert")
-    val v    = createLabeledNode("Venue")
+    val a1 = createLabeledNode("Artist")
+    val a2 = createLabeledNode("Artist")
+    val c = createLabeledNode("Concert")
+    val v = createLabeledNode("Venue")
     relate(corp, a1, "SIGNED_WITH")
     relate(corp, a2, "SIGNED_WITH")
     relate(a1, c, "PERFORMED_AT")
@@ -648,8 +648,8 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     // GIVEN
     createLabeledNode(Map("category_type" -> "cat"), "Category")
     createLabeledNode(Map("category_type" -> "cat"), "Category")
-    val e1    = createLabeledNode(Map("domain_id" -> "1"), "Entity")
-    val e2    = createLabeledNode(Map("domain_id" -> "2"), "Entity")
+    val e1 = createLabeledNode(Map("domain_id" -> "1"), "Entity")
+    val e2 = createLabeledNode(Map("domain_id" -> "2"), "Entity")
     val aNode = createNode()
     relate(aNode, e1)
     val anotherNode = createNode()

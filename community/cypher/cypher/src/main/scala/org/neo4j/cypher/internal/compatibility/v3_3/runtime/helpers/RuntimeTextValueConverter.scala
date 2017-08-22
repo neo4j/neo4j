@@ -53,7 +53,7 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
   private def makeString(m: Map[_, _]) = m.map { case (k, v) => s"$k -> ${asTextValue(v)}" }.mkString("{", ", ", "}")
 
   private def props(n: Node): String = {
-    val ops        = context.nodeOps
+    val ops = context.nodeOps
     val properties = ops.propertyKeyIds(n.getId)
     val keyValStrings = properties.map(pkId =>
       s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(n.getId, pkId).asObject())}")
@@ -61,7 +61,7 @@ class RuntimeTextValueConverter(scalaValues: RuntimeScalaValueConverter)(implici
   }
 
   private def props(r: Relationship): String = {
-    val ops        = context.relationshipOps
+    val ops = context.relationshipOps
     val properties = ops.propertyKeyIds(r.getId)
     val keyValStrings = properties.map(pkId =>
       s"${context.getPropertyKeyName(pkId)}:${asTextValue(ops.getProperty(r.getId, pkId).asObject())}")

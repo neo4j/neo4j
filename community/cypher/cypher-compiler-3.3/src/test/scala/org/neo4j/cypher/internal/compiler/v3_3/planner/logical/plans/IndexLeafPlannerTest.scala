@@ -33,14 +33,14 @@ import org.neo4j.cypher.internal.ir.v3_3.Selections
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
 
-  val idName                = IdName("n")
+  val idName = IdName("n")
   val hasLabels: Expression = hasLabels("n", "Awesome")
   val property1: Expression = prop("n", "prop")
-  val lit42: Expression     = literalInt(42)
-  val lit6: Expression      = literalInt(6)
+  val lit42: Expression = literalInt(42)
+  val lit6: Expression = literalInt(6)
 
   val inCollectionValue = In(property1, ListLiteral(Seq(lit42)) _) _
-  val predicate2        = propEquality("n", "prop2", 43)
+  val predicate2 = propEquality("n", "prop2", 43)
 
   private def hasLabel(l: String) = HasLabels(varFor("n"), Seq(LabelName(l) _)) _
 
@@ -95,7 +95,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val x           = cfg.x
+      val x = cfg.x
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then
@@ -284,9 +284,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Unique constraint on :X(prop1, prop2)
     // Unique constraint on :X(prop3)
 
-    val val1  = literalInt(44)
-    val val2  = literalInt(55)
-    val val3  = literalInt(66)
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)
@@ -321,9 +321,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // Unique constraint on :X(prop1, prop2)
     // Unique constraint on :X(prop2, prop3)
 
-    val val1  = literalInt(44)
-    val val2  = literalInt(55)
-    val val3  = literalInt(66)
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)
@@ -361,9 +361,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     // MERGE (a:X {prop1: 42, prop2: 444, prop3: 56})
     // Unique constraint on :X(prop1, prop2, prop3)
 
-    val val1  = literalInt(44)
-    val val2  = literalInt(55)
-    val val3  = literalInt(66)
+    val val1 = literalInt(44)
+    val val2 = literalInt(55)
+    val val3 = literalInt(66)
     val pred1 = Equals(prop("n", "prop1"), val1)(pos)
     val pred2 = Equals(prop("n", "prop2"), val2)(pos)
     val pred3 = Equals(prop("n", "prop3"), val3)(pos)

@@ -36,10 +36,10 @@ case class RollUpApplyPipe(lhs: Pipe,
       if (nullableIdentifiers.map(ctx).contains(NO_VALUE)) {
         ctx += collectionName -> NO_VALUE
       } else {
-        val original     = ctx.createClone()
-        val innerState   = state.withInitialContext(ctx)
+        val original = ctx.createClone()
+        val innerState = state.withInitialContext(ctx)
         val innerResults = rhs.createResults(innerState)
-        val collection   = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray: _*)
+        val collection = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray: _*)
         original += collectionName -> collection
       }
     }

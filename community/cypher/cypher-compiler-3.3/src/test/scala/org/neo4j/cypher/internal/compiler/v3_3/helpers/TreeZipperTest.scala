@@ -34,11 +34,11 @@ class TreeZipperTest extends CypherFunSuite {
 
   val grandChild1 = TestElem("grandchild1", Seq())
   val grandChild2 = TestElem("grandchild2", Seq())
-  val child1      = TestElem("child1", Seq(grandChild1, grandChild2))
-  val child2      = TestElem("child2", Seq())
-  val child3      = TestElem("child3", Seq())
-  val child4      = TestElem("child4", Seq())
-  val root        = TestElem("parent", Seq(child1, child2, child3, child4))
+  val child1 = TestElem("child1", Seq(grandChild1, grandChild2))
+  val child2 = TestElem("child2", Seq())
+  val child3 = TestElem("child3", Seq())
+  val child4 = TestElem("child4", Seq())
+  val root = TestElem("parent", Seq(child1, child2, child3, child4))
 
   test("Can get location in a single element tree") {
     root.location.elem should equal(root)
@@ -144,7 +144,7 @@ class TreeZipperTest extends CypherFunSuite {
   test("Can add new elem to left") {
     val newElem = TestElem("child0", Seq())
 
-    val child2Location   = root.location.down.right.get
+    val child2Location = root.location.down.right.get
     val newChildLocation = child2Location.insertLeft(newElem).get
     newChildLocation.elem should equal(newElem)
     val updatedRoot = newChildLocation.root.elem
@@ -156,7 +156,7 @@ class TreeZipperTest extends CypherFunSuite {
   test("Can add new elem to left of leftMost") {
     val newElem = TestElem("child0", Seq())
 
-    val child1Location   = root.location.down.get
+    val child1Location = root.location.down.get
     val newChildLocation = child1Location.insertLeft(newElem).get
     newChildLocation.elem should equal(newElem)
     val updatedRoot = newChildLocation.root.elem
@@ -168,7 +168,7 @@ class TreeZipperTest extends CypherFunSuite {
   test("Can add new elem to right") {
     val newElem = TestElem("child0", Seq())
 
-    val child1Location   = root.location.down.get
+    val child1Location = root.location.down.get
     val newChildLocation = child1Location.insertRight(newElem).get
     newChildLocation.elem should equal(newElem)
     val updatedRoot = newChildLocation.root.elem
@@ -180,7 +180,7 @@ class TreeZipperTest extends CypherFunSuite {
   test("Can add new elem to right of rightMost") {
     val newElem = TestElem("child0", Seq())
 
-    val child4Location   = root.location.down.rightMost.get
+    val child4Location = root.location.down.rightMost.get
     val newChildLocation = child4Location.insertRight(newElem).get
     newChildLocation.elem should equal(newElem)
     val updatedRoot = newChildLocation.root.elem

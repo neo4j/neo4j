@@ -97,8 +97,8 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
 
   test("should use index on other node property value where there is no incoming horizon") {
     val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
-    val n1    = createLabeledNode(Map("id" -> 122), "Bar")
-    val n2    = createLabeledNode(Map("id" -> 123), "Bar")
+    val n1 = createLabeledNode(Map("id" -> 122), "Bar")
+    val n2 = createLabeledNode(Map("id" -> 123), "Bar")
     graph.createIndex("Foo", "id")
     val query =
       """
@@ -114,8 +114,8 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with New
 
   test("should use index on other node property value where there is an incoming horizon") {
     val nodes = Range(0, 125).map(i => createLabeledNode(Map("id" -> i), "Foo"))
-    val n1    = createLabeledNode(Map("id" -> 122), "Bar")
-    val n2    = createLabeledNode(Map("id" -> 123), "Bar")
+    val n1 = createLabeledNode(Map("id" -> 122), "Bar")
+    val n2 = createLabeledNode(Map("id" -> 123), "Bar")
     graph.createIndex("Foo", "id")
     val query =
       """

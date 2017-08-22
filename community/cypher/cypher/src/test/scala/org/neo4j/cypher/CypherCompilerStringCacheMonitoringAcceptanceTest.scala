@@ -119,8 +119,8 @@ class CypherCompilerStringCacheMonitoringAcceptanceTest extends ExecutionEngineF
   test("should log on cache evictions") {
     // given
     val logProvider = new AssertableLogProvider()
-    val engine      = createEngine(graph, logProvider)
-    val counter     = new CacheCounter()
+    val engine = createEngine(graph, logProvider)
+    val counter = new CacheCounter()
     kernelMonitors.addMonitorListener(counter)
     val query = "match (n:Person:Dog) return n"
 

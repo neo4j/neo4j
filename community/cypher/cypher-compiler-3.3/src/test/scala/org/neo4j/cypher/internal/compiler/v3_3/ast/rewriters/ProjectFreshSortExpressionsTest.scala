@@ -207,12 +207,12 @@ class ProjectFreshSortExpressionsTest extends CypherFunSuite with RewriteTest wi
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = ast(originalQuery)
     val expected = ast(expectedQuery)
-    val result   = endoRewrite(original)
+    val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
 
   private def ast(queryText: String) = {
-    val parsed      = parseForRewriting(queryText)
+    val parsed = parseForRewriting(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
     val normalized =
       parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))

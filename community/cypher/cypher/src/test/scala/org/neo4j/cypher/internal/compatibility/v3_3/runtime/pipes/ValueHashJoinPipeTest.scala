@@ -124,7 +124,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("a" -> CTInteger)))
     when(left.createResults(queryState)).thenReturn(rows("a", null, null, null))
 
-    val right   = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTInteger)))
     val rhsIter = new TestableIterator(rows("b", 1, 2, 3))
     when(right.createResults(queryState)).thenReturn(rhsIter)
 
@@ -158,7 +158,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
 
   test("should support joining on arrays") {
     // given
-    val ints    = intArray(Array(1, 2, 3))
+    val ints = intArray(Array(1, 2, 3))
     val doubles = doubleArray(Array(1.0, 2.0, 3.0))
 
     val queryState = QueryStateHelper.empty

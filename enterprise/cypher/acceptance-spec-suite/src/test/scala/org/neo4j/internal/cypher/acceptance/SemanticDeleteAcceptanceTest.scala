@@ -95,7 +95,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
           //delete
-          val variables  = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
+          val variables = findAllRelationshipNames(pattern) ++ findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DELETE ${variables.mkString(",")}")
 
@@ -119,7 +119,7 @@ class SemanticDeleteAcceptanceTest extends ExecutionEngineFunSuite with PatternG
           //update
           updateWithBothPlannersAndCompatibilityMode(s"CREATE $patternString")
           //delete
-          val variables  = findAllNodeNames(pattern)
+          val variables = findAllNodeNames(pattern)
           val undirected = makeUndirected(pattern).map(_.string).mkString
           updateWithBothPlannersAndCompatibilityMode(s"MATCH $undirected DETACH DELETE ${variables.mkString(",")}")
 

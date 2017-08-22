@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object NumberType {
   val instance = new NumberType() {
-    val parentType               = CTAny
-    override val isAbstract      = true
-    override val toString        = "Number"
+    val parentType = CTAny
+    override val isAbstract = true
+    override val toString = "Number"
     override val toNeoTypeString = "NUMBER?"
   }
 }

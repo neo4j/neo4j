@@ -32,13 +32,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.symbols._
 object ResolvedCall {
   def apply(signatureLookup: QualifiedName => ProcedureSignature)(unresolved: UnresolvedCall): ResolvedCall = {
     val UnresolvedCall(_, _, declaredArguments, declaredResult) = unresolved
-    val position                                                = unresolved.position
-    val signature                                               = signatureLookup(QualifiedName(unresolved))
+    val position = unresolved.position
+    val signature = signatureLookup(QualifiedName(unresolved))
     val nonDefaults =
       signature.inputSignature.flatMap(s => if (s.default.isDefined) None else Some(Parameter(s.name, CTAny)(position)))
     val callArguments = declaredArguments.getOrElse(nonDefaults)
-    val callResults   = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
-    val callFilter    = declaredResult.flatMap(_.where)
+    val callResults = declaredResult.map(_.items).getOrElse(signatureResults(signature, position))
+    val callFilter = declaredResult.flatMap(_.where)
     if (callFilter.nonEmpty)
       throw new IllegalArgumentException(s"Expected no unresolved call with WHERE but got: $unresolved")
     else
@@ -111,7 +111,7 @@ case class ResolvedCall(signature: ProcedureSignature,
   private def argumentCheck: SemanticCheck = {
     val expectedNumArgs = signature.inputSignature.length
     val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
-    val actualNumArgs   = callArguments.length + usedDefaultArgs.length
+    val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
     if (declaredArguments) {
       if (expectedNumArgs == actualNumArgs) {

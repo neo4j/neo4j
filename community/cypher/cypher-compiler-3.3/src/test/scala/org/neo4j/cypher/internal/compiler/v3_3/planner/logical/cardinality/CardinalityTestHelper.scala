@@ -97,7 +97,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
     def withRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
-      val key                                  = (lhs.name, relType.name, rhs.name)
+      val key = (lhs.name, relType.name, rhs.name)
       assert(!knownRelationshipCardinality.contains(key), "This label/type/label combo is already known")
       copy(
         knownRelationshipCardinality = knownRelationshipCardinality + (key -> cardinality)
@@ -106,8 +106,8 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
 
     def addRelationshipCardinality(relationship: (((Symbol, Symbol), Symbol), Double)): TestUnit = {
       val (((lhs, relType), rhs), cardinality) = relationship
-      val key                                  = (lhs.name, relType.name, rhs.name)
-      val increment                            = Map(key -> cardinality)
+      val key = (lhs.name, relType.name, rhs.name)
+      val increment = Map(key -> cardinality)
       copy(
         knownRelationshipCardinality = knownRelationshipCardinality.fuse(increment)(_ + _)
       )
@@ -141,9 +141,9 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       )
 
     def prepareTestContext: (GraphStatistics, SemanticTable) = {
-      val labelIds: Map[String, Int]    = knownLabelCardinality.map(_._1).zipWithIndex.toMap
+      val labelIds: Map[String, Int] = knownLabelCardinality.map(_._1).zipWithIndex.toMap
       val propertyIds: Map[String, Int] = knownProperties.zipWithIndex.toMap
-      val relTypeIds: Map[String, Int]  = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
+      val relTypeIds: Map[String, Int] = knownRelationshipCardinality.map(_._1._2).toSeq.distinct.zipWithIndex.toMap
 
       val statistics = new GraphStatistics {
 
@@ -159,7 +159,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
           })
 
         def indexSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-          val labelName: Option[String]    = getLabelName(index.label)
+          val labelName: Option[String] = getLabelName(index.label)
           val propertyName: Option[String] = getPropertyName(index.property)
           //TODO: Refactor for composite indexes
           (labelName, propertyName) match {
@@ -172,7 +172,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         }
 
         def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] = {
-          val labelName: Option[String]    = getLabelName(index.label)
+          val labelName: Option[String] = getLabelName(index.label)
           val propertyName: Option[String] = getPropertyName(index.property)
           //TODO: Refactor for composite indexes
           (labelName, propertyName) match {
@@ -224,7 +224,7 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
       }
 
       val semanticTable: SemanticTable = {
-        val empty     = SemanticTable()
+        val empty = SemanticTable()
         val withNodes = knownNodeNames.foldLeft(empty) { case (table, node) => table.addNode(Variable(node)(pos)) }
         val withNodesAndRels = knownRelNames.foldLeft(withNodes) {
           case (table, rel) => table.addRelationship(Variable(rel)(pos))

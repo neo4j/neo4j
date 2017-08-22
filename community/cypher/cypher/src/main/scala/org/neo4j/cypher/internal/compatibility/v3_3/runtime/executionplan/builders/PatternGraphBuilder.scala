@@ -36,7 +36,7 @@ trait PatternGraphBuilder {
     if (patterns.isEmpty)
       return new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
 
-    val patternNodeMap: mutable.Map[String, PatternNode]             = scala.collection.mutable.Map()
+    val patternNodeMap: mutable.Map[String, PatternNode] = scala.collection.mutable.Map()
     val patternRelMap: mutable.Map[String, Seq[PatternRelationship]] = scala.collection.mutable.Map()
 
     def takeOnPattern(x: Pattern): Boolean = {
@@ -48,13 +48,13 @@ trait PatternGraphBuilder {
     }
 
     def takeOnRelatedTo(r: RelatedTo) = {
-      val left                   = r.left
-      val right                  = r.right
-      val relName                = r.relName
-      val leftNode: PatternNode  = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
+      val left = r.left
+      val right = r.right
+      val relName = r.relName
+      val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
       val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right.name, new PatternNode(right))
-      val maybeSetOfPatternRel   = patternRelMap.get(relName)
-      val newPatternRel          = leftNode.relateTo(relName, rightNode, r)
+      val maybeSetOfPatternRel = patternRelMap.get(relName)
+      val newPatternRel = leftNode.relateTo(relName, rightNode, r)
       if (maybeSetOfPatternRel.isDefined)
         patternRelMap(relName) = maybeSetOfPatternRel.get :+ newPatternRel
       else
@@ -64,8 +64,8 @@ trait PatternGraphBuilder {
 
     def takeOnVarLengthRel(r: VarLengthRelatedTo) = {
       val startNode: PatternNode = patternNodeMap.getOrElseUpdate(r.left.name, new PatternNode(r.left))
-      val endNode: PatternNode   = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
-      val maybeSetOfPatternRel   = patternRelMap.get(r.pathName)
+      val endNode: PatternNode = patternNodeMap.getOrElseUpdate(r.right.name, new PatternNode(r.right))
+      val maybeSetOfPatternRel = patternRelMap.get(r.pathName)
       val newPatternRel = startNode.relateViaVariableLengthPathTo(r.pathName,
                                                                   endNode,
                                                                   r.minHops,
@@ -93,7 +93,7 @@ trait PatternGraphBuilder {
           .mkString(", ")))
 
     val patternsLeft = mutable.Set[Pattern](patterns: _*)
-    val boundPoints  = mutable.Set[String](startPoint.possibleStartPoints.map(_._1): _*)
+    val boundPoints = mutable.Set[String](startPoint.possibleStartPoints.map(_._1): _*)
     patternsLeft -= startPoint
     takeOnPattern(startPoint)
 

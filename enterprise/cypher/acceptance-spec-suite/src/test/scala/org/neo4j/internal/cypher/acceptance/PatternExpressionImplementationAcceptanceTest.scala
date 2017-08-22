@@ -60,14 +60,14 @@ class PatternExpressionImplementationAcceptanceTest
   }
 
   test("match (n) return case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p") {
-    val start  = createLabeledNode("A")
-    val c      = createLabeledNode("C")
-    val rel1   = relate(start, c)
-    val rel2   = relate(start, c)
+    val start = createLabeledNode("A")
+    val c = createLabeledNode("C")
+    val rel1 = relate(start, c)
+    val rel2 = relate(start, c)
     val start2 = createLabeledNode("B")
-    val d      = createLabeledNode("D")
-    val rel3   = relate(start2, d)
-    val rel4   = relate(start2, d)
+    val d = createLabeledNode("D")
+    val rel3 = relate(start2, d)
+    val rel4 = relate(start2, d)
 
     graph.inTx {
       val result = executeWithAllPlannersAndCompatibilityMode(
@@ -118,14 +118,14 @@ class PatternExpressionImplementationAcceptanceTest
 
   test(
     "match (n) with case when n:A then (n)-->(:C) when n:B then (n)-->(:D) else 42 end as p, count(n) as c return p, c") {
-    val start  = createLabeledNode("A")
-    val c      = createLabeledNode("C")
-    val rel1   = relate(start, c)
-    val rel2   = relate(start, c)
+    val start = createLabeledNode("A")
+    val c = createLabeledNode("C")
+    val rel1 = relate(start, c)
+    val rel2 = relate(start, c)
     val start2 = createLabeledNode("B")
-    val d      = createLabeledNode("D")
-    val rel3   = relate(start2, d)
-    val rel4   = relate(start2, d)
+    val d = createLabeledNode("D")
+    val rel3 = relate(start2, d)
+    val rel4 = relate(start2, d)
 
     graph.inTx {
       val result = executeWithAllPlannersAndCompatibilityMode(
@@ -362,7 +362,7 @@ class PatternExpressionImplementationAcceptanceTest
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) WHERE (n)-[:HAS]->() RETURN n")
 
-    val argumentPLan  = result.executionPlanDescription().cd("NodeByLabelScan")
+    val argumentPLan = result.executionPlanDescription().cd("NodeByLabelScan")
     val estimatedRows = argumentPLan.arguments.collect { case n: EstimatedRows => n }.head
     estimatedRows should equal(EstimatedRows(3.0))
   }
@@ -373,7 +373,7 @@ class PatternExpressionImplementationAcceptanceTest
     createLabeledNode("A")
     createLabeledNode("A")
     val endNode = createNode()
-    val rel     = relate(node, endNode, "HAS")
+    val rel = relate(node, endNode, "HAS")
 
     val result = executeWithAllPlannersAndCompatibilityMode("MATCH (n:A) RETURN (n)-[:HAS]->() as p")
 

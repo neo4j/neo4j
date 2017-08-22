@@ -41,7 +41,7 @@ class ScopeTest extends CypherFunSuite {
                         nodeSymbol("book", 18, 111))()
     val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 18, 124))(child11)
     val child2 = scope(nodeSymbol("book", 18, 124))()
-    val given  = scope()(child1, child2)
+    val given = scope()(child1, child2)
 
     given.allScopes should equal(Seq(given, child1, child11, child2))
   }
@@ -53,13 +53,13 @@ class ScopeTest extends CypherFunSuite {
                         nodeSymbol("book", 18, 111))()
     val child1 = scope(nodeSymbol("root", 6), nodeSymbol("book", 24, 124))(child11)
     val child2 = scope(nodeSymbol("book", 18, 124))()
-    val given  = scope()(child1, child2)
+    val given = scope()(child1, child2)
 
     given.allSymbolDefinitions should equal(
       Map(
         "name" -> Set(symUse("name", 31)),
         "root" -> Set(symUse("root", 6)),
-        "tag"  -> Set(symUse("tag", 83)),
+        "tag" -> Set(symUse("tag", 83)),
         "book" -> Set(symUse("book", 18), symUse("book", 24))
       ))
   }
@@ -92,16 +92,16 @@ class ScopeTest extends CypherFunSuite {
 
     actual should equal(
       Map(
-        symUse("root", 6)   -> symUse("root", 6),
-        symUse("root", 69)  -> symUse("root", 6),
-        symUse("book", 18)  -> symUse("book", 18),
+        symUse("root", 6) -> symUse("root", 6),
+        symUse("root", 69) -> symUse("root", 6),
+        symUse("book", 18) -> symUse("book", 18),
         symUse("book", 111) -> symUse("book", 18),
         symUse("book", 124) -> symUse("book", 18),
         symUse("book", 200) -> symUse("book", 200),
         symUse("book", 300) -> symUse("book", 200),
-        symUse("name", 31)  -> symUse("name", 31),
-        symUse("name", 93)  -> symUse("name", 31),
-        symUse("tag", 83)   -> symUse("tag", 83)
+        symUse("name", 31) -> symUse("name", 31),
+        symUse("name", 93) -> symUse("name", 31),
+        symUse("tag", 83) -> symUse("tag", 83)
       ))
   }
 }

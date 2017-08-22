@@ -24,7 +24,7 @@ import org.parboiled.scala._
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
 
   def Expression: Rule1[ast.Expression] = ???
-  val t                                 = DummyPosition(0)
+  val t = DummyPosition(0)
 
   test("test variable can contain ascii") {
     implicit val parserToTest = Variable

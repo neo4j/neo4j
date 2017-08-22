@@ -70,7 +70,7 @@ case class TypeAndDirectionExpander(nodeFilters: Seq[KernelPredicate[PropertyCon
 }
 
 object Expander {
-  def typeDirExpander(): TypeAndDirectionExpander           = TypeAndDirectionExpander(Seq.empty, Seq.empty, Seq.empty)
+  def typeDirExpander(): TypeAndDirectionExpander = TypeAndDirectionExpander(Seq.empty, Seq.empty, Seq.empty)
   def expanderForAllTypes(dir: SemanticDirection): Expander = OnlyDirectionExpander(Seq.empty, Seq.empty, dir)
 }
 

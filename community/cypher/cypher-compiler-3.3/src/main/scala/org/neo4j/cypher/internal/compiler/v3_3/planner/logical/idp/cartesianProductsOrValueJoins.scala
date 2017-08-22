@@ -118,7 +118,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       singleComponentPlanner: SingleComponentPlannerTrait)
     : Map[PlannedComponent, (PlannedComponent, PlannedComponent)] = {
     (for {
-      join                              <- qg.selections.valueJoins
+      join <- qg.selections.valueJoins
       t1 @ PlannedComponent(qgA, planA) <- plans if planA.satisfiesExpressionDependencies(join.lhs)
       t2 @ PlannedComponent(qgB, planB) <- plans if planB.satisfiesExpressionDependencies(join.rhs) && planA != planB
       plans = planA -> planB
@@ -156,7 +156,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
                                              singleComponentPlanner: SingleComponentPlannerTrait) = {
 
     val notSingleComponent = rhsQG.connectedComponents.size > 1
-    val containsOptionals  = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
+    val containsOptionals = rhsInputPlan.solved.lastQueryGraph.optionalMatches.nonEmpty
 
     if (notSingleComponent || containsOptionals) None
     else {
@@ -164,7 +164,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       val ids =
         rhsInputPlan.solved.lastQueryGraph.addArgumentIds(lhsQG.coveredIds.toIndexedSeq).addPredicates(predicate)
       val rhsPlan = singleComponentPlanner.planComponent(ids)
-      val result  = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
+      val result = kit.select(context.logicalPlanProducer.planApply(lhsPlan, rhsPlan), fullQG)
 
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and

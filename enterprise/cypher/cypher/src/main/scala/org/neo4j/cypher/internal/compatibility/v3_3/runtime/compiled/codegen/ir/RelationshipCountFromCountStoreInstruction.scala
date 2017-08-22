@@ -52,7 +52,7 @@ case class RelationshipCountFromCountStoreInstruction(opName: String,
         }
 
         val start = labelToken(startLabel, "StartOf")
-        val end   = labelToken(endLabel, "EndOf")
+        val end = labelToken(endLabel, "EndOf")
 
         if (relTypes.isEmpty)
           ifBody.incrementInteger(variable.name, ifBody.relCountFromCountStore(start, end, ifBody.wildCardToken))

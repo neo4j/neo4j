@@ -174,8 +174,8 @@ class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatistics
       index <- 0 until width
     } {
 
-      val inum       = "0" * width + index.toBinaryString
-      val name       = "n" + inum.substring(inum.length - (depth + 1), inum.length)
+      val inum = "0" * width + index.toBinaryString
+      val name = "n" + inum.substring(inum.length - (depth + 1), inum.length)
       val parentName = name.substring(0, name.length - 1)
       nodes(name) = createNode(Map("id" -> name))
       if (nodes.isDefinedAt(parentName)) {

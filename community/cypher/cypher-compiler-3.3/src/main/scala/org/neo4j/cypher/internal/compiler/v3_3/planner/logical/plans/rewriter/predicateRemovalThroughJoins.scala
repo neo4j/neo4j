@@ -41,13 +41,13 @@ case object predicateRemovalThroughJoins extends Rewriter {
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case n @ NodeHashJoin(nodeIds, lhs, rhs @ Selection(rhsPredicates, rhsLeaf)) =>
       val lhsPredicates = predicatesDependingOnTheJoinIds(lhs.solved.lastQueryGraph, nodeIds)
-      val newSelection  = rhsPredicates.filterNot(lhsPredicates)
+      val newSelection = rhsPredicates.filterNot(lhsPredicates)
 
       if (newSelection.isEmpty)
         NodeHashJoin(nodeIds, lhs, rhsLeaf)(n.solved)
       else {
         val newRhsPlannerQuery = rhsLeaf.solved.amendQueryGraph(_.addPredicates(newSelection: _*))
-        val newRhsSolved       = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
+        val newRhsSolved = CardinalityEstimation.lift(newRhsPlannerQuery, rhsLeaf.solved.estimatedCardinality)
         NodeHashJoin(nodeIds, lhs, Selection(newSelection, rhsLeaf)(newRhsSolved))(n.solved)
       }
   })

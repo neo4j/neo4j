@@ -254,7 +254,7 @@ trait TypeSafeMathSupport {
     */
   sealed trait OverflowAwareSum[T] {
     protected var sum: T = _
-    def value            = sum
+    def value = sum
 
     /**
       * @param next  next number to add to the total sum
@@ -336,8 +336,8 @@ trait TypeSafeMathSupport {
     */
   object OverflowAwareSum {
 
-    def apply(x: Int)    = IntSum(x)
-    def apply(x: Long)   = LongSum(x)
+    def apply(x: Int) = IntSum(x)
+    def apply(x: Long) = LongSum(x)
     def apply(x: Double) = DoubleSum(x)
 
     def addExact(x: Int, y: Int): Any = {

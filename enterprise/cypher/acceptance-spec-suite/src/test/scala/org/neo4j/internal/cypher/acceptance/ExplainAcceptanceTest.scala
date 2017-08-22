@@ -67,7 +67,7 @@ class ExplainAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
                   |RETURN count(*), count(distinct bknEnd), avg(size(bookings)),avg(size(perDays));""".stripMargin
 
     val result = succeedWith(Configs.CommunityInterpreted, query)
-    val plan   = result.executionPlanDescription().toString
+    val plan = result.executionPlanDescription().toString
     result.close()
 
     plan.toString should include("NestedPlanExpression(VarExpand-Argument)")

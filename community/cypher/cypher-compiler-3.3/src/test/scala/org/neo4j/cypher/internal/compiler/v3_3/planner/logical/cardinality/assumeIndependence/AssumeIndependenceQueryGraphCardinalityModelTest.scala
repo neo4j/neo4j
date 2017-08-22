@@ -101,52 +101,52 @@ class AssumeIndependenceQueryGraphCardinalityModelTest
       ,
       "MATCH (a:A:B)-->()"
         -> {
-          val maxRelCount      = N * N * Asel * Bsel
+          val maxRelCount = N * N * Asel * Bsel
           val A_relSelectivity = math.min(A_ANY_ANY / maxRelCount, 1.0)
           val B_relSelectivity = math.min(B_ANY_ANY / maxRelCount, 1.0)
-          val relSelectivity   = A_relSelectivity * B_relSelectivity
+          val relSelectivity = A_relSelectivity * B_relSelectivity
           A * B * relSelectivity
         },
       "MATCH (a:A)-[:T1|:T2]->(:B)"
         -> {
           val patternNodeCrossProduct = N * N
-          val labelSelectivity        = Asel * Bsel
-          val maxRelCount             = patternNodeCrossProduct * labelSelectivity
-          val relSelectivity          = or(A_T1_B / maxRelCount, A_T2_B / maxRelCount)
+          val labelSelectivity = Asel * Bsel
+          val maxRelCount = patternNodeCrossProduct * labelSelectivity
+          val relSelectivity = or(A_T1_B / maxRelCount, A_T2_B / maxRelCount)
           patternNodeCrossProduct * labelSelectivity * relSelectivity
         },
       "MATCH (a:A:E)-[:T1|:T2]->()"
         -> {
           val patternNodeCrossProduct = N * N
-          val labelSelectivity        = Asel * Esel
-          val maxRelCount             = patternNodeCrossProduct * labelSelectivity
-          val relSelectivityT1        = and(A_T1_ANY / maxRelCount, E_T1_ANY / maxRelCount)
-          val relSelectivityT2        = and(A_T2_ANY / maxRelCount, E_T2_ANY / maxRelCount)
-          val relSelectivity          = or(relSelectivityT1, relSelectivityT2)
+          val labelSelectivity = Asel * Esel
+          val maxRelCount = patternNodeCrossProduct * labelSelectivity
+          val relSelectivityT1 = and(A_T1_ANY / maxRelCount, E_T1_ANY / maxRelCount)
+          val relSelectivityT2 = and(A_T2_ANY / maxRelCount, E_T2_ANY / maxRelCount)
+          val relSelectivity = or(relSelectivityT1, relSelectivityT2)
           patternNodeCrossProduct * labelSelectivity * relSelectivity
         },
       "MATCH (a:A:D)-[:T1|:T2]->()"
         -> {
           val patternNodeCrossProduct = N * N
-          val labelSelectivity        = Asel * Dsel
-          val maxRelCount             = patternNodeCrossProduct * labelSelectivity
-          val relSelectivityT1        = and(A_T1_ANY / maxRelCount) * (D_T1_ANY / maxRelCount)
-          val relSelectivityT2        = and(A_T2_ANY / maxRelCount) * (D_T2_ANY / maxRelCount)
-          val relSelectivity          = or(relSelectivityT1, relSelectivityT2)
+          val labelSelectivity = Asel * Dsel
+          val maxRelCount = patternNodeCrossProduct * labelSelectivity
+          val relSelectivityT1 = and(A_T1_ANY / maxRelCount) * (D_T1_ANY / maxRelCount)
+          val relSelectivityT2 = and(A_T2_ANY / maxRelCount) * (D_T2_ANY / maxRelCount)
+          val relSelectivity = or(relSelectivityT1, relSelectivityT2)
           patternNodeCrossProduct * labelSelectivity * relSelectivity
         },
       "MATCH (a:A:B)-[:T1|:T2]->(c:C:D)"
         -> {
-          val A_T2_C                  = 0
-          val A_T2_D                  = 0
-          val B_T2_C                  = 0
-          val B_T2_D                  = 0
+          val A_T2_C = 0
+          val A_T2_D = 0
+          val B_T2_C = 0
+          val B_T2_D = 0
           val patternNodeCrossProduct = N * N
-          val labelSelectivity        = Asel * Bsel * Csel * Dsel
-          val maxRelCount             = patternNodeCrossProduct * labelSelectivity
-          val relSelT1                = and(A_T1_C / maxRelCount, A_T1_D / maxRelCount, B_T1_C / maxRelCount, B_T1_D / maxRelCount)
-          val relSelT2                = and(A_T2_C / maxRelCount, A_T2_D / maxRelCount, B_T2_C / maxRelCount, B_T2_D / maxRelCount)
-          val relSelectivity          = or(relSelT1, relSelT2)
+          val labelSelectivity = Asel * Bsel * Csel * Dsel
+          val maxRelCount = patternNodeCrossProduct * labelSelectivity
+          val relSelT1 = and(A_T1_C / maxRelCount, A_T1_D / maxRelCount, B_T1_C / maxRelCount, B_T1_D / maxRelCount)
+          val relSelT2 = and(A_T2_C / maxRelCount, A_T2_D / maxRelCount, B_T2_C / maxRelCount, B_T2_D / maxRelCount)
+          val relSelectivity = or(relSelT1, relSelT2)
           patternNodeCrossProduct * labelSelectivity * relSelectivity
         },
       "MATCH (a) OPTIONAL MATCH (a)-[:T1]->(:B)"
@@ -214,10 +214,10 @@ class AssumeIndependenceQueryGraphCardinalityModelTest
 // The result includes all (:A)-[:T1]->(:B)
 // and all (:A)-[:T1]->()-[:T1]->(:B)
 
-    val maxRelCount      = A * N * B
-    val l1Selectivity    = A_T1_B / maxRelCount
-    val l2Selectivities  = Seq(A_T1_ANY / maxRelCount, ANY_T1_B / maxRelCount)
-    val l2Selectivity    = l2Selectivities.reduce(_ * _)
+    val maxRelCount = A * N * B
+    val l1Selectivity = A_T1_B / maxRelCount
+    val l2Selectivities = Seq(A_T1_ANY / maxRelCount, ANY_T1_B / maxRelCount)
+    val l2Selectivity = l2Selectivities.reduce(_ * _)
     val totalSelectivity = or(l1Selectivity, l2Selectivity)
 
     forQuery("MATCH (a:A)-[r:T1*1..2]->(b:B)").shouldHaveQueryGraphCardinality(maxRelCount * totalSelectivity)

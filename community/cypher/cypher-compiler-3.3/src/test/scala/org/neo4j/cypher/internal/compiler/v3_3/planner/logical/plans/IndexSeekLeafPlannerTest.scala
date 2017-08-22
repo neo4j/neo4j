@@ -34,12 +34,12 @@ import scala.language.reflectiveCalls
 
 class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val idName                = IdName("n")
+  val idName = IdName("n")
   val hasLabels: Expression = HasLabels(varFor("n"), Seq(LabelName("Awesome") _)) _
-  val property: Expression  = Property(varFor("n"), PropertyKeyName("prop") _) _
+  val property: Expression = Property(varFor("n"), PropertyKeyName("prop") _) _
   val property2: Expression = Property(varFor("n"), PropertyKeyName("prop2") _) _
-  val lit42: Expression     = SignedDecimalIntegerLiteral("42") _
-  val lit6: Expression      = SignedDecimalIntegerLiteral("6") _
+  val lit42: Expression = SignedDecimalIntegerLiteral("42") _
+  val lit6: Expression = SignedDecimalIntegerLiteral("6") _
 
   val inCollectionValue = In(property, ListLiteral(Seq(lit42)) _) _
 
@@ -203,7 +203,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
                                         foundProps: Seq[PropertyKeyToken],
                                         foundVals: Seq[Expression]) = {
     val expected: Map[String, Expression] = expectedProps.zip(expectedVals).toMap
-    val found: Map[String, Expression]    = foundProps.map(_.name).zip(foundVals).toMap
+    val found: Map[String, Expression] = foundProps.map(_.name).zip(foundVals).toMap
     found.equals(expected)
   }
 
@@ -216,7 +216,7 @@ class IndexSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       indexOn("Awesome", "prop")
     }.withLogicalPlanningContext { (cfg, ctx) =>
       // when
-      val x           = cfg.x
+      val x = cfg.x
       val resultPlans = indexSeekLeafPlanner(cfg.qg)(ctx)
 
       // then

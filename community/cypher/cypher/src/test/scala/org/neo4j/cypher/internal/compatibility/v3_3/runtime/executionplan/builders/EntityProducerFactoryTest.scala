@@ -36,9 +36,9 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryContextAdaptation
 import org.neo4j.graphdb.Node
 
 class EntityProducerFactoryTest extends CypherFunSuite {
-  var planContext: PlanContext       = null
+  var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
-  val context                        = ExecutionContext.empty
+  val context = ExecutionContext.empty
 
   override def beforeEach() {
     super.beforeEach()
@@ -49,7 +49,7 @@ class EntityProducerFactoryTest extends CypherFunSuite {
   test("throws error when index is missing") {
     //GIVEN
     val label: String = "label"
-    val prop: String  = "prop"
+    val prop: String = "prop"
     when(planContext.indexGet(label, Seq(prop))).thenReturn(None)
 
     //WHEN
@@ -60,10 +60,10 @@ class EntityProducerFactoryTest extends CypherFunSuite {
 
   test("calls the right methods") {
     //GIVEN
-    val label: String              = "label"
-    val prop: String               = "prop"
-    val index: IndexDescriptor     = IndexDescriptor(123, 456)
-    val value                      = 42
+    val label: String = "label"
+    val prop: String = "prop"
+    val index: IndexDescriptor = IndexDescriptor(123, 456)
+    val value = 42
     val queryContext: QueryContext = mock[QueryContext]
     when(planContext.indexGet(label, Seq(prop))).thenReturn(Some(index))
     val indexResult = Iterator(null)
@@ -83,8 +83,8 @@ class EntityProducerFactoryTest extends CypherFunSuite {
 
   test("should translate values to neo4j") {
     //GIVEN
-    val labelName              = "Label"
-    val propertyKey            = "prop"
+    val labelName = "Label"
+    val propertyKey = "prop"
     val index: IndexDescriptor = IndexDescriptor(123, 456)
     when(planContext.indexGet(labelName, Seq(propertyKey))).thenReturn(Some(index))
     val producer = factory.nodeByIndexHint(readOnly = true)(

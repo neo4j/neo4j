@@ -33,7 +33,7 @@ class InvalidInputErrorFormatter extends DefaultInvalidInputErrorFormatter {
       ""
     else {
       val len = error.getEndIndex - error.getStartIndex
-      val sb  = new StringBuilder()
+      val sb = new StringBuilder()
       if (len > 0) {
         val char = error.getInputBuffer.charAt(error.getStartIndex)
         if (char == Chars.EOI) {

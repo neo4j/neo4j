@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 object mergeUniqueIndexSeekLeafPlanner extends AbstractIndexSeekLeafPlanner {
 
   override def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
-    val resultPlans: Set[LeafPlansForVariable]          = producePlanFor(qg.selections.flatPredicates.toSet, qg)
+    val resultPlans: Set[LeafPlansForVariable] = producePlanFor(qg.selections.flatPredicates.toSet, qg)
     val grouped: Map[IdName, Set[LeafPlansForVariable]] = resultPlans.groupBy(_.id)
 
     grouped.map {

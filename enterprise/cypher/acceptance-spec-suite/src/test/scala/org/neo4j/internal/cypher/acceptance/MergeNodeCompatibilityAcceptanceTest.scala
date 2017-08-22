@@ -225,7 +225,7 @@ class MergeNodeCompatibilityAcceptanceTest
       constraintCreator.createConstraint(graph, "Person", "id")
       constraintCreator.createConstraint(graph, "User", "mail")
 
-      createLabeledNode(Map("id"   -> 23), "Person")
+      createLabeledNode(Map("id" -> 23), "Person")
       createLabeledNode(Map("mail" -> "emil@neo.com"), "User")
 
       // when

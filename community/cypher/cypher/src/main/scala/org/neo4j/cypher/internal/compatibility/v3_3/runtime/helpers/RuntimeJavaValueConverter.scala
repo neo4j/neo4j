@@ -50,7 +50,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
 
   case class feedIteratorToVisitable[EX <: Exception](fields: Iterator[Array[AnyValue]]) {
     def accept(visitor: QueryResultVisitor[EX]) = {
-      val row      = new ResultRecord()
+      val row = new ResultRecord()
       var continue = true
       while (continue && fields.hasNext) {
         row._fields = fields.next()
@@ -60,7 +60,7 @@ class RuntimeJavaValueConverter(skip: Any => Boolean) {
   }
 
   private class ResultRecord extends Record {
-    var _fields: Array[AnyValue]           = Array.empty
+    var _fields: Array[AnyValue] = Array.empty
     override def fields(): Array[AnyValue] = _fields
   }
 }

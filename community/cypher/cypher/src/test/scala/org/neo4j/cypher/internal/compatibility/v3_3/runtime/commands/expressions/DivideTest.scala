@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
-    val ctx   = ExecutionContext.empty
+    val ctx = ExecutionContext.empty
     val state = QueryStateHelper.empty
 
     intercept[v3_3.ArithmeticException](Divide(Literal(1), Literal(0))(ctx)(state))

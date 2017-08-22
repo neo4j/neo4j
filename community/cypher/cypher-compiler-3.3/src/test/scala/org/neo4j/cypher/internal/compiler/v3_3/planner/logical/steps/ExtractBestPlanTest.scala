@@ -81,7 +81,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
     )
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(planContext = newMockedPlanContext)
-    val plan                        = newMockedLogicalPlan("b")
+    val plan = newMockedLogicalPlan("b")
 
     a[InternalException] should be thrownBy {
       verifyBestPlan(plan, query)

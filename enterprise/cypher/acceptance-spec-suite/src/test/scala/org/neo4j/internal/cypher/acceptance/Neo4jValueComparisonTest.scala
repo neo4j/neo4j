@@ -62,12 +62,12 @@ class Neo4jValueComparisonTest extends CypherFunSuite {
   object IntegerFloatMix extends TestDifficulty {
 
     val LARGEST_EXACT_LONG_IN_DOUBLE = 1L << 53
-    val LARGEST_EXACT_INT_IN_FLOAT   = 1L << 24
+    val LARGEST_EXACT_INT_IN_FLOAT = 1L << 24
 
-    def canFitInInt(a: Double)            = -Int.MinValue < a && a < Int.MaxValue
-    def canFitInLong(a: Double)           = -Long.MinValue < a && a < Long.MaxValue
+    def canFitInInt(a: Double) = -Int.MinValue < a && a < Int.MaxValue
+    def canFitInLong(a: Double) = -Long.MinValue < a && a < Long.MaxValue
     def canBeExactlyAnIntegerD(a: Double) = -LARGEST_EXACT_LONG_IN_DOUBLE < a && a < LARGEST_EXACT_LONG_IN_DOUBLE
-    def canBeExactlyAnIntegerF(a: Float)  = -LARGEST_EXACT_INT_IN_FLOAT < a && a < LARGEST_EXACT_INT_IN_FLOAT
+    def canBeExactlyAnIntegerF(a: Float) = -LARGEST_EXACT_INT_IN_FLOAT < a && a < LARGEST_EXACT_INT_IN_FLOAT
 
     def applyChallenge(x: Any, y: Any): Option[(Any, Any)] = (x, y) match {
       case (a: Double, _) if canFitInInt(a)            => Some((Math.rint(a), a.toInt))

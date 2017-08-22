@@ -63,7 +63,7 @@ case object isolateAggregation extends Rewriter {
                                 None)(pos)
 
           val expressionRewriter = createRewriterFor(withReturnItems)
-          val resultClause       = clause.endoRewrite(expressionRewriter)
+          val resultClause = clause.endoRewrite(expressionRewriter)
 
           IndexedSeq(withClause, resultClause)
       }

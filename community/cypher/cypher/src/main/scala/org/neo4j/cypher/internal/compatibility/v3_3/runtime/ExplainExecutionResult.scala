@@ -39,8 +39,8 @@ case class ExplainExecutionResult(fieldNames: Array[String],
     extends InternalExecutionResult {
 
   def javaIterator: ResourceIterator[util.Map[String, Any]] = new EmptyResourceIterator()
-  def columnAs[T](column: String)                           = Iterator.empty
-  override def javaColumns: util.List[String]               = Collections.emptyList()
+  def columnAs[T](column: String) = Iterator.empty
+  override def javaColumns: util.List[String] = Collections.emptyList()
 
   def queryStatistics() = QueryStatistics()
 
@@ -64,7 +64,7 @@ case class ExplainExecutionResult(fieldNames: Array[String],
 
   def hasNext = false
 
-  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit      = {}
+  override def accept[EX <: Exception](visitor: ResultVisitor[EX]): Unit = {}
   override def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {}
 
   override def executionMode: ExecutionMode = ExplainMode

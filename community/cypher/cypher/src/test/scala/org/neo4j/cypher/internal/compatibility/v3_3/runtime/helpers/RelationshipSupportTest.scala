@@ -36,9 +36,9 @@ class RelationshipSupportTest extends CypherFunSuite {
 
   test("Should handle lists of length two") {
     val actions = mock[RelationshipActions]
-    val a       = new RelationshipProxy(actions, 1)
-    val b       = new RelationshipProxy(actions, 2)
-    val a1      = new RelationshipProxy(actions, 1)
+    val a = new RelationshipProxy(actions, 1)
+    val b = new RelationshipProxy(actions, 2)
+    val a1 = new RelationshipProxy(actions, 1)
 
     RelationshipSupport.areRelationshipsUnique(List(a, b)) should be(true)
     RelationshipSupport.areRelationshipsUnique(List(a, a)) should be(false)
@@ -47,9 +47,9 @@ class RelationshipSupportTest extends CypherFunSuite {
 
   test("Should handle lists of length three") {
     val actions = mock[RelationshipActions]
-    val a       = new RelationshipProxy(actions, 1)
-    val b       = new RelationshipProxy(actions, 2)
-    val c       = new RelationshipProxy(actions, 3)
+    val a = new RelationshipProxy(actions, 1)
+    val b = new RelationshipProxy(actions, 2)
+    val c = new RelationshipProxy(actions, 3)
 
     RelationshipSupport.areRelationshipsUnique(List(a, b, c)) should be(true)
     RelationshipSupport.areRelationshipsUnique(List(a, a, b)) should be(false)
@@ -59,15 +59,15 @@ class RelationshipSupportTest extends CypherFunSuite {
 
   test("Should handle long lists") {
     val actions = mock[RelationshipActions]
-    val a       = new RelationshipProxy(actions, 1)
-    val b       = new RelationshipProxy(actions, 2)
-    val c       = new RelationshipProxy(actions, 3)
-    val d       = new RelationshipProxy(actions, 4)
-    val e       = new RelationshipProxy(actions, 5)
-    val f       = new RelationshipProxy(actions, 6)
-    val g       = new RelationshipProxy(actions, 7)
-    val h       = new RelationshipProxy(actions, 8)
-    val i       = new RelationshipProxy(actions, 9)
+    val a = new RelationshipProxy(actions, 1)
+    val b = new RelationshipProxy(actions, 2)
+    val c = new RelationshipProxy(actions, 3)
+    val d = new RelationshipProxy(actions, 4)
+    val e = new RelationshipProxy(actions, 5)
+    val f = new RelationshipProxy(actions, 6)
+    val g = new RelationshipProxy(actions, 7)
+    val h = new RelationshipProxy(actions, 8)
+    val i = new RelationshipProxy(actions, 9)
 
     val l0 = List(a, b, c, d, e, f, g, h, i)
     RelationshipSupport.areRelationshipsUnique(l0) should be(true)

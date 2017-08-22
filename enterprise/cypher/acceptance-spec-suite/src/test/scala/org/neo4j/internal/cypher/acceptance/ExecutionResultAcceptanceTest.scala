@@ -34,7 +34,7 @@ class ExecutionResultAcceptanceTest extends ExecutionEngineFunSuite with NewPlan
       s"CYPHER runtime=interpreted $query",
       s"CYPHER 2.3 $query"
     ).foreach(q => {
-      val tx     = graph.beginTransaction(KernelTransaction.Type.`explicit`, AUTH_DISABLED)
+      val tx = graph.beginTransaction(KernelTransaction.Type.`explicit`, AUTH_DISABLED)
       val result = eengine.execute(q, Map.empty[String, Object], graph.transactionalContext(query = q -> Map.empty))
       tx.success()
       result.close()

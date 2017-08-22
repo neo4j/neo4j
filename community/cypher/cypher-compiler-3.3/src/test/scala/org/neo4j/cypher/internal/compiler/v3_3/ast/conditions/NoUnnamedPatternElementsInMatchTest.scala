@@ -76,7 +76,7 @@ class NoUnnamedPatternElementsInMatchTest extends CypherFunSuite with AstConstru
   }
 
   test("unhappy when there are unnamed node and relationship patterns") {
-    val nodePattern: NodePattern                 = node(None)
+    val nodePattern: NodePattern = node(None)
     val relationshipPattern: RelationshipPattern = relationship(None)
     val ast: ASTNode = SingleQuery(
       Seq(

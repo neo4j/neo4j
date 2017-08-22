@@ -24,8 +24,8 @@ import org.scalatest.BeforeAndAfter
 
 class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
   var taskCloser: TaskCloser = _
-  var ran                    = false
-  var outcome                = false
+  var ran = false
+  var outcome = false
 
   before {
     taskCloser = new TaskCloser

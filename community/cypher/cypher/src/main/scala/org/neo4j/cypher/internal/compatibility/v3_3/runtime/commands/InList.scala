@@ -82,7 +82,7 @@ case class AllInList(collection: Expression, symbolName: String, inner: Predicat
   }
 
   def seqMethod(value: ListValue): CollectionPredicate = forAll(value)
-  def name                                             = "all"
+  def name = "all"
 
   def rewrite(f: (Expression) => Expression) =
     f(AllInList(collection = collection.rewrite(f), symbolName = symbolName, inner = inner.rewriteAsPredicate(f)))
@@ -93,7 +93,7 @@ case class AnyInList(collection: Expression, symbolName: String, inner: Predicat
 
   private def exists(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
     var result: Option[Boolean] = Some(false)
-    val iterator                = collectionValue.iterator()
+    val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {
         case Some(true) => return Some(true)
@@ -142,7 +142,7 @@ case class SingleInList(collection: Expression, symbolName: String, inner: Predi
     extends InList(collection, symbolName, inner) {
 
   private def single(collectionValue: ListValue)(predicate: (AnyValue => Option[Boolean])): Option[Boolean] = {
-    var matched  = false
+    var matched = false
     val iterator = collectionValue.iterator()
     while (iterator.hasNext) {
       predicate(iterator.next()) match {

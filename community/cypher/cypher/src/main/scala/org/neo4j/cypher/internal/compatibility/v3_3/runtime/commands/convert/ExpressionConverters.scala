@@ -118,7 +118,7 @@ class ExpressionConverters(converters: ExpressionConverter*) {
         nilProjector
     }
 
-    val projector    = project(e.step)
+    val projector = project(e.step)
     val dependencies = e.step.dependencies.map(_.name)
 
     ProjectedPath(dependencies, projector)

@@ -35,7 +35,7 @@ case object inlineProjections extends Rewriter {
       val context = inliningContextCreator(input)
 
       val inlineVariables = TypedRewriter[ASTNode](context.variableRewriter)
-      val inlinePatterns  = TypedRewriter[Pattern](context.patternRewriter)
+      val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
       val inlineReturnItemsInWith =
         Rewriter.lift(aliasedReturnItemRewriter(inlineVariables.narrowed, context, inlineAliases = true))
       val inlineReturnItemsInReturn =
@@ -55,7 +55,7 @@ case object inlineProjections extends Rewriter {
 
         case m @ Match(_, mPattern, mHints, mOptWhere) =>
           val newOptWhere = mOptWhere.map(inlineVariables.narrowed)
-          val newHints    = mHints.map(inlineVariables.narrowed)
+          val newHints = mHints.map(inlineVariables.narrowed)
           // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
           // calling inlineProjections
           val newPattern = inlinePatterns(mPattern)

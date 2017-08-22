@@ -153,16 +153,16 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should keep different cache entries for different literal types") {
-    runQuery("WITH 1 as x RETURN x")     // miss
-    runQuery("WITH 2 as x RETURN x")     // hit
-    runQuery("WITH 1.0 as x RETURN x")   // miss
-    runQuery("WITH 2.0 as x RETURN x")   // hit
+    runQuery("WITH 1 as x RETURN x") // miss
+    runQuery("WITH 2 as x RETURN x") // hit
+    runQuery("WITH 1.0 as x RETURN x") // miss
+    runQuery("WITH 2.0 as x RETURN x") // hit
     runQuery("WITH 'foo' as x RETURN x") // miss
     runQuery("WITH 'bar' as x RETURN x") // hit
-    runQuery("WITH {p} as x RETURN x")   // miss
-    runQuery("WITH {k} as x RETURN x")   // miss, a little surprising but not harmful
+    runQuery("WITH {p} as x RETURN x") // miss
+    runQuery("WITH {k} as x RETURN x") // miss, a little surprising but not harmful
     runQuery("WITH [1,2] as x RETURN x") // miss
-    runQuery("WITH [3] as x RETURN x")   // hit
+    runQuery("WITH [3] as x RETURN x") // hit
 
     counter.counts should equal(CacheCounts(hits = 4, misses = 6, flushes = 1))
   }
@@ -215,8 +215,8 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should log on cache remove") {
     // given
-    val logProvider  = new AssertableLogProvider()
-    val logName      = "testlog"
+    val logProvider = new AssertableLogProvider()
+    val logName = "testlog"
     val clock: Clock = Clock.fixed(Instant.ofEpochMilli(1000L), ZoneOffset.UTC)
     compiler = createCompiler(queryPlanTTL = 0, clock = clock, log = logProvider.getLog(logName))
     val query: String = "match (n:Person:Dog) return n"

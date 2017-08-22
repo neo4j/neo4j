@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val x: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("110") _
-  val y: ast.Expression                = ast.UnsignedDecimalIntegerLiteral("10") _
-  val variableSortItem: AscSortItem    = ast.AscSortItem(ast.Variable("n") _) _
+  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
+  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
+  val variableSortItem: AscSortItem = ast.AscSortItem(ast.Variable("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
   test("should add projection for expressions not already covered") {
@@ -54,7 +54,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("does not add projection when not needed") {
     // given
     val projections: Map[String, ast.Expression] = Map("n" -> ast.Variable("n") _)
-    implicit val (context, startPlan)            = queryGraphWith(projectionsMap = projections)
+    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections)
@@ -67,7 +67,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("does projection when renaming columns") {
     // given
     val projections: Map[String, ast.Expression] = Map("  n@34" -> ast.Variable("n") _)
-    implicit val (context, startPlan)            = queryGraphWith(projectionsMap = projections)
+    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan, projections)

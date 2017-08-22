@@ -34,7 +34,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should only write let = true for the one that matches when the expression is false") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
@@ -55,7 +55,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should only write let = true for the one that not matches when the expression is false and it is negated") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
@@ -76,8 +76,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should not write let = true for anything if rhs is empty and expression is false") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs     = new FakePipe(Iterator.empty)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs = new FakePipe(Iterator.empty)
 
     val result =
       LetSelectOrSemiApplyPipe(lhs, rhs, "let", Not(True()), negated = false)()
@@ -93,8 +93,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should write let = true for everything if rhs is nonEmpty and the expression is false") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs     = new FakePipe(Iterator(Map("a" -> 1)))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
     val result =
       LetSelectOrSemiApplyPipe(lhs, rhs, "let", Not(True()), negated = false)()
@@ -118,8 +118,8 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should write let = true for the one satisfying the expression even if the rhs is empty") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
-    val rhs     = new FakePipe(Iterator.empty)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs = new FakePipe(Iterator.empty)
 
     val result =
       LetSelectOrSemiApplyPipe(lhs, rhs, "let", Equals(Variable("a"), Literal(2)), negated = false)()
@@ -135,7 +135,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should write let = true for the one that matches and the one satisfying the expression") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2), Map("a" -> 3))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
@@ -157,7 +157,7 @@ class LetSelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should not write let = true for anything if the rhs is empty and the expression is false") {
     val lhsData = List(Map("a" -> 3), Map("a" -> 4))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get

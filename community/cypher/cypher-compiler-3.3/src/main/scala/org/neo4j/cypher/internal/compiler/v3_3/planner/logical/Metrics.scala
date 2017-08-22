@@ -51,7 +51,7 @@ object Metrics {
 
     def recurse(fromPlan: LogicalPlan): QueryGraphSolverInput = {
       val newCardinalityInput = fromPlan.solved.estimatedCardinality
-      val newLabels           = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
+      val newLabels = (labelInfo fuse fromPlan.solved.labelInfo)(_ ++ _)
       copy(labelInfo = newLabels, inboundCardinality = newCardinalityInput, strictness = strictness)
     }
 
@@ -101,7 +101,7 @@ trait MetricsFactory {
 
   def newMetrics(statistics: GraphStatistics, expressionEvaluator: ExpressionEvaluator) = {
     val queryGraphCardinalityModel = newQueryGraphCardinalityModel(statistics)
-    val cardinality                = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
+    val cardinality = newCardinalityEstimator(queryGraphCardinalityModel, expressionEvaluator)
     Metrics(newCostModel(), cardinality, queryGraphCardinalityModel)
   }
 }

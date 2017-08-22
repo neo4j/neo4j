@@ -32,9 +32,9 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   var resourceUnderTest: LoadCsvPeriodicCommitObserver = _
-  var transactionalContext: QueryTransactionalContext  = _
-  var resource: ExternalCSVResource                    = _
-  val url: URL                                         = new URL("file:///tmp/something.csv")
+  var transactionalContext: QueryTransactionalContext = _
+  var resource: ExternalCSVResource = _
+  val url: URL = new URL("file:///tmp/something.csv")
 
   test("writing should not trigger tx restart until next csv line is fetched") {
     // Given

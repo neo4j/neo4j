@@ -63,7 +63,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
 
     test(s"should not leak transaction when closing the result for a query - runtime=$runtime") {
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime return 1").close()
@@ -84,7 +84,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when closing the result for a profile query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime profile return 1").close()
@@ -115,7 +115,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when closing the result for an explain query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime explain return 1").close()
@@ -136,7 +136,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when failing in pre-parsing - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       intercept[SyntaxException](engine.execute(s"CYPHER runtime=$runtime ", Map.empty[String, Object]))
@@ -147,7 +147,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when closing the result for a procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -171,7 +171,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when closing the result for a profile procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -199,7 +199,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when closing the result for an explain procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -227,7 +227,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when consuming the whole iterator for a regular query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       import scala.collection.JavaConverters._
       // when
@@ -249,7 +249,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when consuming the whole iterator for a profile query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       import scala.collection.JavaConverters._
       // when
@@ -271,7 +271,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when consuming the whole iterator for an explain query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       import scala.collection.JavaConverters._
       // when
@@ -293,7 +293,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when consuming the whole iterator for a procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -324,7 +324,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
       s"should not leak transaction when consuming the whole iterator for a profile procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -355,7 +355,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
       s"should not leak transaction when consuming the whole iterator for an explain procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -385,7 +385,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for a regular query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime return 1").accept(consumerVisitor)
@@ -401,7 +401,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for a profile query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime profile return 1").accept(consumerVisitor)
@@ -417,7 +417,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for an explain query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       // when
       db.execute(s"CYPHER runtime=$runtime explain return 1").accept(consumerVisitor)
@@ -433,7 +433,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for a procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -454,7 +454,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for a profile procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -475,7 +475,7 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
     test(s"should not leak transaction when visiting the result for an explain procedure query - runtime=$runtime") {
       //given
       val service = new GraphDatabaseCypherService(db)
-      val engine  = createEngine(service)
+      val engine = createEngine(service)
 
       procedures(service).register(new AllNodesProcedure())
       txBridge(service).hasTransaction shouldBe false
@@ -518,8 +518,8 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
 
     import scala.collection.JavaConverters._
 
-    private val results                           = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
-    val procedureName                             = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
+    private val results = Map[String, AnyRef]("node" -> Neo4jTypes.NTInteger)
+    val procedureName = new QualifiedName(Array[String]("org", "neo4j", "bench"), "getAllNodes")
     val emptySignature: util.List[FieldSignature] = List.empty[FieldSignature].asJava
     val signature: ProcedureSignature = new ProcedureSignature(procedureName,
                                                                paramSignature,
@@ -541,9 +541,9 @@ class CloseTransactionTest extends CypherFunSuite with GraphIcing {
 
     override def apply(context: Context, objects: Array[AnyRef]): RawIterator[Array[AnyRef], ProcedureException] = {
       val statement: Statement = context.get(KERNEL_TRANSACTION).acquireStatement
-      val readOperations       = statement.readOperations
-      val nodes                = readOperations.nodesGetAll()
-      var count                = 0
+      val readOperations = statement.readOperations
+      val nodes = readOperations.nodesGetAll()
+      var count = 0
       new RawIterator[Array[AnyRef], ProcedureException] {
         override def next(): Array[AnyRef] = {
           count = count + 1

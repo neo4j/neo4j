@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.cypher.internal.frontend.v3_3.helpers.NonEmptyList
 
 case class Ands(predicates: NonEmptyList[Predicate]) extends CompositeBooleanPredicate {
-  override def shouldExitWhen                                     = false
-  override def andWith(other: Predicate): Predicate               = Ands(predicates :+ other)
+  override def shouldExitWhen = false
+  override def andWith(other: Predicate): Predicate = Ands(predicates :+ other)
   override def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
   override def toString = {
     predicates.foldLeft("") {
@@ -50,9 +50,9 @@ object Ands {
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Ands(NonEmptyList(a, b)).isMatch(m)
 
-  override def atoms: Seq[Predicate]         = a.atoms ++ b.atoms
-  override def toString: String              = s"($a AND $b)"
-  def containsIsNull                         = a.containsIsNull || b.containsIsNull
+  override def atoms: Seq[Predicate] = a.atoms ++ b.atoms
+  override def toString: String = s"($a AND $b)"
+  def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(And(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)

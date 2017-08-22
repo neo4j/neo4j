@@ -61,15 +61,15 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val id1 = new Id()
     val id2 = new Id()
 
-    val variable    = Variable("name", CodeGenType.primitiveNode)
+    val variable = Variable("name", CodeGenType.primitiveNode)
     val projectNode = NodeProjection(variable)
     val compiled = compile(Seq(WhileLoop(variable, ScanAllNodes("OP1"), AcceptVisitor("OP2", Map("n" -> projectNode)))),
                            Seq("n"),
                            Map("OP1" -> id1, "OP2" -> id2, "X" -> new Id()))
 
-    val readOps              = mock[ReadOperations]
-    val entityAccessor       = mock[NodeManager]
-    val queryContext         = mock[QueryContext]
+    val readOps = mock[ReadOperations]
+    val entityAccessor = mock[NodeManager]
+    val queryContext = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
     when(queryContext.transactionalContext).thenReturn(transactionalContext.asInstanceOf[QueryTransactionalContext])
     when(transactionalContext.kernelStatisticProvider)
@@ -116,21 +116,21 @@ class CompiledProfilingTest extends CypherFunSuite with CodeGenSugar {
     val database = new TestGraphDatabaseFactory().newImpermanentDatabase()
     try {
       val graphDb = new GraphDatabaseCypherService(database)
-      val tx      = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
+      val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.write())
       graphDb.createNode()
       graphDb.createNode()
       tx.success()
       tx.close()
 
-      val solved     = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
-      val lhs        = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val rhs        = AllNodesScan(IdName("a"), Set.empty)(solved)
-      val join       = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
+      val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+      val lhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val rhs = AllNodesScan(IdName("a"), Set.empty)(solved)
+      val join = NodeHashJoin(Set(IdName("a")), lhs, rhs)(solved)
       val projection = plans.Projection(join, Map("foo" -> SignedDecimalIntegerLiteral("1")(null)))(solved)
-      val plan       = plans.ProduceResult(List("foo"), projection)
+      val plan = plans.ProduceResult(List("foo"), projection)
 
       // when
-      val result      = compileAndExecute(plan, graphDb, mode = ProfileMode)
+      val result = compileAndExecute(plan, graphDb, mode = ProfileMode)
       val description = result.executionPlanDescription()
 
       // then

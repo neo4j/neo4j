@@ -29,7 +29,7 @@ class ConstraintOperationPipe(op: PropertyConstraintOperation, keyToken: KeyToke
                                                                                                             new Id)
     extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val keyTokenId    = keyToken.getOrCreateId(state.query)
+    val keyTokenId = keyToken.getOrCreateId(state.query)
     val propertyKeyId = propertyKey.getOrCreateId(state.query)
 
     op match {

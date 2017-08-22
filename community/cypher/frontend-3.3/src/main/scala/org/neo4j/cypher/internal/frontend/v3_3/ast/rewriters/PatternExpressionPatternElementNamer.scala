@@ -25,16 +25,16 @@ import org.neo4j.cypher.internal.frontend.v3_3.topDown
 object PatternExpressionPatternElementNamer {
 
   def apply(expr: PatternExpression): (PatternExpression, Map[PatternElement, Variable]) = {
-    val unnamedMap   = nameUnnamedPatternElements(expr.pattern)
+    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr    = expr.copy(pattern = namedPattern)
+    val namedExpr = expr.copy(pattern = namedPattern)
     (namedExpr, unnamedMap)
   }
 
   def apply(expr: PatternComprehension): (PatternComprehension, Map[PatternElement, Variable]) = {
-    val unnamedMap   = nameUnnamedPatternElements(expr.pattern)
+    val unnamedMap = nameUnnamedPatternElements(expr.pattern)
     val namedPattern = expr.pattern.endoRewrite(namePatternElementsFromMap(unnamedMap))
-    val namedExpr    = expr.copy(pattern = namedPattern)(expr.position)
+    val namedExpr = expr.copy(pattern = namedPattern)(expr.position)
     (namedExpr, unnamedMap)
   }
 

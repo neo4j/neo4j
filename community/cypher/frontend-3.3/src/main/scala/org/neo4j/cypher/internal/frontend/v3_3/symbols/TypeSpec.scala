@@ -22,8 +22,8 @@ object TypeSpec {
   def exact(types: CypherType*): TypeSpec = exact(types)
   def exact[T <: CypherType](traversable: TraversableOnce[T]): TypeSpec =
     TypeSpec(traversable.map(t => TypeRange(t, t)))
-  val all: TypeSpec                         = TypeSpec(TypeRange(CTAny, None))
-  val none: TypeSpec                        = new TypeSpec(Vector.empty)
+  val all: TypeSpec = TypeSpec(TypeRange(CTAny, None))
+  val none: TypeSpec = new TypeSpec(Vector.empty)
   def union(typeSpecs: TypeSpec*): TypeSpec = TypeSpec(typeSpecs.flatMap(_.ranges))
 
   def formatArguments(types: Seq[TypeSpec]) =
@@ -44,7 +44,7 @@ object TypeSpec {
     CTString
   )
 
-  private def apply(range: TypeRange): TypeSpec                   = new TypeSpec(Vector(range))
+  private def apply(range: TypeRange): TypeSpec = new TypeSpec(Vector(range))
   private def apply(ranges: TraversableOnce[TypeRange]): TypeSpec = new TypeSpec(minimalRanges(ranges))
 
   /**
@@ -67,7 +67,7 @@ object TypeSpec {
   * @param ranges A set of TypeRanges, the intersection of which constitutes the entire set of types matched by this specification
   */
 class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
-  def contains(that: CypherType): Boolean                             = contains(that, ranges)
+  def contains(that: CypherType): Boolean = contains(that, ranges)
   private def contains(that: CypherType, rs: Seq[TypeRange]): Boolean = rs.exists(_ contains that)
 
   def containsAny(types: CypherType*): Boolean = containsAny(TypeSpec.exact(types))
@@ -76,7 +76,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
   }
 
   def union(that: TypeSpec): TypeSpec = TypeSpec(ranges ++ that.ranges)
-  def |(that: TypeSpec): TypeSpec     = union(that)
+  def |(that: TypeSpec): TypeSpec = union(that)
 
   def intersect(that: TypeSpec): TypeSpec =
     TypeSpec(ranges.flatMap { r =>
@@ -124,7 +124,7 @@ class TypeSpec private (private val ranges: Seq[TypeRange]) extends Equals {
       TypeSpec.exact(simpleCoercions)
   }
 
-  def isEmpty: Boolean  = ranges.isEmpty
+  def isEmpty: Boolean = ranges.isEmpty
   def nonEmpty: Boolean = !isEmpty
 
   lazy val hasDefiniteSize: Boolean = ranges.forall(_.hasDefiniteSize)

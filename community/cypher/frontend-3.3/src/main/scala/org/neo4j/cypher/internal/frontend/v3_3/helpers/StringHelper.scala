@@ -36,7 +36,7 @@ object StringHelper {
         positionPattern.replaceAllIn(
           text,
           (matcher) => {
-            val line   = matcher.group(1).toInt
+            val line = matcher.group(1).toInt
             val column = matcher.group(2).toInt
             val offset = matcher.group(3).toInt + line - 1
             s"(line $line, column $column (offset: $offset))"

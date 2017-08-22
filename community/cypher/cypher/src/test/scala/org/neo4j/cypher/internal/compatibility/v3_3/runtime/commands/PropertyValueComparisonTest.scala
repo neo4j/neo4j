@@ -33,16 +33,16 @@ class PropertyValueComparisonTest extends CypherFunSuite {
   private val expectedNull = NO_VALUE
 
   test("nullNodeShouldGiveNullProperty") {
-    val p     = Property(Variable("variable"), PropertyKey("property"))
-    val ctx   = ExecutionContext.from("variable" -> NO_VALUE)
+    val p = Property(Variable("variable"), PropertyKey("property"))
+    val ctx = ExecutionContext.from("variable" -> NO_VALUE)
     val state = QueryStateHelper.empty
 
     p(ctx)(state) should equal(expectedNull)
   }
 
   test("nonExistentPropertyShouldEvaluateToNull") {
-    val p     = Property(Variable("variable"), PropertyKey("nonExistent"))
-    val ctx   = ExecutionContext.from("variable" -> Map("property" -> 42))
+    val p = Property(Variable("variable"), PropertyKey("nonExistent"))
+    val ctx = ExecutionContext.from("variable" -> Map("property" -> 42))
     val state = QueryStateHelper.empty
 
     p(ctx)(state) should equal(expectedNull)

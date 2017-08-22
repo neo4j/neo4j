@@ -230,7 +230,7 @@ trait UpdateGraph {
     }
 
     val allRelPatternsWritten = createRelationshipPatterns ++ mergeRelationshipPatterns.flatMap(_.createRelPatterns)
-    val allRelPatternsRead    = qg.allPatternRelationshipsRead
+    val allRelPatternsRead = qg.allPatternRelationshipsRead
 
     //CREATE () MATCH ()-->()
     (allRelPatternsWritten.nonEmpty && qg.patternRelationships.nonEmpty) && allRelPatternsRead.exists(r => {

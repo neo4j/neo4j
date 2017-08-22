@@ -29,9 +29,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.InclusiveBound
 
 class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val variable                         = varFor("n")
+  val variable = varFor("n")
   val propertyKeyName: PropertyKeyName = PropertyKeyName("prop") _
-  val property: Property               = Property(variable, propertyKeyName) _
+  val property: Property = Property(variable, propertyKeyName) _
 
   test("Constructs RangeLessThan") {
     valueRangeSeekable(lessThan(1)).range should equal(RangeLessThan(NonEmptyList(exclusive(1))))

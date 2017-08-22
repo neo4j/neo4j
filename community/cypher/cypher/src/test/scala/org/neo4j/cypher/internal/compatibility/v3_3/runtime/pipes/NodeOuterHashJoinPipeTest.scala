@@ -84,7 +84,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
     val left = newMockedPipe("b")
 
-    val right       = mock[Pipe]
+    val right = mock[Pipe]
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
     when(right.createResults(any())).thenReturn(rhsIterator)
 
@@ -127,7 +127,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
 
     val left = newMockedPipe("b",
                              row("b" -> fromNodeProxy(node1), "a" -> intValue(10)),
-                             row("b" -> NO_VALUE, "a"             -> intValue(20)),
+                             row("b" -> NO_VALUE, "a" -> intValue(20)),
                              row("b" -> fromNodeProxy(node3), "a" -> intValue(30)))
 
     val right = newMockedPipe(
@@ -144,7 +144,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     result.toSet should equal(
       Set(
         Map("a" -> intValue(10), "b" -> fromNodeProxy(node1), "c" -> intValue(10)),
-        Map("a" -> intValue(20), "b" -> NO_VALUE, "c"             -> NO_VALUE),
+        Map("a" -> intValue(20), "b" -> NO_VALUE, "c" -> NO_VALUE),
         Map("a" -> intValue(30), "b" -> fromNodeProxy(node3), "c" -> intValue(30))
       ))
   }
@@ -161,7 +161,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     )
 
     val right = newMockedPipe("b",
-                              row("b" -> NO_VALUE, "c"             -> intValue(10)),
+                              row("b" -> NO_VALUE, "c" -> intValue(10)),
                               row("b" -> fromNodeProxy(node2), "c" -> intValue(20)),
                               row("b" -> fromNodeProxy(node3), "c" -> intValue(30)))
 
@@ -205,7 +205,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(2)),
       row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(3)),
       row("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node3), "c" -> intValue(4)),
-      row("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c"             -> intValue(5))
+      row("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c" -> intValue(5))
     )
 
     val right = newMockedPipe(
@@ -213,7 +213,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
       row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "d" -> intValue(1)),
       row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "d" -> intValue(2)),
       row("a" -> fromNodeProxy(node3), "b" -> fromNodeProxy(node3), "d" -> intValue(3)),
-      row("a" -> NO_VALUE, "b"             -> fromNodeProxy(node3), "d" -> intValue(4))
+      row("a" -> NO_VALUE, "b" -> fromNodeProxy(node3), "d" -> intValue(4))
     )
 
     // when
@@ -226,7 +226,7 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
         Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(2), "d" -> intValue(2)),
         Map("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node3), "c" -> intValue(3), "d" -> intValue(2)),
         Map("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node3), "c" -> intValue(4), "d" -> NO_VALUE),
-        Map("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c"             -> intValue(5), "d" -> NO_VALUE)
+        Map("a" -> fromNodeProxy(node1), "b" -> NO_VALUE, "c" -> intValue(5), "d" -> NO_VALUE)
       ))
   }
 

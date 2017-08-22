@@ -23,18 +23,18 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
   self =>
 
-  def compare(that: Cardinality)        = amount.compare(that.amount)
-  def *(that: Multiplier): Cardinality  = amount * that.coefficient
+  def compare(that: Cardinality) = amount.compare(that.amount)
+  def *(that: Multiplier): Cardinality = amount * that.coefficient
   def *(that: Selectivity): Cardinality = if (that.factor == 0) Cardinality.EMPTY else amount * that.factor
   def +(that: Cardinality): Cardinality = amount + that.amount
   def *(that: Cardinality): Cardinality =
     if (amount == 0 || that.amount == 0) Cardinality.EMPTY
     else Cardinality.noInf(amount * that.amount)
   def /(that: Cardinality): Option[Selectivity] = if (that.amount == 0) None else Selectivity.of(amount / that.amount)
-  def *(that: CostPerRow): Cost                 = amount * that.cost
-  def *(that: Cost): Cost                       = amount * that.gummyBears
-  def ^(a: Int): Cardinality                    = Cardinality.noInf(Math.pow(amount, a))
-  def map(f: Double => Double): Cardinality     = f(amount)
+  def *(that: CostPerRow): Cost = amount * that.cost
+  def *(that: Cost): Cost = amount * that.gummyBears
+  def ^(a: Int): Cardinality = Cardinality.noInf(Math.pow(amount, a))
+  def map(f: Double => Double): Cardinality = f(amount)
 
   def inverse = Multiplier(1.0d / amount)
 
@@ -44,7 +44,7 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
 
 object Cardinality {
 
-  val EMPTY  = Cardinality(0)
+  val EMPTY = Cardinality(0)
   val SINGLE = Cardinality(1)
 
   implicit def lift(amount: Double): Cardinality = Cardinality(amount)
@@ -59,26 +59,26 @@ object Cardinality {
 
   object NumericCardinality extends Numeric[Cardinality] {
     def toDouble(x: Cardinality): Double = x.amount
-    def toFloat(x: Cardinality): Float   = x.amount.toFloat
-    def toInt(x: Cardinality): Int       = x.amount.toInt
-    def toLong(x: Cardinality): Long     = x.amount.toLong
-    def fromInt(x: Int): Cardinality     = Cardinality(x)
+    def toFloat(x: Cardinality): Float = x.amount.toFloat
+    def toInt(x: Cardinality): Int = x.amount.toInt
+    def toLong(x: Cardinality): Long = x.amount.toLong
+    def fromInt(x: Int): Cardinality = Cardinality(x)
 
-    def negate(x: Cardinality): Cardinality                = -x.amount
-    def plus(x: Cardinality, y: Cardinality): Cardinality  = x.amount + y.amount
+    def negate(x: Cardinality): Cardinality = -x.amount
+    def plus(x: Cardinality, y: Cardinality): Cardinality = x.amount + y.amount
     def times(x: Cardinality, y: Cardinality): Cardinality = x.amount * y.amount
     def minus(x: Cardinality, y: Cardinality): Cardinality = x.amount - y.amount
-    def compare(x: Cardinality, y: Cardinality): Int       = x.compare(y)
+    def compare(x: Cardinality, y: Cardinality): Int = x.compare(y)
   }
 }
 
 case class Cost(gummyBears: Double) extends Ordered[Cost] {
 
-  def +(other: Cost): Cost             = other.gummyBears + gummyBears
-  def *(other: Multiplier): Cost       = gummyBears * other.coefficient
+  def +(other: Cost): Cost = other.gummyBears + gummyBears
+  def *(other: Multiplier): Cost = gummyBears * other.coefficient
   def +(other: CostPerRow): CostPerRow = other.cost * gummyBears
-  def compare(that: Cost): Int         = gummyBears.compare(that.gummyBears)
-  def unary_-(): Cost                  = Cost(-gummyBears)
+  def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+  def unary_-(): Cost = Cost(-gummyBears)
 }
 
 object Cost {
@@ -103,7 +103,7 @@ case class Multiplier(coefficient: Double) {
 object Multiplier {
 
   val ZERO = Multiplier(0.0d)
-  val ONE  = Multiplier(1.0d)
+  val ONE = Multiplier(1.0d)
 
   implicit def lift(amount: Double): Multiplier = Multiplier(amount)
 

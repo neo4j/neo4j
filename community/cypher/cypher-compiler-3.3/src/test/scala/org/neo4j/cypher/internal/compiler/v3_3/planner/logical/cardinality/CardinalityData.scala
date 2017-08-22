@@ -32,8 +32,8 @@ trait ForumPostsCardinalityData {
   case object ForumPosts extends CardinalityData {
 
     val PersonSel = 50.00 / 1000.0
-    val PostSel   = 947.00 / 1000.0
-    val ForumSel  = 3.00 / 1000.0
+    val PostSel = 947.00 / 1000.0
+    val ForumSel = 3.00 / 1000.0
 
     val CelebritySel = 5.0 / 1000.0
     val RootForumSel = 10.0 / 1000.0
@@ -43,11 +43,11 @@ trait ForumPostsCardinalityData {
     val Persons = Math.floor(N * PersonSel)
 
     val Celebrities = Math.floor(Persons * CelebritySel)
-    val Fans        = Persons - Celebrities
+    val Fans = Persons - Celebrities
 
     assert(Fans + Celebrities == Persons)
 
-    val Posts  = Math.floor(N * PostSel)
+    val Posts = Math.floor(N * PostSel)
     val Forums = Math.floor(N * ForumSel)
 
     val RootForums = Math.floor(Forums * RootForumSel)
@@ -79,18 +79,18 @@ trait ForumPostsCardinalityData {
 
     // Derived
 
-    val STAR_KNOWS_STAR    = Persons_KNOWS_Persons
+    val STAR_KNOWS_STAR = Persons_KNOWS_Persons
     val Persons_KNOWS_STAR = Persons_KNOWS_Persons
     val STAR_KNOWS_Persons = Persons_KNOWS_Persons
 
-    val Posts_POSTED_IN_STAR  = Posts_POSTED_IN_Forums
+    val Posts_POSTED_IN_STAR = Posts_POSTED_IN_Forums
     val STAR_POSTED_IN_Forums = Posts_POSTED_IN_Forums
-    val STAR_POSTED_IN_STAR   = Posts_POSTED_IN_Forums
+    val STAR_POSTED_IN_STAR = Posts_POSTED_IN_Forums
 
-    val Forums_MEMBER_IN_STAR  = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
+    val Forums_MEMBER_IN_STAR = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
     val STAR_MEMBER_IN_Persons = Forums_MEMBER_IN_Persons
-    val STAR_MEMBER_IN_Forums  = Forums_MEMBER_IN_Forums
-    val STAR_MEMBER_IN_STAR    = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
+    val STAR_MEMBER_IN_Forums = Forums_MEMBER_IN_Forums
+    val STAR_MEMBER_IN_STAR = Forums_MEMBER_IN_Persons + Forums_MEMBER_IN_Forums
 
     val R = STAR_KNOWS_STAR + STAR_POSTED_IN_STAR + STAR_MEMBER_IN_STAR
 
@@ -116,9 +116,9 @@ trait ABCDCardinalityData {
   self: RandomizedCardinalityModelTestSuite =>
 
   case object ABCD extends CardinalityData {
-    val Asel = .2   // How selective a :A predicate is
-    val Bsel = .1   // How selective a :B predicate is
-    val Csel = .01  // How selective a :C predicate is
+    val Asel = .2 // How selective a :A predicate is
+    val Bsel = .1 // How selective a :B predicate is
+    val Csel = .01 // How selective a :C predicate is
     val Dsel = .001 // How selective a :D predicate is
     val Esel = Bsel // How selective a :E predicate is
 
@@ -128,9 +128,9 @@ trait ABCDCardinalityData {
     val D = N * Dsel // Nodes with label D
     val E = N * Esel // Nodes with label E
 
-    val Aprop = 0.5   // Selectivity of index on :A(prop)
+    val Aprop = 0.5 // Selectivity of index on :A(prop)
     val Bprop = 0.003 // Selectivity of index on :B(prop)
-    val Abar  = 0.002 // Selectivity of index on :A(bar)
+    val Abar = 0.002 // Selectivity of index on :A(bar)
 
     val A_T1_A_sel = 5.0 / A
     val A_T1_B_sel = 0.5
@@ -153,10 +153,10 @@ trait ABCDCardinalityData {
     val B_T1_D = B * D * B_T1_D_sel
 
     val C_T1_D_sel = 0.02
-    val C_T1_D     = C * D * C_T1_D_sel
+    val C_T1_D = C * D * C_T1_D_sel
 
     val D_T1_C_sel = 0.3
-    val D_T1_C     = D * C * D_T1_C_sel
+    val D_T1_C = D * C * D_T1_C_sel
 
     // No T1 rels from E nodes
 
@@ -166,14 +166,14 @@ trait ABCDCardinalityData {
     val A_T2_A = A * A * A_T2_A_sel
     val A_T2_B = A * B * A_T2_B_sel
 
-    val B_T2_B     = 0
+    val B_T2_B = 0
     val B_T2_C_sel = 0.0031
-    val B_T2_C     = B * C * B_T2_C_sel
+    val B_T2_C = B * C * B_T2_C_sel
 
     // No T2 rels from C nodes
 
     val D_T2_C_sel = 0.07
-    val D_T2_C     = D * C * D_T2_C_sel
+    val D_T2_C = D * C * D_T2_C_sel
 
     val E_T2_B_sel = 0.01
     val E_T2_C_sel = 0.01
@@ -186,24 +186,24 @@ trait ABCDCardinalityData {
 
     // Sums
 
-    val A_T1_ANY     = A_T1_A + A_T1_B + A_T1_C + A_T1_D
+    val A_T1_ANY = A_T1_A + A_T1_B + A_T1_C + A_T1_D
     val A_T1_ANY_sel = A_T1_ANY / (N * A)
-    val ANY_T1_A     = A_T1_A + B_T1_A
+    val ANY_T1_A = A_T1_A + B_T1_A
     val ANY_T1_A_sel = ANY_T1_A / (N * A)
 
-    val A_T2_ANY  = A_T2_A + A_T2_B
+    val A_T2_ANY = A_T2_A + A_T2_B
     val A_ANY_ANY = A_T1_ANY + A_T2_ANY
 
-    val B_T1_ANY     = B_T1_A + B_T1_B + B_T1_C + B_T1_D
-    val ANY_T1_B     = B_T1_B + A_T1_B
+    val B_T1_ANY = B_T1_A + B_T1_B + B_T1_C + B_T1_D
+    val ANY_T1_B = B_T1_B + A_T1_B
     val ANY_T1_B_sel = ANY_T1_B / N
 
-    val B_T2_ANY  = B_T2_C
+    val B_T2_ANY = B_T2_C
     val B_ANY_ANY = B_T1_ANY + B_T2_ANY
-    val ANY_T2_B  = A_T2_B + B_T2_B + E_T2_B
+    val ANY_T2_B = A_T2_B + B_T2_B + E_T2_B
 
-    val D_T1_ANY  = D_T1_C
-    val D_T2_ANY  = D_T2_C
+    val D_T1_ANY = D_T1_C
+    val D_T2_ANY = D_T2_C
     val D_ANY_ANY = D_T1_ANY + D_T2_ANY
 
     val E_T1_ANY = 0 // No T1 relationships from E nodes

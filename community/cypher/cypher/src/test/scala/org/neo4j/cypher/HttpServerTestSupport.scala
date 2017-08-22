@@ -36,12 +36,12 @@ trait HttpServerTestSupport {
 }
 
 class HttpServerTestSupportBuilder {
-  val ASK_OS_TO_PROVIDE_A_PORT            = 0
-  private var port                        = ASK_OS_TO_PROVIDE_A_PORT
+  val ASK_OS_TO_PROVIDE_A_PORT = 0
+  private var port = ASK_OS_TO_PROVIDE_A_PORT
   private var allowedMethods: Set[String] = Set()
-  private val mapping                     = new mutable.HashMap[String, (HttpExchange => Unit)]()
-  private val filters                     = new mutable.HashMap[String, (HttpExchange => Boolean)]()
-  private val transformations             = new mutable.HashMap[String, (HttpExchange => HttpExchange)]()
+  private val mapping = new mutable.HashMap[String, (HttpExchange => Unit)]()
+  private val filters = new mutable.HashMap[String, (HttpExchange => Boolean)]()
+  private val transformations = new mutable.HashMap[String, (HttpExchange => HttpExchange)]()
 
   def withPort(newPort: Int) {
     assert(newPort >= 0 && newPort < 65536)
@@ -138,8 +138,8 @@ class HttpServerTestSupportBuilder {
 
   private object HttpReplyer {
     private val NO_DATA = Array[Byte]()
-    val GET             = "GET"
-    val POST            = "POST"
+    val GET = "GET"
+    val POST = "POST"
 
     def sendResponse(data: Array[Byte])(exchange: HttpExchange) {
       sendResponse(200, data)(exchange)

@@ -36,7 +36,7 @@ trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String, CypherType)]
   def relTypes: Seq[String]
 
-  protected def leftArrow(dir: SemanticDirection)  = if (dir == INCOMING) "<-" else "-"
+  protected def leftArrow(dir: SemanticDirection) = if (dir == INCOMING) "<-" else "-"
   protected def rightArrow(dir: SemanticDirection) = if (dir == OUTGOING) "->" else "-"
 
   def rewrite(f: Expression => Expression): Pattern
@@ -84,9 +84,9 @@ case class SingleNode(name: String, labels: Seq[KeyToken] = Seq.empty, propertie
   def symbolTableDependencies = properties.symboltableDependencies
 
   override def toString: String = {
-    val namePart  = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
+    val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
-    val props     = if (properties.isEmpty) "" else " " + toString(properties)
+    val props = if (properties.isEmpty) "" else " " + toString(properties)
     "(%s%s%s)".format(namePart, labelPart, props)
   }
 }

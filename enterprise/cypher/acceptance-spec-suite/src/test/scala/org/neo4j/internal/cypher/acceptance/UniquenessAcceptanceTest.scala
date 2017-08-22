@@ -53,8 +53,8 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     // Given
     // leaf1-->parent
     // leaf2-->parent
-    val leaf1  = createNode("leaf1")
-    val leaf2  = createNode("leaf2")
+    val leaf1 = createNode("leaf1")
+    val leaf2 = createNode("leaf2")
     val parent = createNode("parent")
     relate(leaf1, parent)
     relate(leaf2, parent)
@@ -70,8 +70,8 @@ class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
     // Given
     // leaf1-->parent
     // leaf2-->parent
-    val leaf1  = createNode("leaf1")
-    val leaf2  = createNode("leaf2")
+    val leaf1 = createNode("leaf1")
+    val leaf2 = createNode("leaf2")
     val parent = createNode("parent")
     relate(leaf1, parent)
     relate(leaf2, parent)

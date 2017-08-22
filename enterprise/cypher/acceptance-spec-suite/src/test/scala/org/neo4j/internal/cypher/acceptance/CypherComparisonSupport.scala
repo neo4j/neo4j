@@ -236,7 +236,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                                  thisResult: InternalExecutionResult,
                                  hint: String) = {
     val currentOps = firstResult.executionPlanDescription().flatten.map(simpleName)
-    val otherOps   = thisResult.executionPlanDescription().flatten.map(simpleName)
+    val otherOps = thisResult.executionPlanDescription().flatten.map(simpleName)
     withClue(
       hint + "\n" + thisResult.executionPlanDescription() + "\n Did not equal \n" + firstResult
         .executionPlanDescription()) {

@@ -25,18 +25,18 @@ import scala.collection.Map
 import scala.collection.mutable
 
 object renderAsTreeTable extends (InternalPlanDescription => String) {
-  private val UNNAMED_PATTERN      = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
-  val OPERATOR                     = "Operator"
-  private val ESTIMATED_ROWS       = "Estimated Rows"
-  private val ROWS                 = "Rows"
-  private val HITS                 = "DB Hits"
-  private val PAGE_CACHE_HITS      = "Page Cache Hits"
-  private val PAGE_CACHE_MISSES    = "Page Cache Misses"
+  private val UNNAMED_PATTERN = """  (UNNAMED|FRESHID|AGGREGATION)\d+"""
+  val OPERATOR = "Operator"
+  private val ESTIMATED_ROWS = "Estimated Rows"
+  private val ROWS = "Rows"
+  private val HITS = "DB Hits"
+  private val PAGE_CACHE_HITS = "Page Cache Hits"
+  private val PAGE_CACHE_MISSES = "Page Cache Misses"
   private val PAGE_CACHE_HIT_RATIO = "Page Cache Hit Ratio"
-  private val TIME                 = "Time (ms)"
-  val VARIABLES                    = "Variables"
-  val MAX_VARIABLE_COLUMN_WIDTH    = 100
-  private val OTHER                = "Other"
+  private val TIME = "Time (ms)"
+  val VARIABLES = "Variables"
+  val MAX_VARIABLE_COLUMN_WIDTH = 100
+  private val OTHER = "Other"
   private val HEADERS = Seq(OPERATOR,
                             ESTIMATED_ROWS,
                             ROWS,
@@ -52,7 +52,7 @@ object renderAsTreeTable extends (InternalPlanDescription => String) {
   def apply(plan: InternalPlanDescription): String = {
 
     implicit val columns = new mutable.HashMap[String, Int]()
-    val lines            = accumulate(plan)
+    val lines = accumulate(plan)
 
     def compactLine(line: Line, previous: Seq[(Line, CompactedLine)]) = {
       val repeatedVariables =
@@ -211,9 +211,9 @@ case class Line(tree: String,
 }
 
 case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails {
-  val varSep                     = ", "
-  val typeSep                    = " -- "
-  val suffix                     = ", ..."
+  val varSep = ", "
+  val typeSep = " -- "
+  val suffix = ", ..."
   val formattedVariables: String = formatVariables(renderAsTreeTable.MAX_VARIABLE_COLUMN_WIDTH)
 
   def apply(key: String): Justified =
@@ -269,7 +269,7 @@ case class CompactedLine(line: Line, repeated: Set[String]) extends LineDetails 
 sealed abstract class Justified(text: String) {
   def length: Int = text.length
 }
-case class Left(text: String)  extends Justified(text)
+case class Left(text: String) extends Justified(text)
 case class Right(text: String) extends Justified(text)
 
 sealed abstract class Level {
@@ -279,20 +279,20 @@ sealed abstract class Level {
   def connector: Option[String]
 }
 case object Root extends Level {
-  override def child: Level              = Child(1)
-  override def fork: Level               = Fork(2)
-  override def line: String              = "+"
+  override def child: Level = Child(1)
+  override def fork: Level = Fork(2)
+  override def line: String = "+"
   override def connector: Option[String] = None
 }
 case class Child(level: Int) extends Level {
-  override def child: Level              = Child(level)
-  override def fork: Level               = Fork(level + 1)
-  override def line: String              = "| " * (level - 1) + "+"
+  override def child: Level = Child(level)
+  override def fork: Level = Fork(level + 1)
+  override def line: String = "| " * (level - 1) + "+"
   override def connector: Option[String] = Some("| " * level)
 }
 case class Fork(level: Int) extends Level {
-  override def child: Level              = Child(level)
-  override def fork: Level               = Fork(level + 1)
-  override def line: String              = "| " * (level - 1) + "+"
+  override def child: Level = Child(level)
+  override def fork: Level = Fork(level + 1)
+  override def line: String = "| " * (level - 1) + "+"
   override def connector: Option[String] = Some("| " * (level - 2) + "|\\")
 }

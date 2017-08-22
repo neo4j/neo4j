@@ -19,19 +19,19 @@ package org.neo4j.cypher.internal.frontend.v3_3
 import scala.language.implicitConversions
 
 package object symbols {
-  val CTAny: AnyType                      = AnyType.instance
-  val CTBoolean: BooleanType              = BooleanType.instance
-  val CTString: StringType                = StringType.instance
-  val CTNumber: NumberType                = NumberType.instance
-  val CTFloat: FloatType                  = FloatType.instance
-  val CTInteger: IntegerType              = IntegerType.instance
-  val CTMap: MapType                      = MapType.instance
-  val CTNode: NodeType                    = NodeType.instance
-  val CTRelationship: RelationshipType    = RelationshipType.instance
-  val CTPoint: PointType                  = PointType.instance
-  val CTGeometry: GeometryType            = GeometryType.instance
-  val CTPath: PathType                    = PathType.instance
-  val CTGraphRef: GraphRefType            = GraphRefType.instance
+  val CTAny: AnyType = AnyType.instance
+  val CTBoolean: BooleanType = BooleanType.instance
+  val CTString: StringType = StringType.instance
+  val CTNumber: NumberType = NumberType.instance
+  val CTFloat: FloatType = FloatType.instance
+  val CTInteger: IntegerType = IntegerType.instance
+  val CTMap: MapType = MapType.instance
+  val CTNode: NodeType = NodeType.instance
+  val CTRelationship: RelationshipType = RelationshipType.instance
+  val CTPoint: PointType = PointType.instance
+  val CTGeometry: GeometryType = GeometryType.instance
+  val CTPath: PathType = PathType.instance
+  val CTGraphRef: GraphRefType = GraphRefType.instance
   def CTList(inner: CypherType): ListType = ListType(inner)
 
   implicit def invariantTypeSpec(that: CypherType): TypeSpec = that.invariant

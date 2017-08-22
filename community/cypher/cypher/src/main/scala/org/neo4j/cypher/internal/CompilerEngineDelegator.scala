@@ -44,10 +44,10 @@ import org.neo4j.logging.Log
 import org.neo4j.logging.LogProvider
 
 object CompilerEngineDelegator {
-  val DEFAULT_QUERY_CACHE_SIZE: Int               = 128
-  val DEFAULT_QUERY_PLAN_TTL: Long                = 1000 // 1 second
-  val CLOCK: Clock                                = Clock.systemUTC()
-  val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD     = 0.5
+  val DEFAULT_QUERY_CACHE_SIZE: Int = 128
+  val DEFAULT_QUERY_PLAN_TTL: Long = 1000 // 1 second
+  val CLOCK: Clock = Clock.systemUTC()
+  val DEFAULT_STATISTICS_DIVERGENCE_THRESHOLD = 0.5
   val DEFAULT_NON_INDEXED_LABEL_WARNING_THRESHOLD = 10000
 }
 
@@ -124,7 +124,7 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     val CypherStatementWithOptions(statement, offset, version, planner, runtime, updateStrategy, mode, debugOptions) =
       CypherStatementWithOptions(preParsedStatement)
 
-    val cypherVersion       = version.getOrElse(configuredVersion)
+    val cypherVersion = version.getOrElse(configuredVersion)
     val pickedExecutionMode = mode.getOrElse(CypherExecutionMode.default)
 
     val pickedPlanner =
@@ -172,9 +172,9 @@ class CompilerEngineDelegator(graph: GraphDatabaseQueryService,
     import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
     import org.neo4j.cypher.internal.compatibility.v3_2.helpers._
 
-    var version        = preParsedQuery.version
-    val planner        = preParsedQuery.planner
-    val runtime        = preParsedQuery.runtime
+    var version = preParsedQuery.version
+    val planner = preParsedQuery.planner
+    val runtime = preParsedQuery.runtime
     val updateStrategy = preParsedQuery.updateStrategy
 
     var preParsingNotifications: Set[org.neo4j.graphdb.Notification] = Set.empty

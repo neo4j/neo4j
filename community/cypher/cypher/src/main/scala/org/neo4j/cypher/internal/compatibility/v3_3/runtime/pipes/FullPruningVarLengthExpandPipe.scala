@@ -94,7 +94,7 @@ case class FullPruningVarLengthExpandPipe(
 
     import NodeState.UNINITIALIZED
 
-    var relationshipCursor   = 0
+    var relationshipCursor = 0
     var nodeState: NodeState = UNINITIALIZED
 
     def nextEndNode(): NodeValue = {
@@ -108,7 +108,7 @@ case class FullPruningVarLengthExpandPipe(
         while (hasRelationship) {
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingStepsBefore(currentRelIdx)) {
-            val rel   = nodeState.rels(currentRelIdx)
+            val rel = nodeState.rels(currentRelIdx)
             val relId = rel.id()
             if (!seenRelationshipInPath(relId)) {
               val nextNode = rel.otherNode(node)
@@ -208,7 +208,7 @@ case class FullPruningVarLengthExpandPipe(
     val UNINITIALIZED: NodeState = null
 
     val NOOP = new NodeState() {
-      override def minOutgoingDepth(incomingRelId: Long): Int       = 0
+      override def minOutgoingDepth(incomingRelId: Long): Int = 0
       override def updateFullExpandDepth(relIndex: Int, depth: Int) = {}
     }
   }
@@ -232,7 +232,7 @@ case class FullPruningVarLengthExpandPipe(
       */
     def minOutgoingDepth(incomingRelId: Long): Int = {
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
-      var i   = 0
+      var i = 0
       while (i < rels.length) {
         if (rels(i).id() != incomingRelId) {
           min = math.min(depths(i), min)
@@ -270,9 +270,9 @@ case class FullPruningVarLengthExpandPipe(
     */
   class FullPruneState(queryState: QueryState) {
     var inputRow: ExecutionContext = _
-    val nodeState                  = new Array[PruningDFS](self.max + 1)
-    val path                       = new Array[Long](max)
-    var depth                      = -1
+    val nodeState = new Array[PruningDFS](self.max + 1)
+    val path = new Array[Long](max)
+    var depth = -1
 
     def startRow(inputRow: ExecutionContext) = {
       this.inputRow = inputRow
@@ -328,9 +328,9 @@ case class FullPruningVarLengthExpandPipe(
       val queryState: QueryState
   ) extends Iterator[ExecutionContext] {
 
-    var outputRow: ExecutionContext    = _
+    var outputRow: ExecutionContext = _
     var fullPruneState: FullPruneState = new FullPruneState(queryState)
-    var hasPrefetched                  = false
+    var hasPrefetched = false
 
     override def hasNext = {
       prefetch()

@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_3._
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  val aHasLabel         = identHasLabel("a", "LABEL")
-  val rhsLeaf           = newMockedLogicalPlan("a")
+  val aHasLabel = identHasLabel("a", "LABEL")
+  val rhsLeaf = newMockedLogicalPlan("a")
   val pred1: Expression = Equals(SignedDecimalIntegerLiteral("42") _, SignedDecimalIntegerLiteral("42") _) _
   val pred2: Expression = Equals(SignedDecimalIntegerLiteral("44") _, SignedDecimalIntegerLiteral("44") _) _
 
@@ -36,7 +36,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     // Given
     val lhsSelection = selectionOp("a", aHasLabel)
     val rhsSelection = Selection(Seq(aHasLabel), rhsLeaf)(solved)
-    val join         = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
+    val join = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
 
     // When
     val result = join.endoRewrite(predicateRemovalThroughJoins)
@@ -49,7 +49,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     // Given
     val lhsSelection = selectionOp("a", aHasLabel, pred1)
     val rhsSelection = Selection(Seq(aHasLabel, pred2), rhsLeaf)(solved)
-    val join         = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
+    val join = NodeHashJoin(Set(IdName("a")), lhsSelection, rhsSelection)(solved)
 
     // When rewritten
     val result = join.endoRewrite(predicateRemovalThroughJoins)
@@ -74,8 +74,8 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
   }
 
   private def selectionOp(id: String, predicates: Expression*) = {
-    val selections           = Selections.from(predicates)
-    val lhsLeaf              = newMockedLogicalPlan("a")
+    val selections = Selections.from(predicates)
+    val lhsLeaf = newMockedLogicalPlan("a")
     val solved: PlannerQuery = PlannerQuery.empty.withQueryGraph(QueryGraph(selections = selections))
     Selection(Seq(aHasLabel), lhsLeaf)(CardinalityEstimation.lift(solved, Cardinality(0)))
   }

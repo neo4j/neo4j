@@ -63,14 +63,14 @@ case class ContainerIndex(expr: Expression, idx: Expression)(val position: Input
         case exprT =>
           idx.typeSwitch {
             case idxT =>
-              val listT        = CTList(CTAny).covariant & exprT
-              val mapT         = CTMap.covariant & exprT
-              val exprIsList   = listT != TypeSpec.none
-              val exprIsMap    = mapT != TypeSpec.none
+              val listT = CTList(CTAny).covariant & exprT
+              val mapT = CTMap.covariant & exprT
+              val exprIsList = listT != TypeSpec.none
+              val exprIsMap = mapT != TypeSpec.none
               val idxIsInteger = (CTInteger.covariant & idxT) != TypeSpec.none
-              val idxIsString  = (CTString.covariant & idxT) != TypeSpec.none
-              val listLookup   = exprIsList || idxIsInteger
-              val mapLookup    = exprIsMap || idxIsString
+              val idxIsString = (CTString.covariant & idxT) != TypeSpec.none
+              val listLookup = exprIsList || idxIsInteger
+              val mapLookup = exprIsMap || idxIsString
 
               if (listLookup && !mapLookup) {
                 expr.expectType(CTList(CTAny).covariant) chain

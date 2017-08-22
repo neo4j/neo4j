@@ -29,6 +29,6 @@ object ZeroOneOrMany {
   }
 }
 
-case object Zero                         extends ZeroOneOrMany[Nothing]
-final case class One[T](value: T)        extends ZeroOneOrMany[T]
+case object Zero extends ZeroOneOrMany[Nothing]
+final case class One[T](value: T) extends ZeroOneOrMany[T]
 final case class Many[T](values: Seq[T]) extends ZeroOneOrMany[T]

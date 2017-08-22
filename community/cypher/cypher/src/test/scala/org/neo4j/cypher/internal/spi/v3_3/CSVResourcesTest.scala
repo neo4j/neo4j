@@ -32,7 +32,7 @@ import org.neo4j.io.fs.FileUtils
 class CSVResourcesTest extends CypherFunSuite with CreateTempFileTestSupport {
 
   var resources: CSVResources = _
-  var cleaner: TaskCloser     = _
+  var cleaner: TaskCloser = _
 
   override def beforeEach() {
     cleaner = mock[TaskCloser]

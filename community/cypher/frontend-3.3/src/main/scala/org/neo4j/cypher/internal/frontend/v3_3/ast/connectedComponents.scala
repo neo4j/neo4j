@@ -24,12 +24,12 @@ import scala.collection.immutable
  */
 object connectedComponents {
 
-  type ComponentPart      = Set[Variable]
+  type ComponentPart = Set[Variable]
   type ConnectedComponent = Set[ComponentPart]
 
   //enable using the companion objects of the type aliases,
   //e.g. `ComponentPart(Variable("a"), Variable("b"),...)`
-  val ComponentPart      = Set
+  val ComponentPart = Set
   val ConnectedComponent = Set
 
   def apply(patternParts: Seq[PatternPart]): IndexedSeq[ConnectedComponent] = {

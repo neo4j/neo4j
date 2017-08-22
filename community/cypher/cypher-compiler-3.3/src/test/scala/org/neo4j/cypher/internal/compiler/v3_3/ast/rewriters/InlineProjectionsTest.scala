@@ -371,7 +371,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(inlineProjections)
 
   private def ast(queryText: String) = {
-    val parsed      = parser.parse(queryText)
+    val parsed = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
     val normalized =
       parsed.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))

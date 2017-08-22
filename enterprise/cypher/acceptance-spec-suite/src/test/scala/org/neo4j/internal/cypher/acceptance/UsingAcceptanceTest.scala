@@ -232,7 +232,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN expressions") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -249,7 +249,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN collections with duplicates") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -266,7 +266,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN a null value") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -283,7 +283,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
   test("should be able to use index hints on IN a collection parameter") {
     //GIVEN
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -302,7 +302,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     // GIVEN
     graph.createIndex("Entity", "source")
     graph.createIndex("Person", "first_name")
-    createNode("source"     -> "form1")
+    createNode("source" -> "form1")
     createNode("first_name" -> "John")
 
     // WHEN THEN
@@ -737,7 +737,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("Using index hints with two indexes should produce cartesian product") {
     val startNode = createLabeledNode(Map("name" -> "Neo"), "Person")
-    val endNode   = createLabeledNode(Map("name" -> "Trinity"), "Person")
+    val endNode = createLabeledNode(Map("name" -> "Trinity"), "Person")
     relate(startNode, endNode, "knows")
     graph.createIndex("Person", "name")
 
@@ -769,7 +769,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
 
   test("should accept two hints on a single relationship") {
     val startNode = createLabeledNode(Map("prop" -> 1), "PERSON")
-    val endNode   = createLabeledNode(Map("prop" -> 2), "PERSON")
+    val endNode = createLabeledNode(Map("prop" -> 2), "PERSON")
     relate(startNode, endNode)
     graph.createIndex("PERSON", "prop")
 

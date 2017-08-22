@@ -61,7 +61,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       planContext.checkNodeIndex(idxName)
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val keyVal   = key(m)(state).toString
+        val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
         state.query.nodeOps.indexGet(idxName, keyVal, valueVal)
       }
@@ -124,7 +124,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     case (planContext, startItem @ RelationshipByIndex(varName, idxName, key, value, _)) =>
       planContext.checkRelIndex(idxName)
       asProducer[Relationship](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val keyVal   = key(m)(state).toString
+        val keyVal = key(m)(state).toString
         val valueVal = value(m)(state)
         state.query.relationshipOps.indexGet(idxName, keyVal, valueVal)
       }

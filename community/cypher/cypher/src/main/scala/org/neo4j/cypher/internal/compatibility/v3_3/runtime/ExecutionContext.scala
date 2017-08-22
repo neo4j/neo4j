@@ -61,7 +61,7 @@ case class MapExecutionContext(m: MutableMap[String, AnyValue]) extends Executio
   override def copyFrom(input: ExecutionContext): Unit = fail()
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
-  override def getLongAt(offset: Int): Long              = fail()
+  override def getLongAt(offset: Int): Long = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a primitive context")
 

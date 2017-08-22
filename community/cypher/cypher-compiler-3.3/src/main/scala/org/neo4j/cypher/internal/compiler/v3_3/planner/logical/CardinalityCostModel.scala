@@ -29,8 +29,8 @@ object CardinalityCostModel extends CostModel {
   def VERBOSE = java.lang.Boolean.getBoolean("CardinalityCostModel.VERBOSE")
 
   private val DEFAULT_COST_PER_ROW: CostPerRow = 0.1
-  private val PROBE_BUILD_COST: CostPerRow     = 3.1
-  private val PROBE_SEARCH_COST: CostPerRow    = 2.4
+  private val PROBE_BUILD_COST: CostPerRow = 3.1
+  private val PROBE_SEARCH_COST: CostPerRow = 2.4
   private val EAGERNESS_MULTIPLIER: Multiplier = 2.0
 
   private def costPerRow(plan: LogicalPlan): CostPerRow = plan match {
@@ -101,12 +101,12 @@ object CardinalityCostModel extends CostModel {
           rhsCardinality * PROBE_SEARCH_COST
 
       case _ =>
-        val lhsCost         = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
-        val rhsCost         = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
+        val lhsCost = plan.lhs.map(p => apply(p, input)).getOrElse(Cost(0))
+        val rhsCost = plan.rhs.map(p => apply(p, input)).getOrElse(Cost(0))
         val planCardinality = cardinalityForPlan(plan)
-        val rowCost         = costPerRow(plan)
+        val rowCost = costPerRow(plan)
         val costForThisPlan = planCardinality * rowCost
-        val totalCost       = costForThisPlan + lhsCost + rhsCost
+        val totalCost = costForThisPlan + lhsCost + rhsCost
         totalCost
     }
 

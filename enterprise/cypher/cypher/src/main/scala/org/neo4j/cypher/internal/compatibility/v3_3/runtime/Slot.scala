@@ -29,4 +29,4 @@ sealed trait Slot {
 }
 
 case class LongSlot(offset: Int, nullable: Boolean, typ: CypherType, name: String) extends Slot
-case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType, name: String)  extends Slot
+case class RefSlot(offset: Int, nullable: Boolean, typ: CypherType, name: String) extends Slot

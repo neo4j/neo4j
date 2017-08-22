@@ -86,7 +86,7 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
                                                     itemId: Long,
                                                     propertyKey: LazyPropertyKey,
                                                     expression: Expression) = {
-    val queryContext     = state.query
+    val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
       .getOrElse(queryContext.getOrCreatePropertyKeyId(propertyKey.name)) // otherwise create it
@@ -110,7 +110,7 @@ abstract class SetEntityPropertyOperation[T <: PropertyContainer](itemName: Stri
     val item = executionContext.get(itemName).get
     if (item != Values.NO_VALUE) {
       val itemId = id(item)
-      val ops    = operations(state.query)
+      val ops = operations(state.query)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
       try {
@@ -179,7 +179,7 @@ abstract class SetPropertyFromMapOperation[T <: PropertyContainer](itemName: Str
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val item = executionContext.get(itemName).get
     if (item != Values.NO_VALUE) {
-      val ops    = operations(state.query)
+      val ops = operations(state.query)
       val itemId = id(item)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
@@ -245,7 +245,7 @@ case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val value: AnyValue = executionContext.get(nodeName).get
     if (value != Values.NO_VALUE) {
-      val nodeId   = CastSupport.castOrFail[NodeValue](value).id()
+      val nodeId = CastSupport.castOrFail[NodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query).id)
       state.query.setLabelsOnNode(nodeId, labelIds.iterator)
     }

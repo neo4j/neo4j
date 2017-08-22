@@ -32,7 +32,7 @@ case class RelationshipCountFromCountStorePipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val maybeStartLabelId = getLabelId(startLabel, state)
-    val maybeEndLabelId   = getLabelId(endLabel, state)
+    val maybeEndLabelId = getLabelId(endLabel, state)
 
     val count = (maybeStartLabelId, maybeEndLabelId) match {
       case (Some(startLabelId), Some(endLabelId)) =>

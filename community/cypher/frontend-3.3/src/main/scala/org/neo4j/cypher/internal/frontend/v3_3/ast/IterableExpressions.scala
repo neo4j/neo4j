@@ -68,7 +68,7 @@ case class FilterExpression(scope: FilterScope, expression: Expression)(val posi
     extends FilteringExpression {
   val name = "filter"
 
-  def variable       = scope.variable
+  def variable = scope.variable
   def innerPredicate = scope.innerPredicate
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -87,8 +87,8 @@ case class ExtractExpression(scope: ExtractScope, expression: Expression)(val po
     extends FilteringExpression {
   val name = "extract"
 
-  def variable          = scope.variable
-  def innerPredicate    = scope.innerPredicate
+  def variable = scope.variable
+  def innerPredicate = scope.innerPredicate
   def extractExpression = scope.extractExpression
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -127,8 +127,8 @@ case class ListComprehension(scope: ExtractScope, expression: Expression)(val po
 
   val name = "[...]"
 
-  def variable          = scope.variable
-  def innerPredicate    = scope.innerPredicate
+  def variable = scope.variable
+  def innerPredicate = scope.innerPredicate
   def extractExpression = scope.extractExpression
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -191,7 +191,7 @@ case class PatternComprehension(namedPath: Option[Variable],
 sealed trait IterablePredicateExpression extends FilteringExpression {
 
   def scope: FilterScope
-  def variable: Variable                 = scope.variable
+  def variable: Variable = scope.variable
   def innerPredicate: Option[Expression] = scope.innerPredicate
 
   override def semanticCheck(ctx: SemanticContext) =
@@ -253,9 +253,9 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expressi
     extends Expression {
   import ReduceExpression._
 
-  def variable    = scope.variable
+  def variable = scope.variable
   def accumulator = scope.accumulator
-  def expression  = scope.expression
+  def expression = scope.expression
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) chain
@@ -263,7 +263,7 @@ case class ReduceExpression(scope: ReduceScope, init: Expression, list: Expressi
       list.expectType(CTList(CTAny).covariant) chain
       withScopedState {
         val indexType: TypeGenerator = s => (list.types(s) constrain CTList(CTAny)).unwrapLists
-        val accType: TypeGenerator   = init.types
+        val accType: TypeGenerator = init.types
 
         variable.declare(indexType) chain
           accumulator.declare(accType) chain

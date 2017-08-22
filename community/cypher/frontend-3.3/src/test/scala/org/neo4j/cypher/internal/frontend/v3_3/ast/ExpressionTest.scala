@@ -150,17 +150,17 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should compute inputs of composite expressions") {
     val identA = varFor("a")
     val identB = varFor("b")
-    val lit1   = SignedDecimalIntegerLiteral("1")(pos)
-    val sub    = Subtract(lit1, identB)(pos)
-    val add    = Add(identA, sub)(pos)
+    val lit1 = SignedDecimalIntegerLiteral("1")(pos)
+    val sub = Subtract(lit1, identB)(pos)
+    val add = Add(identA, sub)(pos)
 
     IdentityMap(add.inputs: _*) should equal(
       IdentityMap(
         identA -> Set.empty,
         identB -> Set.empty,
-        lit1   -> Set.empty,
-        sub    -> Set.empty,
-        add    -> Set.empty
+        lit1 -> Set.empty,
+        sub -> Set.empty,
+        add -> Set.empty
       ))
   }
 
@@ -176,7 +176,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       ) _)
 
     val callNodes: Expression = FunctionInvocation(FunctionName("nodes") _, varFor("x")) _
-    val callHead: Expression  = FunctionInvocation(FunctionName("head") _, callNodes) _
+    val callHead: Expression = FunctionInvocation(FunctionName("head") _, callNodes) _
 
     // extract(x IN (n)-->(k) | head(nodes(x)) )
     val expr: Expression = ExtractExpression(

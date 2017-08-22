@@ -33,7 +33,7 @@ case class JavaListWrapper[T](inner: java.util.List[T], converter: RuntimeScalaV
   override def length = inner.size()
 
   override def iterator: Iterator[Any] = new Iterator[Any] {
-    private val innerIterator     = inner.iterator()
+    private val innerIterator = inner.iterator()
     override def hasNext: Boolean = innerIterator.hasNext
 
     override def next(): Any = converter.asDeepScalaValue(innerIterator.next())

@@ -305,8 +305,8 @@ class LeafPlanningIntegrationTest
     case (_: NodeIndexScan, _)         => 10.0
     case (_: NodeIndexContainsScan, _) => 10.0
     case (nodeIndexSeek: NodeIndexSeek, _) =>
-      val planCardinality     = nodeIndexSeek.solved.estimatedCardinality.amount
-      val rowCost             = 1.0
+      val planCardinality = nodeIndexSeek.solved.estimatedCardinality.amount
+      val rowCost = 1.0
       val allNodesCardinality = 1000.0
       rowCost * planCardinality / allNodesCardinality
     case (Selection(_, plan), input) => nodeIndexScanCost((plan, input))
@@ -637,15 +637,15 @@ class LeafPlanningIntegrationTest
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
-    val prop1Predicate       = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
-    val prop2Predicate       = SingleQueryExpression(SignedDecimalIntegerLiteral("3")(pos))
-    val prop1                = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2                = PropertyKeyToken("prop2", PropertyKeyId(1))
-    val labelToken           = LabelToken("Awesome", LabelId(0))
+    val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
+    val prop2Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("3")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
     val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
     val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
-    val union: Union         = Union(seek2, seek1)(solved)
-    val distinct             = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
 
     plan._2 should equal(distinct)
   }
@@ -764,15 +764,15 @@ class LeafPlanningIntegrationTest
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2
 
-    val prop1Predicate       = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
-    val prop2Predicate       = SingleQueryExpression(StringLiteral("apa")(pos))
-    val prop1                = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2                = PropertyKeyToken("prop2", PropertyKeyId(1))
-    val labelToken           = LabelToken("Awesome", LabelId(0))
+    val prop1Predicate = SingleQueryExpression(SignedDecimalIntegerLiteral("42")(pos))
+    val prop2Predicate = SingleQueryExpression(StringLiteral("apa")(pos))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
     val seek1: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop1), prop1Predicate, Set.empty)(solved)
     val seek2: NodeIndexSeek = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
-    val union: Union         = Union(seek2, seek1)(solved)
-    val distinct             = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val union: Union = Union(seek2, seek1)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
 
     plan should equal(distinct)
   }
@@ -798,14 +798,14 @@ class LeafPlanningIntegrationTest
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
 
     val prop2Predicate = RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(StringLiteral("apa")(pos)))(pos))
-    val prop1          = PropertyKeyToken("prop1", PropertyKeyId(0))
-    val prop2          = PropertyKeyToken("prop2", PropertyKeyId(1))
-    val labelToken     = LabelToken("Awesome", LabelId(0))
+    val prop1 = PropertyKeyToken("prop1", PropertyKeyId(0))
+    val prop2 = PropertyKeyToken("prop2", PropertyKeyId(1))
+    val labelToken = LabelToken("Awesome", LabelId(0))
     val prop1Predicate = GreaterThanOrEqual(prop("n", "prop1"), literalInt(42))(pos)
-    val seek1          = Selection(Seq(prop1Predicate), NodeIndexScan(IdName("n"), labelToken, prop1, Set.empty)(solved))(solved)
-    val seek2          = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
-    val union          = Union(seek1, seek2)(solved)
-    val distinct       = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
+    val seek1 = Selection(Seq(prop1Predicate), NodeIndexScan(IdName("n"), labelToken, prop1, Set.empty)(solved))(solved)
+    val seek2 = NodeIndexSeek(IdName("n"), labelToken, Seq(prop2), prop2Predicate, Set.empty)(solved)
+    val union = Union(seek1, seek2)(solved)
+    val distinct = Aggregation(union, Map("n" -> varFor("n")), Map.empty)(solved)
 
     plan should equal(distinct)
   }

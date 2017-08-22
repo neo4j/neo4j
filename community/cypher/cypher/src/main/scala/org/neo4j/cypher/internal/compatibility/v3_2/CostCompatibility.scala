@@ -65,7 +65,7 @@ case class CostCompatibility[C <: CompilerContext, T <: Transformer[C, Compilati
       case _                          => None
     }
 
-    val logger   = new StringInfoLogger(log)
+    val logger = new StringInfoLogger(log)
     val monitors = WrappedMonitors(kernelMonitors)
 
     new CypherCompilerFactory().costBasedCompiler(config,

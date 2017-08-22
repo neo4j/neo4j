@@ -720,7 +720,7 @@ class QueryPlanCompactionAcceptanceTest
   }
 
   test("Compact smaller, but still long and compactable query") {
-    val query  = """CREATE (TheMatrix:Movie {title:'The Matrix', released:2001, tagline:'Welcome to the Real World3'})
+    val query = """CREATE (TheMatrix:Movie {title:'The Matrix', released:2001, tagline:'Welcome to the Real World3'})
         |CREATE (Keanu:Person {name:'Keanu Reeves', born:1964})
         |CREATE (Carrie:Person {name:'Carrie-Anne Moss', born:1967})
         |CREATE (Laurence:Person {name:'Laurence Fishburne', born:1961})
@@ -829,7 +829,7 @@ class QueryPlanCompactionAcceptanceTest
     relate(d, e)
     relate(c, b)
     relate(d, b)
-    val query  = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
+    val query = "MATCH (n:Actor {name:'Keanu Reeves'})-->()-->(b) RETURN b"
     val result = executeWithCostPlannerAndCompiledRuntimeOnly(query)
     result should havePlanLike(
       """

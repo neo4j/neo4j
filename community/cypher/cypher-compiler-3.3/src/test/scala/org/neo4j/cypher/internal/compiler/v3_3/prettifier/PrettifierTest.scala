@@ -168,6 +168,6 @@ class PrettifierTest extends CypherFunSuite {
       expected("WITH [1,2,2] AS coll%nUNWIND coll AS x%nRETURN collect(x)"))
   }
 
-  private def actual(text: String)   = Prettifier(text)
+  private def actual(text: String) = Prettifier(text)
   private def expected(text: String) = String.format(text)
 }

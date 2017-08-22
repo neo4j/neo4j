@@ -34,8 +34,8 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek node by id") {
     // given
-    val id      = 17
-    val node    = nodeProxy(17)
+    val id = 17
+    val node = nodeProxy(17)
     val nodeOps = when(mock[Operations[Node]].getById(id)).thenReturn(node).getMock[Operations[Node]]
     when(nodeOps.getById(17)).thenReturn(node)
     when(nodeOps.exists(17)).thenReturn(true)
@@ -52,9 +52,9 @@ class NodeByIdSeekPipeTest extends CypherFunSuite {
 
   test("should seek nodes by multiple ids") {
     // given
-    val node1   = nodeProxy(42)
-    val node2   = nodeProxy(21)
-    val node3   = nodeProxy(11)
+    val node1 = nodeProxy(42)
+    val node2 = nodeProxy(21)
+    val node3 = nodeProxy(11)
     val nodeOps = mock[Operations[Node]]
 
     when(nodeOps.getById(42)).thenReturn(node1)

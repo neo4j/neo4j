@@ -55,7 +55,7 @@ object ExpressionConverter {
     expression match {
       case ast.HasLabels(ast.Variable(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
-        val nodeVariable    = context.getVariable(name)
+        val nodeVariable = context.getVariable(name)
         HasLabel(nodeVariable, labelIdVariable, label.name).asPredicate
 
       case exp @ ast.Property(node @ ast.Variable(name), propKey) if context.semanticTable.isNode(node) =>
@@ -147,12 +147,12 @@ object ExpressionConverter {
         expressions.ListLiteral(exprs.map(e => callback(e)))
 
       case ast.Add(lhs, rhs) =>
-        val leftOp  = callback(lhs)
+        val leftOp = callback(lhs)
         val rightOp = callback(rhs)
         Addition(leftOp, rightOp)
 
       case ast.Subtract(lhs, rhs) =>
-        val leftOp  = callback(lhs)
+        val leftOp = callback(lhs)
         val rightOp = callback(rhs)
         Subtraction(leftOp, rightOp)
 
@@ -164,7 +164,7 @@ object ExpressionConverter {
 
       case ast.HasLabels(ast.Variable(name), label :: Nil) =>
         val labelIdVariable = context.namer.newVarName()
-        val nodeVariable    = context.getVariable(name)
+        val nodeVariable = context.getVariable(name)
         HasLabel(nodeVariable, labelIdVariable, label.name)
 
       case ast.Equals(lhs, rhs) => Equals(callback(lhs), callback(rhs))

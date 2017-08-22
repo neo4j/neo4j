@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.helpers.fixedPoint
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
-  private val leaf            = newMockedLogicalPlan()
+  private val leaf = newMockedLogicalPlan()
   private val sortDescription = Seq(Ascending("x"))
-  private val sort            = Sort(leaf, sortDescription)(solved)
-  private val lit10           = literalInt(10)
+  private val sort = Sort(leaf, sortDescription)(solved)
+  private val lit10 = literalInt(10)
 
   test("should use Top when possible") {
     val limit = Limit(sort, lit10, DoNotIncludeTies)(solved)

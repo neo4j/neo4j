@@ -172,7 +172,7 @@ case object PlanUpdates extends LogicalPlanningFunction3[PlannerQuery, LogicalPl
 
     //Merge needs to make sure that found nodes have all the expected properties, so we use AssertSame operators here
     val leafPlannerList = LeafPlannerList(IndexedSeq(mergeUniqueIndexSeekLeafPlanner))
-    val leafPlanners    = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
+    val leafPlanners = PriorityLeafPlannerList(leafPlannerList, context.config.leafPlanners)
 
     val innerContext: LogicalPlanningContext =
       context.recurse(source).copy(config = context.config.withLeafPlanners(leafPlanners))

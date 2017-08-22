@@ -31,10 +31,10 @@ class StatisticsBackedCardinalityModelTest
     with LogicalPlanningTestSupport
     with CardinalityModelTestHelper {
 
-  val allNodes    = 733.0
+  val allNodes = 733.0
   val personCount = 324
-  val relCount    = 50
-  val rel2Count   = 78
+  val relCount = 50
+  val rel2Count = 78
 
   test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1
@@ -74,9 +74,9 @@ class StatisticsBackedCardinalityModelTest
 
   test("query containing a WITH and aggregation vol. 2") {
     val patternNodeCrossProduct = allNodes * allNodes
-    val labelSelectivity        = personCount / allNodes
-    val maxRelCount             = patternNodeCrossProduct * labelSelectivity
-    val relSelectivity          = rel2Count / maxRelCount
+    val labelSelectivity = personCount / allNodes
+    val maxRelCount = patternNodeCrossProduct * labelSelectivity
+    val relSelectivity = rel2Count / maxRelCount
 
     val firstQG = patternNodeCrossProduct * labelSelectivity * relSelectivity
 

@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.VirtualValues.list
 
 class SplitFunctionTest extends CypherFunSuite {
 
-  val nullSeq    = null.asInstanceOf[Seq[String]]
+  val nullSeq = null.asInstanceOf[Seq[String]]
   val nullString = null.asInstanceOf[String]
 
   test("passing null to split() returns null") {

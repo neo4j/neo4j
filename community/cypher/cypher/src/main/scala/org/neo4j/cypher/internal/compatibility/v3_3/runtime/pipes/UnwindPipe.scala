@@ -41,9 +41,9 @@ case class UnwindPipe(source: Pipe, collection: Expression, variable: String)(va
 
   private class UnwindIterator(input: Iterator[ExecutionContext], state: QueryState)
       extends Iterator[ExecutionContext] {
-    private var context: ExecutionContext          = null
+    private var context: ExecutionContext = null
     private var unwindIterator: Iterator[AnyValue] = null
-    private var nextItem: ExecutionContext         = null
+    private var nextItem: ExecutionContext = null
 
     prefetch()
 

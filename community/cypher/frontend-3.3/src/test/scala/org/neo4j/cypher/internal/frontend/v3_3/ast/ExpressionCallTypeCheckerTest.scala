@@ -108,7 +108,7 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
     val semanticState = argExpressions.foldLeft(SemanticState.clean) {
       case (state, inner) => state.specifyType(inner, inner.possibleTypes).right.get
     }
-    val expr  = TypeExpr(argExpressions)
+    val expr = TypeExpr(argExpressions)
     val check = ExpressionCallTypeChecker(ExpressionSignatures).checkTypes(expr)(semanticState)
     (expr, check)
   }
@@ -129,6 +129,6 @@ class ExpressionCallTypeCheckerTest extends CypherFunSuite with AstConstructionT
 
   case class TypeExpr(override val arguments: Seq[Expression]) extends Expression {
     override def semanticCheck(ctx: SemanticContext): SemanticCheck = ???
-    override def position: InputPosition                            = pos
+    override def position: InputPosition = pos
   }
 }

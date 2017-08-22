@@ -26,7 +26,7 @@ import org.neo4j.values.AnyValue
 
 case class Literal(v: Any) extends Expression {
   //TODO this could have been figured out earlier
-  val anyVal                                                             = asValue(v)
+  val anyVal = asValue(v)
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = anyVal
 
   def rewrite(f: (Expression) => Expression) = f(this)

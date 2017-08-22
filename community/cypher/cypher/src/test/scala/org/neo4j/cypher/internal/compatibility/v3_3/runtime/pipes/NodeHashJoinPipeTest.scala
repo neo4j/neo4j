@@ -40,9 +40,9 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   test("should support simple hash join over nodes") {
     // given
-    val node1      = newMockedNode(1)
-    val node2      = newMockedNode(2)
-    val node3      = newMockedNode(3)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+    val node3 = newMockedNode(3)
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
@@ -66,9 +66,9 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   test("should support joining on two different variables") {
     // given
-    val node0      = newMockedNode(0)
-    val node1      = newMockedNode(1)
-    val node2      = newMockedNode(2)
+    val node0 = newMockedNode(0)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
@@ -79,7 +79,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
           row("a" -> fromNodeProxy(node0), "b" -> fromNodeProxy(node2), "c" -> intValue(2)),
           row("a" -> fromNodeProxy(node0), "b" -> fromNodeProxy(node2), "c" -> intValue(3)),
           row("a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node2), "c" -> intValue(4)),
-          row("a" -> fromNodeProxy(node0), "b" -> NO_VALUE, "c"             -> intValue(5))
+          row("a" -> fromNodeProxy(node0), "b" -> NO_VALUE, "c" -> intValue(5))
         )
     })
 
@@ -90,7 +90,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
           row("a" -> fromNodeProxy(node0), "b" -> fromNodeProxy(node1), "d" -> intValue(1)),
           row("a" -> fromNodeProxy(node0), "b" -> fromNodeProxy(node2), "d" -> intValue(2)),
           row("a" -> fromNodeProxy(node2), "b" -> fromNodeProxy(node2), "d" -> intValue(3)),
-          row("a" -> NO_VALUE, "b"             -> fromNodeProxy(node2), "d" -> intValue(4))
+          row("a" -> NO_VALUE, "b" -> fromNodeProxy(node2), "d" -> intValue(4))
         )
     })
 
@@ -108,8 +108,8 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   test("should work when the inner pipe produces multiple rows with the same join key") {
     // given
-    val node1      = newMockedNode(1)
-    val node2      = newMockedNode(2)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
@@ -139,8 +139,8 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   test("should work when the outer pipe produces rows with a null key") {
     // given
-    val node1      = newMockedNode(1)
-    val node2      = newMockedNode(2)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
@@ -168,8 +168,8 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
 
   test("should work when the inner pipe produces rows with a null key") {
     // given
-    val node1      = newMockedNode(1)
-    val node2      = newMockedNode(2)
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
     val queryState = QueryStateHelper.empty
 
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
@@ -219,7 +219,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> null), row("b" -> null)))
 
-    val right       = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     val rhsIterator = new TestableIterator(Iterator(row("b" -> newMockedNode(0))))
     when(left.createResults(queryState)).thenReturn(Iterator.empty)
 
@@ -235,7 +235,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     // given
     val queryState = QueryStateHelper.empty
 
-    val left  = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
     val node1 = newMockedNode(1)
     val node2 = newMockedNode(2)
 

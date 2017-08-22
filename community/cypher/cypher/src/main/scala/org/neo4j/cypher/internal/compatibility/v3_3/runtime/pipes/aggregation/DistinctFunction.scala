@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compatibility.v3_3.runtime.pipes.QueryState
 import org.neo4j.values.AnyValue
 
 class DistinctFunction(value: Expression, inner: AggregationFunction) extends AggregationFunction {
-  private val seen     = scala.collection.mutable.Set[AnyValue]()
+  private val seen = scala.collection.mutable.Set[AnyValue]()
   private var seenNull = false
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState) {

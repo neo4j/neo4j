@@ -61,6 +61,6 @@ class TopDownWithStateTest extends CypherFunSuite {
 }
 
 trait AST
-case class LIT(value: Int)               extends AST
-case class ADD(lhs: AST, rhs: AST)       extends AST
+case class LIT(value: Int) extends AST
+case class ADD(lhs: AST, rhs: AST) extends AST
 case class NOOP(value: Int, source: AST) extends AST

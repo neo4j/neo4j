@@ -38,7 +38,7 @@ class RenderSummaryTest extends CypherFunSuite {
 
     val arguments2 = Seq(Rows(42), DbHits(22))
 
-    val child  = PlanDescriptionImpl(new Id, "NAME1", NoChildren, arguments1, Set())
+    val child = PlanDescriptionImpl(new Id, "NAME1", NoChildren, arguments1, Set())
     val parent = PlanDescriptionImpl(new Id, "NAME2", SingleChild(child), arguments2, Set())
 
     renderSummary(parent) should equal("Total database accesses: 55")

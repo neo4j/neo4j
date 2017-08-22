@@ -42,7 +42,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx { context: OperationsFacade =>
-      val prop  = context.propertyKeyGetForName("propertyKey")
+      val prop = context.propertyKeyGetForName("propertyKey")
       val label = context.labelGetForName("Label")
 
       val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
@@ -60,7 +60,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx { context: OperationsFacade =>
-      val prop  = context.propertyKeyGetForName("name")
+      val prop = context.propertyKeyGetForName("name")
       val label = context.labelGetForName("Person")
 
       val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
@@ -80,7 +80,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     // THEN
     graph.inTx { context: OperationsFacade =>
-      val prop  = context.propertyKeyGetForName("name")
+      val prop = context.propertyKeyGetForName("name")
       val label = context.labelGetForName("Person")
 
       val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
@@ -98,7 +98,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
     //THEN
     graph.inTx { context: OperationsFacade =>
-      val prop  = context.propertyKeyGetForName("propertyKey")
+      val prop = context.propertyKeyGetForName("propertyKey")
       val label = context.labelGetForName("Label")
 
       val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala
@@ -124,7 +124,7 @@ class UniqueConstraintVerificationAcceptanceTest
     }
 
     graph.inTx { context: OperationsFacade =>
-      val prop  = context.propertyKeyGetForName("id")
+      val prop = context.propertyKeyGetForName("id")
       val label = context.labelGetForName("Person")
 
       val constraints = context.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(label, prop)).asScala

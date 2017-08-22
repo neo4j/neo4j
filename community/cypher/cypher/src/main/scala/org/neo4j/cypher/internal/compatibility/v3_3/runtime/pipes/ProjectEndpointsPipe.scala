@@ -114,7 +114,7 @@ case class ProjectEndpointsPipe(source: Pipe,
                               context: ExecutionContext,
                               qtx: QueryContext): Option[(NodeValue, NodeValue)] = {
     val startNode = relStart.startNode()
-    val endNode   = relEnd.endNode()
+    val endNode = relEnd.endNode()
     Some((startNode, endNode)).filter {
       case (s, e) =>
         (!startInScope || context(start) == s) && (!endInScope || context(end) == e)

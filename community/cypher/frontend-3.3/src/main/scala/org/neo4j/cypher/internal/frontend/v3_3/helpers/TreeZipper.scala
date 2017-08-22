@@ -32,7 +32,7 @@ abstract class TreeZipper[E <: TreeElem[E]: ClassTag] {
   def apply(treeElem: E) = Location(treeElem, Top)
 
   sealed trait Context
-  case object Top                                                         extends Context
+  case object Top extends Context
   case class TreeContext(left: List[E], parent: Location, right: List[E]) extends Context
 
   object Children {
@@ -162,19 +162,19 @@ abstract class TreeZipper[E <: TreeElem[E]: ClassTag] {
     def root = location.map(_.root)
 
     def isLeftMost = location.map(_.isLeftMost)
-    def left       = location.flatMap(_.left)
-    def leftMost   = location.map(_.leftMost)
+    def left = location.flatMap(_.left)
+    def leftMost = location.map(_.leftMost)
 
     def isRightMost = location.map(_.isLeftMost)
-    def right       = location.flatMap(_.right)
-    def rightMost   = location.map(_.rightMost)
+    def right = location.flatMap(_.right)
+    def rightMost = location.map(_.rightMost)
 
     def down = location.flatMap(_.down)
-    def up   = location.flatMap(_.up)
+    def up = location.flatMap(_.up)
 
     def replace(replacementElem: E) = location.map(_.replace(replacementElem))
-    def insertLeft(newElem: E)      = location.flatMap(_.insertLeft(newElem))
-    def insertRight(newElem: E)     = location.flatMap(_.insertRight(newElem))
-    def insertChild(newElem: E)     = location.map(_.insertChild(newElem))
+    def insertLeft(newElem: E) = location.flatMap(_.insertLeft(newElem))
+    def insertRight(newElem: E) = location.flatMap(_.insertRight(newElem))
+    def insertChild(newElem: E) = location.map(_.insertChild(newElem))
   }
 }

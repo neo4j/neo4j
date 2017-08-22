@@ -38,7 +38,7 @@ class DynamicCount(opName: String,
     extends BaseAggregateExpression(expression, distinct) {
 
   private var mapName: String = null
-  private var keyVar: String  = null
+  private var keyVar: String = null
 
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     expression.init(generator)

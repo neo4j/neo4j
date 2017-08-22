@@ -43,7 +43,7 @@ case class RunConditionRewriter(sequenceName: String, name: Option[String], cond
       extends InternalException(buildMessage(sequenceName, optName, failures))
 
   private def buildMessage(sequenceName: String, optName: Option[String], failures: Seq[RewriterConditionFailure]) = {
-    val name    = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
+    val name = optName.map(name => s"step '$name'").getOrElse("start of rewriting")
     val builder = new StringBuilder
     builder ++= s"Error during '$sequenceName' rewriting after $name. The following conditions where violated: \n"
     for (failure <- failures;

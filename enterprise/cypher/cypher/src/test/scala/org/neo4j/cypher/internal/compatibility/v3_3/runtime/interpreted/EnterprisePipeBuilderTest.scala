@@ -68,12 +68,12 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val planContext = mock[PlanContext]
     when(planContext.statistics).thenReturn(HardcodedGraphStatistics)
     when(planContext.getOptPropertyKeyId("propertyKey")).thenReturn(Some(0))
-    val context: EnterpriseRuntimeContext                      = CompiledRuntimeContextHelper.create(planContext = planContext)
+    val context: EnterpriseRuntimeContext = CompiledRuntimeContextHelper.create(planContext = planContext)
     val beforePipelines: Map[LogicalPlan, PipelineInformation] = RegisterAllocation.allocateRegisters(beforeRewrite)
-    val registeredRewriter                                     = new RegisteredRewriter(context.planContext)
-    val (logicalPlan, pipelines)                               = registeredRewriter(beforeRewrite, beforePipelines)
-    val idMap                                                  = LogicalPlanIdentificationBuilder(logicalPlan)
-    val converters                                             = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
+    val registeredRewriter = new RegisteredRewriter(context.planContext)
+    val (logicalPlan, pipelines) = registeredRewriter(beforeRewrite, beforePipelines)
+    val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
+    val converters = new ExpressionConverters(CommunityExpressionConverter, EnterpriseExpressionConverters)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(
       context.clock,
       context.monitors,
@@ -83,9 +83,9 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     executionPlanBuilder.build(None, logicalPlan, idMap)(pipeBuildContext, context.planContext).pipe
   }
 
-  private val x     = IdName("x")
-  private val z     = IdName("z")
-  private val r     = IdName("r")
+  private val x = IdName("x")
+  private val z = IdName("z")
+  private val r = IdName("r")
   private val LABEL = LabelName("label1")(pos)
 
   test("only single allnodes scan") {
@@ -103,8 +103,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("create node") {
     // given
-    val label      = LabelName("label")(pos)
-    val singleRow  = SingleRow()(solved)
+    val label = LabelName("label")(pos)
+    val singleRow = SingleRow()(solved)
     val createNode = CreateNode(singleRow, z, Seq(label), None)(solved)
 
     // when
@@ -125,7 +125,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single labelscan scan") {
     // given
     val label = LabelName("label")(pos)
-    val plan  = NodeByLabelScan(x, label, Set.empty)(solved)
+    val plan = NodeByLabelScan(x, label, Set.empty)(solved)
 
     // when
     val pipe = build(plan)
@@ -140,8 +140,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("labelscan with filtering") {
     // given
-    val label  = LabelName("label")(pos)
-    val leaf   = NodeByLabelScan(x, label, Set.empty)(solved)
+    val label = LabelName("label")(pos)
+    val leaf = NodeByLabelScan(x, label, Set.empty)(solved)
     val filter = Selection(Seq(ast.True()(pos)), leaf)(solved)
 
     // when
@@ -163,14 +163,14 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single node with expand") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand       = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     // when
     val pipe = build(expand)
 
     // then
     val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
-    val rRelSlot  = LongSlot(1, nullable = false, CTRelationship, "r")
+    val rRelSlot = LongSlot(1, nullable = false, CTRelationship, "r")
     val zNodeSlot = LongSlot(2, nullable = false, CTNode, "z")
     pipe should equal(
       ExpandAllRegisterPipe(
@@ -191,14 +191,14 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single node with expand into") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand       = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
+    val expand = Expand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
 
     // when
     val pipe = build(expand)
 
     // then
     val nodeSlot = LongSlot(0, nullable = false, CTNode, "x")
-    val relSlot  = LongSlot(1, nullable = false, CTRelationship, "r")
+    val relSlot = LongSlot(1, nullable = false, CTRelationship, "r")
     pipe should equal(
       ExpandIntoRegisterPipe(
         AllNodesScanRegisterPipe(
@@ -216,7 +216,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single optional node with expand") {
     // given
     val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val optional     = Optional(allNodesScan)(solved)
+    val optional = Optional(allNodesScan)(solved)
     val expand =
       Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("z"), IdName("r"), ExpandAll)(solved)
 
@@ -224,9 +224,9 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
-    val xNodeSlot           = LongSlot(0, nullable = true, CTNode, "x")
-    val rRelSlot            = LongSlot(1, nullable = false, CTRelationship, "r")
-    val zNodeSlot           = LongSlot(2, nullable = false, CTNode, "z")
+    val xNodeSlot = LongSlot(0, nullable = true, CTNode, "x")
+    val rRelSlot = LongSlot(1, nullable = false, CTRelationship, "r")
+    val zNodeSlot = LongSlot(2, nullable = false, CTNode, "z")
     val allNodeScanPipeline = PipelineInformation(Map("x" -> xNodeSlot), numberOfLongs = 1, numberOfReferences = 0)
     val expandPipeline = PipelineInformation(Map("x" -> xNodeSlot, "r" -> rRelSlot, "z" -> zNodeSlot),
                                              numberOfLongs = 3,
@@ -251,7 +251,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single optional node with expand into") {
     // given
     val allNodesScan = AllNodesScan(IdName("x"), Set.empty)(solved)
-    val optional     = Optional(allNodesScan)(solved)
+    val optional = Optional(allNodesScan)(solved)
     val expand =
       Expand(optional, IdName("x"), SemanticDirection.INCOMING, Seq.empty, IdName("x"), IdName("r"), ExpandInto)(solved)
 
@@ -259,8 +259,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipe = build(expand)
 
     // then
-    val nodeSlot            = LongSlot(0, nullable = true, CTNode, "x")
-    val relSlot             = LongSlot(1, nullable = false, CTRelationship, "r")
+    val nodeSlot = LongSlot(0, nullable = true, CTNode, "x")
+    val relSlot = LongSlot(1, nullable = false, CTRelationship, "r")
     val allNodeScanPipeline = PipelineInformation(Map("x" -> nodeSlot), numberOfLongs = 1, numberOfReferences = 0)
     val expandPipeline =
       PipelineInformation(Map("x" -> nodeSlot, "r" -> relSlot), numberOfLongs = 2, numberOfReferences = 0)
@@ -305,7 +305,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single node with optionalExpand ExpandAll") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand       = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
+    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, z, r, ExpandAll)(solved)
 
     // when
     val pipe = build(expand)
@@ -336,7 +336,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single node with optionalExpand ExpandInto") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val expand       = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
+    val expand = OptionalExpand(allNodesScan, x, SemanticDirection.INCOMING, Seq.empty, x, r, ExpandInto)(solved)
 
     // when
     val pipe = build(expand)
@@ -364,7 +364,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("single node with varlength expand") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val varLength    = VarPatternLength(1, Some(15))
+    val varLength = VarPatternLength(1, Some(15))
     val expand = VarExpand(allNodesScan,
                            x,
                            SemanticDirection.INCOMING,
@@ -381,7 +381,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     // then
     val xNodeSlot = LongSlot(0, nullable = false, CTNode, "x")
     val zNodeSlot = LongSlot(1, nullable = false, CTNode, "z")
-    val rRelSlot  = RefSlot(0, nullable = false, CTList(CTRelationship), "r")
+    val rRelSlot = RefSlot(0, nullable = false, CTList(CTRelationship), "r")
     pipe should equal(
       VarLengthExpandRegisterPipe(
         AllNodesScanRegisterPipe(
@@ -406,7 +406,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
   test("let's skip this one") {
     // given
     val allNodesScan = AllNodesScan(x, Set.empty)(solved)
-    val skip         = plans.Skip(allNodesScan, literalInt(42))(solved)
+    val skip = plans.Skip(allNodesScan, literalInt(42))(solved)
 
     // when
     val pipe = build(skip)
@@ -424,11 +424,11 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("all we need is to apply ourselves") {
     // given
-    val lhs            = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
-    val label          = LabelToken("label2", LabelId(0))
+    val lhs = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
+    val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val rhs            = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
-    val apply          = Apply(lhs, rhs)(solved)
+    val rhs = NodeIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
+    val apply = Apply(lhs, rhs)(solved)
 
     // when
     val pipe = build(apply)
@@ -459,7 +459,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   ignore("aggregation used for distinct") {
     // given
-    val leaf     = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val distinct = Aggregation(leaf, Map("x" -> varFor("x")), Map.empty)(solved)
 
     // when
@@ -479,7 +479,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   ignore("optional travels through aggregation used for distinct") {
     // given OPTIONAL MATCH (x) RETURN DISTINCT x, x.propertyKey
-    val leaf     = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional,
                                groupingExpressions =
@@ -493,23 +493,23 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
                                                   numberOfLongs = 1,
                                                   numberOfReferences = 0)
     // then
-    val labelScan    = NodesByLabelScanRegisterPipe("x", LazyLabel("label"), pipelineInformation)()
+    val labelScan = NodesByLabelScanRegisterPipe("x", LazyLabel("label"), pipelineInformation)()
     val optionalPipe = OptionalRegisteredPipe(labelScan, Seq(0), pipelineInformation)()
     pipe should equal(
       DistinctPipe(
         optionalPipe,
-        Map("x"             -> Variable("x"),
+        Map("x" -> Variable("x"),
             "x.propertyKey" -> Property(Variable("x"), KeyToken.Resolved("propertyKey", 0, PropertyKey)))
       )())
   }
 
   ignore("optional travels through aggregation") {
     // given OPTIONAL MATCH (x) RETURN x, x.propertyKey, count(*)
-    val leaf     = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val optional = Optional(leaf)(solved)
     val distinct = Aggregation(optional,
                                groupingExpressions =
-                                 Map("x"                           -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")),
+                                 Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")),
                                aggregationExpression = Map("count" -> CountStar()(pos)))(solved)
 
     // when
@@ -530,7 +530,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("labelscan with projection") {
     // given
-    val leaf       = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
+    val leaf = NodeByLabelScan(x, LabelName("label")(pos), Set.empty)(solved)
     val projection = Projection(leaf, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))(solved)
 
     // when
@@ -540,7 +540,7 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
     val pipeline = PipelineInformation(
       numberOfLongs = 1,
       numberOfReferences = 1,
-      slots = Map("x"             -> LongSlot(0, nullable = false, CTNode, "x"),
+      slots = Map("x" -> LongSlot(0, nullable = false, CTNode, "x"),
                   "x.propertyKey" -> RefSlot(0, nullable = true, CTAny, "x.propertyKey"))
     )
     pipe should equal(
@@ -552,8 +552,8 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("cartesian product") {
     // given
-    val lhs      = NodeByLabelScan(x, LABEL, Set.empty)(solved)
-    val rhs      = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
+    val lhs = NodeByLabelScan(x, LABEL, Set.empty)(solved)
+    val rhs = NodeByLabelScan(IdName("y"), LabelName("label2")(pos), Set.empty)(solved)
     val Xproduct = CartesianProduct(lhs, rhs)(solved)
 
     // when
@@ -639,9 +639,9 @@ class EnterprisePipeBuilderTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("Should use NodeIndexUniqeSeek") {
     // given
-    val label          = LabelToken("label2", LabelId(0))
+    val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val seek           = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
+    val seek = NodeUniqueIndexSeek(z, label, Seq.empty, seekExpression, Set(x))(solved)
 
     // when
     val pipe = build(seek)

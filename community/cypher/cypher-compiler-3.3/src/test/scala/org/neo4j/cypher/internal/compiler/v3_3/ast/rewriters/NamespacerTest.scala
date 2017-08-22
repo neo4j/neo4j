@@ -74,9 +74,9 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never)
 
   private def assertRewritten(from: String, to: String) = {
-    val fromAst   = parseAndRewrite(from)
+    val fromAst = parseAndRewrite(from)
     val fromState = LogicalPlanState(from, None, IDPPlannerName, Some(fromAst), Some(fromAst.semanticState))
-    val toState   = Namespacer.transform(fromState, ContextHelper.create())
+    val toState = Namespacer.transform(fromState, ContextHelper.create())
 
     val expectedAst = parseAndRewrite(to)
 
@@ -84,7 +84,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def parseAndRewrite(queryText: String): Statement = {
-    val parsedAst   = parser.parse(queryText)
+    val parsedAst = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
     val cleanedAst =
       parsedAst.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))

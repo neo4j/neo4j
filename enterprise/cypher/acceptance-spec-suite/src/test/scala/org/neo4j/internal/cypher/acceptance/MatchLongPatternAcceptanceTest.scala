@@ -50,15 +50,15 @@ class MatchLongPatternAcceptanceTest
 
   override def databaseConfig() = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
-    GraphDatabaseSettings.cypher_compiler_tracing    -> "true",
-    GraphDatabaseSettings.pagecache_memory           -> "8M"
+    GraphDatabaseSettings.cypher_compiler_tracing -> "true",
+    GraphDatabaseSettings.pagecache_memory -> "8M"
   )
 
   test("changing idp max table size should affect IDP inner loop count") {
     graph.shutdown()
     // GIVEN
     val numberOfPatternRelationships = 13
-    val maxTableSizes                = Seq(128, 64, 32, 16)
+    val maxTableSizes = Seq(128, 64, 32, 16)
 
     // WHEN
     val idpInnerIterations = determineIDPLoopSizes(numberOfPatternRelationships,
@@ -79,7 +79,7 @@ class MatchLongPatternAcceptanceTest
     // GIVEN
     graph.shutdown()
     val numberOfPatternRelationships = 13
-    val iterationDurationThresholds  = Seq(1000, 500, 100, 10)
+    val iterationDurationThresholds = Seq(1000, 500, 100, 10)
 
     // WHEN
     val idpInnerIterations = determineIDPLoopSizes(numberOfPatternRelationships,
@@ -99,13 +99,13 @@ class MatchLongPatternAcceptanceTest
 
     // WHEN
     val numberOfPatternRelationships = 20
-    val query                        = makeLongPatternQuery(numberOfPatternRelationships)
+    val query = makeLongPatternQuery(numberOfPatternRelationships)
     if (VERBOSE) {
       println(s"Running IDP on pattern expression of length $numberOfPatternRelationships")
       println(s"\t$query")
     }
-    val start    = System.currentTimeMillis()
-    val result   = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
+    val start = System.currentTimeMillis()
+    val result = innerExecute(s"EXPLAIN CYPHER planner=IDP $query")
     val duration = System.currentTimeMillis() - start
     if (VERBOSE) {
       println(result.executionPlanDescription())
@@ -124,7 +124,7 @@ class MatchLongPatternAcceptanceTest
 
     graph.createIndex("Person", "name")
 
-    val planners      = Seq("IDP")
+    val planners = Seq("IDP")
     val minPathLength = 8
     val maxPathLength = 15
     makeLargeMatrixDataset(maxPathLength + 100)
@@ -139,16 +139,16 @@ class MatchLongPatternAcceptanceTest
           if (VERBOSE) println("QUERY: " + query)
 
           // measure planning time
-          val startPlaning     = System.currentTimeMillis()
-          val resultPlanning   = innerExecute(s"EXPLAIN CYPHER planner=$planner $query")
+          val startPlaning = System.currentTimeMillis()
+          val resultPlanning = innerExecute(s"EXPLAIN CYPHER planner=$planner $query")
           val durationPlanning = System.currentTimeMillis() - startPlaning
-          val plan             = resultPlanning.executionPlanDescription()
+          val plan = resultPlanning.executionPlanDescription()
 
           // measure query time
-          val start               = System.currentTimeMillis()
-          val result              = innerExecute(s"CYPHER planner=$planner $query")
-          val resultCount         = result.toList.length
-          val duration            = System.currentTimeMillis() - start
+          val start = System.currentTimeMillis()
+          val result = innerExecute(s"CYPHER planner=$planner $query")
+          val resultCount = result.toList.length
+          val duration = System.currentTimeMillis() - start
           val expectedResultCount = Math.pow(2, pathlen % indexStep).toInt
           resultCount should equal(expectedResultCount)
 
@@ -157,7 +157,7 @@ class MatchLongPatternAcceptanceTest
               s"$planner took ${durationPlanning}ms to solve length $pathlen and ${duration}ms to run query (got $resultCount results)")
           val minCounts = Map(
             "expands" -> (if (planner == "RULE") 0 else pathlen),
-            "joins"   -> (if (planner == "IDP") pathlen / 15 else 0)
+            "joins" -> (if (planner == "IDP") pathlen / 15 else 0)
           )
           val counts = assertMinExpandsAndJoins(plan, minCounts)
           acc :+ Seq(durationPlanning, duration, counts("joins").toLong, resultCount.toLong)
@@ -166,7 +166,7 @@ class MatchLongPatternAcceptanceTest
     }
     if (VERBOSE) {
       Seq("Compile Time", "Query Time", "Number of Joins in Plan", "Number of Results").zipWithIndex.foreach { (pair) =>
-        val name  = pair._1
+        val name = pair._1
         val index = pair._2
         println(s"\n$name\n")
         println(planners.mkString("\t"))
@@ -267,12 +267,12 @@ class MatchLongPatternAcceptanceTest
     val graph = new GraphDatabaseCypherService(
       new ImpermanentGraphDatabase(new File("target/test-data/pattern-acceptance"), config))
     try {
-      val kernelAPI   = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
-      val monitors    = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
+      val kernelAPI = graph.getDependencyResolver.resolveDependency(classOf[KernelAPI])
+      val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
       val logProvider = NullLogProvider.getInstance()
       // FIXME: probably both?
       val factory = new CommunityCompatibilityFactory(graph, kernelAPI, monitors, logProvider)
-      val engine  = new ExecutionEngine(graph, logProvider, factory)
+      val engine = new ExecutionEngine(graph, logProvider, factory)
       run(engine, graph)
     } finally {
       graph.shutdown()
@@ -280,7 +280,7 @@ class MatchLongPatternAcceptanceTest
   }
 
   case class TestIDPSolverMonitor() extends IDPSolverMonitor {
-    var maxStartIteration  = 0
+    var maxStartIteration = 0
     var foundPlanIteration = 0
 
     override def startIteration(iteration: Int): Unit = maxStartIteration = iteration

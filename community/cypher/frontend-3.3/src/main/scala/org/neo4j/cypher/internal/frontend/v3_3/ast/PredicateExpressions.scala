@@ -154,7 +154,7 @@ object PartialPredicate {
   final case class PartialPredicateWrapper[P <: Expression](coveredPredicate: P, coveringPredicate: Expression)
       extends PartialPredicate[P] {
     override def semanticCheck(ctx: SemanticContext): SemanticCheck = coveredPredicate.semanticCheck(ctx)
-    override def position: InputPosition                            = coveredPredicate.position
+    override def position: InputPosition = coveredPredicate.position
   }
 }
 

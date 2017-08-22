@@ -31,7 +31,7 @@ class GraphArchiveLibrary(val repository: GraphFileRepository) {
     locateArchive(archiveUse.archive)
 
   def snapshotForUpdatingUse(archiveUse: GraphArchive.Use.Updating)(implicit importer: GraphArchiveImporter): Path = {
-    val archivePath  = locateArchive(archiveUse.archive)
+    val archivePath = locateArchive(archiveUse.archive)
     val snapshotPath = repository.temporarySnapshotPath
     Files.copy(archivePath.jfile.toPath, snapshotPath.jfile.toPath)
     snapshotPath

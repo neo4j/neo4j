@@ -81,9 +81,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
                              offset: Option[frontend.v3_1.InputPosition])
     extends org.neo4j.cypher.internal.InternalExecutionResult {
 
-  override def planDescriptionRequested: Boolean                     = inner.planDescriptionRequested
+  override def planDescriptionRequested: Boolean = inner.planDescriptionRequested
   override def javaIterator: ResourceIterator[util.Map[String, Any]] = inner.javaIterator
-  override def columnAs[T](column: String): Iterator[Nothing]        = inner.columnAs(column)
+  override def columnAs[T](column: String): Iterator[Nothing] = inner.columnAs(column)
 
   override def queryStatistics(): QueryStatistics = {
     val i = inner.queryStatistics()
@@ -105,7 +105,7 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
   }
 
   override def dumpToString(writer: PrintWriter): Unit = inner.dumpToString(writer)
-  override def dumpToString(): String                  = inner.dumpToString()
+  override def dumpToString(): String = inner.dumpToString()
 
   override def javaColumnAs[T](column: String): ResourceIterator[T] = inner.javaColumnAs(column)
 
@@ -150,9 +150,9 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
     case Arguments.Version(value)      => InternalPlanDescription3_3.Arguments.Version(value)
   }
 
-  override def hasNext: Boolean         = inner.hasNext
+  override def hasNext: Boolean = inner.hasNext
   override def next(): Map[String, Any] = inner.next()
-  override def close(): Unit            = inner.close()
+  override def close(): Unit = inner.close()
 
   override def queryType: compatibility.v3_3.runtime.executionplan.InternalQueryType = inner.executionType match {
     case READ_ONLY    => compatibility.v3_3.runtime.executionplan.READ_ONLY
@@ -173,12 +173,12 @@ class ExecutionResultWrapper(val inner: InternalExecutionResult,
 
   private def unwrapResultRow(row: InternalResultRow): ResultRow = new ResultRow {
     override def getRelationship(key: String): graphdb.Relationship = row.getRelationship(key)
-    override def get(key: String): AnyRef                           = row.get(key)
-    override def getBoolean(key: String): java.lang.Boolean         = row.getBoolean(key)
-    override def getPath(key: String): graphdb.Path                 = row.getPath(key)
-    override def getNode(key: String): graphdb.Node                 = row.getNode(key)
-    override def getNumber(key: String): Number                     = row.getNumber(key)
-    override def getString(key: String): String                     = row.getString(key)
+    override def get(key: String): AnyRef = row.get(key)
+    override def getBoolean(key: String): java.lang.Boolean = row.getBoolean(key)
+    override def getPath(key: String): graphdb.Path = row.getPath(key)
+    override def getNode(key: String): graphdb.Node = row.getNode(key)
+    override def getNumber(key: String): Number = row.getNumber(key)
+    override def getString(key: String): String = row.getString(key)
   }
 
   override def executionMode: ExecutionMode = inner.executionMode match {

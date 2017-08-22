@@ -150,16 +150,16 @@ object LdbcQueries {
       Map(
         "ff21" ->
           Map(
-            "id"           -> 21,
-            "languages"    -> Seq.empty,
-            "birthday"     -> 21,
+            "id" -> 21,
+            "languages" -> Seq.empty,
+            "birthday" -> 21,
             "creationDate" -> 21,
-            "lastName"     -> "last21-ᚠさ丵פش",
-            "browserUsed"  -> "browser21",
-            "email"        -> Seq.empty,
-            "locationIP"   -> "ip21",
-            "gender"       -> "gender21",
-            "firstName"    -> "name1"
+            "lastName" -> "last21-ᚠさ丵פش",
+            "browserUsed" -> "browser21",
+            "email" -> Seq.empty,
+            "locationIP" -> "ip21",
+            "gender" -> "gender21",
+            "firstName" -> "name1"
           ),
         "company1" ->
           Map("id" -> 11, "name" -> "company1"),
@@ -175,70 +175,70 @@ object LdbcQueries {
           Map("id" -> 10, "name" -> "company0"),
         "fffff11111" ->
           Map(
-            "id"           -> 11111,
-            "languages"    -> Seq("fffff11111language0"),
-            "birthday"     -> 11111,
+            "id" -> 11111,
+            "languages" -> Seq("fffff11111language0"),
+            "birthday" -> 11111,
             "creationDate" -> 11111,
-            "lastName"     -> "last11111-ᚠさ丵פش",
-            "browserUsed"  -> "browser11111",
-            "email"        -> Seq("fffff11111email1"),
-            "locationIP"   -> "ip11111",
-            "gender"       -> "gender11111",
-            "firstName"    -> "name0"
+            "lastName" -> "last11111-ᚠさ丵פش",
+            "browserUsed" -> "browser11111",
+            "email" -> Seq("fffff11111email1"),
+            "locationIP" -> "ip11111",
+            "gender" -> "gender11111",
+            "firstName" -> "name0"
           ),
         "f1StudyAtUni0" ->
           Map("classYear" -> 0),
         "f1" ->
           Map(
-            "id"           -> 1,
-            "languages"    -> Seq("friend1language0"),
-            "birthday"     -> 1,
+            "id" -> 1,
+            "languages" -> Seq("friend1language0"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last1-ᚠさ丵פش",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("friend1email1", "friend1email2"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "name0"
+            "lastName" -> "last1-ᚠさ丵פش",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("friend1email1", "friend1email2"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "name0"
           ),
         "f3" ->
           Map(
-            "id"           -> 3,
-            "languages"    -> Seq("friend3language0"),
-            "birthday"     -> 3,
+            "id" -> 3,
+            "languages" -> Seq("friend3language0"),
+            "birthday" -> 3,
             "creationDate" -> 3,
-            "lastName"     -> "last0-ᚠさ丵פش",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("friend3email1", "friend3email2"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "name0"
+            "lastName" -> "last0-ᚠさ丵פش",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("friend3email1", "friend3email2"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "name0"
           ),
         "ff11" ->
           Map(
-            "id"           -> 11,
-            "languages"    -> Seq.empty,
-            "birthday"     -> 11,
+            "id" -> 11,
+            "languages" -> Seq.empty,
+            "birthday" -> 11,
             "creationDate" -> 11,
-            "lastName"     -> "last11-ᚠさ丵פش",
-            "browserUsed"  -> "browser11",
-            "email"        -> Seq.empty,
-            "locationIP"   -> "ip11",
-            "gender"       -> "gender11",
-            "firstName"    -> "name0"
+            "lastName" -> "last11-ᚠさ丵פش",
+            "browserUsed" -> "browser11",
+            "email" -> Seq.empty,
+            "locationIP" -> "ip11",
+            "gender" -> "gender11",
+            "firstName" -> "name0"
           ),
         "f2" ->
           Map(
-            "id"           -> 2,
-            "languages"    -> Seq("friend2language0", "friend2language1"),
-            "birthday"     -> 2,
+            "id" -> 2,
+            "languages" -> Seq("friend2language0", "friend2language1"),
+            "birthday" -> 2,
             "creationDate" -> 2,
-            "lastName"     -> "last0-ᚠさ丵פش",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq.empty,
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "name0"
+            "lastName" -> "last0-ᚠさ丵פش",
+            "browserUsed" -> "browser2",
+            "email" -> Seq.empty,
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "name0"
           ),
         "ff21WorkAtCompany1" ->
           Map("workFrom" -> 2),
@@ -248,55 +248,55 @@ object LdbcQueries {
           Map("id" -> 11, "name" -> "country1"),
         "fff111" ->
           Map(
-            "id"           -> 111,
-            "languages"    -> Seq("fff111language0", "fff111language1", "fff111language2"),
-            "birthday"     -> 111,
+            "id" -> 111,
+            "languages" -> Seq("fff111language0", "fff111language1", "fff111language2"),
+            "birthday" -> 111,
             "creationDate" -> 111,
-            "lastName"     -> "last111-ᚠさ丵פش",
-            "browserUsed"  -> "browser111",
-            "email"        -> Seq("fff111email1", "fff111email2", "fff111email3"),
-            "locationIP"   -> "ip111",
-            "gender"       -> "gender111",
-            "firstName"    -> "name1"
+            "lastName" -> "last111-ᚠさ丵פش",
+            "browserUsed" -> "browser111",
+            "email" -> Seq("fff111email1", "fff111email2", "fff111email3"),
+            "locationIP" -> "ip111",
+            "gender" -> "gender111",
+            "firstName" -> "name1"
           ),
         "person0" ->
           Map(
-            "id"           -> 0,
-            "languages"    -> Seq("person0language0", "person0language1"),
-            "birthday"     -> 0,
+            "id" -> 0,
+            "languages" -> Seq("person0language0", "person0language1"),
+            "birthday" -> 0,
             "creationDate" -> 0,
-            "lastName"     -> "zero-ᚠさ丵פش",
-            "browserUsed"  -> "browser0",
-            "email"        -> Seq("person0email1", "person0email2"),
-            "locationIP"   -> "ip0",
-            "gender"       -> "gender0",
-            "firstName"    -> "person"
+            "lastName" -> "zero-ᚠさ丵פش",
+            "browserUsed" -> "browser0",
+            "email" -> Seq("person0email1", "person0email2"),
+            "locationIP" -> "ip0",
+            "gender" -> "gender0",
+            "firstName" -> "person"
           ),
         "fff211" ->
           Map(
-            "id"           -> 211,
-            "languages"    -> Seq.empty,
-            "birthday"     -> 211,
+            "id" -> 211,
+            "languages" -> Seq.empty,
+            "birthday" -> 211,
             "creationDate" -> 211,
-            "lastName"     -> "last211-ᚠさ丵פش",
-            "browserUsed"  -> "browser211",
-            "email"        -> Seq("fff211email1"),
-            "locationIP"   -> "ip211",
-            "gender"       -> "gender211",
-            "firstName"    -> "name1"
+            "lastName" -> "last211-ᚠさ丵פش",
+            "browserUsed" -> "browser211",
+            "email" -> Seq("fff211email1"),
+            "locationIP" -> "ip211",
+            "gender" -> "gender211",
+            "firstName" -> "name1"
           ),
         "ffff1111" ->
           Map(
-            "id"           -> 1111,
-            "languages"    -> Seq("ffff1111language0"),
-            "birthday"     -> 1111,
+            "id" -> 1111,
+            "languages" -> Seq("ffff1111language0"),
+            "birthday" -> 1111,
             "creationDate" -> 1111,
-            "lastName"     -> "last1111-ᚠさ丵פش",
-            "browserUsed"  -> "browser1111",
-            "email"        -> Seq("ffff1111email1"),
-            "locationIP"   -> "ip1111",
-            "gender"       -> "gender1111",
-            "firstName"    -> "name0"
+            "lastName" -> "last1111-ᚠさ丵פش",
+            "browserUsed" -> "browser1111",
+            "email" -> Seq("ffff1111email1"),
+            "locationIP" -> "ip1111",
+            "gender" -> "gender1111",
+            "firstName" -> "name0"
           ),
         "f3WorkAtCompany0" ->
           Map("workFrom" -> 1),
@@ -312,16 +312,16 @@ object LdbcQueries {
           Map("id" -> 2, "name" -> "uni2"),
         "ff31" ->
           Map(
-            "id"           -> 31,
-            "languages"    -> Seq.empty,
-            "birthday"     -> 31,
+            "id" -> 31,
+            "languages" -> Seq.empty,
+            "birthday" -> 31,
             "creationDate" -> 31,
-            "lastName"     -> "last31-ᚠさ丵פش",
-            "browserUsed"  -> "browser31",
-            "email"        -> Seq.empty,
-            "locationIP"   -> "ip31",
-            "gender"       -> "gender31",
-            "firstName"    -> "name0"
+            "lastName" -> "last31-ᚠさ丵פش",
+            "browserUsed" -> "browser31",
+            "email" -> Seq.empty,
+            "locationIP" -> "ip31",
+            "gender" -> "gender31",
+            "firstName" -> "name0"
           )
       )
 
@@ -331,78 +331,78 @@ object LdbcQueries {
       List(
         Map(
           "creationDate" -> 2,
-          "gender"       -> "gender2",
-          "distance"     -> 1,
-          "unis"         -> List(List[Any]("uni2", 3, "city0")),
-          "locationIp"   -> "ip2",
-          "languages"    -> List("friend2language0", "friend2language1"),
-          "birthday"     -> 2,
-          "cityName"     -> "city1",
-          "lastName"     -> "last0-ᚠさ丵פش",
-          "id"           -> 2,
-          "emails"       -> Seq.empty,
-          "browser"      -> "browser2",
-          "companies"    -> Seq.empty
+          "gender" -> "gender2",
+          "distance" -> 1,
+          "unis" -> List(List[Any]("uni2", 3, "city0")),
+          "locationIp" -> "ip2",
+          "languages" -> List("friend2language0", "friend2language1"),
+          "birthday" -> 2,
+          "cityName" -> "city1",
+          "lastName" -> "last0-ᚠさ丵פش",
+          "id" -> 2,
+          "emails" -> Seq.empty,
+          "browser" -> "browser2",
+          "companies" -> Seq.empty
         ),
         Map(
           "creationDate" -> 3,
-          "gender"       -> "gender3",
-          "distance"     -> 1,
-          "unis"         -> Seq.empty,
-          "locationIp"   -> "ip3",
-          "languages"    -> List("friend3language0"),
-          "birthday"     -> 3,
-          "cityName"     -> "city1",
-          "lastName"     -> "last0-ᚠさ丵פش",
-          "id"           -> 3,
-          "emails"       -> List("friend3email1", "friend3email2"),
-          "browser"      -> "browser3",
-          "companies"    -> List(List[Any]("company0", 1, "country0"))
+          "gender" -> "gender3",
+          "distance" -> 1,
+          "unis" -> Seq.empty,
+          "locationIp" -> "ip3",
+          "languages" -> List("friend3language0"),
+          "birthday" -> 3,
+          "cityName" -> "city1",
+          "lastName" -> "last0-ᚠさ丵פش",
+          "id" -> 3,
+          "emails" -> List("friend3email1", "friend3email2"),
+          "browser" -> "browser3",
+          "companies" -> List(List[Any]("company0", 1, "country0"))
         ),
         Map(
           "creationDate" -> 1,
-          "gender"       -> "gender1",
-          "distance"     -> 1,
-          "unis"         -> List(List[Any]("uni0", 0, "city1")),
-          "locationIp"   -> "ip1",
-          "languages"    -> List("friend1language0"),
-          "birthday"     -> 1,
-          "cityName"     -> "city0",
-          "lastName"     -> "last1-ᚠさ丵פش",
-          "id"           -> 1,
-          "emails"       -> List("friend1email1", "friend1email2"),
-          "browser"      -> "browser1",
-          "companies"    -> List(List[Any]("company0", 0, "country0"))
+          "gender" -> "gender1",
+          "distance" -> 1,
+          "unis" -> List(List[Any]("uni0", 0, "city1")),
+          "locationIp" -> "ip1",
+          "languages" -> List("friend1language0"),
+          "birthday" -> 1,
+          "cityName" -> "city0",
+          "lastName" -> "last1-ᚠさ丵פش",
+          "id" -> 1,
+          "emails" -> List("friend1email1", "friend1email2"),
+          "browser" -> "browser1",
+          "companies" -> List(List[Any]("company0", 0, "country0"))
         ),
         Map(
           "creationDate" -> 11,
-          "gender"       -> "gender11",
-          "distance"     -> 2,
-          "unis"         -> List(List[Any]("uni2", 2, "city0"), List[Any]("uni1", 1, "city0")),
-          "locationIp"   -> "ip11",
-          "languages"    -> Seq.empty,
-          "birthday"     -> 11,
-          "cityName"     -> "city0",
-          "lastName"     -> "last11-ᚠさ丵פش",
-          "id"           -> 11,
-          "emails"       -> Seq.empty,
-          "browser"      -> "browser11",
-          "companies"    -> Seq.empty
+          "gender" -> "gender11",
+          "distance" -> 2,
+          "unis" -> List(List[Any]("uni2", 2, "city0"), List[Any]("uni1", 1, "city0")),
+          "locationIp" -> "ip11",
+          "languages" -> Seq.empty,
+          "birthday" -> 11,
+          "cityName" -> "city0",
+          "lastName" -> "last11-ᚠさ丵פش",
+          "id" -> 11,
+          "emails" -> Seq.empty,
+          "browser" -> "browser11",
+          "companies" -> Seq.empty
         ),
         Map(
           "creationDate" -> 31,
-          "gender"       -> "gender31",
-          "distance"     -> 2,
-          "unis"         -> Seq.empty,
-          "locationIp"   -> "ip31",
-          "languages"    -> Seq.empty,
-          "birthday"     -> 31,
-          "cityName"     -> "city1",
-          "lastName"     -> "last31-ᚠさ丵פش",
-          "id"           -> 31,
-          "emails"       -> Seq.empty,
-          "browser"      -> "browser31",
-          "companies"    -> Seq.empty
+          "gender" -> "gender31",
+          "distance" -> 2,
+          "unis" -> Seq.empty,
+          "locationIp" -> "ip31",
+          "languages" -> Seq.empty,
+          "birthday" -> 31,
+          "cityName" -> "city1",
+          "lastName" -> "last31-ᚠさ丵פش",
+          "id" -> 31,
+          "emails" -> Seq.empty,
+          "browser" -> "browser31",
+          "companies" -> Seq.empty
         )
       )
     }
@@ -451,227 +451,227 @@ object LdbcQueries {
     def createParams =
       Map(
         "s5Post1" ->
-          Map("content"      -> "[s5Post1] content",
-              "id"           -> 8,
+          Map("content" -> "[s5Post1] content",
+              "id" -> 8,
               "creationDate" -> 1,
-              "browserUsed"  -> "5",
-              "locationIP"   -> "5",
-              "imageFile"    -> "[s5Post1] image",
-              "language"     -> "5"),
+              "browserUsed" -> "5",
+              "locationIP" -> "5",
+              "imageFile" -> "[s5Post1] image",
+              "language" -> "5"),
         "p1" ->
           Map(
-            "id"           -> 1,
-            "languages"    -> Seq("1a", "1b"),
-            "birthday"     -> 1,
+            "id" -> 1,
+            "languages" -> Seq("1a", "1b"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last1-ᚠさ丵פش",
-            "browserUsed"  -> "1",
-            "email"        -> Seq("person1@email1", "person1@email2"),
-            "locationIP"   -> "1",
-            "gender"       -> "1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1-ᚠさ丵פش",
+            "browserUsed" -> "1",
+            "email" -> Seq("person1@email1", "person1@email2"),
+            "locationIP" -> "1",
+            "gender" -> "1",
+            "firstName" -> "person1"
           ),
         "f2Comment1" ->
-          Map("content"      -> "[f2Comment1] content",
-              "id"           -> 13,
+          Map("content" -> "[f2Comment1] content",
+              "id" -> 13,
               "creationDate" -> 2,
-              "browserUsed"  -> "2",
-              "locationIP"   -> "2"),
+              "browserUsed" -> "2",
+              "locationIP" -> "2"),
         "f2Comment2" ->
-          Map("content"      -> "[f2Comment2] content",
-              "id"           -> 14,
+          Map("content" -> "[f2Comment2] content",
+              "id" -> 14,
               "creationDate" -> 4,
-              "browserUsed"  -> "2",
-              "locationIP"   -> "2"),
+              "browserUsed" -> "2",
+              "locationIP" -> "2"),
         "ff6" ->
           Map(
-            "id"           -> 6,
-            "languages"    -> Seq("6a", "6b"),
-            "birthday"     -> 6,
+            "id" -> 6,
+            "languages" -> Seq("6a", "6b"),
+            "birthday" -> 6,
             "creationDate" -> 6,
-            "lastName"     -> "last6-ᚠさ丵פش",
-            "browserUsed"  -> "6",
-            "email"        -> Seq("ff6@email1"),
-            "locationIP"   -> "6",
-            "gender"       -> "6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6-ᚠさ丵פش",
+            "browserUsed" -> "6",
+            "email" -> Seq("ff6@email1"),
+            "locationIP" -> "6",
+            "gender" -> "6",
+            "firstName" -> "ff6"
           ),
         "s5Comment1" ->
-          Map("content"      -> "[s5Comment1] content",
-              "id"           -> 15,
+          Map("content" -> "[s5Comment1] content",
+              "id" -> 15,
               "creationDate" -> 1,
-              "browserUsed"  -> "5",
-              "locationIP"   -> "5"),
+              "browserUsed" -> "5",
+              "locationIP" -> "5"),
         "f3Comment1" ->
-          Map("content"      -> "[f3Comment1] content",
-              "id"           -> 16,
+          Map("content" -> "[f3Comment1] content",
+              "id" -> 16,
               "creationDate" -> 3,
-              "browserUsed"  -> "3",
-              "locationIP"   -> "3"),
+              "browserUsed" -> "3",
+              "locationIP" -> "3"),
         "s7" ->
           Map(
-            "id"           -> 7,
-            "languages"    -> Seq("7"),
-            "birthday"     -> 7,
+            "id" -> 7,
+            "languages" -> Seq("7"),
+            "birthday" -> 7,
             "creationDate" -> 7,
-            "lastName"     -> "last7-ᚠさ丵פش",
-            "browserUsed"  -> "7",
-            "email"        -> Seq("s7@email1"),
-            "locationIP"   -> "7",
-            "gender"       -> "7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7-ᚠさ丵פش",
+            "browserUsed" -> "7",
+            "email" -> Seq("s7@email1"),
+            "locationIP" -> "7",
+            "gender" -> "7",
+            "firstName" -> "s7"
           ),
         "s5Post2" ->
-          Map("content"      -> "[s5Post2] content",
-              "id"           -> 9,
+          Map("content" -> "[s5Post2] content",
+              "id" -> 9,
               "creationDate" -> 1,
-              "browserUsed"  -> "5",
-              "locationIP"   -> "5",
-              "imageFile"    -> "[s5Post2] image",
-              "language"     -> "5"),
+              "browserUsed" -> "5",
+              "locationIP" -> "5",
+              "imageFile" -> "[s5Post2] image",
+              "language" -> "5"),
         "s5" ->
           Map(
-            "id"           -> 5,
-            "languages"    -> Seq("5"),
-            "birthday"     -> 5,
+            "id" -> 5,
+            "languages" -> Seq("5"),
+            "birthday" -> 5,
             "creationDate" -> 5,
-            "lastName"     -> "last5-ᚠさ丵פش",
-            "browserUsed"  -> "5",
-            "email"        -> Seq("stranger5@email1"),
-            "locationIP"   -> "5",
-            "gender"       -> "5",
-            "firstName"    -> "s5"
+            "lastName" -> "last5-ᚠさ丵פش",
+            "browserUsed" -> "5",
+            "email" -> Seq("stranger5@email1"),
+            "locationIP" -> "5",
+            "gender" -> "5",
+            "firstName" -> "s5"
           ),
         "f3" ->
           Map(
-            "id"           -> 3,
-            "languages"    -> Seq("3a", "3b"),
-            "birthday"     -> 3,
+            "id" -> 3,
+            "languages" -> Seq("3a", "3b"),
+            "birthday" -> 3,
             "creationDate" -> 3,
-            "lastName"     -> "last3-ᚠさ丵פش",
-            "browserUsed"  -> "3",
-            "email"        -> Seq("friend3@email1", "friend3@email2"),
-            "locationIP"   -> "3",
-            "gender"       -> "3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3-ᚠさ丵פش",
+            "browserUsed" -> "3",
+            "email" -> Seq("friend3@email1", "friend3@email2"),
+            "locationIP" -> "3",
+            "gender" -> "3",
+            "firstName" -> "f3"
           ),
         "f2Post3" ->
           Map(
-            "content"      -> "[f2Post3] content",
-            "id"           -> 7,
+            "content" -> "[f2Post3] content",
+            "id" -> 7,
             "creationDate" -> 2,
-            "browserUsed"  -> "safari",
-            "locationIP"   -> "31.55.91.343",
-            "imageFile"    -> "[f2Post3] image",
-            "language"     -> "2"
+            "browserUsed" -> "safari",
+            "locationIP" -> "31.55.91.343",
+            "imageFile" -> "[f2Post3] image",
+            "language" -> "2"
           ),
         "s7Post1" ->
-          Map("content"      -> "[s7Post1] content",
-              "id"           -> 10,
+          Map("content" -> "[s7Post1] content",
+              "id" -> 10,
               "creationDate" -> 1,
-              "browserUsed"  -> "7",
-              "locationIP"   -> "7",
-              "imageFile"    -> "[s7Post1] image",
-              "language"     -> "7a"),
+              "browserUsed" -> "7",
+              "locationIP" -> "7",
+              "imageFile" -> "[s7Post1] image",
+              "language" -> "7a"),
         "f2" ->
           Map(
-            "id"           -> 2,
-            "languages"    -> Seq("2"),
-            "birthday"     -> 2,
+            "id" -> 2,
+            "languages" -> Seq("2"),
+            "birthday" -> 2,
             "creationDate" -> 2,
-            "lastName"     -> "last2-ᚠさ丵פش",
-            "browserUsed"  -> "2",
-            "email"        -> Seq("friend2@email1"),
-            "locationIP"   -> "2",
-            "gender"       -> "2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2-ᚠさ丵פش",
+            "browserUsed" -> "2",
+            "email" -> Seq("friend2@email1"),
+            "locationIP" -> "2",
+            "gender" -> "2",
+            "firstName" -> "f2"
           ),
         "f2Post2" ->
-          Map("content"      -> "[f2Post2] content",
-              "id"           -> 6,
+          Map("content" -> "[f2Post2] content",
+              "id" -> 6,
               "creationDate" -> 2,
-              "browserUsed"  -> "2",
-              "locationIP"   -> "2",
-              "imageFile"    -> "[f2Post2] image",
-              "language"     -> "2"),
+              "browserUsed" -> "2",
+              "locationIP" -> "2",
+              "imageFile" -> "[f2Post2] image",
+              "language" -> "2"),
         "f2Post1" ->
-          Map("content"      -> "[f2Post1] content",
-              "id"           -> 5,
+          Map("content" -> "[f2Post1] content",
+              "id" -> 5,
               "creationDate" -> 4,
-              "browserUsed"  -> "2",
-              "locationIP"   -> "2",
-              "imageFile"    -> "[f2Post1] image",
-              "language"     -> "2"),
+              "browserUsed" -> "2",
+              "locationIP" -> "2",
+              "imageFile" -> "[f2Post1] image",
+              "language" -> "2"),
         "f4" ->
           Map(
-            "id"           -> 4,
-            "languages"    -> Seq("4a", "4b"),
-            "birthday"     -> 4,
+            "id" -> 4,
+            "languages" -> Seq("4a", "4b"),
+            "birthday" -> 4,
             "creationDate" -> 4,
-            "lastName"     -> "last4-ᚠさ丵פش",
-            "browserUsed"  -> "4",
-            "email"        -> Seq("friend4@email1"),
-            "locationIP"   -> "4",
-            "gender"       -> "4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4-ᚠさ丵פش",
+            "browserUsed" -> "4",
+            "email" -> Seq("friend4@email1"),
+            "locationIP" -> "4",
+            "gender" -> "4",
+            "firstName" -> "f4"
           ),
         "s7Post2" ->
-          Map("content"      -> "[s7Post2] content",
-              "id"           -> 11,
+          Map("content" -> "[s7Post2] content",
+              "id" -> 11,
               "creationDate" -> 1,
-              "browserUsed"  -> "7",
-              "locationIP"   -> "7",
-              "imageFile"    -> "[s7Post2] image",
-              "language"     -> "7"),
+              "browserUsed" -> "7",
+              "locationIP" -> "7",
+              "imageFile" -> "[s7Post2] image",
+              "language" -> "7"),
         "country0" ->
           Map("id" -> 10, "name" -> "country0"),
         "forum1" ->
           Map("id" -> 1, "title" -> "forum1-ᚠさ丵פش"),
         "ff6Post1" ->
-          Map("content"      -> "[ff6Post1] content",
-              "id"           -> 12,
+          Map("content" -> "[ff6Post1] content",
+              "id" -> 12,
               "creationDate" -> 1,
-              "browserUsed"  -> "6",
-              "locationIP"   -> "6",
-              "imageFile"    -> "[ff6Post1] image",
-              "language"     -> "6"),
+              "browserUsed" -> "6",
+              "locationIP" -> "6",
+              "imageFile" -> "[ff6Post1] image",
+              "language" -> "6"),
         "f3Post1" ->
-          Map("content"      -> "[f3Post1] content",
-              "id"           -> 1,
+          Map("content" -> "[f3Post1] content",
+              "id" -> 1,
               "creationDate" -> 4,
-              "browserUsed"  -> "3",
-              "locationIP"   -> "3",
-              "imageFile"    -> "3",
-              "language"     -> "3"),
+              "browserUsed" -> "3",
+              "locationIP" -> "3",
+              "imageFile" -> "3",
+              "language" -> "3"),
         "f3Post2" ->
-          Map("content"      -> "[f3Post2] content",
-              "id"           -> 2,
+          Map("content" -> "[f3Post2] content",
+              "id" -> 2,
               "creationDate" -> 3,
-              "browserUsed"  -> "3",
-              "locationIP"   -> "3",
-              "imageFile"    -> "[f3Post2] image",
-              "language"     -> "3"),
+              "browserUsed" -> "3",
+              "locationIP" -> "3",
+              "imageFile" -> "[f3Post2] image",
+              "language" -> "3"),
         "f3Post3" ->
-          Map("id"           -> 3,
+          Map("id" -> 3,
               "creationDate" -> 3,
-              "browserUsed"  -> "3",
-              "locationIP"   -> "3",
-              "imageFile"    -> "[f3Post3] image",
-              "language"     -> "3"),
+              "browserUsed" -> "3",
+              "locationIP" -> "3",
+              "imageFile" -> "[f3Post3] image",
+              "language" -> "3"),
         "p1Comment1" ->
-          Map("content"      -> "[p1Comment1] content",
-              "id"           -> 17,
+          Map("content" -> "[p1Comment1] content",
+              "id" -> 17,
               "creationDate" -> 1,
-              "browserUsed"  -> "browser1",
-              "locationIP"   -> "1"),
+              "browserUsed" -> "browser1",
+              "locationIP" -> "1"),
         "f4Post1" ->
-          Map("content"      -> "[f4Post1] content",
-              "id"           -> 4,
+          Map("content" -> "[f4Post1] content",
+              "id" -> 4,
               "creationDate" -> 4,
-              "browserUsed"  -> "4",
-              "locationIP"   -> "4",
-              "imageFile"    -> "[f4Post1] image",
-              "language"     -> "4")
+              "browserUsed" -> "4",
+              "locationIP" -> "4",
+              "imageFile" -> "[f4Post1] image",
+              "language" -> "4")
       )
 
     val query =
@@ -686,41 +686,41 @@ object LdbcQueries {
 
     def expectedResult =
       List(
-        Map("personId"        -> 3,
-            "messageId"       -> 2,
-            "personLastName"  -> "last3-ᚠさ丵פش",
-            "messageContent"  -> "[f3Post2] content",
-            "messageDate"     -> 3,
+        Map("personId" -> 3,
+            "messageId" -> 2,
+            "personLastName" -> "last3-ᚠさ丵פش",
+            "messageContent" -> "[f3Post2] content",
+            "messageDate" -> 3,
             "personFirstName" -> "f3"),
-        Map("personId"        -> 3,
-            "messageId"       -> 3,
-            "personLastName"  -> "last3-ᚠさ丵פش",
-            "messageContent"  -> "[f3Post3] image",
-            "messageDate"     -> 3,
+        Map("personId" -> 3,
+            "messageId" -> 3,
+            "personLastName" -> "last3-ᚠさ丵פش",
+            "messageContent" -> "[f3Post3] image",
+            "messageDate" -> 3,
             "personFirstName" -> "f3"),
-        Map("personId"        -> 3,
-            "messageId"       -> 16,
-            "personLastName"  -> "last3-ᚠさ丵פش",
-            "messageContent"  -> "[f3Comment1] content",
-            "messageDate"     -> 3,
+        Map("personId" -> 3,
+            "messageId" -> 16,
+            "personLastName" -> "last3-ᚠさ丵פش",
+            "messageContent" -> "[f3Comment1] content",
+            "messageDate" -> 3,
             "personFirstName" -> "f3"),
-        Map("personId"        -> 2,
-            "messageId"       -> 6,
-            "personLastName"  -> "last2-ᚠさ丵פش",
-            "messageContent"  -> "[f2Post2] content",
-            "messageDate"     -> 2,
+        Map("personId" -> 2,
+            "messageId" -> 6,
+            "personLastName" -> "last2-ᚠさ丵פش",
+            "messageContent" -> "[f2Post2] content",
+            "messageDate" -> 2,
             "personFirstName" -> "f2"),
-        Map("personId"        -> 2,
-            "messageId"       -> 7,
-            "personLastName"  -> "last2-ᚠさ丵פش",
-            "messageContent"  -> "[f2Post3] content",
-            "messageDate"     -> 2,
+        Map("personId" -> 2,
+            "messageId" -> 7,
+            "personLastName" -> "last2-ᚠさ丵פش",
+            "messageContent" -> "[f2Post3] content",
+            "messageDate" -> 2,
             "personFirstName" -> "f2"),
-        Map("personId"        -> 2,
-            "messageId"       -> 13,
-            "personLastName"  -> "last2-ᚠさ丵פش",
-            "messageContent"  -> "[f2Comment1] content",
-            "messageDate"     -> 2,
+        Map("personId" -> 2,
+            "messageId" -> 13,
+            "personLastName" -> "last2-ᚠさ丵פش",
+            "messageContent" -> "[f2Comment1] content",
+            "messageDate" -> 2,
             "personFirstName" -> "f2")
       )
   }
@@ -803,210 +803,210 @@ object LdbcQueries {
           Map("id" -> 3, "name" -> "city3"),
         "s5Post1" ->
           Map(
-            "content"      -> "[s5Post1] content",
-            "id"           -> 8,
+            "content" -> "[s5Post1] content",
+            "id" -> 8,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "city4" ->
           Map("id" -> 4, "name" -> "city4"),
         "city5" ->
           Map("id" -> 5, "name" -> "city5"),
         "f2Comment1" ->
-          Map("content"      -> "[f2Comment1] content",
-              "id"           -> 13,
+          Map("content" -> "[f2Comment1] content",
+              "id" -> 13,
               "creationDate" -> 946854000000L,
-              "browserUsed"  -> "browser2",
-              "locationIP"   -> "ip2"),
+              "browserUsed" -> "browser2",
+              "locationIP" -> "ip2"),
         "f2Comment2" ->
-          Map("content"      -> "[f2Comment2] content",
-              "id"           -> 14,
+          Map("content" -> "[f2Comment2] content",
+              "id" -> 14,
               "creationDate" -> 946940400000L,
-              "browserUsed"  -> "browser2",
-              "locationIP"   -> "ip2"),
+              "browserUsed" -> "browser2",
+              "locationIP" -> "ip2"),
         "person1Comment1" ->
-          Map("content"      -> "[person1Comment1] content",
-              "id"           -> 17,
+          Map("content" -> "[person1Comment1] content",
+              "id" -> 17,
               "creationDate" -> 946854000000L,
-              "browserUsed"  -> "browser1",
-              "locationIP"   -> "ip1"),
+              "browserUsed" -> "browser1",
+              "locationIP" -> "ip1"),
         "city1" ->
           Map("id" -> 1, "name" -> "city1"),
         "city2" ->
           Map("id" -> 2, "name" -> "city2"),
         "ff6Comment1" ->
-          Map("content"      -> "[ff6Comment1] content",
-              "id"           -> 18,
+          Map("content" -> "[ff6Comment1] content",
+              "id" -> 18,
               "creationDate" -> 946940400000L,
-              "browserUsed"  -> "browser6",
-              "locationIP"   -> "ip6"),
+              "browserUsed" -> "browser6",
+              "locationIP" -> "ip6"),
         "ff6" ->
           Map(
-            "id"           -> 6,
-            "languages"    -> Seq("language6a", "language6b"),
-            "birthday"     -> 6,
+            "id" -> 6,
+            "languages" -> Seq("language6a", "language6b"),
+            "birthday" -> 6,
             "creationDate" -> 6,
-            "lastName"     -> "last6-ᚠさ丵פش",
-            "browserUsed"  -> "browser6",
-            "email"        -> Seq("ff6@email.com"),
-            "locationIP"   -> "ip6",
-            "gender"       -> "gender6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6-ᚠさ丵פش",
+            "browserUsed" -> "browser6",
+            "email" -> Seq("ff6@email.com"),
+            "locationIP" -> "ip6",
+            "gender" -> "gender6",
+            "firstName" -> "ff6"
           ),
         "s5Comment1" ->
-          Map("content"      -> "[s5Comment1] content",
-              "id"           -> 15,
+          Map("content" -> "[s5Comment1] content",
+              "id" -> 15,
               "creationDate" -> 946854000000L,
-              "browserUsed"  -> "browser5",
-              "locationIP"   -> "ip5"),
+              "browserUsed" -> "browser5",
+              "locationIP" -> "ip5"),
         "f3Comment1" ->
-          Map("content"      -> "[f3Comment1] content",
-              "id"           -> 16,
+          Map("content" -> "[f3Comment1] content",
+              "id" -> 16,
               "creationDate" -> 946681200000L,
-              "browserUsed"  -> "browser3",
-              "locationIP"   -> "ip3"),
+              "browserUsed" -> "browser3",
+              "locationIP" -> "ip3"),
         "s7" ->
           Map(
-            "id"           -> 7,
-            "languages"    -> Seq("language7"),
-            "birthday"     -> 7,
+            "id" -> 7,
+            "languages" -> Seq("language7"),
+            "birthday" -> 7,
             "creationDate" -> 7,
-            "lastName"     -> "last7-ᚠさ丵פش",
-            "browserUsed"  -> "browser7",
-            "email"        -> Seq("s7@email.com"),
-            "locationIP"   -> "ip7",
-            "gender"       -> "gender7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7-ᚠさ丵פش",
+            "browserUsed" -> "browser7",
+            "email" -> Seq("s7@email.com"),
+            "locationIP" -> "ip7",
+            "gender" -> "gender7",
+            "firstName" -> "s7"
           ),
         "s5Post2" ->
           Map(
-            "content"      -> "[s5Post2] content",
-            "id"           -> 9,
+            "content" -> "[s5Post2] content",
+            "id" -> 9,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "s7Post1" ->
           Map(
-            "content"      -> "[s7Post1] content",
-            "id"           -> 10,
+            "content" -> "[s7Post1] content",
+            "id" -> 10,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7a"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7a"
           ),
         "s5" ->
           Map(
-            "id"           -> 5,
-            "languages"    -> Seq("language5"),
-            "birthday"     -> 5,
+            "id" -> 5,
+            "languages" -> Seq("language5"),
+            "birthday" -> 5,
             "creationDate" -> 5,
-            "lastName"     -> "last5-ᚠさ丵פش",
-            "browserUsed"  -> "browser5",
-            "email"        -> Seq("s5@email.com"),
-            "locationIP"   -> "ip5",
-            "gender"       -> "gender5",
-            "firstName"    -> "s5"
+            "lastName" -> "last5-ᚠさ丵פش",
+            "browserUsed" -> "browser5",
+            "email" -> Seq("s5@email.com"),
+            "locationIP" -> "ip5",
+            "gender" -> "gender5",
+            "firstName" -> "s5"
           ),
         "f3" ->
           Map(
-            "id"           -> 3,
-            "languages"    -> Seq("language3a", "language3b"),
-            "birthday"     -> 3,
+            "id" -> 3,
+            "languages" -> Seq("language3a", "language3b"),
+            "birthday" -> 3,
             "creationDate" -> 3,
-            "lastName"     -> "last3-ᚠさ丵פش",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("f3a@email.com", "f3b@email.com"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3-ᚠさ丵פش",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("f3a@email.com", "f3b@email.com"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "f3"
           ),
         "f2Post3" ->
           Map(
-            "content"      -> "[f2Post3] content",
-            "id"           -> 7,
+            "content" -> "[f2Post3] content",
+            "id" -> 7,
             "creationDate" -> 946940400000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f2" ->
           Map(
-            "id"           -> 2,
-            "languages"    -> Seq("language2"),
-            "birthday"     -> 2,
+            "id" -> 2,
+            "languages" -> Seq("language2"),
+            "birthday" -> 2,
             "creationDate" -> 2,
-            "lastName"     -> "last2-ᚠさ丵פش",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq("f2@email.com"),
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2-ᚠさ丵פش",
+            "browserUsed" -> "browser2",
+            "email" -> Seq("f2@email.com"),
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "f2"
           ),
         "f2Post2" ->
           Map(
-            "content"      -> "[f2Post2] content",
-            "id"           -> 6,
+            "content" -> "[f2Post2] content",
+            "id" -> 6,
             "creationDate" -> 947458800000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f2Post1" ->
           Map(
-            "content"      -> "[f2Post1] content",
-            "id"           -> 5,
+            "content" -> "[f2Post1] content",
+            "id" -> 5,
             "creationDate" -> 947458800000L,
-            "browserUsed"  -> "ip2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "ip2",
-            "language"     -> "language2"
+            "browserUsed" -> "ip2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "ip2",
+            "language" -> "language2"
           ),
         "s7Post2" ->
           Map(
-            "content"      -> "[s7Post2] content",
-            "id"           -> 11,
+            "content" -> "[s7Post2] content",
+            "id" -> 11,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7"
           ),
         "f4" ->
           Map(
-            "id"           -> 4,
-            "languages"    -> Seq("language4a", "language4b"),
-            "birthday"     -> 4,
+            "id" -> 4,
+            "languages" -> Seq("language4a", "language4b"),
+            "birthday" -> 4,
             "creationDate" -> 4,
-            "lastName"     -> "last4-ᚠさ丵פش",
-            "browserUsed"  -> "browser4",
-            "email"        -> Seq("f4@email.com"),
-            "locationIP"   -> "ip4",
-            "gender"       -> "gender4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4-ᚠさ丵פش",
+            "browserUsed" -> "browser4",
+            "email" -> Seq("f4@email.com"),
+            "locationIP" -> "ip4",
+            "gender" -> "gender4",
+            "firstName" -> "f4"
           ),
         "country1" ->
           Map("id" -> 11, "name" -> "country1"),
         "person1" ->
           Map(
-            "id"           -> 1,
-            "languages"    -> Seq("language1a", "language1b"),
-            "birthday"     -> 1,
+            "id" -> 1,
+            "languages" -> Seq("language1a", "language1b"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last1-ᚠさ丵פش",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("person1a@email.com", "person1b@email.com"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1-ᚠさ丵פش",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("person1a@email.com", "person1b@email.com"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "person1"
           ),
         "country4" ->
           Map("id" -> 14, "name" -> "country4"),
@@ -1018,53 +1018,53 @@ object LdbcQueries {
           Map("id" -> 13, "name" -> "country3"),
         "ff6Post1" ->
           Map(
-            "content"      -> "[ff6Post1] content",
-            "id"           -> 12,
+            "content" -> "[ff6Post1] content",
+            "id" -> 12,
             "creationDate" -> 946940400000L,
-            "browserUsed"  -> "browser6",
-            "locationIP"   -> "ip6",
-            "imageFile"    -> "image6",
-            "language"     -> "language6"
+            "browserUsed" -> "browser6",
+            "locationIP" -> "ip6",
+            "imageFile" -> "image6",
+            "language" -> "language6"
           ),
         "f3Post1" ->
           Map(
-            "content"      -> "[f3Post1] content",
-            "id"           -> 1,
+            "content" -> "[f3Post1] content",
+            "id" -> 1,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post2" ->
           Map(
-            "content"      -> "[f3Post2] content",
-            "id"           -> 2,
+            "content" -> "[f3Post2] content",
+            "id" -> 2,
             "creationDate" -> 947458800000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post3" ->
           Map(
-            "content"      -> "[f3Post3] content",
-            "id"           -> 3,
+            "content" -> "[f3Post3] content",
+            "id" -> 3,
             "creationDate" -> 946940400000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f4Post1" ->
           Map(
-            "content"      -> "[f4Post1] content",
-            "id"           -> 4,
+            "content" -> "[f4Post1] content",
+            "id" -> 4,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser4",
-            "locationIP"   -> "ip4",
-            "imageFile"    -> "image4",
-            "language"     -> "language4"
+            "browserUsed" -> "browser4",
+            "locationIP" -> "ip4",
+            "imageFile" -> "image4",
+            "language" -> "language4"
           )
       )
 
@@ -1084,7 +1084,7 @@ object LdbcQueries {
 
     def params = {
       val startTime = new DateTime(2000, 1, 3, 0, 0, 0, DateTimeZone.forID("Europe/Stockholm"))
-      val endTime   = startTime.plusDays(2)
+      val endTime = startTime.plusDays(2)
       Map("1" -> 1,
           "2" -> "country1",
           "3" -> "country2",
@@ -1095,18 +1095,18 @@ object LdbcQueries {
 
     def expectedResult =
       List(
-        Map("friendLastName"  -> "last2-ᚠさ丵פش",
-            "friendId"        -> 2,
+        Map("friendLastName" -> "last2-ᚠさ丵פش",
+            "friendId" -> 2,
             "friendFirstName" -> "f2",
-            "yCount"          -> 1,
-            "xyCount"         -> 2,
-            "xCount"          -> 1),
-        Map("friendLastName"  -> "last6-ᚠさ丵פش",
-            "friendId"        -> 6,
+            "yCount" -> 1,
+            "xyCount" -> 2,
+            "xCount" -> 1),
+        Map("friendLastName" -> "last6-ᚠさ丵פش",
+            "friendId" -> 6,
             "friendFirstName" -> "ff6",
-            "yCount"          -> 1,
-            "xyCount"         -> 2,
-            "xCount"          -> 1)
+            "yCount" -> 1,
+            "xyCount" -> 2,
+            "xCount" -> 1)
       )
   }
 
@@ -1151,85 +1151,85 @@ object LdbcQueries {
       Map(
         "person1" ->
           Map(
-            "id"           -> 1,
-            "languages"    -> Seq("language1a", "language1b"),
-            "birthday"     -> 1,
+            "id" -> 1,
+            "languages" -> Seq("language1a", "language1b"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last1",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("person1b@email.com", "person1b@email.com"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("person1b@email.com", "person1b@email.com"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "person1"
           ),
         "s5Post1" ->
           Map(
-            "content"      -> "[s5Post1] content",
-            "id"           -> 8,
+            "content" -> "[s5Post1] content",
+            "id" -> 8,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "f4Comment1" ->
-          Map("content"      -> "[f4Comment1] content",
-              "id"           -> 13,
+          Map("content" -> "[f4Comment1] content",
+              "id" -> 13,
               "creationDate" -> 946854000000L,
-              "browserUsed"  -> "browser4",
-              "locationIP"   -> "ip4"),
+              "browserUsed" -> "browser4",
+              "locationIP" -> "ip4"),
         "ff6Post1" ->
           Map(
-            "content"      -> "[ff6Post1] content",
-            "id"           -> 12,
+            "content" -> "[ff6Post1] content",
+            "id" -> 12,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser6",
-            "locationIP"   -> "ip6",
-            "imageFile"    -> "image6",
-            "language"     -> "language6"
+            "browserUsed" -> "browser6",
+            "locationIP" -> "ip6",
+            "imageFile" -> "image6",
+            "language" -> "language6"
           ),
         "f3Post1" ->
           Map(
-            "content"      -> "[f3Post1] content",
-            "id"           -> 1,
+            "content" -> "[f3Post1] content",
+            "id" -> 1,
             "creationDate" -> 946767600000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post2" ->
           Map(
-            "content"      -> "[f3Post2] content",
-            "id"           -> 2,
+            "content" -> "[f3Post2] content",
+            "id" -> 2,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post3" ->
           Map(
-            "content"      -> "[f3Post3] content",
-            "id"           -> 3,
+            "content" -> "[f3Post3] content",
+            "id" -> 3,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "ff6" ->
           Map(
-            "id"           -> 6,
-            "languages"    -> Seq("language6a", "language6b"),
-            "birthday"     -> 1,
+            "id" -> 6,
+            "languages" -> Seq("language6a", "language6b"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last6",
-            "browserUsed"  -> "browser6",
-            "email"        -> Seq("friend6@email.com"),
-            "locationIP"   -> "ip6",
-            "gender"       -> "gender6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6",
+            "browserUsed" -> "browser6",
+            "email" -> Seq("friend6@email.com"),
+            "locationIP" -> "ip6",
+            "gender" -> "gender6",
+            "firstName" -> "ff6"
           ),
         "tag4" ->
           Map("name" -> "tag4-ᚠさ丵פش"),
@@ -1241,140 +1241,140 @@ object LdbcQueries {
           Map("name" -> "tag3-ᚠさ丵פش"),
         "s7" ->
           Map(
-            "id"           -> 7,
-            "languages"    -> Seq("language7a", "language7b"),
-            "birthday"     -> 7,
+            "id" -> 7,
+            "languages" -> Seq("language7a", "language7b"),
+            "birthday" -> 7,
             "creationDate" -> 7,
-            "lastName"     -> "last7",
-            "browserUsed"  -> "browser7",
-            "email"        -> Seq("stranger7a@email.com", "stranger7b@email.com"),
-            "locationIP"   -> "ip7",
-            "gender"       -> "gender7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7",
+            "browserUsed" -> "browser7",
+            "email" -> Seq("stranger7a@email.com", "stranger7b@email.com"),
+            "locationIP" -> "ip7",
+            "gender" -> "gender7",
+            "firstName" -> "s7"
           ),
         "s5Post2" ->
           Map(
-            "content"      -> "[s5Post2] content",
-            "id"           -> 9,
+            "content" -> "[s5Post2] content",
+            "id" -> 9,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "f4Post1" ->
           Map(
-            "content"      -> "[f4Post1] content",
-            "id"           -> 4,
+            "content" -> "[f4Post1] content",
+            "id" -> 4,
             "creationDate" -> 947026800000L,
-            "browserUsed"  -> "browser4",
-            "locationIP"   -> "ip4",
-            "imageFile"    -> "image4",
-            "language"     -> "language4"
+            "browserUsed" -> "browser4",
+            "locationIP" -> "ip4",
+            "imageFile" -> "image4",
+            "language" -> "language4"
           ),
         "s7Post1" ->
           Map(
-            "content"      -> "[s7Post1] content",
-            "id"           -> 10,
+            "content" -> "[s7Post1] content",
+            "id" -> 10,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7a"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7a"
           ),
         "f2Post3" ->
           Map(
-            "content"      -> "[f2Post3] content",
-            "id"           -> 7,
+            "content" -> "[f2Post3] content",
+            "id" -> 7,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f3" ->
           Map(
-            "id"           -> 3,
-            "languages"    -> Seq("language3a", "language3b"),
-            "birthday"     -> 3,
+            "id" -> 3,
+            "languages" -> Seq("language3a", "language3b"),
+            "birthday" -> 3,
             "creationDate" -> 3,
-            "lastName"     -> "last3",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("friend3a@email.com", "friend3b@email.com"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("friend3a@email.com", "friend3b@email.com"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "f3"
           ),
         "s5" ->
           Map(
-            "id"           -> 5,
-            "languages"    -> Seq("language5"),
-            "birthday"     -> 5,
+            "id" -> 5,
+            "languages" -> Seq("language5"),
+            "birthday" -> 5,
             "creationDate" -> 5,
-            "lastName"     -> "last5",
-            "browserUsed"  -> "browser5",
-            "email"        -> Seq("stranger5@email.com"),
-            "locationIP"   -> "ip5",
-            "gender"       -> "gender5",
-            "firstName"    -> "s5"
+            "lastName" -> "last5",
+            "browserUsed" -> "browser5",
+            "email" -> Seq("stranger5@email.com"),
+            "locationIP" -> "ip5",
+            "gender" -> "gender5",
+            "firstName" -> "s5"
           ),
         "f2Post2" ->
           Map(
-            "content"      -> "[f2Post2] content",
-            "id"           -> 6,
+            "content" -> "[f2Post2] content",
+            "id" -> 6,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "tag1" ->
           Map("name" -> "tag1-ᚠさ丵פش"),
         "f2" ->
           Map(
-            "id"           -> 2,
-            "languages"    -> Seq("language2"),
-            "birthday"     -> 2,
+            "id" -> 2,
+            "languages" -> Seq("language2"),
+            "birthday" -> 2,
             "creationDate" -> 2,
-            "lastName"     -> "last2",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq("friend2@email.com"),
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2",
+            "browserUsed" -> "browser2",
+            "email" -> Seq("friend2@email.com"),
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "f2"
           ),
         "f2Post1" ->
           Map(
-            "content"      -> "[f2Post1] content",
-            "id"           -> 5,
+            "content" -> "[f2Post1] content",
+            "id" -> 5,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "s7Post2" ->
           Map(
-            "content"      -> "[s7Post2] content",
-            "id"           -> 11,
+            "content" -> "[s7Post2] content",
+            "id" -> 11,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7"
           ),
         "f4" ->
           Map(
-            "id"           -> 4,
-            "languages"    -> Seq("language4a", "language4b"),
-            "birthday"     -> 1,
+            "id" -> 4,
+            "languages" -> Seq("language4a", "language4b"),
+            "birthday" -> 1,
             "creationDate" -> 1,
-            "lastName"     -> "last4",
-            "browserUsed"  -> "browser4",
-            "email"        -> Seq("friend4@email.com"),
-            "locationIP"   -> "ip4",
-            "gender"       -> "gender4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4",
+            "browserUsed" -> "browser4",
+            "email" -> Seq("friend4@email.com"),
+            "locationIP" -> "ip4",
+            "gender" -> "gender4",
+            "firstName" -> "f4"
           )
       )
 
@@ -1392,7 +1392,7 @@ object LdbcQueries {
 
     def params = {
       val startTime = new DateTime(2000, 1, 3, 0, 0, 0, DateTimeZone.forID("Europe/Stockholm"))
-      val endTime   = startTime.plusDays(2)
+      val endTime = startTime.plusDays(2)
       Map("1" -> 1, "2" -> startTime.getMillis, "3" -> endTime.getMillis, "4" -> 10)
     }
 
@@ -1453,13 +1453,13 @@ object LdbcQueries {
           Map("joinDate" -> 946854000000L),
         "s5Post1" ->
           Map(
-            "content"      -> "[s5Post1] content",
-            "id"           -> 8L,
+            "content" -> "[s5Post1] content",
+            "id" -> 8L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "forum2HasMemberF3" ->
           Map("joinDate" -> 946854000000L),
@@ -1469,16 +1469,16 @@ object LdbcQueries {
           Map("joinDate" -> 946854000000L),
         "ff6" ->
           Map(
-            "id"           -> 6L,
-            "languages"    -> Seq("language6a", "language6b"),
-            "birthday"     -> 6L,
+            "id" -> 6L,
+            "languages" -> Seq("language6a", "language6b"),
+            "birthday" -> 6L,
             "creationDate" -> 6L,
-            "lastName"     -> "last6",
-            "browserUsed"  -> "browser6",
-            "email"        -> Seq("ff6@email.com"),
-            "locationIP"   -> "ip6",
-            "gender"       -> "gender6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6",
+            "browserUsed" -> "browser6",
+            "email" -> Seq("ff6@email.com"),
+            "locationIP" -> "ip6",
+            "gender" -> "gender6",
+            "firstName" -> "ff6"
           ),
         "forum3HasMemberF4" ->
           Map("joinDate" -> 946854000000L),
@@ -1486,132 +1486,132 @@ object LdbcQueries {
           Map("joinDate" -> 946681200000L),
         "s7" ->
           Map(
-            "id"           -> 7L,
-            "languages"    -> Seq("language7a", "language7b"),
-            "birthday"     -> 7L,
+            "id" -> 7L,
+            "languages" -> Seq("language7a", "language7b"),
+            "birthday" -> 7L,
             "creationDate" -> 7L,
-            "lastName"     -> "last7",
-            "browserUsed"  -> "browser7",
-            "email"        -> Seq("s7@email.com"),
-            "locationIP"   -> "ip7",
-            "gender"       -> "gender7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7",
+            "browserUsed" -> "browser7",
+            "email" -> Seq("s7@email.com"),
+            "locationIP" -> "ip7",
+            "gender" -> "gender7",
+            "firstName" -> "s7"
           ),
         "forum1HasMemberFF6" ->
           Map("joinDate" -> 946854000000L),
         "s5Post2" ->
           Map(
-            "content"      -> "[s5Post2] content",
-            "id"           -> 9L,
+            "content" -> "[s5Post2] content",
+            "id" -> 9L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "forum1HasMemberS5" ->
           Map("joinDate" -> 946854000000L),
         "s5" ->
           Map(
-            "id"           -> 5L,
-            "languages"    -> Seq("language5"),
-            "birthday"     -> 5L,
+            "id" -> 5L,
+            "languages" -> Seq("language5"),
+            "birthday" -> 5L,
             "creationDate" -> 5L,
-            "lastName"     -> "last5",
-            "browserUsed"  -> "browser5",
-            "email"        -> Seq("s5@email.com"),
-            "locationIP"   -> "ip5",
-            "gender"       -> "gender5",
-            "firstName"    -> "s5"
+            "lastName" -> "last5",
+            "browserUsed" -> "browser5",
+            "email" -> Seq("s5@email.com"),
+            "locationIP" -> "ip5",
+            "gender" -> "gender5",
+            "firstName" -> "s5"
           ),
         "f3" ->
           Map(
-            "id"           -> 3L,
-            "languages"    -> Seq("language3a", "language3b"),
-            "birthday"     -> 3L,
+            "id" -> 3L,
+            "languages" -> Seq("language3a", "language3b"),
+            "birthday" -> 3L,
             "creationDate" -> 3L,
-            "lastName"     -> "last3",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("f3a@email.com", "f3b@email.com"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("f3a@email.com", "f3b@email.com"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "f3"
           ),
         "f2Post3" ->
           Map(
-            "content"      -> "[f2Post3] content",
-            "id"           -> 7L,
+            "content" -> "[f2Post3] content",
+            "id" -> 7L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "s7Post1" ->
           Map(
-            "content"      -> "[s7Post1] content",
-            "id"           -> 10L,
+            "content" -> "[s7Post1] content",
+            "id" -> 10L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7a"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7a"
           ),
         "f2" ->
           Map(
-            "id"           -> 2L,
-            "languages"    -> Seq("language2"),
-            "birthday"     -> 2L,
+            "id" -> 2L,
+            "languages" -> Seq("language2"),
+            "birthday" -> 2L,
             "creationDate" -> 2L,
-            "lastName"     -> "last2",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq("f2@email.com"),
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2",
+            "browserUsed" -> "browser2",
+            "email" -> Seq("f2@email.com"),
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "f2"
           ),
         "f2Post2" ->
           Map(
-            "content"      -> "[f2Post2] content",
-            "id"           -> 6L,
+            "content" -> "[f2Post2] content",
+            "id" -> 6L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f2Post1" ->
           Map(
-            "content"      -> "[f2Post1] content",
-            "id"           -> 5L,
+            "content" -> "[f2Post1] content",
+            "id" -> 5L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f4" ->
           Map(
-            "id"           -> 4L,
-            "languages"    -> Seq("language4a", "language4b"),
-            "birthday"     -> 4L,
+            "id" -> 4L,
+            "languages" -> Seq("language4a", "language4b"),
+            "birthday" -> 4L,
             "creationDate" -> 4L,
-            "lastName"     -> "last4",
-            "browserUsed"  -> "browser4",
-            "email"        -> Seq("f4@email.com"),
-            "locationIP"   -> "ip4",
-            "gender"       -> "gender4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4",
+            "browserUsed" -> "browser4",
+            "email" -> Seq("f4@email.com"),
+            "locationIP" -> "ip4",
+            "gender" -> "gender4",
+            "firstName" -> "f4"
           ),
         "s7Post2" ->
           Map(
-            "content"      -> "[s7Post2] content",
-            "id"           -> 11L,
+            "content" -> "[s7Post2] content",
+            "id" -> 11L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7"
           ),
         "country0" ->
           Map("id" -> 10L, "name" -> "country0"),
@@ -1621,16 +1621,16 @@ object LdbcQueries {
           Map("joinDate" -> 946854000000L),
         "person1" ->
           Map(
-            "id"           -> 1L,
-            "languages"    -> Seq("language1a", "language1b"),
-            "birthday"     -> 1L,
+            "id" -> 1L,
+            "languages" -> Seq("language1a", "language1b"),
+            "birthday" -> 1L,
             "creationDate" -> 1L,
-            "lastName"     -> "last1",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("person1a@email.com", "person1b@email.com"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("person1a@email.com", "person1b@email.com"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "person1"
           ),
         "forum1" ->
           Map("id" -> 1L, "title" -> "forum1-ᚠさ丵פش"),
@@ -1642,43 +1642,43 @@ object LdbcQueries {
           Map("id" -> 4L, "title" -> "forum4-ᚠさ丵פش"),
         "ff6Post1" ->
           Map(
-            "content"      -> "[ff6Post1] content",
-            "id"           -> 12L,
+            "content" -> "[ff6Post1] content",
+            "id" -> 12L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser6",
-            "locationIP"   -> "ip6",
-            "imageFile"    -> "image6",
-            "language"     -> "language6"
+            "browserUsed" -> "browser6",
+            "locationIP" -> "ip6",
+            "imageFile" -> "image6",
+            "language" -> "language6"
           ),
         "f3Post1" ->
           Map(
-            "content"      -> "[f3Post1] content",
-            "id"           -> 1L,
+            "content" -> "[f3Post1] content",
+            "id" -> 1L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post2" ->
           Map(
-            "content"      -> "[f3Post2] content",
-            "id"           -> 2L,
+            "content" -> "[f3Post2] content",
+            "id" -> 2L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post3" ->
           Map(
-            "content"      -> "[f3Post3] content",
-            "id"           -> 3L,
+            "content" -> "[f3Post3] content",
+            "id" -> 3L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "forum1HasMemberF2" ->
           Map("joinDate" -> 946681200000L),
@@ -1744,79 +1744,79 @@ object LdbcQueries {
       Map(
         "person1" ->
           Map(
-            "id"           -> 1L,
-            "languages"    -> Seq("language1"),
-            "birthday"     -> 1L,
+            "id" -> 1L,
+            "languages" -> Seq("language1"),
+            "birthday" -> 1L,
             "creationDate" -> 1L,
-            "lastName"     -> "last1",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("person1@email.com"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("person1@email.com"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "person1"
           ),
         "s5Post1" ->
           Map(
-            "content"      -> "[s5Post1] content",
-            "id"           -> 8L,
+            "content" -> "[s5Post1] content",
+            "id" -> 8L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "ff6Post1" ->
           Map(
-            "content"      -> "[ff6Post1] content",
-            "id"           -> 12L,
+            "content" -> "[ff6Post1] content",
+            "id" -> 12L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser6",
-            "locationIP"   -> "ip6",
-            "imageFile"    -> "image6",
-            "language"     -> "language6"
+            "browserUsed" -> "browser6",
+            "locationIP" -> "ip6",
+            "imageFile" -> "image6",
+            "language" -> "language6"
           ),
         "f3Post1" ->
           Map(
-            "content"      -> "[f3Post1] content",
-            "id"           -> 1L,
+            "content" -> "[f3Post1] content",
+            "id" -> 1L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post2" ->
           Map(
-            "content"      -> "[f3Post2] content",
-            "id"           -> 2L,
+            "content" -> "[f3Post2] content",
+            "id" -> 2L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "f3Post3" ->
           Map(
-            "content"      -> "[f3Post3] content",
-            "id"           -> 3L,
+            "content" -> "[f3Post3] content",
+            "id" -> 3L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "image3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "image3",
+            "language" -> "language3"
           ),
         "ff6" ->
           Map(
-            "id"           -> 6L,
-            "languages"    -> Seq("language6"),
-            "birthday"     -> 6L,
+            "id" -> 6L,
+            "languages" -> Seq("language6"),
+            "birthday" -> 6L,
             "creationDate" -> 6L,
-            "lastName"     -> "last6",
-            "browserUsed"  -> "browser6",
-            "email"        -> Seq("ff6@email.com"),
-            "locationIP"   -> "ip6",
-            "gender"       -> "gender6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6",
+            "browserUsed" -> "browser6",
+            "email" -> Seq("ff6@email.com"),
+            "locationIP" -> "ip6",
+            "gender" -> "gender6",
+            "firstName" -> "ff6"
           ),
         "tag4" ->
           Map("name" -> "tag4-ᚠさ丵פش"),
@@ -1828,140 +1828,140 @@ object LdbcQueries {
           Map("name" -> "tag3-ᚠさ丵פش"),
         "s7" ->
           Map(
-            "id"           -> 7L,
-            "languages"    -> Seq("language7"),
-            "birthday"     -> 7L,
+            "id" -> 7L,
+            "languages" -> Seq("language7"),
+            "birthday" -> 7L,
             "creationDate" -> 7L,
-            "lastName"     -> "last7",
-            "browserUsed"  -> "browser7",
-            "email"        -> Seq("s7@email.com"),
-            "locationIP"   -> "ip7",
-            "gender"       -> "gender7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7",
+            "browserUsed" -> "browser7",
+            "email" -> Seq("s7@email.com"),
+            "locationIP" -> "ip7",
+            "gender" -> "gender7",
+            "firstName" -> "s7"
           ),
         "s5Post2" ->
           Map(
-            "content"      -> "[s5Post2] content",
-            "id"           -> 9L,
+            "content" -> "[s5Post2] content",
+            "id" -> 9L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser5",
-            "locationIP"   -> "ip5",
-            "imageFile"    -> "image5",
-            "language"     -> "language5"
+            "browserUsed" -> "browser5",
+            "locationIP" -> "ip5",
+            "imageFile" -> "image5",
+            "language" -> "language5"
           ),
         "f4Post1" ->
           Map(
-            "content"      -> "[f4Post1] content",
-            "id"           -> 4L,
+            "content" -> "[f4Post1] content",
+            "id" -> 4L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser4",
-            "locationIP"   -> "ip4",
-            "imageFile"    -> "image4",
-            "language"     -> "language4"
+            "browserUsed" -> "browser4",
+            "locationIP" -> "ip4",
+            "imageFile" -> "image4",
+            "language" -> "language4"
           ),
         "s7Post1" ->
           Map(
-            "content"      -> "[s7Post1] content",
-            "id"           -> 10L,
+            "content" -> "[s7Post1] content",
+            "id" -> 10L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7"
           ),
         "f2Post3" ->
           Map(
-            "content"      -> "[f2Post3] content",
-            "id"           -> 7L,
+            "content" -> "[f2Post3] content",
+            "id" -> 7L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "f3" ->
           Map(
-            "id"           -> 3L,
-            "languages"    -> Seq("language3"),
-            "birthday"     -> 3L,
+            "id" -> 3L,
+            "languages" -> Seq("language3"),
+            "birthday" -> 3L,
             "creationDate" -> 3L,
-            "lastName"     -> "last3",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("f3@email.com"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("f3@email.com"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "f3"
           ),
         "s5" ->
           Map(
-            "id"           -> 5L,
-            "languages"    -> Seq("language5"),
-            "birthday"     -> 5L,
+            "id" -> 5L,
+            "languages" -> Seq("language5"),
+            "birthday" -> 5L,
             "creationDate" -> 5L,
-            "lastName"     -> "last5",
-            "browserUsed"  -> "browser5",
-            "email"        -> Seq("f5@email.com"),
-            "locationIP"   -> "ip5",
-            "gender"       -> "gender5",
-            "firstName"    -> "s5"
+            "lastName" -> "last5",
+            "browserUsed" -> "browser5",
+            "email" -> Seq("f5@email.com"),
+            "locationIP" -> "ip5",
+            "gender" -> "gender5",
+            "firstName" -> "s5"
           ),
         "f2Post2" ->
           Map(
-            "content"      -> "[f2Post2] content",
-            "id"           -> 6L,
+            "content" -> "[f2Post2] content",
+            "id" -> 6L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "tag1" ->
           Map("name" -> "tag1-ᚠさ丵פش"),
         "f2" ->
           Map(
-            "id"           -> 2L,
-            "languages"    -> Seq("language2"),
-            "birthday"     -> 2L,
+            "id" -> 2L,
+            "languages" -> Seq("language2"),
+            "birthday" -> 2L,
             "creationDate" -> 2L,
-            "lastName"     -> "last2",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq("f2@email.com"),
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2",
+            "browserUsed" -> "browser2",
+            "email" -> Seq("f2@email.com"),
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "f2"
           ),
         "f2Post1" ->
           Map(
-            "content"      -> "[f2Post1] content",
-            "id"           -> 5L,
+            "content" -> "[f2Post1] content",
+            "id" -> 5L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "image2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "image2",
+            "language" -> "language2"
           ),
         "s7Post2" ->
           Map(
-            "content"      -> "[s7Post2] content",
-            "id"           -> 11L,
+            "content" -> "[s7Post2] content",
+            "id" -> 11L,
             "creationDate" -> 946854000000L,
-            "browserUsed"  -> "browser7",
-            "locationIP"   -> "ip7",
-            "imageFile"    -> "image7",
-            "language"     -> "language7"
+            "browserUsed" -> "browser7",
+            "locationIP" -> "ip7",
+            "imageFile" -> "image7",
+            "language" -> "language7"
           ),
         "f4" ->
           Map(
-            "id"           -> 4L,
-            "languages"    -> Seq("language4"),
-            "birthday"     -> 4L,
+            "id" -> 4L,
+            "languages" -> Seq("language4"),
+            "birthday" -> 4L,
             "creationDate" -> 4L,
-            "lastName"     -> "last4",
-            "browserUsed"  -> "browser4",
-            "email"        -> Seq("f4@email.com"),
-            "locationIP"   -> "ip4",
-            "gender"       -> "gender4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4",
+            "browserUsed" -> "browser4",
+            "email" -> Seq("f4@email.com"),
+            "locationIP" -> "ip4",
+            "gender" -> "gender4",
+            "firstName" -> "f4"
           )
       )
 
@@ -2064,75 +2064,75 @@ object LdbcQueries {
       Map(
         "person1Post2" ->
           Map(
-            "content"      -> "person1post2",
-            "id"           -> 2L,
+            "content" -> "person1post2",
+            "id" -> 2L,
             "creationDate" -> 946681320000L,
-            "browserUsed"  -> "browser2",
-            "locationIP"   -> "ip2",
-            "imageFile"    -> "imageFile2",
-            "language"     -> "language2"
+            "browserUsed" -> "browser2",
+            "locationIP" -> "ip2",
+            "imageFile" -> "imageFile2",
+            "language" -> "language2"
           ),
         "person1Post3" ->
           Map(
-            "content"      -> "person1post3",
-            "id"           -> 3L,
+            "content" -> "person1post3",
+            "id" -> 3L,
             "creationDate" -> 946681380000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "imageFile3",
-            "language"     -> "language3"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "imageFile3",
+            "language" -> "language3"
           ),
         "person1Post1" ->
           Map(
-            "content"      -> "person1post1",
-            "id"           -> 1L,
+            "content" -> "person1post1",
+            "id" -> 1L,
             "creationDate" -> 946681260000L,
-            "browserUsed"  -> "browser1",
-            "locationIP"   -> "ip1",
-            "imageFile"    -> "imageFile1",
-            "language"     -> "language1"
+            "browserUsed" -> "browser1",
+            "locationIP" -> "ip1",
+            "imageFile" -> "imageFile1",
+            "language" -> "language1"
           ),
         "f4Comment1" ->
-          Map("content"      -> "f4comment1",
-              "id"           -> 6L,
+          Map("content" -> "f4comment1",
+              "id" -> 6L,
               "creationDate" -> 946681560000L,
-              "browserUsed"  -> "browser6",
-              "locationIP"   -> "ip6"),
+              "browserUsed" -> "browser6",
+              "locationIP" -> "ip6"),
         "s7LikesPerson1Comment1" ->
           Map("creationDate" -> 946681560000L),
         "city0" ->
           Map("id" -> 0L, "name" -> "city0"),
         "person1Comment1" ->
-          Map("content"      -> "person1comment1",
-              "id"           -> 5L,
+          Map("content" -> "person1comment1",
+              "id" -> 5L,
               "creationDate" -> 946681500000L,
-              "browserUsed"  -> "browser5",
-              "locationIP"   -> "ip5"),
+              "browserUsed" -> "browser5",
+              "locationIP" -> "ip5"),
         "ff5" ->
           Map(
-            "id"           -> 5L,
-            "languages"    -> Seq("language5"),
-            "birthday"     -> 5L,
+            "id" -> 5L,
+            "languages" -> Seq("language5"),
+            "birthday" -> 5L,
             "creationDate" -> 5L,
-            "lastName"     -> "last5-ᚠさ丵פش",
-            "browserUsed"  -> "browser5",
-            "email"        -> Seq("ff5@email.com"),
-            "locationIP"   -> "ip5",
-            "gender"       -> "gender5",
-            "firstName"    -> "ff5"
+            "lastName" -> "last5-ᚠさ丵פش",
+            "browserUsed" -> "browser5",
+            "email" -> Seq("ff5@email.com"),
+            "locationIP" -> "ip5",
+            "gender" -> "gender5",
+            "firstName" -> "ff5"
           ),
         "ff6" ->
           Map(
-            "id"           -> 6L,
-            "languages"    -> Seq("language6"),
-            "birthday"     -> 6L,
+            "id" -> 6L,
+            "languages" -> Seq("language6"),
+            "birthday" -> 6L,
             "creationDate" -> 6L,
-            "lastName"     -> "last6-ᚠさ丵פش",
-            "browserUsed"  -> "browser6",
-            "email"        -> Seq("ff6@email.com"),
-            "locationIP"   -> "ip6",
-            "gender"       -> "gender6",
-            "firstName"    -> "ff6"
+            "lastName" -> "last6-ᚠさ丵פش",
+            "browserUsed" -> "browser6",
+            "email" -> Seq("ff6@email.com"),
+            "locationIP" -> "ip6",
+            "gender" -> "gender6",
+            "firstName" -> "ff6"
           ),
         "person1LikesF4Comment1" ->
           Map("creationDate" -> 946682400000L),
@@ -2140,93 +2140,93 @@ object LdbcQueries {
           Map("creationDate" -> 946681380000L),
         "s7" ->
           Map(
-            "id"           -> 7L,
-            "languages"    -> Seq("language7"),
-            "birthday"     -> 7L,
+            "id" -> 7L,
+            "languages" -> Seq("language7"),
+            "birthday" -> 7L,
             "creationDate" -> 7L,
-            "lastName"     -> "last7-ᚠさ丵פش",
-            "browserUsed"  -> "browser7",
-            "email"        -> Seq("s7@email.com"),
-            "locationIP"   -> "ip7",
-            "gender"       -> "gender7",
-            "firstName"    -> "s7"
+            "lastName" -> "last7-ᚠさ丵פش",
+            "browserUsed" -> "browser7",
+            "email" -> Seq("s7@email.com"),
+            "locationIP" -> "ip7",
+            "gender" -> "gender7",
+            "firstName" -> "s7"
           ),
         "s8" ->
           Map(
-            "id"           -> 8L,
-            "languages"    -> Seq("language8"),
-            "birthday"     -> 8L,
+            "id" -> 8L,
+            "languages" -> Seq("language8"),
+            "birthday" -> 8L,
             "creationDate" -> 8L,
-            "lastName"     -> "last8-ᚠさ丵פش",
-            "browserUsed"  -> "browser8",
-            "email"        -> Seq("s8@email.com"),
-            "locationIP"   -> "ip8",
-            "gender"       -> "gender8",
-            "firstName"    -> "s8"
+            "lastName" -> "last8-ᚠさ丵פش",
+            "browserUsed" -> "browser8",
+            "email" -> Seq("s8@email.com"),
+            "locationIP" -> "ip8",
+            "gender" -> "gender8",
+            "firstName" -> "s8"
           ),
         "s7Post1" ->
           Map(
-            "content"      -> "s7post1",
-            "id"           -> 4L,
+            "content" -> "s7post1",
+            "id" -> 4L,
             "creationDate" -> 946681440000L,
-            "browserUsed"  -> "browser3",
-            "locationIP"   -> "ip3",
-            "imageFile"    -> "imageFile4",
-            "language"     -> "language4"
+            "browserUsed" -> "browser3",
+            "locationIP" -> "ip3",
+            "imageFile" -> "imageFile4",
+            "language" -> "language4"
           ),
         "f3" ->
           Map(
-            "id"           -> 3L,
-            "languages"    -> Seq("language3"),
-            "birthday"     -> 3L,
+            "id" -> 3L,
+            "languages" -> Seq("language3"),
+            "birthday" -> 3L,
             "creationDate" -> 3L,
-            "lastName"     -> "last3-ᚠさ丵פش",
-            "browserUsed"  -> "browser3",
-            "email"        -> Seq("f3@email.com"),
-            "locationIP"   -> "ip3",
-            "gender"       -> "gender3",
-            "firstName"    -> "f3"
+            "lastName" -> "last3-ᚠさ丵פش",
+            "browserUsed" -> "browser3",
+            "email" -> Seq("f3@email.com"),
+            "locationIP" -> "ip3",
+            "gender" -> "gender3",
+            "firstName" -> "f3"
           ),
         "f2" ->
           Map(
-            "id"           -> 2L,
-            "languages"    -> Seq("language2"),
-            "birthday"     -> 2L,
+            "id" -> 2L,
+            "languages" -> Seq("language2"),
+            "birthday" -> 2L,
             "creationDate" -> 2L,
-            "lastName"     -> "last2-ᚠさ丵פش",
-            "browserUsed"  -> "browser2",
-            "email"        -> Seq("f2@email.com"),
-            "locationIP"   -> "ip2",
-            "gender"       -> "gender2",
-            "firstName"    -> "f2"
+            "lastName" -> "last2-ᚠさ丵פش",
+            "browserUsed" -> "browser2",
+            "email" -> Seq("f2@email.com"),
+            "locationIP" -> "ip2",
+            "gender" -> "gender2",
+            "firstName" -> "f2"
           ),
         "f4" ->
           Map(
-            "id"           -> 4L,
-            "languages"    -> Seq("language4"),
-            "birthday"     -> 4L,
+            "id" -> 4L,
+            "languages" -> Seq("language4"),
+            "birthday" -> 4L,
             "creationDate" -> 4L,
-            "lastName"     -> "last4-ᚠさ丵פش",
-            "browserUsed"  -> "browser4",
-            "email"        -> Seq("f4@email.com"),
-            "locationIP"   -> "ip4",
-            "gender"       -> "gender4",
-            "firstName"    -> "f4"
+            "lastName" -> "last4-ᚠさ丵פش",
+            "browserUsed" -> "browser4",
+            "email" -> Seq("f4@email.com"),
+            "locationIP" -> "ip4",
+            "gender" -> "gender4",
+            "firstName" -> "f4"
           ),
         "person1LikesPerson1Post1" ->
           Map("creationDate" -> 946681260000L),
         "person1" ->
           Map(
-            "id"           -> 1L,
-            "languages"    -> Seq("language1"),
-            "birthday"     -> 2L,
+            "id" -> 1L,
+            "languages" -> Seq("language1"),
+            "birthday" -> 2L,
             "creationDate" -> 1L,
-            "lastName"     -> "last1-ᚠさ丵פش",
-            "browserUsed"  -> "browser1",
-            "email"        -> Seq("person1@email.com"),
-            "locationIP"   -> "ip1",
-            "gender"       -> "gender1",
-            "firstName"    -> "person1"
+            "lastName" -> "last1-ᚠさ丵פش",
+            "browserUsed" -> "browser1",
+            "email" -> Seq("person1@email.com"),
+            "locationIP" -> "ip1",
+            "gender" -> "gender1",
+            "firstName" -> "person1"
           ),
         "s8LikesF4Comment1" ->
           Map("creationDate" -> 946682400000L),
@@ -2255,13 +2255,13 @@ object LdbcQueries {
     def expectedResult =
       List(
         Map(
-          "isNew"           -> true,
-          "likeTime"        -> 946681800000L,
-          "personId"        -> 8,
-          "latencyAsMilli"  -> 480000,
-          "messageId"       -> 2,
-          "personLastName"  -> "last8-ᚠさ丵פش",
-          "messageContent"  -> "person1post2",
+          "isNew" -> true,
+          "likeTime" -> 946681800000L,
+          "personId" -> 8,
+          "latencyAsMilli" -> 480000,
+          "messageId" -> 2,
+          "personLastName" -> "last8-ᚠさ丵פش",
+          "messageContent" -> "person1post2",
           "personFirstName" -> "s8"
         ))
   }
@@ -2376,42 +2376,42 @@ object LdbcQueries {
 
     def expectedResult =
       List(
-        Map("personId"            -> 1,
-            "commentContent"      -> "C21",
-            "commentId"           -> 17,
-            "personLastName"      -> "one-ᚠさ丵פش",
+        Map("personId" -> 1,
+            "commentContent" -> "C21",
+            "commentId" -> 17,
+            "personLastName" -> "one-ᚠさ丵פش",
             "commentCreationDate" -> 7,
-            "personFirstName"     -> "friend"),
-        Map("personId"            -> 2,
-            "commentContent"      -> "C131",
-            "commentId"           -> 14,
-            "personLastName"      -> "two-ᚠさ丵פش",
+            "personFirstName" -> "friend"),
+        Map("personId" -> 2,
+            "commentContent" -> "C131",
+            "commentId" -> 14,
+            "personLastName" -> "two-ᚠさ丵פش",
             "commentCreationDate" -> 4,
-            "personFirstName"     -> "friend"),
-        Map("personId"            -> 0,
-            "commentContent"      -> "C13",
-            "commentId"           -> 13,
-            "personLastName"      -> "zero-ᚠさ丵פش",
+            "personFirstName" -> "friend"),
+        Map("personId" -> 0,
+            "commentContent" -> "C13",
+            "commentId" -> 13,
+            "personLastName" -> "zero-ᚠさ丵פش",
             "commentCreationDate" -> 3,
-            "personFirstName"     -> "person"),
-        Map("personId"            -> 3,
-            "commentContent"      -> "C12",
-            "commentId"           -> 12,
-            "personLastName"      -> "three-ᚠさ丵פش",
+            "personFirstName" -> "person"),
+        Map("personId" -> 3,
+            "commentContent" -> "C12",
+            "commentId" -> 12,
+            "personLastName" -> "three-ᚠさ丵פش",
             "commentCreationDate" -> 2,
-            "personFirstName"     -> "friend"),
-        Map("personId"            -> 3,
-            "commentContent"      -> "C01",
-            "commentId"           -> 10,
-            "personLastName"      -> "three-ᚠさ丵פش",
+            "personFirstName" -> "friend"),
+        Map("personId" -> 3,
+            "commentContent" -> "C01",
+            "commentId" -> 10,
+            "personLastName" -> "three-ᚠさ丵פش",
             "commentCreationDate" -> 1,
-            "personFirstName"     -> "friend"),
-        Map("personId"            -> 3,
-            "commentContent"      -> "C11",
-            "commentId"           -> 11,
-            "personLastName"      -> "three-ᚠさ丵פش",
+            "personFirstName" -> "friend"),
+        Map("personId" -> 3,
+            "commentContent" -> "C11",
+            "commentId" -> 11,
+            "personLastName" -> "three-ᚠさ丵פش",
             "commentCreationDate" -> 1,
-            "personFirstName"     -> "friend")
+            "personFirstName" -> "friend")
       )
 
     override def supportedInCompiledRuntime = true
@@ -2515,53 +2515,53 @@ object LdbcQueries {
 
     def expectedResult =
       List(
-        Map("personId"            -> 1,
-            "messageId"           -> 11,
-            "personLastName"      -> "one-ᚠさ丵פش",
-            "messageContent"      -> "P11 - content",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 1,
+            "messageId" -> 11,
+            "personLastName" -> "one-ᚠさ丵פش",
+            "messageContent" -> "P11 - content",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 11),
-        Map("personId"            -> 4,
-            "messageId"           -> 1211,
-            "personLastName"      -> "four-ᚠさ丵פش",
-            "messageContent"      -> "C1211",
-            "personFirstName"     -> "friendfriend",
+        Map("personId" -> 4,
+            "messageId" -> 1211,
+            "personLastName" -> "four-ᚠさ丵פش",
+            "messageContent" -> "C1211",
+            "personFirstName" -> "friendfriend",
             "messageCreationDate" -> 10),
-        Map("personId"            -> 1,
-            "messageId"           -> 21111,
-            "personLastName"      -> "one-ᚠさ丵פش",
-            "messageContent"      -> "C21111",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 1,
+            "messageId" -> 21111,
+            "personLastName" -> "one-ᚠさ丵פش",
+            "messageContent" -> "C21111",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 9),
-        Map("personId"            -> 2,
-            "messageId"           -> 2111,
-            "personLastName"      -> "two-ᚠさ丵פش",
-            "messageContent"      -> "C2111",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 2,
+            "messageId" -> 2111,
+            "personLastName" -> "two-ᚠさ丵פش",
+            "messageContent" -> "C2111",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 8),
-        Map("personId"            -> 1,
-            "messageId"           -> 211,
-            "personLastName"      -> "one-ᚠさ丵פش",
-            "messageContent"      -> "C211",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 1,
+            "messageId" -> 211,
+            "personLastName" -> "one-ᚠさ丵פش",
+            "messageContent" -> "C211",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 7),
-        Map("personId"            -> 2,
-            "messageId"           -> 21,
-            "personLastName"      -> "two-ᚠさ丵פش",
-            "messageContent"      -> "P21 - image",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 2,
+            "messageId" -> 21,
+            "personLastName" -> "two-ᚠさ丵פش",
+            "messageContent" -> "P21 - image",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 6),
-        Map("personId"            -> 1,
-            "messageId"           -> 12,
-            "personLastName"      -> "one-ᚠさ丵פش",
-            "messageContent"      -> "P12 - content",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 1,
+            "messageId" -> 12,
+            "personLastName" -> "one-ᚠさ丵פش",
+            "messageContent" -> "P12 - content",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 4),
-        Map("personId"            -> 2,
-            "messageId"           -> 311,
-            "personLastName"      -> "two-ᚠさ丵פش",
-            "messageContent"      -> "C311",
-            "personFirstName"     -> "friend",
+        Map("personId" -> 2,
+            "messageId" -> 311,
+            "personLastName" -> "two-ᚠさ丵פش",
+            "messageContent" -> "C311",
+            "personFirstName" -> "friend",
             "messageCreationDate" -> 4)
       )
   }
@@ -2638,38 +2638,38 @@ object LdbcQueries {
     def createParams =
       Map(
         "ff22" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 22L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "two two-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friendfriend",
+          Map("birthday_day" -> 1,
+              "id" -> 22L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "two two-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friendfriend",
               "birthday_month" -> 2),
         "ff23" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 23L,
-              "birthday"       -> 1270072800000L,
-              "lastName"       -> "two three-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friendfriend",
+          Map("birthday_day" -> 1,
+              "id" -> 23L,
+              "birthday" -> 1270072800000L,
+              "lastName" -> "two three-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friendfriend",
               "birthday_month" -> 3),
         "ff21" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 21L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "two one-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friendfriend",
+          Map("birthday_day" -> 1,
+              "id" -> 21L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "two one-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friendfriend",
               "birthday_month" -> 2),
         "post21" ->
           Map("content" -> "P21", "id" -> 21L),
         "person0" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 0L,
-              "birthday"       -> 1277935200000L,
-              "lastName"       -> "zero-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "person",
+          Map("birthday_day" -> 1,
+              "id" -> 0L,
+              "birthday" -> 1277935200000L,
+              "lastName" -> "zero-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "person",
               "birthday_month" -> 6),
         "city0" ->
           Map("name" -> "city0"),
@@ -2690,38 +2690,38 @@ object LdbcQueries {
         "commonTag6" ->
           Map("name" -> "common tag 6"),
         "f1" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 1L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "one-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friend",
+          Map("birthday_day" -> 1,
+              "id" -> 1L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "one-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friend",
               "birthday_month" -> 2),
         "commonTag5" ->
           Map("name" -> "common tag 5"),
         "ff12" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 12L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "one two-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friendfriend",
+          Map("birthday_day" -> 1,
+              "id" -> 12L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "one two-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friendfriend",
               "birthday_month" -> 2),
         "f2" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 2L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "two-ᚠさ丵פش",
-              "gender"         -> "male",
-              "firstName"      -> "friend",
+          Map("birthday_day" -> 1,
+              "id" -> 2L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "two-ᚠさ丵פش",
+              "gender" -> "male",
+              "firstName" -> "friend",
               "birthday_month" -> 2),
         "ff11" ->
-          Map("birthday_day"   -> 1,
-              "id"             -> 11L,
-              "birthday"       -> 1267398000000L,
-              "lastName"       -> "one one-ᚠさ丵פش",
-              "gender"         -> "female",
-              "firstName"      -> "friendfriend",
+          Map("birthday_day" -> 1,
+              "id" -> 11L,
+              "birthday" -> 1267398000000L,
+              "lastName" -> "one one-ᚠさ丵פش",
+              "gender" -> "female",
+              "firstName" -> "friendfriend",
               "birthday_month" -> 2),
         "post111" ->
           Map("content" -> "P111", "id" -> 111L),
@@ -2751,36 +2751,36 @@ object LdbcQueries {
     def expectedResult =
       List(
         Map(
-          "personId"            -> 22,
-          "personGender"        -> "male",
-          "personLastName"      -> "two two-ᚠさ丵פش",
+          "personId" -> 22,
+          "personGender" -> "male",
+          "personLastName" -> "two two-ᚠさ丵פش",
           "commonInterestScore" -> 0,
-          "personFirstName"     -> "friendfriend",
-          "personCityName"      -> "city0"
+          "personFirstName" -> "friendfriend",
+          "personCityName" -> "city0"
         ),
         Map(
-          "personId"            -> 11,
-          "personGender"        -> "female",
-          "personLastName"      -> "one one-ᚠさ丵פش",
+          "personId" -> 11,
+          "personGender" -> "female",
+          "personLastName" -> "one one-ᚠさ丵פش",
           "commonInterestScore" -> -1,
-          "personFirstName"     -> "friendfriend",
-          "personCityName"      -> "city1"
+          "personFirstName" -> "friendfriend",
+          "personCityName" -> "city1"
         ),
         Map(
-          "personId"            -> 12,
-          "personGender"        -> "male",
-          "personLastName"      -> "one two-ᚠさ丵פش",
+          "personId" -> 12,
+          "personGender" -> "male",
+          "personLastName" -> "one two-ᚠさ丵פش",
           "commonInterestScore" -> -1,
-          "personFirstName"     -> "friendfriend",
-          "personCityName"      -> "city0"
+          "personFirstName" -> "friendfriend",
+          "personCityName" -> "city0"
         ),
         Map(
-          "personId"            -> 21,
-          "personGender"        -> "male",
-          "personLastName"      -> "two one-ᚠさ丵פش",
+          "personId" -> 21,
+          "personGender" -> "male",
+          "personLastName" -> "two one-ᚠさ丵פش",
           "commonInterestScore" -> -1,
-          "personFirstName"     -> "friendfriend",
-          "personCityName"      -> "city0"
+          "personFirstName" -> "friendfriend",
+          "personCityName" -> "city0"
         )
       )
   }
@@ -2866,16 +2866,16 @@ object LdbcQueries {
 
     def expectedResult =
       List(
-        Map("friendLastName"  -> "one-ᚠさ丵פش",
-            "friendId"        -> 1,
-            "companyName"     -> "company zero",
+        Map("friendLastName" -> "one-ᚠさ丵פش",
+            "friendId" -> 1,
+            "companyName" -> "company zero",
             "friendFirstName" -> "friend",
-            "workFromYear"    -> 2),
-        Map("friendLastName"  -> "one one-ᚠさ丵פش",
-            "friendId"        -> 11,
-            "companyName"     -> "company zero",
+            "workFromYear" -> 2),
+        Map("friendLastName" -> "one one-ᚠさ丵פش",
+            "friendId" -> 11,
+            "companyName" -> "company zero",
             "friendFirstName" -> "friend friend",
-            "workFromYear"    -> 3)
+            "workFromYear" -> 3)
       )
   }
 

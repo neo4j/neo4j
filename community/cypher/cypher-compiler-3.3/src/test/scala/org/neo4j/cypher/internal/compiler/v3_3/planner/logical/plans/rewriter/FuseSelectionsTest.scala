@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.ir.v3_3.IdName
 
 class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   test("merges two selections into one") {
-    val p1  = propEquality("a", "foo", 12)
-    val p2  = propEquality("a", "bar", 33)
+    val p1 = propEquality("a", "foo", 12)
+    val p2 = propEquality("a", "bar", 33)
     val lhs = Argument(Set(IdName("a")))(solved)()
 
     Selection(Seq(p1), Selection(Seq(p2), lhs)(solved))(solved).endoRewrite(fuseSelections) should equal(
@@ -37,9 +37,9 @@ class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("merges three selections into one") {
-    val p1  = propEquality("a", "foo", 12)
-    val p2  = propEquality("a", "bar", 33)
-    val p3  = propEquality("a", "baz", 42)
+    val p1 = propEquality("a", "foo", 12)
+    val p2 = propEquality("a", "bar", 33)
+    val p3 = propEquality("a", "baz", 42)
     val lhs = Argument(Set(IdName("a")))(solved)()
 
     Selection(Seq(p1), Selection(Seq(p2), Selection(Seq(p3), lhs)(solved))(solved))(solved)

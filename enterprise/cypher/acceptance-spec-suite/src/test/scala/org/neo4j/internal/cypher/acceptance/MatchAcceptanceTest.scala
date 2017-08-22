@@ -228,8 +228,8 @@ return p""")
   }
 
   test("should return shortest paths when only one side is bound") {
-    val a  = createLabeledNode("A")
-    val b  = createLabeledNode("B")
+    val a = createLabeledNode("A")
+    val b = createLabeledNode("B")
     val r1 = relate(a, b)
 
     val result = succeedWith(
@@ -247,7 +247,7 @@ return p""")
   test("should handle cartesian products even when same argument exists on both sides") {
     val node1 = createNode()
     val node2 = createNode()
-    val r     = relate(node1, node2)
+    val r = relate(node1, node2)
 
     val query = """WITH [{0}, {1}] AS x, count(*) as y
                   |MATCH (n) WHERE ID(n) IN x
@@ -276,7 +276,7 @@ return p""")
   test("should be able to use index hints") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -295,7 +295,7 @@ return p""")
     // given
     (1 to 50) foreach (i => createLabeledNode(Map("name" -> ("Robot" + i)), "Person"))
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -313,7 +313,7 @@ return p""")
   test("should be able to use index hints with inequality/range predicates") {
     // given
     val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-    val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
     relate(andres, createNode())
     relate(jake, createNode())
 
@@ -335,8 +335,8 @@ return p""")
 
     val node1 = createNode()
     val node2 = createNode()
-    val r1    = relate(node1, node2, "prop" -> 10)
-    val r2    = relate(node1, node2, "prop" -> 0)
+    val r1 = relate(node1, node2, "prop" -> 10)
+    val r2 = relate(node1, node2, "prop" -> 0)
 
     val result = succeedWith(Configs.All - Configs.Compiled, query)
 
@@ -413,8 +413,8 @@ return p""")
 
   test("should use the index for property existence queries (with exists) for cost when asked for it") {
     // given
-    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
 
@@ -429,8 +429,8 @@ return p""")
 
   test("should use the index for property existence queries (with IS NOT NULL) for cost when asked for it") {
     // given
-    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
 
@@ -447,8 +447,8 @@ return p""")
     for (i <- 1 to 100) {
       createLabeledNode(Map("name" -> ("Joe Soap " + i)), "User")
     }
-    val n = createLabeledNode(Map("email"  -> "me@mine"), "User")
-    val m = createLabeledNode(Map("email"  -> "you@yours"), "User")
+    val n = createLabeledNode(Map("email" -> "me@mine"), "User")
+    val m = createLabeledNode(Map("email" -> "you@yours"), "User")
     val p = createLabeledNode(Map("emailx" -> "youtoo@yours"), "User")
     graph.createIndex("User", "email")
     graph.createIndex("User", "name")
@@ -547,9 +547,9 @@ return p""")
                   |RETURN project.p""".stripMargin
 
     //WHEN
-    val first  = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check  = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -580,9 +580,9 @@ return p""")
 
     //WHEN
 
-    val first  = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
+    val first = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
     val second = updateWith(Configs.CommunityInterpreted - Configs.Cost2_3, query).length
-    val check  = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
+    val check = succeedWith(Configs.All, "MATCH (f:Folder) RETURN f.name").toSet
 
     //THEN
     first should equal(second)
@@ -665,7 +665,7 @@ return p""")
       graph.execute("CYPHER runtime=interpreted MATCH (a:A) with a as n SKIP 0 MATCH (n)-[]->(b:B) return n, b")
     resultWithAlias.asScala.toList.size should equal(11)
 
-    var descriptionNoAlias   = resultNoAlias.getExecutionPlanDescription
+    var descriptionNoAlias = resultNoAlias.getExecutionPlanDescription
     var descriptionWithAlias = resultWithAlias.getExecutionPlanDescription
     descriptionWithAlias.getArguments.get("EstimatedRows") should equal(
       descriptionNoAlias.getArguments.get("EstimatedRows"))

@@ -41,7 +41,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use unique index hints on IN expressions") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -60,7 +60,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use unique index on IN collections with duplicates") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -80,7 +80,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use unique index on IN a null value") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -100,7 +100,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should be able to use index unique index on IN a collection parameter") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 
@@ -121,7 +121,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     test(s"$constraintCreator: should not use locking index for read only query") {
       //GIVEN
       val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
-      val jake   = createLabeledNode(Map("name" -> "Jacob"), "Person")
+      val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
       relate(andres, createNode())
       relate(jake, createNode())
 

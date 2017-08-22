@@ -34,34 +34,34 @@ class ScenarioExecutionBuilder {
   import scala.collection.JavaConverters._
 
   var skip: Boolean = _
-  var name: String  = _
+  var name: String = _
   def register(name: String, skip: Boolean): Unit = {
     this.name = name
     this.skip = skip
   }
 
-  var db: GraphDatabaseAPI              = _
+  var db: GraphDatabaseAPI = _
   def setDb(db: GraphDatabaseAPI): Unit = this.db = db
 
-  var params: util.Map[String, AnyRef]                  = Map.empty[String, AnyRef].asJava
+  var params: util.Map[String, AnyRef] = Map.empty[String, AnyRef].asJava
   def setParams(params: util.Map[String, AnyRef]): Unit = this.params = params
 
-  var initF: Seq[(GraphDatabaseAPI) => Unit]    = Seq.empty
+  var initF: Seq[(GraphDatabaseAPI) => Unit] = Seq.empty
   def init(f: (GraphDatabaseAPI) => Unit): Unit = initF = initF :+ f
 
-  var procReg: (GraphDatabaseAPI) => Unit                        = _
+  var procReg: (GraphDatabaseAPI) => Unit = _
   def procedureRegistration(f: (GraphDatabaseAPI) => Unit): Unit = procReg = f
 
   var executions: Seq[(GraphDatabaseAPI, util.Map[String, Object]) => Result] = Seq.empty
-  def exec(function: (GraphDatabaseAPI, util.Map[String, Object]) => Result)  = executions = executions :+ function
+  def exec(function: (GraphDatabaseAPI, util.Map[String, Object]) => Result) = executions = executions :+ function
 
-  var expectations: Seq[(Result) => Unit]         = Seq.empty
+  var expectations: Seq[(Result) => Unit] = Seq.empty
   def expect(expectation: (Result) => Unit): Unit = expectations = expectations :+ expectation
 
-  var expectedError: (Try[Result], Transaction) => Unit         = _
+  var expectedError: (Try[Result], Transaction) => Unit = _
   def expectError(function: (Try[Result], Transaction) => Unit) = expectedError = function
 
-  var sideEffects: (QueryStatistics) => Unit          = _
+  var sideEffects: (QueryStatistics) => Unit = _
   def sideEffects(f: (QueryStatistics) => Unit): Unit = sideEffects = f
 
   def build(): ScenarioExecution = {
@@ -115,7 +115,7 @@ case class NegativeScenario(name: String,
       init.foreach(f => f(db))
       procedureRegistration.foreach(f => f(db))
 
-      val tx      = db.beginTx()
+      val tx = db.beginTx()
       val attempt = Try(execution(db, params))
       try {
         errorExpectation(attempt, tx)
@@ -195,4 +195,4 @@ case class RegularScenario(name: String,
 }
 
 class ScenarioFailedException(message: String, cause: Throwable) extends Exception(message, cause)
-class BlacklistException(message: String)                        extends Exception(message)
+class BlacklistException(message: String) extends Exception(message)

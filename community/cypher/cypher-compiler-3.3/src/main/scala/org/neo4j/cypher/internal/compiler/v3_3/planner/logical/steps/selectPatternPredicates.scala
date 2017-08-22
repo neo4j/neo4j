@@ -70,14 +70,14 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
         (plan, expressions + p)
 
       case (patternExpression: PatternExpression) :: tail =>
-        val rhs                      = rhsPlan(lhs, patternExpression)
-        val (newLhs, newLetExpr)     = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression)
+        val rhs = rhsPlan(lhs, patternExpression)
+        val (newLhs, newLetExpr) = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression)
         val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
         (plan, solvedPredicates ++ Set(patternExpression) ++ expressions)
 
       case (p @ Not(patternExpression: PatternExpression)) :: tail =>
-        val rhs                      = rhsPlan(lhs, patternExpression)
-        val (newLhs, newLetExpr)     = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression)
+        val rhs = rhsPlan(lhs, patternExpression)
+        val (newLhs, newLetExpr) = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression)
         val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
         (plan, solvedPredicates ++ Set(p) ++ expressions)
 
@@ -116,7 +116,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
   }
 
   private def rhsPlan(lhs: LogicalPlan, pattern: PatternExpression)(implicit ctx: LogicalPlanningContext) = {
-    val context   = ctx.recurse(lhs)
+    val context = ctx.recurse(lhs)
     val (plan, _) = context.strategy.planPatternExpression(lhs.availableSymbols, pattern)(context)
     plan
   }
@@ -129,7 +129,7 @@ case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 
   private def applicable(outerPlan: LogicalPlan, qg: QueryGraph, expression: Expression) = {
     val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
-    val isSolved         = outerPlan.solved.exists(_.queryGraph.selections.contains(expression))
+    val isSolved = outerPlan.solved.exists(_.queryGraph.selections.contains(expression))
     symbolsAvailable && !isSolved
   }
 

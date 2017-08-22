@@ -101,13 +101,13 @@ object HaversinCalculator extends DistanceCalculator {
     p1.getCoordinateReferenceSystem.code() == CRS.WGS84.code && p2.getCoordinateReferenceSystem.code == CRS.WGS84.code
 
   override def calculateDistance(p1: PointValue, p2: PointValue): Double = {
-    val c1Coord             = p1.coordinates()
-    val c2Coord             = p2.coordinates()
-    val c1: Array[Double]   = Array(toRadians(c1Coord(0)), toRadians(c1Coord(1)))
-    val c2: Array[Double]   = Array(toRadians(c2Coord(0)), toRadians(c2Coord(1)))
-    val dx                  = c2(0) - c1(0)
-    val dy                  = c2(1) - c1(1)
-    val a                   = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)
+    val c1Coord = p1.coordinates()
+    val c2Coord = p2.coordinates()
+    val c1: Array[Double] = Array(toRadians(c1Coord(0)), toRadians(c1Coord(1)))
+    val c2: Array[Double] = Array(toRadians(c2Coord(0)), toRadians(c2Coord(1)))
+    val dx = c2(0) - c1(0)
+    val dy = c2(1) - c1(1)
+    val a = pow(sin(dy / 2), 2.0) + cos(c1(1)) * cos(c2(1)) * pow(sin(dx / 2.0), 2.0)
     val greatCircleDistance = 2.0 * atan2(sqrt(a), sqrt(1 - a))
     EARTH_RADIUS_METERS * greatCircleDistance
   }

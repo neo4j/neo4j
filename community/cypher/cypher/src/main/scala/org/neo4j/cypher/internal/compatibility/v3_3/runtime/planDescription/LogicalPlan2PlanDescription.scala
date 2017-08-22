@@ -53,7 +53,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
   override protected def build(plan: LogicalPlan): InternalPlanDescription = {
     assert(plan.isLeaf)
 
-    val id        = idMap(plan)
+    val id = idMap(plan)
     val variables = plan.availableSymbols.map(_.name)
 
     val result: InternalPlanDescription = plan match {
@@ -127,9 +127,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.isEmpty)
 
-    val id        = idMap(plan)
+    val id = idMap(plan)
     val variables = plan.availableSymbols.map(_.name)
-    val children  = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
+    val children = if (source.isInstanceOf[SingleRowPlanDescription]) NoChildren else SingleChild(source)
 
     val result: InternalPlanDescription = plan match {
       case Aggregation(_, groupingExpressions, aggregationExpressions) if aggregationExpressions.isEmpty =>
@@ -318,9 +318,9 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.nonEmpty)
 
-    val id        = idMap(plan)
+    val id = idMap(plan)
     val variables = plan.availableSymbols.map(_.name)
-    val children  = TwoChildren(lhs, rhs)
+    val children = TwoChildren(lhs, rhs)
 
     val result: InternalPlanDescription = plan match {
       case _: AntiConditionalApply =>
@@ -408,7 +408,7 @@ case class LogicalPlan2PlanDescription(idMap: Map[LogicalPlan, Id], readOnly: Bo
       case e: RangeQueryExpression[_] =>
         assert(propertyKeys.size == 1, "Range queries not yet supported for composite indexes")
         val propertyKey = propertyKeys.head.name
-        val name        = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
+        val name = if (unique) "NodeUniqueIndexSeekByRange" else "NodeIndexSeekByRange"
         e.expression match {
           case PrefixSeekRangeWrapper(range) =>
             (name, PrefixIndex(label.name, propertyKey, range.prefix))

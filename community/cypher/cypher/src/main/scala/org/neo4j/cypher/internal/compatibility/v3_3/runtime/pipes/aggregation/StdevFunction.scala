@@ -36,8 +36,8 @@ class StdevFunction(val value: Expression, val population: Boolean)
   // would be cool to not have to keep a temporary list to do multiple passes
   // this will blow up RAM over a big data set (not lazy!)
   // but I don't think it's currently possible with the way aggregation works
-  private var temp          = Vector[Double]()
-  private var count: Int    = 0
+  private var temp = Vector[Double]()
+  private var count: Int = 0
   private var total: Double = 0
 
   def result(implicit state: QueryState): AnyValue = {

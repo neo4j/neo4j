@@ -59,7 +59,7 @@ class ExecutionEngineTest
   }
 
   test("shouldFilterOnGreaterThan") {
-    val n      = createNode()
+    val n = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("match(node) where 0<1 return node")
 
     result.columnAs[Node]("node").toList should equal(List(n))
@@ -85,7 +85,7 @@ class ExecutionEngineTest
   }
 
   test("shouldGetRelationship") {
-    val node: Node        = createNode()
+    val node: Node = createNode()
     val rel: Relationship = relate(createNode(), node, "yo")
 
     val result =
@@ -105,7 +105,7 @@ class ExecutionEngineTest
   }
 
   test("shouldGetNodeProperty") {
-    val name       = "Andres"
+    val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
@@ -139,10 +139,10 @@ class ExecutionEngineTest
   }
 
   test("should Find Nodes By Exact Index Lookup") {
-    val n       = createNode()
+    val n = createNode()
     val idxName = "idxName"
-    val key     = "key"
-    val value   = "andres"
+    val key = "key"
+    val value = "andres"
     indexNode(n, idxName, key, value)
 
     val query = s"start n=node:$idxName($key = '$value') return n"
@@ -151,10 +151,10 @@ class ExecutionEngineTest
   }
 
   test("shouldFindNodesByIndexQuery") {
-    val n       = createNode()
+    val n = createNode()
     val idxName = "idxName"
-    val key     = "key"
-    val value   = "andres"
+    val key = "key"
+    val value = "andres"
     indexNode(n, idxName, key, value)
 
     val query = s"start n=node:$idxName('$key: $value') return n"
@@ -163,9 +163,9 @@ class ExecutionEngineTest
   }
 
   test("shouldFindNodesByIndexParameters") {
-    val n       = createNode()
+    val n = createNode()
     val idxName = "idxName"
-    val key     = "key"
+    val key = "key"
     indexNode(n, idxName, key, "Andres")
 
     val query = s"start n=node:$idxName(key = {value}) return n"
@@ -174,10 +174,10 @@ class ExecutionEngineTest
   }
 
   test("shouldFindNodesByIndexWildcardQuery") {
-    val n       = createNode()
+    val n = createNode()
     val idxName = "idxName"
-    val key     = "key"
-    val value   = "andres"
+    val key = "key"
+    val value = "andres"
     indexNode(n, idxName, key, value)
 
     val query = s"start n=node:$idxName('$key:andr*') return n"
@@ -209,8 +209,8 @@ class ExecutionEngineTest
 
   test("shouldHandleNestedAndOrFilters") {
     val n1 = createNode(Map("animal" -> "monkey", "food" -> "banana"))
-    val n2 = createNode(Map("animal" -> "cow", "food"    -> "grass"))
-    val n3 = createNode(Map("animal" -> "cow", "food"    -> "banana"))
+    val n2 = createNode(Map("animal" -> "cow", "food" -> "grass"))
+    val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
 
     val result = executeWithAllPlannersAndCompatibilityMode(
       s"match (n) where id(n) in [${n1.getId}, ${n2.getId}, ${n3.getId}] " +
@@ -253,7 +253,7 @@ class ExecutionEngineTest
   test("testZeroLengthVarLenPathInTheMiddle") {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
-    relate("B" -> "FRIEND"   -> "C")
+    relate("B" -> "FRIEND" -> "C")
 
     val result = executeWithAllPlannersAndCompatibilityMode(
       "match (a)-[:CONTAINS*0..1]->(b)-[:FRIEND*0..1]->(c) where id(a) = 0 return a,b,c")
@@ -297,7 +297,7 @@ class ExecutionEngineTest
   test("shouldBeAbleToTakeParamsFromParsedStuff") {
     createNodes("A")
 
-    val query  = "match (pA) where id(pA) IN {a} return pA"
+    val query = "match (pA) where id(pA) IN {a} return pA"
     val result = executeWithAllPlannersAndCompatibilityMode(query, "a" -> Seq[Long](0))
 
     result.toList should equal(List(Map("pA" -> node("A"))))
@@ -320,7 +320,7 @@ class ExecutionEngineTest
     val result = executeWithAllPlannersAndRuntimesAndCompatibilityMode(
       "match (x)-[r]-(friend) where x = {startId} and friend.name = {name} return TYPE(r)",
       "startId" -> a,
-      "name"    -> "you")
+      "name" -> "you")
 
     result.toList should equal(List(Map("TYPE(r)" -> "KNOW")))
   }
@@ -344,9 +344,9 @@ return a""")
   }
 
   test("shouldReturnAnInterableWithAllRelationshipsFromAVarLength") {
-    val a  = createNode()
-    val b  = createNode()
-    val c  = createNode()
+    val a = createNode()
+    val b = createNode()
+    val c = createNode()
     val r1 = relate(a, b)
     val r2 = relate(b, c)
 
@@ -431,7 +431,7 @@ order by a.COL1""")
 
   test("shouldReturnDifferentResultsWithDifferentParams") {
     val refNode = createNode()
-    val a       = createNode()
+    val a = createNode()
 
     val b = createNode()
     relate(a, b)
@@ -473,7 +473,7 @@ order by a.COL1""")
     val a = createNode("foo" -> 42)
     createNode("foo" -> 49)
 
-    val q      = "match (x) where id(x) in [0,1] with x WHERE x.foo = 42 return x"
+    val q = "match (x) where id(x) in [0,1] with x WHERE x.foo = 42 return x"
     val result = executeWithAllPlannersAndCompatibilityMode(q)
 
     result.toList should equal(List(Map("x" -> a)))
@@ -481,7 +481,7 @@ order by a.COL1""")
 
   test("second piped query woot") {
     createNode()
-    val q      = "match (x) where id(x) = 0 with count(*) as apa WHERE apa = 1 RETURN apa"
+    val q = "match (x) where id(x) = 0 with count(*) as apa WHERE apa = 1 RETURN apa"
     val result = executeWithAllPlannersAndCompatibilityMode(q)
 
     result.toList should equal(List(Map("apa" -> 1)))
@@ -625,7 +625,7 @@ order by a.COL1""")
   }
 
   test("can alias and aggregate") {
-    val a      = createNode()
+    val a = createNode()
     val result = executeWithAllPlannersAndCompatibilityMode("match (n) where id(n) = 0 return sum(ID(n)), n as m")
 
     result.toList should equal(List(Map("sum(ID(n))" -> 0, "m" -> a)))
@@ -673,7 +673,7 @@ order by a.COL1""")
 
     // Until we have a clean cut way where statement context is injected into cypher,
     // I don't know a non-hairy way to tell if this was done correctly, so here goes:
-    val tx           = graph.beginTransaction(Type.explicit, AnonymousContext.none())
+    val tx = graph.beginTransaction(Type.explicit, AnonymousContext.none())
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 
@@ -681,28 +681,28 @@ order by a.COL1""")
   }
 
   test("should add label to node") {
-    val a      = createNode()
+    val a = createNode()
     val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 SET a :foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should add multiple labels to node") {
-    val a      = createNode()
+    val a = createNode()
     val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 SET a :foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set label on node") {
-    val a      = createNode()
+    val a = createNode()
     val result = updateWithBothPlannersAndCompatibilityMode("match (a) SET a:foo RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
   }
 
   test("should set multiple labels on node") {
-    val a      = createNode()
+    val a = createNode()
     val result = updateWithBothPlannersAndCompatibilityMode("match (a) where id(a) = 0 SET a:foo:bar RETURN a")
 
     result.toList should equal(List(Map("a" -> a)))
@@ -750,7 +750,7 @@ order by a.COL1""")
 
   test("should create index") {
     // GIVEN
-    val labelName    = "Person"
+    val labelName = "Person"
     val propertyKeys = Seq("name")
 
     // WHEN
@@ -802,10 +802,10 @@ order by a.COL1""")
 
   test("should use predicates in the correct place") {
     val advertiser = createLabeledNode(Map("name" -> "advertiser1"), "Advertiser")
-    val thing      = createLabeledNode(Map("name" -> "Color"), "Thing")
-    val red        = createNode(Map("name"        -> "red"))
-    val p1         = createNode(Map("name"        -> "product1"))
-    val p4         = createNode(Map("name"        -> "product4"))
+    val thing = createLabeledNode(Map("name" -> "Color"), "Thing")
+    val red = createNode(Map("name" -> "red"))
+    val p1 = createNode(Map("name" -> "product1"))
+    val p4 = createNode(Map("name" -> "product4"))
 
     relate(advertiser, p1, "adv_has_product")
     relate(advertiser, p4, "adv_has_product")
@@ -867,7 +867,7 @@ order by a.COL1""")
   }
 
   test("multiple start points should still honor predicates") {
-    val e  = createNode()
+    val e = createNode()
     val p1 = createNode("value" -> 567)
     val p2 = createNode("value" -> 0)
     relate(p1, e)
@@ -965,7 +965,7 @@ order by a.COL1""")
 
   test("should be able to coerce collections to predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
-    createLabeledNode(Map("coll" -> Array[Int](), "bool"   -> true), "LABEL")
+    createLabeledNode(Map("coll" -> Array[Int](), "bool" -> true), "LABEL")
     createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> false), "LABEL")
     createNode("coll" -> Array(1, 2, 3), "bool" -> true)
     createLabeledNode("LABEL")
@@ -1025,7 +1025,7 @@ order by a.COL1""")
 
   override def databaseConfig(): Map[Setting[_], String] = super.databaseConfig() ++ Map(
     GraphDatabaseSettings.cypher_min_replan_interval -> "0",
-    GraphDatabaseSettings.cypher_compiler_tracing    -> "true"
+    GraphDatabaseSettings.cypher_compiler_tracing -> "true"
   )
 
   case class PlanningListener(planRequests: mutable.ArrayBuffer[String] = mutable.ArrayBuffer.empty)

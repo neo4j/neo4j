@@ -107,14 +107,14 @@ trait GraphIcing {
     def inTx[T](f: => T, txType: Type = Type.`implicit`): T = withTx(_ => f, txType)
 
     private val locker: PropertyContainerLocker = new PropertyContainerLocker
-    private val javaValues                      = new RuntimeJavaValueConverter(isGraphKernelResultValue)
+    private val javaValues = new RuntimeJavaValueConverter(isGraphKernelResultValue)
 
     private def createTransactionalContext(
         txType: Type,
         queryText: String,
         params: Map[String, Any] = Map.empty): (InternalTransaction, TransactionalContext) = {
-      val tx             = graph.beginTransaction(txType, AUTH_DISABLED)
-      val javaParams     = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
+      val tx = graph.beginTransaction(txType, AUTH_DISABLED)
+      val javaParams = javaValues.asDeepJavaMap(params).asInstanceOf[util.Map[String, AnyRef]]
       val contextFactory = Neo4jTransactionalContextFactory.create(graphService, locker)
       val transactionalContext =
         contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION, tx, queryText, javaParams)
@@ -123,7 +123,7 @@ trait GraphIcing {
 
     def transactionalContext(txType: Type = Type.`implicit`, query: (String, Map[String, Any])): TransactionalContext = {
       val (queryText, params) = query
-      val (_, context)        = createTransactionalContext(txType, queryText, params)
+      val (_, context) = createTransactionalContext(txType, queryText, params)
       context
     }
 

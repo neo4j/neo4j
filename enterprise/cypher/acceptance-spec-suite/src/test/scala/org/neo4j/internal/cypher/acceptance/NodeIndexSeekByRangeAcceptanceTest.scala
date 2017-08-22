@@ -603,16 +603,16 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val smallValue = s"15${java.lang.Character.MIN_VALUE}"
 
     // Given Non-matches
-    createLabeledNode(Map("prop"  -> "15"), "Label")
-    createLabeledNode(Map("prop"  -> smallValue), "Label")
-    createLabeledNode(Map("prop"  -> "5"), "Label")
+    createLabeledNode(Map("prop" -> "15"), "Label")
+    createLabeledNode(Map("prop" -> smallValue), "Label")
+    createLabeledNode(Map("prop" -> "5"), "Label")
     createLabeledNode(Map("prop2" -> 5), "Label")
-    createLabeledNode(Map("prop"  -> ""), "Label")
-    createLabeledNode(Map("prop"  -> "-5"), "Label")
-    createLabeledNode(Map("prop"  -> "0"), "Label")
-    createLabeledNode(Map("prop"  -> "10"), "Label")
+    createLabeledNode(Map("prop" -> ""), "Label")
+    createLabeledNode(Map("prop" -> "-5"), "Label")
+    createLabeledNode(Map("prop" -> "0"), "Label")
+    createLabeledNode(Map("prop" -> "10"), "Label")
     createLabeledNode(Map("prop2" -> 10), "Label")
-    createLabeledNode(Map("prop"  -> "14whatever"), "Label")
+    createLabeledNode(Map("prop" -> "14whatever"), "Label")
 
     (1 to 400).foreach { _ =>
       createLabeledNode("Label")
@@ -972,7 +972,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("should plan range index seeks matching characters against properties (coerced to string wrt the inequality)") {
     // Given
     val nonMatchingChar = "X".charAt(0).charValue()
-    val matchingChar    = "Y".charAt(0).charValue()
+    val matchingChar = "Y".charAt(0).charValue()
 
     (1 to 500).foreach { _ =>
       createLabeledNode("Label")
@@ -994,7 +994,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     "should plan range index seeks matching strings against character properties (coerced to string wrt the inequality)") {
     // Given
     val nonMatchingChar = "X".charAt(0).charValue()
-    val matchingChar    = "Y".charAt(0).charValue()
+    val matchingChar = "Y".charAt(0).charValue()
 
     (1 to 500).foreach { _ =>
       createLabeledNode("Label")
@@ -1031,7 +1031,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query  = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop > a.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1044,7 +1044,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query  = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop <= a.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1057,7 +1057,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query  = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
+    val query = "MATCH (a)-->(b:Label) WHERE b.prop >= b.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1070,7 +1070,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query  = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
+    val query = s"MATCH (a)-->(b:Label) WHERE ${size / 2} < b.prop RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1084,7 +1084,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val size = createTestModelBigEnoughToConsiderPickingIndexSeek
 
     // When
-    val query  = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
+    val query = s"MATCH (a)-->(b:Label) WHERE 10 < b.prop <= ${size - 10} RETURN count(a) as c"
     val result = executeWithAllPlannersAndCompatibilityMode(query)
 
     // Then
@@ -1123,7 +1123,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
     (1 to size).foreach { i =>
       // Half of unlabeled nodes has prop = 0 (for even i:s prop = 0, for odd i:s prop = i)
-      val a = createNode(Map("prop"        -> (i & 1) * i))
+      val a = createNode(Map("prop" -> (i & 1) * i))
       val b = createLabeledNode(Map("prop" -> i), "Label")
       relate(a, b)
     }

@@ -81,8 +81,8 @@ case object planShortestPaths {
   }
 
   private def createPathExpression(pattern: PatternElement): PathExpression = {
-    val pos            = pattern.position
-    val path           = EveryPath(pattern)
+    val pos = pattern.position
+    val path = EveryPath(pattern)
     val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
     PathExpression(step)(pos)
   }
@@ -108,7 +108,7 @@ case object planShortestPaths {
                                      withFallBack = true,
                                      disallowSameNode = context.errorIfShortestPathHasCommonNodesAtRuntime)
     val lhsOption = lpp.planOptional(lhsSp, Set.empty)
-    val lhs       = lpp.planApply(inner, lhsOption)
+    val lhs = lpp.planApply(inner, lhsOption)
 
     val rhsArgument = lpp.planArgumentRowFrom(lhs)
 
@@ -134,8 +134,8 @@ case object planShortestPaths {
     // TODO: Decide the best from and to based on degree (generate two alternative plans and let planner decide)
     // (or do bidirectional var length expand)
     val pattern = shortestPath.rel
-    val from    = pattern.left
-    val lpp     = context.logicalPlanProducer
+    val from = pattern.left
+    val lpp = context.logicalPlanProducer
 
     // We assume there is always a path name (either explicit or auto-generated)
     val pathName = shortestPath.name.get
@@ -146,23 +146,23 @@ case object planShortestPaths {
       .getOrElse(throw new InternalException("Expected the nodes needed for this expansion to exist"))
 
     // Projection with path
-    val map           = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
+    val map = Map(pathName.name -> createPathExpression(shortestPath.expr.element))
     val rhsProjection = lpp.planRegularProjection(rhsVarExpand, map, map)
 
     // Filter using predicates
     val rhsFiltered = context.logicalPlanProducer.planSelection(rhsProjection, predicates, predicates)
 
     // Plan Sort and Limit
-    val pos          = shortestPath.expr.position
+    val pos = shortestPath.expr.position
     val pathVariable = Variable(pathName.name)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
-    val columnName   = FreshIdNameGenerator.name(pos)
+    val columnName = FreshIdNameGenerator.name(pos)
 
-    val rhsProjMap      = Map(columnName -> lengthOfPath)
-    val rhsProjected    = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap)
+    val rhsProjMap = Map(columnName -> lengthOfPath)
+    val rhsProjected = lpp.planRegularProjection(rhsFiltered, rhsProjMap, rhsProjMap)
     val sortDescription = Seq(Ascending(IdName(columnName)))
-    val sorted          = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
-    val ties            = if (shortestPath.single) DoNotIncludeTies else IncludeTies
+    val sorted = lpp.planSort(rhsProjected, sortDescription, Seq.empty)
+    val ties = if (shortestPath.single) DoNotIncludeTies else IncludeTies
     lpp.planLimit(sorted, SignedDecimalIntegerLiteral("1")(pos), ties)
   }
 }

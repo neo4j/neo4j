@@ -24,7 +24,7 @@ import java.net.URL
 class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit) extends Iterator[Array[String]] {
   var lastProcessed = 0L
   var lastCommitted = -1L
-  var readAll       = false
+  var readAll = false
 
   def next() = {
     val row = inner.next()

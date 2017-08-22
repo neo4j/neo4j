@@ -32,7 +32,7 @@ class NodeMatcherTest extends ParsingTestSupport {
   test("should match a node with labels and properties") {
     new NodeMatcher(Set("L1", "L2", "L3").asJava, MapMatcher.EMPTY) should accept(node(Seq("L1", "L2", "L3")))
 
-    val map     = new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava)
+    val map = new MapMatcher(Map[String, ValueMatcher]("key" -> new StringMatcher("value")).asJava)
     val matcher = new NodeMatcher(Set.empty[String].asJava, map)
     matcher should accept(node(properties = Map("key" -> "value")))
   }

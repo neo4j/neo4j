@@ -41,8 +41,8 @@ class CypherCompilerFactory[C <: CompilerContext, T <: Transformer[C, LogicalPla
                         plannerName: Option[CostBasedPlannerName],
                         updateStrategy: Option[UpdateStrategy],
                         contextCreator: ContextCreator[C]): CypherCompiler[C] = {
-    val rewriter                             = new ASTRewriter(rewriterSequencer, IfNoParameter)
-    val metricsFactory                       = CachedMetricsFactory(SimpleMetricsFactory)
+    val rewriter = new ASTRewriter(rewriterSequencer, IfNoParameter)
+    val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
     val actualUpdateStrategy: UpdateStrategy = updateStrategy.getOrElse(defaultUpdateStrategy)
     CypherCompiler(rewriter,
                    monitors,

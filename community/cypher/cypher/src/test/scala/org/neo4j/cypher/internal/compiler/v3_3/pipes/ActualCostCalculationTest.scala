@@ -64,10 +64,10 @@ import scala.collection.mutable.ListBuffer
   */
 class ActualCostCalculationTest extends CypherFunSuite {
 
-  private val N            = 1000000
-  private val STEPS        = 100
-  private val LABEL        = Label.label("L")
-  private val PROPERTY     = "prop"
+  private val N = 1000000
+  private val STEPS = 100
+  private val LABEL = Label.label("L")
+  private val PROPERTY = "prop"
   private val RELATIONSHIP = "REL"
 
   ignore("do the test") {
@@ -77,7 +77,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
-      val chunk   = N / STEPS
+      val chunk = N / STEPS
       for (count <- 1 to STEPS) {
         println(STEPS - count)
         setUpDb(graph, chunk)
@@ -110,7 +110,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     try {
       graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
-      val chunk   = N / STEPS
+      val chunk = N / STEPS
       for (count <- 1 to STEPS) {
         setUpDb(graph, chunk)
         results.addAll("Eager", runSimulation(graph, eager(allNodes)))
@@ -134,8 +134,8 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val graph: GraphDatabaseQueryService =
       new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newEmbeddedDatabase(new File(path)))
     val labels = Seq("A", "B", "C", "D", "E", "F", "G", "H", "I", "J")
-    val x      = ListBuffer.empty[Array[Double]]
-    val y      = ListBuffer.empty[Double]
+    val x = ListBuffer.empty[Array[Double]]
+    val y = ListBuffer.empty[Double]
 
     try {
       setupDbForJoins(graph, labels)
@@ -147,10 +147,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
         label2 <- labels if label1 != label2
       } {
 
-        val lhsPipe      = labelScan("x", label1)
-        val rhsPipe      = labelScan("x", label2)
-        val lhsCost      = medianPerRowCount(runSimulation(graph, lhsPipe)).head
-        val rhsCost      = medianPerRowCount(runSimulation(graph, rhsPipe)).head
+        val lhsPipe = labelScan("x", label1)
+        val rhsPipe = labelScan("x", label2)
+        val lhsCost = medianPerRowCount(runSimulation(graph, lhsPipe)).head
+        val rhsCost = medianPerRowCount(runSimulation(graph, rhsPipe)).head
         val hashJoinCost = medianPerRowCount(runSimulation(graph, hashJoin(lhsPipe, rhsPipe))).head
         x.append(Array(lhsCost.elapsed, rhsCost.elapsed))
         y.append(hashJoinCost.elapsed)
@@ -180,7 +180,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       table.getOrElseUpdate(name, ListBuffer.empty).appendAll(dataPoints)
 
     def normalizedResult = {
-      val result   = table.mapValues(calculateSimpleResult)
+      val result = table.mapValues(calculateSimpleResult)
       val minValue = result.values.min
       result.mapValues(_ / minValue)
     }
@@ -196,7 +196,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   object ResultTable {
-    def empty   = new ResultTable
+    def empty = new ResultTable
     def apply() = new ResultTable
   }
 
@@ -207,7 +207,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   }
 
   private def expandResult(graph: GraphDatabaseQueryService, scan: Pipe) = {
-    val scanCost   = medianPerRowCount(runSimulation(graph, scan)).head
+    val scanCost = medianPerRowCount(runSimulation(graph, scan)).head
     val simulation = runSimulation(graph, expand(scan, RELATIONSHIP)).map(_.subtractTime(scanCost.elapsed))
 
     simulation
@@ -254,15 +254,15 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val results = new ListBuffer[DataPoint]
 
     graph.withTx { tx =>
-      val tc           = transactionContext(graph, tx)
-      val tcWrapper    = TransactionalContextWrapper(tc)
+      val tc = transactionContext(graph, tx)
+      val tcWrapper = TransactionalContextWrapper(tc)
       val queryContext = new TransactionBoundQueryContext(tcWrapper)(mock[IndexSearchMonitor])
-      val state        = QueryStateHelper.emptyWith(queryContext)
+      val state = QueryStateHelper.emptyWith(queryContext)
       for (x <- 0 to 25) {
         for (pipe <- pipes) {
-          val start        = System.nanoTime()
+          val start = System.nanoTime()
           val numberOfRows = pipe.createResults(state).size
-          val elapsed      = System.nanoTime() - start
+          val elapsed = System.nanoTime() - start
 
           //warmup
           if (x > 4) results.append(DataPoint(elapsed, numberOfRows))
@@ -289,11 +289,11 @@ class ActualCostCalculationTest extends CypherFunSuite {
     //divide so that each subsequent label is more frequent,
     //e.g. [100, 200, 300,...] with 100 + 200 + 300 ~ N
     val factor = 2 * N / (nLabels * (nLabels + 1))
-    val sizes  = for (i <- 1 to nLabels) yield i * factor
+    val sizes = for (i <- 1 to nLabels) yield i * factor
     graph.withTx { _ =>
       for (i <- labels.indices) {
         val label = labels(i)
-        val size  = sizes(i)
+        val size = sizes(i)
         for (c <- 1 to size) {
           graph.createNode(Label.label(label))
         }
@@ -319,12 +319,12 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexSeek(graph: GraphDatabaseQueryService) = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapper(transactionContext(graph, tx))
-      val ctx                  = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
-      val literal              = Literal(42)
+      val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
+      val literal = Literal(42)
 
-      val labelId          = ctx.getOptLabelId(LABEL.name()).get
-      val propKeyId        = ctx.getOptPropertyKeyId(PROPERTY).get
-      val labelToken       = ast.LabelToken(LABEL.name(), LabelId(labelId))
+      val labelId = ctx.getOptLabelId(LABEL.name()).get
+      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
+      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = Seq(ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId)))
 
       NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
@@ -334,11 +334,11 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def indexScan(graph: GraphDatabaseQueryService): NodeIndexScanPipe = {
     graph.withTx { tx =>
       val transactionalContext = TransactionalContextWrapper(transactionContext(graph, tx))
-      val ctx                  = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
+      val ctx = new TransactionBoundPlanContext(transactionalContext, devNullLogger)
 
-      val labelId          = ctx.getOptLabelId(LABEL.name()).get
-      val propKeyId        = ctx.getOptPropertyKeyId(PROPERTY).get
-      val labelToken       = ast.LabelToken(LABEL.name(), LabelId(labelId))
+      val labelId = ctx.getOptLabelId(LABEL.name()).get
+      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
+      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
       NodeIndexScanPipe(LABEL.name(), labelToken, propertyKeyToken)()
@@ -349,14 +349,14 @@ class ActualCostCalculationTest extends CypherFunSuite {
     val literal = Literal(42)
 
     val propertyKey = PropertyKey(PROPERTY)
-    val predicate   = Equals(literal, Property(Variable(variable), propertyKey))
+    val predicate = Equals(literal, Property(Variable(variable), propertyKey))
 
     FilterPipe(input, predicate)()
   }
 
   implicit class RichGraph(graph: GraphDatabaseQueryService) {
     def statement = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge]).get()
-    val gds       = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
+    val gds = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
 
     def withTx[T](f: InternalTransaction => T): T = {
       val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)

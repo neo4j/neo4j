@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 
 class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val n               = NodePattern(Some(varFor("n")), Seq.empty, None)(pos)
-  val x               = NodePattern(Some(varFor("x")), Seq.empty, None)(pos)
-  val r               = RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
-  val pattern         = RelationshipsPattern(RelationshipChain(n, r, x)(pos))(pos)
-  val property        = Property(varFor("x"), PropertyKeyName("prop")(pos))(pos)
+  val n = NodePattern(Some(varFor("n")), Seq.empty, None)(pos)
+  val x = NodePattern(Some(varFor("x")), Seq.empty, None)(pos)
+  val r = RelationshipPattern(None, Seq.empty, None, None, SemanticDirection.OUTGOING)(pos)
+  val pattern = RelationshipsPattern(RelationshipChain(n, r, x)(pos))(pos)
+  val property = Property(varFor("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty = Property(varFor("missing"), PropertyKeyName("prop")(pos))(pos)
-  val stringLiteral   = StringLiteral("APA")(pos)
+  val stringLiteral = StringLiteral("APA")(pos)
 
   test("pattern comprehension on a property returns the expected type") {
     val expression = PatternComprehension(None, pattern, None, property)(pos)
@@ -70,7 +70,7 @@ class PatternComprehensionTest extends CypherFunSuite with AstConstructionTestSu
     val expression = PatternComprehension(None, pattern, None, stringLiteral)(pos)
 
     val semanticState = SemanticState.clean.declareVariable(varFor("n"), CTBoolean).right.get
-    val result        = expression.semanticCheck(Expression.SemanticContext.Simple)(semanticState)
+    val result = expression.semanticCheck(Expression.SemanticContext.Simple)(semanticState)
 
     result.errors shouldBe Seq(
       SemanticError("Type mismatch: n already defined with conflicting type Boolean (expected Node)", pos, pos)

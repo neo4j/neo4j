@@ -76,7 +76,7 @@ class BuildUp(list: ListValue) extends Checker {
       (None, NullListChecker)
     } else {
       val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult)
-      val result    = if (foundMatch) Some(true) else falseResult
+      val result = if (foundMatch) Some(true) else falseResult
 
       (result, nextState)
     }

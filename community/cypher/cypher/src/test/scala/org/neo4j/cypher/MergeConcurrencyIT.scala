@@ -23,7 +23,7 @@ import scala.collection.JavaConverters._
 
 class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
-  val nodeCount   = 100
+  val nodeCount = 100
   val threadCount = 10
 
   test("should handle ten simultaneous threads") {
@@ -129,10 +129,10 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("merge relationship - one bound end node") {
-    val n1               = createNode()
-    val n2               = createNode()
-    val query            = "MATCH (n) WHERE ID(n) = {id1} MERGE (n)-[r:TEST]-(m)"
-    val compileFirst     = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
+    val n1 = createNode()
+    val n2 = createNode()
+    val query = "MATCH (n) WHERE ID(n) = {id1} MERGE (n)-[r:TEST]-(m)"
+    val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
     var exceptionsThrown = List.empty[Throwable]
 
     def createRunner(n1: Long, n2: Long) = new Runnable {
@@ -163,9 +163,9 @@ class MergeConcurrencyIT extends ExecutionEngineFunSuite {
   }
 
   test("merge relationship - both end nodes matched") {
-    val n1           = createNode()
-    val n2           = createNode()
-    val query        = "MATCH (n), (m) WHERE ID(n) = {id1} AND ID(m) = {id2} MERGE (n)-[r:TEST]-(m)"
+    val n1 = createNode()
+    val n2 = createNode()
+    val query = "MATCH (n), (m) WHERE ID(n) = {id1} AND ID(m) = {id2} MERGE (n)-[r:TEST]-(m)"
     val compileFirst = execute(s"EXPLAIN $query", "id1" -> n1.getId, "id2" -> n2.getId)
 
     var exceptionsThrown = List.empty[Throwable]

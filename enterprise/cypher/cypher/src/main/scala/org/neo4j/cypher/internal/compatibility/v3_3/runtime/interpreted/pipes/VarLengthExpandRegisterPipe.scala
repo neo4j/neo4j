@@ -108,7 +108,7 @@ case class VarLengthExpandRegisterPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext],
                                       state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap { inputRowWithFromNode =>
-      val fromNode                                    = inputRowWithFromNode.getLongAt(fromOffset)
+      val fromNode = inputRowWithFromNode.getLongAt(fromOffset)
       val paths: Iterator[(LNode, Seq[Relationship])] = varLengthExpand(fromNode, state, inputRowWithFromNode)
       paths collect {
         case (toNode: LNode, rels: Seq[Relationship])

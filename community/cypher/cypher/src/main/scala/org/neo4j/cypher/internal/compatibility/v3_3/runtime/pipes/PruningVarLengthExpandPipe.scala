@@ -104,7 +104,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         rels = expand(row, node)
 
       while (rels.hasNext) {
-        val r     = rels.next()
+        val r = rels.next()
         val relId = r.id
 
         if (!seenRelationshipInPath(relId)) {
@@ -192,7 +192,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
 
     import FullExpandDepths.UNINITIALIZED
 
-    var idx                                = 0
+    var idx = 0
     var fullExpandDepths: FullExpandDepths = UNINITIALIZED
 
     override def next(): (State, ExecutionContext) = {
@@ -204,7 +204,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
         while (hasRelationships) {
           val currentRelIdx = nextRelationship()
           if (!haveFullyExploredTheRemainingDepthBefore(currentRelIdx)) {
-            val rel   = fullExpandDepths.rels(currentRelIdx)
+            val rel = fullExpandDepths.rels(currentRelIdx)
             val relId = rel.id
             if (!seenRelationshipInPath(relId)) {
               val nextNode = rel.otherNode(node)
@@ -337,7 +337,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
       */
     def minOutgoingDepth(incomingRelId: Long): Int = {
       var min = Integer.MAX_VALUE >> 1 // we don't want it to overflow
-      var i   = 0
+      var i = 0
       while (i < rels.length) {
         if (rels(i).id() != incomingRelId)
           min = math.min(depths(i), min)
@@ -360,7 +360,7 @@ case class PruningVarLengthExpandPipe(source: Pipe,
           // fail
           Iterator.empty.next()
         }
-        val temp                     = current
+        val temp = current
         val (nextState, nextCurrent) = stateMachine.next()
         stateMachine = nextState
         current = nextCurrent

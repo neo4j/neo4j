@@ -35,7 +35,7 @@ trait SemanticChecking {
         SemanticCheckResult.success(state)
 
   private val pushStateScope: SemanticCheck = state => SemanticCheckResult.success(state.newChildScope)
-  private val popStateScope: SemanticCheck  = state => SemanticCheckResult.success(state.popScope)
+  private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
   protected def withScopedState(check: => SemanticCheck): SemanticCheck =
     pushStateScope chain check chain popStateScope
 }

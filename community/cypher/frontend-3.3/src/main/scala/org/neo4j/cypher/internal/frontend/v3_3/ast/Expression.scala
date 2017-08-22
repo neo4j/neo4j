@@ -28,7 +28,7 @@ import scala.collection.immutable.Stack
 object Expression {
   sealed trait SemanticContext
   object SemanticContext {
-    case object Simple  extends SemanticContext
+    case object Simple extends SemanticContext
     case object Results extends SemanticContext
   }
 
@@ -66,12 +66,12 @@ object Expression {
   final case class TreeAcc[A](data: A, stack: Stack[Set[Variable]] = Stack.empty) {
     def mapData(f: A => A): TreeAcc[A] = copy(data = f(data))
 
-    def inScope(variable: Variable)     = stack.exists(_.contains(variable))
+    def inScope(variable: Variable) = stack.exists(_.contains(variable))
     def variablesInScope: Set[Variable] = stack.toSet.flatten
 
-    def pushScope(newVariable: Variable): TreeAcc[A]       = pushScope(Set(newVariable))
+    def pushScope(newVariable: Variable): TreeAcc[A] = pushScope(Set(newVariable))
     def pushScope(newVariables: Set[Variable]): TreeAcc[A] = copy(stack = stack.push(newVariables))
-    def popScope: TreeAcc[A]                               = copy(stack = stack.pop)
+    def popScope: TreeAcc[A] = copy(stack = stack.pop)
   }
 }
 

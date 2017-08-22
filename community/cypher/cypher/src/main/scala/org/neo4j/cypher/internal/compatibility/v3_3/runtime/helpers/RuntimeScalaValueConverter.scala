@@ -62,7 +62,7 @@ class RuntimeScalaValueConverter(skip: Any => Boolean) {
   }
 
   private def copyJavaList(list: java.util.List[_], newList: () => java.util.List[Any]) = {
-    val copy     = newList()
+    val copy = newList()
     val iterator = list.iterator()
     while (iterator.hasNext) {
       copy.add(iterator.next())

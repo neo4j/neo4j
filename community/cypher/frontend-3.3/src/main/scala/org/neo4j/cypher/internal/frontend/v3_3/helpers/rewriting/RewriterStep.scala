@@ -21,13 +21,13 @@ import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 object RewriterStep {
   implicit def namedProductRewriter(p: Product with Rewriter): ApplyRewriter = ApplyRewriter(p.productPrefix, p)
 
-  def enableCondition(p: Condition)  = EnableRewriterCondition(RewriterCondition(p.name, p))
+  def enableCondition(p: Condition) = EnableRewriterCondition(RewriterCondition(p.name, p))
   def disableCondition(p: Condition) = DisableRewriterCondition(RewriterCondition(p.name, p))
 }
 
 sealed trait RewriterStep
-final case class ApplyRewriter(name: String, rewriter: Rewriter)   extends RewriterStep
-final case class EnableRewriterCondition(cond: RewriterCondition)  extends RewriterStep
+final case class ApplyRewriter(name: String, rewriter: Rewriter) extends RewriterStep
+final case class EnableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 final case class DisableRewriterCondition(cond: RewriterCondition) extends RewriterStep
 
 trait Condition extends (Any => Seq[String]) {

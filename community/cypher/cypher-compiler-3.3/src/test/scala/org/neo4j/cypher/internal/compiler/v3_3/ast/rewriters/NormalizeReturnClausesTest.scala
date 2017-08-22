@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast.rewriters.normalizeReturnClau
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val mkException                 = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
   val rewriterUnderTest: Rewriter = normalizeReturnClauses(mkException)
 
   test("alias RETURN clause items") {
@@ -109,7 +109,7 @@ class NormalizeReturnClausesTest extends CypherFunSuite with RewriteTest with As
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
-    val result   = endoRewrite(original)
+    val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
 

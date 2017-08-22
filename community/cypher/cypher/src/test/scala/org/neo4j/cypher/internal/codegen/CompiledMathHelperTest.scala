@@ -104,8 +104,8 @@ class CompiledMathHelperTest extends PropSpec with TableDrivenPropertyChecks wit
     }
   }
 
-  implicit class I(i: Int)     { def ! = i: java.lang.Integer }
-  implicit class D(i: Double)  { def ! = i: java.lang.Double  }
+  implicit class I(i: Int) { def ! = i: java.lang.Integer }
+  implicit class D(i: Double) { def ! = i: java.lang.Double }
   implicit class Z(i: Boolean) { def ! = i: java.lang.Boolean }
 
   private def getTable(f: (AnyRef, AnyRef) => AnyRef) = {

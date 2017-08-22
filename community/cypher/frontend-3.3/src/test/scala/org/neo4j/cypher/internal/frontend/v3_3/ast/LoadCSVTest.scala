@@ -25,25 +25,25 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 class LoadCSVTest extends CypherFunSuite {
 
   val literalURL = StringLiteral("file:///tmp/foo.csv")(DummyPosition(4))
-  val variable   = Variable("a")(DummyPosition(4))
+  val variable = Variable("a")(DummyPosition(4))
 
   test("cannot overwrite existing variable") {
     val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
-    val result  = loadCSV.semanticCheck(SemanticState.clean)
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     assert(result.errors === Seq())
   }
 
   test("when expecting headers, the variable has a map type") {
-    val loadCSV        = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
-    val result         = loadCSV.semanticCheck(SemanticState.clean)
+    val loadCSV = LoadCSV(withHeaders = true, literalURL, variable, None)(DummyPosition(6))
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
 
     assert(expressionType === CTMap.invariant)
   }
 
   test("when not expecting headers, the variable has a list type") {
-    val loadCSV        = LoadCSV(withHeaders = false, literalURL, variable, None)(DummyPosition(6))
-    val result         = loadCSV.semanticCheck(SemanticState.clean)
+    val loadCSV = LoadCSV(withHeaders = false, literalURL, variable, None)(DummyPosition(6))
+    val result = loadCSV.semanticCheck(SemanticState.clean)
     val expressionType = result.state.expressionType(variable).actual
 
     assert(expressionType === CTList(CTString).invariant)

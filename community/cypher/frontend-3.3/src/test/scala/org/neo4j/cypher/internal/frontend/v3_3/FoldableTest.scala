@@ -19,10 +19,10 @@ package org.neo4j.cypher.internal.frontend.v3_3
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 object FoldableTest {
-  trait Exp                          extends Foldable
-  case class Val(int: Int)           extends Exp
+  trait Exp extends Foldable
+  case class Val(int: Int) extends Exp
   case class Add(lhs: Exp, rhs: Exp) extends Exp
-  case class Sum(args: Seq[Exp])     extends Exp
+  case class Sum(args: Seq[Exp]) extends Exp
 }
 
 class FoldableTest extends CypherFunSuite {

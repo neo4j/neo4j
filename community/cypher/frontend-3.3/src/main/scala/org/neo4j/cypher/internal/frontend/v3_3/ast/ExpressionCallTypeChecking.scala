@@ -24,7 +24,7 @@ trait ExpressionCallTypeChecking {
 
   def signatures: Seq[ExpressionSignature] = Seq.empty
 
-  protected final def signatureLengths                            = typeChecker.signatureLengths
+  protected final def signatureLengths = typeChecker.signatureLengths
   protected final lazy val typeChecker: ExpressionCallTypeChecker = ExpressionCallTypeChecker(signatures)
 }
 
@@ -41,7 +41,7 @@ case class ExpressionCallTypeChecker(signatures: Seq[ExpressionSignature]) {
           accumulator
         case ((possibilities, r1), arg) =>
           val argTypes = possibilities.foldLeft(TypeSpec.none) { _ | _.argumentTypes.head.covariant }
-          val r2       = arg.expectType(argTypes)(r1.state)
+          val r2 = arg.expectType(argTypes)(r1.state)
 
           val actualTypes = arg.types(r2.state)
           val remainingPossibilities = possibilities.filter { sig =>

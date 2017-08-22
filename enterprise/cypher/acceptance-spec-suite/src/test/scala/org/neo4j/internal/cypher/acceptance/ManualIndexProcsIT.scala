@@ -57,7 +57,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("legacy index + where") {
-    val node      = createNode(Map("prop" -> 42))
+    val node = createNode(Map("prop" -> 42))
     val otherNode = createNode(Map("prop" -> 21))
 
     graph.inTx {
@@ -72,8 +72,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("Relationship legacy index seek ") {
-    val node         = createNode(Map("prop" -> 42))
-    val otherNode    = createNode(Map("prop" -> 21))
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -81,7 +81,7 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
       relationshipIndex.add(relationship, "key", "value")
     }
 
-    val query  = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
+    val query = "CALL db.relationshipManualIndexSeek('relIndex', 'key', 'value') YIELD relationship AS r RETURN r"
     val result = execute(query)
 
     result.toList should equal(List(Map("r" -> relationship)))
@@ -93,8 +93,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("Relationship legacy index search plus MATCH") {
-    val node         = createNode(Map("prop" -> 42))
-    val otherNode    = createNode(Map("prop" -> 21))
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -114,8 +114,8 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("Relationship legacy index search plus MATCH directed") {
-    val node         = createNode(Map("prop" -> 42))
-    val otherNode    = createNode(Map("prop" -> 21))
+    val node = createNode(Map("prop" -> 42))
+    val otherNode = createNode(Map("prop" -> 21))
     val relationship = relate(node, otherNode)
 
     graph.inTx {
@@ -134,9 +134,9 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
   }
 
   test("should return correct results on combined node and relationship index starts") {
-    val node       = createNode()
+    val node = createNode()
     val resultNode = createNode()
-    val rel        = relate(node, resultNode)
+    val rel = relate(node, resultNode)
     relate(node, createNode())
 
     graph.inTx {

@@ -35,9 +35,9 @@ case class RuleCompatibility(graph: GraphDatabaseQueryService,
                              kernelAPI: KernelAPI)
     extends Compatibility {
   protected val compiler = {
-    val nodeManager     = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
-    val entityAccessor  = new EntityAccessorWrapper(nodeManager)
-    val monitors        = new WrappedMonitors(kernelMonitors)
+    val nodeManager = graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val entityAccessor = new EntityAccessorWrapper(nodeManager)
+    val monitors = new WrappedMonitors(kernelMonitors)
     val databaseService = graph.asInstanceOf[GraphDatabaseCypherService].getGraphDatabaseService
     CypherCompilerFactory.ruleBasedCompiler(databaseService, entityAccessor, config, clock, monitors, rewriterSequencer)
   }

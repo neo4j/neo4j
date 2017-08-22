@@ -95,7 +95,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
   }
 
   class CodeSaver {
-    private var _source: Seq[(String, String)]   = Seq.empty
+    private var _source: Seq[(String, String)] = Seq.empty
     private var _bytecode: Seq[(String, String)] = Seq.empty
 
     def saveSourceCode = new SourceVisitor {
@@ -109,7 +109,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
     }
 
     def sourceCode: Seq[(String, String)] = _source
-    def bytecode: Seq[(String, String)]   = _bytecode
+    def bytecode: Seq[(String, String)] = _bytecode
   }
 
   override def generateQuery(className: String,
@@ -119,7 +119,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       implicit codeGenContext: CodeGenContext): GeneratedQueryStructureResult = {
 
     val sourceSaver = new CodeSaver
-    val generator   = createGenerator(conf, sourceSaver)
+    val generator = createGenerator(conf, sourceSaver)
     val execution =
       using(generator.generateClass(conf.packageName, className + "Execution", typeRef[GeneratedQueryExecution])) {
         clazz =>
@@ -190,10 +190,10 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
         new AuxGenerator(conf.packageName, generator),
         onClose = Seq((success: Boolean) =>
           (block: CodeBlock) => {
-            val target    = Expression.get(block.self(), fields.closeable)
+            val target = Expression.get(block.self(), fields.closeable)
             val reference = method[Completable, Unit]("completed", typeRef[Boolean])
             val constant1 = Expression.constant(success)
-            val invoke1   = invoke(target, reference, constant1)
+            val invoke1 = invoke(target, reference, constant1)
             block.expression(invoke1)
         })
       )
@@ -258,7 +258,7 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
 
   def typeReference(manifest: Manifest[_]): TypeReference = {
     val arguments = manifest.typeArguments
-    val base      = TypeReference.typeReference(manifest.runtimeClass)
+    val base = TypeReference.typeReference(manifest.runtimeClass)
     if (arguments.nonEmpty) {
       TypeReference.parameterizedType(base, arguments.map(typeReference): _*)
     } else {

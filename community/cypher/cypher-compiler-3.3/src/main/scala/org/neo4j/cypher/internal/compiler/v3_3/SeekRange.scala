@@ -90,8 +90,8 @@ final case class RangeBetween[+V](greaterThan: RangeGreaterThan[V], lessThan: Ra
 
   override def groupBy[K](f: Bound[V] => K): Map[K, InequalitySeekRange[V]] = {
     val greaterThanBounds = greaterThan.bounds.map(Left(_))
-    val lessThanBounds    = lessThan.bounds.map(Right(_))
-    val allBounds         = greaterThanBounds ++ lessThanBounds
+    val lessThanBounds = lessThan.bounds.map(Right(_))
+    val allBounds = greaterThanBounds ++ lessThanBounds
     val groupedBounds = allBounds.groupBy[Either[Bound[V], Bound[V]], K] {
       case Left(bound)  => f(bound)
       case Right(bound) => f(bound)

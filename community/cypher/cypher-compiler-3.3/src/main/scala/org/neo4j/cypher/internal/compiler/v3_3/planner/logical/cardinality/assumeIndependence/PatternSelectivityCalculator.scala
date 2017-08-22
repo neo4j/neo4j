@@ -44,7 +44,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
   def apply(pattern: PatternRelationship, labels: Map[IdName, Set[LabelName]])(implicit semanticTable: SemanticTable,
                                                                                selections: Selections): Selectivity = {
     val nbrOfNodesInGraph = stats.nodesWithLabelCardinality(None)
-    val (lhs, rhs)        = pattern.nodes
+    val (lhs, rhs) = pattern.nodes
     val labelsOnLhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(
       selections.labelsOnNode(lhs) ++ labels.getOrElse(lhs, Set.empty))
     val labelsOnRhs: Seq[TokenSpec[LabelId]] = mapToLabelTokenSpecs(
@@ -145,7 +145,7 @@ case class PatternSelectivityCalculator(stats: GraphStatistics, combiner: Select
     }
 
     val selectivitiesPerType = selectivitiesPerTypeAndLabel.flatMap(combiner.andTogetherSelectivities)
-    val combinedSelectivity  = combiner.orTogetherSelectivities(selectivitiesPerType).get
+    val combinedSelectivity = combiner.orTogetherSelectivities(selectivitiesPerType).get
     combinedSelectivity
   }
 

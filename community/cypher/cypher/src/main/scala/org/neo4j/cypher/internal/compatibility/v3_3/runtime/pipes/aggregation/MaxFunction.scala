@@ -53,10 +53,10 @@ trait MinMax extends AggregationFunction {
 
 class MaxFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult < 0
-  override def name: String       = "MAX"
+  override def name: String = "MAX"
 }
 
 class MinFunction(val value: Expression) extends AggregationFunction with MinMax {
   def keep(comparisonResult: Int) = comparisonResult > 0
-  override def name: String       = "MIN"
+  override def name: String = "MIN"
 }

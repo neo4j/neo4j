@@ -41,9 +41,9 @@ case class PathImpl(pathEntities: PropertyContainer*)
     if (sz % 2 == 0)
       throw new IllegalArgumentException(
         s"Tried to construct a path that is not built like a path: even number of elements ($sz)")
-    var x     = 0
+    var x = 0
     val nodes = new Array[Node](pathEntities.size / 2 + 1)
-    val rels  = new Array[Relationship](pathEntities.size / 2)
+    val rels = new Array[Relationship](pathEntities.size / 2)
     try {
       pathEntities.foreach(e => {
         if ((x % 2) == 0) nodes.update(x / 2, e.asInstanceOf[Node])
@@ -60,7 +60,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
   require(isProperPath, s"Tried to construct a path that is not built like a path: $pathEntities")
 
   def isProperPath: Boolean = {
-    val atLeastOneNode                        = nodeList.length > 0
+    val atLeastOneNode = nodeList.length > 0
     val relsLengthEqualsToNodesLengthMinusOne = relList.length == nodeList.length - 1
     atLeastOneNode && relsLengthEqualsToNodesLengthMinusOne
   }

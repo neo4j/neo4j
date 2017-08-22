@@ -33,7 +33,7 @@ class HasLabelTests extends CypherFunSuite {
     val predicate = HasLabel(Literal(null), KeyToken.Unresolved("Person", TokenType.Label))
 
     //when
-    val ctx            = ExecutionContext.empty
+    val ctx = ExecutionContext.empty
     implicit val state = QueryStateHelper.empty
 
     //then

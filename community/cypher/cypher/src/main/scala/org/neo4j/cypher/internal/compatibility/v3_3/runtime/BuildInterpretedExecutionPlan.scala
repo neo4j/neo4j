@@ -51,8 +51,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
 
   override def process(from: LogicalPlanState, context: CommunityRuntimeContext): CompilationState = {
     val logicalPlan = from.logicalPlan
-    val idMap       = LogicalPlanIdentificationBuilder(logicalPlan)
-    val converters  = new ExpressionConverters(CommunityExpressionConverter)
+    val idMap = LogicalPlanIdentificationBuilder(logicalPlan)
+    val converters = new ExpressionConverters(CommunityExpressionConverter)
     val executionPlanBuilder = new PipeExecutionPlanBuilder(context.clock,
                                                             context.monitors,
                                                             expressionConverters = converters,
@@ -62,8 +62,8 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     val pipeInfo =
       executionPlanBuilder.build(from.periodicCommit, logicalPlan, idMap)(pipeBuildContext, context.planContext)
     val PipeInfo(pipe, updating, periodicCommitInfo, fp, planner) = pipeInfo
-    val columns                                                   = from.statement().returnColumns
-    val resultBuilderFactory                                      = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
+    val columns = from.statement().returnColumns
+    val resultBuilderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, columns, logicalPlan, idMap)
     val func = getExecutionPlanFunction(periodicCommitInfo,
                                         from.queryText,
                                         updating,
@@ -116,7 +116,7 @@ object BuildInterpretedExecutionPlan extends Phase[CommunityRuntimeContext, Logi
     (queryContext: QueryContext, planType: ExecutionMode, params: Map[String, AnyValue]) => {
       val builder = resultBuilderFactory.create()
 
-      val profiling      = planType == ProfileMode
+      val profiling = planType == ProfileMode
       val builderContext = if (updating || profiling) new UpdateCountingQueryContext(queryContext) else queryContext
 
       builder.setQueryContext(builderContext)

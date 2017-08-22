@@ -34,7 +34,7 @@ case class ReturnItemSafeTopDownRewriter(inner: Rewriter) extends Rewriter {
 
   override def apply(that: AnyRef): AnyRef = {
     val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef]()))
-    val result       = tailrecApply(initialStack)
+    val result = tailrecApply(initialStack)
     assert(result.size == 1)
     result.head
   }
@@ -63,7 +63,7 @@ case class ReturnItemSafeTopDownRewriter(inner: Rewriter) extends Rewriter {
       }
     } else {
       val (newJob :: jobs, doneJobs) = stack.pop()
-      val rewrittenJob               = newJob.rewrite(inner)
+      val rewrittenJob = newJob.rewrite(inner)
       stack.push((rewrittenJob :: jobs, doneJobs))
       stack.push((rewrittenJob.children.toList, new mutable.MutableList()))
       tailrecApply(stack)

@@ -91,7 +91,7 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
       .endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
 
     val checkResult = original.semanticCheck(SemanticState.clean)
-    val rewriter    = expandStar(checkResult.state)
+    val rewriter = expandStar(checkResult.state)
 
     val result = original.rewrite(rewriter)
     assert(result === expected)

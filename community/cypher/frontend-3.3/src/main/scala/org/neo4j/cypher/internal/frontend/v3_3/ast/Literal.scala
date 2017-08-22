@@ -35,7 +35,7 @@ sealed trait IntegerLiteral extends NumberLiteral {
   def value: java.lang.Long
 }
 
-sealed trait SignedIntegerLiteral   extends IntegerLiteral
+sealed trait SignedIntegerLiteral extends IntegerLiteral
 sealed trait UnsignedIntegerLiteral extends IntegerLiteral
 
 sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {

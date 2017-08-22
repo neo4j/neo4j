@@ -106,8 +106,8 @@ case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition)
         when(CTFloat.covariant, CTFloat.covariant | CTInteger.covariant)(CTFloat)
 
     val listTypes = {
-      val lhsListTypes      = lhsTypes constrain CTList(CTAny)
-      val rhsListTypes      = rhsTypes constrain CTList(CTAny)
+      val lhsListTypes = lhsTypes constrain CTList(CTAny)
+      val rhsListTypes = rhsTypes constrain CTList(CTAny)
       val lhsListInnerTypes = lhsListTypes.unwrapLists
       val rhsListInnerTypes = rhsListTypes.unwrapLists
 

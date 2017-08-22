@@ -26,10 +26,10 @@ sealed abstract class CypherExecutionMode(modeName: String) extends CypherOption
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode] {
 
-  case object normal  extends CypherExecutionMode("normal")
+  case object normal extends CypherExecutionMode("normal")
   case object profile extends CypherExecutionMode("profile")
   case object explain extends CypherExecutionMode("explain")
 
-  val default                       = normal
+  val default = normal
   val all: Set[CypherExecutionMode] = Set(profile, explain, normal)
 }

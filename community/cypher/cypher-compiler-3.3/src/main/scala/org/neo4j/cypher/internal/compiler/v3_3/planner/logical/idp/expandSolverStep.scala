@@ -33,8 +33,8 @@ case class expandSolverStep(qg: QueryGraph)
       implicit context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
       for (patternId <- goal.iterator;
-           pattern   <- registry.lookup(patternId);
-           plan      <- table(goal - patternId)) yield {
+           pattern <- registry.lookup(patternId);
+           plan <- table(goal - patternId)) yield {
         if (plan.availableSymbols.contains(pattern.name))
           Iterator.apply(
             planSingleProjectEndpoints(pattern, plan)
@@ -55,9 +55,9 @@ object expandSolverStep {
 
   def planSingleProjectEndpoints(patternRel: PatternRelationship, plan: LogicalPlan)(
       implicit context: LogicalPlanningContext): LogicalPlan = {
-    val (start, end)   = patternRel.inOrder
+    val (start, end) = patternRel.inOrder
     val isStartInScope = plan.availableSymbols(start)
-    val isEndInScope   = plan.availableSymbols(end)
+    val isEndInScope = plan.availableSymbols(end)
     context.logicalPlanProducer.planEndpointProjection(plan, start, isStartInScope, end, isEndInScope, patternRel)
   }
 
@@ -65,10 +65,10 @@ object expandSolverStep {
       implicit context: LogicalPlanningContext): Option[LogicalPlan] = {
     val availableSymbols = plan.availableSymbols
     if (availableSymbols(nodeId)) {
-      val dir         = patternRel.directionRelativeTo(nodeId)
-      val otherSide   = patternRel.otherSide(nodeId)
+      val dir = patternRel.directionRelativeTo(nodeId)
+      val otherSide = patternRel.otherSide(nodeId)
       val overlapping = availableSymbols.contains(otherSide)
-      val mode        = if (overlapping) ExpandInto else ExpandAll
+      val mode = if (overlapping) ExpandInto else ExpandAll
 
       patternRel.length match {
         case SimplePatternLength =>

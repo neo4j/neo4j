@@ -57,8 +57,8 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     implicit val kit = kitWithShortestPathSupport(context.config.toKit())
-    val components   = queryGraph.connectedComponents
-    val plans        = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
+    val components = queryGraph.connectedComponents
+    val plans = if (components.isEmpty) planEmptyComponent(queryGraph) else planComponents(components)
 
     monitor.startConnectingComponents(queryGraph)
     val result = connectComponentsAndSolveOptionalMatch(plans.toSet, queryGraph)
@@ -106,12 +106,12 @@ case class IDPQueryGraphSolver(singleComponentSolver: SingleComponentPlannerTrai
       if (optionalMatches.nonEmpty) {
         // If we have optional matches left to solve - start with that
         val firstOptionalMatch = optionalMatches.head
-        val applicablePlan     = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.availableSymbols)
+        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.availableSymbols)
 
         applicablePlan match {
           case Some(t @ PlannedComponent(solvedQg, p)) =>
             val candidates = context.config.optionalSolvers.flatMap(solver => solver(firstOptionalMatch, p))
-            val best       = kit.pickBest(candidates).get
+            val best = kit.pickBest(candidates).get
             recurse(plans - t + PlannedComponent(solvedQg, best), optionalMatches.tail)
 
           case None =>

@@ -334,15 +334,15 @@ class LoadCsvAcceptanceTest
         result === List(
           Map(
             "line" -> Map("DEPARTMENT ID" -> "010-1010",
-                          "DEPARTMENT NAME"         -> "MFG Supplies",
+                          "DEPARTMENT NAME" -> "MFG Supplies",
                           null.asInstanceOf[String] -> null)),
           Map(
             "line" -> Map("DEPARTMENT ID" -> "010-1011",
-                          "DEPARTMENT NAME"         -> "Corporate Procurement",
+                          "DEPARTMENT NAME" -> "Corporate Procurement",
                           null.asInstanceOf[String] -> null)),
           Map(
             "line" -> Map("DEPARTMENT ID" -> "010-1015",
-                          "DEPARTMENT NAME"         -> "MFG - Engineering HQ",
+                          "DEPARTMENT NAME" -> "MFG - Engineering HQ",
                           null.asInstanceOf[String] -> null))
         ))
     }
@@ -530,7 +530,7 @@ class LoadCsvAcceptanceTest
       writer.println("'Foo'")
       writer.println("'Foo'")
     }).cypherEscape
-    val first  = url.substring(0, url.length / 2)
+    val first = url.substring(0, url.length / 2)
     val second = url.substring(url.length / 2)
     createNode(Map("prop" -> second))
 
@@ -579,13 +579,13 @@ class LoadCsvAcceptanceTest
     }
   }
 
-  private val CSV_DATA_CONTENT                  = "1,1,1\n2,2,2\n3,3,3\n".getBytes
-  private val CSV_PATH                          = "/test.csv"
-  private val CSV_COOKIE_PATH                   = "/cookie_test.csv"
-  private val CSV_REDIRECT_PATH                 = "/redirect_test.csv"
-  private val MAGIC_COOKIE                      = "neoCookie=Magic"
+  private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes
+  private val CSV_PATH = "/test.csv"
+  private val CSV_COOKIE_PATH = "/cookie_test.csv"
+  private val CSV_REDIRECT_PATH = "/redirect_test.csv"
+  private val MAGIC_COOKIE = "neoCookie=Magic"
   private var httpServer: HttpServerTestSupport = _
-  private var port                              = -1
+  private var port = -1
 
   override def beforeAll() {
     val builder = new HttpServerTestSupportBuilder()

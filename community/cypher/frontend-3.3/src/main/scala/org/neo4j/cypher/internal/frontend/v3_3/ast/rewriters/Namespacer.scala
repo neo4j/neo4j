@@ -34,13 +34,13 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
   override def description: String = "rename variables so they are all unique"
 
   override def process(from: BaseState, ignored: BaseContext): BaseState = {
-    val ambiguousNames                                 = shadowedNames(from.semantics().scopeTree)
+    val ambiguousNames = shadowedNames(from.semantics().scopeTree)
     val variableDefinitions: Map[SymbolUse, SymbolUse] = from.semantics().scopeTree.allVariableDefinitions
-    val protectedVariables                             = returnAliases(from.statement())
-    val renamings                                      = variableRenamings(from.statement(), variableDefinitions, ambiguousNames, protectedVariables)
+    val protectedVariables = returnAliases(from.statement())
+    val renamings = variableRenamings(from.statement(), variableDefinitions, ambiguousNames, protectedVariables)
 
     val newStatement = from.statement().endoRewrite(statementRewriter(renamings))
-    val table        = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes)
+    val table = SemanticTable(types = from.semantics().typeTable, recordedScopes = from.semantics().recordedScopes)
 
     val newSemanticTable: SemanticTable = tableRewriter(renamings)(table)
     from.withStatement(newStatement).withSemanticTable(newSemanticTable)
@@ -73,8 +73,8 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
     statement.treeFold(Map.empty[Ref[Variable], Variable]) {
       case i: Variable if ambiguousNames(i.name) && !protectedVariables(Ref(i)) =>
         val symbolDefinition = variableDefinitions(i.toSymbolUse)
-        val newVariable      = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
-        val renaming         = Ref(i) -> newVariable
+        val newVariable = i.renameId(s"  ${symbolDefinition.nameWithPosition}")
+        val renaming = Ref(i) -> newVariable
         acc =>
           (acc + renaming, Some(identity))
     }
@@ -95,7 +95,7 @@ object Namespacer extends Phase[BaseContext, BaseState, BaseState] {
     )
 
   private def tableRewriter(renamings: VariableRenamings)(semanticTable: SemanticTable) = {
-    val replacements     = renamings.toIndexedSeq.collect { case (old, newVariable) => old.value -> newVariable }
+    val replacements = renamings.toIndexedSeq.collect { case (old, newVariable) => old.value -> newVariable }
     val newSemanticTable = semanticTable.replaceVariables(replacements: _*)
     newSemanticTable
   }

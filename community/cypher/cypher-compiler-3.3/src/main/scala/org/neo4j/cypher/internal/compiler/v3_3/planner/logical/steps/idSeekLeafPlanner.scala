@@ -47,7 +47,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       case (predicate, idExpr @ Variable(id), idValues) if !qg.argumentIds.contains(IdName(id)) =>
         qg.patternRelationships.find(_.name.name == id) match {
           case Some(relationship) =>
-            val types    = relationship.types.toList
+            val types = relationship.types.toList
             val seekPlan = planRelationshipByIdSeek(relationship, idValues, Seq(predicate), qg.argumentIds)
             LeafPlansForVariable(IdName(id), Set(planRelTypeFilter(seekPlan, idExpr, types)))
           case None =>
@@ -67,7 +67,7 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       predicates: Seq[Expression],
       argumentIds: Set[IdName])(implicit context: LogicalPlanningContext): LogicalPlan = {
     val (left, right) = relationship.nodes
-    val name          = relationship.name
+    val name = relationship.name
     relationship.dir match {
       case BOTH =>
         context.logicalPlanProducer
@@ -86,13 +86,13 @@ object idSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
     relTypes match {
       case Seq(tpe) =>
         val relTypeExpr = relTypeAsStringLiteral(tpe)
-        val predicate   = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
+        val predicate = Equals(typeOfRelExpr(idExpr), relTypeExpr)(idExpr.position)
         context.logicalPlanProducer.planHiddenSelection(Seq(predicate), plan)
 
       case tpe :: _ =>
         val relTypeExprs = relTypes.map(relTypeAsStringLiteral).toSet
-        val invocation   = typeOfRelExpr(idExpr)
-        val idPos        = idExpr.position
+        val invocation = typeOfRelExpr(idExpr)
+        val idPos = idExpr.position
         val predicate = Ors(relTypeExprs.map { expr =>
           Equals(invocation, expr)(idPos)
         })(idPos)

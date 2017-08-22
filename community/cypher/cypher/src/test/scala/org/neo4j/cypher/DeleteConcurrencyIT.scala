@@ -197,7 +197,7 @@ class DeleteConcurrencyIT extends ExecutionEngineFunSuite {
 
   private def prettyPrintErrors(errors: Seq[Throwable]): String = {
     val stringWriter = new StringWriter()
-    val writer       = new PrintWriter(stringWriter)
+    val writer = new PrintWriter(stringWriter)
     errors.foreach { e =>
       e.printStackTrace(writer); writer.println()
     }

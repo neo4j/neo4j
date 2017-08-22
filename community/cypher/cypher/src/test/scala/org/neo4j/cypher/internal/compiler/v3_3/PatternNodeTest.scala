@@ -37,8 +37,8 @@ class PatternNodeTest extends GraphDatabaseFunSuite {
   }
 
   test("does not return rels already visited") {
-    val a   = createNode()
-    val b   = createNode()
+    val a = createNode()
+    val b = createNode()
     val rel = relate(a, b, "r")
 
     val pA = new PatternNode("a")

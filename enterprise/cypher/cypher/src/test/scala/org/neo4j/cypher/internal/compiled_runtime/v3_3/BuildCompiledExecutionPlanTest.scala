@@ -46,7 +46,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   test("should tell the monitor when building works") {
     // Given
     val monitors = WrappedMonitors(new Monitors)
-    val monitor  = new SpyingMonitor
+    val monitor = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
     // When
@@ -59,7 +59,7 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   test("should tell the monitor when building does not work") {
     // Given
     val monitors = WrappedMonitors(new Monitors)
-    val monitor  = new SpyingMonitor
+    val monitor = new SpyingMonitor
     monitors.addMonitorListener(monitor)
 
     process(monitors, SingleRow()(solved))
@@ -88,10 +88,10 @@ class BuildCompiledExecutionPlanTest extends CypherFunSuite {
   }
 
   class SpyingMonitor extends NewRuntimeSuccessRateMonitor {
-    var successfullyPlanned                           = false
+    var successfullyPlanned = false
     override def newPlanSeen(plan: LogicalPlan): Unit = successfullyPlanned = true
 
-    var failedToPlan                                                                            = false
+    var failedToPlan = false
     override def unableToHandlePlan(plan: LogicalPlan, origin: CantCompileQueryException): Unit = failedToPlan = true
   }
 }

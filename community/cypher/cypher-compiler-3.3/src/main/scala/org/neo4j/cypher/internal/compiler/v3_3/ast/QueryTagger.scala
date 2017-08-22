@@ -29,7 +29,7 @@ import scala.util.Success
 import scala.util.Try
 
 sealed class QueryTag(aName: String) {
-  val name  = aName.trim.toLowerCase
+  val name = aName.trim.toLowerCase
   val token = s":$name"
 
   override def toString = token
@@ -108,7 +108,7 @@ object QueryTags {
           val tag = input.substring(1).trim
           tags + tag
         } else {
-          val tag  = input.substring(1, boundary).trim
+          val tag = input.substring(1, boundary).trim
           val tail = input.substring(boundary)
           tokenize(tail, tags + tag)
         }
@@ -120,75 +120,75 @@ object QueryTags {
 
 // Matching
 
-case object MatchTag         extends QueryTag("match")
+case object MatchTag extends QueryTag("match")
 case object OptionalMatchTag extends QueryTag("opt-match")
-case object RegularMatchTag  extends QueryTag("reg-match")
+case object RegularMatchTag extends QueryTag("reg-match")
 
 case object ShortestPathTag extends QueryTag("shortest-path")
-case object NamedPathTag    extends QueryTag("named-path")
+case object NamedPathTag extends QueryTag("named-path")
 
 case object SingleLengthRelTag extends QueryTag("single-length-rel")
-case object VarLengthRelTag    extends QueryTag("var-length-rel")
+case object VarLengthRelTag extends QueryTag("var-length-rel")
 
-case object DirectedRelTag   extends QueryTag("directed-rel")
+case object DirectedRelTag extends QueryTag("directed-rel")
 case object UnDirectedRelTag extends QueryTag("undirected-rel")
 
 case object SingleNodePatternTag extends QueryTag("single-node-pattern")
-case object RelPatternTag        extends QueryTag("rel-pattern")
+case object RelPatternTag extends QueryTag("rel-pattern")
 
 case object WhereTag extends QueryTag("where")
 
 // Projection
 
-case object WithTag   extends QueryTag("with")
+case object WithTag extends QueryTag("with")
 case object ReturnTag extends QueryTag("return")
 
 // Others
 
-case object StartTag         extends QueryTag("start")
-case object UnionTag         extends QueryTag("union")
-case object UnwindTag        extends QueryTag("unwind")
-case object SkipTag          extends QueryTag("skip")
-case object LimitTag         extends QueryTag("limit")
-case object OrderByTag       extends QueryTag("order-by")
+case object StartTag extends QueryTag("start")
+case object UnionTag extends QueryTag("union")
+case object UnwindTag extends QueryTag("unwind")
+case object SkipTag extends QueryTag("skip")
+case object LimitTag extends QueryTag("limit")
+case object OrderByTag extends QueryTag("order-by")
 case object CallProcedureTag extends QueryTag("call-procedure")
 
 // Updates
 
-case object UpdatesTag      extends QueryTag("updates")
-case object LoadCSVTag      extends QueryTag("load-csv")
-case object CreateTag       extends QueryTag("create")
-case object DeleteTag       extends QueryTag("delete")
+case object UpdatesTag extends QueryTag("updates")
+case object LoadCSVTag extends QueryTag("load-csv")
+case object CreateTag extends QueryTag("create")
+case object DeleteTag extends QueryTag("delete")
 case object DetachDeleteTag extends QueryTag("detach-delete")
-case object SetTag          extends QueryTag("set")
-case object RemoveTag       extends QueryTag("remove")
-case object MergeTag        extends QueryTag("merge")
-case object OnMatchTag      extends QueryTag("on-match")
-case object OnCreateTag     extends QueryTag("on-create")
+case object SetTag extends QueryTag("set")
+case object RemoveTag extends QueryTag("remove")
+case object MergeTag extends QueryTag("merge")
+case object OnMatchTag extends QueryTag("on-match")
+case object OnCreateTag extends QueryTag("on-create")
 case object CreateUniqueTag extends QueryTag("create-unique")
-case object ForeachTag      extends QueryTag("foreach")
+case object ForeachTag extends QueryTag("foreach")
 
 // Expressions
 
-case object ComplexExpressionTag   extends QueryTag("complex-expr")
+case object ComplexExpressionTag extends QueryTag("complex-expr")
 case object FilteringExpressionTag extends QueryTag("filtering-expr")
-case object LiteralExpressionTag   extends QueryTag("literal-expr")
+case object LiteralExpressionTag extends QueryTag("literal-expr")
 case object ParameterExpressionTag extends QueryTag("parameter-expr")
-case object VariableExpressionTag  extends QueryTag("variable-expr")
-case object CaseTag                extends QueryTag("case-expr")
+case object VariableExpressionTag extends QueryTag("variable-expr")
+case object CaseTag extends QueryTag("case-expr")
 
 // Commands
 
-case object CreateIndexTag      extends QueryTag("create-index")
+case object CreateIndexTag extends QueryTag("create-index")
 case object CreateConstraintTag extends QueryTag("create-constraint")
-case object DropIndexTag        extends QueryTag("drop-index")
-case object DropConstraintTag   extends QueryTag("drop-constraint")
+case object DropIndexTag extends QueryTag("drop-index")
+case object DropConstraintTag extends QueryTag("drop-constraint")
 
 // Functions
 
-case object MathFunctionTag   extends QueryTag("math-function")
+case object MathFunctionTag extends QueryTag("math-function")
 case object StringFunctionTag extends QueryTag("string-function")
-case object AggregationTag    extends QueryTag("aggregation")
+case object AggregationTag extends QueryTag("aggregation")
 
 object QueryTagger extends QueryTagger[String] {
 

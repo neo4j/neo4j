@@ -32,7 +32,7 @@ trait ResultIterator extends Iterator[immutable.Map[String, AnyValue]] {
 
 class EagerResultIterator(result: ResultIterator) extends ResultIterator {
   override val toList = result.toList
-  private val inner   = toList.iterator
+  private val inner = toList.iterator
 
   override def toEager: EagerResultIterator = this
 

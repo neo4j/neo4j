@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("accepts property access on a map") {
-    val mapExpr: Variable            = varFor("map")
+    val mapExpr: Variable = varFor("map")
     val propertyKey: PropertyKeyName = PropertyKeyName("prop") _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTMap).right.get
@@ -35,7 +35,7 @@ class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("accepts property access on a node") {
-    val mapExpr: Variable            = varFor("map")
+    val mapExpr: Variable = varFor("map")
     val propertyKey: PropertyKeyName = PropertyKeyName("prop") _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTNode).right.get
@@ -46,7 +46,7 @@ class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("accepts property access on a relationship") {
-    val mapExpr: Variable            = varFor("map")
+    val mapExpr: Variable = varFor("map")
     val propertyKey: PropertyKeyName = PropertyKeyName("prop") _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTRelationship).right.get
@@ -57,7 +57,7 @@ class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("accepts property access on an Any") {
-    val mapExpr: Variable            = varFor("map")
+    val mapExpr: Variable = varFor("map")
     val propertyKey: PropertyKeyName = PropertyKeyName("prop") _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTAny).right.get
@@ -68,7 +68,7 @@ class PropertyTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("refuses property access on an Integer") {
-    val mapExpr: Variable            = varFor("map")
+    val mapExpr: Variable = varFor("map")
     val propertyKey: PropertyKeyName = PropertyKeyName("prop") _
 
     val beforeState = SemanticState.clean.newChildScope.declareVariable(mapExpr, CTInteger).right.get

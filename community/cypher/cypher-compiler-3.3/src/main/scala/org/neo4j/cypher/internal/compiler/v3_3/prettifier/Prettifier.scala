@@ -42,7 +42,7 @@ final case class NonBreakingKeywords(text: String) extends KeywordToken
 
 final case class GroupToken(start: String, close: String, innerTokens: Seq[SyntaxToken]) extends SyntaxToken {
   override def toString = s"$start${innerTokens.mkString(",")}$close"
-  def text              = toString
+  def text = toString
 }
 
 sealed abstract class GroupingText extends SyntaxToken
@@ -202,7 +202,7 @@ class PrettifierParser extends Parser with Base with Strings {
 
   def parse(input: String): Seq[SyntaxToken] = {
     val runner = parserunners.ReportingParseRunner(main)
-    val v      = runner.run(input)
+    val v = runner.run(input)
     v match {
       case (output: ParsingResult[_]) if output.matched => output.result.get
       case (output: ParsingResult[Seq[SyntaxToken]])    => throw new SyntaxException(output.parseErrors.mkString("\n"))
@@ -217,7 +217,7 @@ case object Prettifier extends (String => String) {
     val builder = new StringBuilder
 
     val parsedTokens = parser.parse(input)
-    var tokens       = flattenTokens(parsedTokens)
+    var tokens = flattenTokens(parsedTokens)
 
     while (tokens.nonEmpty) {
       val tail = tokens.tail
@@ -247,7 +247,7 @@ case object Prettifier extends (String => String) {
     }
   }
 
-  val space   = " "
+  val space = " "
   val newline = System.lineSeparator()
 
   def insertBreak(token: SyntaxToken, tail: Seq[SyntaxToken]): String = {

@@ -56,11 +56,11 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("statistics should default to single cardinality on empty db") {
-    val graph                = new GraphDatabaseCypherService(database)
-    val transaction          = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val graph = new GraphDatabaseCypherService(database)
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext          = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-    val statistics           = planContext.statistics
+    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+    val statistics = planContext.statistics
 
     // label stats
     statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality.SINGLE)
@@ -82,10 +82,10 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     val graph = new GraphDatabaseCypherService(database)
     graph.getGraphDatabaseService.execute("UNWIND range(1, 100) AS i CREATE (:L1)-[:T]->()")
 
-    val transaction          = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
     val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext          = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-    val statistics           = planContext.statistics
+    val planContext = new TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
+    val statistics = planContext.statistics
 
     // label stats
     statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(100))

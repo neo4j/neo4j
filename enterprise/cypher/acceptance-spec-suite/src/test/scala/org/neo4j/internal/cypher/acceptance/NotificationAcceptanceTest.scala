@@ -457,7 +457,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     createLabeledNode("Person")
 
     //when
-    val resultMisspelled       = innerExecute("EXPLAIN MATCH (n:Preson) RETURN *")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH (n:Preson) RETURN *")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n:Person) RETURN *")
 
     //then
@@ -481,7 +481,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     relate(createNode(), createNode(), "R")
 
     //when
-    val resultMisspelled       = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN *")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH ()-[r:r]->() RETURN *")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH ()-[r:R]->() RETURN *")
 
     resultMisspelled.notifications should contain(
@@ -495,7 +495,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     //given
     createNode(Map("prop" -> 42))
     //when
-    val resultMisspelled       = innerExecute("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n")
+    val resultMisspelled = innerExecute("EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n")
     val resultCorrectlySpelled = innerExecute("EXPLAIN MATCH (n) WHERE n.prop = 43 RETURN n")
 
     resultMisspelled.notifications should contain(

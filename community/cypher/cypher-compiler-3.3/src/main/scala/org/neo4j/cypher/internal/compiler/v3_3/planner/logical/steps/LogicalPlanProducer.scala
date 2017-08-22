@@ -73,7 +73,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   def planApply(left: LogicalPlan, right: LogicalPlan)(implicit context: LogicalPlanningContext): LogicalPlan = {
     // We don't want to keep the arguments that this Apply is inserting on the RHS, so we remove them here.
     val rhsSolved: PlannerQuery = right.solved.updateTailOrSelf(_.amendQueryGraph(_.withArgumentIds(Set.empty)))
-    val solved: PlannerQuery    = left.solved ++ rhsSolved
+    val solved: PlannerQuery = left.solved ++ rhsSolved
     Apply(left, right)(solved = solved)
   }
 
@@ -247,14 +247,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
       implicit context: LogicalPlanningContext): LogicalPlan = {
 
     val plannerQuery = left.solved ++ right.solved
-    val solved       = plannerQuery.amendQueryGraph(_.addHints(hints))
+    val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
     NodeHashJoin(nodes, left, right)(solved)
   }
 
   def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals)(
       implicit context: LogicalPlanningContext): LogicalPlan = {
     val plannerQuery = left.solved ++ right.solved
-    val solved       = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
+    val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
     ValueHashJoin(left, right, join)(solved)
   }
 
@@ -350,8 +350,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
 
   def planQueryArgumentRow(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
-    val patternRels  = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
-    val otherIds     = queryGraph.argumentIds -- patternNodes
+    val patternRels = queryGraph.patternRelationships.filter(rel => queryGraph.argumentIds.contains(rel.name))
+    val otherIds = queryGraph.argumentIds -- patternNodes
     planArgumentRow(patternNodes, patternRels, otherIds)
   }
 
@@ -361,11 +361,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
   def planArgumentRow(patternNodes: Set[IdName],
                       patternRels: Set[PatternRelationship] = Set.empty,
                       other: Set[IdName] = Set.empty)(implicit context: LogicalPlanningContext): LogicalPlan = {
-    val relIds     = patternRels.map(_.name)
+    val relIds = patternRels.map(_.name)
     val coveredIds = patternNodes ++ relIds ++ other
     val typeInfoSeq = patternNodes.toIndexedSeq.map((x: IdName) => x.name -> CTNode) ++
       relIds.toIndexedSeq.map((x: IdName) => x.name -> CTRelationship) ++
-      other.toIndexedSeq.map((x: IdName) => x.name  -> CTAny)
+      other.toIndexedSeq.map((x: IdName) => x.name -> CTAny)
     val typeInfo = typeInfoSeq.toMap
 
     val solved = RegularPlannerQuery(
@@ -483,7 +483,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel) extends ListS
                              patternRel: PatternRelationship)(implicit context: LogicalPlanningContext): LogicalPlan = {
     val relTypes = patternRel.types.asNonEmptyOption
     val directed = patternRel.dir != SemanticDirection.BOTH
-    val solved   = inner.solved.amendQueryGraph(_.addPatternRelationship(patternRel))
+    val solved = inner.solved.amendQueryGraph(_.addPatternRelationship(patternRel))
     ProjectEndpoints(inner,
                      patternRel.name,
                      start,

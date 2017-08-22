@@ -28,8 +28,8 @@ import scala.collection.Map
 
 case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
   def hasVariableNamed(name: String): Boolean = variables.contains(name)
-  def size: Int                               = variables.size
-  def isEmpty: Boolean                        = variables.isEmpty
+  def size: Int = variables.size
+  def isEmpty: Boolean = variables.isEmpty
 
   def add(key: String, typ: CypherType): SymbolTable = SymbolTable(variables + (key -> typ))
 
@@ -40,7 +40,7 @@ case class SymbolTable(variables: Map[String, CypherType] = Map.empty) {
   }
 
   def filter(f: String => Boolean): SymbolTable = SymbolTable(variables.filterKeys(f))
-  def keys: Seq[String]                         = variables.keys.toIndexedSeq
+  def keys: Seq[String] = variables.keys.toIndexedSeq
   def missingSymbolTableDependencies(x: TypeSafe) =
     x.symbolTableDependencies.filterNot(dep => variables.exists(_._1 == dep))
 

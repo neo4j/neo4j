@@ -40,7 +40,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with GraphDatabaseTestSupport {
-  var logger: InternalNotificationLogger                = _
+  var logger: InternalNotificationLogger = _
   var compiler: CypherCompiler[CommunityRuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
@@ -96,8 +96,8 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
 
   private def runQuery(query: String) = {
     graph.inTx {
-      val tracer           = CompilationPhaseTracer.NO_TRACING
-      val parsed           = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
+      val tracer = CompilationPhaseTracer.NO_TRACING
+      val parsed = compiler.parseQuery(query, query, logger, IDPPlannerName.name, Set.empty, None, tracer)
       val queryGraphSolver = Compatibility.createQueryGraphSolver(IDPPlannerName, monitors, configuration)
       val context = CommunityRuntimeContextCreator.create(
         tracer,
@@ -131,7 +131,7 @@ class CartesianProductNotificationAcceptanceTest extends CypherFunSuite with Gra
     legacyCsvQuoteEscaping = false,
     nonIndexedLabelWarningThreshold = 10000L
   )
-  private lazy val monitors  = WrappedMonitors(kernelMonitors)
+  private lazy val monitors = WrappedMonitors(kernelMonitors)
   private val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
   private def createCompiler(): CypherCompiler[CommunityRuntimeContext] = {
 

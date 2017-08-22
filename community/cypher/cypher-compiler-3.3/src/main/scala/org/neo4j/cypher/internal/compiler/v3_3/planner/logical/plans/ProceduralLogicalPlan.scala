@@ -44,14 +44,14 @@ case class StandAloneProcedureCall(signature: ProcedureSignature,
     extends ProceduralLogicalPlan
 
 case class CreateNodeKeyConstraint(node: IdName, label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
-case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property])                 extends ProceduralLogicalPlan
+case class DropNodeKeyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 
 case class CreateUniquePropertyConstraint(node: IdName, label: LabelName, props: Seq[Property])
     extends ProceduralLogicalPlan
 case class DropUniquePropertyConstraint(label: LabelName, props: Seq[Property]) extends ProceduralLogicalPlan
 
 case class CreateNodePropertyExistenceConstraint(label: LabelName, prop: Property) extends ProceduralLogicalPlan
-case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property)   extends ProceduralLogicalPlan
+case class DropNodePropertyExistenceConstraint(label: LabelName, prop: Property) extends ProceduralLogicalPlan
 
 case class CreateRelationshipPropertyExistenceConstraint(typeName: RelTypeName, prop: Property)
     extends ProceduralLogicalPlan
@@ -59,4 +59,4 @@ case class DropRelationshipPropertyExistenceConstraint(typeName: RelTypeName, pr
     extends ProceduralLogicalPlan
 
 case class CreateIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName]) extends ProceduralLogicalPlan
-case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName])   extends ProceduralLogicalPlan
+case class DropIndex(label: LabelName, propertyKeyNames: List[PropertyKeyName]) extends ProceduralLogicalPlan

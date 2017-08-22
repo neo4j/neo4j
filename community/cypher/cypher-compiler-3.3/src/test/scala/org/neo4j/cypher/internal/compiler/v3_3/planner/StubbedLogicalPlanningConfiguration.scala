@@ -37,13 +37,13 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
 
   self =>
 
-  var knownLabels: Set[String]                                          = Set.empty
-  var cardinality: PartialFunction[PlannerQuery, Cardinality]           = PartialFunction.empty
+  var knownLabels: Set[String] = Set.empty
+  var cardinality: PartialFunction[PlannerQuery, Cardinality] = PartialFunction.empty
   var cost: PartialFunction[(LogicalPlan, QueryGraphSolverInput), Cost] = PartialFunction.empty
-  var selectivity: PartialFunction[Expression, Selectivity]             = PartialFunction.empty
-  var labelCardinality: Map[String, Cardinality]                        = Map.empty
-  var statistics                                                        = null
-  var qg: QueryGraph                                                    = null
+  var selectivity: PartialFunction[Expression, Selectivity] = PartialFunction.empty
+  var labelCardinality: Map[String, Cardinality] = Map.empty
+  var statistics = null
+  var qg: QueryGraph = null
   var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
     override def evaluateExpression(expr: Expression): Option[Any] = ???
 
@@ -52,7 +52,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
     override def hasParameters(expr: Expression): Boolean = ???
   }
 
-  var indexes: Set[(String, Seq[String])]       = Set.empty
+  var indexes: Set[(String, Seq[String])] = Set.empty
   var uniqueIndexes: Set[(String, Seq[String])] = Set.empty
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
@@ -92,7 +92,7 @@ class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration)
                                        semanticTable: SemanticTable,
                                        labelIdCardinality: Map[LabelId, Cardinality]) = {
     val labelMap: Map[IdName, Set[HasLabels]] = queryGraph.selections.labelPredicates
-    val labels                                = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
+    val labels = queryGraph.patternNodes.flatMap(labelMap.get).flatten.flatMap(_.labels)
     val results = labels.collect {
       case label if label.id(semanticTable).isDefined && labelIdCardinality.contains(label.id(semanticTable).get) =>
         labelIdCardinality(label.id(semanticTable).get)

@@ -43,26 +43,26 @@ class KillQueryTest extends ExecutionEngineFunSuite {
   Concurrently, another thread tries to terminate all running queries. This should not lead to weird behaviour - only
   well known and expected exceptions should be produced.
    */
-  val emptyMap       = new util.HashMap[String, AnyRef]
-  val NODE_COUNT     = 1000
-  val THREAD_COUNT   = Runtime.getRuntime().availableProcessors() * 2
+  val emptyMap = new util.HashMap[String, AnyRef]
+  val NODE_COUNT = 1000
+  val THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 2
   val SECONDS_TO_RUN = 5
 
   test("run queries and kill them left and right") {
-    val locker         = new PropertyContainerLocker()
+    val locker = new PropertyContainerLocker()
     val contextFactory = Neo4jTransactionalContextFactory.create(graph, locker)
 
     (1 to NODE_COUNT) foreach { x =>
       createLabeledNode(Map("x" -> x, "name" -> ("apa" + x)), "Label")
     }
 
-    val logProvider          = NullLogProvider.getInstance()
+    val logProvider = NullLogProvider.getInstance()
     val compatibilityFactory = new CommunityCompatibilityFactory(graph, kernelAPI, kernelMonitors, logProvider)
-    val engine               = new ExecutionEngine(graph, logProvider, compatibilityFactory)
+    val engine = new ExecutionEngine(graph, logProvider, compatibilityFactory)
 
     val query = "MATCH (n:Label) WHERE n.x > 12 RETURN n.name"
 
-    val continue         = new AtomicBoolean(true)
+    val continue = new AtomicBoolean(true)
     var exceptionsThrown = List.empty[Throwable]
 
     val tcs = new ArrayBlockingQueue[TransactionalContext](1000)

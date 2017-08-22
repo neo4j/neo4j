@@ -27,17 +27,17 @@ object JavaConversionSupport {
 
   def asScala(iterator: PrimitiveLongIterator): Iterator[Long] = new Iterator[Long] {
     def hasNext = iterator.hasNext
-    def next()  = iterator.next()
+    def next() = iterator.next()
   }
 
   def mapToScala[T](iterator: PrimitiveLongIterator)(f: Long => T): Iterator[T] = new Iterator[T] {
     def hasNext = iterator.hasNext
-    def next()  = f(iterator.next())
+    def next() = f(iterator.next())
   }
 
   def asScala(iterator: PrimitiveIntIterator): Iterator[Int] = new Iterator[Int] {
     def hasNext = iterator.hasNext
-    def next()  = iterator.next()
+    def next() = iterator.next()
   }
 
   def asScalaENFXSafe(iterator: PrimitiveIntIterator): Iterator[Int] =
@@ -45,7 +45,7 @@ object JavaConversionSupport {
 
   def mapToScala[T](iterator: PrimitiveIntIterator)(f: Int => T): Iterator[T] = new Iterator[T] {
     def hasNext = iterator.hasNext
-    def next()  = f(iterator.next())
+    def next() = f(iterator.next())
   }
 
   // Same as mapToScala, but handles concurrency exceptions by swallowing exceptions

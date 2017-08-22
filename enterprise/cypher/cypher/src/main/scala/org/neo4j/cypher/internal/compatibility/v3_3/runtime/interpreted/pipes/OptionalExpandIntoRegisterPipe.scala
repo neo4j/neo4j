@@ -51,7 +51,7 @@ case class OptionalExpandIntoRegisterPipe(source: Pipe,
 
     input.flatMap { (inputRow: ExecutionContext) =>
       val fromNode = inputRow.getLongAt(fromOffset)
-      val toNode   = inputRow.getLongAt(toOffset)
+      val toNode = inputRow.getLongAt(toOffset)
 
       if (nodeIsNull(fromNode) || nodeIsNull(toNode)) {
         Iterator(withNulls(inputRow))

@@ -36,18 +36,18 @@ trait ScopeExpression extends Expression {
 case class FilterScope(variable: Variable, innerPredicate: Option[Expression])(val position: InputPosition)
     extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
-  val introducedVariables                          = Set(variable)
+  val introducedVariables = Set(variable)
 }
 
 case class ExtractScope(variable: Variable, innerPredicate: Option[Expression], extractExpression: Option[Expression])(
     val position: InputPosition)
     extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
-  val introducedVariables                          = Set(variable)
+  val introducedVariables = Set(variable)
 }
 
 case class ReduceScope(accumulator: Variable, variable: Variable, expression: Expression)(val position: InputPosition)
     extends ScopeExpression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
-  val introducedVariables                          = Set(accumulator, variable)
+  val introducedVariables = Set(accumulator, variable)
 }

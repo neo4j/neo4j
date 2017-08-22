@@ -69,8 +69,8 @@ object LabelSet {
 }
 
 final case class LabelSet(labelVals: Seq[KeyToken]) extends LabelSpec {
-  val bare       = labelVals.isEmpty
-  def allSets    = if (bare) Seq.empty else Seq(this)
+  val bare = labelVals.isEmpty
+  def allSets = if (bare) Seq.empty else Seq(this)
   def asLabelSet = this
 }
 

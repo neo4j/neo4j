@@ -31,8 +31,8 @@ class LiteralMapTest extends CypherFunSuite {
   test("should_present_all_child_expressions") {
     val x = Variable("x")
     // given
-    val propX      = Property(x, UnresolvedProperty("foo"))
-    val count      = CountStar()
+    val propX = Property(x, UnresolvedProperty("foo"))
+    val count = CountStar()
     val literalMap = LiteralMap(Map("x" -> propX, "count" -> count))
 
     // when

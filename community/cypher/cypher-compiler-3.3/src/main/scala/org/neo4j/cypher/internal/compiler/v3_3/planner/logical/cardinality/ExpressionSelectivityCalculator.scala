@@ -140,7 +140,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val indexSelectivities = labels.toIndexedSeq.flatMap { labelName =>
       (labelName.id, propertyKey.id) match {
         case (Some(labelId), Some(propertyKeyId)) =>
-          val descriptor                         = IndexDescriptor(labelId, propertyKeyId)
+          val descriptor = IndexDescriptor(labelId, propertyKeyId)
           val selectivities: Option[Selectivity] = stats.indexSelectivity(descriptor)
           selectivities
 
@@ -150,7 +150,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     }
 
     val itemSelectivity = combiner.orTogetherSelectivities(indexSelectivities).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
-    val size            = sizeHint.getOrElse(DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt)
+    val size = sizeHint.getOrElse(DEFAULT_NUMBER_OF_INDEX_LOOKUPS.amount.toInt)
     val selectivity =
       combiner.orTogetherSelectivities(1.to(size).map(_ => itemSelectivity)).getOrElse(DEFAULT_EQUALITY_SELECTIVITY)
 
@@ -181,7 +181,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       .divide(prefixLength, 17, RoundingMode.HALF_UP)
       .multiply(math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR))
       .stripTrailingZeros()
-    val slack  = BigDecimalCombiner.negate(equality).multiply(factor)
+    val slack = BigDecimalCombiner.negate(equality).multiply(factor)
     val result = Selectivity.of(equality.add(slack).doubleValue()).get
 
     //we know for sure we are no worse than a propertyExistence check
@@ -191,12 +191,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
   private def calculateSelectivityForValueRangeSeekable(seekable: InequalityRangeSeekable, selections: Selections)(
       implicit semanticTable: SemanticTable): Selectivity = {
-    val name                = seekable.ident.name
-    val propertyKeyName     = seekable.expr.property.propertyKey
+    val name = seekable.ident.name
+    val propertyKeyName = seekable.expr.property.propertyKey
     val equalitySelectivity = calculateSelectivityForPropertyEquality(name, Some(1), selections, propertyKeyName).factor
 
-    val equality        = math.BigDecimal.valueOf(equalitySelectivity)
-    val factor          = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
+    val equality = math.BigDecimal.valueOf(equalitySelectivity)
+    val factor = math.BigDecimal.valueOf(DEFAULT_RANGE_SEEK_FACTOR)
     val negatedEquality = BigDecimalCombiner.negate(equality)
 
     val base = if (seekable.hasEquality) equality else math.BigDecimal.valueOf(0)
@@ -218,7 +218,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val indexPropertyExistsSelectivities = labels.toIndexedSeq.flatMap { labelName =>
       (labelName.id, propertyKey.id) match {
         case (Some(labelId), Some(propertyKeyId)) =>
-          val descriptor                       = IndexDescriptor(labelId, propertyKeyId)
+          val descriptor = IndexDescriptor(labelId, propertyKeyId)
           val selectivity: Option[Selectivity] = stats.indexPropertyExistsSelectivity(descriptor)
           selectivity
 

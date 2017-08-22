@@ -39,10 +39,10 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.control.Breaks._
 
 object CSVResources {
-  val NEO_USER_AGENT_PREFIX          = "NeoLoadCSV_"
+  val NEO_USER_AGENT_PREFIX = "NeoLoadCSV_"
   val DEFAULT_FIELD_TERMINATOR: Char = ','
-  val DEFAULT_BUFFER_SIZE: Int       = 2 * 1024 * 1024
-  val DEFAULT_QUOTE_CHAR: Char       = '"'
+  val DEFAULT_BUFFER_SIZE: Int = 2 * 1024 * 1024
+  val DEFAULT_QUOTE_CHAR: Char = '"'
 
   private def config(legacyCsvQuoteEscaping: Boolean) = new Configuration {
     override def quotationCharacter(): Char = DEFAULT_QUOTE_CHAR
@@ -72,10 +72,10 @@ class CSVResources(cleaner: TaskCloser) extends ExternalCSVResource {
       Readables.wrap(inputStream, url.toString, StandardCharsets.UTF_8)
     }
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
-    val seeker          = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
-    val extractor       = new Extractors(delimiter).string()
-    val intDelimiter    = delimiter.toInt
-    val mark            = new Mark
+    val seeker = CharSeekers.charSeeker(reader, CSVResources.config(legacyCsvQuoteEscaping), true)
+    val extractor = new Extractors(delimiter).string()
+    val intDelimiter = delimiter.toInt
+    val mark = new Mark
 
     cleaner.addTask(_ => {
       seeker.close()

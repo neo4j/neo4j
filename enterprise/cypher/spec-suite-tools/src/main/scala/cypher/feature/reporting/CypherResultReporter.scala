@@ -55,10 +55,10 @@ class CypherResultReporter(producer: OutputProducer,
     )
   }
 
-  private var query: String     = null
-  private var status: String    = Result.PASSED
+  private var query: String = null
+  private var status: String = Result.PASSED
   private val execQRegex: Regex = TCKStepDefinitions.EXECUTING_QUERY.r
-  private val controlQRegex     = TCKStepDefinitions.EXECUTING_CONTROL_QUERY.r
+  private val controlQRegex = TCKStepDefinitions.EXECUTING_CONTROL_QUERY.r
 
   override def done(): Unit = {
     jsonWriter.println(producer.dump())

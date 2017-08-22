@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val ns               = Namespace(List("my", "proc"))(pos)
-  val name             = ProcedureName("foo")(pos)
-  val qualifiedName    = QualifiedName(ns.parts, name.name)
-  val signatureInputs  = IndexedSeq(FieldSignature("a", CTInteger))
+  val ns = Namespace(List("my", "proc"))(pos)
+  val name = ProcedureName("foo")(pos)
+  val qualifiedName = QualifiedName(ns.parts, name.name)
+  val signatureInputs = IndexedSeq(FieldSignature("a", CTInteger))
   val signatureOutputs = Some(IndexedSeq(FieldSignature("x", CTInteger), FieldSignature("y", CTList(CTNode))))
 
   val signature = ProcedureSignature(qualifiedName,
@@ -39,12 +39,12 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
                                      signatureOutputs,
                                      None,
                                      ProcedureReadOnlyAccess(Array.empty[String]))
-  val procLookup: (QualifiedName) => ProcedureSignature           = _ => signature
+  val procLookup: (QualifiedName) => ProcedureSignature = _ => signature
   val fcnLookup: (QualifiedName) => Option[UserFunctionSignature] = _ => None
 
   test("should resolve standalone procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
-    val original   = Query(None, SingleQuery(Seq(unresolved)) _)(pos)
+    val original = Query(None, SingleQuery(Seq(unresolved)) _)(pos)
 
     val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
 
@@ -57,7 +57,7 @@ class RewriteProcedureCallsTest extends CypherFunSuite with AstConstructionTestS
   test("should resolve in-query procedure calls") {
     val unresolved = UnresolvedCall(ns, name, None, None)(pos)
     val headClause = Unwind(varFor("x"), varFor("y"))(pos)
-    val original   = Query(None, SingleQuery(Seq(headClause, unresolved)) _)(pos)
+    val original = Query(None, SingleQuery(Seq(headClause, unresolved)) _)(pos)
 
     val rewritten = rewriteProcedureCalls(procLookup, fcnLookup, original)
 

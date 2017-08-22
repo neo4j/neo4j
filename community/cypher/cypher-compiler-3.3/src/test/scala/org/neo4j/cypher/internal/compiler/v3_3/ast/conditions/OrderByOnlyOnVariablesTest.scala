@@ -30,7 +30,7 @@ class OrderByOnlyOnVariablesTest extends CypherFunSuite with AstConstructionTest
 
   test("unhappy when when order by sort on non-variable expressions") {
     val expr: Expression = UnsignedDecimalIntegerLiteral("42") _
-    val orderByPos       = DummyPosition(42)
+    val orderByPos = DummyPosition(42)
     val ast: ASTNode = Return(false,
                               ReturnItems(false, Seq(AliasedReturnItem(varFor("n"), varFor("n")) _)) _,
                               Some(OrderBy(Seq(AscSortItem(expr) _))(orderByPos)),

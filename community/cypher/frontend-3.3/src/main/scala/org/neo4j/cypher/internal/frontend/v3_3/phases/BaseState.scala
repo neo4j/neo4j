@@ -36,10 +36,10 @@ trait BaseState {
     case _                 => false
   }
 
-  def statement(): Statement              = maybeStatement getOrElse fail("Statement")
-  def semantics(): SemanticState          = maybeSemantics getOrElse fail("Semantics")
+  def statement(): Statement = maybeStatement getOrElse fail("Statement")
+  def semantics(): SemanticState = maybeSemantics getOrElse fail("Semantics")
   def extractedParams(): Map[String, Any] = maybeExtractedParams getOrElse fail("Extracted parameters")
-  def semanticTable(): SemanticTable      = maybeSemanticTable getOrElse fail("Semantic table")
+  def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
 
   protected def fail(what: String) = {
     throw new InternalException(s"$what not yet initialised")

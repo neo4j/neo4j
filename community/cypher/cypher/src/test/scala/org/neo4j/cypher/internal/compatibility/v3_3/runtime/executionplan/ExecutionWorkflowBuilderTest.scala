@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.spi.v3_3.QueryTransactionalContext
 
 class ExecutionWorkflowBuilderTest extends CypherFunSuite {
   val PlannerName = IDPPlannerName
-  val solved      = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(1))
   val logicalPlan = SingleRow()(solved)
 
   test("produces eager results for updating queries") {
@@ -47,7 +47,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
 
-    val pipeInfo       = PipeInfo(pipe, updating = true, None, None, PlannerName)
+    val pipeInfo = PipeInfo(pipe, updating = true, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
@@ -64,8 +64,8 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     // GIVEN
     val pipe = mock[Pipe]
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
-    val context        = mock[QueryContext]
-    val pipeInfo       = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val context = mock[QueryContext]
+    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN
@@ -84,7 +84,7 @@ class ExecutionWorkflowBuilderTest extends CypherFunSuite {
     when(pipe.createResults(any())).thenReturn(Iterator.empty)
     val context = mock[QueryContext]
     when(context.transactionalContext).thenReturn(mock[QueryTransactionalContext])
-    val pipeInfo       = PipeInfo(pipe, updating = false, None, None, PlannerName)
+    val pipeInfo = PipeInfo(pipe, updating = false, None, None, PlannerName)
     val builderFactory = DefaultExecutionResultBuilderFactory(pipeInfo, List.empty, logicalPlan, new FakeIdMap)
 
     // WHEN

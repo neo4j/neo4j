@@ -31,7 +31,7 @@ case class CreateIndex(label: LabelName, properties: List[PropertyKeyName])(val 
 }
 
 case class DropIndex(label: LabelName, properties: List[PropertyKeyName])(val position: InputPosition) extends Command {
-  def property      = properties.head
+  def property = properties.head
   def semanticCheck = Seq()
 }
 

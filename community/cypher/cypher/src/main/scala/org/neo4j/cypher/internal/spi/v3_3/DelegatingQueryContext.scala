@@ -44,11 +44,11 @@ import scala.collection.Iterator
 
 class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
-  protected def singleDbHit[A](value: A): A                                        = value
-  protected def manyDbHits[A](value: Iterator[A]): Iterator[A]                     = value
+  protected def singleDbHit[A](value: A): A = value
+  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
   protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
-  protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator   = value
-  protected def manyDbHits(count: Int): Int                                        = count
+  protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
+  protected def manyDbHits(count: Int): Int = count
 
   type EntityAccessor = inner.EntityAccessor
 
@@ -258,8 +258,8 @@ class DelegatingQueryContext(val inner: QueryContext) extends QueryContext {
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
 
-  protected def singleDbHit[A](value: A): A                                        = value
-  protected def manyDbHits[A](value: Iterator[A]): Iterator[A]                     = value
+  protected def singleDbHit[A](value: A): A = value
+  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
   protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = value
 
   override def delete(id: Long): Unit = singleDbHit(inner.delete(id))

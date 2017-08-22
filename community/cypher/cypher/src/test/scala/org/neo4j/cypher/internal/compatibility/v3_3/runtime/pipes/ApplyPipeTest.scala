@@ -29,7 +29,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should work by applying the identity operator on the rhs") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = pipeWithResults { (state) =>
       Iterator(state.initialContext.get)
     }
@@ -41,7 +41,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should work by applying a  on the rhs") {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhsData = "c" -> Values.intValue(36)
     val rhs = pipeWithResults { (state) =>
       Iterator(ExecutionContext.empty += rhsData)
@@ -54,7 +54,7 @@ class ApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should work even if inner pipe overwrites values") {
     val lhsData = List(Map("a" -> 1, "b" -> 3), Map("a" -> 2, "b" -> 4))
-    val lhs     = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber, "b" -> CTNumber)
     val rhs = pipeWithResults { (state) =>
       Iterator(state.initialContext.get += "b" -> null)
     }

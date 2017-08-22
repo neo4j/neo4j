@@ -51,8 +51,8 @@ class IDPSolver[Solvable, Result, Context](
   def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable])(
       implicit context: Context): Iterator[(Set[Solvable], Result)] = {
     val registry = registryFactory()
-    val table    = tableFactory(registry, seed)
-    var toDo     = registry.registerAll(initialToDo)
+    val table = tableFactory(registry, seed)
+    var toDo = registry.registerAll(initialToDo)
 
     // utility functions
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
@@ -60,7 +60,7 @@ class IDPSolver[Solvable, Result, Context](
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var blockSize = 1
       var keepGoing = true
-      val start     = System.currentTimeMillis()
+      val start = System.currentTimeMillis()
 
       while (keepGoing && blockSize <= maxBlockSize) {
         blockSize += 1
@@ -80,7 +80,7 @@ class IDPSolver[Solvable, Result, Context](
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
       val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
-      val bestInBlock                               = goalSelector(blockCandidates)
+      val bestInBlock = goalSelector(blockCandidates)
       bestInBlock.getOrElse {
         throw new IllegalStateException(s"""Found no solution for block with size $blockSize,
               |$blockCandidates were the selected candidates from the table $table""".stripMargin)
@@ -101,7 +101,7 @@ class IDPSolver[Solvable, Result, Context](
     while (toDo.size > 1) {
       iterations += 1
       monitor.startIteration(iterations)
-      val largestFinished         = generateBestCandidates(toDo.size)
+      val largestFinished = generateBestCandidates(toDo.size)
       val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
       monitor.endIteration(iterations, largestFinished, table.size)
       compactBlock(bestGoal, bestInBlock)

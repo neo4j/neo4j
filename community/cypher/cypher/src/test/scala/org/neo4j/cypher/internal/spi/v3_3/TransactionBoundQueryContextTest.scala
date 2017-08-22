@@ -57,10 +57,10 @@ import scala.collection.JavaConverters._
 class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   var graph: GraphDatabaseCypherService = null
-  var outerTx: InternalTransaction      = null
-  var statement: KernelStatement        = null
-  val indexSearchMonitor                = mock[IndexSearchMonitor]
-  val locker                            = mock[PropertyContainerLocker]
+  var outerTx: InternalTransaction = null
+  var statement: KernelStatement = null
+  val indexSearchMonitor = mock[IndexSearchMonitor]
+  val locker = mock[PropertyContainerLocker]
 
   override def beforeEach() {
     super.beforeEach()
@@ -69,7 +69,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val kernelTransaction = mock[KernelTransactionImplementation]
     when(kernelTransaction.securityContext()).thenReturn(AUTH_DISABLED)
     val storeStatement = mock[StorageStatement]
-    val operations     = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
+    val operations = mock[StatementOperationParts](RETURNS_DEEP_STUBS)
     statement =
       new KernelStatement(kernelTransaction, null, storeStatement, new Procedures(), new CanWrite(), LockTracer.NONE)
     statement.initialize(null, operations, PageCursorTracerSupplier.NULL.get())
@@ -85,9 +85,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
-    val tc                   = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
+    val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapper(tc)
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = true)
 
@@ -104,9 +104,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(KernelTransaction.Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
-    val tc                   = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
+    val tc = new Neo4jTransactionalContext(graph, null, null, null, locker, outerTx, statement, null)
     val transactionalContext = TransactionalContextWrapper(tc)
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
     // WHEN
     context.transactionalContext.close(success = false)
 
@@ -121,11 +121,11 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
   test("should return fresh but equal iterators") {
     // GIVEN
     val relTypeName = "LINK"
-    val node        = createMiniGraph(relTypeName)
+    val node = createMiniGraph(relTypeName)
 
-    val tx                   = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // WHEN
     val iterable = DynamicIterable(context.getRelationshipsForIds(node.getId, SemanticDirection.BOTH, None))
@@ -143,9 +143,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   test("should deny non-whitelisted URL protocols for loading") {
     // GIVEN
-    val tx                   = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
@@ -163,9 +163,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     graph.getGraphDatabaseService.shutdown()
     val config = Map[Setting[_], String](GraphDatabaseSettings.allow_file_urls -> "false")
     graph = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase(config.asJava))
-    val tx                   = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     // THEN
     context.getImportURL(new URL("http://localhost:7474/data.csv")) should equal(
@@ -185,9 +185,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     creator.success()
     creator.close()
 
-    val tx                   = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, SecurityContext.AUTH_DISABLED)
     val transactionalContext = TransactionalContextWrapper(createTransactionContext(graph, tx))
-    val context              = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
+    val context = new TransactionBoundQueryContext(transactionalContext)(indexSearchMonitor)
 
     val tracer = transactionalContext.kernelStatisticProvider
     tracer.getPageCacheHits should equal(0)
@@ -209,9 +209,9 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
   private def createMiniGraph(relTypeName: String): Node = {
     val relType = RelationshipType.withName(relTypeName)
-    val tx      = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.writeToken())
+    val tx = graph.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.writeToken())
     try {
-      val node   = graph.createNode()
+      val node = graph.createNode()
       val other1 = graph.createNode()
       val other2 = graph.createNode()
 

@@ -27,43 +27,43 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class PatternExpressionPatternElementNamerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should not touch anything if everything is named") {
-    val original      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[r]->(b)")
+    val original = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[r]->(b)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[r]->(b)")
+    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[r]->(b)")
 
     actual should equal(expected)
     map should be(empty)
   }
 
   test("should name nodes") {
-    val original      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[r]->(b)")
+    val original = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN ()-[r]->(b)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  UNNAMED50`)-[r]->(b)")
+    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (`  UNNAMED50`)-[r]->(b)")
 
     actual should equal(expected)
     processMap(map) should equal(Map(49 -> "  UNNAMED50"))
   }
 
   test("should name relationships") {
-    val original      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[]->(b)")
+    val original = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[]->(b)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected      = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[`  UNNAMED53`]->(b)")
+    val expected = parsePatternExpression("WITH {a} AS a, {r} AS r, {b} AS b LIMIT 1 RETURN (a)-[`  UNNAMED53`]->(b)")
 
     actual should equal(expected)
     processMap(map) should equal(Map(52 -> "  UNNAMED53"))
   }
 
   test("should rename multiple nodes") {
-    val original      = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN ()-[r]->()")
+    val original = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN ()-[r]->()")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
-    val expected      = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN (`  UNNAMED30`)-[r]->(`  UNNAMED38`)")
+    val expected = parsePatternExpression("WITH {r} AS r LIMIT 1 RETURN (`  UNNAMED30`)-[r]->(`  UNNAMED38`)")
 
     actual should equal(expected)
     processMap(map) should equal(Map(29 -> "  UNNAMED30", 37 -> "  UNNAMED38"))
   }
 
   test("should rename multiple relationships") {
-    val original      = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[]-(b)-[]-(c)")
+    val original = parsePatternExpression("WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[]-(b)-[]-(c)")
     val (actual, map) = PatternExpressionPatternElementNamer(original)
     val expected = parsePatternExpression(
       "WITH {a} AS a, {b} AS b, {c} AS c LIMIT 1 RETURN (a)-[`  UNNAMED53`]-(b)-[`  UNNAMED60`]-(c)")
@@ -74,7 +74,7 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
 
   private def processMap(map: Map[PatternElement, Variable]) = {
     map.collect {
-      case (pattern: NodePattern, ident)       => pattern.position.offset              -> ident.name
+      case (pattern: NodePattern, ident)       => pattern.position.offset -> ident.name
       case (pattern: RelationshipChain, ident) => pattern.relationship.position.offset -> ident.name
     }.toMap
   }
@@ -82,7 +82,7 @@ class PatternExpressionPatternElementNamerTest extends CypherFunSuite with Logic
   private def parsePatternExpression(query: String): PatternExpression = {
     parser.parse(query) match {
       case Query(_, SingleQuery(clauses)) =>
-        val ret     = clauses.last.asInstanceOf[Return]
+        val ret = clauses.last.asInstanceOf[Return]
         val patExpr = ret.returnItems.items.head.expression.asInstanceOf[PatternExpression]
         patExpr
     }

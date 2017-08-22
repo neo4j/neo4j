@@ -33,7 +33,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val rhs: LogicalPlan =
       Optional(Expand(singleRow, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"))(solved))(
         solved)
-    val lhs   = newMockedLogicalPlan("a")
+    val lhs = newMockedLogicalPlan("a")
     val input = Apply(lhs, rhs)(solved)
 
     input.endoRewrite(unnestOptional) should equal(
@@ -59,10 +59,10 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
                            VarPatternLength(1, None))(solved)
     val predicate: Equals =
       Equals(Property(varFor("b"), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("1")(pos))(pos)
-    val selection        = Selection(Seq(predicate), expand)(solved)
+    val selection = Selection(Seq(predicate), expand)(solved)
     val rhs: LogicalPlan = Optional(selection)(solved)
-    val lhs              = newMockedLogicalPlan("a")
-    val input            = Apply(lhs, rhs)(solved)
+    val lhs = newMockedLogicalPlan("a")
+    val input = Apply(lhs, rhs)(solved)
 
     input.endoRewrite(unnestOptional) should equal(input)
   }
@@ -72,7 +72,7 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val rhs: LogicalPlan =
       Optional(Expand(singleRow, IdName("a"), SemanticDirection.OUTGOING, Seq.empty, IdName("b"), IdName("r"))(solved))(
         solved)
-    val lhs   = newMockedLogicalPlan("a")
+    val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)(solved)
     val mergeRel =
       MergeCreateRelationship(SingleRow()(solved), IdName("r"), IdName("a"), RelTypeName("T")(pos), IdName("b"), None)(

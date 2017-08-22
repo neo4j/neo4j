@@ -45,7 +45,7 @@ object PatternConverters {
         case _ =>
           throw new IllegalStateException("This should be caught during semantic checking")
       }
-      val reltypes        = rel.types.map(_.name)
+      val reltypes = rel.types.map(_.name)
       val relIteratorName = rel.variable.map(_.name)
       val (allowZeroLength, maxDepth) = rel.length match {
         case Some(Some(ast.Range(lower, max))) => (lower.exists(_.value == 0L), max.map(_.value.toInt))
@@ -81,7 +81,7 @@ object PatternConverters {
   implicit class NodePatternConverter(val node: ast.NodePattern) extends AnyVal {
 
     def asLegacyNode(converter: ExpressionConverters): SingleNode = {
-      val labelTokens: Seq[KeyToken]                 = labels.map(x => commandvalues.UnresolvedLabel(x.name))
+      val labelTokens: Seq[KeyToken] = labels.map(x => commandvalues.UnresolvedLabel(x.name))
       val properties: Map[String, CommandExpression] = node.legacyProperties(converter)
       commands.SingleNode(node.legacyName, labelTokens, properties = properties)
     }

@@ -45,8 +45,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   val types = LazyTypes(Seq.empty[String])
 
   test("node without any relationships produces empty result") {
-    val n1            = createNode()
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val n1 = createNode()
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -59,7 +59,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -73,7 +73,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n1 = createNode()
     val n2 = createNode()
     relate(n1, n2)
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 0, 2, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -95,9 +95,9 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
-    val min           = 3
-    val max           = 5
+    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val min = 3
+    val max = 5
     val pipeUnderTest = createPipe(src, min, max, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -121,7 +121,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n1)
     relate(n1, n2)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
     val pipeUnderTest = createPipe(src, 2, 2, SemanticDirection.BOTH)
 
     graph.withTx { tx =>
@@ -146,8 +146,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2, "k" -> 1)
     relate(n2, n3, "k" -> 2)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate     = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate = Equals(Property(Variable("r"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, predicate, True())
 
     graph.withTx { tx =>
@@ -172,8 +172,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     relate(n1, n2)
     relate(n2, n3)
 
-    val src           = new FakePipe(Iterator(Map("from" -> n1)))
-    val predicate     = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
+    val src = new FakePipe(Iterator(Map("from" -> n1)))
+    val predicate = Equals(Property(Variable("to"), UnresolvedProperty("k")), Literal(1))
     val pipeUnderTest = createPipe(src, 1, 2, SemanticDirection.BOTH, True(), predicate)
 
     graph.withTx { tx =>
@@ -206,7 +206,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val n5 = nodes(5)
     relate(n1, n4)
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes.head)))
+    val src = new FakePipe(Iterator(Map("from" -> nodes.head)))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -225,7 +225,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
         y
     }
 
-    val src           = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
+    val src = new FakePipe(Iterator(Map("from" -> nodes(1)), Map("from" -> nodes(5))))
     val pipeUnderTest = createPipe(src, 1, 4, SemanticDirection.OUTGOING)
 
     graph.withTx { tx =>
@@ -247,7 +247,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   private def setUpGraph(seed: Long, POPULATION: Int, friendCount: Int = 50): IndexedSeq[Node] = {
     val r = new Random(seed)
 
-    var tx    = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
+    var tx = graph.beginTransaction(Type.`implicit`, SecurityContext.AUTH_DISABLED)
     var count = 0
 
     def checkAndSwitch() = {
@@ -282,10 +282,10 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   }
 
   private def testNode(startNode: Node, r: Random) = {
-    val min           = r.nextInt(3)
-    val max           = min + 1 + r.nextInt(3)
-    val sourcePipe    = new FakePipe(Iterator(Map("from" -> startNode)))
-    val sourcePipe2   = new FakePipe(Iterator(Map("from" -> startNode)))
+    val min = r.nextInt(3)
+    val max = min + 1 + r.nextInt(3)
+    val sourcePipe = new FakePipe(Iterator(Map("from" -> startNode)))
+    val sourcePipe2 = new FakePipe(Iterator(Map("from" -> startNode)))
     val pipeUnderTest = createPipe(sourcePipe, min, max, SemanticDirection.BOTH)
     val pipe = VarLengthExpandPipe(sourcePipe2,
                                    "from",
@@ -312,7 +312,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
     val oldThing = distinctAfterVarLengthExpand.toSet
     val newThing = distinctExpand.toSet
     if (oldThing != newThing) {
-      val missingFromNew   = oldThing -- newThing
+      val missingFromNew = oldThing -- newThing
       val shouldNotBeInNew = newThing -- oldThing
       var message =
         s"""startNode: $startNode
@@ -335,9 +335,9 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
   test("random and compare") {
     // runs DistinctVarExpand and VarExpand side-by-side and checks that the reachable nodes are the same
     val POPULATION: Int = 1 * 1000
-    val seed            = System.currentTimeMillis()
-    val nodes           = setUpGraph(seed, POPULATION, 20)
-    val r               = new Random
+    val seed = System.currentTimeMillis()
+    val nodes = setUpGraph(seed, POPULATION, 20)
+    val r = new Random
 
     val start = System.currentTimeMillis()
 

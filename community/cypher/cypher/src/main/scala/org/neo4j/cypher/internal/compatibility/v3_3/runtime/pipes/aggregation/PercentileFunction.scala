@@ -32,8 +32,8 @@ abstract class PercentileFunction(val value: Expression, val percentile: Express
     with NumericExpressionOnly
     with NumericHelper {
 
-  protected var temp         = Vector[AnyValue]()
-  protected var count: Int   = 0
+  protected var temp = Vector[AnyValue]()
+  protected var count: Int = 0
   protected var perc: Double = 0
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {
@@ -64,8 +64,8 @@ class PercentileContFunction(value: Expression, percentile: Expression) extends 
       temp.last
     } else if (count > 1) {
       val floatIdx = perc * (count - 1)
-      val floor    = floatIdx.toInt
-      val ceil     = math.ceil(floatIdx).toInt
+      val floor = floatIdx.toInt
+      val ceil = math.ceil(floatIdx).toInt
       if (ceil == floor || floor == count - 1) temp(floor)
       else
         Values.doubleValue(
@@ -88,7 +88,7 @@ class PercentileDiscFunction(value: Expression, percentile: Expression) extends 
       temp.last
     } else if (count > 1) {
       val floatIdx = perc * count
-      var idx      = floatIdx.toInt
+      var idx = floatIdx.toInt
       idx =
         if (floatIdx != idx || idx == 0) idx
         else idx - 1

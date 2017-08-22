@@ -27,10 +27,10 @@ case object expandCallWhere extends Rewriter {
     case query @ SingleQuery(clauses) =>
       val newClauses = clauses.flatMap {
         case unresolved @ UnresolvedCall(_, _, _, Some(result @ ProcedureResult(_, optWhere @ Some(where)))) =>
-          val newResult     = result.copy(where = None)(result.position)
+          val newResult = result.copy(where = None)(result.position)
           val newUnresolved = unresolved.copy(declaredResult = Some(newResult))(unresolved.position)
-          val newItems      = ReturnItems(includeExisting = true, Seq.empty)(where.position)
-          val newWith       = With(distinct = false, newItems, None, None, None, optWhere)(where.position)
+          val newItems = ReturnItems(includeExisting = true, Seq.empty)(where.position)
+          val newWith = With(distinct = false, newItems, None, None, None, optWhere)(where.position)
           Seq(newUnresolved, newWith)
 
         case clause =>

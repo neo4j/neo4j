@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object MapType {
   val instance = new MapType() {
-    val parentType               = CTAny
-    override val toString        = "Map"
+    val parentType = CTAny
+    override val toString = "Map"
     override val toNeoTypeString = "MAP?"
 
   }

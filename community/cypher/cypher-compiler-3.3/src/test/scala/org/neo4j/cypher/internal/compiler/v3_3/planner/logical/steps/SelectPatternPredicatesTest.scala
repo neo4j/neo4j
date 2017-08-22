@@ -32,11 +32,11 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val sdir       = SemanticDirection.OUTGOING
-  val dir        = SemanticDirection.OUTGOING
-  val types      = Seq.empty[RelTypeName]
-  val relName    = "  UNNAMED1"
-  val nodeName   = "  UNNAMED2"
+  val sdir = SemanticDirection.OUTGOING
+  val dir = SemanticDirection.OUTGOING
+  val types = Seq.empty[RelTypeName]
+  val relName = "  UNNAMED1"
+  val nodeName = "  UNNAMED2"
   val patternRel = PatternRelationship(relName, ("a", nodeName), dir, types, SimplePatternLength)
 
   // MATCH (a) WHERE (a)-->()
@@ -57,7 +57,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
-    val predicate  = Predicate(Set(IdName("a")), patternExp)
+    val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
@@ -95,7 +95,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
     val notExpr = Not(patternExp) _
     // Given
-    val predicate  = Predicate(Set(IdName("a")), notExpr)
+    val predicate = Predicate(Set(IdName("a")), notExpr)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
@@ -132,7 +132,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // Given
-    val predicate  = Predicate(Set(IdName("a")), patternExp)
+    val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
@@ -167,7 +167,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     ) _
     val orsExp: Ors = Ors(Set(patternExp, equals)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -185,9 +185,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       planContext = newMockedPlanContext
     )
 
-    val aPlan     = newMockedLogicalPlan("a")
+    val aPlan = newMockedLogicalPlan("a")
     val singleRow = Argument(Set(IdName("a")))(solved)()
-    val inner     = Expand(singleRow, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
+    val inner = Expand(singleRow, IdName("a"), dir, types, IdName(nodeName), patternRel.name, ExpandAll)(solved)
 
     // When
     val result = selectPatternPredicates(aPlan, qg)
@@ -203,9 +203,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(varFor("a"), PropertyKeyName("prop") _) _,
       StringLiteral("42") _
     ) _
-    val orsExp      = Ors(Set(Not(patternExp)(pos), equals)) _
+    val orsExp = Ors(Set(Not(patternExp)(pos), equals)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -250,9 +250,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp      = Ors(Set(patternExp, patternExp2)) _
+    val orsExp = Ors(Set(patternExp, patternExp2)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -311,9 +311,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       ) _) _)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp      = Ors(Set(patternExp, Not(patternExp2) _)) _
+    val orsExp = Ors(Set(patternExp, Not(patternExp2) _)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -372,9 +372,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       ) _) _)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp      = Ors(Set(Not(patternExp) _, patternExp2)) _
+    val orsExp = Ors(Set(Not(patternExp) _, patternExp2)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -438,9 +438,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       ) _) _)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp      = Ors(Set(equals, patternExp, Not(patternExp2) _)) _
+    val orsExp = Ors(Set(equals, patternExp, Not(patternExp2) _)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),
@@ -506,9 +506,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       ) _) _)
     val patternRel2 = PatternRelationship("  UNNAMED3", ("a", "  UNNAMED4"), dir, types, SimplePatternLength)
 
-    val orsExp      = Ors(Set(equals, Not(patternExp) _, patternExp2)) _
+    val orsExp = Ors(Set(equals, Not(patternExp) _, patternExp2)) _
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph(
       patternRelationships = Set(patternRel),
       argumentIds = Set(IdName("a")),

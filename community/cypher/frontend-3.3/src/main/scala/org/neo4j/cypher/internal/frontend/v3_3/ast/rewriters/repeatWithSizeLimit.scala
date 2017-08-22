@@ -35,14 +35,14 @@ case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewr
 
   final def apply(that: AnyRef): AnyRef = {
     val initialSize = astNodeSize(that)
-    val limit       = initialSize * initialSize
+    val limit = initialSize * initialSize
 
     innerApply(that, limit)
   }
 
   @tailrec
   private def innerApply(that: AnyRef, limit: Int): AnyRef = {
-    val t       = rewriter.apply(that)
+    val t = rewriter.apply(that)
     val newSize = astNodeSize(t)
 
     if (newSize > limit) {

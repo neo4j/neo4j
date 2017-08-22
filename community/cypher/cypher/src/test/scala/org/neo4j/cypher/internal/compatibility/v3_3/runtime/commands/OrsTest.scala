@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class OrsTest extends CypherFunSuite {
   private implicit val state = QueryStateHelper.empty
-  private val ctx            = ExecutionContext.empty
+  private val ctx = ExecutionContext.empty
 
   private val nullPredicate = mock[Predicate]
   when(nullPredicate.isMatch(ctx)).thenReturn(None)
@@ -57,6 +57,6 @@ class OrsTest extends CypherFunSuite {
   }
 
   private def ors(predicate: Predicate, predicates: Predicate*) = Ors(NonEmptyList(predicate, predicates: _*))
-  private def T                                                 = True()
-  private def F                                                 = Not(True())
+  private def T = True()
+  private def F = Not(True())
 }

@@ -80,7 +80,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override type EntityAccessor = NodeManager
 
-  override val nodeOps         = new NodeOperations
+  override val nodeOps = new NodeOperations
   override val relationshipOps = new RelationshipOperations
   override lazy val entityAccessor: NodeManager =
     transactionalContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
@@ -157,7 +157,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
 
   override def indexSeek(index: IndexDescriptor, values: Seq[Any]) = {
     indexSearchMonitor.indexSeek(index, values)
-    val predicates  = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
+    val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
     val indexResult = transactionalContext.statement.readOperations().indexQuery(index, predicates: _*)
     JavaConversionSupport.mapToScalaENFXSafe(indexResult)(nodeOps.getById)
   }
@@ -184,8 +184,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     }
 
     val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange  = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
-    val anyRange        = groupedRanges.get(classOf[Any])
+    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val anyRange = groupedRanges.get(classOf[Any])
 
     if (anyRange.nonEmpty) {
       // If we get back an exclusion test, the range could return values otherwise it is empty
@@ -329,7 +329,7 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   override def lockingUniqueIndexSeek(index: IndexDescriptor, values: Seq[Any]): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, values)
     val predicates = index.properties.zip(values).map(p => IndexQuery.exact(p._1, p._2))
-    val nodeId     = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, predicates: _*)
+    val nodeId = transactionalContext.statement.readOperations().nodeGetFromUniqueIndexSeek(index, predicates: _*)
     if (StatementConstants.NO_SUCH_NODE == nodeId) None else Some(nodeOps.getById(nodeId))
   }
 
@@ -699,8 +699,8 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
     pathFinder.findAllPaths(left, right).iterator().asScala
   }
 
-  type KernelProcedureCall           = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
-  type KernelFunctionCall            = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+  type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
   type KernelAggregationFunctionCall = (KernelQualifiedName) => Aggregator
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
@@ -744,11 +744,11 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
-    val kn      = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read    = call(kn, toArray)
+    val read = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
-      override def hasNext: Boolean      = read.hasNext
+      override def hasNext: Boolean = read.hasNext
       override def next(): Array[AnyRef] = read.next
     }
   }
@@ -772,13 +772,13 @@ final class TransactionBoundQueryContext(val transactionalContext: Transactional
   }
 
   private def callFunction(name: QualifiedName, args: Seq[Any], call: KernelFunctionCall) = {
-    val kn      = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     call(kn, toArray)
   }
 
   private def callAggregationFunction(name: QualifiedName, call: KernelAggregationFunctionCall) = {
-    val kn         = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val aggregator = call(kn)
     new UserDefinedAggregator {
       override def result = aggregator.result()

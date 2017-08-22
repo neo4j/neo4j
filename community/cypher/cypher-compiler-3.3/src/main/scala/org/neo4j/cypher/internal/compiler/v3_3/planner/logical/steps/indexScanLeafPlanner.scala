@@ -36,7 +36,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
   override def producePlanFor(e: Expression, qg: QueryGraph)(
       implicit context: LogicalPlanningContext): Option[LeafPlansForVariable] = {
     implicit val semanticTable = context.semanticTable
-    val lpp                    = context.logicalPlanProducer
+    val lpp = context.logicalPlanProducer
 
     e match {
       // MATCH (n:User) WHERE n.prop CONTAINS 'substring' RETURN n
@@ -53,7 +53,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
 
       // MATCH (n:User) WHERE exists(n.prop) RETURN n
       case predicate @ AsPropertyScannable(scannable) =>
-        val name            = scannable.name
+        val name = scannable.name
         val propertyKeyName = scannable.propertyKey.name
 
         val plans = produce(name, propertyKeyName, qg, scannable.property, scannable.expr, lpp.planNodeIndexScan)
@@ -96,19 +96,19 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                       planProducer: PlanProducer)(implicit context: LogicalPlanningContext,
                                                   semanticTable: SemanticTable): Set[LogicalPlan] = {
     val labelPredicates: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
-    val idName                                       = IdName(variableName)
+    val idName = IdName(variableName)
 
-    for (labelPredicate  <- labelPredicates.getOrElse(idName, Set.empty);
-         labelName       <- labelPredicate.labels;
+    for (labelPredicate <- labelPredicates.getOrElse(idName, Set.empty);
+         labelName <- labelPredicate.labels;
          indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName);
-         labelId         <- labelName.id)
+         labelId <- labelName.id)
       yield {
         val hint = qg.hints.collectFirst {
           case hint @ UsingIndexHint(Variable(`variableName`), `labelName`, properties)
               if properties.map(_.name) == Seq(propertyKeyName) =>
             hint
         }
-        val keyToken   = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
+        val keyToken = PropertyKeyToken(property.propertyKey, property.propertyKey.id.head)
         val labelToken = LabelToken(labelName, labelId)
         val predicates = Seq(predicate, labelPredicate)
         planProducer(idName, labelToken, keyToken, predicates, hint, qg.argumentIds)

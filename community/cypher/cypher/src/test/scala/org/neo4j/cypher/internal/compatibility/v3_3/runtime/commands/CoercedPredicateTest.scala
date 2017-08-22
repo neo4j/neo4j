@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CoercedPredicateTest extends CypherFunSuite {
 
-  val ctx: ExecutionContext      = null
+  val ctx: ExecutionContext = null
   implicit val state: QueryState = QueryStateHelper.empty
 
   test("should_coerce_non_empty_collection_to_true") {

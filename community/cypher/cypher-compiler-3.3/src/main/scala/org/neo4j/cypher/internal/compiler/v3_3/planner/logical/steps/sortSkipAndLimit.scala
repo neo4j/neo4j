@@ -41,7 +41,7 @@ object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
           case (sortItems, s, l) =>
             require(sortItems.forall(_.expression.isInstanceOf[Variable]))
             val sortDescriptions = sortItems.map(sortDescription)
-            val sortedPlan       = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
+            val sortedPlan = context.logicalPlanProducer.planSort(plan, sortDescriptions, sortItems)
 
             addLimit(l, addSkip(s, sortedPlan))
         }

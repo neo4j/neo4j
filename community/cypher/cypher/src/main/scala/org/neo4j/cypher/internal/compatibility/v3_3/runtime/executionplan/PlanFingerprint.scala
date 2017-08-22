@@ -34,7 +34,7 @@ class PlanFingerprintReference(clock: Clock,
   def isStale(lastCommittedTxId: () => Long, statistics: GraphStatistics): Boolean = {
     fingerprint.fold(false) { f =>
       lazy val currentTimeMillis = clock.millis()
-      lazy val currentTxId       = lastCommittedTxId()
+      lazy val currentTxId = lastCommittedTxId()
 
       f.creationTimeMillis + minimalTimeToLive <= currentTimeMillis &&
       check(currentTxId != f.txId, () => { fingerprint = Some(f.copy(creationTimeMillis = currentTimeMillis)) }) &&

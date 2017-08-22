@@ -25,7 +25,7 @@ class ASTNodeTest extends CypherFunSuite {
     val position = DummyPosition(0)
   }
 
-  case class Val(int: Int)           extends Exp
+  case class Val(int: Int) extends Exp
   case class Add(lhs: Exp, rhs: Exp) extends Exp
 
   test("rewrite should match and replace expressions") {

@@ -204,6 +204,6 @@ class countStorePlannerTest
   }
 
   private def beCountPlanFor(variable: String) = IsCountPlan(variable, false)
-  private def notBeCountPlan                   = new IsCountPlan("", true)
+  private def notBeCountPlan = new IsCountPlan("", true)
 
 }

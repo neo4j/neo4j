@@ -249,7 +249,7 @@ case class RangeFunction(start: Expression, end: Expression, step: Expression) e
     if (stepVal.longValue() == 0L)
       throw new InvalidArgumentException("step argument to range() cannot be zero")
 
-    val startVal        = asLong(start(ctx))
+    val startVal = asLong(start(ctx))
     val inclusiveEndVal = asLong(end(ctx))
 
     VirtualValues.range(startVal.longValue(), inclusiveEndVal.longValue(), stepVal.longValue())

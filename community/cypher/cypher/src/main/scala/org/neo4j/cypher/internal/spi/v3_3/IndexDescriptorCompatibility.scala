@@ -41,7 +41,7 @@ trait IndexDescriptorCompatibility {
   implicit def toLabelSchemaDescriptor(tc: TransactionBoundTokenContext,
                                        labelName: String,
                                        propertyKeys: Seq[String]): LabelSchemaDescriptor = {
-    val labelId: Int             = tc.getLabelId(labelName)
+    val labelId: Int = tc.getLabelId(labelName)
     val propertyKeyIds: Seq[Int] = propertyKeys.map(tc.getPropertyKeyId)
     toLabelSchemaDescriptor(labelId, propertyKeyIds)
   }

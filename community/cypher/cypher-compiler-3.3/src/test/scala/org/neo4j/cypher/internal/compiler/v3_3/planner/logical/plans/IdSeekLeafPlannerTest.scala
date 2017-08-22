@@ -34,7 +34,7 @@ import scala.collection.mutable
 
 class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val statistics                   = hardcodedStatistics
+  private val statistics = hardcodedStatistics
   private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   // NOTE: the ronja rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
@@ -198,7 +198,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       ) _
     ) _
     val from = IdName("from")
-    val end  = IdName("to")
+    val end = IdName("to")
     val patternRel =
       PatternRelationship(IdName("r"), (from, end), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
@@ -250,7 +250,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       ) _
     ) _
     val from = IdName("from")
-    val end  = IdName("to")
+    val end = IdName("to")
     val patternRel =
       PatternRelationship(IdName("r"), (from, end), SemanticDirection.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
@@ -296,7 +296,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
     ) _
     val from = IdName("from")
-    val end  = IdName("to")
+    val end = IdName("to")
 
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1)))
@@ -349,7 +349,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
     ) _
     val from = IdName("from")
-    val end  = IdName("to")
+    val end = IdName("to")
 
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("X" -> RelTypeId(1), "Y" -> RelTypeId(2)))

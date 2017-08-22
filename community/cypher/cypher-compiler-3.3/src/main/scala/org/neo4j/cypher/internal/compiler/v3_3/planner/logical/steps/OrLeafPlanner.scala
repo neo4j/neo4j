@@ -37,7 +37,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
         // This is a Seq of possible solutions per expression
         val plansPerExpression: Seq[Seq[LeafPlansForVariable]] = exprs.toSeq.map { (e: Expression) =>
           val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg))
-          val qgForExpression                              = qg.copy(selections = Selections.from(e))
+          val qgForExpression = qg.copy(selections = Selections.from(e))
           plansForVariables.map(p => p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression))))
         }
 
@@ -47,7 +47,7 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
           Seq.empty
         } else {
           val combination: Seq[Seq[LeafPlansForVariable]] = combine(plansPerExpression)
-          val step2: Seq[Seq[LogicalPlan]]                = combination.map(_.flatMap(_.plans))
+          val step2: Seq[Seq[LogicalPlan]] = combination.map(_.flatMap(_.plans))
 
           val producer = context.logicalPlanProducer
           step2.flatMap {

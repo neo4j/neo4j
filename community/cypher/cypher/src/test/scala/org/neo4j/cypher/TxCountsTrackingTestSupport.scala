@@ -41,8 +41,8 @@ trait TxCountsTrackingTestSupport extends CypherTestSupport {
     deleteAllEntities()
 
     val initialTxCounts = graph.txCounts
-    val result          = f
-    val txCounts        = graph.txCounts - initialTxCounts
+    val result = f
+    val txCounts = graph.txCounts - initialTxCounts
 
     (result, txCounts)
   }

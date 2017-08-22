@@ -31,7 +31,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
   import GeneratedQueryStructure.lowerType
 
   private val types: scala.collection.mutable.Map[Map[String, CodeGenType], TypeReference] = mutable.Map.empty
-  private var nameId                                                                       = 0
+  private var nameId = 0
 
   def typeReference(structure: Map[String, CodeGenType]): TypeReference = {
     types.getOrElseUpdate(

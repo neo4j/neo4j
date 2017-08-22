@@ -55,7 +55,7 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
     val bestPlan =
       if (qg.patternRelationships.nonEmpty) {
 
-        val generators          = solverConfig.solvers(qg).map(_(qg))
+        val generators = solverConfig.solvers(qg).map(_(qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
         val generator = selectingGenerators.foldLeft(
           IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
@@ -142,13 +142,13 @@ object SingleComponentPlanner {
                                                              pattern))
       case plan =>
         val (start, end) = pattern.nodes
-        val leftExpand   = planSinglePatternSide(qg, pattern, plan, start)
-        val rightExpand  = planSinglePatternSide(qg, pattern, plan, end)
+        val leftExpand = planSinglePatternSide(qg, pattern, plan, start)
+        val rightExpand = planSinglePatternSide(qg, pattern, plan, end)
 
-        val startJoinNodes   = Set(start)
-        val endJoinNodes     = Set(end)
-        val maybeStartPlan   = leaves.find(_.availableSymbols == startJoinNodes)
-        val maybeEndPlan     = leaves.find(_.availableSymbols == endJoinNodes)
+        val startJoinNodes = Set(start)
+        val endJoinNodes = Set(end)
+        val maybeStartPlan = leaves.find(_.availableSymbols == startJoinNodes)
+        val maybeEndPlan = leaves.find(_.availableSymbols == endJoinNodes)
         val cartesianProduct = planSinglePatternCartesian(qg, pattern, start, maybeStartPlan, maybeEndPlan)
         val joins = planSinglePatternJoins(qg,
                                            leftExpand,
@@ -188,7 +188,7 @@ object SingleComponentPlanner {
     (maybeStartPlan, maybeEndPlan) match {
       case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
         val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
-        val endJoinHints   = qg.joinHints.filter(_.coveredBy(endJoinNodes))
+        val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
         val join1a = leftExpand.map(expand =>
           context.logicalPlanProducer.planNodeHashJoin(endJoinNodes, expand, endPlan, endJoinHints))
         val join1b = leftExpand.map(expand =>

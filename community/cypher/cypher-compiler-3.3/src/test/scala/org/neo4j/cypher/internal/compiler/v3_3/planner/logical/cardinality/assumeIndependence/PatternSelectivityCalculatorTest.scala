@@ -48,14 +48,14 @@ class PatternSelectivityCalculatorTest
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(0))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ZERO)
   }
@@ -65,14 +65,14 @@ class PatternSelectivityCalculatorTest
     when(stats.nodesWithLabelCardinality(any())).thenReturn(Cardinality(1))
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
   }
@@ -89,8 +89,8 @@ class PatternSelectivityCalculatorTest
     val label = LabelName("L")(pos)
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = mutable.Map("L" -> LabelId(0)))
-    implicit val selections    = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
-    val result                 = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
+    implicit val selections = Selections(Set(Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(label))(pos))))
+    val result = calculator.apply(relationship, Map(IdName("a") -> Set(label)))
 
     result should equal(Selectivity.ONE)
   }
@@ -108,7 +108,7 @@ class PatternSelectivityCalculatorTest
     })
     when(stats.cardinalityByLabelsAndRelationshipType(any(), any(), any())).thenReturn(Cardinality(42))
 
-    val calculator   = PatternSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator = PatternSelectivityCalculator(stats, IndependenceCombiner)
     val relationship = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
     val labels = new mutable.HashMap[String, LabelId]()
@@ -117,8 +117,8 @@ class PatternSelectivityCalculatorTest
     val predicates = labelNames.map(l => Predicate(Set[IdName]("a"), HasLabels(varFor("a"), Seq(l))(pos))).toSet
 
     implicit val semanticTable = new SemanticTable(resolvedLabelIds = labels)
-    implicit val selections    = Selections(predicates)
-    val result                 = calculator.apply(relationship, Map.empty)
+    implicit val selections = Selections(predicates)
+    val result = calculator.apply(relationship, Map.empty)
 
     result should equal(Selectivity.ONE)
   }

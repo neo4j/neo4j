@@ -59,10 +59,10 @@ trait LogicalPlanningTestSupport2
     with LogicalPlanConstructionTestSupport {
   self: CypherFunSuite =>
 
-  val solved            = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
-  var parser            = new CypherParser
+  val solved = CardinalityEstimation.lift(PlannerQuery.empty, Cardinality(0))
+  var parser = new CypherParser
   val rewriterSequencer = RewriterStepSequencer.newValidating _
-  var astRewriter       = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
+  var astRewriter = new ASTRewriter(rewriterSequencer, literalExtraction = Never)
   final var planner = new QueryPlanner() {
     def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext,
                                           leafPlan: Option[LogicalPlan] = None): LogicalPlan =
@@ -183,7 +183,7 @@ trait LogicalPlanningTestSupport2
 
     def getLogicalPlanFor(queryString: String): (Option[PeriodicCommit], LogicalPlan, SemanticTable) = {
       val mkException = new SyntaxExceptionCreator(queryString, Some(pos))
-      val metrics     = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
+      val metrics = metricsFactory.newMetrics(planContext.statistics, mock[ExpressionEvaluator])
       def context =
         ContextHelper.create(planContext = planContext,
                              exceptionCreator = mkException,
@@ -191,8 +191,8 @@ trait LogicalPlanningTestSupport2
                              config = cypherCompilerConfig,
                              queryGraphSolver = queryGraphSolver)
 
-      val state       = LogicalPlanState(queryString, None, IDPPlannerName)
-      val output      = pipeLine.transform(state, context)
+      val state = LogicalPlanState(queryString, None, IDPPlannerName)
+      val output = pipeLine.transform(state, context)
       val logicalPlan = output.logicalPlan.asInstanceOf[ProduceResult].inner
       (output.periodicCommit, logicalPlan, output.semanticTable())
     }
@@ -203,7 +203,7 @@ trait LogicalPlanningTestSupport2
         .queryGraphCardinalityModel(qg, input, semanticTable)
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics             = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
+      val metrics = metricsFactory.newMetrics(config.graphStatistics, mock[ExpressionEvaluator])
       val logicalPlanProducer = LogicalPlanProducer(metrics.cardinality)
       val ctx = LogicalPlanningContext(
         planContext = planContext,

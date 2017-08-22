@@ -35,12 +35,12 @@ class HistoryTest extends CypherFunSuite {
   val typ = RelationshipType.withName("REL")
 
   test("excludingPatternRelsWorksAsExpected") {
-    val a                       = new PatternNode("a")
-    val b                       = new PatternNode("b")
+    val a = new PatternNode("a")
+    val b = new PatternNode("b")
     val pr: PatternRelationship = a.relateTo("r", b, Seq(), SemanticDirection.BOTH)
-    val r: Relationship         = mock[Relationship]
-    val mp                      = MatchingPair(pr, r)
-    val history                 = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
+    val r: Relationship = mock[Relationship]
+    val mp = MatchingPair(pr, r)
+    val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
 
     history.removeSeen(Set[PatternRelationship](pr)) shouldBe empty
   }
@@ -56,7 +56,7 @@ class HistoryTest extends CypherFunSuite {
   }
 
   test("should_know_that_it_has_not_seen_a_relationship") {
-    val r       = mock[Relationship]
+    val r = mock[Relationship]
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty)
     history.hasSeen(r) should equal(false)
   }

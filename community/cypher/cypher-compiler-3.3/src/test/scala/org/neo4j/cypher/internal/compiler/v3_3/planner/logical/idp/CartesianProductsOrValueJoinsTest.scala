@@ -127,7 +127,7 @@ class CartesianProductsOrValueJoinsTest
         case _                                                                                    => 100.0
       }
     }.withLogicalPlanningContext { (cfg, ctx) =>
-      implicit val x   = ctx
+      implicit val x = ctx
       implicit val kit = ctx.config.toKit()
 
       var plans: Set[PlannedComponent] = input

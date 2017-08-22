@@ -33,15 +33,15 @@ import org.neo4j.cypher.internal.ir.v3_3._
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val nIdent: Variable            = Variable("n") _
-  val A: LabelName                = LabelName("A") _
-  val B: LabelName                = LabelName("B") _
-  val X: LabelName                = LabelName("X") _
-  val Y: LabelName                = LabelName("Y") _
+  val nIdent: Variable = Variable("n") _
+  val A: LabelName = LabelName("A") _
+  val B: LabelName = LabelName("B") _
+  val X: LabelName = LabelName("X") _
+  val Y: LabelName = LabelName("Y") _
   val lit42: SignedIntegerLiteral = SignedDecimalIntegerLiteral("42") _
   val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43") _
 
-  val patternRel        = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
+  val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   val nProp: Expression = Property(Variable("n") _, PropertyKeyName("prop") _) _
 
   test("RETURN 42") {
@@ -54,7 +54,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.horizon should equal(
       RegularQueryProjection(
         Map(
-          "42"    -> SignedDecimalIntegerLiteral("42") _,
+          "42" -> SignedDecimalIntegerLiteral("42") _,
           "'foo'" -> StringLiteral("foo") _
         )))
   }
@@ -425,10 +425,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ))
     query.queryGraph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
 
-    val identR    = Variable("r")(null)
-    val identR2   = Variable("r2")(null)
-    val inner     = AnyIterablePredicate(FilterScope(identR2, Some(Equals(identR, identR2)(null)))(null), identR2)(null)
-    val outer     = NoneIterablePredicate(FilterScope(identR, Some(inner))(null), identR)(null)
+    val identR = Variable("r")(null)
+    val identR2 = Variable("r2")(null)
+    val inner = AnyIterablePredicate(FilterScope(identR2, Some(Equals(identR, identR2)(null)))(null), identR2)(null)
+    val outer = NoneIterablePredicate(FilterScope(identR, Some(inner))(null), identR)(null)
     val predicate = Predicate(Set(IdName("r2"), IdName("r")), outer)
 
     query.queryGraph.selections should equal(Selections(Set(predicate)))
@@ -520,10 +520,10 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("match (a) where (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName    = "  UNNAMED20"
-    val nodeName   = "  UNNAMED23"
-    val exp        = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
-    val predicate  = Predicate(Set(IdName("a")), exp)
+    val relName = "  UNNAMED20"
+    val nodeName = "  UNNAMED23"
+    val exp = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
+    val predicate = Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
 
     query.queryGraph.selections should equal(selections)
@@ -531,7 +531,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("match (n) return n.prop order by n.prop2 DESC") {
-    val query  = buildPlannerQuery("match (n) return n.prop order by n.prop2 DESC")
+    val query = buildPlannerQuery("match (n) return n.prop order by n.prop2 DESC")
     val result = query.toString
 
     val expectation =
@@ -559,7 +559,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val query  = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a")
+    val query = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a")
     val result = query.toString
 
     val expectation =
@@ -572,15 +572,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("match (a) where a.prop = 42 OR (a)-->() return a")
 
     // Then inner pattern query graph
-    val relName  = "  UNNAMED35"
+    val relName = "  UNNAMED35"
     val nodeName = "  UNNAMED38"
-    val exp1     = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
+    val exp1 = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
     val exp2: Expression = In(
       Property(Variable("a") _, PropertyKeyName("prop") _) _,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2)) _)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
@@ -591,15 +591,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("match (a) where (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName  = "  UNNAMED20"
+    val relName = "  UNNAMED20"
     val nodeName = "  UNNAMED23"
-    val exp1     = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
+    val exp1 = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
     val exp2: Expression = In(
       Property(Variable("a") _, PropertyKeyName("prop") _) _,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2)) _)
-    val selections  = Selections(Set(orPredicate))
+    val selections = Selections(Set(orPredicate))
 
     query.queryGraph.selections should equal(selections)
     query.queryGraph.patternNodes should equal(Set(IdName("a")))
@@ -610,9 +610,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildPlannerQuery("match (a) where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a")
 
     // Then inner pattern query graph
-    val relName  = "  UNNAMED36"
+    val relName = "  UNNAMED36"
     val nodeName = "  UNNAMED39"
-    val exp1     = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
+    val exp1 = GreaterThan(GetDegree(varFor("a"), None, OUTGOING) _, SignedDecimalIntegerLiteral("0") _) _
     val exp2: Expression = In(
       Property(Variable("a") _, PropertyKeyName("prop") _) _,
       ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
@@ -765,7 +765,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     query.horizon should equal(
       AggregatingQueryProjection(
         Map("property" -> Property(Variable("a") _, PropertyKeyName("prop") _) _),
-        Map("count"    -> CountStar() _)
+        Map("count" -> CountStar() _)
       ))
 
     val tailQg = query.tail.get
@@ -917,7 +917,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner") {
-    val query  = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
+    val query = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner")
     val result = query.toString
 
     val expectation =
@@ -960,8 +960,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("UNWIND [1,2,3] AS x RETURN x") {
     val query = buildPlannerQuery("UNWIND [1,2,3] AS x RETURN x")
 
-    val one   = SignedDecimalIntegerLiteral("1")(pos)
-    val two   = SignedDecimalIntegerLiteral("2")(pos)
+    val one = SignedDecimalIntegerLiteral("1")(pos)
+    val two = SignedDecimalIntegerLiteral("2")(pos)
     val three = SignedDecimalIntegerLiteral("3")(pos)
 
     query.horizon should equal(
@@ -996,8 +996,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("WITH [1,2,3] as xes, 2 as y UNWIND xes AS x RETURN x, y") {
     val query = buildPlannerQuery("WITH [1,2,3] as xes, 2 as y UNWIND xes AS x RETURN x, y")
 
-    val one   = SignedDecimalIntegerLiteral("1")(pos)
-    val two   = SignedDecimalIntegerLiteral("2")(pos)
+    val one = SignedDecimalIntegerLiteral("1")(pos)
+    val two = SignedDecimalIntegerLiteral("2")(pos)
     val three = SignedDecimalIntegerLiteral("3")(pos)
 
     query.horizon should equal(
@@ -1014,14 +1014,14 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ))
 
     val tailOfTail = tail.tail.get
-    val graph      = tailOfTail.queryGraph
+    val graph = tailOfTail.queryGraph
 
     graph.argumentIds should equal(Set(IdName("xes"), IdName("x"), IdName("y")))
   }
 
-  private val one        = SignedDecimalIntegerLiteral("1")(pos)
-  private val two        = SignedDecimalIntegerLiteral("2")(pos)
-  private val three      = SignedDecimalIntegerLiteral("3")(pos)
+  private val one = SignedDecimalIntegerLiteral("1")(pos)
+  private val two = SignedDecimalIntegerLiteral("2")(pos)
+  private val three = SignedDecimalIntegerLiteral("3")(pos)
   private val collection = ListLiteral(Seq(one, two, three))(pos)
 
   test("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
@@ -1064,7 +1064,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     query.queryGraph.patternNodes should equal(Set(IdName("row")))
 
-    val functionName: FunctionName             = FunctionName("collect") _
+    val functionName: FunctionName = FunctionName("collect") _
     val functionInvocation: FunctionInvocation = FunctionInvocation(functionName, varFor("row")) _
 
     query.horizon should equal(

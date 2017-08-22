@@ -32,7 +32,7 @@ class SumFunction(val value: Expression)
 
   def name = "SUM"
 
-  private var sum: OverflowAwareSum[_]             = OverflowAwareSum(0L)
+  private var sum: OverflowAwareSum[_] = OverflowAwareSum(0L)
   def result(implicit state: QueryState): AnyValue = asNumberValue(sum.value)
 
   def apply(data: ExecutionContext)(implicit state: QueryState) {

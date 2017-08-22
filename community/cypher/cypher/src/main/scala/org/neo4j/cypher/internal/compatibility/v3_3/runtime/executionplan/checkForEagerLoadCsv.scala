@@ -30,8 +30,8 @@ object checkForEagerLoadCsv extends (Pipe => Option[InternalNotification]) {
   def apply(pipe: Pipe) = {
     import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
     sealed trait SearchState
-    case object NoEagerFound          extends SearchState
-    case object EagerFound            extends SearchState
+    case object NoEagerFound extends SearchState
+    case object EagerFound extends SearchState
     case object EagerWithLoadCsvFound extends SearchState
 
     // Walk over the pipe tree and check if an Eager is to be executed after a LoadCsv

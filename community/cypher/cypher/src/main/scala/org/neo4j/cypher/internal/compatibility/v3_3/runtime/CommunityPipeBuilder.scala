@@ -382,8 +382,8 @@ case class CommunityPipeBuilder(monitors: Monitors,
 
     //partition predicates on whether they deal with nodes or rels
     val (nodePreds, relPreds) = predicates.partition(e => table.seen(e._1) && table.isNode(e._1))
-    val nodeCommand           = asCommand(nodePreds)
-    val relCommand            = asCommand(relPreds)
+    val nodeCommand = asCommand(nodePreds)
+    val relCommand = asCommand(relPreds)
 
     new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean =
@@ -462,7 +462,7 @@ case class CommunityPipeBuilder(monitors: Monitors,
     }
   }
 
-  private val resolver              = new KeyTokenResolver
+  private val resolver = new KeyTokenResolver
   implicit val table: SemanticTable = context.semanticTable
 
   private def buildPredicate(expr: frontEndAst.Expression)(implicit context: PipeExecutionBuilderContext,

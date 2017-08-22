@@ -43,20 +43,20 @@ case class joinSolverStep(qg: QueryGraph)
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
     }
 
-    val goalSize     = goal.size
-    val arguments    = qg.argumentIds
+    val goalSize = goal.size
+    val arguments = qg.argumentIds
     val planProducer = context.logicalPlanProducer
-    val builder      = Vector.newBuilder[LogicalPlan]
+    val builder = Vector.newBuilder[LogicalPlan]
 
-    for (leftSize  <- 1.until(goalSize);
-         leftGoal  <- goal.subsets(leftSize);
+    for (leftSize <- 1.until(goalSize);
+         leftGoal <- goal.subsets(leftSize);
          rightSize <- 1.until(goalSize);
          rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)) {
       val optLhs = table(leftGoal)
       val optRhs = table(rightGoal)
       if (optLhs.isDefined && optRhs.isDefined) {
-        val lhs              = optLhs.get
-        val rhs              = optRhs.get
+        val lhs = optLhs.get
+        val rhs = optRhs.get
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, arguments)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, arguments)
@@ -77,13 +77,13 @@ case class joinSolverStep(qg: QueryGraph)
   }
 
   private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
-    val leftNodes  = nodes(lhs)
+    val leftNodes = nodes(lhs)
     val rightNodes = nodes(rhs)
     (leftNodes intersect rightNodes) -- arguments
   }
 
   private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[IdName]): Set[IdName] = {
-    val leftSymbols  = lhs.availableSymbols
+    val leftSymbols = lhs.availableSymbols
     val rightSymbols = rhs.availableSymbols
     (leftSymbols intersect rightSymbols) -- arguments
   }

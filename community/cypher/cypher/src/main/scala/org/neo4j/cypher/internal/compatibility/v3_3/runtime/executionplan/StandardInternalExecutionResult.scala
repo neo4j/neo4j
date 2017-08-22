@@ -57,7 +57,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   import scala.collection.JavaConverters._
 
   protected val isGraphKernelResultValue = context.isGraphKernelResultValue _
-  private val scalaValues                = new RuntimeScalaValueConverter(isGraphKernelResultValue)
+  private val scalaValues = new RuntimeScalaValueConverter(isGraphKernelResultValue)
 
   protected def isOpen: Boolean = !isClosed
 
@@ -82,7 +82,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
 
   override def dumpToString(): String = {
     val stringWriter = new StringWriter()
-    val writer       = new PrintWriter(stringWriter)
+    val writer = new PrintWriter(stringWriter)
     dumpToString(writer)
     writer.close()
     stringWriter.getBuffer.toString
@@ -95,7 +95,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   }
 
   override def planDescriptionRequested: Boolean = executionMode == ExplainMode || executionMode == ProfileMode
-  override def notifications                     = Iterable.empty[Notification]
+  override def notifications = Iterable.empty[Notification]
 
   override def close(): Unit = {
     completed(success = true)
@@ -121,7 +121,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
    */
   def toEagerResultForTestingOnly(planner: PlannerName): InternalExecutionResult = {
     val dumpToStringBuilder = Seq.newBuilder[Map[String, String]]
-    val result              = new util.ArrayList[util.Map[String, Any]]()
+    val result = new util.ArrayList[util.Map[String, Any]]()
     if (isOpen)
       doInAccept { (row) =>
         populateResults(result)(row)
@@ -182,7 +182,7 @@ abstract class StandardInternalExecutionResult(context: QueryContext,
   protected def populateDumpToStringResults(builder: mutable.Builder[Map[String, String], Seq[Map[String, String]]])(
       row: ResultRow): builder.type = {
     val textValues = new RuntimeTextValueConverter(scalaValues)(context)
-    val map        = new mutable.HashMap[String, String]()
+    val map = new mutable.HashMap[String, String]()
     columns.foreach(c => map.put(c, textValues.asTextValue(row.get(c))))
 
     builder += map

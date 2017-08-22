@@ -50,7 +50,7 @@ trait RewriteTest {
 
   protected def assertIsNotRewritten(query: String) {
     val original = parser.parse(query)
-    val result   = original.rewrite(rewriterUnderTest)
+    val result = original.rewrite(rewriterUnderTest)
     assert(result === original, "\n" + query)
   }
 }

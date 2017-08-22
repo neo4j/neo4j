@@ -142,13 +142,13 @@ trait Compatibility[CONTEXT <: CommunityRuntimeContext, T <: Transformer[CONTEXT
           )
           //Prepare query for caching
           val preparedQuery = compiler.normalizeQuery(syntacticQuery, context)
-          val cache         = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
-          val isStale       = (plan: ExecutionPlan_v3_3) => plan.isStale(planContext.txIdProvider, planContext.statistics)
+          val cache = provideCache(cacheAccessor, cacheMonitor, planContext, planCacheFactory)
+          val isStale = (plan: ExecutionPlan_v3_3) => plan.isStale(planContext.txIdProvider, planContext.statistics)
 
           //Just in the case the query is not in the cache do we want to do the full planning + creating executable plan
           def createPlan(): ExecutionPlan_v3_3 = {
             val logicalPlanState = compiler.planPreparedQuery(preparedQuery, context)
-            val result           = createExecPlan.transform(logicalPlanState, context)
+            val result = createExecPlan.transform(logicalPlanState, context)
             result.maybeExecutionPlan.get
           }
           val executionPlan =
@@ -255,7 +255,7 @@ object Compatibility {
       IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
 
     case DPPlannerName =>
-      val monitor                = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
+      val monitor = monitors.newMonitor[IDPQueryGraphSolverMonitor]()
       val singleComponentPlanner = SingleComponentPlanner(monitor, DPSolverConfig)
       IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
   }

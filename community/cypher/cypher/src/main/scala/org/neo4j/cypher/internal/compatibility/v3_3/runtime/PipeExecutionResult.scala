@@ -52,9 +52,9 @@ class PipeExecutionResult(val result: ResultIterator,
 
   self =>
 
-  private val query     = state.query
-  val javaValues        = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
-  val scalaValues       = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
+  private val query = state.query
+  val javaValues = new RuntimeJavaValueConverter(query.isGraphKernelResultValue)
+  val scalaValues = new RuntimeScalaValueConverter(query.isGraphKernelResultValue)
   lazy val dumpToString = withDumper(dumper => dumper.dumpToString(_))
 
   def dumpToString(writer: PrintWriter) { withDumper(dumper => dumper.dumpToString(writer)(_)) }
@@ -75,7 +75,7 @@ class PipeExecutionResult(val result: ResultIterator,
 
   def javaIterator: ResourceIterator[java.util.Map[String, Any]] = new WrappingResourceIterator[util.Map[String, Any]] {
     def hasNext = self.hasNext
-    def next()  = immutableMapValues(result.next(), query.asObject).asJava
+    def next() = immutableMapValues(result.next(), query.asObject).asJava
   }
 
   override def toList: List[Predef.Map[String, Any]] =
@@ -111,7 +111,7 @@ class PipeExecutionResult(val result: ResultIterator,
   }
 
   //notifications only present for EXPLAIN
-  override val notifications                                                           = Iterable.empty[Notification]
+  override val notifications = Iterable.empty[Notification]
   override def withNotifications(notification: Notification*): InternalExecutionResult = this
 
   def accept[EX <: Exception](visitor: QueryResultVisitor[EX]): Unit = {

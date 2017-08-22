@@ -67,8 +67,8 @@ case class NodeCountFromCountStoreInstruction(opName: String,
     case Some((None, labelName)) =>
       (body: MethodStructure[E]) =>
         {
-          val isMissing         = body.primitiveEquals(body.loadVariable(tokenVar(labelName)), body.wildCardToken)
-          val zero              = body.constantExpression(0L.asInstanceOf[AnyRef])
+          val isMissing = body.primitiveEquals(body.loadVariable(tokenVar(labelName)), body.wildCardToken)
+          val zero = body.constantExpression(0L.asInstanceOf[AnyRef])
           val getFromCountStore = body.nodeCountFromCountStore(body.loadVariable(tokenVar(labelName)))
           body.ternaryOperator(isMissing, zero, getFromCountStore)
         }

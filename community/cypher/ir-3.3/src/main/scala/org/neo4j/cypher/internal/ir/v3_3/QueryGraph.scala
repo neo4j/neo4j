@@ -147,7 +147,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph =
     shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
-  def addArgumentId(newId: IdName): QueryGraph        = copy(argumentIds = argumentIds + newId)
+  def addArgumentId(newId: IdName): QueryGraph = copy(argumentIds = argumentIds + newId)
   def addArgumentIds(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))
@@ -287,14 +287,14 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val visited = mutable.Set.empty[IdName]
     patternNodes.toIndexedSeq.collect {
       case patternNode if !visited(patternNode) =>
-        val qg         = connectedComponentFor(patternNode, visited)
+        val qg = connectedComponentFor(patternNode, visited)
         val coveredIds = qg.coveredIds
         val shortestPaths = shortestPathPatterns.filter { p =>
           coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
         }
         val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
-        val allIds          = coveredIds ++ argumentIds ++ shortestPathIds
-        val predicates      = selections.predicates.filter(_.dependencies.subsetOf(allIds))
+        val allIds = coveredIds ++ argumentIds ++ shortestPathIds
+        val predicates = selections.predicates.filter(_.dependencies.subsetOf(allIds))
         val filteredHints =
           hints.filter(h => h.variables.forall(variable => coveredIds.contains(IdName(variable.name))))
         qg.withSelections(Selections(predicates))
@@ -312,7 +312,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   private def connectedComponentFor(startNode: IdName, visited: mutable.Set[IdName]): QueryGraph = {
     val queue = mutable.Queue(startNode)
-    var qg    = QueryGraph.empty
+    var qg = QueryGraph.empty
     while (queue.nonEmpty) {
       val node = queue.dequeue()
       if (!visited(node)) {

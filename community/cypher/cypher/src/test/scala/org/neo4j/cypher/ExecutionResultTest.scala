@@ -36,7 +36,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val result = execute(q)
 
     assert(result.columns === columns)
-    val regex   = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
+    val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
     assertTrue("Columns did not appear in the expected order: \n" + result.dumpToString(),
@@ -45,16 +45,16 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctLabelStatisticsForCreate") {
     val result = execute("create (n:foo:bar)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForAdd") {
-    val n      = createNode()
+    val n = createNode()
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 2)
     assert(stats.labelsRemoved === 0)
@@ -64,34 +64,34 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     val n = createNode()
     execute(s"match (n) where id(n) = ${n.getId} set n:foo:bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} remove n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 2)
   }
 
   test("correctLabelStatisticsForAddAndRemove") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:baz remove n:foo:bar")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
     assert(stats.labelsRemoved === 2)
   }
 
   test("correctLabelStatisticsForLabelAddedTwice") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} set n:bar:baz")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 1)
     assert(stats.labelsRemoved === 0)
   }
 
   test("correctLabelStatisticsForRemovalOfUnsetLabel") {
-    val n      = createLabeledNode("foo", "bar")
+    val n = createLabeledNode("foo", "bar")
     val result = execute(s"match (n) where id(n) = ${n.getId} remove n:baz:foo")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.labelsAdded === 0)
     assert(stats.labelsRemoved === 1)
@@ -99,7 +99,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctIndexStatisticsForIndexAdded") {
     val result = execute("create index on :Person(name)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.indexesAdded === 1)
     assert(stats.indexesRemoved === 0)
@@ -109,7 +109,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     execute("create index on :Person(name)")
 
     val result = execute("create index on :Person(name)")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.indexesAdded === 0)
     assert(stats.indexesRemoved === 0)
@@ -117,7 +117,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
 
   test("correctConstraintStatisticsForUniquenessConstraintAdded") {
     val result = execute("create constraint on (n:Person) assert n.name is unique")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.uniqueConstraintsAdded === 1)
     assert(stats.uniqueConstraintsRemoved === 0)
@@ -127,7 +127,7 @@ class ExecutionResultTest extends ExecutionEngineFunSuite {
     execute("create constraint on (n:Person) assert n.name is unique")
 
     val result = execute("create constraint on (n:Person) assert n.name is unique")
-    val stats  = result.queryStatistics()
+    val stats = result.queryStatistics()
 
     assert(stats.uniqueConstraintsAdded === 0)
     assert(stats.uniqueConstraintsRemoved === 0)

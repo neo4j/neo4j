@@ -50,7 +50,7 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def setUpRelMockingInQueryContext(rels: Relationship*) {
     val relsByStartNode = rels.groupBy(_.getStartNode)
-    val relsByEndNode   = rels.groupBy(_.getEndNode)
+    val relsByEndNode = rels.groupBy(_.getEndNode)
     val relsByNode = (relsByStartNode.keySet ++ relsByEndNode.keySet).map { n =>
       n -> (relsByStartNode.getOrElse(n, Seq.empty) ++ relsByEndNode.getOrElse(n, Seq.empty))
     }.toMap
@@ -79,8 +79,8 @@ trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
 
   def newMockedRelationship(id: Int, startNode: Node, endNode: Node): Relationship = {
     val relationship = mock[Relationship]
-    val startId      = startNode.getId
-    val endId        = endNode.getId
+    val startId = startNode.getId
+    val endId = endNode.getId
     when(relationship.getId).thenReturn(id)
     when(relationship.getStartNode).thenReturn(startNode)
     when(relationship.getStartNodeId).thenReturn(startId)

@@ -45,8 +45,8 @@ object ExpressionConverters {
 
   implicit class PatternExpressionConverter(val exp: PatternExpression) extends AnyVal {
     def asQueryGraph: QueryGraph = {
-      val uniqueRels                  = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates            = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
       val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) =>
@@ -68,8 +68,8 @@ object ExpressionConverters {
 
   implicit class PatternComprehensionConverter(val exp: PatternComprehension) extends AnyVal {
     def asQueryGraph: QueryGraph = {
-      val uniqueRels                  = addUniquenessPredicates.collectUniqueRels(exp.pattern)
-      val uniquePredicates            = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
+      val uniqueRels = addUniquenessPredicates.collectUniqueRels(exp.pattern)
+      val uniquePredicates = addUniquenessPredicates.createPredicatesFor(uniqueRels, exp.pattern.position)
       val relChain: RelationshipChain = exp.pattern.element
       val predicates: IndexedSeq[Expression] = relChain.fold(uniquePredicates.toIndexedSeq) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) =>

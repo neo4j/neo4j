@@ -28,11 +28,11 @@ import scala.collection.mutable.ArrayBuffer
 
 final class PathValueBuilder {
 
-  private val nodes                   = ArrayBuffer.empty[NodeValue]
-  private val rels                    = ArrayBuffer.empty[EdgeValue]
-  private var nulled                  = false
+  private val nodes = ArrayBuffer.empty[NodeValue]
+  private val rels = ArrayBuffer.empty[EdgeValue]
+  private var nulled = false
   private var previousNode: NodeValue = null
-  def result(): AnyValue              = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
+  def result(): AnyValue = if (nulled) Values.NO_VALUE else VirtualValues.path(nodes.toArray, rels.toArray)
 
   def clear(): PathValueBuilder = {
     nodes.clear()
@@ -86,7 +86,7 @@ final class PathValueBuilder {
       while (i.hasNext) addUndirectedRelationship(i.next().asInstanceOf[EdgeValue])
 
     if (relIterator.hasNext) {
-      val first          = relIterator.next().asInstanceOf[EdgeValue]
+      val first = relIterator.next().asInstanceOf[EdgeValue]
       val rightDirection = first.startNode() == previousNode || first.endNode() == previousNode
 
       if (rightDirection) {

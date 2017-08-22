@@ -27,8 +27,8 @@ class Namer(classNameCounter: AtomicInteger,
             operationPrefix: String = "OP") {
 
   private var methodNameCounter = 0
-  private var varNameCounter    = 0
-  private var opNameCounter     = 0
+  private var varNameCounter = 0
+  private var opNameCounter = 0
 
   def newMethodName(): String = {
     methodNameCounter += 1

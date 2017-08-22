@@ -57,7 +57,7 @@ case class CRS(@BeanProperty name: String, @BeanProperty code: Int, @BeanPropert
 object CRS {
 
   val Cartesian = CRS("cartesian", 7203, "http://spatialreference.org/ref/sr-org/7203/")
-  val WGS84     = CRS("WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/")
+  val WGS84 = CRS("WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/")
 
   def fromName(name: String): CRS = name match {
     case Cartesian.name => Cartesian
@@ -87,10 +87,10 @@ object CRS {
 object Points {
   def fromMap(map: collection.Map[String, Any]): Point = {
     if (map.contains("x") && map.contains("y")) {
-      val x       = safeToDouble(map("x"))
-      val y       = safeToDouble(map("y"))
+      val x = safeToDouble(map("x"))
+      val y = safeToDouble(map("y"))
       val crsName = map.getOrElse("crs", CRS.Cartesian.name).asInstanceOf[String]
-      val crs     = CRS.fromName(crsName)
+      val crs = CRS.fromName(crsName)
       crs match {
         case CRS.WGS84 => GeographicPoint(x, y, crs)
         case _         => CartesianPoint(x, y, crs)
@@ -100,7 +100,7 @@ object Points {
       if (crsName != CRS.WGS84.name)
         throw new InvalidArgumentException(
           s"'$crsName' is not a supported coordinate reference system for geographic points, supported CRS are: '${CRS.WGS84.name}'")
-      val latitude  = safeToDouble(map("latitude"))
+      val latitude = safeToDouble(map("latitude"))
       val longitude = safeToDouble(map("longitude"))
       GeographicPoint(longitude, latitude, CRS.fromName(crsName))
     } else {

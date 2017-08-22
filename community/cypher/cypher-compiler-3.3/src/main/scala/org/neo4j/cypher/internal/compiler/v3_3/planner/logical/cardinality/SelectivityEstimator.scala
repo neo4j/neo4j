@@ -36,7 +36,7 @@ trait SelectivityEstimator extends (Expression => Selectivity) {
 
 case class DelegatingSelectivityEstimator(inner: SelectivityEstimator) extends SelectivityEstimator {
   def apply(expr: Expression) = inner(expr)
-  def combiner                = inner.combiner
+  def combiner = inner.combiner
 }
 
 // TODO: Fuse with ExpressionSelectivityCalculator

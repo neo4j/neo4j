@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.SemanticState
 import org.neo4j.cypher.internal.frontend.v3_3.SyntaxException
 
 class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstConstructionTestSupport {
-  val mkException                 = new SyntaxExceptionCreator("<Query>", Some(pos))
+  val mkException = new SyntaxExceptionCreator("<Query>", Some(pos))
   val rewriterUnderTest: Rewriter = normalizeWithClauses(mkException)
 
   test("ensure variables are aliased") {
@@ -619,7 +619,7 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {
     val original = parseForRewriting(originalQuery.replace("\r\n", "\n"))
     val expected = parseForRewriting(expectedQuery.replace("\r\n", "\n"))
-    val result   = endoRewrite(original)
+    val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
 
     val checkResult = result.semanticCheck(SemanticState.clean)
@@ -629,11 +629,11 @@ class NormalizeWithClausesTest extends CypherFunSuite with RewriteTest with AstC
   protected def assertRewriteAndSemanticErrors(originalQuery: String, expectedQuery: String, semanticErrors: String*) {
     val original = parseForRewriting(originalQuery)
     val expected = parseForRewriting(expectedQuery)
-    val result   = endoRewrite(original)
+    val result = endoRewrite(original)
     assert(result === expected, "\n" + originalQuery)
 
     val checkResult = result.semanticCheck(SemanticState.clean)
-    val errors      = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
+    val errors = checkResult.errors.map(error => s"${error.msg} (${error.position})").toSet
     semanticErrors.foreach(msg => assert(errors contains msg, s"Error '$msg' not produced (errors: $errors)}"))
   }
 

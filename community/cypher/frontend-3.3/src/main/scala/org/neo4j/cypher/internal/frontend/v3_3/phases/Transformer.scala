@@ -57,7 +57,7 @@ class PipeLine[-C <: BaseContext, FROM, MID, TO](first: Transformer[C, FROM, MID
     (from, transformer) match {
       case (f: BaseState, phase: Phase[_, _, _]) =>
         val conditions = f.accumulatedConditions ++ phase.postConditions
-        val messages   = conditions.flatMap(condition => condition.check(f))
+        val messages = conditions.flatMap(condition => condition.check(f))
         if (messages.nonEmpty) {
           throw new InternalException(messages.mkString(", "))
         }

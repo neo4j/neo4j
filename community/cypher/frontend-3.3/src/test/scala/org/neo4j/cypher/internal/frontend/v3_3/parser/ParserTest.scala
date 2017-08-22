@@ -70,7 +70,7 @@ trait ParserTest[T, J] extends CypherFunSuite {
           .map {
             case error: InvalidInputError =>
               val position = BufferPosition(error.getInputBuffer, error.getStartIndex)
-              val message  = new InvalidInputErrorFormatter().format(error)
+              val message = new InvalidInputErrorFormatter().format(error)
               s"$message ($position)"
             case error =>
               error.getClass.getSimpleName

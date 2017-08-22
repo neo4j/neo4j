@@ -66,7 +66,7 @@ case object pruningVarExpander extends Rewriter {
 
     while (planStack.nonEmpty) {
       val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
-      val newDeps                                        = collectDistinctSet(plan, deps)
+      val newDeps = collectDistinctSet(plan, deps)
 
       plan.lhs.foreach(p => planStack.push((p, newDeps)))
       plan.rhs.foreach(p => planStack.push((p, newDeps)))

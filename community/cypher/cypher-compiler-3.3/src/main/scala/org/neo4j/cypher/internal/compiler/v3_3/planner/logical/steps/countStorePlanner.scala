@@ -34,7 +34,7 @@ case object countStorePlanner {
       case AggregatingQueryProjection(groupingKeys, aggregatingExpressions, _)
           if groupingKeys.isEmpty && aggregatingExpressions.size == 1 =>
         val (columnName, exp) = aggregatingExpressions.head
-        val countStorePlan    = checkForValidQueryGraph(query, columnName, exp)
+        val countStorePlan = checkForValidQueryGraph(query, columnName, exp)
         countStorePlan.map(p => projection(p, groupingKeys))
 
       case _ => None
@@ -110,8 +110,8 @@ case object countStorePlanner {
     if (patternRelationships.isEmpty &&
         variableName.forall(patternNodes.map(_.name).contains) &&
         noWrongPredicates(patternNodes, selections)) { // MATCH (n), MATCH (n:A)
-      val lpp          = context.logicalPlanProducer
-      val labels       = patternNodes.toList.map(n => findLabel(n, selections))
+      val lpp = context.logicalPlanProducer
+      val labels = patternNodes.toList.map(n => findLabel(n, selections))
       val aggregation1 = lpp.planCountStoreNodeAggregation(query, IdName(columnName), labels, argumentIds)(context)
       labels.collectFirst {
         case l if labelCheck(l)(Some(aggregation1)).nonEmpty => aggregation1

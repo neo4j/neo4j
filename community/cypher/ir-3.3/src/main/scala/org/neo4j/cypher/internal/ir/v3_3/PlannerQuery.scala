@@ -41,7 +41,7 @@ sealed trait PlannerQuery {
 
   def last: PlannerQuery = tail.map(_.last).getOrElse(this)
 
-  def lastQueryGraph: QueryGraph     = last.queryGraph
+  def lastQueryGraph: QueryGraph = last.queryGraph
   def lastQueryHorizon: QueryHorizon = last.horizon
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {

@@ -33,8 +33,8 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("StringRangeSeekable finds n.prop STARTS WITH 'prefix'") {
     val propKey: PropertyKeyName = PropertyKeyName("prop") _
-    val leftExpr: Property       = Property(nodeA, propKey) _
-    val startsWith: StartsWith   = StartsWith(leftExpr, StringLiteral("prefix") _) _
+    val leftExpr: Property = Property(nodeA, propKey) _
+    val startsWith: StartsWith = StartsWith(leftExpr, StringLiteral("prefix") _) _
     assertMatches(startsWith) {
       case AsStringRangeSeekable(PrefixRangeSeekable(range, expr, ident, propertyKey)) =>
         range should equal(PrefixRange(StringLiteral("prefix")(pos)))
@@ -101,7 +101,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("PropertySeekable works with plain expressions") {
     val leftExpr: Property = Property(nodeA, PropertyKeyName("id") _) _
-    val expr: Expression   = In(leftExpr, expr2) _
+    val expr: Expression = In(leftExpr, expr2) _
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
 
     assertMatches(expr) {
@@ -115,9 +115,9 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertySeekable works with collection expressions") {
-    val leftExpr: Property     = Property(nodeA, PropertyKeyName("id") _) _
+    val leftExpr: Property = Property(nodeA, PropertyKeyName("id") _) _
     val rightExpr: ListLiteral = ListLiteral(Seq(expr1, expr2)) _
-    val expr: Expression       = In(leftExpr, rightExpr) _
+    val expr: Expression = In(leftExpr, rightExpr) _
     Mockito.when(expr1.dependencies).thenReturn(Set.empty[Variable])
     Mockito.when(expr2.dependencies).thenReturn(Set.empty[Variable])
 
@@ -142,7 +142,7 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("PropertyScannable works") {
-    val propertyExpr: Property   = Property(nodeA, PropertyKeyName("name") _) _
+    val propertyExpr: Property = Property(nodeA, PropertyKeyName("name") _) _
     val expr: FunctionInvocation = FunctionInvocation(FunctionName("exists") _, propertyExpr) _
 
     assertMatches(expr) {

@@ -59,7 +59,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       checkIndexHints
 
   private def checkIndexHints: SemanticCheck = s => {
-    val hints          = clauses.collect { case m: Match => m.hints }.flatten
+    val hints = clauses.collect { case m: Match => m.hints }.flatten
     val hasStartClause = clauses.exists(_.isInstanceOf[Start])
     if (hints.nonEmpty && hasStartClause) {
       SemanticCheckResult.error(s, SemanticError("Cannot use planner hints with start clause", hints.head.position))
@@ -134,8 +134,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val result = clauses.foldLeft(SemanticCheckResult.success(s.newChildScope))((lastResult, clause) =>
       clause match {
         case c: HorizonClause =>
-          val closingResult      = c.semanticCheck(lastResult.state)
-          val nextState          = closingResult.state.newSiblingScope
+          val closingResult = c.semanticCheck(lastResult.state)
+          val nextState = closingResult.state.newSiblingScope
           val continuationResult = c.semanticCheckContinuation(closingResult.state.currentScope.scope)(nextState)
           SemanticCheckResult(continuationResult.state,
                               lastResult.errors ++ closingResult.errors ++ continuationResult.errors)
@@ -197,5 +197,5 @@ sealed trait Union extends QueryPart with SemanticChecking {
   }
 }
 
-final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition)      extends Union
+final case class UnionAll(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union
 final case class UnionDistinct(part: QueryPart, query: SingleQuery)(val position: InputPosition) extends Union

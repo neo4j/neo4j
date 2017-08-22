@@ -21,6 +21,6 @@ import org.parboiled.scala._
 
 package object parser {
   lazy val IdentifierStart: Rule0 = new IdentifierStartMatcher()
-  lazy val IdentifierPart: Rule0  = new IdentifierPartMatcher()
-  lazy val WSChar: Rule0          = new WhitespaceCharMatcher()
+  lazy val IdentifierPart: Rule0 = new IdentifierPartMatcher()
+  lazy val WSChar: Rule0 = new WhitespaceCharMatcher()
 }

@@ -40,7 +40,7 @@ object IsList extends ListSupport {
 trait ListSupport {
 
   def singleOr[T](in: Iterator[T], or: => Exception): Iterator[T] = new Iterator[T] {
-    var used             = false
+    var used = false
     def hasNext: Boolean = in.hasNext
 
     def next(): T = {

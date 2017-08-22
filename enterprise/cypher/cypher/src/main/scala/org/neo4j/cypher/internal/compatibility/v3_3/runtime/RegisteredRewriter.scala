@@ -44,7 +44,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
   def apply(in: LogicalPlan, pipelineInformation: Map[LogicalPlan, PipelineInformation])
     : (LogicalPlan, Map[LogicalPlan, PipelineInformation]) = {
     val newPipelineInfo = mutable.HashMap[LogicalPlan, PipelineInformation]()
-    var rewrites        = Map[LogicalPlan, LogicalPlan]()
+    var rewrites = Map[LogicalPlan, LogicalPlan]()
     val rewritePlanWithRegisters = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
@@ -52,7 +52,7 @@ class RegisteredRewriter(tokenContext: TokenContext) {
        */
       case oldPlan @ Projection(_, expressions) =>
         val information = pipelineInformation(oldPlan)
-        val rewriter    = rewriteCreator(information, oldPlan)
+        val rewriter = rewriteCreator(information, oldPlan)
 
         val newExpressions = expressions collect {
           case (column, expression) if !expression.isInstanceOf[Variable] => column -> expression.endoRewrite(rewriter)
@@ -74,8 +74,8 @@ class RegisteredRewriter(tokenContext: TokenContext) {
 
       case oldPlan: LogicalPlan =>
         val information = pipelineInformation(oldPlan)
-        val rewriter    = rewriteCreator(information, oldPlan)
-        val newPlan     = oldPlan.endoRewrite(rewriter)
+        val rewriter = rewriteCreator(information, oldPlan)
+        val newPlan = oldPlan.endoRewrite(rewriter)
         newPipelineInfo += (newPlan -> information)
 
         rewrites += (oldPlan -> newPlan)

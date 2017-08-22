@@ -24,21 +24,21 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 class EffectsTest extends CypherFunSuite {
 
   test("testAsLeafEffects") {
-    val actual: Effects   = Effects(CreatesAnyNode, ReadsAllRelationships).asLeafEffects
+    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).asLeafEffects
     val expected: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships))
 
     actual should equal(expected)
   }
 
   test("testLeafEffectsAsOptional") {
-    val actual: Effects   = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships)).leafEffectsAsOptional
+    val actual: Effects = Effects(LeafEffect(CreatesAnyNode), LeafEffect(ReadsAllRelationships)).leafEffectsAsOptional
     val expected: Effects = Effects(OptionalLeafEffect(CreatesAnyNode), OptionalLeafEffect(ReadsAllRelationships))
 
     actual should equal(expected)
   }
 
   test("testWriteEffects") {
-    val actual: Effects   = Effects(CreatesAnyNode, ReadsAllRelationships).writeEffects
+    val actual: Effects = Effects(CreatesAnyNode, ReadsAllRelationships).writeEffects
     val expected: Effects = Effects(CreatesAnyNode)
 
     actual should equal(expected)

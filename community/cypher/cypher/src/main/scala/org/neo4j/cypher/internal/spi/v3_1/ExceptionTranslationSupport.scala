@@ -51,7 +51,7 @@ trait ExceptionTranslationSupport {
     val iterator = translateException(iteratorFactory)
     new Iterator[A] {
       override def hasNext: Boolean = translateException(iterator.hasNext)
-      override def next(): A        = translateException(iterator.next())
+      override def next(): A = translateException(iterator.next())
     }
   }
 }

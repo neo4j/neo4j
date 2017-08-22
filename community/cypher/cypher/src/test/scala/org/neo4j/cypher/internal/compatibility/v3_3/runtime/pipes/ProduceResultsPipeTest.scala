@@ -37,7 +37,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
     when(queryState.decorator).thenReturn(NullPipeDecorator)
     when(sourcePipe.createResults(queryState)).thenReturn(
       Iterator(
-        ExecutionContext.from("a" -> "foo", "b" -> 10, "c" -> true, "d"  -> "d"),
+        ExecutionContext.from("a" -> "foo", "b" -> 10, "c" -> true, "d" -> "d"),
         ExecutionContext.from("a" -> "bar", "b" -> 20, "c" -> false, "d" -> "d")
       ))
 

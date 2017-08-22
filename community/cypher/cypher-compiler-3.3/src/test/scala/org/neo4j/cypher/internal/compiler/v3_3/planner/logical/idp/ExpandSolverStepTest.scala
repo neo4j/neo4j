@@ -47,7 +47,7 @@ class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanConstructionTe
   private val pattern2 = PatternRelationship('r2, ('b, 'c), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
   private val table = new IDPTable[LogicalPlan]()
-  private val qg    = mock[QueryGraph]
+  private val qg = mock[QueryGraph]
 
   private implicit val context = LogicalPlanningContext(
     mock[PlanContext],

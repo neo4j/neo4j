@@ -31,18 +31,18 @@ import org.neo4j.values.storable.Value
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
-  private val nodesCreated                        = new Counter
-  private val relationshipsCreated                = new Counter
-  private val propertiesSet                       = new Counter
-  private val nodesDeleted                        = new Counter
-  private val relationshipsDeleted                = new Counter
-  private val labelsAdded                         = new Counter
-  private val labelsRemoved                       = new Counter
-  private val indexesAdded                        = new Counter
-  private val indexesRemoved                      = new Counter
-  private val uniqueConstraintsAdded              = new Counter
-  private val uniqueConstraintsRemoved            = new Counter
-  private val propertyExistenceConstraintsAdded   = new Counter
+  private val nodesCreated = new Counter
+  private val relationshipsCreated = new Counter
+  private val propertiesSet = new Counter
+  private val nodesDeleted = new Counter
+  private val relationshipsDeleted = new Counter
+  private val labelsAdded = new Counter
+  private val labelsRemoved = new Counter
+  private val indexesAdded = new Counter
+  private val indexesRemoved = new Counter
+  private val uniqueConstraintsAdded = new Counter
+  private val uniqueConstraintsRemoved = new Counter
+  private val propertyExistenceConstraintsAdded = new Counter
   private val propertyExistenceConstraintsRemoved = new Counter
 
   def getStatistics =

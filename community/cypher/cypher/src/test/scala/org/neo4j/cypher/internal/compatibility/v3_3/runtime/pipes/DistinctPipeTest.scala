@@ -47,7 +47,7 @@ class DistinctPipeTest extends CypherFunSuite {
   test("distinct executes expressions") {
     //GIVEN
     val expressions = Map("doubled" -> Multiply(Variable("x"), Literal(2)))
-    val pipe        = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
+    val pipe = createDistinctPipe(List(Map("x" -> 1), Map("x" -> 2)), expressions)
 
     //WHEN
     val result = pipe.createResults(QueryStateHelper.empty)

@@ -46,10 +46,10 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
     ExecutionWorkflowBuilder()
 
   case class ExecutionWorkflowBuilder() extends ExecutionResultBuilder {
-    private val taskCloser                                             = new TaskCloser
-    private var externalResource: ExternalCSVResource                  = new CSVResources(taskCloser)
-    private var maybeQueryContext: Option[QueryContext]                = None
-    private var pipeDecorator: PipeDecorator                           = NullPipeDecorator
+    private val taskCloser = new TaskCloser
+    private var externalResource: ExternalCSVResource = new CSVResources(taskCloser)
+    private var maybeQueryContext: Option[QueryContext] = None
+    private var pipeDecorator: PipeDecorator = NullPipeDecorator
     private var exceptionDecorator: CypherException => CypherException = identity
 
     def setQueryContext(context: QueryContext) {
@@ -114,9 +114,9 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
                                queryType,
                                notificationLogger.notifications.map(asKernelNotification(notificationLogger.offset)))
       } else {
-        val results        = pipeInfo.pipe.createResults(state)
+        val results = pipeInfo.pipe.createResults(state)
         val resultIterator = buildResultIterator(results, pipeInfo.updating)
-        val descriptor     = buildDescriptor(planDescription, resultIterator.wasMaterialized)
+        val descriptor = buildDescriptor(planDescription, resultIterator.wasMaterialized)
         new PipeExecutionResult(resultIterator, columns.toArray, state, descriptor, planType, queryType)
       }
     }
@@ -125,7 +125,7 @@ case class DefaultExecutionResultBuilderFactory(pipeInfo: PipeInfo,
 
     private def buildResultIterator(results: Iterator[ExecutionContext], isUpdating: Boolean): ResultIterator = {
       val closingIterator = new ClosingIterator(results, taskCloser, exceptionDecorator)
-      val resultIterator  = if (isUpdating) closingIterator.toEager else closingIterator
+      val resultIterator = if (isUpdating) closingIterator.toEager else closingIterator
       resultIterator
     }
 

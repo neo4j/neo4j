@@ -100,7 +100,7 @@ class LazyGroupingIteratorTest extends CypherFunSuite {
 
   def asScalaSet(in: PrimitiveLongIterable): Set[Long] = {
     val builder = Set.newBuilder[Long]
-    val iter    = in.iterator()
+    val iter = in.iterator()
     while (iter.hasNext) {
       builder += iter.next()
     }

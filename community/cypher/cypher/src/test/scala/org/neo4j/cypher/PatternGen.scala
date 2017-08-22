@@ -31,11 +31,11 @@ import org.scalacheck.Shrink
 import org.scalatest.prop.PropertyChecks
 
 trait PatternGen extends PropertyChecks {
-  protected def minPatternLength   = 2
-  protected def maxPatternLength   = 8
-  protected def numberOfTestRuns   = 100
+  protected def minPatternLength = 2
+  protected def maxPatternLength = 8
+  protected def numberOfTestRuns = 100
   protected def maxDiscardedInputs = 500
-  protected def maxSize            = 10
+  protected def maxSize = 10
 
   override implicit val generatorDrivenConfig = PropertyCheckConfig(
     minSuccessful = numberOfTestRuns,
@@ -159,40 +159,40 @@ trait PatternGen extends PropertyChecks {
   }
 
   case class EmptyRelationshipWithLength(length: String, direction: SemanticDirection) extends Relationship {
-    val string                                               = formatRelationship(s"[$length]", direction)
+    val string = formatRelationship(s"[$length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class NamedRelationship(name: String, direction: SemanticDirection) extends Relationship {
-    val string                                               = formatRelationship(s"[$name]", direction)
+    val string = formatRelationship(s"[$name]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class NamedRelationshipWithLength(name: String, length: String, direction: SemanticDirection)
       extends Relationship {
-    val string                                               = formatRelationship(s"[$name $length]", direction)
+    val string = formatRelationship(s"[$name $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class TypedRelationship(relType: String, direction: SemanticDirection) extends Relationship {
-    val string                                               = formatRelationship(s"[:$relType]", direction)
+    val string = formatRelationship(s"[:$relType]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class TypedWithPropertiesRelationship(relType: String, direction: SemanticDirection, properties: Seq[String])
       extends Relationship {
-    val string                                               = formatRelationship(s"[:$relType {${properties.mkString(",")}}]", direction)
+    val string = formatRelationship(s"[:$relType {${properties.mkString(",")}}]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class TypedRelationshipWithLength(relType: String, length: String, direction: SemanticDirection)
       extends Relationship {
-    val string                                               = formatRelationship(s"[:$relType $length]", direction)
+    val string = formatRelationship(s"[:$relType $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
   case class NamedTypedRelationship(name: String, relType: String, direction: SemanticDirection) extends Relationship {
-    val string                                               = formatRelationship(s"[$name:$relType]", direction)
+    val string = formatRelationship(s"[$name:$relType]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
@@ -201,7 +201,7 @@ trait PatternGen extends PropertyChecks {
                                                   direction: SemanticDirection,
                                                   properties: Seq[String])
       extends Relationship {
-    val string                                               = formatRelationship(s"[$name :$relType {${properties.mkString(",")}}]", direction)
+    val string = formatRelationship(s"[$name :$relType {${properties.mkString(",")}}]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
@@ -210,7 +210,7 @@ trait PatternGen extends PropertyChecks {
                                               length: String,
                                               direction: SemanticDirection)
       extends Relationship {
-    val string                                               = formatRelationship(s"[$name:$relType $length]", direction)
+    val string = formatRelationship(s"[$name:$relType $length]", direction)
     override def withDirection(direction: SemanticDirection) = copy(direction = direction)
   }
 
@@ -227,8 +227,8 @@ trait PatternGen extends PropertyChecks {
       nodeGen.map(f => List(f))
     else
       for {
-        node  <- nodeGen
-        rel   <- relGen
+        node <- nodeGen
+        rel <- relGen
         other <- patternGen(maxLength - 1)
       } yield NodeWithRelationship(node, rel) :: other
 
@@ -239,62 +239,62 @@ trait PatternGen extends PropertyChecks {
   def emptyRelWithLengthGen =
     for {
       direction <- relDirection
-      length    <- relLength
+      length <- relLength
     } yield EmptyRelationshipWithLength(length, direction)
 
   def namedRelGen =
     for {
-      name      <- relName
+      name <- relName
       direction <- relDirection
     } yield NamedRelationship(name, direction)
 
   def namedRelWithLengthGen =
     for {
-      name      <- relName
-      length    <- relLength
+      name <- relName
+      length <- relLength
       direction <- relDirection
     } yield NamedRelationshipWithLength(name, length, direction)
 
   def typedRelGen =
     for {
-      relType   <- relTypeName
+      relType <- relTypeName
       direction <- relDirection
     } yield TypedRelationship(relType, direction)
 
   def typedWithPropertiesRelGen =
     for {
-      relType    <- relTypeName
-      direction  <- relDirection
+      relType <- relTypeName
+      direction <- relDirection
       properties <- Gen.nonEmptyListOf(property)
     } yield TypedWithPropertiesRelationship(relType, direction, properties)
 
   def typedRelWithLengthGen =
     for {
-      relType   <- relTypeName
-      length    <- relLength
+      relType <- relTypeName
+      length <- relLength
       direction <- relDirection
     } yield TypedRelationshipWithLength(relType, length, direction)
 
   def namedTypedRelGen =
     for {
-      name      <- relName
-      relType   <- relTypeName
+      name <- relName
+      relType <- relTypeName
       direction <- relDirection
     } yield NamedTypedRelationship(name, relType, direction)
 
   def namedTypedWithPropertiesRelGen =
     for {
-      name       <- relName
-      relType    <- relTypeName
-      direction  <- relDirection
+      name <- relName
+      relType <- relTypeName
+      direction <- relDirection
       properties <- Gen.nonEmptyListOf(property)
     } yield NamedTypedWithPropertiesRelationship(name, relType, direction, properties)
 
   def namedTypedRelWithLengthGen =
     for {
-      name      <- relName
-      relType   <- relTypeName
-      length    <- relLength
+      name <- relName
+      relType <- relTypeName
+      length <- relLength
       direction <- relDirection
     } yield NamedTypedRelationshipWithLength(name, relType, length, direction)
 
@@ -309,19 +309,19 @@ trait PatternGen extends PropertyChecks {
   def labeledWithPropertiesNodeGen =
     for {
       label <- Gen.nonEmptyListOf(labelName)
-      prop  <- Gen.nonEmptyListOf(property)
+      prop <- Gen.nonEmptyListOf(property)
     } yield LabeledNodeWithProperties(label, prop)
 
   def namedLabeledWithPropertiesNodeGen =
     for {
-      name  <- nodeName
+      name <- nodeName
       label <- Gen.nonEmptyListOf(labelName)
-      prop  <- Gen.nonEmptyListOf(property)
+      prop <- Gen.nonEmptyListOf(property)
     } yield NamedLabeledNodeWithProperties(name, label, prop)
 
   def namedLabeledNodeGen =
     for {
-      name  <- nodeName
+      name <- nodeName
       label <- labelName
     } yield NamedLabeledNode(name, label)
 

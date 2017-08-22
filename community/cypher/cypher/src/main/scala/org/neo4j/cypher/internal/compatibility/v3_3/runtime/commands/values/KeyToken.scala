@@ -51,8 +51,8 @@ sealed abstract class KeyToken(typ: TokenType) extends Expression {
 object KeyToken {
 
   case class Unresolved(name: String, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Int    = typ.getOrCreateIdForName(name, state)
-    def getIdOrFail(state: TokenContext): Int      = typ.getIdForNameOrFail(name, state)
+    def getOrCreateId(state: QueryContext): Int = typ.getOrCreateIdForName(name, state)
+    def getIdOrFail(state: TokenContext): Int = typ.getIdForNameOrFail(name, state)
     def getOptId(state: TokenContext): Option[Int] = typ.getOptIdForName(name, state)
 
     def resolve(tokenContext: TokenContext) = getOptId(tokenContext).map(Resolved(name, _, typ)).getOrElse(this)
@@ -61,8 +61,8 @@ object KeyToken {
   }
 
   case class Resolved(name: String, id: Int, typ: TokenType) extends KeyToken(typ) {
-    def getOrCreateId(state: QueryContext): Int    = id
-    def getIdOrFail(state: TokenContext): Int      = id
+    def getOrCreateId(state: QueryContext): Int = id
+    def getIdOrFail(state: TokenContext): Int = id
     def getOptId(state: TokenContext): Option[Int] = Some(id)
 
     override def resolve(tokenContext: TokenContext): Resolved = this

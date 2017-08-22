@@ -179,7 +179,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
         commandexpressions.Atan2Function(self.toCommandExpression(invocation.arguments.head),
                                          self.toCommandExpression(invocation.arguments(1)))
       case Avg =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Avg(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
@@ -188,7 +188,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case Ceil     => commandexpressions.CeilFunction(self.toCommandExpression(invocation.arguments.head))
       case Coalesce => commandexpressions.CoalesceFunction(toCommandExpression(invocation.arguments, self): _*)
       case Collect =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Collect(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
@@ -197,7 +197,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case Cos => commandexpressions.CosFunction(self.toCommandExpression(invocation.arguments.head))
       case Cot => commandexpressions.CotFunction(self.toCommandExpression(invocation.arguments.head))
       case Count =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Count(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
@@ -247,14 +247,14 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case Log10  => commandexpressions.Log10Function(self.toCommandExpression(invocation.arguments.head))
       case LTrim  => commandexpressions.LTrimFunction(self.toCommandExpression(invocation.arguments.head))
       case Max =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Max(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
         else
           command
       case Min =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Min(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
@@ -262,7 +262,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
           command
       case Nodes => commandexpressions.NodesFunction(self.toCommandExpression(invocation.arguments.head))
       case PercentileCont =>
-        val firstArg  = self.toCommandExpression(invocation.arguments.head)
+        val firstArg = self.toCommandExpression(invocation.arguments.head)
         val secondArg = self.toCommandExpression(invocation.arguments(1))
 
         val command = commandexpressions.PercentileCont(firstArg, secondArg)
@@ -271,7 +271,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
         else
           command
       case PercentileDisc =>
-        val firstArg  = self.toCommandExpression(invocation.arguments.head)
+        val firstArg = self.toCommandExpression(invocation.arguments.head)
         val secondArg = self.toCommandExpression(invocation.arguments(1))
 
         val command = commandexpressions.PercentileDisc(firstArg, secondArg)
@@ -281,7 +281,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
           command
       case Pi => commandexpressions.PiFunction()
       case Distance =>
-        val firstArg  = self.toCommandExpression(invocation.arguments.head)
+        val firstArg = self.toCommandExpression(invocation.arguments.head)
         val secondArg = self.toCommandExpression(invocation.arguments(1))
         commandexpressions.DistanceFunction(firstArg, secondArg)
       case Point   => commandexpressions.PointFunction(self.toCommandExpression(invocation.arguments.head))
@@ -320,14 +320,14 @@ object CommunityExpressionConverter extends ExpressionConverter {
       case StartNode =>
         commandexpressions.RelationshipEndPoints(self.toCommandExpression(invocation.arguments.head), start = true)
       case StdDev =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Stdev(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
         else
           command
       case StdDevP =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.StdevP(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)
@@ -340,7 +340,7 @@ object CommunityExpressionConverter extends ExpressionConverter {
           toCommandExpression(invocation.arguments.lift(2), self)
         )
       case Sum =>
-        val inner   = self.toCommandExpression(invocation.arguments.head)
+        val inner = self.toCommandExpression(invocation.arguments.head)
         val command = commandexpressions.Sum(inner)
         if (invocation.distinct)
           commandexpressions.Distinct(command, inner)

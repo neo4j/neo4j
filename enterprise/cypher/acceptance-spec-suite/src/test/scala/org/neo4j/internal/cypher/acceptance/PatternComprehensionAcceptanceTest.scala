@@ -28,9 +28,9 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
 
   test("pattern comprehension nested in pattern comprehension") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
-    val tag     = createLabeledNode("Tag")
+    val tag = createLabeledNode("Tag")
     val content = createLabeledNode("Content")
-    val user    = createLabeledNode(Map("name" -> "Michael Hunger"), "User")
+    val user = createLabeledNode(Map("name" -> "Michael Hunger"), "User")
     relate(content, tag, "TAGGED")
     relate(user, content, "CREATED")
 
@@ -123,7 +123,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r  = relate(n1, n2)
+    val r = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | p] AS list"
 
@@ -136,7 +136,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
     val n3 = createLabeledNode("NotEnd")
-    val r  = relate(n1, n2)
+    val r = relate(n1, n2)
     relate(n2, n3)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() WHERE last(nodes(p)):End | p] AS list"
@@ -150,7 +150,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
     val n3 = createLabeledNode("NotEnd")
-    val r  = relate(n1, n2)
+    val r = relate(n1, n2)
     relate(n2, n3)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() where last(nodes(p)):End | p] AS list"
@@ -163,7 +163,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path and shadowed variable in predicate") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r  = relate(n1, n2)
+    val r = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->(b) WHERE head([p IN ['foo'] | true ]) | p] AS list"
 
@@ -175,7 +175,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   test("with named path and shadowed variable in projection") {
     val n1 = createLabeledNode("Start")
     val n2 = createLabeledNode("End")
-    val r  = relate(n1, n2)
+    val r = relate(n1, n2)
 
     val query = "MATCH (n:Start) RETURN [p = (n)-->() | {path: p, other: [p IN ['foo'] | true ]} ] AS list"
 
@@ -358,13 +358,13 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   }
 
   test("pattern comprehension inside list comprehension") {
-    val a  = createLabeledNode("X", "A")
+    val a = createLabeledNode("X", "A")
     val m1 = createLabeledNode("Y")
     relate(a, m1)
     relate(m1, createLabeledNode("Y"))
     relate(m1, createLabeledNode("Y"))
 
-    val b  = createLabeledNode("X", "B")
+    val b = createLabeledNode("X", "B")
     val m2 = createNode()
     relate(b, m2)
     relate(m2, createLabeledNode("Y"))
@@ -387,7 +387,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
   }
 
   test("pattern comprehension play nice with map projections") {
-    val movie  = createLabeledNode(Map("title" -> "The Shining"), "Movie")
+    val movie = createLabeledNode(Map("title" -> "The Shining"), "Movie")
     val actor1 = createNode("name" -> "Actor1")
     val actor2 = createNode("name" -> "Actor2")
     relate(actor1, movie, "ACTED_IN")
@@ -415,8 +415,8 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Ne
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result.toList should equal(
       List(
-        Map("name" -> "Tom Cruise", "dirMovie"   -> Seq()),
-        Map("name" -> "Ron Howard", "dirMovie"   -> Seq("Cocoon")),
+        Map("name" -> "Tom Cruise", "dirMovie" -> Seq()),
+        Map("name" -> "Ron Howard", "dirMovie" -> Seq("Cocoon")),
         Map("name" -> "Keanu Reeves", "dirMovie" -> Seq())
       ))
   }

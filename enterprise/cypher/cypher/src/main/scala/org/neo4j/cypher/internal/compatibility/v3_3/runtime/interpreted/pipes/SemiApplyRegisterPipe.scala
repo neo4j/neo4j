@@ -29,7 +29,7 @@ case class SemiApplyRegisterPipe(source: Pipe, inner: Pipe, negated: Boolean)(va
     extends PipeWithSource(source) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input filter { (inputContext) =>
-      val innerState   = state.withInitialContext(inputContext)
+      val innerState = state.withInitialContext(inputContext)
       val innerResults = inner.createResults(innerState)
       if (negated) innerResults.isEmpty else innerResults.nonEmpty
     }

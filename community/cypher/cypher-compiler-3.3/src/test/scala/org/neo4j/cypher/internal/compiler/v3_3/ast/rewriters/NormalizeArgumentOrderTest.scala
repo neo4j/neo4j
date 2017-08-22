@@ -40,7 +40,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     val lhs: Expression = SignedDecimalIntegerLiteral("12") _
     val rhs: Expression = Property(varFor("a"), PropertyKeyName("prop") _) _
 
-    val input: Expression    = Equals(lhs, rhs) _
+    val input: Expression = Equals(lhs, rhs) _
     val expected: Expression = Equals(rhs, lhs) _
 
     normalizeArgumentOrder(input) should equal(expected)
@@ -59,7 +59,7 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     val lhs: Expression = SignedDecimalIntegerLiteral("12") _
     val rhs: Expression = id("a")
 
-    val input: Expression    = Equals(lhs, rhs) _
+    val input: Expression = Equals(lhs, rhs) _
     val expected: Expression = Equals(rhs, lhs) _
 
     normalizeArgumentOrder(input) should equal(expected)

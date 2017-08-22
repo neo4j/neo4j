@@ -122,7 +122,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery,
 
     val fixedArgumentIds = q.foldMap {
       case (head, tail) =>
-        val symbols      = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
+        val symbols = head.horizon.exposedSymbols(head.queryGraph.allCoveredIds)
         val newTailGraph = tail.queryGraph.withArgumentIds(symbols)
         tail.withQueryGraph(newTailGraph)
     }
@@ -145,8 +145,8 @@ case class PlannerQueryBuilder(private val q: PlannerQuery,
     }
 
     val withFixedOptionalMatchArgumentIds = fixArgumentIdsOnOptionalMatch(fixedArgumentIds)
-    val withFixedMergeArgumentIds         = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
-    val groupedInequalities               = groupInequalities(withFixedMergeArgumentIds)
+    val withFixedMergeArgumentIds = fixArgumentIdsOnMerge(withFixedOptionalMatchArgumentIds)
+    val groupedInequalities = groupInequalities(withFixedMergeArgumentIds)
     fixQueriesWithOnlyRelationshipIndex(groupedInequalities)
   }
 }

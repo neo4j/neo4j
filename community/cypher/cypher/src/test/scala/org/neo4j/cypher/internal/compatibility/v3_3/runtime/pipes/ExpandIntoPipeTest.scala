@@ -32,13 +32,13 @@ import org.neo4j.values.virtual.VirtualValues.fromRelationshipProxy
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
-  val startNode        = newMockedNode(1)
-  val endNode1         = newMockedNode(2)
-  val endNode2         = newMockedNode(3)
-  val endNode3         = newMockedNode(4)
-  val relationship1    = newMockedRelationship(1, startNode, endNode1)
-  val relationship2    = newMockedRelationship(2, startNode, endNode2)
-  val relationship3    = newMockedRelationship(3, startNode, endNode3)
+  val startNode = newMockedNode(1)
+  val endNode1 = newMockedNode(2)
+  val endNode2 = newMockedNode(3)
+  val endNode3 = newMockedNode(4)
+  val relationship1 = newMockedRelationship(1, startNode, endNode1)
+  val relationship2 = newMockedRelationship(2, startNode, endNode2)
+  val relationship3 = newMockedRelationship(3, startNode, endNode3)
   val selfRelationship = newMockedRelationship(4, startNode, startNode)
 
   val queryState = QueryStateHelper.emptyWith(query = query)
@@ -177,8 +177,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     // Given
     val node0 = newMockedNode(0)
     val node1 = newMockedNode(1)
-    val rel0  = newMockedRelationship(0, node0, node1)
-    val rel1  = newMockedRelationship(1, node1, node0)
+    val rel0 = newMockedRelationship(0, node0, node1)
+    val rel1 = newMockedRelationship(1, node1, node0)
 
     setUpRelMockingInQueryContext(rel0, rel1)
 
@@ -193,12 +193,12 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results should contain theSameElementsAs List(
-      Map("n"  -> fromNodeProxy(node1),
-          "k"  -> fromNodeProxy(node0),
+      Map("n" -> fromNodeProxy(node1),
+          "k" -> fromNodeProxy(node0),
           "r1" -> fromRelationshipProxy(rel1),
           "r2" -> fromRelationshipProxy(rel1)),
-      Map("n"  -> fromNodeProxy(node0),
-          "k"  -> fromNodeProxy(node1),
+      Map("n" -> fromNodeProxy(node0),
+          "k" -> fromNodeProxy(node1),
           "r1" -> fromRelationshipProxy(rel0),
           "r2" -> fromRelationshipProxy(rel0))
     )
@@ -208,8 +208,8 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     // Given
     val node0 = newMockedNode(0)
     val node1 = newMockedNode(1)
-    val rel0  = newMockedRelationship(0, node0, node1)
-    val rel1  = newMockedRelationship(1, node1, node0)
+    val rel0 = newMockedRelationship(0, node0, node1)
+    val rel1 = newMockedRelationship(1, node1, node0)
 
     setUpRelMockingInQueryContext(rel0, rel1)
 
@@ -223,20 +223,20 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
     // Then
     results should contain theSameElementsAs List(
-      Map("n"  -> fromNodeProxy(node1),
-          "k"  -> fromNodeProxy(node0),
+      Map("n" -> fromNodeProxy(node1),
+          "k" -> fromNodeProxy(node0),
           "r1" -> fromRelationshipProxy(rel0),
           "r2" -> fromRelationshipProxy(rel1)),
-      Map("n"  -> fromNodeProxy(node1),
-          "k"  -> fromNodeProxy(node0),
+      Map("n" -> fromNodeProxy(node1),
+          "k" -> fromNodeProxy(node0),
           "r1" -> fromRelationshipProxy(rel1),
           "r2" -> fromRelationshipProxy(rel1)),
-      Map("n"  -> fromNodeProxy(node0),
-          "k"  -> fromNodeProxy(node1),
+      Map("n" -> fromNodeProxy(node0),
+          "k" -> fromNodeProxy(node1),
           "r1" -> fromRelationshipProxy(rel1),
           "r2" -> fromRelationshipProxy(rel0)),
-      Map("n"  -> fromNodeProxy(node0),
-          "k"  -> fromNodeProxy(node1),
+      Map("n" -> fromNodeProxy(node0),
+          "k" -> fromNodeProxy(node1),
           "r1" -> fromRelationshipProxy(rel0),
           "r2" -> fromRelationshipProxy(rel0))
     )

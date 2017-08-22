@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identN        = varFor("n")
-  val identM        = varFor("m")
-  val identA        = varFor("a")
+  val identN = varFor("n")
+  val identM = varFor("m")
+  val identA = varFor("a")
   val astNull: Null = Null() _
 
   val mapN = Map(identN -> astNull)

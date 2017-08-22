@@ -45,7 +45,7 @@ trait PipeBuilderFactory {
     val buildPipeExpressions = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
         case expr @ compilerAst.NestedPlanExpression(patternPlan, expression) =>
-          val pipe   = recurse(patternPlan)
+          val pipe = recurse(patternPlan)
           val result = NestedPipeExpression(pipe, expression)(expr.position)
           result
       })

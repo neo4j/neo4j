@@ -71,7 +71,7 @@ class DecimalDoubleLiteralTest extends CypherFunSuite {
 
   private def assertSemanticError(stringValue: String, errorMessage: String) {
     val literal = DecimalDoubleLiteral(stringValue)(DummyPosition(4))
-    val result  = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
+    val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }
 }

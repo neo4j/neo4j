@@ -117,7 +117,7 @@ class expectedResultsParserTest extends ParsingTestSupport {
   }
 
   test("should allow whitespace between key and value") {
-    parse("{key:'value'}") should accept(Map("key"  -> "value").asJava)
+    parse("{key:'value'}") should accept(Map("key" -> "value").asJava)
     parse("{key: 'value'}") should accept(Map("key" -> "value").asJava)
   }
 
@@ -128,8 +128,8 @@ class expectedResultsParserTest extends ParsingTestSupport {
   }
 
   test("should parse nodes with properties") {
-    parse("({key:'value'})") should accept(node(properties = Map("key"       -> "value")))
-    parse("({key:0})") should accept(node(properties = Map("key"             -> Long.valueOf(0L))))
+    parse("({key:'value'})") should accept(node(properties = Map("key" -> "value")))
+    parse("({key:0})") should accept(node(properties = Map("key" -> Long.valueOf(0L))))
     parse("({key:null, key2:[]})") should accept(node(properties = Map("key" -> null, "key2" -> emptyList())))
   }
 
@@ -154,20 +154,20 @@ class expectedResultsParserTest extends ParsingTestSupport {
 
   test("should parse simple outgoing path") {
     val startNode = node(Seq("Start"))
-    val endNode   = node(Seq("End"))
+    val endNode = node(Seq("End"))
 
     parse("<(:Start)-[:T]->(:End)>") should accept(path(pathLink(startNode, relationship("T"), endNode)))
   }
 
   test("should parse simple incoming path") {
     val startNode = node(Seq("Start"))
-    val endNode   = node(Seq("End"))
+    val endNode = node(Seq("End"))
 
     parse("<(:End)<-[:T]-(:Start)>") should accept(path(pathLink(startNode, relationship("T"), endNode)))
   }
 
   test("should parse path with mixed directions") {
-    val middle              = node()
+    val middle = node()
     val link1: Relationship = pathLink(node(Seq("S")), relationship("R1"), middle)
     val link2: Relationship = pathLink(node(Seq("E")), relationship("R2"), middle)
 

@@ -18,8 +18,8 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object PointType {
   val instance = new PointType() {
-    val parentType               = CTAny
-    override val toString        = "Point"
+    val parentType = CTAny
+    override val toString = "Point"
     override val toNeoTypeString = "POINT?"
   }
 }

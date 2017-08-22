@@ -37,8 +37,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
     val constructed = plan.solved
     if (expected != constructed) {
       val unfulfillableIndexHints = findUnfulfillableIndexHints(expected, context.planContext)
-      val unfulfillableJoinHints  = findUnfulfillableJoinHints(expected, context.planContext)
-      val expectedWithoutHints    = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
+      val unfulfillableJoinHints = findUnfulfillableJoinHints(expected, context.planContext)
+      val expectedWithoutHints = expected.withoutHints(unfulfillableIndexHints ++ unfulfillableJoinHints)
       if (expectedWithoutHints != constructed) {
         val a: PlannerQuery = expected.withoutHints(expected.allHints)
         val b: PlannerQuery = constructed.withoutHints(constructed.allHints)
@@ -48,8 +48,8 @@ object verifyBestPlan extends PlanTransformer[PlannerQuery] {
         } else {
           // unknown planner issue failed to find plan matching hints (i.e. "implicit hints")
           val expectedHints = expected.allHints
-          val actualHints   = constructed.allHints
-          val missing       = expectedHints -- actualHints
+          val actualHints = constructed.allHints
+          val missing = expectedHints -- actualHints
 
           def out(h: Set[Hint]) = h.mkString("`", ", ", "`")
 

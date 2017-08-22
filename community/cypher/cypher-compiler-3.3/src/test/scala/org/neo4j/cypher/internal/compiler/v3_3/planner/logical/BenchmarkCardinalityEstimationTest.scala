@@ -37,11 +37,11 @@ class BenchmarkCardinalityEstimationTest extends CypherFunSuite with LogicalPlan
                            expectedDifference: Double,
                            allowedSlack: Double = 0.05): Unit = {
       val (_, plan, semanticTable) = env.getLogicalPlanFor(query)
-      val qg                       = plan.solved.queryGraph
-      val estimate                 = env.estimate(qg).amount
-      val currentDifference        = Math.abs(estimate - actual)
+      val qg = plan.solved.queryGraph
+      val estimate = env.estimate(qg).amount
+      val currentDifference = Math.abs(estimate - actual)
 
-      val differenceDifference       = Math.abs(currentDifference - expectedDifference)
+      val differenceDifference = Math.abs(currentDifference - expectedDifference)
       val differenceDifferenceMargin = Math.round(expectedDifference * allowedSlack)
 
       if (differenceDifference > differenceDifferenceMargin) {

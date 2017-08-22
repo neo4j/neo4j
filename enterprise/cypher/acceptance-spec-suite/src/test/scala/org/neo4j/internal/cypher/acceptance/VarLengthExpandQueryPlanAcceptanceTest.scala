@@ -26,7 +26,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Plan should have right relationship direction") {
     setUp("From")
-    val query  = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
+    val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
 
     result should havePlanLike(
@@ -55,7 +55,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("Plan should have right relationship direction other direction") {
     setUp("To")
-    val query  = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
+    val query = "PROFILE MATCH (a:From {name:'Keanu Reeves'})-[*..4]->(e:To {name:'Andres'}) RETURN *"
     val result = executeWithCostPlannerAndInterpretedRuntimeOnly(query)
     result should havePlanLike(
       """

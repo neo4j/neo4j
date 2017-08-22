@@ -46,9 +46,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1    = ExecutionContext.empty.newWith1("x", intValue(1))
+    val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
-    val v14   = ExecutionContext.empty.newWith1("x", intValue(14))
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -66,9 +66,9 @@ abstract class CachedInTest extends CypherFunSuite {
     val predicate = createPredicate(Variable("x"), ListLiteral(Literal(1), Literal(2), Literal(null)))
 
     implicit val state = QueryStateHelper.empty
-    val v1             = ExecutionContext.empty.newWith1("x", intValue(1))
-    val vNull          = ExecutionContext.empty.newWith1("x", NO_VALUE)
-    val v14            = ExecutionContext.empty.newWith1("x", intValue(14))
+    val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
+    val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))
@@ -87,9 +87,9 @@ abstract class CachedInTest extends CypherFunSuite {
 
     implicit val state = QueryStateHelper.empty
 
-    val v1    = ExecutionContext.empty.newWith1("x", intValue(1))
+    val v1 = ExecutionContext.empty.newWith1("x", intValue(1))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
-    val v14   = ExecutionContext.empty.newWith1("x", intValue(14))
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(None)
@@ -105,13 +105,13 @@ abstract class CachedInTest extends CypherFunSuite {
   test("check lists") {
     // given
     val listInList = ListLiteral(ListLiteral(Literal(1), Literal(2)), ListLiteral(Literal(3), Literal(4)))
-    val predicate  = createPredicate(Variable("x"), listInList)
+    val predicate = createPredicate(Variable("x"), listInList)
 
     implicit val state = QueryStateHelper.empty
 
-    val v1    = ExecutionContext.empty.newWith1("x", toListValue(Seq(1, 2)))
+    val v1 = ExecutionContext.empty.newWith1("x", toListValue(Seq(1, 2)))
     val vNull = ExecutionContext.empty.newWith1("x", NO_VALUE)
-    val v14   = ExecutionContext.empty.newWith1("x", intValue(14))
+    val v14 = ExecutionContext.empty.newWith1("x", intValue(14))
 
     // then when
     predicate.isMatch(v1) should equal(Some(true))

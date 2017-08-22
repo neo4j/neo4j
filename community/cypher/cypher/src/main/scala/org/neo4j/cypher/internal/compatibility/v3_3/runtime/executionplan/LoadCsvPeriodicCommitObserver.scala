@@ -30,7 +30,7 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
     extends ExternalCSVResource
     with ((CypherException) => CypherException) {
 
-  val updateCounter                                 = new UpdateCounter
+  val updateCounter = new UpdateCounter
   var outerLoadCSVIterator: Option[LoadCsvIterator] = None
 
   def getCsvIterator(url: URL,

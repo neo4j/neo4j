@@ -47,10 +47,10 @@ import scala.collection.mutable
 class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends PipeDecorator {
   outerProfiler =>
 
-  val pageCacheStats: mutable.Map[Id, (Long, Long)]           = mutable.Map.empty
+  val pageCacheStats: mutable.Map[Id, (Long, Long)] = mutable.Map.empty
   val dbHitsStats: mutable.Map[Id, ProfilingPipeQueryContext] = mutable.Map.empty
-  val rowStats: mutable.Map[Id, ProfilingIterator]            = mutable.Map.empty
-  private var parentPipe: Option[Pipe]                        = None
+  val rowStats: mutable.Map[Id, ProfilingIterator] = mutable.Map.empty
+  private var parentPipe: Option[Pipe] = None
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = {
     val oldCount = rowStats.get(pipe.id).map(_.count).getOrElse(0L)
@@ -83,9 +83,9 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
   }
 
   private def updatePageCacheStatistics(pipeId: Id) = {
-    val context           = dbHitsStats(pipeId)
+    val context = dbHitsStats(pipeId)
     val statisticProvider = context.transactionalContext.kernelStatisticProvider
-    val currentStat       = pageCacheStats(pipeId)
+    val currentStat = pageCacheStats(pipeId)
     pageCacheStats(pipeId) =
       (statisticProvider.getPageCacheHits - currentStat._1, statisticProvider.getPageCacheMisses - currentStat._2)
   }
@@ -99,10 +99,10 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
       throw new ProfilerStatisticsNotReadyException()
 
     plan map { input: InternalPlanDescription =>
-      val rows                       = rowStats.get(input.id).map(_.count).getOrElse(0L)
-      val dbHits                     = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
+      val rows = rowStats.get(input.id).map(_.count).getOrElse(0L)
+      val dbHits = dbHitsStats.get(input.id).map(_.count).getOrElse(0L)
       val (hits: Long, misses: Long) = pageCacheStats.getOrElse(input.id, (0L, 0L))
-      val hitRatio                   = MathUtil.portion(hits, misses)
+      val hitRatio = MathUtil.portion(hits, misses)
 
       input
         .addArgument(Arguments.Rows(rows))
@@ -133,7 +133,7 @@ class Profiler(databaseInfo: DatabaseInfo = DatabaseInfo.COMMUNITY) extends Pipe
 
 trait Counter {
   protected var _count = 0L
-  def count: Long      = _count
+  def count: Long = _count
 
   def increment() {
     _count += 1L
@@ -181,13 +181,13 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   }
 
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
-    override protected def singleDbHit[A](value: A): A                    = self.singleDbHit(value)
+    override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
 
     override protected def manyDbHits[A](value: PrimitiveLongIterator): PrimitiveLongIterator = self.manyDbHits(value)
   }
 
-  override def nodeOps: Operations[Node]                 = new ProfilerOperations(inner.nodeOps)
+  override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 

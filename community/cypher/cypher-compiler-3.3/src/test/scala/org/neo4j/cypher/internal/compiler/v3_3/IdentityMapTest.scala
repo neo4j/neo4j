@@ -41,23 +41,23 @@ class IdentityMapTest extends CypherFunSuite {
     val y = Val()
     assert(x === y)
 
-    val map        = IdentityMap(x -> "x")
+    val map = IdentityMap(x -> "x")
     val updatedMap = map.updated(y, "y")
     assert(updatedMap.get(x) === Some("x"))
     assert(updatedMap.get(y) === Some("y"))
   }
 
   test("should overwrite eq key") {
-    val x          = Val()
-    val map        = IdentityMap(x -> "x")
+    val x = Val()
+    val map = IdentityMap(x -> "x")
     val updatedMap = map.updated(x, "x'")
     assert(updatedMap.get(x) === Some("x'"))
   }
 
   test("should be immutable when updating") {
-    val x          = Val()
-    val y          = Val()
-    val map        = IdentityMap(x -> "x")
+    val x = Val()
+    val y = Val()
+    val map = IdentityMap(x -> "x")
     val updatedMap = map.updated(x, "x'").updated(y, "y")
     assert(map.get(x) === Some("x"))
     assert(map.get(y) === None)
@@ -66,8 +66,8 @@ class IdentityMapTest extends CypherFunSuite {
   }
 
   test("should know contained keys") {
-    val k1  = Val()
-    val k2  = Val()
+    val k1 = Val()
+    val k2 = Val()
     val map = IdentityMap(k1 -> "x")
 
     assert(map.contains(k1))

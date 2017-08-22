@@ -92,10 +92,10 @@ object ExecutionEngineHelper {
 
   def createEngine(graphDatabaseCypherService: GraphDatabaseQueryService,
                    logProvider: LogProvider = NullLogProvider.getInstance()): ExecutionEngine = {
-    val resolver                       = graphDatabaseCypherService.getDependencyResolver
-    val kernel                         = resolver.resolveDependency(classOf[KernelAPI])
+    val resolver = graphDatabaseCypherService.getDependencyResolver
+    val kernel = resolver.resolveDependency(classOf[KernelAPI])
     val kernelMonitors: KernelMonitors = resolver.resolveDependency(classOf[KernelMonitors])
-    val compatibilityFactory           = resolver.resolveDependency(classOf[CompatibilityFactory])
+    val compatibilityFactory = resolver.resolveDependency(classOf[CompatibilityFactory])
 
     new ExecutionEngine(graphDatabaseCypherService, logProvider, compatibilityFactory)
   }

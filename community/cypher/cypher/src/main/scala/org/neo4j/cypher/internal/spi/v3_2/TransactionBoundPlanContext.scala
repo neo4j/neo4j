@@ -107,7 +107,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     try {
-      val labelId       = getLabelId(labelName)
+      val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
       tc.statement
@@ -161,15 +161,15 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), deprecated = s.isDeprecated))
             .toIndexedSeq)
     val deprecationInfo = asOption(ks.deprecated())
-    val mode            = asCypherProcMode(ks.mode(), ks.allowed())
-    val description     = asOption(ks.description())
-    val warning         = asOption(ks.warning())
+    val mode = asCypherProcMode(ks.mode(), ks.allowed())
+    val description = asOption(ks.description())
+    val warning = asOption(ks.warning())
 
     ProcedureSignature(name, input, output, deprecationInfo, mode, description, warning)
   }
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] = {
-    val kn            = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val maybeFunction = tc.statement.readOperations().functionGet(kn)
     val (fcn, aggregation) =
       if (maybeFunction.isPresent) (Some(maybeFunction.get), false)
@@ -180,9 +180,9 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         .asScala
         .map(s => FieldSignature(s.name(), asCypherType(s.neo4jType()), asOption(s.defaultValue()).map(asCypherValue)))
         .toIndexedSeq
-      val output          = asCypherType(f.outputType())
+      val output = asCypherType(f.outputType())
       val deprecationInfo = asOption(f.deprecated())
-      val description     = asOption(f.description())
+      val description = asOption(f.description())
 
       UserFunctionSignature(name, input, output, deprecationInfo, f.allowed(), description, isAggregate = aggregation)
     })

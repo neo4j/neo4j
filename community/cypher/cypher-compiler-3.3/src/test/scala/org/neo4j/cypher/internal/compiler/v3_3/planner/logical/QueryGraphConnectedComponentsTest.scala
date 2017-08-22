@@ -30,15 +30,15 @@ class QueryGraphConnectedComponentsTest
     with AstConstructionTestSupport
     with LogicalPlanningTestSupport {
 
-  private val labelA      = LabelName("A")(pos)
-  private val prop        = varFor("prop")
+  private val labelA = LabelName("A")(pos)
+  private val prop = varFor("prop")
   private val propKeyName = PropertyKeyName(prop.name)(pos)
-  private val A           = IdName("a")
-  private val B           = IdName("b")
-  private val C           = IdName("c")
-  private val D           = IdName("d")
-  private val X           = IdName("x")
-  private val Y           = IdName("y")
+  private val A = IdName("a")
+  private val B = IdName("b")
+  private val C = IdName("c")
+  private val D = IdName("d")
+  private val X = IdName("x")
+  private val Y = IdName("y")
   private val A_to_B =
     PatternRelationship(IdName("r1"), (A, B), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   private val B_to_A =
@@ -143,8 +143,8 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern nodes with one predicate connecting them") {
-    val propA     = Property(identA, propKeyName)(pos)
-    val propB     = Property(identB, propKeyName)(pos)
+    val propA = Property(identA, propKeyName)(pos)
+    val propB = Property(identB, propKeyName)(pos)
     val predicate = Equals(propA, propB)(pos)
 
     val graph = QueryGraph(patternNodes = Set(A, B), selections = Selections.from(predicate))
@@ -157,7 +157,7 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected relationships with each predicate on one of the relationships") {
-    val propA     = Property(varFor(A_to_B.name.name), propKeyName)(pos)
+    val propA = Property(varFor(A_to_B.name.name), propKeyName)(pos)
     val predicate = Equals(propA, StringLiteral("something")(pos))(pos)
 
     val graph = QueryGraph(

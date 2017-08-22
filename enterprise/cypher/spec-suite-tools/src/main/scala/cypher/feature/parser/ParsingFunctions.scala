@@ -38,7 +38,7 @@ import scala.collection.JavaConverters._
 object constructResultMatcher extends ((DataTable, Boolean) => ResultMatcher) {
 
   override def apply(table: DataTable, unorderedLists: Boolean = false): ResultMatcher = {
-    val keys  = table.topCells().asScala
+    val keys = table.topCells().asScala
     val cells = table.cells(1).asScala
 
     new ResultMatcher(
@@ -65,7 +65,7 @@ object constructResultMatcher extends ((DataTable, Boolean) => ResultMatcher) {
 object matcherParser extends ((String, Boolean) => ValueMatcher) {
 
   // has to be a def to renew the instance
-  private def parser   = new ResultsParser
+  private def parser = new ResultsParser
   private val listener = new CypherMatchersCreator
 
   def apply(input: String, unorderedLists: Boolean): ValueMatcher = {
@@ -80,7 +80,7 @@ object matcherParser extends ((String, Boolean) => ValueMatcher) {
 object parseParameters extends (DataTable => java.util.Map[String, AnyRef]) {
 
   override def apply(input: DataTable): util.Map[String, AnyRef] = {
-    val keys   = input.transpose().topCells().asScala
+    val keys = input.transpose().topCells().asScala
     val values = input.transpose().cells(1).asScala.head
 
     keys.zipWithIndex
@@ -100,7 +100,7 @@ object parseParameters extends (DataTable => java.util.Map[String, AnyRef]) {
   */
 object parseValueTable extends (DataTable => (List[String], List[Array[AnyRef]])) {
   override def apply(input: DataTable): (List[String], List[Array[AnyRef]]) = {
-    val keys    = input.topCells().asScala.toList
+    val keys = input.topCells().asScala.toList
     val builder = List.newBuilder[Array[AnyRef]]
     input.cells(1).asScala.foreach { values =>
       builder += values.asScala.map(paramsParser).toArray
@@ -116,7 +116,7 @@ object parseValueTable extends (DataTable => (List[String], List[Array[AnyRef]])
 object paramsParser extends (String => AnyRef) {
 
   // has to be a def to renew the instance
-  private def parser   = new ResultsParser
+  private def parser = new ResultsParser
   private val listener = new CypherParametersCreator
 
   def apply(input: String): AnyRef = {
@@ -131,7 +131,7 @@ object paramsParser extends (String => AnyRef) {
 object statisticsParser extends (DataTable => QueryStatisticsMatcher) {
 
   override def apply(expectations: DataTable): QueryStatisticsMatcher = {
-    val keys   = expectations.transpose().topCells().asScala
+    val keys = expectations.transpose().topCells().asScala
     val values = expectations.transpose().cells(1).asScala.head
 
     val matcher = new QueryStatisticsMatcher

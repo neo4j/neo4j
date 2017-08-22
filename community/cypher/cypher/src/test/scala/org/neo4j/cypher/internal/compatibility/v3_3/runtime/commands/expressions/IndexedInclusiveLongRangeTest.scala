@@ -69,9 +69,9 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
          b = random.nextInt(Int.MaxValue);
          c = random.nextInt(Int.MaxValue)) {
       val input = Array(a, b, c).sorted
-      val step  = input(0)
+      val step = input(0)
       val start = input(1)
-      val end   = input(2)
+      val end = input(2)
 
       IndexedInclusiveLongRange(start, end, step).toIndexedSeq.map(_.toInt) should equal(start to end by step)
     }
@@ -86,7 +86,7 @@ class IndexedInclusiveLongRangeTest extends CypherFunSuite {
   test("should handle big ranges as long as you only iterat") {
     val range = IndexedInclusiveLongRange(0, Int.MaxValue + 1L, 1L)
 
-    var i  = 0L
+    var i = 0L
     val it = range.iterator
     while (it.hasNext && i < 1000L) {
       it.next() should equal(i)

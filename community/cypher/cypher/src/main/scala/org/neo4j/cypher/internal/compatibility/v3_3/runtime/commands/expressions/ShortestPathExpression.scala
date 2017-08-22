@@ -48,14 +48,14 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     extends Expression {
 
   val pathPattern: Seq[Pattern] = Seq(shortestPathPattern)
-  val pathVariables             = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
+  val pathVariables = Set(shortestPathPattern.pathName, shortestPathPattern.relIterator.getOrElse(""))
 
   def apply(ctx: ExecutionContext)(implicit state: QueryState): AnyValue = {
     if (anyStartpointsContainNull(ctx)) {
       Values.NO_VALUE
     } else {
       val start = getEndPoint(ctx, shortestPathPattern.left)
-      val end   = getEndPoint(ctx, shortestPathPattern.right)
+      val end = getEndPoint(ctx, shortestPathPattern.right)
       if (!shortestPathPattern.allowZeroLength && disallowSameNode && start
             .equals(end)) throw new ShortestPathCommonEndNodesForbiddenException
       getMatches(ctx, start, end)
@@ -65,7 +65,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   private def getMatches(ctx: ExecutionContext, start: NodeValue, end: NodeValue)(
       implicit state: QueryState): AnyValue = {
     val (expander, nodePredicates) = addPredicates(ctx, makeRelationshipTypeExpander())
-    val maybePredicate             = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
+    val maybePredicate = if (predicates.isEmpty) None else Some(Ands(NonEmptyList.from(predicates)))
     /* This test is made after a full shortest path candidate has been produced,
      * accepting or disqualifying it as appropriate.
      */
@@ -104,7 +104,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     new KernelPredicate[Path] {
       override def test(path: Path): Boolean =
         maybePredicate.forall { predicate =>
-          incomingCtx += shortestPathPattern.pathName        -> AnyValues.asPathValue(path)
+          incomingCtx += shortestPathPattern.pathName -> AnyValues.asPathValue(path)
           incomingCtx += shortestPathPattern.relIterator.get -> AnyValues.asListOfEdges(path.relationships())
           predicate.isTrue(incomingCtx)
         } && (!withFallBack || RelationshipSupport.areRelationshipsUnique(path.relationships.asScala.toList))

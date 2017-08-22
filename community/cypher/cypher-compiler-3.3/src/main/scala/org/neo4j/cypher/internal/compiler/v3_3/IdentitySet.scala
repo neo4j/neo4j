@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.IdentityMap
 
 object IdentitySet {
   private val PRESENT = new Object
-  def empty[T]        = IdentitySet(IdentityMap.empty[T, AnyRef])
+  def empty[T] = IdentitySet(IdentityMap.empty[T, AnyRef])
 }
 
 case class IdentitySet[T] private (idSet: IdentityMap[T, AnyRef] = IdentityMap.empty)

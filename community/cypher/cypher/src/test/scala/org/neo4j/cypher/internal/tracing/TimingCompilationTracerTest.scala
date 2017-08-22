@@ -41,7 +41,7 @@ class TimingCompilationTracerTest extends CypherFunSuite {
 
   test("measure time") {
     // given
-    val clock    = new FakeClock
+    val clock = new FakeClock
     val listener = mock[TimingCompilationTracer.EventListener]
 
     // when

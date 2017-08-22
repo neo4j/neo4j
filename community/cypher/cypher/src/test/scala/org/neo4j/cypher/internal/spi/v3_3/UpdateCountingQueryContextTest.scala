@@ -32,15 +32,15 @@ import org.neo4j.graphdb.Relationship
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
 
-  val inner   = mock[QueryContext]
-  val nodeA   = mock[Node]
-  val nodeB   = mock[Node]
+  val inner = mock[QueryContext]
+  val nodeA = mock[Node]
+  val nodeB = mock[Node]
   val nodeAId = 666
-  val rel     = mock[Relationship]
-  val relId   = 42
+  val rel = mock[Relationship]
+  val relId = 42
 
   val nodeOps = mock[Operations[Node]]
-  val relOps  = mock[Operations[Relationship]]
+  val relOps = mock[Operations[Relationship]]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)

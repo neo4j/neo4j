@@ -89,7 +89,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
 
   type EntityAccessor = NodeManager
 
-  val nodeOps         = new NodeOperations
+  val nodeOps = new NodeOperations
   val relationshipOps = new RelationshipOperations
 
   override lazy val entityAccessor = txContext.graph.getDependencyResolver.resolveDependency(classOf[NodeManager])
@@ -191,8 +191,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
     }
 
     val optNumericRange = groupedRanges.get(classOf[Number]).map(_.asInstanceOf[InequalitySeekRange[Number]])
-    val optStringRange  = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
-    val anyRange        = groupedRanges.get(classOf[Any])
+    val optStringRange = groupedRanges.get(classOf[String]).map(_.mapBounds(_.toString))
+    val anyRange = groupedRanges.get(classOf[Any])
 
     if (anyRange.nonEmpty) {
       // If we get back an exclusion test, the range could return values otherwise it is empty
@@ -698,7 +698,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   type KernelProcedureCall = (KernelQualifiedName, Array[AnyRef]) => RawIterator[Array[AnyRef], ProcedureException]
-  type KernelFunctionCall  = (KernelQualifiedName, Array[AnyRef]) => AnyRef
+  type KernelFunctionCall = (KernelQualifiedName, Array[AnyRef]) => AnyRef
 
   private def shouldElevate(allowed: Array[String]): Boolean = {
     // We have to be careful with elevation, since we cannot elevate permissions in a nested procedure call
@@ -739,11 +739,11 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   private def callProcedure(name: QualifiedName, args: Seq[Any], call: KernelProcedureCall) = {
-    val kn      = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
-    val read    = call(kn, toArray)
+    val read = call(kn, toArray)
     new scala.Iterator[Array[AnyRef]] {
-      override def hasNext: Boolean      = read.hasNext
+      override def hasNext: Boolean = read.hasNext
       override def next(): Array[AnyRef] = read.next
     }
   }
@@ -758,7 +758,7 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper)
   }
 
   private def callFunction(name: QualifiedName, args: Seq[Any], call: KernelFunctionCall) = {
-    val kn      = new KernelQualifiedName(name.namespace.asJava, name.name)
+    val kn = new KernelQualifiedName(name.namespace.asJava, name.name)
     val toArray = args.map(_.asInstanceOf[AnyRef]).toArray
     call(kn, toArray)
   }

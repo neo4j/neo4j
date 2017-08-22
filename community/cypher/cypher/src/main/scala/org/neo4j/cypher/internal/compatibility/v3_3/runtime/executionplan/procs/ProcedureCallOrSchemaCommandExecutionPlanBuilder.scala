@@ -60,7 +60,7 @@ case object ProcedureCallOrSchemaCommandExecutionPlanBuilder
           // Global call: CALL foo.bar.baz("arg1", 2)
           case StandAloneProcedureCall(signature, args, types, indices) =>
             val converters = new ExpressionConverters(CommunityExpressionConverter)
-            val logger     = context.notificationLogger
+            val logger = context.notificationLogger
             Some(
               ProcedureCallExecutionPlan(signature,
                                          args,

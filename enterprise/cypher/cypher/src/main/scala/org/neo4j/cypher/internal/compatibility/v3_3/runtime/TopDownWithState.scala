@@ -36,7 +36,7 @@ object TopDownWithState {
         throw new IllegalArgumentException("Need the initial object to return an initial state"))
 
       val initialStack = mutable.ArrayStack((List(that), new mutable.MutableList[AnyRef](), initialState))
-      val result       = rec(initialStack)
+      val result = rec(initialStack)
       assert(result.size == 1)
       result.head
     }
@@ -51,15 +51,15 @@ object TopDownWithState {
           newChildren
         } else {
           val (job :: jobs, doneJobs, state) = stack.pop()
-          val doneJob                        = job.dup(newChildren)
+          val doneJob = job.dup(newChildren)
           stack.push((jobs, doneJobs += doneJob, state))
           rec(stack)
         }
       } else {
         val (newJob :: jobs, doneJobs, oldState) = stack.pop()
-        val newState                             = stateChange(newJob).getOrElse(oldState)
-        val rewriter                             = rewriterCreator(newState)
-        val rewrittenJob                         = newJob.rewrite(rewriter)
+        val newState = stateChange(newJob).getOrElse(oldState)
+        val rewriter = rewriterCreator(newState)
+        val rewrittenJob = newJob.rewrite(rewriter)
         stack.push((rewrittenJob :: jobs, doneJobs, newState))
         stack.push((rewrittenJob.children.toList, new mutable.MutableList(), newState))
         rec(stack)

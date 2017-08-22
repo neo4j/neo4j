@@ -56,7 +56,7 @@ case class MatchRelationship(name: Option[String], from: String, to: String) {
 }
 
 case class MatchPattern(nodes: Seq[String], relationships: Seq[MatchRelationship]) {
-  def isEmpty: Boolean  = nodes.isEmpty && relationships.isEmpty
+  def isEmpty: Boolean = nodes.isEmpty && relationships.isEmpty
   def nonEmpty: Boolean = !isEmpty
 
   def possibleStartNodes: Seq[String] = nodes
@@ -73,12 +73,12 @@ case class MatchPattern(nodes: Seq[String], relationships: Seq[MatchRelationship
       Seq(this)
     } else {
 
-      val result            = mutable.ListBuffer[MatchPattern]()
-      var nodesLeft         = nodes.toSet
+      val result = mutable.ListBuffer[MatchPattern]()
+      var nodesLeft = nodes.toSet
       var relationshipsLeft = relationships.toSet
 
       var currentNodes = mutable.ListBuffer[String]()
-      var currentRels  = mutable.ListBuffer[MatchRelationship]()
+      var currentRels = mutable.ListBuffer[MatchRelationship]()
 
       def popNextNode() {
         var current = nodesLeft.head

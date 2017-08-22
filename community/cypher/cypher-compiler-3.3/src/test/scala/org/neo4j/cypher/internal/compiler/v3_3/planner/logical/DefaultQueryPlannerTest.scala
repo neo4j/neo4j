@@ -53,7 +53,7 @@ class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("adds ProduceResult with a single value") {
-    val expr  = varFor("x")
+    val expr = varFor("x")
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo].updated(expr, ExpressionTypeInfo(CTFloat, None))
 
     val result = createProduceResultOperator(Seq("x"), semanticTable = SemanticTable(types = types))

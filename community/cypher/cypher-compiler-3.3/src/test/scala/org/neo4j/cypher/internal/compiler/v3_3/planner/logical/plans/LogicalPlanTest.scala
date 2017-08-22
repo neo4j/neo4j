@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.ir.v3_3.PlannerQuery
 
 class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
   case class TestPlan()(val solved: PlannerQuery with CardinalityEstimation) extends LogicalPlan {
-    def lhs: Option[LogicalPlan]      = ???
+    def lhs: Option[LogicalPlan] = ???
     def availableSymbols: Set[IdName] = ???
-    def rhs: Option[LogicalPlan]      = ???
-    def strictness                    = ???
+    def rhs: Option[LogicalPlan] = ???
+    def strictness = ???
   }
 
   test("updating the planner query works well, thank you very much") {
@@ -53,7 +53,7 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("apply with two singlerows should return them both") {
     val singleRow1 = Argument(Set(IdName("a")))(solved)()
     val singleRow2 = SingleRow()(solved)
-    val apply      = Apply(singleRow1, singleRow2)(solved)
+    val apply = Apply(singleRow1, singleRow2)(solved)
 
     apply.leaves should equal(Seq(singleRow1, singleRow2))
   }
@@ -63,9 +63,9 @@ class LogicalPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val singleRow2 = SingleRow()(solved)
     val singleRow3 = Argument(Set(IdName("b")))(solved)()
     val singleRow4 = SingleRow()(solved)
-    val apply1     = Apply(singleRow1, singleRow2)(solved)
-    val apply2     = Apply(singleRow3, singleRow4)(solved)
-    val metaApply  = Apply(apply1, apply2)(solved)
+    val apply1 = Apply(singleRow1, singleRow2)(solved)
+    val apply2 = Apply(singleRow3, singleRow4)(solved)
+    val metaApply = Apply(apply1, apply2)(solved)
 
     metaApply.leaves should equal(Seq(singleRow1, singleRow2, singleRow3, singleRow4))
   }

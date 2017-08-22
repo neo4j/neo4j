@@ -94,10 +94,10 @@ trait Compatibility[C <: CompilerContext] {
       override def plan(transactionalContext: TransactionalContextWrapperV3_3,
                         tracer: frontend.v3_3.phases.CompilationPhaseTracer): (ExecutionPlan, Map[String, Any]) =
         exceptionHandler.runSafely {
-          val tc             = TransactionalContextWrapperV3_2(transactionalContext.tc)
-          val planContext    = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
+          val tc = TransactionalContextWrapperV3_2(transactionalContext.tc)
+          val planContext = new ExceptionTranslatingPlanContext(new TransactionBoundPlanContext(tc, notificationLogger))
           val syntacticQuery = preparedSyntacticQueryForV_3_2.get
-          val pos3_2         = helpers.as3_2(preParsedQuery.offset)
+          val pos3_2 = helpers.as3_2(preParsedQuery.offset)
           val (planImpl, extractedParameters) = compiler.planPreparedQuery(syntacticQuery,
                                                                            notificationLogger,
                                                                            planContext,

@@ -45,7 +45,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))),
                                           Seq("b" -> CTInteger),
-                                          Seq(0   -> "b"),
+                                          Seq(0 -> "b"),
                                           notifications = Set.empty,
                                           converters)
 
@@ -61,7 +61,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     val proc = ProcedureCallExecutionPlan(writeSignature,
                                           Seq(add(int(42), int(42))),
                                           Seq("b" -> CTInteger),
-                                          Seq(0   -> "b"),
+                                          Seq(0 -> "b"),
                                           notifications = Set.empty,
                                           converters)
 
@@ -77,7 +77,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     val proc = ProcedureCallExecutionPlan(readSignature,
                                           Seq(add(int(42), int(42))),
                                           Seq("b" -> CTInteger),
-                                          Seq(0   -> "b"),
+                                          Seq(0 -> "b"),
                                           notifications = Set.empty,
                                           converters)
 
@@ -112,8 +112,8 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     ProcedureReadWriteAccess(Array.empty)
   )
 
-  private val pos       = DummyPosition(-1)
-  val ctx               = mock[QueryContext]
+  private val pos = DummyPosition(-1)
+  val ctx = mock[QueryContext]
   var iteratorExhausted = false
 
   val procedureResult = new Answer[Iterator[Array[AnyRef]]] {

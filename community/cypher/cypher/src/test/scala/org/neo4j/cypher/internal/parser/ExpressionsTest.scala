@@ -78,7 +78,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
   }
 
   test("list_comprehension") {
-    val predicate     = predicates.Equals(legacy.Property(legacy.Variable("x"), PropertyKey("prop")), legacy.Literal(42))
+    val predicate = predicates.Equals(legacy.Property(legacy.Variable("x"), PropertyKey("prop")), legacy.Literal(42))
     val mapExpression = legacy.Property(legacy.Variable("x"), PropertyKey("name"))
 
     parsing("[x in collection WHERE x.prop = 42 | x.name]") shouldGive
@@ -152,6 +152,6 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
 
   }
 
-  private val converters                                  = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
   def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(astNode)
 }

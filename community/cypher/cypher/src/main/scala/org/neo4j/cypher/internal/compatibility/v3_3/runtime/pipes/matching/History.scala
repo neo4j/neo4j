@@ -86,7 +86,7 @@ class AddedHistory(val parent: History, val pair: MatchingPair) extends History 
       case MatchingPair(pe: PatternRelationship, entity: SingleGraphRelationship) => Seq(pe.key -> entity.rel)
       case MatchingPair(pe: VariableLengthPatternRelationship, null) =>
         Seq(pe.key -> Values.NO_VALUE) ++ pe.relIterable
-          .map(_   -> Values.NO_VALUE)
+          .map(_ -> Values.NO_VALUE)
       case MatchingPair(pe: PatternRelationship, null) => Seq(pe.key -> Values.NO_VALUE)
       case MatchingPair(pe: VariableLengthPatternRelationship, entity: VariableLengthGraphRelationship) => {
         relationshipIterable(pe, entity) match {

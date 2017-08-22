@@ -95,7 +95,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   override def databaseConfig = Map(GraphDatabaseSettings.forbid_shortestpath_common_nodes -> "false")
 
   test("shortestPath with same start and end node should return zero length path with no fallback") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |RETURN nodes(p) AS nodes""".stripMargin)
 
@@ -112,7 +112,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("shortestPath with same start and end node as well as predicates should resort to fallback") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -130,7 +130,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("Shortest path from first to first node via top right (reverts to exhaustive)") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$topLeft))
         |WHERE ANY(n in nodes(p) WHERE n:$topRight)
         |RETURN nodes(p) AS nodes""".stripMargin)
@@ -149,7 +149,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node with no possible path (reverts to exhaustive)") {
     // Impossible predicate: No node is both topRight and bottomRight
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight AND n:$bottomRight)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -305,7 +305,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("All shortest paths from first to last node") {
-    val start  = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          |RETURN p""".stripMargin)
 
@@ -318,7 +318,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("All shortest paths from first to last node via bottom left") {
-    val start  = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          | WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          | RETURN p""".stripMargin)
@@ -327,7 +327,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("All shortest paths from first to last node via top right") {
-    val start  = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val result = executeUsingCostPlannerOnly(s"""MATCH p = allShortestPaths((src:$topLeft)-[*]-(dst:$bottomRight))
          | WHERE ANY(n in nodes(p) WHERE n:$topRight)
          | RETURN p""".stripMargin)
@@ -382,7 +382,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          | WITH reduce(a={l:10000}, p IN paths | case when length(p) > a.l then a when length(p) < a.l then {l:length(p),c:[p]} else {l:a.l, c:a.c +[p]} end).c as all_shortest_paths
          | UNWIND all_shortest_paths as shortest_paths
          | RETURN shortest_paths""".stripMargin
-    val startMs           = System.currentTimeMillis()
+    val startMs = System.currentTimeMillis()
     val expectedPathCount = Map(3 -> 6, 4 -> 20, 5 -> 70)
     evaluateAllShortestPathResults(executeUsingCostPlannerOnly(query),
                                    "shortest_paths",
@@ -434,7 +434,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          | WITH reduce(a={l:10000}, p IN paths | case when length(p) > a.l then a when length(p) < a.l then {l:length(p),c:[p]} else {l:a.l, c:a.c +[p]} end).c as all_shortest_paths
          | UNWIND all_shortest_paths as shortest_paths
          | RETURN shortest_paths""".stripMargin
-    val startMs           = System.currentTimeMillis()
+    val startMs = System.currentTimeMillis()
     val expectedPathCount = Map(3 -> 4, 4 -> 12, 5 -> 36)
     evaluateAllShortestPathResults(
       executeUsingCostPlannerOnly(query),
@@ -457,7 +457,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
          | WITH reduce(a={l:10000}, p IN paths | case when length(p) > a.l then a when length(p) < a.l then {l:length(p),c:[p]} else {l:a.l, c:a.c +[p]} end).c as all_shortest_paths
          | UNWIND all_shortest_paths as shortest_paths
          | RETURN shortest_paths""".stripMargin
-    val startMs           = System.currentTimeMillis()
+    val startMs = System.currentTimeMillis()
     val expectedPathCount = Map(3 -> 2, 4 -> 8, 5 -> 30)
     evaluateAllShortestPathResults(
       executeUsingCostPlannerOnly(query),
@@ -474,7 +474,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   //---------------------------------------------------------------------------
   // Negative tests
   test("Shortest path from first to last node without predicate") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |RETURN nodes(p) AS nodes""".stripMargin)
 
@@ -486,7 +486,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node with ALL predicate") {
     addDiagonal()
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ALL(r in rels(p) WHERE type(r) = 'DIAG')
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -498,7 +498,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("Shortest path from first to last node with NONE predicate") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE NONE(r in rels(p) WHERE exists(r.blocked))
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -510,7 +510,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   test("Shortest path from first to last node with NONE predicate with a composite predicate") {
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE NONE(r in rels(p) WHERE exists(r.blocked) AND src:$bottomLeft) AND src:$topLeft
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -538,7 +538,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node with ALL node predicate") {
     addDiagonal()
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ALL(n in nodes(p) WHERE n.row = 0 OR n.col = $dMax)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -552,7 +552,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
 
   test("Shortest path from first to last node with NONE node predicate") {
     addDiagonal()
-    val start   = System.currentTimeMillis
+    val start = System.currentTimeMillis
     val results = executeUsingCostPlannerOnly(s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE NONE(n in nodes(p) WHERE n.row > 0 AND n.col < $dMax)
          |RETURN nodes(p) AS nodes""".stripMargin)
@@ -626,7 +626,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     }
 
     createTestGraph()
-    val query   = """WITH [1,3,26,14] as wps
+    val query = """WITH [1,3,26,14] as wps
                   |UNWIND wps AS wpstartid
                   |UNWIND wps AS wpendid
                   |WITH wpstartid, wpendid, wps
@@ -650,7 +650,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     new Matcher[InternalExecutionResult] {
       override def apply(result: InternalExecutionResult): MatchResult = {
         val plan: InternalPlanDescription = result.executionPlanDescription()
-        val operators                     = plan.find("VarLengthExpand(Into)")
+        val operators = plan.find("VarLengthExpand(Into)")
         if (operators.isEmpty) {
           MatchResult(matches = false,
                       rawFailureMessage = s"Plan should use VarLengthExpand\n$plan",
@@ -673,13 +673,13 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       }
     }
 
-  val dim                                    = 4
-  val dMax                                   = dim - 1
-  val topLeft                                = "CELL00"
-  val topRight                               = s"CELL0${dMax}"
-  val bottomLeft                             = s"CELL${dMax}0"
-  val bottomRight                            = s"CELL${dMax}${dMax}"
-  val middle                                 = s"CELL${dMax / 2}${dMax / 2}"
+  val dim = 4
+  val dMax = dim - 1
+  val topLeft = "CELL00"
+  val topRight = s"CELL0${dMax}"
+  val bottomLeft = s"CELL${dMax}0"
+  val bottomRight = s"CELL${dMax}${dMax}"
+  val middle = s"CELL${dMax / 2}${dMax / 2}"
   val nodesByName: mutable.Map[String, Node] = mutable.Map[String, Node]()
 
   override protected def initTest(): Unit = {
@@ -739,15 +739,15 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   private def debugResults(nodes: Seq[Node]): Unit = {
     dprintln
     val nodeMap: Map[String, Map[Node, Int]] = nodes.foldLeft(Map[String, Map[Node, Int]]()) { (acc, node) =>
-      val row  = node.getId / dim
-      val col  = node.getId - dim * row
+      val row = node.getId / dim
+      val col = node.getId - dim * row
       val name = s"$row$col"
       acc + (name -> Map(node -> acc.size))
     }
     0 to dMax foreach { row =>
       0 to dMax foreach { col =>
-        val name    = s"$row$col"
-        val text    = if (nodeMap.isDefinedAt(name)) nodeMap(name).values.head.toString else "-"
+        val name = s"$row$col"
+        val text = if (nodeMap.isDefinedAt(name)) nodeMap(name).values.head.toString else "-"
         val toPrint = "  " + text
         dprint(toPrint.substring(toPrint.length - 3))
       }
@@ -780,8 +780,8 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
   }
 
   private def dprintln(s: Any) = if (VERBOSE) println(s)
-  private def dprintln         = if (VERBOSE) println
-  private def dprint(s: Any)   = if (VERBOSE) print(s)
+  private def dprintln = if (VERBOSE) println
+  private def dprint(s: Any) = if (VERBOSE) print(s)
 
   private def evaluateAllShortestPathResults(results: InternalExecutionResult,
                                              identifier: String,
@@ -789,7 +789,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
                                              expectedPathCount: Int,
                                              expectedNodes: Set[Set[Node]]): Unit = {
     val resultList = results.toList
-    val duration   = System.currentTimeMillis() - startMs
+    val duration = System.currentTimeMillis() - startMs
     dprintln(results.executionPlanDescription())
     dprintln(s"Query took ${duration / 1000.0}s")
     withClue("expected row count") { resultList.length should be(expectedPathCount) }
@@ -850,10 +850,10 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
     }
 
     private def debugNode(dim: Int, matrix: mutable.Map[String, String], cellSize: Int, node: Node, text: String): Int = {
-      val row: Long   = node.getId / dim
-      val col: Long   = node.getId - dim * row
+      val row: Long = node.getId / dim
+      val col: Long = node.getId - dim * row
       val key: String = row.toString + col.toString
-      val value       = if (matrix.isDefinedAt(key)) matrix(key) + text else text
+      val value = if (matrix.isDefinedAt(key)) matrix(key) + text else text
       matrix += (key -> value)
       Math.max(cellSize, value.length)
     }
@@ -868,7 +868,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
               connectingNode: Node) {
       import scala.collection.JavaConversions._
       val matrix: mutable.Map[String, String] = mutable.Map[String, String]()
-      var cellSize: Int                       = 0
+      var cellSize: Int = 0
       for (node <- nextNodes) {
         cellSize = debugNode(dim, matrix, cellSize, node, if (node == connectingNode) "(@)" else "(*)")
       }
@@ -879,7 +879,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with NewP
       0 until dim foreach { row =>
         dprint(s"$row:")
         0 until dim foreach { col =>
-          val key  = s"$row$col"
+          val key = s"$row$col"
           val text = matrix.getOrElse(key, "- ")
           printf(s"%${4 + cellSize}s", text)
         }

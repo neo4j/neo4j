@@ -71,7 +71,7 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
     )(solvedWithEstimation(10.0))
 
     val pleaseLazy = QueryGraphSolverInput.empty.withPreferredStrictness(LazyMode)
-    val whatever   = QueryGraphSolverInput.empty
+    val whatever = QueryGraphSolverInput.empty
 
     CardinalityCostModel(plan, whatever) should be < CardinalityCostModel(plan, pleaseLazy)
   }
@@ -137,14 +137,14 @@ class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSu
 
   test("multiple property expressions are counted for in cost") {
     val cardinality = 10.0
-    val card10      = solvedWithEstimation(cardinality)
+    val card10 = solvedWithEstimation(cardinality)
     val plan =
       Selection(List(propEquality("a", "prop1", 42), propEquality("a", "prop1", 42), propEquality("a", "prop1", 42)),
                 Argument(Set("a"))(card10)())(card10)
 
     val numberOfPredicates = 3
-    val costForSelection   = cardinality * numberOfPredicates
-    val costForArgument    = cardinality * .1
+    val costForSelection = cardinality * numberOfPredicates
+    val costForArgument = cardinality * .1
     CardinalityCostModel(plan, QueryGraphSolverInput.empty) should equal(Cost(costForSelection + costForArgument))
   }
 

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-  val monitor            = mock[AstRewritingMonitor]
+  val monitor = mock[AstRewritingMonitor]
   val rewriter: Rewriter = distributeLawsRewriter()(monitor)
 
   test("(P or (Q and R))  iff  (P or Q) and (P or R)") {
@@ -45,7 +45,7 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
 
   test("should not rewrite DNF predicates larger than the limit") {
     // given
-    val start  = or(and(P, Q), and(Q, R))
+    val start = or(and(P, Q), and(Q, R))
     val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 2)
 
     // when
@@ -58,7 +58,7 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
 
   test("should rewrite DNF predicates smaller than the limit") {
     // given
-    val start  = or(and(P, Q), and(Q, R))
+    val start = or(and(P, Q), and(Q, R))
     val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 3)
 
     // when

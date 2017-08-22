@@ -77,16 +77,16 @@ class SumFunctionTest extends CypherFunSuite with AggregateTest {
   }
 
   test("intOverflowTransformsSumToLong") {
-    val halfInt  = Int.MaxValue
-    val result   = aggregateOn(intValue(halfInt), intValue(halfInt), intValue(halfInt))
+    val halfInt = Int.MaxValue
+    val result = aggregateOn(intValue(halfInt), intValue(halfInt), intValue(halfInt))
     val expected = 3L * halfInt
     result should equal(longValue(expected))
   }
 
   test("typesArentUnnecessaryWidened") {
     val thirdOfMaxInt: Int = Int.MaxValue / 3
-    val result             = aggregateOn(intValue(thirdOfMaxInt), intValue(thirdOfMaxInt))
-    val expected           = thirdOfMaxInt + thirdOfMaxInt
+    val result = aggregateOn(intValue(thirdOfMaxInt), intValue(thirdOfMaxInt))
+    val expected = thirdOfMaxInt + thirdOfMaxInt
     result should equal(longValue(expected))
     result shouldBe a[LongValue]
   }

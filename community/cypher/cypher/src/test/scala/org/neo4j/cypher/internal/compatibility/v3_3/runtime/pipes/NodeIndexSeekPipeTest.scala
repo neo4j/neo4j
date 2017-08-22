@@ -45,11 +45,11 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
 
   implicit val windowsSafe = WindowsStringSafe
 
-  val label       = LabelToken(LabelName("LabelName") _, LabelId(11))
+  val label = LabelToken(LabelName("LabelName") _, LabelId(11))
   val propertyKey = Seq(PropertyKeyToken(PropertyKeyName("PropertyName") _, PropertyKeyId(10)))
-  val descriptor  = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
-  val node        = nodeProxy(1)
-  val node2       = nodeProxy(2)
+  val descriptor = IndexDescriptor(label.nameId.id, propertyKey.map(_.nameId.id))
+  val node = nodeProxy(1)
+  val node2 = nodeProxy(2)
 
   private def nodeProxy(id: Long) = {
     val node = mock[Node]
@@ -64,7 +64,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe   = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -156,7 +156,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe   = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral()))()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(ListLiteral()))()
     val result = pipe.createResults(queryState)
 
     // then
@@ -213,7 +213,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val queryState = QueryStateHelper.emptyWith( // WHERE n.prop = 'hello' AND n.prop2 = 'world']
       query = indexFor(
         Seq("hello", "world") -> Iterator(node),
-        Seq("hello")          -> Iterator(node, node2)
+        Seq("hello") -> Iterator(node, node2)
       ))
 
     // when
@@ -250,7 +250,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     val queryState = QueryStateHelper.emptyWith(query = indexFor(Seq("hello") -> Iterator(node)))
 
     // when
-    val pipe   = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), UniqueIndexSeek)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -265,7 +265,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     // when
-    val pipe   = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Variable("x")))()
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Variable("x")))()
     val result = pipe.createResults(queryState)
 
     // then

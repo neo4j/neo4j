@@ -105,9 +105,9 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
     extends IdSeekIterator[Relationship] {
 
   private var lastEntity: Relationship = null
-  private var lastStart: Node          = null
-  private var lastEnd: Node            = null
-  private var emitSibling              = false
+  private var lastStart: Node = null
+  private var lastEnd: Node = null
+  private var emitSibling = false
 
   def hasNext: Boolean = emitSibling || hasNextEntity
 

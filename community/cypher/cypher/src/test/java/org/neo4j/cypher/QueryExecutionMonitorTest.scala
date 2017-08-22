@@ -47,8 +47,8 @@ class QueryExecutionMonitorTest
   implicit def contextQuery(context: TransactionalContext): ExecutingQuery = context.executingQuery()
 
   private def runQuery(query: String): (ExecutingQuery, Result) = {
-    val context         = db.transactionalContext(query = query -> Map.empty)
-    val executingQuery  = context.executingQuery()
+    val context = db.transactionalContext(query = query -> Map.empty)
+    val executingQuery = context.executingQuery()
     val executionResult = engine.execute(executingQuery.queryText(), executingQuery.queryParameters(), context)
     (executingQuery, executionResult)
   }
@@ -306,9 +306,9 @@ class QueryExecutionMonitorTest
     verify(monitor, times(1)).endSuccess(query)
   }
 
-  var db: GraphDatabaseQueryService  = null
+  var db: GraphDatabaseQueryService = null
   var monitor: QueryExecutionMonitor = null
-  var engine: ExecutionEngine        = null
+  var engine: ExecutionEngine = null
 
   override protected def beforeEach(): Unit = {
     db = new GraphDatabaseCypherService(new TestGraphDatabaseFactory().newImpermanentDatabase())

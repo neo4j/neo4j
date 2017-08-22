@@ -116,8 +116,8 @@ class CodeGenerator(val structure: CodeStructure[GeneratedQuery],
                             columns: Seq[String],
                             conf: CodeGenConfiguration): CodeStructureResult[GeneratedQuery] = {
     import LogicalPlanConverter._
-    val lookup            = columns.indices.map(i => columns(i) -> i).toMap
-    implicit val context  = new CodeGenContext(semantics, ids, lookup)
+    val lookup = columns.indices.map(i => columns(i) -> i).toMap
+    implicit val context = new CodeGenContext(semantics, ids, lookup)
     val (_, instructions) = asCodeGenPlan(plan).produce(context)
     generateCode(structure)(instructions, context.operatorIds.map {
       case (id: Id, field: String) => field -> id

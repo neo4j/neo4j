@@ -68,7 +68,7 @@ trait CodeGenSugar extends MockitoSugar {
 
   def compile(plan: LogicalPlan): CompiledPlan = {
     val statistics: GraphStatistics = mock[GraphStatistics]
-    val context                     = mock[PlanContext]
+    val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
     new CodeGenerator(GeneratedQueryStructure, Clocks.systemClock())
       .generate(plan, context, semanticTable, CostBasedPlannerName.default)
@@ -84,7 +84,7 @@ trait CodeGenSugar extends MockitoSugar {
     val tx = graphDb.beginTransaction(KernelTransaction.Type.explicit, AnonymousContext.read())
     try {
       val locker: PropertyContainerLocker = new PropertyContainerLocker
-      val contextFactory                  = Neo4jTransactionalContextFactory.create(graphDb, locker)
+      val contextFactory = Neo4jTransactionalContextFactory.create(graphDb, locker)
       val transactionalContext = TransactionalContextWrapper(
         contextFactory.newContext(ClientConnectionInfo.EMBEDDED_CONNECTION,
                                   tx,
@@ -106,13 +106,13 @@ trait CodeGenSugar extends MockitoSugar {
                columns: Seq[String] = Seq.empty,
                params: Map[String, AnyRef] = Map.empty,
                operatorIds: Map[String, Id] = Map.empty): List[Map[String, Object]] = {
-    val clazz  = compile(instructions, columns, operatorIds)
+    val clazz = compile(instructions, columns, operatorIds)
     val result = newInstance(clazz, queryContext = qtx, params = params)
     evaluate(result)
   }
 
   def evaluate(result: InternalExecutionResult): List[Map[String, Object]] = {
-    var rows                  = List.empty[Map[String, Object]]
+    var rows = List.empty[Map[String, Object]]
     val columns: List[String] = result.columns
     result.accept(new ResultVisitor[RuntimeException] {
       override def visit(row: ResultRow): Boolean = {
@@ -163,9 +163,9 @@ trait CodeGenSugar extends MockitoSugar {
   }
 
   private def mockQueryContext() = {
-    val qc                   = mock[QueryContext]
+    val qc = mock[QueryContext]
     val transactionalContext = mock[TransactionalContextWrapper]
-    val statement            = mock[Statement]
+    val statement = mock[Statement]
     when(qc.transactionalContext).thenReturn(transactionalContext)
     when(transactionalContext.statement).thenReturn(statement)
 

@@ -35,8 +35,8 @@ class LengthFunctionTest extends CypherFunSuite {
 
   test("length can be used on paths") {
     //given
-    val p              = PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m              = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
+    val p = PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val m = ExecutionContext.from("p" -> AnyValues.asPathValue(p))
     val lengthFunction = LengthFunction(Variable("p"))
 
     //when
@@ -47,8 +47,8 @@ class LengthFunctionTest extends CypherFunSuite {
   }
   test("length can still be used on collections") {
     //given
-    val l              = Seq("it", "was", "the")
-    val m              = ExecutionContext.from("l" -> l)
+    val l = Seq("it", "was", "the")
+    val m = ExecutionContext.from("l" -> l)
     val lengthFunction = LengthFunction(Variable("l"))
 
     //when
@@ -60,8 +60,8 @@ class LengthFunctionTest extends CypherFunSuite {
 
   test("length can still be used on strings") {
     //given
-    val s              = "it was the"
-    val m              = ExecutionContext.from("s" -> s)
+    val s = "it was the"
+    val m = ExecutionContext.from("s" -> s)
     val lengthFunction = LengthFunction(Variable("s"))
 
     //when

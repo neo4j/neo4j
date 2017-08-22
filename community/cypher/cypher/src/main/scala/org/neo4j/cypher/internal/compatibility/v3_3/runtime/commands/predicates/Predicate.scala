@@ -43,7 +43,7 @@ abstract class Predicate extends Expression {
   def apply(ctx: ExecutionContext)(implicit state: QueryState) =
     isMatch(ctx).map(Values.booleanValue).getOrElse(Values.NO_VALUE)
   def isTrue(m: ExecutionContext)(implicit state: QueryState): Boolean = isMatch(m).getOrElse(false)
-  def andWith(other: Predicate): Predicate                             = Ands(this, other)
+  def andWith(other: Predicate): Predicate = Ands(this, other)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean]
 
   // This is the un-dividable list of predicates. They can all be ANDed
@@ -109,11 +109,11 @@ case class Not(a: Predicate) extends Predicate {
     case Some(x) => Some(!x)
     case None    => None
   }
-  override def toString: String              = "NOT(" + a + ")"
-  def containsIsNull                         = a.containsIsNull
+  override def toString: String = "NOT(" + a + ")"
+  def containsIsNull = a.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Not(a.rewriteAsPredicate(f)))
-  def arguments                              = Seq(a)
-  def symbolTableDependencies                = a.symbolTableDependencies
+  def arguments = Seq(a)
+  def symbolTableDependencies = a.symbolTableDependencies
 }
 
 case class Xor(a: Predicate, b: Predicate) extends Predicate {
@@ -123,8 +123,8 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
     case (Some(l), Some(r)) => Some(l ^ r)
   }
 
-  override def toString: String              = "(" + a + " XOR " + b + ")"
-  def containsIsNull                         = a.containsIsNull || b.containsIsNull
+  override def toString: String = "(" + a + " XOR " + b + ")"
+  def containsIsNull = a.containsIsNull || b.containsIsNull
   def rewrite(f: (Expression) => Expression) = f(Xor(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
 
   def arguments = Seq(a, b)
@@ -138,20 +138,20 @@ case class IsNull(expression: Expression) extends Predicate {
     case _               => Some(false)
   }
 
-  override def toString: String              = expression + " IS NULL"
-  def containsIsNull                         = true
+  override def toString: String = expression + " IS NULL"
+  def containsIsNull = true
   def rewrite(f: (Expression) => Expression) = f(IsNull(expression.rewrite(f)))
-  def arguments                              = Seq(expression)
-  def symbolTableDependencies                = expression.symbolTableDependencies
+  def arguments = Seq(expression)
+  def symbolTableDependencies = expression.symbolTableDependencies
 }
 
 case class True() extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = Some(true)
-  override def toString: String                                                 = "true"
-  def containsIsNull                                                            = false
-  def rewrite(f: (Expression) => Expression)                                    = f(this)
-  def arguments                                                                 = Nil
-  def symbolTableDependencies                                                   = Set()
+  override def toString: String = "true"
+  def containsIsNull = false
+  def rewrite(f: (Expression) => Expression) = f(this)
+  def arguments = Nil
+  def symbolTableDependencies = Set()
 }
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
@@ -185,8 +185,8 @@ trait StringOperator {
   def lhs: Expression
   def rhs: Expression
   def compare(a: String, b: String): Boolean
-  override def containsIsNull          = false
-  override def arguments               = Seq(lhs, rhs)
+  override def containsIsNull = false
+  override def arguments = Seq(lhs, rhs)
   override def symbolTableDependencies = lhs.symbolTableDependencies ++ rhs.symbolTableDependencies
 }
 
@@ -290,8 +290,8 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
       None
 
     case value =>
-      val node     = CastSupport.castOrFail[NodeValue](value)
-      val nodeId   = node.id
+      val node = CastSupport.castOrFail[NodeValue](value)
+      val nodeId = node.id
       val queryCtx = state.query
 
       label.getOptId(state.query) match {

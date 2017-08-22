@@ -35,8 +35,8 @@ case class CheckForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext, nonInde
     import org.neo4j.cypher.internal.frontend.v3_3.Foldable._
 
     sealed trait SearchState
-    case object NoneFound                  extends SearchState
-    case object LargeLabelFound            extends SearchState
+    case object NoneFound extends SearchState
+    case object LargeLabelFound extends SearchState
     case object LargeLabelWithLoadCsvFound extends SearchState
 
     // Walk over the pipe tree and check if a large label scan is to be executed after a LoadCsv

@@ -36,7 +36,7 @@ import scala.math._
 abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription]) extends PipeWithSource(source) {
 
   val sortItems: Array[SortDescription] = sortDescription.toArray
-  private val sortItemsCount: Int       = sortItems.length
+  private val sortItemsCount: Int = sortItems.length
 
   type SortDataWithContext = (Array[AnyValue], ExecutionContext)
 
@@ -44,7 +44,7 @@ abstract class TopPipe(source: Pipe, sortDescription: List[SortDescription]) ext
     override def compare(a: SortDataWithContext, b: SortDataWithContext): Int = {
       val v1 = a._1
       val v2 = b._1
-      var i  = 0
+      var i = 0
       while (i < sortItemsCount) {
         val res = sortItems(i).compareAny(v1(i), v2(i))
 
@@ -106,7 +106,7 @@ case class TopNPipe(source: Pipe, sortDescription: List[SortDescription], countE
           input.foreach { ctx =>
             val next = arrayEntry(ctx)
             if (lessThan.compare(next, result(last)) < 0) {
-              val idx            = search(next)
+              val idx = search(next)
               val insertPosition = if (idx < 0) -idx - 1 else idx + 1
               if (insertPosition >= 0 && insertPosition < count) {
                 Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
@@ -139,7 +139,7 @@ case class Top1Pipe(source: Pipe, sortDescription: List[SortDescription])(val id
 
       val lessThan = new LessThanComparator()
 
-      val first  = input.next()
+      val first = input.next()
       var result = arrayEntry(first)
 
       input.foreach { ctx =>
@@ -167,12 +167,12 @@ case class Top1WithTiesPipe(source: Pipe, sortDescription: List[SortDescription]
     else {
       val lessThan = new LessThanComparator()
 
-      val first        = input.next()
-      var best         = arrayEntry(first)
+      val first = input.next()
+      var best = arrayEntry(first)
       var matchingRows = init(best)
 
       input.foreach { ctx =>
-        val next       = arrayEntry(ctx)
+        val next = arrayEntry(ctx)
         val comparison = lessThan.compare(next, best)
         if (comparison < 0) { // Found a new best
           best = next

@@ -77,7 +77,7 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     implicit val semanticTable = SemanticTable()
     semanticTable.resolvedLabelIds.put("Person", index.label)
 
-    val n_is_Person      = Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
+    val n_is_Person = Predicate(Set(IdName("n")), HasLabels(varFor("n"), Seq(LabelName("Person") _)) _)
     val n_prop: Property = Property(varFor("n"), PropertyKeyName("prop") _) _
     val n_gt_3_and_lt_4 = Predicate(
       Set(IdName("n")),
@@ -107,8 +107,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     semanticTable.resolvedPropertyKeyNames.put("prop", index.property)
 
     implicit val selections = mock[Selections]
-    val label               = LabelName("A")(InputPosition.NONE)
-    val propKey             = PropertyKeyName("prop")(InputPosition.NONE)
+    val label = LabelName("A")(InputPosition.NONE)
+    val propKey = PropertyKeyName("prop")(InputPosition.NONE)
     when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
 
     val stats = mock[GraphStatistics]
@@ -117,9 +117,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val prefixes = Map("p" -> 0.23384596099184043,
-                       "p2"         -> 0.2299568541948447,
-                       "p33"        -> 0.22801230079634685,
-                       "p5555"      -> 0.22606774739784896,
+                       "p2" -> 0.2299568541948447,
+                       "p33" -> 0.22801230079634685,
+                       "p5555" -> 0.22606774739784896,
                        "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach {
@@ -136,8 +136,8 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     semanticTable.resolvedPropertyKeyNames.put("prop", index.property)
 
     implicit val selections = mock[Selections]
-    val label               = LabelName("A")(InputPosition.NONE)
-    val propKey             = PropertyKeyName("prop")(InputPosition.NONE)
+    val label = LabelName("A")(InputPosition.NONE)
+    val propKey = PropertyKeyName("prop")(InputPosition.NONE)
     when(selections.labelsOnNode(IdName("a"))).thenReturn(Set(label))
 
     val stats = mock[GraphStatistics]
@@ -147,9 +147,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
     val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
 
     val prefixes = Map("p" -> existenceSelectivity,
-                       "p2"         -> existenceSelectivity,
-                       "p33"        -> 0.22801230079634685,
-                       "p5555"      -> 0.22606774739784896,
+                       "p2" -> existenceSelectivity,
+                       "p33" -> 0.22801230079634685,
+                       "p5555" -> 0.22606774739784896,
                        "reallylong" -> 0.22429997158103274)
 
     prefixes.foreach {
@@ -163,9 +163,9 @@ class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstru
   test("should default to single cardinality for HasLabels with previously unknown label") {
     val stats = mock[GraphStatistics]
     when(stats.nodesWithLabelCardinality(None)).thenReturn(Cardinality(10))
-    val calculator             = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
+    val calculator = ExpressionSelectivityCalculator(stats, IndependenceCombiner)
     implicit val semanticTable = SemanticTable()
-    implicit val selections    = mock[Selections]
+    implicit val selections = mock[Selections]
 
     val expr = HasLabels(null, Seq(LabelName("Foo")(pos)))(pos)
     calculator(expr) should equal(Selectivity.of(1.0 / 10.0).get)

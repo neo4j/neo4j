@@ -24,11 +24,11 @@ object Pattern {
   sealed trait SemanticContext
 
   object SemanticContext {
-    case object Match        extends SemanticContext
-    case object Merge        extends SemanticContext
-    case object Create       extends SemanticContext
+    case object Match extends SemanticContext
+    case object Merge extends SemanticContext
+    case object Create extends SemanticContext
     case object CreateUnique extends SemanticContext
-    case object Expression   extends SemanticContext
+    case object Expression extends SemanticContext
   }
 
   object findDuplicateRelationships extends (Pattern => Set[Seq[Variable]]) {
@@ -40,7 +40,7 @@ object Pattern {
             val (seen, duplicates) = acc
 
             val newDuplicates = if (seen.contains(rel)) duplicates :+ rel else duplicates
-            val newSeen       = seen + rel
+            val newSeen = seen + rel
 
             (newSeen, newDuplicates)
 
@@ -76,7 +76,7 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
 
   private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
     findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) { (acc, duplicates) =>
-      val id   = duplicates.head
+      val id = duplicates.head
       val dups = duplicates.tail
 
       acc chain SemanticError(s"Cannot use the same relationship variable '${id.name}' for multiple patterns",
@@ -104,7 +104,7 @@ sealed abstract class PatternPart extends ASTNode with ASTParticle {
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
     extends PatternPart {
   def declareVariables(ctx: SemanticContext) = patternPart.declareVariables(ctx) chain variable.declare(CTPath)
-  def semanticCheck(ctx: SemanticContext)    = patternPart.semanticCheck(ctx)
+  def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 
   def element: PatternElement = patternPart.element
 }

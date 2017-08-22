@@ -42,7 +42,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   @Deprecated
   def getIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
-    val labelId       = getLabelId(labelName)
+    val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
 
     getOnlineIndex(
@@ -52,14 +52,14 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
   def hasIndexRule(labelName: String): Boolean = {
     val labelId = getLabelId(labelName)
 
-    val indexDescriptors       = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
+    val indexDescriptors = tc.statement.readOperations().indexesGetForLabel(labelId).asScala
     val onlineIndexDescriptors = indexDescriptors.flatMap(getOnlineIndex)
 
     onlineIndexDescriptors.nonEmpty
   }
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[SchemaTypes.IndexDescriptor] = evalOrNone {
-    val labelId       = getLabelId(labelName)
+    val labelId = getLabelId(labelName)
     val propertyKeyId = getPropertyKeyId(propertyKey)
     val schema =
       tc.statement.readOperations().indexGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId))
@@ -79,7 +79,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper)
 
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[SchemaTypes.UniquenessConstraint] =
     evalOrNone {
-      val labelId       = getLabelId(labelName)
+      val labelId = getLabelId(labelName)
       val propertyKeyId = getPropertyKeyId(propertyKey)
 
       import scala.collection.JavaConverters._

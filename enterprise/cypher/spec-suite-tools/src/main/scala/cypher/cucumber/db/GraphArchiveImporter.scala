@@ -61,12 +61,12 @@ abstract class GraphArchiveImporter {
     archive.scripts.foreach { script =>
       val executor = new CypherExecutor(db)
       try {
-        val input    = Source.fromFile(script.file.jfile, "UTF-8").mkString
+        val input = Source.fromFile(script.file.jfile, "UTF-8").mkString
         val iterator = input.split(";").filter(_.trim.nonEmpty).iterator
 
         while (iterator.hasNext) {
           val statement = iterator.next()
-          val result    = executor.execute(s"CYPHER runtime=interpreted $statement", java.util.Collections.emptyMap())
+          val result = executor.execute(s"CYPHER runtime=interpreted $statement", java.util.Collections.emptyMap())
           try {
             while (result.hasNext) result.next()
           } finally {
@@ -104,7 +104,7 @@ abstract class GraphArchiveImporter {
 
   private class CypherExecutor(db: GraphDatabaseService, batchSize: Int = 1000) {
     private var tx: Transaction = null
-    private var count           = 0
+    private var count = 0
 
     def execute(statement: String, parameters: JavaMap[String, AnyRef]) =
       try {

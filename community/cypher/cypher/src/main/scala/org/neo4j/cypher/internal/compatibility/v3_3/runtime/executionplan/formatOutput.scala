@@ -50,8 +50,8 @@ object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]
       columns
         .map(c => {
           val length = columnSizes.get(c).get
-          val txt    = m.get(c).get
-          val value  = makeSize(txt, length)
+          val txt = m.get(c).get
+          val value = makeSize(txt, length)
           value
         })
         .mkString("| ", " | ", " |")
@@ -73,13 +73,13 @@ object formatOutput extends ((PrintWriter, List[String], Seq[Map[String, String]
     }
 
     if (columns.nonEmpty) {
-      val headers     = columns.map((c) => Map(c -> c)).reduceLeft(_ ++ _)
+      val headers = columns.map((c) => Map(c -> c)).reduceLeft(_ ++ _)
       val columnSizes = calculateColumnSizes(result)
-      val headerLine  = createString(columnSizes, headers)
-      val lineWidth   = headerLine.length - 2
-      val ---         = "+" + repeat("-", lineWidth) + "+"
+      val headerLine = createString(columnSizes, headers)
+      val lineWidth = headerLine.length - 2
+      val --- = "+" + repeat("-", lineWidth) + "+"
 
-      val row    = if (result.size > 1) "rows" else "row"
+      val row = if (result.size > 1) "rows" else "row"
       val footer = "%d %s".format(result.size, row)
 
       writer.println(---)

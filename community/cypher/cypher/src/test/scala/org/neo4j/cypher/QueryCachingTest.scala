@@ -36,7 +36,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val cacheListener = new LoggingStringCacheListener
     kernelMonitors.addMonitorListener(cacheListener)
 
-    val query        = "MATCH (n:Person) RETURN n"
+    val query = "MATCH (n:Person) RETURN n"
     val profileQuery = s"PROFILE $query"
     val explainQuery = s"EXPLAIN $query"
 

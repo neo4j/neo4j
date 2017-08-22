@@ -42,7 +42,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
   import GeneratedQueryStructure.typeRef
 
   private val types: scala.collection.mutable.Map[_ >: TupleDescriptor, TypeReference] = mutable.Map.empty
-  private var nameId                                                                   = 0
+  private var nameId = 0
 
   def typeReference(tupleDescriptor: TupleDescriptor) = tupleDescriptor match {
     case t: SimpleTupleDescriptor    => simpleTypeReference(t)
@@ -104,7 +104,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
     case Descending => +1
   }
 
-  private def lessThanSortResult(sortOrder: SortOrder)    = sortResultSign(sortOrder)
+  private def lessThanSortResult(sortOrder: SortOrder) = sortResultSign(sortOrder)
   private def greaterThanSortResult(sortOrder: SortOrder) = -sortResultSign(sortOrder)
 
   def comparableTypeReference(tupleDescriptor: OrderableTupleDescriptor): TypeReference = {
@@ -122,18 +122,18 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
             tupleDescriptor.sortItems.foreach {
               sortItem =>
                 val SortItem(fieldName, sortOrder) = sortItem
-                val sanitizedFieldName             = CodeGenContext.sanitizedName(fieldName)
-                val codeGenType                    = tupleDescriptor.structure(sanitizedFieldName)
-                val fieldType: TypeReference       = lowerType(codeGenType)
-                val fieldReference                 = field(clazz.handle(), fieldType, sanitizedFieldName)
-                val thisValueName                  = s"thisValue_$sanitizedFieldName"
-                val otherValueName                 = s"otherValue_$sanitizedFieldName"
+                val sanitizedFieldName = CodeGenContext.sanitizedName(fieldName)
+                val codeGenType = tupleDescriptor.structure(sanitizedFieldName)
+                val fieldType: TypeReference = lowerType(codeGenType)
+                val fieldReference = field(clazz.handle(), fieldType, sanitizedFieldName)
+                val thisValueName = s"thisValue_$sanitizedFieldName"
+                val otherValueName = s"otherValue_$sanitizedFieldName"
 
                 // Helper for generating code expressions for the field values to compare, with proper boxing
                 def extractFields(block: CodeBlock, reprType: RepresentationType): (Expression, Expression) = {
                   val isPrimitive = RepresentationType.isPrimitive(reprType)
-                  val thisField   = Expression.get(block.self(), fieldReference)
-                  val otherField  = Expression.get(block.load(otherTupleName), fieldReference)
+                  val thisField = Expression.get(block.self(), fieldReference)
+                  val otherField = Expression.get(block.load(otherTupleName), fieldReference)
                   if (isPrimitive)
                     (thisField, otherField)
                   else
@@ -144,8 +144,8 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 // and assigning them to local variables
                 def assignComparatorVariablesFor(block: CodeBlock,
                                                  reprType: RepresentationType): (LocalVariable, LocalVariable) = {
-                  val (thisField, otherField)           = extractFields(block, reprType)
-                  val thisValueVariable: LocalVariable  = block.declare(fieldType, thisValueName)
+                  val (thisField, otherField) = extractFields(block, reprType)
+                  val thisValueVariable: LocalVariable = block.declare(fieldType, thisValueName)
                   val otherValueVariable: LocalVariable = block.declare(fieldType, otherValueName)
 
                   block.assign(thisValueVariable, thisField)
@@ -204,8 +204,8 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                 }
                 ...
                          */
-                        val compareResultName       = s"compare_$sanitizedFieldName"
-                        val compareResult           = l2.declare(typeRef[Int], compareResultName)
+                        val compareResultName = s"compare_$sanitizedFieldName"
+                        val compareResult = l2.declare(typeRef[Int], compareResultName)
                         val (thisField, otherField) = extractFields(l2, reprType)
 
                         // Invoke compare with the parameter order of the fields based on the sort order
@@ -243,7 +243,7 @@ class AuxGenerator(val packageName: String, val generator: CodeGenerator) {
                       case _ => {
                         // Use CypherOrderability.compare which handles mixed-types according to Cypher orderability semantics
                         val compareResultName = s"compare_$sanitizedFieldName"
-                        val compareResult     = l2.declare(typeRef[Int], compareResultName)
+                        val compareResult = l2.declare(typeRef[Int], compareResultName)
 
                         val (thisField, otherField) = extractFields(l2, ReferenceType) // NOTE: Always force boxing in this case
 

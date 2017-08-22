@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.frontend.v3_3.symbols
 
 object GeometryType {
   val instance = new GeometryType() {
-    val parentType        = CTAny
+    val parentType = CTAny
     override val toString = "Geometry"
 
     override def toNeoTypeString = "GEOMETRY?"

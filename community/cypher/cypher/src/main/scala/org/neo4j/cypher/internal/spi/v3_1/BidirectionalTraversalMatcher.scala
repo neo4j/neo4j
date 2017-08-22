@@ -45,12 +45,12 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[N
 
   val initialStartStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(steps)
-    def reverse()                                      = this
+    def reverse() = this
   }
 
   val initialEndStep = new InitialBranchState[Option[ExpanderStep]] {
     def initialState(path: Path): Option[ExpanderStep] = Some(reversedSteps)
-    def reverse()                                      = this
+    def reverse() = this
   }
   val baseTraversal: TraversalDescription =
     new MonoDirectionalTraversalDescription().uniqueness(Uniqueness.RELATIONSHIP_PATH)
@@ -63,13 +63,13 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[N
 
     def produceTraversalDescriptions() = {
       val startWithoutCutoff = baseTraversal.expand(new TraversalPathExpander(context, state), initialStartStep)
-      val endWithoutCutOff   = baseTraversal.expand(new TraversalPathExpander(context, state), initialEndStep)
+      val endWithoutCutOff = baseTraversal.expand(new TraversalPathExpander(context, state), initialEndStep)
 
       steps.size match {
         case None => (startWithoutCutoff, endWithoutCutOff)
         case Some(size) => {
           val startDepth = atLeastOne(size / 2)
-          val endDepth   = atLeastOne(size - startDepth)
+          val endDepth = atLeastOne(size - startDepth)
           (startWithoutCutoff.evaluator(Evaluators.toDepth(startDepth)),
            endWithoutCutOff.evaluator(Evaluators.toDepth(endDepth)))
         }
@@ -101,7 +101,7 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[N
       val e = endPath.state().asInstanceOf[Option[ExpanderStep]]
 
       def doBranchesMatch(startStep: ExpanderStep, endStep: ExpanderStep): (Boolean, Boolean) = {
-        val foundEnd             = endStep.id + 1 == startStep.id
+        val foundEnd = endStep.id + 1 == startStep.id
         val includeButDoNotPrune = endStep.id == startStep.id && endStep.shouldInclude() || startStep.shouldInclude()
         (foundEnd || includeButDoNotPrune, foundEnd)
       }

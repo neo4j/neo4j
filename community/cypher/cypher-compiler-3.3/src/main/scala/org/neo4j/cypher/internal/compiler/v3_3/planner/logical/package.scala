@@ -23,6 +23,6 @@ import org.neo4j.cypher.internal.compiler.v3_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ir.v3_3.QueryGraph
 
 package object logical {
-  type Selector[P]    = Iterable[P] => Option[P]
+  type Selector[P] = Iterable[P] => Option[P]
   type LeafPlanFinder = LogicalPlanningFunction2[QueryPlannerConfiguration, QueryGraph, Set[LogicalPlan]]
 }

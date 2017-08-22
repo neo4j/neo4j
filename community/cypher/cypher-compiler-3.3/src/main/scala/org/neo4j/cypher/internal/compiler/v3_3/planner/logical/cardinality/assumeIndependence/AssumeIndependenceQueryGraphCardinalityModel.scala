@@ -34,7 +34,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   import AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
 
   private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
-  private val patternSelectivityEstimator    = PatternSelectivityCalculator(stats, combiner)
+  private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
 
   /**
     * When there are optional matches, the cardinality is always the maximum of any matches that exist,
@@ -87,8 +87,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   private def cardinalityForQueryGraph(qg: QueryGraph, input: QueryGraphSolverInput)(
       implicit semanticTable: SemanticTable): Cardinality = {
     val (selectivity, numberOfZeroZeroRels) = calculateSelectivity(qg, input.labelInfo)
-    val numberOfPatternNodes                = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
-    val numberOfGraphNodes                  = stats.nodesWithLabelCardinality(None)
+    val numberOfPatternNodes = calculateNumberOfPatternNodes(qg) - numberOfZeroZeroRels
+    val numberOfGraphNodes = stats.nodesWithLabelCardinality(None)
 
     val c = if (qg.argumentIds.nonEmpty) {
       if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {

@@ -35,8 +35,8 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size can be used on collections") {
     //given
-    val l            = Seq("it", "was", "the")
-    val m            = ExecutionContext.from("l" -> l)
+    val l = Seq("it", "was", "the")
+    val m = ExecutionContext.from("l" -> l)
     val sizeFunction = SizeFunction(Variable("l"))
 
     //when
@@ -48,8 +48,8 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size can be used on strings") {
     //given
-    val s            = "it was the"
-    val m            = ExecutionContext.from("s" -> s)
+    val s = "it was the"
+    val m = ExecutionContext.from("s" -> s)
     val sizeFunction = SizeFunction(Variable("s"))
 
     //when
@@ -61,8 +61,8 @@ class SizeFunctionTest extends CypherFunSuite {
 
   test("size cannot be used on paths") {
     //given
-    val p            = new PathImpl(mock[Node], mock[Relationship], mock[Node])
-    val m            = ExecutionContext.from("p" -> p)
+    val p = new PathImpl(mock[Node], mock[Relationship], mock[Node])
+    val m = ExecutionContext.from("p" -> p)
     val sizeFunction = SizeFunction(Variable("p"))
 
     //when/then

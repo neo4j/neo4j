@@ -49,6 +49,6 @@ class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with 
       legacy.LiteralMap(Map("inner1" -> legacy.LiteralMap(Map("inner2" -> legacy.Literal("Value")))))
   }
 
-  private val converters                                  = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
   def convert(astNode: ast.Expression): legacy.Expression = converters.toCommandExpression(astNode)
 }

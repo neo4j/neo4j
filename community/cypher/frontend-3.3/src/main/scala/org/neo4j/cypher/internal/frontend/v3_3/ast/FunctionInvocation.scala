@@ -37,7 +37,7 @@ case class FunctionInvocation(namespace: Namespace,
                               distinct: Boolean,
                               args: IndexedSeq[Expression])(val position: InputPosition)
     extends Expression {
-  val name: String       = (namespace.parts :+ functionName.name).mkString(".")
+  val name: String = (namespace.parts :+ functionName.name).mkString(".")
   val function: Function = Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
 
   def semanticCheck(ctx: SemanticContext) = function.semanticCheckHook(ctx, this)

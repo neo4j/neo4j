@@ -36,7 +36,7 @@ class RowIteratorVisitationTest extends CypherFunSuite {
 
   test("should convert non-empty iterator to visitor") {
     // Given
-    val input            = List[Array[AnyValue]](Array(stringValue("1"), intValue(2)), Array(stringValue("11"), intValue(22)))
+    val input = List[Array[AnyValue]](Array(stringValue("1"), intValue(2)), Array(stringValue("11"), intValue(22)))
     val recordingVisitor = RecordingResultVisitor("a", "b")()
 
     // When
@@ -49,8 +49,8 @@ class RowIteratorVisitationTest extends CypherFunSuite {
 
   test("should stop when visitor asks to stop") {
     // Given
-    val rowsToAccept     = 2
-    val input            = List[Array[AnyValue]](Array(stringValue("1")), Array(stringValue("2")), Array(stringValue("3")))
+    val rowsToAccept = 2
+    val input = List[Array[AnyValue]](Array(stringValue("1")), Array(stringValue("2")), Array(stringValue("3")))
     val recordingVisitor = RecordingResultVisitor("a")(rowsToAccept)
 
     // When

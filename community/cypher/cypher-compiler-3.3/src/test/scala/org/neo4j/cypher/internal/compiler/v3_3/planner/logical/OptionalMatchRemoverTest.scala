@@ -199,7 +199,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
       }
 
     def is_not_rewritten(): Unit = test(originalQuery) {
-      val query  = getUnionQueryFrom(originalQuery.stripMargin)
+      val query = getUnionQueryFrom(originalQuery.stripMargin)
       val result = query.endoRewrite(fixedPoint(rewriter))
       assert(result === query, "\nShould not have been rewritten\n" + originalQuery)
     }
@@ -208,10 +208,10 @@ class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSu
   private def assert_that(originalQuery: String): RewriteTester = RewriteTester(originalQuery)
 
   private def getUnionQueryFrom(query: String): UnionQuery = {
-    val ast         = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
+    val ast = parseForRewriting(query).endoRewrite(flattenBooleanOperators)
     val mkException = new SyntaxExceptionCreator(query, Some(DummyPosition(0)))
-    val onError     = SyntaxExceptionCreator.throwOnError(mkException)
-    val result      = SemanticChecker.check(ast)
+    val onError = SyntaxExceptionCreator.throwOnError(mkException)
+    val result = SemanticChecker.check(ast)
     onError(result.errors)
     val table = SemanticTable(types = result.state.typeTable, recordedScopes = result.state.recordedScopes)
     toUnionQuery(ast.asInstanceOf[Query], table)

@@ -37,7 +37,7 @@ class UnionIterator(in: Seq[Pipe], state: QueryState) extends Iterator[Execution
   iterator in it always.
    */
   var currentIterator: Iterator[ExecutionContext] = null
-  var pipesLeft: List[Pipe]                       = in.toList
+  var pipesLeft: List[Pipe] = in.toList
 
   def hasNext: Boolean = {
     stepIfNeccessary()

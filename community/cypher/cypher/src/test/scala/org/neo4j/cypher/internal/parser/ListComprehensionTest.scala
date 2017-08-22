@@ -47,6 +47,6 @@ class ListComprehensionTest extends ParserTest[ast.ListComprehension, legacy.Exp
       legacy.ExtractFunction(filterCommand, "a", legacy.Property(legacy.Variable("a"), PropertyKey("foo")))
   }
 
-  private val converters                                         = new ExpressionConverters(CommunityExpressionConverter)
+  private val converters = new ExpressionConverters(CommunityExpressionConverter)
   def convert(astNode: ast.ListComprehension): legacy.Expression = converters.toCommandExpression(astNode)
 }

@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class RepeatTest extends CypherFunSuite {
 
-  var count  = 0
+  var count = 0
   val result = new Object
   val mockedRewriter = new Rewriter {
     def apply(v1: AnyRef): AnyRef = {

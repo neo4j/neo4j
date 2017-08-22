@@ -34,7 +34,7 @@ import org.neo4j.values.storable.Values.stringValue
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
   private val mockedContext = mock[QueryContext]
-  private val operations    = mock[Operations[Relationship]]
+  private val operations = mock[Operations[Relationship]]
   doReturn(operations).when(mockedContext).relationshipOps
 
   private implicit val state = QueryStateHelper.emptyWith(query = mockedContext)

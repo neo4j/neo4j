@@ -29,7 +29,7 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
   private def pipeline(longs: Int, refs: Int) = new PipelineInformation(Map.empty, longs, refs)
 
   test("copy fills upp the first few elements") {
-    val input  = PrimitiveExecutionContext(pipeline(2, 1))
+    val input = PrimitiveExecutionContext(pipeline(2, 1))
     val result = PrimitiveExecutionContext(pipeline(3, 2))
 
     input.setLongAt(0, 42)
@@ -44,14 +44,14 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
   }
 
   test("copy fails if copy from larger") {
-    val input  = PrimitiveExecutionContext(pipeline(4, 0))
+    val input = PrimitiveExecutionContext(pipeline(4, 0))
     val result = PrimitiveExecutionContext(pipeline(2, 0))
 
     intercept[InternalException](result.copyFrom(input))
   }
 
   test("copy fails if copy from larger 2") {
-    val input  = PrimitiveExecutionContext(pipeline(0, 4))
+    val input = PrimitiveExecutionContext(pipeline(0, 4))
     val result = PrimitiveExecutionContext(pipeline(0, 2))
 
     intercept[InternalException](result.copyFrom(input))

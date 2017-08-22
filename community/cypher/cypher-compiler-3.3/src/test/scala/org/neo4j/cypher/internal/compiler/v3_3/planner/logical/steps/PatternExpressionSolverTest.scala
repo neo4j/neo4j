@@ -37,9 +37,9 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
   test("Rewrites single pattern expression") {
     // given MATCH (a) RETURN (a)-->() as x
     val otherSide = newMockedLogicalPlan("  UNNAMED1")
-    val strategy  = createStrategy(otherSide)
-    val source    = newMockedLogicalPlan("a")
-    val pathStep  = mock[PathStep]
+    val strategy = createStrategy(otherSide)
+    val source = newMockedLogicalPlan("a")
+    val pathStep = mock[PathStep]
 
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep))
     implicit val context = logicalPlanningContext(strategy)
@@ -57,13 +57,13 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Rewrites multiple pattern expressions") {
     // given MATCH (a) RETURN (a)-->(b) as x, (a)<--(b) as y
-    val b1               = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2               = newMockedLogicalPlan("incoming-inner-plan")
-    val strategy         = createStrategy(b1, b2)
+    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan("incoming-inner-plan")
+    val strategy = createStrategy(b1, b2)
     implicit val context = logicalPlanningContext(strategy)
-    val source           = newMockedLogicalPlan("a")
-    val pathStep1        = mock[PathStep]
-    val pathStep2        = mock[PathStep]
+    val source = newMockedLogicalPlan("a")
+    val pathStep1 = mock[PathStep]
+    val pathStep2 = mock[PathStep]
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
@@ -72,10 +72,10 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
-    val rollUp1            = RollUpApply(source, expectedInnerPlan1, IdName("x"), IdName("  FRESHID0"), Set(IdName("a")))(solved)
+    val rollUp1 = RollUpApply(source, expectedInnerPlan1, IdName("x"), IdName("  FRESHID0"), Set(IdName("a")))(solved)
 
     val expectedInnerPlan2 = Projection(b2, Map("  FRESHID3" -> PathExpression(pathStep2)(pos)))(solved)
-    val rollUp2            = RollUpApply(rollUp1, expectedInnerPlan2, IdName("y"), IdName("  FRESHID3"), Set(IdName("a")))(solved)
+    val rollUp2 = RollUpApply(rollUp1, expectedInnerPlan2, IdName("y"), IdName("  FRESHID3"), Set(IdName("a")))(solved)
 
     resultPlan should equal(rollUp2)
     expressions should equal(Map("x" -> Variable("x")(pos), "y" -> Variable("y")(pos)))
@@ -83,19 +83,19 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Rewrites pattern expression inside complex expression") {
     // given MATCH (a) RETURN (a)-->() = (a)--()
-    val b1               = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2               = newMockedLogicalPlan("both-inner-plan")
-    val strategy         = createStrategy(b1, b2)
+    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan("both-inner-plan")
+    val strategy = createStrategy(b1, b2)
     implicit val context = logicalPlanningContext(strategy)
-    val source           = newMockedLogicalPlan("a")
-    val pathStep1        = mock[PathStep]
-    val pathStep2        = mock[PathStep]
+    val source = newMockedLogicalPlan("a")
+    val pathStep1 = mock[PathStep]
+    val pathStep2 = mock[PathStep]
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
     val stringToEquals1: Map[String, Expression] = Map("x" -> Equals(patExpr1, patExpr2)(pos))
-    val (resultPlan, expressions)                = expressionSolver(source, stringToEquals1)
+    val (resultPlan, expressions) = expressionSolver(source, stringToEquals1)
 
     // then
     val expectedInnerPlan1 = Projection(b1, Map("  FRESHID0" -> PathExpression(pathStep1)(pos)))(solved)
@@ -112,18 +112,18 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Rewrites pattern expression inside complex expression, as a WHERE predicate") {
     // given MATCH (a) WHERE (a)-->() = (a)--() return a
-    val b1               = newMockedLogicalPlan("outgoing-inner-plan")
-    val b2               = newMockedLogicalPlan("both-inner-plan")
-    val strategy         = createStrategy(b1, b2)
+    val b1 = newMockedLogicalPlan("outgoing-inner-plan")
+    val b2 = newMockedLogicalPlan("both-inner-plan")
+    val strategy = createStrategy(b1, b2)
     implicit val context = logicalPlanningContext(strategy)
-    val source           = newMockedLogicalPlan("a")
-    val pathStep1        = mock[PathStep]
-    val pathStep2        = mock[PathStep]
+    val source = newMockedLogicalPlan("a")
+    val pathStep1 = mock[PathStep]
+    val pathStep2 = mock[PathStep]
 
     // when
     val expressionSolver = createPatternExpressionBuilder(Map(namedPatExpr1 -> pathStep1, namedPatExpr2 -> pathStep2))
 
-    val predicate                 = Equals(patExpr1, patExpr2)(pos)
+    val predicate = Equals(patExpr1, patExpr2)(pos)
     val (resultPlan, expressions) = expressionSolver(source, Seq(predicate))
 
     // then
@@ -147,8 +147,8 @@ class PatternExpressionSolverTest extends CypherFunSuite with LogicalPlanningTes
       case (exp, step) => EveryPath(exp.pattern.element) -> step
     })
 
-  private val patExpr1      = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
-  private val patExpr2      = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
+  private val patExpr1 = newPatExpr("a", 0, 1, 2, SemanticDirection.OUTGOING)
+  private val patExpr2 = newPatExpr("a", 3, 4, 5, SemanticDirection.INCOMING)
   private val namedPatExpr1 = newPatExpr("a", 0, Right("  UNNAMED2"), Right("  UNNAMED3"), SemanticDirection.OUTGOING)
   private val namedPatExpr2 = newPatExpr("a", 3, Right("  UNNAMED5"), Right("  UNNAMED6"), SemanticDirection.INCOMING)
 

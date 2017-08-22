@@ -84,7 +84,7 @@ class PeriodicCommitAcceptanceTest
     // to make sure the property key id is created before the tx in order to not mess up with the tx counts
     createNode(Map("id" -> 42))
 
-    val txIdStore  = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
+    val txIdStore = graph.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
     val beforeTxId = txIdStore.getLastClosedTransactionId
     val result = execute(
       s"PROFILE USING PERIODIC COMMIT 1 LOAD CSV FROM '$url' AS line CREATE (n {id: line[0]}) RETURN n.id as id")
@@ -137,7 +137,7 @@ class PeriodicCommitAcceptanceTest
 
   test("should abort first tx when failing on first batch during periodic commit") {
     // given
-    val url       = createTempCSVFile(20)
+    val url = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: (toInt(line[0]) - 8)/0})"
 
     // when
@@ -152,7 +152,7 @@ class PeriodicCommitAcceptanceTest
 
   test("should not mistakenly use closed statements") {
     // given
-    val url       = createTempCSVFile(20)
+    val url = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line MERGE (:Label);"
 
     // when
@@ -164,7 +164,7 @@ class PeriodicCommitAcceptanceTest
 
   test("should commit first tx and abort second tx when failing on second batch during periodic commit") {
     // given
-    val url       = createTempCSVFile(20)
+    val url = createTempCSVFile(20)
     val queryText = s"USING PERIODIC COMMIT 10 LOAD CSV FROM '$url' AS line CREATE ({x: 1 / (toInt(line[0]) - 16)})"
 
     // when

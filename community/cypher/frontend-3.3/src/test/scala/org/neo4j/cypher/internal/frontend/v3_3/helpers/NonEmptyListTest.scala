@@ -179,8 +179,8 @@ class NonEmptyListTest extends CypherFunSuite {
   }
 
   test("Should group a NonEmptyList by a key for each element") {
-    NonEmptyList(1).groupBy((x: Int) => x / 2) should equal(Map(0       -> NonEmptyList(1)))
-    NonEmptyList(1, 2).groupBy((x: Int) => x / 2) should equal(Map(0    -> NonEmptyList(1), 1 -> NonEmptyList(2)))
+    NonEmptyList(1).groupBy((x: Int) => x / 2) should equal(Map(0 -> NonEmptyList(1)))
+    NonEmptyList(1, 2).groupBy((x: Int) => x / 2) should equal(Map(0 -> NonEmptyList(1), 1 -> NonEmptyList(2)))
     NonEmptyList(1, 2, 3).groupBy((x: Int) => x / 2) should equal(Map(0 -> NonEmptyList(1), 1 -> NonEmptyList(2, 3)))
   }
 

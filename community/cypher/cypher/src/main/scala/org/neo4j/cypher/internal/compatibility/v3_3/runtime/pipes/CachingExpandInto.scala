@@ -57,7 +57,7 @@ trait CachingExpandInto {
                                   relTypes: => Option[Seq[Int]]): Iterator[EdgeValue] = {
 
     val fromNodeIsDense = query.nodeIsDense(fromNode.id())
-    val toNodeIsDense   = query.nodeIsDense(toNode.id())
+    val toNodeIsDense = query.nodeIsDense(toNode.id())
 
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
@@ -109,7 +109,7 @@ trait CachingExpandInto {
 
       override def fetchNextOrNull(): EdgeValue = {
         while (relationships.hasNext) {
-          val rel   = relationships.next()
+          val rel = relationships.next()
           val other = rel.otherNode(start)
           if (end == other) {
             connectedRelationships.append(rel)

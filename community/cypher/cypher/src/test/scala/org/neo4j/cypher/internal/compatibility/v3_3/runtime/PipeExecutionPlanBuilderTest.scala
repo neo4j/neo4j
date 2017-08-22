@@ -99,7 +99,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite {
   private implicit val pipeContext = mock[PipeExecutionBuilderContext]
 
   test("should handle plan with single leaf node") {
-    val plan         = LeafPlan("a")
+    val plan = LeafPlan("a")
     val expectedPipe = LeafPipe("a")
 
     val result = builder.build(None, plan, new FakeIdMap).pipe

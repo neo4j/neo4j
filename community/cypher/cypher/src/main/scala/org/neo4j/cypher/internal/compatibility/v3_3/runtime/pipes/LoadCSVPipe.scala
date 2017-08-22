@@ -70,7 +70,7 @@ case class LoadCSVPipe(source: Pipe,
     private val internalMap = new ArrayBackedMap[String, AnyValue](
       headers.map(a => if (a == Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
     private var nextContext: ExecutionContext = _
-    private var needsUpdate                   = true
+    private var needsUpdate = true
 
     override def hasNext: Boolean = {
       if (needsUpdate) {
@@ -110,9 +110,9 @@ case class LoadCSVPipe(source: Pipe,
   override protected def internalCreateResults(input: Iterator[ExecutionContext],
                                                state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      implicit val s           = state
+      implicit val s = state
       val urlString: TextValue = urlExpression(context).asInstanceOf[TextValue]
-      val url                  = getImportURL(urlString.stringValue(), state.query)
+      val url = getImportURL(urlString.stringValue(), state.query)
 
       val iterator: Iterator[Array[Value]] = state.resources
         .getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping)

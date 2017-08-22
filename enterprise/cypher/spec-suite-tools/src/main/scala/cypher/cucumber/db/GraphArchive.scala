@@ -83,8 +83,8 @@ object GraphRecipe {
       .filter { case (l, implied) => implied.nonEmpty }
       .toMap
 
-    val allUniqueNodeProperties  = nodes.flatMap(_.collectIf(UniqueAdvice)(n => n.label -> n.key))
-    val allIndexedNodeProperties = nodes.flatMap(_.collectIf(IndexAdvice)(n => n.label  -> n.key))
+    val allUniqueNodeProperties = nodes.flatMap(_.collectIf(UniqueAdvice)(n => n.label -> n.key))
+    val allIndexedNodeProperties = nodes.flatMap(_.collectIf(IndexAdvice)(n => n.label -> n.key))
 
     val uniqueNodeProperties =
       allUniqueNodeProperties.filter(!allUniqueNodeProperties.coveredByImpliedLabel(_)).properties
@@ -93,9 +93,9 @@ object GraphRecipe {
       .properties
 
     // Neo4j disk size estimation
-    val nodeSize                 = nodes.find(i => i.label == "" && i.key == "").map(_.count * 14).get
-    val nodePropertySize         = nodes.filter(i => i.label == "" && i.key != "").map(_.count * 41).sum
-    val relationshipSize         = relationships.find(i => i.`type` == "" && i.key == "").map(_.count * 33).get
+    val nodeSize = nodes.find(i => i.label == "" && i.key == "").map(_.count * 14).get
+    val nodePropertySize = nodes.filter(i => i.label == "" && i.key != "").map(_.count * 41).sum
+    val relationshipSize = relationships.find(i => i.`type` == "" && i.key == "").map(_.count * 33).get
     val relationshipPropertySize = relationships.filter(i => i.`type` == "" && i.key != "").map(_.count * 41).sum
 
     val estimatedDiskSize =
@@ -135,9 +135,9 @@ object GraphRecipe {
 
   sealed class Advice(val name: String)
 
-  case object ExistsAdvice  extends Advice("exists")
-  case object UniqueAdvice  extends Advice("unique")
-  case object IndexAdvice   extends Advice("index")
+  case object ExistsAdvice extends Advice("exists")
+  case object UniqueAdvice extends Advice("unique")
+  case object IndexAdvice extends Advice("index")
   case object ImpliedAdvice extends Advice("implied")
 
   class AdviceSerializer

@@ -80,7 +80,7 @@ case class GeneratedMethodStructure(
       case LongToListTable(structure, localMap) =>
         // compute the participating types
         val valueType = aux.typeReference(structure)
-        val listType  = parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[PrimitiveLongObjectMap[_]], valueType)
         // the methods we use on those types
         val get = methodReference(tableType, typeRef[Object], "get", typeRef[Long])
@@ -92,7 +92,7 @@ case class GeneratedMethodStructure(
       case LongsToListTable(structure, localMap) =>
         // compute the participating types
         val valueType = aux.typeReference(structure)
-        val listType  = parameterizedType(classOf[util.ArrayList[_]], valueType)
+        val listType = parameterizedType(classOf[util.ArrayList[_]], valueType)
         val tableType = parameterizedType(classOf[util.HashMap[_, _]], typeRef[CompositeKey], valueType)
         // the methods we use on those types
         val get = methodReference(tableType, typeRef[Object], "get", typeRef[Object])
@@ -114,8 +114,8 @@ case class GeneratedMethodStructure(
                                        fromNodeVar: String,
                                        relVar: String) = {
     val extractor = relExtractor(relVar)
-    val start     = invoke(generator.load(extractor), startNode)
-    val end       = invoke(generator.load(extractor), endNode)
+    val start = invoke(generator.load(extractor), startNode)
+    val end = invoke(generator.load(extractor), endNode)
 
     generator.expression(
       pop(
@@ -499,7 +499,7 @@ case class GeneratedMethodStructure(
     tableType match {
       case LongToCountTable =>
         assert(keyVars.size == 1)
-        val keyVar    = keyVars.head
+        val keyVar = keyVars.head
         val countName = context.namer.newVarName()
         generator
           .assign(typeRef[Int], countName, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
@@ -516,7 +516,7 @@ case class GeneratedMethodStructure(
 
       case LongsToCountTable =>
         val countName = context.namer.newVarName()
-        val keyName   = context.namer.newVarName()
+        val keyName = context.namer.newVarName()
         generator.assign(typeRef[CompositeKey],
                          keyName,
                          invoke(compositeKey, newArray(typeRef[Long], keyVars.map(generator.load): _*)))
@@ -545,14 +545,14 @@ case class GeneratedMethodStructure(
     case LongToCountTable =>
       assert(keyVars.size == 1)
       val keyVar = keyVars.head
-      val times  = generator.declare(typeRef[Int], context.namer.newVarName())
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
       generator.assign(times, invoke(generator.load(tableVar), countingTableGet, generator.load(keyVar)))
       using(generator.whileLoop(gt(times, constant(0)))) { body =>
         block(copy(generator = body))
         body.assign(times, subtract(times, constant(1)))
       }
     case LongsToCountTable =>
-      val times        = generator.declare(typeRef[Int], context.namer.newVarName())
+      val times = generator.declare(typeRef[Int], context.namer.newVarName())
       val intermediate = generator.declare(typeRef[java.lang.Integer], context.namer.newVarName())
       generator.assign(
         intermediate,
@@ -577,7 +577,7 @@ case class GeneratedMethodStructure(
 
       val hashTable = tableType.extractHashTable()
       // generate the code
-      val list        = generator.declare(hashTable.listType, context.namer.newVarName())
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
       generator.assign(list, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar)))
       using(generator.ifStatement(Expression.notNull(list))) { onTrue =>
@@ -592,8 +592,8 @@ case class GeneratedMethodStructure(
       }
 
     case tableType @ LongsToListTable(structure, localVars) =>
-      val hashTable   = tableType.extractHashTable()
-      val list        = generator.declare(hashTable.listType, context.namer.newVarName())
+      val hashTable = tableType.extractHashTable()
+      val list = generator.declare(hashTable.listType, context.namer.newVarName())
       val elementName = context.namer.newVarName()
 
       generator.assign(
@@ -630,11 +630,11 @@ case class GeneratedMethodStructure(
                                 element: Expression) = tableType match {
     case _: LongToListTable =>
       assert(keyVars.size == 1)
-      val keyVar    = keyVars.head
+      val keyVar = keyVars.head
       val hashTable = tableType.extractHashTable()
       // generate the code
       val listName = context.namer.newVarName()
-      val list     = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       // list = tableVar.get(keyVar);
       generator
         .assign(list, cast(hashTable.listType, invoke(generator.load(tableVar), hashTable.get, generator.load(keyVar))))
@@ -654,8 +654,8 @@ case class GeneratedMethodStructure(
       val hashTable = tableType.extractHashTable()
       // generate the code
       val listName = context.namer.newVarName()
-      val keyName  = context.namer.newVarName()
-      val list     = generator.declare(hashTable.listType, listName) // ProbeTable list;
+      val keyName = context.namer.newVarName()
+      val list = generator.declare(hashTable.listType, listName) // ProbeTable list;
       generator.assign(typeRef[CompositeKey],
                        keyName,
                        invoke(compositeKey, newArray(typeRef[Long], keyVars.map(generator.load): _*)))
@@ -697,7 +697,7 @@ case class GeneratedMethodStructure(
   }
 
   override def relType(relVar: String, typeVar: String) = {
-    val variable  = locals(typeVar)
+    val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relExtractor(relVar)), typeOf)
     handleKernelExceptions(generator, fields.ro, fields.close) { inner =>
       val res = invoke(readOperations, relationshipTypeGetName, typeOfRel)
@@ -708,7 +708,7 @@ case class GeneratedMethodStructure(
 
   override def projectVariable(variableName: String, expression: Expression) = {
     // java.lang.Object is an ok type for result variables because we only put them into result row
-    val resultType    = typeRef[Object]
+    val resultType = typeRef[Object]
     val localVariable = generator.declare(resultType, variableName)
     generator.assign(localVariable, expression)
   }

@@ -88,7 +88,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
     //let jetty pick a random available port for us
     private val server: Server = new Server(0)
     //assign the correct port when server has started.
-    private var _port    = -1
+    private var _port = -1
     private val handlers = new ContextHandlerCollection()
     addHandler("/csv", new CsvHandler)
     addHandler("/gzip", new GzipCsvHandler)
@@ -143,7 +143,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
       httpServletResponse.setStatus(HttpServletResponse.SC_OK)
       httpServletResponse.setHeader("content-encoding", "gzip")
       //write compressed data to a byte array
-      val stream     = new ByteArrayOutputStream(CSV.length)
+      val stream = new ByteArrayOutputStream(CSV.length)
       val gzipStream = new GZIPOutputStream(stream)
       gzipStream.write(CSV.getBytes)
       gzipStream.close()
@@ -170,7 +170,7 @@ class LoadCsvCompressionAcceptanceTest extends ExecutionEngineFunSuite with Befo
       httpServletResponse.setHeader("content-encoding", "deflate")
 
       //write deflated data to byte array
-      val stream        = new ByteArrayOutputStream(CSV.length)
+      val stream = new ByteArrayOutputStream(CSV.length)
       val deflateStream = new DeflaterOutputStream(stream)
       deflateStream.write(CSV.getBytes)
       deflateStream.close()

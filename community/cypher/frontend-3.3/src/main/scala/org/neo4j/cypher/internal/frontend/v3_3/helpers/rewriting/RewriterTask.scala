@@ -20,4 +20,4 @@ import org.neo4j.cypher.internal.frontend.v3_3.Rewriter
 
 sealed trait RewriterTask
 final case class RunConditions(previousName: Option[String], conditions: Set[RewriterCondition]) extends RewriterTask
-final case class RunRewriter(name: String, rewriter: Rewriter)                                   extends RewriterTask
+final case class RunRewriter(name: String, rewriter: Rewriter) extends RewriterTask

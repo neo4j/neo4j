@@ -97,7 +97,7 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
   private def calculateCardinalityForQueryGraph(graph: QueryGraph,
                                                 input: QueryGraphSolverInput,
                                                 semanticTable: SemanticTable) = {
-    val newLabels      = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
+    val newLabels = input.labelInfo.fuse(graph.patternNodeLabels)(_ ++ _)
     val newCardinality = queryGraphCardinalityModel(graph, input, semanticTable)
     QueryGraphSolverInput(newLabels, newCardinality, input.strictness)
   }

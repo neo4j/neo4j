@@ -92,7 +92,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                           input: Seq[Any],
                                           planType: ExecutionMode) = {
     val descriptionGenerator = () => createNormalPlan
-    val callMode             = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     new ProcedureExecutionResult(ctx,
                                  taskCloser,
                                  signature.name,
@@ -110,7 +110,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     // close all statements
     taskCloser.close(success = true)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    val columns  = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
+    val columns = signature.outputSignature.map(_.seq.map(_.name).toList).getOrElse(List.empty)
     ExplainExecutionResult(columns.toArray, createNormalPlan, callMode.queryType, notifications)
   }
 
@@ -118,9 +118,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                                             taskCloser: TaskCloser,
                                             input: Seq[Any],
                                             planType: ExecutionMode) = {
-    val rowCounter           = Counter()
+    val rowCounter = Counter()
     val descriptionGenerator = createProfilePlanGenerator(rowCounter)
-    val callMode             = ProcedureCallMode.fromAccessMode(signature.accessMode)
+    val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     new ProcedureExecutionResult(ctx,
                                  taskCloser,
                                  signature.name,
@@ -157,8 +157,8 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
     Signature(signature.name, Seq.empty, resultSymbols)
 
   override def notifications(planContext: PlanContext): Seq[InternalNotification] = Seq.empty
-  override def isPeriodicCommit: Boolean                                          = false
-  override def runtimeUsed                                                        = ProcedureRuntimeName
-  override def isStale(lastTxId: () => Long, statistics: GraphStatistics)         = false
-  override def plannerUsed                                                        = ProcedurePlannerName
+  override def isPeriodicCommit: Boolean = false
+  override def runtimeUsed = ProcedureRuntimeName
+  override def isStale(lastTxId: () => Long, statistics: GraphStatistics) = false
+  override def plannerUsed = ProcedurePlannerName
 }

@@ -54,7 +54,7 @@ abstract class ExecutionEngineFunSuite
     def withValue(value: Any) = this and new Matcher[PropertyContainer] {
       def apply(left: PropertyContainer): MatchResult = {
         val propValue = graph.inTx(left.getProperty(propName))
-        val result    = propValue == value
+        val result = propValue == value
         MatchResult(
           result,
           s"Property `$propName` didn't have expected value. Expected: $value\nbut was: $propValue",

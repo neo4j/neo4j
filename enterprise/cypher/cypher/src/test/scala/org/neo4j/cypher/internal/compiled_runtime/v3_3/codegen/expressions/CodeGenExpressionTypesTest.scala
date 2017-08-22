@@ -27,16 +27,16 @@ import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class CodeGenExpressionTypesTest extends CypherFunSuite {
 
-  val int              = Literal(1: java.lang.Integer)
-  val double           = Literal(1.1: java.lang.Double)
-  val string           = Literal("apa")
-  val node             = NodeProjection(Variable("a", CypherCodeGenType(CTNode, ReferenceType)))
-  val rel              = RelationshipProjection(Variable("a", CypherCodeGenType(CTRelationship, ReferenceType)))
-  val intCollection    = ListLiteral(Seq(int))
+  val int = Literal(1: java.lang.Integer)
+  val double = Literal(1.1: java.lang.Double)
+  val string = Literal("apa")
+  val node = NodeProjection(Variable("a", CypherCodeGenType(CTNode, ReferenceType)))
+  val rel = RelationshipProjection(Variable("a", CypherCodeGenType(CTRelationship, ReferenceType)))
+  val intCollection = ListLiteral(Seq(int))
   val doubleCollection = ListLiteral(Seq(double))
   val stringCollection = ListLiteral(Seq(string))
-  val nodeCollection   = ListLiteral(Seq(node))
-  val relCollection    = ListLiteral(Seq(rel))
+  val nodeCollection = ListLiteral(Seq(node))
+  val relCollection = ListLiteral(Seq(rel))
 
   test("collection") {
     implicit val context: CodeGenContext = null

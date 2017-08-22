@@ -68,11 +68,11 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
           val newAcc = if (acc.contains(expr)) {
             acc
           } else {
-            val arguments                      = planArguments ++ scopeMap(expr)
-            val (plan, namedExpr)              = context.strategy.planPatternExpression(arguments, expr)(context)
-            val uniqueNamedExpr                = namedExpr.copy()
-            val path                           = ast.EveryPath(namedExpr.pattern.element)
-            val step: PathStep                 = projectNamedPaths.patternPartPathExpression(path)
+            val arguments = planArguments ++ scopeMap(expr)
+            val (plan, namedExpr) = context.strategy.planPatternExpression(arguments, expr)(context)
+            val uniqueNamedExpr = namedExpr.copy()
+            val path = ast.EveryPath(namedExpr.pattern.element)
+            val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
             val pathExpression: PathExpression = ast.PathExpression(step)(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, pathExpression)(uniqueNamedExpr.position)
@@ -89,9 +89,9 @@ case class patternExpressionRewriter(planArguments: Set[IdName], context: Logica
           val newAcc = if (acc.contains(expr)) {
             acc
           } else {
-            val arguments         = planArguments ++ scopeMap(expr)
+            val arguments = planArguments ++ scopeMap(expr)
             val (plan, namedExpr) = context.strategy.planPatternComprehension(arguments, expr)(context)
-            val uniqueNamedExpr   = namedExpr.copy()(expr.position)
+            val uniqueNamedExpr = namedExpr.copy()(expr.position)
 
             val rewrittenExpression = NestedPlanExpression(plan, projection)(uniqueNamedExpr.position)
             acc.updated(expr, rewrittenExpression)

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.frontend.v3_3.ast._
 import org.neo4j.cypher.internal.frontend.v3_3.test_helpers.CypherFunSuite
 
 class NormalizeComparisonsTest extends CypherFunSuite {
-  val pos                    = DummyPosition(0)
+  val pos = DummyPosition(0)
   val expression: Expression = Variable("foo")(pos)
   val comparisons = List(
     Equals(expression, expression)(pos),

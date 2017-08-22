@@ -37,8 +37,8 @@ case class Expand(left: LogicalPlan,
                   mode: ExpansionMode = ExpandAll)(val solved: PlannerQuery with CardinalityEstimation)
     extends LogicalPlan
     with LazyLogicalPlan {
-  override val lhs                           = Some(left)
-  override def rhs                           = None
+  override val lhs = Some(left)
+  override def rhs = None
   override def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
@@ -52,8 +52,8 @@ case class OptionalExpand(left: LogicalPlan,
                           predicates: Seq[Expression] = Seq.empty)(val solved: PlannerQuery with CardinalityEstimation)
     extends LogicalPlan
     with LazyLogicalPlan {
-  override val lhs              = Some(left)
-  override def rhs              = None
+  override val lhs = Some(left)
+  override def rhs = None
   override def availableSymbols = left.availableSymbols + relName + to
 }
 
@@ -114,5 +114,5 @@ case class FullPruningVarExpand(
 }
 
 sealed trait ExpansionMode
-case object ExpandAll  extends ExpansionMode
+case object ExpandAll extends ExpansionMode
 case object ExpandInto extends ExpansionMode

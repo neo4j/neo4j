@@ -34,7 +34,7 @@ case class InliningContext(projections: Map[Variable, Expression] = Map.empty,
     copy(usageCount = usageCount + (id -> (usageCount.withDefaultValue(0)(id) + 1)))
 
   def enterQueryPart(newProjections: Map[Variable, Expression]): InliningContext = {
-    val inlineExpressions   = TypedRewriter[Expression](variableRewriter)
+    val inlineExpressions = TypedRewriter[Expression](variableRewriter)
     val containsAggregation = newProjections.values.exists(containsAggregate)
     val shadowing = newProjections.filterKeys(seenVariables.contains).filter {
       case (_, _: PathExpression) => false

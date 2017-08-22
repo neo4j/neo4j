@@ -31,10 +31,10 @@ import org.neo4j.values.virtual.VirtualValues.list
 
 class ExtractTest extends CypherFunSuite {
   test("canReturnSomethingFromAnIterable") {
-    val l          = Seq("x", "xxx", "xx")
+    val l = Seq("x", "xxx", "xx")
     val expression = SizeFunction(Variable("n"))
     val collection = Variable("l")
-    val m          = ExecutionContext.from("l" -> l)
+    val m = ExecutionContext.from("l" -> l)
 
     val extract = ExtractFunction(collection, "n", expression)
 

@@ -82,7 +82,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
                             SemanticDirection.OUTGOING,
                             Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m          = ExecutionContext.from("a" -> a)
+    val m = ExecutionContext.from("a" -> a)
 
     // WHEN
     val result = withQueryState { state =>
@@ -107,7 +107,7 @@ class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSuppor
                             SemanticDirection.OUTGOING,
                             Map.empty)
     val expression = NonEmpty(PathExpression(Seq(pattern), True(), PathExtractorExpression(Seq(pattern))))
-    val m          = ExecutionContext.from("a" -> a)
+    val m = ExecutionContext.from("a" -> a)
 
     // WHEN
     val result = withQueryState { state =>

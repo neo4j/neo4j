@@ -142,7 +142,7 @@ object CastSupport {
       extends AnyValueWriter[RuntimeException] {
 
     private var _array: AnyRef = null
-    private var index          = 0
+    private var index = 0
 
     private def fail() =
       throw new CypherTypeException("Property values can only be of primitive types or arrays thereof")

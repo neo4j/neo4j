@@ -35,9 +35,9 @@ import scala.util.Random
 class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen with LogicalPlanningTestSupport2 {
 
   test("NodeHashJoin is planned in IDP planner") {
-    val monitor  = mock[IDPQueryGraphSolverMonitor]
+    val monitor = mock[IDPQueryGraphSolverMonitor]
     val planner1 = SingleComponentPlanner(monitor, solverConfig = DefaultIDPSolverConfig)
-    val solver   = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
+    val solver = IDPQueryGraphSolver(planner1, cartesianProductsOrValueJoins, monitor)
 
     testPlanner(solver)
   }
@@ -96,7 +96,7 @@ class JoinHintPlanningIntegrationTest extends CypherFunSuite with PatternGen wit
     }
 
     val firstNodeName = findFirstNodeName(elements).getOrElse(return None)
-    val lastNodeName  = findFirstNodeName(elements.reverse).getOrElse(return None)
+    val lastNodeName = findFirstNodeName(elements.reverse).getOrElse(return None)
 
     var joinNodeName: String = null
     do {

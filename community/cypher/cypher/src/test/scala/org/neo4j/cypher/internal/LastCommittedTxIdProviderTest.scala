@@ -29,7 +29,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {
 
-  var db: GraphDatabaseCypherService                       = null
+  var db: GraphDatabaseCypherService = null
   var lastCommittedTxIdProvider: LastCommittedTxIdProvider = null
 
   override protected def beforeAll(): Unit = {

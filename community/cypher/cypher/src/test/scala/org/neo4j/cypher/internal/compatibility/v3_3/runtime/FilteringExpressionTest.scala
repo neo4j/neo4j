@@ -37,7 +37,7 @@ class FilteringExpressionTest extends CypherFunSuite {
 
   case class TestableFilteringExpression(variable: Variable, expression: Expression, innerPredicate: Option[Expression])
       extends FilteringExpression {
-    def name     = "Testable Filter Expression"
+    def name = "Testable Filter Expression"
     def position = DummyPosition(0)
 
     def toCommand(command: expressions.Expression, name: String, inner: Predicate) = ???

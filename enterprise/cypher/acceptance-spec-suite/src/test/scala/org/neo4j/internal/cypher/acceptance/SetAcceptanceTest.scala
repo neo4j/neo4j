@@ -215,48 +215,48 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
   //Not suitable for the TCK
   test("Lost updates should not happen on set node property") {
     val init: () => Unit = () => createNode("prop" -> 0)
-    val query            = "MATCH (n) SET n.prop = n.prop + 1"
-    val resultQuery      = "MATCH (n) RETURN n.prop"
+    val query = "MATCH (n) SET n.prop = n.prop + 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   test("Lost updates should not happen on set node property with an entangled expression") {
     val init: () => Unit = () => createNode("prop" -> 0)
-    val query            = "MATCH (n) SET n.prop = 2 + (10 * n.prop) / 10 - 1"
-    val resultQuery      = "MATCH (n) RETURN n.prop"
+    val query = "MATCH (n) SET n.prop = 2 + (10 * n.prop) / 10 - 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   test("Lost updates should not happen for set node property with map") {
     val init: () => Unit = () => createNode("prop" -> 0)
-    val query            = "MATCH (n) SET n = {prop: n.prop + 1}"
-    val resultQuery      = "MATCH (n) RETURN n.prop"
+    val query = "MATCH (n) SET n = {prop: n.prop + 1}"
+    val resultQuery = "MATCH (n) RETURN n.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   test("Lost updates should not happen on set relationship property") {
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
-    val query            = "MATCH ()-[r]->() SET r.prop = r.prop + 1"
-    val resultQuery      = "MATCH ()-[r]->() RETURN r.prop"
+    val query = "MATCH ()-[r]->() SET r.prop = r.prop + 1"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   test("Lost updates should not happen on set relationship property with an entangled expression") {
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
-    val query            = "MATCH ()-[r]->() SET r.prop = 2 + (10 * r.prop) / 10 - 1"
-    val resultQuery      = "MATCH ()-[r]->() RETURN r.prop"
+    val query = "MATCH ()-[r]->() SET r.prop = 2 + (10 * r.prop) / 10 - 1"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   test("Lost updates should not happen for set relationship property with map") {
     val init: () => Unit = () => relate(createNode(), createNode(), "prop" -> 0)
-    val query            = "MATCH ()-[r]->() SET r = {prop: r.prop + 1}"
-    val resultQuery      = "MATCH ()-[r]->() RETURN r.prop"
+    val query = "MATCH ()-[r]->() SET r = {prop: r.prop + 1}"
+    val resultQuery = "MATCH ()-[r]->() RETURN r.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
@@ -270,16 +270,16 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
   //Not suitable for the TCK
   ignore("Lost updates should not happen on set node property with the read in a preceding statement") {
     val init: () => Unit = () => createNode("prop" -> 0)
-    val query            = "MATCH (n) WITH n.prop as p SET n.prop = p + 1"
-    val resultQuery      = "MATCH (n) RETURN n.prop"
+    val query = "MATCH (n) WITH n.prop as p SET n.prop = p + 1"
+    val resultQuery = "MATCH (n) RETURN n.prop"
     testLostUpdates(init, query, resultQuery, 10, 10)
   }
 
   //Not suitable for the TCK
   ignore("lost updates should not happen on set node properties from map with circular dependencies") {
     val init: () => Unit = () => createNode("prop" -> 0, "prop2" -> 0)
-    val query            = "match (n) set n += { prop: n.prop2 + 1, prop2: n.prop + 1 }"
-    val resultQuery      = "MATCH (n) RETURN n.prop + n.prop2"
+    val query = "match (n) set n += { prop: n.prop2 + 1, prop2: n.prop + 1 }"
+    val resultQuery = "MATCH (n) RETURN n.prop + n.prop2"
     testLostUpdates(init, query, resultQuery, 10, 20)
   }
 

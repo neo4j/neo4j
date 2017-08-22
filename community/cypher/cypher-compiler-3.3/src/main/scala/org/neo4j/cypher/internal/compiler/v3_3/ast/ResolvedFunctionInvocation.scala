@@ -30,8 +30,8 @@ object ResolvedFunctionInvocation {
 
   def apply(signatureLookup: QualifiedName => Option[UserFunctionSignature])(
       unresolved: FunctionInvocation): ResolvedFunctionInvocation = {
-    val position  = unresolved.position
-    val name      = QualifiedName(unresolved)
+    val position = unresolved.position
+    val name = QualifiedName(unresolved)
     val signature = signatureLookup(name)
     ResolvedFunctionInvocation(name, signature, unresolved.args)(position)
   }
@@ -76,7 +76,7 @@ case class ResolvedFunctionInvocation(qualifiedName: QualifiedName,
     case Some(signature) =>
       val expectedNumArgs = signature.inputSignature.length
       val usedDefaultArgs = signature.inputSignature.drop(callArguments.length).flatMap(_.default)
-      val actualNumArgs   = callArguments.length + usedDefaultArgs.length
+      val actualNumArgs = callArguments.length + usedDefaultArgs.length
 
       if (expectedNumArgs == actualNumArgs) {
         //this zip is fine since it will only verify provided args in callArguments

@@ -44,7 +44,7 @@ class ListSliceTest extends CypherFunSuite {
   }
 
   test("shouldRaiseErrorIfStartingFromFraction") {
-    val to    = DecimalDoubleLiteral("1.3")(DummyPosition(5))
+    val to = DecimalDoubleLiteral("1.3")(DummyPosition(5))
     val slice = ListSlice(dummyList, None, Some(to))(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)

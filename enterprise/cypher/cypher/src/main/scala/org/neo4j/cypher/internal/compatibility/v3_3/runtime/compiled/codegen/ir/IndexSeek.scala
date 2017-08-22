@@ -34,7 +34,7 @@ case class IndexSeek(opName: String,
   override def init[E](generator: MethodStructure[E])(implicit context: CodeGenContext) = {
     assert(propNames.length == 1)
     expression.init(generator)
-    val labelVar   = context.namer.newVarName()
+    val labelVar = context.namer.newVarName()
     val propKeyVar = context.namer.newVarName()
     generator.lookupLabelId(labelVar, labelName)
     generator.lookupPropertyKey(propNames.head, propKeyVar)

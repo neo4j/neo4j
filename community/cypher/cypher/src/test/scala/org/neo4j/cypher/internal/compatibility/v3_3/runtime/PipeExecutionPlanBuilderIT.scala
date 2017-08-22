@@ -51,10 +51,10 @@ import scala.collection.mutable
 class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
   implicit val planContext: PlanContext = newMockedPlanContext
-  implicit val LogicalPlanningContext   = newMockedLogicalPlanningContext(planContext)
-  implicit val pipeBuildContext         = newMockedPipeExecutionPlanBuilderContext
-  val patternRel                        = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-  val converters                        = new ExpressionConverters(CommunityExpressionConverter)
+  implicit val LogicalPlanningContext = newMockedLogicalPlanningContext(planContext)
+  implicit val pipeBuildContext = newMockedPipeExecutionPlanBuilderContext
+  val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
+  val converters = new ExpressionConverters(CommunityExpressionConverter)
 
   private val planBuilder = {
     val converters = new ExpressionConverters(CommunityExpressionConverter)
@@ -80,7 +80,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple pattern query") {
-    val logicalPlan        = AllNodesScan(IdName("n"), Set.empty) _
+    val logicalPlan = AllNodesScan(IdName("n"), Set.empty) _
     val pipeInfo: PipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -90,7 +90,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("simple label scan query") {
     val logicalPlan = NodeByLabelScan(IdName("n"), lblName("Foo"), Set.empty) _
-    val pipeInfo    = build(logicalPlan)
+    val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
@@ -99,8 +99,8 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("simple node by id seek query") {
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
-    val logicalPlan            = NodeByIdSeek(IdName("n"), ManySeekableArgs(astLiteral), Set.empty) _
-    val pipeInfo               = build(logicalPlan)
+    val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astLiteral), Set.empty) _
+    val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
@@ -112,7 +112,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
       Seq(SignedDecimalIntegerLiteral("42") _, SignedDecimalIntegerLiteral("43") _, SignedDecimalIntegerLiteral("43") _)
     ) _
     val logicalPlan = NodeByIdSeek(IdName("n"), ManySeekableArgs(astCollection), Set.empty) _
-    val pipeInfo    = build(logicalPlan)
+    val pipeInfo = build(logicalPlan)
 
     pipeInfo should not be 'updating
     pipeInfo.periodicCommit should equal(None)
@@ -121,8 +121,8 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
 
   test("simple relationship by id seek query") {
     val astLiteral: Expression = ListLiteral(Seq(SignedDecimalIntegerLiteral("42") _)) _
-    val fromNode               = "from"
-    val toNode                 = "to"
+    val fromNode = "from"
+    val toNode = "to"
     val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"),
                                                    ManySeekableArgs(astLiteral),
                                                    IdName(fromNode),
@@ -143,7 +143,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
             SignedDecimalIntegerLiteral("43") _)) _
 
     val fromNode = "from"
-    val toNode   = "to"
+    val toNode = "to"
     val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"),
                                                    ManySeekableArgs(astCollection),
                                                    IdName(fromNode),
@@ -168,7 +168,7 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
             SignedDecimalIntegerLiteral("43") _)) _
 
     val fromNode = "from"
-    val toNode   = "to"
+    val toNode = "to"
     val logicalPlan = UndirectedRelationshipByIdSeek(IdName("r"),
                                                      ManySeekableArgs(astCollection),
                                                      IdName(fromNode),
@@ -186,17 +186,17 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
   }
 
   test("simple cartesian product") {
-    val lhs         = AllNodesScan(IdName("n"), Set.empty)(solved)
-    val rhs         = AllNodesScan(IdName("m"), Set.empty)(solved)
+    val lhs = AllNodesScan(IdName("n"), Set.empty)(solved)
+    val rhs = AllNodesScan(IdName("m"), Set.empty)(solved)
     val logicalPlan = CartesianProduct(lhs, rhs) _
-    val pipeInfo    = build(logicalPlan)
+    val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(CartesianProductPipe(AllNodesScanPipe("n")(), AllNodesScanPipe("m")())())
   }
 
   test("simple expand") {
     val logicalPlan = Expand(AllNodesScan("a", Set.empty)(solved), "a", SemanticDirection.INCOMING, Seq(), "b", "r1") _
-    val pipeInfo    = build(logicalPlan)
+    val pipeInfo = build(logicalPlan)
 
     pipeInfo.pipe should equal(
       ExpandAllPipe(AllNodesScanPipe("a")(), "a", "r1", "b", SemanticDirection.INCOMING, LazyTypes.empty)())
@@ -255,9 +255,9 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
     val token = 42
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(token))
     val allNodesScan = AllNodesScan("n", Set.empty)(solved)
-    val expressions  = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))
-    val projection   = Projection(allNodesScan, expressions)(solved)
-    val aggregation  = Aggregation(projection, expressions, Map.empty) _
+    val expressions = Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))
+    val projection = Projection(allNodesScan, expressions)(solved)
+    val aggregation = Aggregation(projection, expressions, Map.empty) _
 
     // WHEN
     val pipe = build(aggregation).pipe

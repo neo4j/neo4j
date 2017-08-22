@@ -85,8 +85,8 @@ abstract class LogicalPlan extends Product with Strictness with Rewritable {
       this
     else {
       val constructor = this.copyConstructor
-      val params      = constructor.getParameterTypes
-      val args        = children.toIndexedSeq
+      val params = constructor.getParameterTypes
+      val args = children.toIndexedSeq
       if ((params.length == args.length + 1) && params.last.isAssignableFrom(classOf[PlannerQuery]))
         constructor.invoke(this, args :+ this.solved: _*).asInstanceOf[this.type]
       else
@@ -108,9 +108,9 @@ abstract class LogicalPlan extends Product with Strictness with Rewritable {
     while (childrenHeap.nonEmpty) {
       childrenHeap.pop() match {
         case (prefix, level, Some(plan)) =>
-          val children       = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
+          val children = plan.lhs.toIndexedSeq ++ plan.rhs.toIndexedSeq
           val nonChildFields = plan.productIterator.filterNot(children.contains).mkString(", ")
-          val prodPrefix     = plan.productPrefix
+          val prodPrefix = plan.productPrefix
           sb.append(indent(level, s"""$prefix$prodPrefix($nonChildFields) {""".stripMargin))
 
           (plan.lhs, plan.rhs) match {
@@ -186,5 +186,5 @@ final case class SchemaIndexSeekUsage(identifier: String, labelId: Int, label: S
     extends IndexUsage
 final case class SchemaIndexScanUsage(identifier: String, labelId: Int, label: String, propertyKey: String)
     extends IndexUsage
-final case class LegacyNodeIndexUsage(identifier: String, index: String)         extends IndexUsage
+final case class LegacyNodeIndexUsage(identifier: String, index: String) extends IndexUsage
 final case class LegacyRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage

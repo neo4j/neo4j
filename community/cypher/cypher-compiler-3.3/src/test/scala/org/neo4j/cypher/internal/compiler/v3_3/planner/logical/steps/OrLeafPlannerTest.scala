@@ -40,11 +40,11 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("two predicates on the same variable can be used") {
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1     = newMockedLogicalPlan("x")
-    val p2     = newMockedLogicalPlan("x")
-    val e1     = Variable("e1")(pos)
-    val e2     = Variable("e2")(pos)
-    val ors    = Ors(Set(e1, e2))(pos)
+    val p1 = newMockedLogicalPlan("x")
+    val p2 = newMockedLogicalPlan("x")
+    val e1 = Variable("e1")(pos)
+    val e2 = Variable("e2")(pos)
+    val ors = Ors(Set(e1, e2))(pos)
     when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
       .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
     when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
@@ -62,11 +62,11 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("two predicates on different variables are not used") {
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1     = newMockedLogicalPlan("x")
-    val p2     = newMockedLogicalPlan("x")
-    val e1     = Variable("e1")(pos)
-    val e2     = Variable("e2")(pos)
-    val ors    = Ors(Set(e1, e2))(pos)
+    val p1 = newMockedLogicalPlan("x")
+    val p2 = newMockedLogicalPlan("x")
+    val e1 = Variable("e1")(pos)
+    val e2 = Variable("e2")(pos)
+    val ors = Ors(Set(e1, e2))(pos)
     when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
       .thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
     when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any()))
@@ -80,10 +80,10 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("two predicates, where one cannot be leaf-plan-solved, is not used") {
     val inner1 = mock[LeafPlanFromExpressions]
-    val p1     = newMockedLogicalPlan("x")
-    val e1     = Variable("e1")(pos)
-    val e2     = Variable("e2")(pos)
-    val ors    = Ors(Set(e1, e2))(pos)
+    val p1 = newMockedLogicalPlan("x")
+    val e1 = Variable("e1")(pos)
+    val e2 = Variable("e2")(pos)
+    val ors = Ors(Set(e1, e2))(pos)
     when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
       .thenReturn(Set(LeafPlansForVariable(IdName("e1"), Set(p1))))
     when(inner1.producePlanFor(Matchers.eq(Set(e2)), any())(any())).thenReturn(Set.empty[LeafPlansForVariable])
@@ -97,13 +97,13 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("two predicates that produce two plans each") {
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]
-    val p1     = newMockedLogicalPlan("x", "a")
-    val p2     = newMockedLogicalPlan("x", "b")
-    val p3     = newMockedLogicalPlan("x", "c")
-    val p4     = newMockedLogicalPlan("x", "d")
+    val p1 = newMockedLogicalPlan("x", "a")
+    val p2 = newMockedLogicalPlan("x", "b")
+    val p3 = newMockedLogicalPlan("x", "c")
+    val p4 = newMockedLogicalPlan("x", "d")
 
-    val e1  = Variable("e1")(pos)
-    val e2  = Variable("e2")(pos)
+    val e1 = Variable("e1")(pos)
+    val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
     when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
       .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))
@@ -136,12 +136,12 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("two predicates that produce two plans each mk 2") {
     val inner1 = mock[LeafPlanFromExpressions]
     val inner2 = mock[LeafPlanFromExpressions]
-    val p1     = newMockedLogicalPlan("x", "a")
-    val p2     = newMockedLogicalPlan("x", "b")
-    val p3     = newMockedLogicalPlan("x", "c")
+    val p1 = newMockedLogicalPlan("x", "a")
+    val p2 = newMockedLogicalPlan("x", "b")
+    val p3 = newMockedLogicalPlan("x", "c")
 
-    val e1  = Variable("e1")(pos)
-    val e2  = Variable("e2")(pos)
+    val e1 = Variable("e1")(pos)
+    val e2 = Variable("e2")(pos)
     val ors = Ors(Set(e1, e2))(pos)
     when(inner1.producePlanFor(Matchers.eq(Set(e1)), any())(any()))
       .thenReturn(Set(LeafPlansForVariable(IdName("x"), Set(p1))))

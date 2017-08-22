@@ -45,7 +45,7 @@ case class PathExpression(pathPattern: Seq[Pattern],
     with PatternGraphBuilder {
   private val variables: Seq[(String, CypherType)] =
     pathPattern.flatMap(pattern => pattern.possibleStartPoints.filter(p => isNamed(p._1)))
-  private val symbols2          = SymbolTable(variables.toMap)
+  private val symbols2 = SymbolTable(variables.toMap)
   private val variablesInClause = Pattern.variables(pathPattern)
 
   private val matchingContext =
@@ -89,7 +89,7 @@ case class PathExpression(pathPattern: Seq[Pattern],
                      allowIntroducingNewIdentifiers))
 
   override def symbolTableDependencies = {
-    val patternDependencies    = pathPattern.flatMap(_.symbolTableDependencies).toSet
+    val patternDependencies = pathPattern.flatMap(_.symbolTableDependencies).toSet
     val startPointDependencies = pathPattern.flatMap(_.possibleStartPoints).map(_._1).filter(isNamed).toSet
     patternDependencies ++ startPointDependencies
   }

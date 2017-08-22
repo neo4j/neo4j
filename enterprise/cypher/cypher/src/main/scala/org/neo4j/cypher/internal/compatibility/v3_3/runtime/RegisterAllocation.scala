@@ -165,8 +165,8 @@ object RegisterAllocation {
           rhsPipeline
 
         case CartesianProduct(lhs, rhs) =>
-          val lhsPipeline              = allocate(lhs, nullable, argument)
-          val rhsPipeline              = allocate(rhs, nullable, argument)
+          val lhsPipeline = allocate(lhs, nullable, argument)
+          val rhsPipeline = allocate(rhs, nullable, argument)
           val cartesianProductPipeline = lhsPipeline.deepClone()
           rhsPipeline.foreachSlot {
             case (k, slot) =>

@@ -65,10 +65,10 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("foldMap plannerQuery with tail should change when reverseMapped") {
 
-    val tail             = RegularPlannerQuery(queryGraph = QueryGraph.empty)
-    val firstQueryGraph  = QueryGraph.empty
+    val tail = RegularPlannerQuery(queryGraph = QueryGraph.empty)
+    val firstQueryGraph = QueryGraph.empty
     val secondQueryGraph = QueryGraph(patternNodes = Set(IdName("a")))
-    val input            = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
+    val input = RegularPlannerQuery(queryGraph = firstQueryGraph, tail = Some(tail))
 
     val result = input.foldMap {
       case (pq1: PlannerQuery, pq2: PlannerQuery) =>
@@ -104,8 +104,8 @@ class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
     // pq -> pqWithLimit -> pqWithLimitAndSort
 
     val pqWithLimitAndSort: PlannerQuery = RegularPlannerQuery(horizon = shuffleWithLimitAndSort)
-    val pqWithLimit                      = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
-    val pq                               = RegularPlannerQuery(tail = Some(pqWithLimit))
+    val pqWithLimit = RegularPlannerQuery(horizon = shuffleWithLimit, tail = Some(pqWithLimitAndSort))
+    val pq = RegularPlannerQuery(tail = Some(pqWithLimit))
 
     pq.preferredStrictness should equal(Some(LazyMode))
     pqWithLimit.preferredStrictness should equal(Some(LazyMode))

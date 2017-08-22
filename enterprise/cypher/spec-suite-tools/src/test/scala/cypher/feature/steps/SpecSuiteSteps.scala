@@ -76,7 +76,7 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   Before() { scenario =>
     val currentScenarioName = scenario.getName.toLowerCase
-    val skip                = requiredScenarioName.nonEmpty && !currentScenarioName.contains(requiredScenarioName)
+    val skip = requiredScenarioName.nonEmpty && !currentScenarioName.contains(requiredScenarioName)
     scenarioBuilder = new ScenarioExecutionBuilder
     scenarioBuilder.register(scenario.getName, skip)
   }
@@ -197,13 +197,13 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
   }
 
   private def lendForReadOnlyUse(recipeName: String) = {
-    val recipe            = graphArchiveLibrary.recipe(recipeName)
+    val recipe = graphArchiveLibrary.recipe(recipeName)
     val recommendedPcSize = recipe.recommendedPageCacheSize
-    val pcSize            = (recommendedPcSize / MB(32) + 1) * MB(32)
-    val config            = currentDatabaseConfig(pcSize.toString)
-    val archiveUse        = GraphArchive(recipe, config).readOnlyUse
-    val path              = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
-    val builder           = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
+    val pcSize = (recommendedPcSize / MB(32) + 1) * MB(32)
+    val config = currentDatabaseConfig(pcSize.toString)
+    val archiveUse = GraphArchive(recipe, config).readOnlyUse
+    val path = graphArchiveLibrary.lendForReadOnlyUse(archiveUse)(graphImporter)
+    val builder = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder(path.jfile)
     builder.setConfig(archiveUse.dbConfig.asJava)
     builder.newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
   }
@@ -212,14 +212,14 @@ trait SpecSuiteSteps extends FunSuiteLike with Matchers with TCKCucumberTemplate
 
   private def currentDatabaseConfig(sizeHint: String) = {
     val builder = Map.newBuilder[String, String]
-    builder += GraphDatabaseSettings.pagecache_memory.name()   -> sizeHint
+    builder += GraphDatabaseSettings.pagecache_memory.name() -> sizeHint
     builder += GraphDatabaseSettings.cypher_hints_error.name() -> "true"
     cypherConfig().foreach { case (s, v) => builder += s.name() -> v }
     builder.result()
   }
 
   private def buildProcedure(parsedSignature: ProcedureSignature, values: DataTable) = {
-    val signatureFields             = parsedSignature.fields
+    val signatureFields = parsedSignature.fields
     val (tableColumns, tableValues) = parseValueTable(values)
     if (tableColumns != signatureFields)
       throw new scala.IllegalArgumentException(

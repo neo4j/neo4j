@@ -33,8 +33,8 @@ case object projectNamedPaths extends Rewriter {
 
     self =>
 
-    def withoutNamedPaths                                = copy(paths = Map.empty)
-    def withProtectedVariable(ident: Ref[Variable])      = copy(protectedVariables = protectedVariables + ident)
+    def withoutNamedPaths = copy(paths = Map.empty)
+    def withProtectedVariable(ident: Ref[Variable]) = copy(protectedVariables = protectedVariables + ident)
     def withNamedPath(entry: (Variable, PathExpression)) = copy(paths = paths + entry)
     def withRewrittenVariable(entry: (Ref[Variable], PathExpression)) = {
       val (ref, pathExpr) = entry

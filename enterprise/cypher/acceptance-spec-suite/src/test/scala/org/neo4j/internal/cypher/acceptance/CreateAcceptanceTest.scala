@@ -72,8 +72,8 @@ class CreateAcceptanceTest
   }
 
   test("should allow create, delete and return in one go (relationship)") {
-    val typ    = "ThisIsTheRelationshipType"
-    val query  = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
+    val typ = "ThisIsTheRelationshipType"
+    val query = s"CREATE ()-[r:$typ]->() DELETE r RETURN type(r)"
     val result = succeedWith(Configs.CommunityInterpreted - Configs.Cost2_3, query)
     result.toList should equal(List(Map("type(r)" -> typ)))
   }

@@ -47,7 +47,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
   val (patternGraph, containsLoops) = validatePattern(patternNodes, patternRels)
 
   lazy val hasBoundRelationships: Boolean = boundElements.exists(patternRels.keys.toIndexedSeq.contains)
-  lazy val hasVarLengthPaths: Boolean     = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
+  lazy val hasVarLengthPaths: Boolean = patternRels.values.exists(_.isInstanceOf[VariableLengthPatternRelationship])
 
   def apply(key: String) = patternGraph(key)
 
@@ -82,7 +82,7 @@ case class PatternGraph(patternNodes: Map[String, PatternNode],
 
   private def checkIfWeHaveLoops(boundPatternElements: Seq[PatternElement], allPatternElements: Seq[PatternElement]) = {
     var visited = Seq[PatternElement]()
-    var loop    = false
+    var loop = false
 
     def follow(element: PatternElement) = element match {
       case n: PatternNode         => true

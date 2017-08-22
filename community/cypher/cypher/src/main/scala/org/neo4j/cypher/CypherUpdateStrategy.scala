@@ -24,7 +24,7 @@ sealed abstract class CypherUpdateStrategy(plannerName: String) extends CypherOp
 case object CypherUpdateStrategy extends CypherOptionCompanion[CypherUpdateStrategy] {
 
   case object default extends CypherUpdateStrategy("default")
-  case object eager   extends CypherUpdateStrategy("eager")
+  case object eager extends CypherUpdateStrategy("eager")
 
   val all: Set[CypherUpdateStrategy] = Set(default, eager)
 }

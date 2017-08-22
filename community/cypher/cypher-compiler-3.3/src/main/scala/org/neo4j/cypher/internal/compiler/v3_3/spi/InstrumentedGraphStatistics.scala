@@ -36,7 +36,7 @@ case class CardinalityByLabelsAndRelationshipType(lhs: Option[LabelId],
                                                   relType: Option[RelTypeId],
                                                   rhs: Option[LabelId])
     extends StatisticsKey
-case class IndexSelectivity(index: IndexDescriptor)               extends StatisticsKey
+case class IndexSelectivity(index: IndexDescriptor) extends StatisticsKey
 case class IndexPropertyExistsSelectivity(index: IndexDescriptor) extends StatisticsKey
 
 class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double] = mutable.Map.empty) {
@@ -45,7 +45,7 @@ class MutableGraphStatisticsSnapshot(val map: mutable.Map[StatisticsKey, Double]
 
 case class GraphStatisticsSnapshot(statsValues: Map[StatisticsKey, Double] = Map.empty) {
   def recompute(statistics: GraphStatistics): GraphStatisticsSnapshot = {
-    val snapshot     = new MutableGraphStatisticsSnapshot()
+    val snapshot = new MutableGraphStatisticsSnapshot()
     val instrumented = InstrumentedGraphStatistics(statistics, snapshot)
     statsValues.keys.foreach {
       case NodesWithLabelCardinality(labelId) =>

@@ -113,7 +113,7 @@ class GroupInequalityPredicatesForLegacyTest extends CypherFunSuite {
     GreaterThanOrEqual(lhs, Literal(v))
 
   private def anded(property: Property, first: ComparablePredicate, others: ComparablePredicate*) = {
-    val variable     = property.mapExpr.asInstanceOf[Variable]
+    val variable = property.mapExpr.asInstanceOf[Variable]
     val inequalities = NonEmptyList(first, others: _*)
     AndedPropertyComparablePredicates(variable, property, inequalities)
   }

@@ -53,15 +53,15 @@ import scala.collection.mutable
 
 class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
-  private val tableVarName         = "probeTable"
+  private val tableVarName = "probeTable"
   private val buildTableMethodName = "buildProbeTable"
-  private val resultRowKey         = "resultKey"
+  private val resultRowKey = "resultKey"
 
-  private val entityAccessor       = mock[NodeManager]
-  private val queryContext         = mock[QueryContext]
+  private val entityAccessor = mock[NodeManager]
+  private val queryContext = mock[QueryContext]
   private val transactionalContext = mock[TransactionalContextWrapper]
-  private val readOps              = mock[ReadOperations]
-  private val allNodeIds           = mutable.ArrayBuffer[Long]()
+  private val readOps = mock[ReadOperations]
+  private val allNodeIds = mutable.ArrayBuffer[Long]()
 
   // used by instructions that generate probe tables
   private implicit val codeGenContext = new CodeGenContext(SemanticTable(), Map.empty, Map.empty)
@@ -78,7 +78,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     // Given
     setUpNodeMocks(1, 2, 42)
     val nodeVar = "node"
-    val nodes   = Set(Variable(nodeVar, CodeGenType.primitiveNode))
+    val nodes = Set(Variable(nodeVar, CodeGenType.primitiveNode))
 
     val buildInstruction = BuildCountingProbeTable(id = "countingTable", name = tableVarName, nodes = nodes)
 
@@ -96,7 +96,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
   test("should generate correct code for a counting probe table on multiple keys") {
     // Given
     setUpNodeMocks(1, 2)
-    val nodes            = Set(Variable("node1", CodeGenType.primitiveNode), Variable("node2", CodeGenType.primitiveNode))
+    val nodes = Set(Variable("node1", CodeGenType.primitiveNode), Variable("node2", CodeGenType.primitiveNode))
     val buildInstruction = BuildCountingProbeTable(id = "countingTable", name = tableVarName, nodes = nodes)
 
     // When
@@ -115,7 +115,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
     // Given
     setUpNodeMocks(42, 4242)
     val nodeVar = "node"
-    val nodes   = Set(Variable(nodeVar, CodeGenType.primitiveNode))
+    val nodes = Set(Variable(nodeVar, CodeGenType.primitiveNode))
     val buildInstruction = BuildRecordingProbeTable(id = "recordingTable",
                                                     name = tableVarName,
                                                     nodes = nodes,
@@ -208,7 +208,7 @@ class BuildProbeTableInstructionsTest extends CypherFunSuite with CodeGenSugar {
 
   private def runTest(buildInstruction: BuildProbeTable, nodes: Set[Variable]): List[Map[String, Object]] = {
     val instructions = buildProbeTableWithTwoAllNodeScans(buildInstruction, nodes)
-    val ids          = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
+    val ids = instructions.flatMap(_.allOperatorIds.map(id => id -> null)).toMap
     evaluate(instructions, queryContext, Seq(resultRowKey), Map.empty[String, Object], ids)
   }
 

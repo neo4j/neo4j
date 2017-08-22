@@ -51,15 +51,15 @@ case class LogicalPlanState(queryText: String,
                             accumulatedConditions: Set[Condition] = Set.empty)
     extends BaseState {
 
-  def unionQuery: UnionQuery                 = maybeUnionQuery getOrElse fail("Union query")
-  def logicalPlan: LogicalPlan               = maybeLogicalPlan getOrElse fail("Logical plan")
+  def unionQuery: UnionQuery = maybeUnionQuery getOrElse fail("Union query")
+  def logicalPlan: LogicalPlan = maybeLogicalPlan getOrElse fail("Logical plan")
   def periodicCommit: Option[PeriodicCommit] = maybePeriodicCommit getOrElse fail("Periodic commit")
-  def astAsQuery: Query                      = statement().asInstanceOf[Query]
+  def astAsQuery: Query = statement().asInstanceOf[Query]
 
-  override def withStatement(s: Statement): LogicalPlanState         = copy(maybeStatement = Some(s))
+  override def withStatement(s: Statement): LogicalPlanState = copy(maybeStatement = Some(s))
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
   override def withSemanticState(s: SemanticState): LogicalPlanState = copy(maybeSemantics = Some(s))
-  override def withParams(p: Map[String, Any]): LogicalPlanState     = copy(maybeExtractedParams = Some(p))
+  override def withParams(p: Map[String, Any]): LogicalPlanState = copy(maybeExtractedParams = Some(p))
 
   def withMaybeLogicalPlan(p: Option[LogicalPlan]): LogicalPlanState = copy(maybeLogicalPlan = p)
 }

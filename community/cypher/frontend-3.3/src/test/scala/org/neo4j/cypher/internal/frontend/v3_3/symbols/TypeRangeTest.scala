@@ -91,7 +91,7 @@ class TypeRangeTest extends CypherFunSuite {
   }
 
   test("should contain overlapping range") {
-    val rangeRootedAtNumber  = TypeRange(CTNumber, None)
+    val rangeRootedAtNumber = TypeRange(CTNumber, None)
     val rangeRootedAtInteger = TypeRange(CTInteger, None)
     rangeRootedAtNumber.contains(rangeRootedAtInteger) should equal(true)
 
@@ -99,8 +99,8 @@ class TypeRangeTest extends CypherFunSuite {
     rangeOfNumberToDouble.contains(rangeRootedAtInteger) should equal(false)
     rangeOfNumberToDouble.contains(rangeRootedAtNumber) should equal(false)
 
-    val rangeOfDouble  = TypeRange(CTFloat, CTFloat)
-    val rangeOfNumber  = TypeRange(CTNumber, CTNumber)
+    val rangeOfDouble = TypeRange(CTFloat, CTFloat)
+    val rangeOfNumber = TypeRange(CTNumber, CTNumber)
     val rangeOfInteger = TypeRange(CTInteger, CTInteger)
     rangeOfNumberToDouble.contains(rangeOfDouble) should equal(true)
     rangeOfNumberToDouble.contains(rangeOfNumber) should equal(true)
@@ -167,7 +167,7 @@ class TypeRangeTest extends CypherFunSuite {
 
   test("leastUpperBound with super type") {
     val rangeFromAny = TypeRange(CTAny, None)
-    val rangeOfAny   = TypeRange(CTAny, CTAny)
+    val rangeOfAny = TypeRange(CTAny, CTAny)
     (rangeFromAny leastUpperBounds rangeOfAny) should equal(Seq(rangeOfAny))
 
     val rangeOfInteger = TypeRange(CTInteger, None)
@@ -179,7 +179,7 @@ class TypeRangeTest extends CypherFunSuite {
 
   test("leastUpperBound with sub type") {
     val rangeFromListAny = TypeRange(CTList(CTAny), None)
-    val rangeOfListAny   = TypeRange(CTList(CTAny), CTList(CTAny))
+    val rangeOfListAny = TypeRange(CTList(CTAny), CTList(CTAny))
     (rangeFromListAny leastUpperBounds rangeOfListAny) should equal(Seq(rangeOfListAny))
 
     val rangeFromListString = TypeRange(CTList(CTString), None)

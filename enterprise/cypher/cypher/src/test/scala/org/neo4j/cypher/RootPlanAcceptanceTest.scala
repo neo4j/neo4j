@@ -60,7 +60,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       .planDescription
     val children = description.getChildren
     children should have size 1
-    description.getArguments.get("DbHits") should equal(0)     // ProduceResults has no hits
+    description.getArguments.get("DbHits") should equal(0) // ProduceResults has no hits
     children.get(0).getArguments.get("DbHits") should equal(1) // AllNodesScan has 1 hit
   }
 
@@ -163,7 +163,7 @@ class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
       val prepend = (cypherVersion, planner, runtime) match {
         case (None, None, None) => ""
         case _ =>
-          val version       = cypherVersion.map(_.name).getOrElse("")
+          val version = cypherVersion.map(_.name).getOrElse("")
           val plannerString = planner.map("planner=" + _.name).getOrElse("")
           val runtimeString = runtime.map("runtime=" + _.name).getOrElse("")
           s"CYPHER $version $plannerString $runtimeString"

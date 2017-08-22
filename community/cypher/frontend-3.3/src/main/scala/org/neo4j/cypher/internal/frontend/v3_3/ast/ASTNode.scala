@@ -32,13 +32,13 @@ trait ASTNode extends Product with Foldable with Rewritable {
     if (children.iterator eqElements this.children)
       this
     else {
-      val constructor    = this.copyConstructor
-      val params         = constructor.getParameterTypes
-      val args           = children.toVector
-      val hasExtraParam  = params.length == args.length + 1
+      val constructor = this.copyConstructor
+      val params = constructor.getParameterTypes
+      val args = children.toVector
+      val hasExtraParam = params.length == args.length + 1
       val lastParamIsPos = params.last.isAssignableFrom(classOf[InputPosition])
-      val ctorArgs       = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
-      val duped          = constructor.invoke(this, ctorArgs: _*)
+      val ctorArgs = if (hasExtraParam && lastParamIsPos) args :+ this.position else args
+      val duped = constructor.invoke(this, ctorArgs: _*)
       duped.asInstanceOf[self.type]
     }
 

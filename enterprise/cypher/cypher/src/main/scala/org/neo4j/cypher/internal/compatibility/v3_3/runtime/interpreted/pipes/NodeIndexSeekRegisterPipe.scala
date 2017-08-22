@@ -50,7 +50,7 @@ case class NodeIndexSeekRegisterPipe(ident: String,
   valueExpr.expressions.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val index       = indexFactory(state)
+    val index = indexFactory(state)
     val baseContext = state.initialContext.getOrElse(PrimitiveExecutionContext.empty)
     val resultNodes = indexQuery(valueExpr, baseContext, state, index, label.name, propertyKeys.map(_.name))
     resultNodes.map { node =>

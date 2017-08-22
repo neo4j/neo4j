@@ -55,14 +55,14 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def cardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
                                 expressionEvaluator: ExpressionEvaluator): CardinalityModel =
     parent.cardinalityModel(queryGraphCardinalityModel, expressionEvaluator)
-  override def costModel()      = parent.costModel()
-  override def graphStatistics  = parent.graphStatistics
-  override def indexes          = parent.indexes
-  override def uniqueIndexes    = parent.uniqueIndexes
+  override def costModel() = parent.costModel()
+  override def graphStatistics = parent.graphStatistics
+  override def indexes = parent.indexes
+  override def uniqueIndexes = parent.uniqueIndexes
   override def labelCardinality = parent.labelCardinality
-  override def knownLabels      = parent.knownLabels
-  override def labelsById       = parent.labelsById
-  override def qg               = parent.qg
+  override def knownLabels = parent.knownLabels
+  override def labelsById = parent.labelsById
+  override def qg = parent.qg
 }
 
 trait LogicalPlanningConfigurationAdHocSemanticTable {

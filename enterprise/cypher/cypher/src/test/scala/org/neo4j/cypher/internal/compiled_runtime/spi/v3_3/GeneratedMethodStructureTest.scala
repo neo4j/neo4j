@@ -141,7 +141,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
         val table: LongsToListTable =
           LongsToListTable(
             SimpleTupleDescriptor(Map("a" -> CodeGenType.primitiveNode, "b" -> CodeGenType.primitiveNode)),
-            localMap = Map("aa"           -> "a", "bb"                      -> "b"))
+            localMap = Map("aa" -> "a", "bb" -> "b"))
         m.declareAndInitialize("a", CodeGenType.primitiveNode)
         m.declareAndInitialize("b", CodeGenType.primitiveNode)
         m.allocateProbeTable("table", table)
@@ -294,7 +294,7 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
   )
 
   for {
-    op   <- ops
+    op <- ops
     mode <- modes
   } {
     test(s"${op.name} $mode") {
@@ -305,8 +305,8 @@ class GeneratedMethodStructureTest extends CypherFunSuite {
   case class Operation[E](name: String, block: GeneratedMethodStructure => Unit)
 
   private def codeGenerator[E](block: GeneratedMethodStructure => Unit, mode: CodeGenerationStrategy[_]) = {
-    val codeGen          = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode)
-    val packageName      = "foo"
+    val codeGen = CodeGenerator.generateCode(classOf[CodeStructure[_]].getClassLoader, mode)
+    val packageName = "foo"
     implicit val context = new CodeGenContext(SemanticTable(), Map.empty, Map.empty)
     val clazz = using(codeGen.generateClass(packageName, "Test")) { body =>
       val fields = Fields(

@@ -42,18 +42,18 @@ trait QueryGraphProducer extends MockitoSugar {
   import org.neo4j.cypher.internal.compiler.v3_3.ast.convert.plannerQuery.StatementConverters._
 
   def producePlannerQueryForPattern(query: String): (PlannerQuery, SemanticTable) = {
-    val q           = query + " RETURN 1 AS Result"
-    val ast         = parser.parse(q)
+    val q = query + " RETURN 1 AS Result"
+    val ast = parser.parse(q)
     val mkException = new SyntaxExceptionCreator(query, Some(pos))
     val cleanedStatement: Statement =
       ast.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
-    val onError                                    = SyntaxExceptionCreator.throwOnError(mkException)
+    val onError = SyntaxExceptionCreator.throwOnError(mkException)
     val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
     onError(errors)
 
     val (firstRewriteStep, _, _) = astRewriter.rewrite(query, cleanedStatement, semanticState)
-    val state                    = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
-    val context                  = ContextHelper.create()
+    val state = LogicalPlanState(query, None, IDPPlannerName, Some(firstRewriteStep), Some(semanticState))
+    val context = ContextHelper.create()
     val output = (Namespacer andThen rewriteEqualityToInPredicate andThen CNFNormalizer andThen LateAstRewriting)
       .transform(state, context)
 

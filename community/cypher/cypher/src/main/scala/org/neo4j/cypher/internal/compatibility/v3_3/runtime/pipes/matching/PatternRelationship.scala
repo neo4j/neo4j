@@ -126,7 +126,7 @@ class PatternRelationship(key: String,
           if (propertyId.isEmpty) {
             false // The property doesn't exist in the graph
           } else {
-            val value         = state.query.relationshipOps.getProperty(rel.id, propertyId.get)
+            val value = state.query.relationshipOps.getProperty(rel.id, propertyId.get)
             val expectedValue = expression(ctx)(state)
             expectedValue == value
           }

@@ -61,13 +61,13 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
     )
   }
 
-  val dim                                    = 4
-  val dMax                                   = dim - 1
-  val topLeft                                = "CELL00"
-  val topRight                               = s"CELL0${dMax}"
-  val bottomLeft                             = s"CELL${dMax}0"
-  val bottomRight                            = s"CELL${dMax}${dMax}"
-  val middle                                 = s"CELL${dMax / 2}${dMax / 2}"
+  val dim = 4
+  val dMax = dim - 1
+  val topLeft = "CELL00"
+  val topRight = s"CELL0${dMax}"
+  val bottomLeft = s"CELL${dMax}0"
+  val bottomRight = s"CELL${dMax}${dMax}"
+  val middle = s"CELL${dMax / 2}${dMax / 2}"
   val nodesByName: mutable.Map[String, Node] = mutable.Map[String, Node]()
 
   override protected def initTest(): Unit = {

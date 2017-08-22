@@ -63,13 +63,13 @@ object QueryStateHelper {
 
   private def toObject(any: AnyValue) = {
     val writer = new BaseToObjectValueWriter[RuntimeException] {
-      override protected def newNodeProxyById(id: Long): Node                 = ???
+      override protected def newNodeProxyById(id: Long): Node = ???
       override protected def newRelationshipProxyById(id: Long): Relationship = ???
       override protected def newGeographicPoint(longitude: Double,
                                                 latitude: Double,
                                                 name: String,
                                                 code: Int,
-                                                href: String): Point                                               = ???
+                                                href: String): Point = ???
       override protected def newCartesianPoint(x: Double, y: Double, name: String, code: Int, href: String): Point = ???
     }
     any.writeTo(writer)

@@ -192,7 +192,7 @@ class MutatingIntegrationTest
   test("create multiple nodes") {
     val maps = List(Map("name" -> "Andres", "prefers" -> "Scala"),
                     Map("name" -> "Michael", "prefers" -> "Java"),
-                    Map("name" -> "Peter", "prefers"   -> "Java"))
+                    Map("name" -> "Peter", "prefers" -> "Java"))
 
     val result =
       updateWithBothPlannersAndCompatibilityMode("unwind {params} as m create (x) set x = m ", "params" -> maps)
@@ -203,7 +203,7 @@ class MutatingIntegrationTest
   test("not allowed to create multiple nodes with parameter list") {
     val maps = List(Map("name" -> "Andres", "prefers" -> "Scala"),
                     Map("name" -> "Michael", "prefers" -> "Java"),
-                    Map("name" -> "Peter", "prefers"   -> "Java"))
+                    Map("name" -> "Peter", "prefers" -> "Java"))
 
     intercept[CypherTypeException](
       executeWithCostPlannerAndInterpretedRuntimeOnly("create ({params})", "params" -> maps))
@@ -226,9 +226,9 @@ class MutatingIntegrationTest
 
   test("first read then write") {
     val root = createNode()
-    val a    = createNode("Alfa")
-    val b    = createNode("Beta")
-    val c    = createNode("Gamma")
+    val a = createNode("Alfa")
+    val b = createNode("Beta")
+    val c = createNode("Gamma")
 
     relate(root, a)
     relate(root, b)
@@ -295,7 +295,7 @@ class MutatingIntegrationTest
     val map = new java.util.HashMap[String, Object]()
     map.put("arrayProp", list)
 
-    val q      = "create (a{param}) return a.arrayProp"
+    val q = "create (a{param}) return a.arrayProp"
     val result = executeScalar[Array[String]](q, "param" -> map)
 
     assertStats(updateWithBothPlannersAndCompatibilityMode(q, "param" -> map), nodesCreated = 1, propertiesWritten = 1)
@@ -437,8 +437,8 @@ class MutatingIntegrationTest
     val result = updateWithBothPlanners(query)
 
     assertStats(result, nodesCreated = 8)
-    val unwind      = 2
-    val firstMatch  = 4
+    val unwind = 2
+    val firstMatch = 4
     val secondMatch = 12 // The already existing 4 nodes, plus the now created 8
     result.toList should equal(List(Map("count" -> unwind * firstMatch * secondMatch)))
   }

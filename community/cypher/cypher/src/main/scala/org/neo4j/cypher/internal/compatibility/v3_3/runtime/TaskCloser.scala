@@ -24,7 +24,7 @@ import scala.collection.mutable.ListBuffer
 class TaskCloser {
 
   private val _tasks: ListBuffer[Boolean => Unit] = ListBuffer.empty
-  private var closed                              = false
+  private var closed = false
 
   /**
     *
